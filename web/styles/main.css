@@ -1,0 +1,522 @@
+/* ═══════════════════════════════════════════════
+   Overtone Dashboard — Dark Theme
+   ═══════════════════════════════════════════════ */
+
+/* ── CSS 變數 ── */
+
+:root {
+  /* 背景 */
+  --bg-primary: #0d1117;
+  --bg-secondary: #161b22;
+  --bg-tertiary: #21262d;
+  --bg-hover: #292e36;
+
+  /* 文字 */
+  --text-primary: #e6edf3;
+  --text-secondary: #8b949e;
+  --text-muted: #484f58;
+
+  /* Agent 色彩（對齊 registry.js stages[].color） */
+  --color-purple: #a855f7;
+  --color-cyan: #22d3ee;
+  --color-yellow: #eab308;
+  --color-blue: #3b82f6;
+  --color-red: #ef4444;
+  --color-orange: #f97316;
+  --color-pink: #ec4899;
+  --color-green: #22c55e;
+
+  /* 狀態 */
+  --status-pass: #22c55e;
+  --status-fail: #ef4444;
+  --status-reject: #f97316;
+  --status-active: #eab308;
+  --status-pending: #484f58;
+
+  /* 間距 */
+  --spacing: 16px;
+  --spacing-sm: 8px;
+  --spacing-lg: 24px;
+  --radius: 8px;
+  --radius-sm: 4px;
+}
+
+/* ── 全域 ── */
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  line-height: 1.5;
+  min-height: 100vh;
+}
+
+a { color: var(--color-blue); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* ── Header ── */
+
+header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing);
+  padding: var(--spacing) var(--spacing-lg);
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--bg-tertiary);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.logo {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  text-decoration: none;
+}
+.logo:hover { text-decoration: none; }
+
+.session-id-header {
+  color: var(--text-secondary);
+  font-family: 'SF Mono', Consolas, monospace;
+  font-size: 0.85rem;
+}
+
+.header-spacer { flex: 1; }
+
+.connection-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.connection-status::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--status-fail);
+}
+
+.connection-status.online::before {
+  background: var(--status-pass);
+}
+
+/* ── Main ── */
+
+main {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: var(--spacing-lg);
+}
+
+h1 {
+  font-size: 1.4rem;
+  margin-bottom: var(--spacing-lg);
+  color: var(--text-primary);
+}
+
+h2 {
+  font-size: 1.1rem;
+  margin-bottom: var(--spacing);
+  color: var(--text-secondary);
+}
+
+h3 {
+  font-size: 1rem;
+  margin-bottom: var(--spacing-sm);
+  color: var(--text-secondary);
+}
+
+section {
+  margin-bottom: var(--spacing-lg);
+}
+
+/* ── Tab 導航 ── */
+
+.tabs {
+  display: flex;
+  gap: 2px;
+  padding: 0 var(--spacing-lg);
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--bg-tertiary);
+}
+
+.tabs button {
+  background: none;
+  border: none;
+  padding: 12px var(--spacing);
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.tabs button:hover { color: var(--text-primary); }
+
+.tabs button.active {
+  color: var(--text-primary);
+  border-bottom-color: var(--color-blue);
+}
+
+.tab-content {
+  padding: var(--spacing-lg);
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* ── Session 卡片（首頁） ── */
+
+.session-card {
+  display: block;
+  background: var(--bg-secondary);
+  border: 1px solid var(--bg-tertiary);
+  border-radius: var(--radius);
+  padding: var(--spacing);
+  margin-bottom: var(--spacing-sm);
+  text-decoration: none;
+  color: var(--text-primary);
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.session-card:hover {
+  background: var(--bg-hover);
+  border-color: var(--text-muted);
+  text-decoration: none;
+}
+
+.session-card.active {
+  border-left: 3px solid var(--status-active);
+}
+
+.session-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-sm);
+}
+
+.workflow-type {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.session-time {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.session-stats {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-top: var(--spacing-sm);
+}
+
+.session-id {
+  font-family: 'SF Mono', Consolas, monospace;
+}
+
+.empty-state {
+  padding: var(--spacing-lg);
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+/* ── 進度條 ── */
+
+.progress-mini,
+.progress-bar {
+  height: 4px;
+  background: var(--bg-tertiary);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 8px;
+  border-radius: var(--radius-sm);
+  margin-bottom: var(--spacing-sm);
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--color-blue), var(--color-cyan));
+  border-radius: inherit;
+  transition: width 0.5s ease;
+}
+
+.progress-text {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+/* ── Pipeline 視覺化 ── */
+
+.pipeline {
+  display: flex;
+  gap: var(--spacing-sm);
+  overflow-x: auto;
+  padding: var(--spacing) 0;
+  scrollbar-width: thin;
+}
+
+.stage-card {
+  flex: 0 0 auto;
+  width: 80px;
+  text-align: center;
+  padding: 12px var(--spacing-sm);
+  border-radius: var(--radius);
+  background: var(--bg-tertiary);
+  border: 2px solid transparent;
+  transition: border-color 0.3s, background 0.3s;
+  position: relative;
+}
+
+.stage-card + .stage-card::before {
+  content: '→';
+  position: absolute;
+  left: -14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+.stage-card.completed {
+  border-color: var(--status-pass);
+  background: rgba(34, 197, 94, 0.08);
+}
+
+.stage-card.active,
+.stage-card.in-progress {
+  border-color: var(--status-active);
+  background: rgba(234, 179, 8, 0.08);
+}
+
+.stage-card.failed {
+  border-color: var(--status-fail);
+  background: rgba(239, 68, 68, 0.08);
+}
+
+.stage-icon {
+  font-size: 1.5rem;
+  margin-bottom: 4px;
+}
+
+.stage-label {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.stage-status {
+  font-size: 0.9rem;
+  margin-top: 4px;
+}
+
+/* ── Agent 清單 ── */
+
+.agents-section {
+  margin-top: var(--spacing-lg);
+}
+
+.agent-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--spacing-sm);
+}
+
+.agent-card {
+  background: var(--bg-tertiary);
+  border-radius: var(--radius);
+  padding: var(--spacing-sm) var(--spacing);
+  border-left: 3px solid var(--text-muted);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.agent-name {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.agent-stage {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.agent-duration {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+/* ── 統計卡片 ── */
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-lg);
+}
+
+.stat-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--bg-tertiary);
+  border-radius: var(--radius);
+  padding: var(--spacing);
+  text-align: center;
+}
+
+.stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.stat-label {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+
+/* ── Timeline ── */
+
+.filter-bar {
+  display: flex;
+  gap: 4px;
+  padding-bottom: var(--spacing);
+  overflow-x: auto;
+  flex-wrap: wrap;
+}
+
+.filter-bar button {
+  background: var(--bg-tertiary);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  padding: 4px 12px;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+  white-space: nowrap;
+}
+
+.filter-bar button:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.filter-bar button.active {
+  background: var(--color-blue);
+  color: white;
+  border-color: var(--color-blue);
+}
+
+.timeline-list {
+  max-height: 70vh;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.timeline-event {
+  display: grid;
+  grid-template-columns: 80px 120px 1fr;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing);
+  border-bottom: 1px solid var(--bg-tertiary);
+  font-size: 0.85rem;
+  transition: background 0.15s;
+}
+
+.timeline-event:hover {
+  background: var(--bg-secondary);
+}
+
+.event-time {
+  color: var(--text-muted);
+  font-family: 'SF Mono', Consolas, monospace;
+  font-size: 0.8rem;
+}
+
+.event-label {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.event-detail {
+  color: var(--text-secondary);
+}
+
+/* 分類色條 */
+.timeline-event.cat-workflow { border-left: 3px solid var(--color-purple); }
+.timeline-event.cat-stage { border-left: 3px solid var(--color-cyan); }
+.timeline-event.cat-agent { border-left: 3px solid var(--color-blue); }
+.timeline-event.cat-loop { border-left: 3px solid var(--color-yellow); }
+.timeline-event.cat-handoff { border-left: 3px solid var(--color-green); }
+.timeline-event.cat-parallel { border-left: 3px solid var(--color-orange); }
+.timeline-event.cat-error { border-left: 3px solid var(--color-red); }
+.timeline-event.cat-session { border-left: 3px solid var(--text-muted); }
+
+/* ── 動畫 ── */
+
+.pulse {
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+/* ── Scrollbar ── */
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--bg-tertiary);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* ── Workflow Header ── */
+
+.workflow-header {
+  margin-bottom: var(--spacing-lg);
+}
+
+.workflow-header h2 {
+  color: var(--text-primary);
+  margin-bottom: var(--spacing-sm);
+}
+
+/* ── 響應式 ── */
+
+@media (max-width: 768px) {
+  .pipeline { flex-wrap: wrap; }
+  .stage-card { width: 60px; }
+  .stage-card + .stage-card::before { display: none; }
+  .timeline-event { grid-template-columns: 60px 100px 1fr; }
+  .agent-list { grid-template-columns: 1fr; }
+  .stats-grid { grid-template-columns: repeat(3, 1fr); }
+}

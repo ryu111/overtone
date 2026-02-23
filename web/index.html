@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Overtone Dashboard</title>
+  <link rel="stylesheet" href="/static/main.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.8/dist/cdn.min.js"></script>
+</head>
+<body x-data="indexState()">
+
+  <!-- Header -->
+  <header>
+    <div class="logo">🎵 Overtone</div>
+    <div class="header-spacer"></div>
+    <div class="connection-status" :class="connected ? 'online' : ''">
+      <span x-text="connected ? '已連線' : '連線中...'"></span>
+    </div>
+  </header>
+
+  <main>
+    <h1>工作階段</h1>
+
+    <!-- 進行中 -->
+    <section>
+      <h2>⏳ 進行中 <span style="font-weight:normal; font-size:0.85rem">({{ACTIVE_COUNT}})</span></h2>
+      <div id="active-sessions">{{ACTIVE_SESSIONS}}</div>
+    </section>
+
+    <!-- 歷史紀錄 -->
+    <section>
+      <h2>📋 歷史紀錄 <span style="font-weight:normal; font-size:0.85rem">({{HISTORY_COUNT}})</span></h2>
+      <div id="history-sessions">{{HISTORY_SESSIONS}}</div>
+    </section>
+  </main>
+
+  <script>
+  function indexState() {
+    return {
+      connected: false,
+      eventSource: null,
+
+      init() {
+        this.connectSSE();
+      },
+
+      connectSSE() {
+        if (this.eventSource) {
+          this.eventSource.close();
+        }
+
+        const es = new EventSource('/sse/all');
+
+        es.addEventListener('connected', () => {
+          this.connected = true;
+        });
+
+        es.addEventListener('workflow', () => {
+          // 收到工作流更新時重新載入頁面以刷新 session 列表
+          // 簡單方案：直接 reload（低頻事件，不影響體驗）
+          location.reload();
+        });
+
+        es.addEventListener('heartbeat', () => {
+          this.connected = true;
+        });
+
+        es.onerror = () => {
+          this.connected = false;
+          if (this.eventSource) {
+            this.eventSource.close();
+            this.eventSource = null;
+          }
+          setTimeout(() => this.connectSSE(), 3000);
+        };
+
+        this.eventSource = es;
+      },
+
+      destroy() {
+        if (this.eventSource) {
+          this.eventSource.close();
+        }
+      },
+    };
+  }
+  </script>
+
+</body>
+</html>

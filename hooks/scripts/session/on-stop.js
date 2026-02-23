@@ -9,7 +9,7 @@
  *   ✅ Loop 模式：未完成時 block + 重注入 prompt
  *   ✅ 退出條件：checkbox 全完成 / /ot:stop / max iterations / 連續錯誤
  *   ✅ emit timeline 事件
- *   ✅ Dashboard 通知（Phase 4 佔位）
+ *   ✅ Dashboard 通知（透過 timeline emit → SSE file watcher 推送）
  */
 
 const { readFileSync, writeFileSync, mkdirSync } = require('fs');
@@ -167,6 +167,12 @@ function exitLoop(sid, loopData, reason) {
   writeLoopState(sid, loopData);
 
   timeline.emit(sid, 'loop:complete', {
+    iteration: loopData.iteration,
+    reason,
+  });
+
+  // Dashboard 通知：SSE 透過 file watcher 自動偵測 timeline 變更並推送
+  timeline.emit(sid, 'session:end', {
     iteration: loopData.iteration,
     reason,
   });

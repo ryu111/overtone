@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Overtone — Session</title>
+  <link rel="stylesheet" href="/static/main.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.8/dist/cdn.min.js"></script>
+</head>
+<body x-data="sessionState('{{SESSION_ID}}')">
+
+  <!-- Header -->
+  <header>
+    <a href="/" class="logo">🎵 Overtone</a>
+    <span class="session-id-header" x-text="sessionId.slice(0, 8) + '...'"></span>
+    <div class="header-spacer"></div>
+    <div class="connection-status" :class="connected ? 'online' : ''">
+      <span x-text="connected ? '已連線' : '重新連線中...'"></span>
+    </div>
+  </header>
+
+  <!-- Tab 導航 -->
+  <nav class="tabs">
+    <button @click="tab = 'overview'" :class="{ active: tab === 'overview' }">
+      📊 概覽
+    </button>
+    <button @click="tab = 'timeline'" :class="{ active: tab === 'timeline' }">
+      📜 時間軸
+    </button>
+  </nav>
+
+  <!-- ═══ Overview Tab ═══ -->
+  <section x-show="tab === 'overview'" x-cloak class="tab-content">
+
+    <!-- 工作流類型 + 進度 -->
+    <div class="workflow-header">
+      <h2>
+        <span x-text="workflowLabel"></span>
+        <span style="font-weight:normal; font-size:0.85rem; color:var(--text-secondary)"
+              x-text="workflow.workflowType ? '(' + workflow.workflowType + ')' : ''"></span>
+      </h2>
+      <div class="progress-bar">
+        <div class="progress-fill" :style="'width:' + progressPercent + '%'"></div>
+      </div>
+      <span class="progress-text" x-text="completedCount + '/' + totalCount + ' 階段'"></span>
+    </div>
+
+    <!-- Stage 管線 -->
+    <div class="pipeline">
+      <template x-for="[key, stage] in stageEntries" :key="key">
+        <div class="stage-card" :class="stage.status">
+          <div class="stage-icon" x-text="getStageEmoji(key)"></div>
+          <div class="stage-label" x-text="getStageLabel(key)"></div>
+          <div class="stage-status">
+            <span x-show="stage.status === 'completed' && stage.result === 'pass'">✅</span>
+            <span x-show="stage.status === 'completed' && stage.result === 'fail'">❌</span>
+            <span x-show="stage.status === 'completed' && stage.result === 'reject'">🔙</span>
+            <span x-show="stage.status === 'active' || stage.status === 'in-progress'" class="pulse">⏳</span>
+            <span x-show="stage.status === 'pending'">⬜</span>
+          </div>
+        </div>
+      </template>
+    </div>
+
+    <!-- Active Agents -->
+    <div class="agents-section" x-show="activeAgentEntries.length > 0">
+      <h3>🤖 執行中的代理</h3>
+      <div class="agent-list">
+        <template x-for="[name, info] in activeAgentEntries" :key="name">
+          <div class="agent-card" :style="'border-left-color:' + getAgentColor(name)">
+            <div class="agent-name" x-text="name"></div>
+            <div class="agent-stage" x-text="info.stage"></div>
+            <div class="agent-duration" x-text="calcDuration(info.startedAt)"></div>
+          </div>
+        </template>
+      </div>
+    </div>
+
+    <!-- 統計 -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-value" x-text="workflow.failCount || 0"></div>
+        <div class="stat-label">失敗重試</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" x-text="workflow.rejectCount || 0"></div>
+        <div class="stat-label">審查拒絕</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" x-text="calcDuration(workflow.createdAt)"></div>
+        <div class="stat-label">經過時間</div>
+      </div>
+    </div>
+
+    <!-- 無工作流提示 -->
+    <div class="empty-state" x-show="!workflow.workflowType">
+      此 session 尚未啟動工作流。使用 /ot:auto 或指定 workflow 開始。
+    </div>
+  </section>
+
+  <!-- ═══ Timeline Tab ═══ -->
+  <section x-show="tab === 'timeline'" x-cloak class="tab-content">
+
+    <!-- 分類篩選 -->
+    <div class="filter-bar">
+      <button @click="timelineFilter = ''" :class="{ active: !timelineFilter }">全部</button>
+      <template x-for="cat in categories" :key="cat.key">
+        <button @click="timelineFilter = cat.key"
+                :class="{ active: timelineFilter === cat.key }"
+                x-text="cat.label"></button>
+      </template>
+    </div>
+
+    <!-- 事件列表 -->
+    <div class="timeline-list" x-ref="timelineList">
+      <template x-for="event in filteredEvents" :key="event.ts + event.type + Math.random()">
+        <div class="timeline-event" :class="'cat-' + event.category">
+          <div class="event-time" x-text="formatTime(event.ts)"></div>
+          <div class="event-label" x-text="event.label"></div>
+          <div class="event-detail" x-text="formatEventDetail(event)"></div>
+        </div>
+      </template>
+
+      <div class="empty-state" x-show="filteredEvents.length === 0">
+        尚無事件紀錄
+      </div>
+    </div>
+  </section>
+
+  <script>
+  // ── Stage Registry 鏡像（來自 scripts/lib/registry.js） ──
+
+  const stageRegistry = {
+    PLAN:        { label: '規劃',   emoji: '📋', color: 'var(--color-purple)' },
+    ARCH:        { label: '架構',   emoji: '🏗️', color: 'var(--color-cyan)' },
+    DESIGN:      { label: '設計',   emoji: '🎨', color: 'var(--color-cyan)' },
+    DEV:         { label: '開發',   emoji: '💻', color: 'var(--color-yellow)' },
+    DEBUG:       { label: '除錯',   emoji: '🔧', color: 'var(--color-orange)' },
+    REVIEW:      { label: '審查',   emoji: '🔍', color: 'var(--color-blue)' },
+    TEST:        { label: '測試',   emoji: '🧪', color: 'var(--color-pink)' },
+    SECURITY:    { label: '安全',   emoji: '🛡️', color: 'var(--color-red)' },
+    'DB-REVIEW': { label: 'DB審查', emoji: '🗄️', color: 'var(--color-red)' },
+    QA:          { label: '驗證',   emoji: '🏁', color: 'var(--color-yellow)' },
+    E2E:         { label: 'E2E',   emoji: '🌐', color: 'var(--color-green)' },
+    'BUILD-FIX': { label: '修構建', emoji: '🔨', color: 'var(--color-orange)' },
+    REFACTOR:    { label: '清理',   emoji: '🧹', color: 'var(--color-blue)' },
+    DOCS:        { label: '文件',   emoji: '📝', color: 'var(--color-purple)' },
+  };
+
+  const workflowLabels = {
+    single: '單步修改', quick: '快速開發', standard: '標準功能',
+    full: '完整功能', secure: '高風險', tdd: '測試驅動',
+    debug: '除錯', refactor: '重構', 'review-only': '純審查',
+    'security-only': '安全掃描', 'build-fix': '修構建', 'e2e-only': 'E2E 測試',
+  };
+
+  // Agent name → color 對照（從 registry.js stages 反查）
+  const agentColors = {
+    planner: 'var(--color-purple)',
+    architect: 'var(--color-cyan)',
+    designer: 'var(--color-cyan)',
+    developer: 'var(--color-yellow)',
+    debugger: 'var(--color-orange)',
+    'code-reviewer': 'var(--color-blue)',
+    'security-reviewer': 'var(--color-red)',
+    'database-reviewer': 'var(--color-red)',
+    tester: 'var(--color-pink)',
+    qa: 'var(--color-yellow)',
+    'e2e-runner': 'var(--color-green)',
+    'build-error-resolver': 'var(--color-orange)',
+    'refactor-cleaner': 'var(--color-blue)',
+    'doc-updater': 'var(--color-purple)',
+  };
+
+  const eventCategories = [
+    { key: 'workflow', label: '工作流' },
+    { key: 'stage',    label: '階段' },
+    { key: 'agent',    label: '代理' },
+    { key: 'loop',     label: '循環' },
+    { key: 'parallel', label: '並行' },
+    { key: 'handoff',  label: '交接' },
+    { key: 'error',    label: '錯誤' },
+    { key: 'session',  label: '工作階段' },
+  ];
+
+  // ── Alpine.js 狀態 ──
+
+  function sessionState(sessionId) {
+    return {
+      sessionId,
+      connected: false,
+      eventSource: null,
+      tab: 'overview',
+      workflow: {},
+      events: [],
+      timelineFilter: '',
+      categories: eventCategories,
+      durationTimer: null,
+
+      // ── 計算屬性 ──
+
+      get workflowLabel() {
+        return workflowLabels[this.workflow.workflowType] || this.workflow.workflowType || '無工作流';
+      },
+      get stageEntries() {
+        return Object.entries(this.workflow.stages || {});
+      },
+      get activeAgentEntries() {
+        return Object.entries(this.workflow.activeAgents || {});
+      },
+      get completedCount() {
+        return this.stageEntries.filter(([, s]) => s.status === 'completed').length;
+      },
+      get totalCount() {
+        return this.stageEntries.length;
+      },
+      get progressPercent() {
+        return this.totalCount > 0 ? Math.round(this.completedCount / this.totalCount * 100) : 0;
+      },
+      get filteredEvents() {
+        if (!this.timelineFilter) return this.events;
+        return this.events.filter(e => e.category === this.timelineFilter);
+      },
+
+      // ── 生命週期 ──
+
+      init() {
+        this.fetchState();
+        this.fetchTimeline();
+        this.connectSSE();
+        // 每秒更新持續時間
+        this.durationTimer = setInterval(() => this.$nextTick(() => {}), 10000);
+      },
+
+      destroy() {
+        if (this.eventSource) this.eventSource.close();
+        if (this.durationTimer) clearInterval(this.durationTimer);
+      },
+
+      // ── 資料載入 ──
+
+      async fetchState() {
+        try {
+          const r = await fetch('/api/sessions/' + this.sessionId);
+          if (r.ok) this.workflow = await r.json();
+        } catch {}
+      },
+
+      async fetchTimeline() {
+        try {
+          const r = await fetch('/api/sessions/' + this.sessionId + '/timeline');
+          if (r.ok) this.events = await r.json();
+        } catch {}
+      },
+
+      // ── SSE 連線 ──
+
+      connectSSE() {
+        if (this.eventSource) {
+          this.eventSource.close();
+        }
+
+        const es = new EventSource('/sse/' + this.sessionId);
+
+        es.addEventListener('connected', () => {
+          this.connected = true;
+        });
+
+        es.addEventListener('workflow', (e) => {
+          try {
+            this.workflow = JSON.parse(e.data);
+          } catch {}
+        });
+
+        es.addEventListener('timeline', (e) => {
+          try {
+            const event = JSON.parse(e.data);
+            this.events.push(event);
+            // 自動捲動到最新
+            this.$nextTick(() => {
+              const el = this.$refs.timelineList;
+              if (el) el.scrollTop = el.scrollHeight;
+            });
+          } catch {}
+        });
+
+        es.addEventListener('heartbeat', () => {
+          this.connected = true;
+        });
+
+        es.onerror = () => {
+          this.connected = false;
+          if (this.eventSource) {
+            this.eventSource.close();
+            this.eventSource = null;
+          }
+          setTimeout(() => this.connectSSE(), 3000);
+        };
+
+        this.eventSource = es;
+      },
+
+      // ── 輔助函式 ──
+
+      getStageEmoji(key) {
+        const base = key.split(':')[0];
+        return stageRegistry[base]?.emoji || '❓';
+      },
+
+      getStageLabel(key) {
+        const base = key.split(':')[0];
+        const reg = stageRegistry[base];
+        if (!reg) return key;
+        // TEST stage 顯示模式
+        if (base === 'TEST') {
+          const stage = this.workflow.stages?.[key];
+          if (stage?.mode === 'spec') return '測試:規格';
+          if (stage?.mode === 'verify') return '測試:驗證';
+        }
+        return reg.label;
+      },
+
+      getAgentColor(name) {
+        return agentColors[name] || 'var(--text-muted)';
+      },
+
+      calcDuration(iso) {
+        if (!iso) return '-';
+        const ms = Date.now() - new Date(iso).getTime();
+        const m = Math.floor(ms / 60000);
+        const s = Math.floor((ms % 60000) / 1000);
+        if (m > 60) {
+          const h = Math.floor(m / 60);
+          return h + 'h ' + (m % 60) + 'm';
+        }
+        return m > 0 ? m + 'm ' + s + 's' : s + 's';
+      },
+
+      formatTime(iso) {
+        if (!iso) return '';
+        try {
+          return new Date(iso).toLocaleTimeString('zh-TW', { hour12: false });
+        } catch {
+          return iso;
+        }
+      },
+
+      formatEventDetail(event) {
+        const parts = [];
+        if (event.agent) parts.push(event.agent);
+        if (event.stage) parts.push(event.stage);
+        if (event.workflowType) parts.push(workflowLabels[event.workflowType] || event.workflowType);
+        if (event.iteration !== undefined) parts.push('第 ' + event.iteration + ' 次');
+        if (event.progress) parts.push(event.progress);
+        if (event.reason) parts.push(event.reason);
+        if (event.result) parts.push(event.result);
+        if (event.duration) parts.push(event.duration);
+        return parts.join(' · ');
+      },
+    };
+  }
+  </script>
+
+  <style>
+  /* x-cloak 隱藏未初始化的元素 */
+  [x-cloak] { display: none !important; }
+  </style>
+
+</body>
+</html>

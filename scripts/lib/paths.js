@@ -52,6 +52,7 @@ const session = {
 // ── 全域設定 ──
 
 const CONFIG_FILE = join(OVERTONE_HOME, 'config.json');
+const DASHBOARD_FILE = join(OVERTONE_HOME, 'dashboard.json');
 
 // ── 專案路徑（相對於專案根目錄）──
 
@@ -65,6 +66,7 @@ module.exports = {
   OVERTONE_HOME,
   SESSIONS_DIR,
   CONFIG_FILE,
+  DASHBOARD_FILE,
   sessionDir,
   sessionFile,
   session,
