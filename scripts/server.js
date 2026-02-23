@@ -1,9 +1,9 @@
 #!/usr/bin/env bun
 'use strict';
 /**
- * server.js — Overtone Dashboard Server
+ * server.js — Overtone Dashboard + Remote Server
  *
- * Bun HTTP server：路由、REST API、SSE、靜態檔案。
+ * Bun HTTP server：路由、REST API、SSE、控制端點、靜態檔案。
  * 啟動：bun run scripts/server.js
  * 端口：OVERTONE_PORT 環境變數（預設 7777）
  */
@@ -12,10 +12,35 @@ const { readFileSync } = require('fs');
 const { join, extname } = require('path');
 const pid = require('./lib/dashboard/pid');
 const sessions = require('./lib/dashboard/sessions');
-const sse = require('./lib/dashboard/sse');
 const state = require('./lib/state');
 const timeline = require('./lib/timeline');
 const { stages, workflows } = require('./lib/registry');
+
+// ── Remote 模組 ──
+
+const EventBus = require('./lib/remote/event-bus');
+const DashboardAdapter = require('./lib/remote/dashboard-adapter');
+const TelegramAdapter = require('./lib/remote/telegram-adapter');
+
+// ── 初始化 EventBus + Adapter ──
+
+const eventBus = new EventBus();
+const dashboardAdapter = new DashboardAdapter(eventBus);
+eventBus.register(dashboardAdapter);
+
+// 可選 Telegram Adapter
+let telegramAdapter = null;
+if (process.env.TELEGRAM_BOT_TOKEN) {
+  telegramAdapter = new TelegramAdapter(
+    process.env.TELEGRAM_BOT_TOKEN,
+    eventBus,
+    { chatId: process.env.TELEGRAM_CHAT_ID },
+  );
+  eventBus.register(telegramAdapter);
+  telegramAdapter.connect();
+}
+
+eventBus.start();
 
 // ── 設定 ──
 
@@ -45,7 +70,7 @@ const MIME_TYPES = {
 
 const server = Bun.serve({
   port: PORT,
-  fetch(req) {
+  async fetch(req) {
     const url = new URL(req.url);
     const path = url.pathname;
 
@@ -56,7 +81,7 @@ const server = Bun.serve({
 
     // API 端點
     if (path.startsWith('/api/')) {
-      return handleAPI(path, url.searchParams);
+      return handleAPI(path, url.searchParams, req);
     }
 
     // 健康檢查
@@ -65,6 +90,10 @@ const server = Bun.serve({
         ok: true,
         uptime: Math.floor((Date.now() - START_TIME) / 1000),
         port: PORT,
+        adapters: Array.from(eventBus.adapters).map(a => ({
+          name: a.name,
+          connected: a.isConnected,
+        })),
       });
     }
 
@@ -97,11 +126,14 @@ pid.write({
 });
 
 console.log(`🎵 Overtone Dashboard 啟動於 http://localhost:${PORT}`);
+if (telegramAdapter) {
+  console.log('📱 Telegram Adapter 已啟用');
+}
 
 // ── 清理 ──
 
 function cleanup() {
-  sse.closeAll();
+  eventBus.stop();
   pid.remove();
   process.exit(0);
 }
@@ -120,7 +152,7 @@ function handleSSE(path) {
   };
 
   if (path === '/sse/all') {
-    const stream = sse.createAllSSEStream();
+    const stream = dashboardAdapter.createAllSSEStream();
     return new Response(stream, { headers });
   }
 
@@ -129,13 +161,24 @@ function handleSSE(path) {
     return json({ error: '缺少 sessionId' }, 400);
   }
 
-  const stream = sse.createSSEStream(sessionId);
+  const stream = dashboardAdapter.createSSEStream(sessionId);
   return new Response(stream, { headers });
 }
 
 // ── API 處理 ──
 
-function handleAPI(path, params) {
+async function handleAPI(path, params, req) {
+  // POST /api/sessions/:id/control — 遠端控制
+  const controlMatch = path.match(/^\/api\/sessions\/([a-zA-Z0-9_-]+)\/control$/);
+  if (controlMatch && req.method === 'POST') {
+    return handleControlAPI(controlMatch[1], req);
+  }
+
+  // POST /api/control — 全域控制（如 sessions 列表）
+  if (path === '/api/control' && req.method === 'POST') {
+    return handleControlAPI(null, req);
+  }
+
   // GET /api/sessions
   if (path === '/api/sessions') {
     const activeParam = params.get('active');
@@ -167,6 +210,28 @@ function handleAPI(path, params) {
   }
 
   return json({ error: 'API 端點不存在' }, 404);
+}
+
+/**
+ * 處理控制 API 請求
+ * @param {string|null} sessionId
+ * @param {Request} req
+ */
+async function handleControlAPI(sessionId, req) {
+  let body;
+  try {
+    body = await req.json();
+  } catch {
+    return json({ ok: false, error: '無效的 JSON' }, 400);
+  }
+
+  const { command, params = {} } = body;
+  if (!command) {
+    return json({ ok: false, error: '缺少 command 欄位' }, 400);
+  }
+
+  const result = eventBus.handleControl(sessionId, command, params);
+  return json(result, result.ok ? 200 : 400);
 }
 
 // ── HTML 頁面 ──

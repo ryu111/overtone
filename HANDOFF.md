@@ -20,11 +20,16 @@ Overtone 是 Vibe（Claude Code marketplace plugin）的進化版。Vibe 的 pip
 | 項目 | 狀態 | 說明 |
 |------|:----:|------|
 | 設計文件 | ✅ | `docs/workflow.md` v0.3（55 個決策） |
-| registry.js | ✅ | 14 stages、12 workflows、agentModels、timelineEvents、instinctDefaults |
+| registry.js | ✅ | 14 stages、12 workflows、agentModels、timelineEvents、remoteCommands、instinctDefaults |
 | CLAUDE.md | ✅ | 專案規則文件 |
 | Plugin manifest | ✅ | plugin.json + marketplace.json |
 | ECC 參考文件 | ✅ | 4 份分析文件在 docs/reference/ |
 | 目錄骨架 | ✅ | agents/、skills/、hooks/、scripts/、web/、docs/ |
+| Phase 1 | ✅ | 核心 lib（paths/state/timeline/registry）+ 5 hook |
+| Phase 2 | ✅ | 14 agent .md prompt 檔案 |
+| Phase 3 | ✅ | 18 skill SKILL.md + 2 helper scripts |
+| Phase 4 | ✅ | Dashboard（Bun HTTP + SSE + htmx + Alpine.js） |
+| Phase 5 | ✅ | Remote（EventBus + DashboardAdapter + TelegramAdapter） |
 
 ## 待實作
 

@@ -130,6 +130,13 @@ const timelineEvents = {
   'session:end':        { label: '工作階段結束', category: 'session' },
 };
 
+// Remote 控制命令
+const remoteCommands = {
+  stop:     { label: '停止 Loop',     description: '標記 Loop 為停止狀態' },
+  status:   { label: '查詢狀態',      description: '查詢工作流目前狀態' },
+  sessions: { label: '列出工作階段',   description: '列出所有進行中/已完成的工作階段' },
+};
+
 // Instinct 信心分數設定
 const instinctDefaults = {
   initialConfidence: 0.3,
@@ -151,5 +158,6 @@ module.exports = {
   loopDefaults,
   retryDefaults,
   timelineEvents,
+  remoteCommands,
   instinctDefaults,
 };
