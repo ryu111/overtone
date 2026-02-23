@@ -1,0 +1,17 @@
+# Dependencies
+node_modules/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Runtime state
+*.log
+/tmp/
+
+# Build output
+dashboard/dist/
+
+# Secrets
+.env
+.env.local
