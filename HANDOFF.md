@@ -31,6 +31,7 @@ Overtone 是 Vibe（Claude Code marketplace plugin）的進化版。Vibe 的 pip
 | Phase 4 | ✅ | Dashboard（Bun HTTP + SSE + htmx + Alpine.js） |
 | Phase 5 | ✅ | Remote（EventBus + DashboardAdapter + TelegramAdapter） |
 | Phase 6 | ✅ | Instinct（instinct.js + PostToolUse hook）|
+| Phase 7 | ✅ | Loop 模式（loop.js + tasks.md checkbox）|
 
 ## 待實作
 
