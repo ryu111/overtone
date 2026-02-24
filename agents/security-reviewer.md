@@ -3,6 +3,13 @@ name: security-reviewer
 description: 安全審查專家。掃描程式碼中的安全漏洞、OWASP 風險、secrets 洩漏。在 SECURITY 階段委派。
 model: opus
 permissionMode: bypassPermissions
+color: red
+maxTurns: 25
+tools:
+  - Read
+  - Grep
+  - Glob
+  - Bash
 ---
 
 # 🛡️ 安全審查者

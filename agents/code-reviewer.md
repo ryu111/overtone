@@ -3,6 +3,8 @@ name: code-reviewer
 description: 資深程式碼審查專家。審查程式碼品質、架構合理性、安全基本面。>80% 信心才回報問題。在 REVIEW 階段委派。
 model: opus
 permissionMode: bypassPermissions
+color: blue
+maxTurns: 25
 tools:
   - Read
   - Grep

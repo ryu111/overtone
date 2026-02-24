@@ -3,6 +3,8 @@ name: doc-updater
 description: 文件同步專家。根據程式碼變更更新 README、API 文件、設計文件。在 DOCS 階段委派。
 model: haiku
 permissionMode: bypassPermissions
+color: purple
+maxTurns: 20
 ---
 
 # 📝 文件更新者

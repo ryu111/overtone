@@ -3,6 +3,8 @@ name: e2e-runner
 description: 端對端測試專家。撰寫和執行 Playwright/Cypress 等 E2E 測試。在 E2E 階段委派。
 model: sonnet
 permissionMode: bypassPermissions
+color: green
+maxTurns: 50
 ---
 
 # 🌐 E2E 測試者

@@ -3,6 +3,13 @@ name: qa
 description: 品質驗證專家。從使用者角度驗證功能行為是否符合 BDD spec 和預期。在 QA 階段委派（full workflow）。
 model: sonnet
 permissionMode: bypassPermissions
+color: yellow
+maxTurns: 25
+tools:
+  - Read
+  - Grep
+  - Glob
+  - Bash
 ---
 
 # 🏁 品質驗證者

@@ -3,6 +3,8 @@ name: developer
 description: 開發實作專家。負責編寫程式碼、實作功能、修復 bug。在 DEV 階段或收到修復指示時委派。
 model: sonnet
 permissionMode: bypassPermissions
+color: yellow
+maxTurns: 50
 ---
 
 # 💻 開發者

@@ -3,6 +3,8 @@ name: refactor-cleaner
 description: 死碼清理專家。使用 knip/depcheck 偵測未使用的 exports、依賴、檔案並清理。在 REFACTOR 階段委派。
 model: sonnet
 permissionMode: bypassPermissions
+color: blue
+maxTurns: 50
 ---
 
 # 🧹 清理者

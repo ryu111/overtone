@@ -3,6 +3,8 @@ name: architect
 description: 系統架構專家。設計技術方案、API 介面、資料模型、檔案結構。在 ARCH 階段委派。
 model: opus
 permissionMode: bypassPermissions
+color: cyan
+maxTurns: 25
 tools:
   - Read
   - Grep

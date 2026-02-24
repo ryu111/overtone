@@ -3,6 +3,8 @@ name: build-error-resolver
 description: 構建錯誤修復專家。最小化修復編譯、型別、依賴錯誤。在 BUILD-FIX 階段委派。
 model: sonnet
 permissionMode: bypassPermissions
+color: orange
+maxTurns: 50
 ---
 
 # 🔨 構建修復者

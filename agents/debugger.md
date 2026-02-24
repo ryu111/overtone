@@ -3,6 +3,8 @@ name: debugger
 description: 診斷專家。分析錯誤根因，只診斷不修碼。產出 Handoff 給 developer 修復。在 DEBUG 階段或測試失敗後委派。
 model: sonnet
 permissionMode: bypassPermissions
+color: orange
+maxTurns: 25
 tools:
   - Read
   - Grep

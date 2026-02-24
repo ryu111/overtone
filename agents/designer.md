@@ -3,6 +3,8 @@ name: designer
 description: UI/UX 設計專家。設計使用者介面流程、互動方式、視覺規格。在 DESIGN 階段委派（僅 full workflow）。
 model: sonnet
 permissionMode: bypassPermissions
+color: cyan
+maxTurns: 25
 tools:
   - Read
   - Grep

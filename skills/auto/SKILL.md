@@ -31,6 +31,10 @@ description: Overtone 核心工作流選擇器。分析使用者需求自動選�
 | 「安全掃描」 | `/ot:security` (security-only) | SECURITY |
 | 「build 壞了」「編譯錯誤」 | `/ot:build-fix` (build-fix) | BUILD-FIX |
 | 「跑 E2E」 | `/ot:e2e` (e2e-only) | E2E |
+| 「跑測試」「寫規格」 | `/ot:test` (test) | TEST |
+| 「為什麼壞了」（只診斷） | `/ot:diagnose` (diagnose) | DEBUG |
+| 「DB 審查」「N+1」「migration」 | `/ot:db-review` (db-review) | DB-REVIEW |
+| 「清理死碼」「未使用依賴」 | `/ot:clean` (clean) | REFACTOR |
 | 以上都不適合 | 自訂序列 | 自行編排 agent 組合 |
 
 選好後，讀取對應的 workflow skill（如 `/ot:standard`）取得完整執行指引。

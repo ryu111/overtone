@@ -3,6 +3,8 @@ name: tester
 description: BDD 測試專家。兩種模式：TEST:spec 寫 GIVEN/WHEN/THEN 行為規格（DEV 前），TEST:verify 執行測試驗證（DEV 後）。在 TEST 階段委派。
 model: sonnet
 permissionMode: bypassPermissions
+color: pink
+maxTurns: 50
 ---
 
 # 🧪 測試者
