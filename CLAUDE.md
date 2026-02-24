@@ -1,3 +1,7 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
 # Overtone — 專案規則
 
 ## 專案定位
@@ -112,6 +116,23 @@ overtone/
 | SubagentStop | 記錄結果 + 提示下一步 + 寫 state + emit timeline |
 | PostToolUse | Instinct 觀察收集 |
 | Stop | Loop 迴圈 + 完成度 + Dashboard 通知 |
+
+## 常用指令
+
+```bash
+# 啟動 Dashboard 監控面板（port 7777）
+bun scripts/server.js
+
+# 驗證所有 14 個 agent 設定是否完整
+bun scripts/validate-agents.js
+
+# 手動停止 Loop（需提供 sessionId）
+bun scripts/stop-loop.js {sessionId}
+
+# 初始化 workflow state（測試用）
+bun scripts/init-workflow.js {workflowType} {sessionId}
+# workflowType 可選：single / quick / standard / full / secure / tdd / debug / refactor / review-only / security-only / build-fix / e2e-only
+```
 
 ## 開發規範
 
