@@ -15,6 +15,7 @@ const { readFileSync } = require('fs');
 const { readState, updateStateAtomic } = require('../../../scripts/lib/state');
 const timeline = require('../../../scripts/lib/timeline');
 const { stages, workflows, parallelGroups, retryDefaults } = require('../../../scripts/lib/registry');
+const paths = require('../../../scripts/lib/paths');
 
 // ── 從 stdin 讀取 hook input ──
 
@@ -159,19 +160,11 @@ if (result.verdict === 'fail') {
   }
 }
 
-// Grader 評分（await 確保 scores 在 process 結束前寫入）
-const grader = require('../../../scripts/lib/grader');
-const graderContent = agentOutput.slice(0, 500) || '';
-try {
-  const scores = await grader.grade(agentName, actualStageKey, graderContent);
-  if (scores) {
-    timeline.emit(sessionId, 'grader:score', {
-      stage: actualStageKey,
-      agent: agentName,
-      scores,
-    });
-  }
-} catch { /* 靜默失敗，不阻擋 hook 輸出 */ }
+// 提示 Main Agent 可選呼叫 grader
+if (result.verdict !== 'fail') {
+  const handoffPath = paths.session.handoff(sessionId, actualStageKey, agentName);
+  messages.push(`\n💡 可選：委派 grader agent 評估此階段輸出品質（subagent_type: ot:grader，傳入 STAGE=${actualStageKey} AGENT=${agentName} SESSION_ID=${sessionId} HANDOFF_PATH=${handoffPath}）`);
+}
 
 process.stdout.write(JSON.stringify({
   result: messages.join('\n'),

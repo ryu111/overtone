@@ -326,6 +326,19 @@
           const r = await fetch('/api/sessions/' + this.sessionId + '/passatk');
           if (r.ok) this.passatk = await r.json();
         } catch { /* 網路失敗靜默，可手動重試 */ }
+        // 同時載入 grader scores（歷史 session 不會有 SSE 推送）
+        try {
+          const r = await fetch('/api/sessions/' + this.sessionId + '/timeline?category=grader');
+          if (r.ok) {
+            const graderEvents = await r.json();
+            // 合併到 events（複合鍵避免同毫秒碰撞）
+            const existingKeys = new Set(this.events.map(e => `${e.ts}|${e.type}|${e.stage || ''}|${e.agent || ''}`));
+            for (const e of graderEvents) {
+              const key = `${e.ts}|${e.type}|${e.stage || ''}|${e.agent || ''}`;
+              if (!existingKeys.has(key)) this.events.push(e);
+            }
+          }
+        } catch { /* 靜默 */ }
       },
 
       // ── SSE 連線 ──
