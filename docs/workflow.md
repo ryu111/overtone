@@ -652,10 +652,10 @@ Handoff 檔案存在 session 目錄，compact 後 Main Agent 可重新讀取。
 - [x] `on-submit.js` 解析 prompt 中的 `[workflow:xxx]` 語法
 - [x] 跳過 /ot:auto 判斷，直接啟動指定 workflow
 
-### Dashboard 動畫版（V1 尾聲）
+### Dashboard 動畫版（V1 尾聲）✅
 
-- [ ] Stage 轉換動畫
-- [ ] Agent 活動動態指示器
+- [x] Stage 轉換動畫（active 光暈脈動 + completed 閃光確認）
+- [x] Agent 活動動態指示器（spinner + 邊框脈動 + 進場動畫）
 
 ## V2 Planned（延後）
 
