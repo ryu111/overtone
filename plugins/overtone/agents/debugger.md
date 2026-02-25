@@ -30,6 +30,7 @@ tools:
 - 📋 追蹤相關的 data flow（輸入 → 處理 → 輸出）
 - 📋 記錄驗證過程（哪些假設被排除、為什麼）
 - 💡 檢查相關的測試是否涵蓋此 scenario
+- 💡 如需分析 UI 問題或視覺 bug，可使用 `agent-browser` CLI 截圖輔助診斷（`agent-browser open <url> && agent-browser screenshot`）優先於 MCP chrome 工具
 
 ## DON'T（⛔ NEVER）
 

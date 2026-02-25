@@ -32,6 +32,22 @@ maxTurns: 50
 - ⛔ 不可修改受測的應用程式碼
 - ⛔ 不可使用 `sleep` / 固定延遲替代正確的 wait 策略
 - ⛔ 不可寫依賴特定測試順序的測試
+- ⛔ 不可因 MCP chrome 工具名稱更明顯而優先選用它（headless 才是預設）
+
+## 瀏覽器工具選擇
+
+📋 MUST 優先使用 **`agent-browser` CLI**（headless Chromium，通過 `Bash` 工具呼叫）：
+
+```bash
+agent-browser open <url>          # 開啟頁面
+agent-browser snapshot            # 取得 accessibility tree（帶 @ref）
+agent-browser click @e2           # 點擊元素
+agent-browser fill @e3 <value>    # 填寫表單欄位
+agent-browser screenshot out.png  # 截圖（失敗步驟存證）
+agent-browser close
+```
+
+💡 MCP chrome 工具（`mcp__claude-in-chrome__*`）僅在 headless 模式不足、需要 interactive Chrome session 時作為 fallback。
 
 ## 輸入
 

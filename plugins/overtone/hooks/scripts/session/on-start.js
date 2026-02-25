@@ -50,6 +50,16 @@ if (sessionId && !dashboardPid.isRunning()) {
   }
 }
 
+// ── 依賴狀態檢查 ──
+
+let agentBrowserStatus;
+try {
+  require('child_process').execSync('which agent-browser', { stdio: 'ignore' });
+  agentBrowserStatus = '  🌐 agent-browser: 已安裝';
+} catch {
+  agentBrowserStatus = '  ⚠️  agent-browser 未安裝 — npm i -g agent-browser && agent-browser install';
+}
+
 // ── Banner ──
 
 const dashboardUrl = sessionId ? `http://localhost:${port}/s/${sessionId}` : null;
@@ -60,6 +70,7 @@ const banner = [
   '  有規範的 Vibe',
   sessionId ? `  📂 Session: ${sessionId.slice(0, 8)}...` : '',
   dashboardUrl ? `  🖥️ Dashboard: ${dashboardUrl}` : '',
+  agentBrowserStatus,
   '',
 ].filter(Boolean).join('\n');
 

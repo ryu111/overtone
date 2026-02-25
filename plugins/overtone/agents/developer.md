@@ -26,6 +26,7 @@ maxTurns: 50
 - 📋 確保程式碼可編譯（`npm run build` / `tsc --noEmit` 通過）
 - 💡 優先使用專案已有的 utilities 和 abstractions
 - 💡 commit message 說明 why 而非 what
+- 💡 如需驗證 UI 行為或視覺效果，可使用 `agent-browser` CLI（`agent-browser open <url> && agent-browser screenshot`）優先於 MCP chrome 工具
 
 ## DON'T（⛔ NEVER）
 

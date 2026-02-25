@@ -37,6 +37,20 @@ tools:
 - ⛔ 不可跳過 BDD spec 中定義的 scenario
 - ⛔ 不可報告不影響功能的 cosmetic 問題（除非嚴重影響體驗）
 
+## 瀏覽器驗證（agent-browser CLI）
+
+如需視覺確認或 UI 行為驗證，💡 should prefer 使用 `agent-browser` CLI（通過 `Bash` 工具呼叫），優先於 MCP chrome 工具：
+
+```bash
+agent-browser open <url>          # 開啟頁面
+agent-browser snapshot            # 取得 accessibility tree（帶 @ref）
+agent-browser click @e2           # 點擊元素
+agent-browser screenshot out.png  # 截圖存證
+agent-browser close
+```
+
+> `agent-browser` 適合 headless 自動化驗收；MCP chrome 工具（`mcp__claude-in-chrome__*`）僅在需要使用者已開啟 Chrome session 時作為 fallback。
+
 ## 輸入
 
 - BDD spec（`openspec/specs/`）

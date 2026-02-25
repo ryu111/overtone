@@ -10,5 +10,8 @@
   },
   "engines": {
     "bun": ">=1.0.0"
+  },
+  "peerDependencies": {
+    "agent-browser": ">=0.1.0"
   }
 }
