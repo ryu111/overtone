@@ -1,6 +1,6 @@
 'use strict';
 const { test, expect, beforeEach, afterEach, describe } = require('bun:test');
-const { mkdirSync, rmSync, appendFileSync } = require('fs');
+const { mkdirSync, rmSync, appendFileSync, readFileSync, existsSync } = require('fs');
 const { join } = require('path');
 const { homedir } = require('os');
 
@@ -48,6 +48,185 @@ afterEach(() => {
   rmSync(SESSION_DIR, { recursive: true, force: true });
 });
 
+// ─────────────────────────────────────────────
+// emit() 測試
+// ─────────────────────────────────────────────
+describe('emit()', () => {
+  let sessionId;
+  let sessionDir;
+
+  beforeEach(() => {
+    sessionId = `test_emit_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+    sessionDir = join(homedir(), '.overtone', 'sessions', sessionId);
+    mkdirSync(sessionDir, { recursive: true });
+  });
+
+  afterEach(() => {
+    rmSync(sessionDir, { recursive: true, force: true });
+  });
+
+  // Scenario: 正常寫入後用 query 讀回
+  test('正常寫入後 query 能讀回同一筆事件', () => {
+    timeline.emit(sessionId, 'workflow:start', { workflowType: 'single' });
+    const events = timeline.query(sessionId);
+    expect(events.length).toBe(1);
+    expect(events[0].type).toBe('workflow:start');
+    expect(events[0].workflowType).toBe('single');
+  });
+
+  // Scenario: 事件格式驗證 — ts / type / category 欄位
+  test('寫入的事件包含 ts、type、category 欄位', () => {
+    const returned = timeline.emit(sessionId, 'stage:start', { stage: 'DEV' });
+    // 回傳值驗證
+    expect(typeof returned.ts).toBe('string');
+    expect(new Date(returned.ts).toString()).not.toBe('Invalid Date');
+    expect(returned.type).toBe('stage:start');
+    expect(returned.category).toBe('stage');
+    // 讀回 JSONL 的原始行驗證
+    const filePath = paths.session.timeline(sessionId);
+    const raw = readFileSync(filePath, 'utf8').trim();
+    const parsed = JSON.parse(raw);
+    expect(parsed.ts).toBe(returned.ts);
+    expect(parsed.type).toBe('stage:start');
+    expect(parsed.category).toBe('stage');
+  });
+
+  // Scenario: 未知事件類型應拋錯
+  test('未知的 eventType 應拋出 Error', () => {
+    expect(() => {
+      timeline.emit(sessionId, 'totally:unknown:event');
+    }).toThrow('未知的 timeline 事件類型：totally:unknown:event');
+  });
+
+  // Scenario: 多次 emit — 事件依序追加，query 回傳正確數量
+  test('多次 emit 後 query 回傳正確數量', () => {
+    timeline.emit(sessionId, 'workflow:start');
+    timeline.emit(sessionId, 'stage:start',    { stage: 'DEV' });
+    timeline.emit(sessionId, 'agent:delegate', { agent: 'developer' });
+    timeline.emit(sessionId, 'stage:complete', { stage: 'DEV', result: 'pass' });
+    timeline.emit(sessionId, 'workflow:complete');
+
+    const events = timeline.query(sessionId);
+    expect(events.length).toBe(5);
+    // 順序應與寫入一致
+    expect(events[0].type).toBe('workflow:start');
+    expect(events[4].type).toBe('workflow:complete');
+  });
+});
+
+// ─────────────────────────────────────────────
+// query() 測試
+// ─────────────────────────────────────────────
+describe('query()', () => {
+  let sessionId;
+  let sessionDir;
+
+  beforeEach(() => {
+    sessionId = `test_query_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+    sessionDir = join(homedir(), '.overtone', 'sessions', sessionId);
+    mkdirSync(sessionDir, { recursive: true });
+
+    // 預先寫入一組混合事件供各測試共用
+    timeline.emit(sessionId, 'workflow:start');
+    timeline.emit(sessionId, 'stage:start',    { stage: 'DEV' });
+    timeline.emit(sessionId, 'stage:complete', { stage: 'DEV', result: 'pass' });
+    timeline.emit(sessionId, 'agent:delegate', { agent: 'developer' });
+    timeline.emit(sessionId, 'agent:complete', { agent: 'developer' });
+    timeline.emit(sessionId, 'workflow:complete');
+  });
+
+  afterEach(() => {
+    rmSync(sessionDir, { recursive: true, force: true });
+  });
+
+  // Scenario: 無 filter — 回傳所有事件
+  test('無 filter 時回傳所有事件', () => {
+    const events = timeline.query(sessionId);
+    expect(events.length).toBe(6);
+  });
+
+  // Scenario: type filter — 只回傳指定 type 的事件
+  test('type filter 只回傳指定類型事件', () => {
+    const agentEvents = timeline.query(sessionId, { type: 'agent:delegate' });
+    expect(agentEvents.length).toBe(1);
+    expect(agentEvents[0].type).toBe('agent:delegate');
+    expect(agentEvents[0].agent).toBe('developer');
+
+    const stageEvents = timeline.query(sessionId, { type: 'stage:complete' });
+    expect(stageEvents.length).toBe(1);
+    expect(stageEvents[0].type).toBe('stage:complete');
+  });
+
+  // Scenario: category filter — 只回傳指定 category 的事件
+  test('category filter 只回傳指定分類事件', () => {
+    const workflowEvents = timeline.query(sessionId, { category: 'workflow' });
+    expect(workflowEvents.length).toBe(2);
+    workflowEvents.forEach((e) => expect(e.category).toBe('workflow'));
+
+    const stageEvents = timeline.query(sessionId, { category: 'stage' });
+    expect(stageEvents.length).toBe(2);
+    stageEvents.forEach((e) => expect(e.category).toBe('stage'));
+
+    const agentEvents = timeline.query(sessionId, { category: 'agent' });
+    expect(agentEvents.length).toBe(2);
+  });
+
+  // Scenario: limit — 回傳最多 N 筆（從最新開始）
+  test('limit 回傳最後 N 筆事件', () => {
+    const last2 = timeline.query(sessionId, { limit: 2 });
+    expect(last2.length).toBe(2);
+    // 最後兩筆應是 agent:complete 與 workflow:complete
+    expect(last2[0].type).toBe('agent:complete');
+    expect(last2[1].type).toBe('workflow:complete');
+  });
+
+  // Scenario: 不存在的 session — 回傳空陣列
+  test('不存在的 session 回傳空陣列', () => {
+    const events = timeline.query('nonexistent_session_xyz_999');
+    expect(events).toEqual([]);
+  });
+});
+
+// ─────────────────────────────────────────────
+// latest() 測試
+// ─────────────────────────────────────────────
+describe('latest()', () => {
+  let sessionId;
+  let sessionDir;
+
+  beforeEach(() => {
+    sessionId = `test_latest_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+    sessionDir = join(homedir(), '.overtone', 'sessions', sessionId);
+    mkdirSync(sessionDir, { recursive: true });
+  });
+
+  afterEach(() => {
+    rmSync(sessionDir, { recursive: true, force: true });
+  });
+
+  // Scenario: 有匹配事件 — 回傳最新一筆
+  test('有匹配事件時回傳最新一筆', () => {
+    timeline.emit(sessionId, 'stage:complete', { stage: 'DEV', result: 'fail' });
+    timeline.emit(sessionId, 'stage:complete', { stage: 'DEV', result: 'pass' });
+
+    const result = timeline.latest(sessionId, 'stage:complete');
+    expect(result).not.toBeNull();
+    expect(result.type).toBe('stage:complete');
+    // latest() 用 limit:1 取最後一筆，應為最後寫入的 pass
+    expect(result.result).toBe('pass');
+  });
+
+  // Scenario: 無匹配事件 — 回傳 null
+  test('無匹配事件時回傳 null', () => {
+    timeline.emit(sessionId, 'workflow:start');
+    const result = timeline.latest(sessionId, 'workflow:complete');
+    expect(result).toBeNull();
+  });
+});
+
+// ─────────────────────────────────────────────
+// passAtK() 測試（原有，保留不動）
+// ─────────────────────────────────────────────
 describe('passAtK()', () => {
   // Scenario: 空 timeline — 無任何 stage:complete 事件
   test('空 timeline — stages 為 {} 且 overall rates 為 null', () => {

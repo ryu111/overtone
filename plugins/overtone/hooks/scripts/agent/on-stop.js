@@ -157,6 +157,7 @@ if (result.verdict === 'fail') {
   } else {
     // 所有階段完成 — 不在此 emit workflow:complete，由 Stop hook 統一處理
     messages.push('🎉 所有階段已完成！');
+    messages.push('📋 建議：委派 planner 規劃下一批工作（或執行 /ot:plan）');
   }
 }
 
