@@ -22,7 +22,7 @@ const sessionId = process.env.CLAUDE_SESSION_ID || '';
 
 // 如果使用者已手動輸入 /ot: 命令，不覆蓋
 if (userPrompt.startsWith('/ot:')) {
-  process.stdout.write(JSON.stringify({}));
+  process.stdout.write(JSON.stringify({ additionalContext: '' }));
   process.exit(0);
 }
 

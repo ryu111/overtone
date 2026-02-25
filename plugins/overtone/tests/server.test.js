@@ -121,11 +121,24 @@ afterAll(() => {
 // 1. GET /api/registry — 回傳 registry 結構
 // ─────────────────────────────────────────────
 describe('GET /api/registry', () => {
-  test('status 200 且回傳 stages + workflows 欄位', async () => {
+  test('status 200 且回傳 stages + workflows + agents 欄位', async () => {
     const { status, body } = await get('/api/registry');
     expect(status).toBe(200);
     expect(body).toHaveProperty('stages');
     expect(body).toHaveProperty('workflows');
+    expect(body).toHaveProperty('agents');
+  });
+
+  test('agents 包含正確欄位（model、color）且涵蓋 14 個 agent', async () => {
+    const { body } = await get('/api/registry');
+    expect(typeof body.agents).toBe('object');
+    expect(Object.keys(body.agents).length).toBe(14);
+    const dev = body.agents['developer'];
+    expect(dev).toBeDefined();
+    expect(dev).toHaveProperty('model');
+    expect(dev).toHaveProperty('color');
+    expect(dev.model).toBe('sonnet');
+    expect(dev.color).toBe('yellow');
   });
 
   test('workflows.quick 存在且包含 label', async () => {
@@ -202,14 +215,11 @@ describe('GET /api/sessions/:id/passatk', () => {
     expect(body.stages.REVIEW.pass3).toBe(true);
   });
 
-  test('不存在的 session：回傳空 stages（timeline 不存在時回傳 []）', async () => {
+  test('不存在的 session：回傳 404', async () => {
     const { status, body } = await get(`/api/sessions/${NONEXISTENT_SESSION}/passatk`);
-    // passAtK 對不存在的 session 回傳空結構（不拋錯）
-    expect(status).toBe(200);
-    expect(body.sessionId).toBe(NONEXISTENT_SESSION);
-    expect(Object.keys(body.stages).length).toBe(0);
-    expect(body.overall.stageCount).toBe(0);
-    expect(body.overall.pass1Rate).toBeNull();
+    // 先驗證 session 存在，不存在則回傳 404
+    expect(status).toBe(404);
+    expect(body).toHaveProperty('error');
   });
 });
 
@@ -320,7 +330,7 @@ describe('CORS headers', () => {
   });
 
   test('非 API 端點（/api/sessions）：包含 Access-Control-Allow-Origin', async () => {
-    // /api/sessions 使用不帶 req 的 json()，仍會設定 fallback CORS header
+    // /api/sessions 現在傳入 req，會設定動態 CORS header
     const { headers } = await get('/api/sessions');
     expect(headers.get('access-control-allow-origin')).not.toBeNull();
   });

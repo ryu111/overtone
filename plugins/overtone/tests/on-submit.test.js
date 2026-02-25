@@ -58,23 +58,23 @@ afterAll(() => {
 // ────────────────────────────────────────────────────────────────────────────
 
 describe('/ot: 命令跳過', () => {
-  test('場景 1：prompt = /ot:auto → 回傳空物件 {}', async () => {
+  test('場景 1：prompt = /ot:auto → 回傳 { additionalContext: "" }', async () => {
     const result = await runHook({ user_prompt: '/ot:auto' });
-    // hook 輸出 {} 而非 { result: '' }，這是正確的「不注入」行為
-    expect(result).toEqual({});
-    expect(result.additionalContext).toBeUndefined();
+    // hook 輸出 { additionalContext: '' } 明確表示「不注入任何內容」
+    expect(result).toEqual({ additionalContext: '' });
+    expect(result.additionalContext).toBe('');
   });
 
-  test('場景 2：prompt = /ot:plan → 回傳空物件 {}', async () => {
+  test('場景 2：prompt = /ot:plan → 回傳 { additionalContext: "" }', async () => {
     const result = await runHook({ user_prompt: '/ot:plan' });
-    expect(result).toEqual({});
-    expect(result.additionalContext).toBeUndefined();
+    expect(result).toEqual({ additionalContext: '' });
+    expect(result.additionalContext).toBe('');
   });
 
-  test('場景 2b：prompt = /ot:standard → 回傳空物件 {}', async () => {
+  test('場景 2b：prompt = /ot:standard → 回傳 { additionalContext: "" }', async () => {
     const result = await runHook({ user_prompt: '/ot:standard' });
-    expect(result).toEqual({});
-    expect(result.additionalContext).toBeUndefined();
+    expect(result).toEqual({ additionalContext: '' });
+    expect(result.additionalContext).toBe('');
   });
 });
 

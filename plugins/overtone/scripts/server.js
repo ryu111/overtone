@@ -13,7 +13,7 @@ const pid = require('./lib/dashboard/pid');
 const sessions = require('./lib/dashboard/sessions');
 const state = require('./lib/state');
 const timeline = require('./lib/timeline');
-const { stages, workflows } = require('./lib/registry');
+const { stages, agentModels, workflows } = require('./lib/registry');
 const { escapeHtml } = require('./lib/utils');
 
 // ── Remote 模組 ──
@@ -71,6 +71,15 @@ function getCorsOrigin(req) {
 const workflowLabels = {};
 for (const [key, wf] of Object.entries(workflows)) {
   workflowLabels[key] = wf.label;
+}
+
+// ── Agent 色彩反向映射（從 stages 提取）──
+
+const agentColors = {};
+for (const stageDef of Object.values(stages)) {
+  if (stageDef.agent && stageDef.color) {
+    agentColors[stageDef.agent] = stageDef.color;
+  }
 }
 
 // ── MIME 對照 ──
@@ -203,13 +212,15 @@ async function handleAPI(path, params, req) {
     const filter = {};
     if (activeParam === 'true') filter.active = true;
     if (activeParam === 'false') filter.active = false;
-    return json(sessions.listSessions(filter));
+    return json(sessions.listSessions(filter), 200, req);
   }
 
   // GET /api/sessions/:id/passatk
   const passatkMatch = path.match(/^\/api\/sessions\/([a-zA-Z0-9_-]+)\/passatk$/);
   if (passatkMatch) {
-    const data = timeline.passAtK(passatkMatch[1]);
+    const sessionId = passatkMatch[1];
+    if (!state.readState(sessionId)) return json({ error: 'Session 不存在' }, 404, req);
+    const data = timeline.passAtK(sessionId);
     return json(data, 200, req);
   }
 
@@ -223,15 +234,15 @@ async function handleAPI(path, params, req) {
     if (limit) filter.limit = parseInt(limit, 10);
     if (category) filter.category = category;
     const events = timeline.query(sessionId, filter);
-    return json(events);
+    return json(events, 200, req);
   }
 
   // GET /api/sessions/:id
   const sessionMatch = path.match(/^\/api\/sessions\/([a-zA-Z0-9_-]+)$/);
   if (sessionMatch) {
     const ws = state.readState(sessionMatch[1]);
-    if (!ws) return json({ error: 'Session 不存在' }, 404);
-    return json(ws);
+    if (!ws) return json({ error: 'Session 不存在' }, 404, req);
+    return json(ws, 200, req);
   }
 
   // GET /api/registry — 前端動態載入 registry（消除硬編碼重複）
@@ -245,10 +256,15 @@ async function handleAPI(path, params, req) {
       workflows: Object.fromEntries(
         Object.entries(workflows).map(([k, v]) => [k, { label: v.label }])
       ),
-    });
+      agents: Object.fromEntries(
+        Object.entries(agentModels).map(([name, model]) => [name, {
+          model, color: agentColors[name] || 'unknown',
+        }])
+      ),
+    }, 200, req);
   }
 
-  return json({ error: 'API 端點不存在' }, 404);
+  return json({ error: 'API 端點不存在' }, 404, req);
 }
 
 /**
