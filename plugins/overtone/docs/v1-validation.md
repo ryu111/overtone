@@ -129,7 +129,7 @@ curl "http://localhost:7777/api/sessions/{sessionId}/timeline?category=grader"
 
 1. 輸入含 `[workflow:standard]` 的 prompt，hook 輸出的 `additionalContext` 包含「使用者指定了 workflow：standard」字串
 2. 輸入含 `[workflow:invalid_key]` 的 prompt，hook 輸出的 `additionalContext` 包含「/ot:auto」（回到正常流程）
-3. 輸入以 `/ot:` 開頭的 prompt，hook 輸出為 `{}`（空物件，不注入）
+3. 輸入以 `/ot:` 開頭的 prompt，hook 輸出為 `{ additionalContext: '' }`（明確不注入）
 
 **驗證方式**
 
@@ -147,7 +147,7 @@ echo '{"user_prompt":"請執行 [workflow:nonexistent]"}' \
 # 步驟 3：模擬 /ot: 命令直接輸入
 echo '{"user_prompt":"/ot:standard"}' \
   | CLAUDE_SESSION_ID="" node hooks/scripts/prompt/on-submit.js
-# 預期：輸出為 {}
+# 預期：{"additionalContext":""}
 
 # 步驟 4：大小寫不敏感測試
 echo '{"user_prompt":"測試 [Workflow:QUICK]"}' \
@@ -159,9 +159,9 @@ echo '{"user_prompt":"測試 [Workflow:QUICK]"}' \
 
 | 項目 | 狀態 | 說明 |
 |------|------|------|
-| `parseWorkflowOverride` 解析邏輯 | 未覆蓋 | 需新建 `tests/on-submit.test.js`，覆蓋合法 key、非法 key、大小寫不敏感、`/ot:` 前綴跳過 |
-| 有進行中 workflow 時的狀態摘要 | 未覆蓋 | 需模擬有效的 `workflow.json` 再呼叫 hook |
-| 無 workflow 時注入 `/ot:auto` | 未覆蓋 | 同上 |
+| `parseWorkflowOverride` 解析邏輯 | ✅ 已覆蓋 | `tests/on-submit.test.js` — 場景 3~6（合法 key、非法 key、大小寫不敏感、`/ot:` 前綴跳過） |
+| 有進行中 workflow 時的狀態摘要 | ✅ 已覆蓋 | `tests/on-submit.test.js` — 場景 8（mock workflow.json） |
+| 無 workflow 時注入 `/ot:auto` | ✅ 已覆蓋 | `tests/on-submit.test.js` — 場景 7 |
 
 ---
 
@@ -348,7 +348,7 @@ rm -rf ~/.overtone/sessions/$SESSION_ID
 
 1. 輸入無 workflow 的 prompt，hook 輸出的 `additionalContext` 包含「/ot:auto」字串
 2. 輸入進行中 workflow 的 prompt（有效 sessionId），hook 輸出的 `additionalContext` 包含「工作流進行中」
-3. 輸入 `/ot:` 開頭的 prompt，hook 輸出為 `{}`
+3. 輸入 `/ot:` 開頭的 prompt，hook 輸出為 `{ additionalContext: '' }`（明確不注入）
 4. 輸入含 `[workflow:quick]` 的 prompt，hook 輸出包含「使用者指定了 workflow：quick」
 
 **驗證方式**
@@ -370,7 +370,7 @@ echo '{"user_prompt":"繼續執行"}' \
 # 步驟 3：/ot: 命令直接輸入（passthrough）
 echo '{"user_prompt":"/ot:standard"}' \
   | CLAUDE_SESSION_ID="" node hooks/scripts/prompt/on-submit.js
-# 預期：{}
+# 預期：{"additionalContext":""}
 
 # 步驟 4：[workflow:xxx] 覆寫語法
 echo '{"user_prompt":"建立 API [workflow:quick]"}' \
@@ -385,10 +385,10 @@ rm -rf ~/.overtone/sessions/$SESSION_ID
 
 | 項目 | 狀態 | 說明 |
 |------|------|------|
-| 無 workflow 注入 `/ot:auto` | 未覆蓋 | 需新建 `tests/on-submit.test.js` |
-| 有 workflow 注入進度摘要 | 未覆蓋 | 需整合測試（依賴 state.js） |
-| `/ot:` 前綴 passthrough | 未覆蓋 | 需新建 `tests/on-submit.test.js` |
-| `[workflow:xxx]` 覆寫語法 | 未覆蓋 | 見 F3 驗證計畫 |
+| 無 workflow 注入 `/ot:auto` | ✅ 已覆蓋 | `tests/on-submit.test.js` — 場景 7 |
+| 有 workflow 注入進度摘要 | ✅ 已覆蓋 | `tests/on-submit.test.js` — 場景 8 |
+| `/ot:` 前綴 passthrough | ✅ 已覆蓋 | `tests/on-submit.test.js` — 場景 1、2 |
+| `[workflow:xxx]` 覆寫語法 | ✅ 已覆蓋 | `tests/on-submit.test.js` — 場景 3~6 |
 
 ---
 
