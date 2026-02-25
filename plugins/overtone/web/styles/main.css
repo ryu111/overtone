@@ -577,3 +577,97 @@ section {
 
 /* grader 分類色條 */
 .timeline-event.cat-grader { border-left: 3px solid var(--color-pink); }
+
+/* ── 動畫 Token ── */
+/* 快 0.3s / 中 0.6s / 循環 1.5-2s，easing: ease-out */
+
+/* Stage 進入 active 時的光暈脈動 */
+@keyframes stage-activate {
+  0%   { box-shadow: 0 0 0 0 rgba(234, 179, 8, 0.5); }
+  70%  { box-shadow: 0 0 0 8px rgba(234, 179, 8, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(234, 179, 8, 0); }
+}
+
+/* Stage 完成時的確認閃光 */
+@keyframes stage-complete {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.04); box-shadow: 0 0 12px rgba(34, 197, 94, 0.6); }
+  100% { transform: scale(1); box-shadow: none; }
+}
+
+/* Agent card 進場 */
+@keyframes agent-enter {
+  from { opacity: 0; transform: translateX(-12px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+/* Agent card 邊框脈動（寬度循環） */
+@keyframes agent-border-pulse {
+  0%, 100% { border-left-width: 3px; }
+  50%       { border-left-width: 5px; }
+}
+
+/* 連線指示燈脈動 */
+@keyframes dot-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.5); }
+  50%       { box-shadow: 0 0 0 4px rgba(34, 197, 94, 0); }
+}
+
+/* Spinner 旋轉 */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* ── 動畫套用 ── */
+
+/* Stage active — 光暈脈動 */
+.stage-card.active,
+.stage-card.in-progress {
+  animation: stage-activate 2s ease-out infinite;
+}
+
+/* Stage completed — 完成閃光（播一次即停） */
+.stage-card.completed {
+  animation: stage-complete 0.6s ease-out forwards;
+}
+
+/* Agent card — 進場 + 邊框脈動（position: relative 支援 ::after spinner） */
+.agent-card {
+  position: relative;
+  animation: agent-enter 0.3s ease-out, agent-border-pulse 2s ease-in-out infinite;
+}
+
+/* Agent card spinner（::after 偽元素，CSS-only） */
+.agent-card::after {
+  content: '';
+  position: absolute;
+  top: var(--spacing-sm);
+  right: var(--spacing-sm);
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  border-top-color: currentColor;
+  border-right-color: currentColor;
+  animation: spin 1s linear infinite;
+  opacity: 0.6;
+}
+
+/* 連線指示燈脈動（online 狀態） */
+.connection-status.online::before {
+  animation: dot-pulse 1.5s ease-in-out infinite;
+}
+
+/* ── prefers-reduced-motion 保護 ── */
+@media (prefers-reduced-motion: reduce) {
+  .stage-card.active,
+  .stage-card.in-progress,
+  .stage-card.completed,
+  .agent-card,
+  .agent-card::after,
+  .connection-status.online::before,
+  .pulse {
+    animation: none !important;
+  }
+}
