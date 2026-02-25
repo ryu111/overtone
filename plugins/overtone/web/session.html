@@ -5,7 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Overtone — Session</title>
   <link rel="stylesheet" href="/static/main.css">
-  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.8/dist/cdn.min.js"></script>
+  <script defer
+    src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.8/dist/cdn.min.js"
+    integrity="sha384-X9kJyAubVxnP0hcA+AMMs21U445qsnqhnUF8EBlEpP3a42Kh/JwWjlv2ZcvGfphb"
+    crossorigin="anonymous"></script>
 </head>
 <body x-data="sessionState('{{SESSION_ID}}')">
 
@@ -113,7 +116,7 @@
 
     <!-- 事件列表 -->
     <div class="timeline-list" x-ref="timelineList">
-      <template x-for="event in filteredEvents" :key="event.ts + event.type + Math.random()">
+      <template x-for="(event, idx) in filteredEvents" :key="event.ts + '-' + event.type + '-' + idx">
         <div class="timeline-event" :class="'cat-' + event.category">
           <div class="event-time" x-text="formatTime(event.ts)"></div>
           <div class="event-label" x-text="event.label"></div>
@@ -128,49 +131,25 @@
   </section>
 
   <script>
-  // ── Stage Registry 鏡像（來自 scripts/lib/registry.js） ──
+  // ── Registry（從 /api/registry 動態載入，消除硬編碼重複） ──
 
-  const stageRegistry = {
-    PLAN:        { label: '規劃',   emoji: '📋', color: 'var(--color-purple)' },
-    ARCH:        { label: '架構',   emoji: '🏗️', color: 'var(--color-cyan)' },
-    DESIGN:      { label: '設計',   emoji: '🎨', color: 'var(--color-cyan)' },
-    DEV:         { label: '開發',   emoji: '💻', color: 'var(--color-yellow)' },
-    DEBUG:       { label: '除錯',   emoji: '🔧', color: 'var(--color-orange)' },
-    REVIEW:      { label: '審查',   emoji: '🔍', color: 'var(--color-blue)' },
-    TEST:        { label: '測試',   emoji: '🧪', color: 'var(--color-pink)' },
-    SECURITY:    { label: '安全',   emoji: '🛡️', color: 'var(--color-red)' },
-    'DB-REVIEW': { label: 'DB審查', emoji: '🗄️', color: 'var(--color-red)' },
-    QA:          { label: '驗證',   emoji: '🏁', color: 'var(--color-yellow)' },
-    E2E:         { label: 'E2E',   emoji: '🌐', color: 'var(--color-green)' },
-    'BUILD-FIX': { label: '修構建', emoji: '🔨', color: 'var(--color-orange)' },
-    REFACTOR:    { label: '清理',   emoji: '🧹', color: 'var(--color-blue)' },
-    DOCS:        { label: '文件',   emoji: '📝', color: 'var(--color-purple)' },
-  };
+  let stageRegistry = {};
+  let workflowLabels = {};
+  let agentColors = {};
 
-  const workflowLabels = {
-    single: '單步修改', quick: '快速開發', standard: '標準功能',
-    full: '完整功能', secure: '高風險', tdd: '測試驅動',
-    debug: '除錯', refactor: '重構', 'review-only': '純審查',
-    'security-only': '安全掃描', 'build-fix': '修構建', 'e2e-only': 'E2E 測試',
-  };
-
-  // Agent name → color 對照（從 registry.js stages 反查）
-  const agentColors = {
-    planner: 'var(--color-purple)',
-    architect: 'var(--color-cyan)',
-    designer: 'var(--color-cyan)',
-    developer: 'var(--color-yellow)',
-    debugger: 'var(--color-orange)',
-    'code-reviewer': 'var(--color-blue)',
-    'security-reviewer': 'var(--color-red)',
-    'database-reviewer': 'var(--color-red)',
-    tester: 'var(--color-pink)',
-    qa: 'var(--color-yellow)',
-    'e2e-runner': 'var(--color-green)',
-    'build-error-resolver': 'var(--color-orange)',
-    'refactor-cleaner': 'var(--color-blue)',
-    'doc-updater': 'var(--color-purple)',
-  };
+  // 啟動時從 server 載入 registry（SoT = scripts/lib/registry.js）
+  fetch('/api/registry').then(r => r.json()).then(data => {
+    stageRegistry = data.stages || {};
+    workflowLabels = Object.fromEntries(
+      Object.entries(data.workflows || {}).map(([k, v]) => [k, v.label])
+    );
+    // 從 stages 反查 agent → color
+    for (const [, v] of Object.entries(stageRegistry)) {
+      if (v.agent && v.color) agentColors[v.agent] = v.color;
+    }
+  }).catch(() => {
+    // fallback：API 不可用時使用空 registry
+  });
 
   const eventCategories = [
     { key: 'workflow', label: '工作流' },

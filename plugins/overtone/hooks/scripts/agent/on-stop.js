@@ -143,10 +143,8 @@ if (result.verdict === 'fail') {
   if (nextHint) {
     messages.push(`⏭️ 下一步：${nextHint}`);
   } else {
+    // 所有階段完成 — 不在此 emit workflow:complete，由 Stop hook 統一處理
     messages.push('🎉 所有階段已完成！');
-    timeline.emit(sessionId, 'workflow:complete', {
-      workflowType: updatedState.workflowType,
-    });
   }
 }
 
@@ -160,27 +158,41 @@ process.stdout.write(JSON.stringify({
  * 解析 agent 輸出，判斷結果
  */
 function parseResult(output, stageKey) {
+  // 優先解析結構化 verdict（agent prompt 約定格式）
+  const verdictMatch = output.match(/<!--\s*VERDICT:\s*(\{[^}]+\})\s*-->/);
+  if (verdictMatch) {
+    try {
+      const parsed = JSON.parse(verdictMatch[1]);
+      if (parsed.result) {
+        return { verdict: parsed.result.toLowerCase() };
+      }
+    } catch {
+      // 解析失敗，fallback 到字串匹配
+    }
+  }
+
   const lower = output.toLowerCase();
 
   // REVIEWER → PASS / REJECT
   if (stageKey === 'REVIEW' || stageKey === 'SECURITY' || stageKey === 'DB-REVIEW') {
-    if (lower.includes('reject') || lower.includes('拒絕')) {
+    // 排除 false positive：「no rejections」「not rejected」
+    if ((lower.includes('reject') || lower.includes('拒絕'))
+        && !lower.includes('no reject') && !lower.includes('not reject')) {
       return { verdict: 'reject' };
     }
     return { verdict: 'pass' };
   }
 
-  // TESTER / QA / E2E → PASS / FAIL
-  if (stageKey === 'TEST' || stageKey === 'QA' || stageKey === 'E2E') {
-    if (lower.includes('fail') || lower.includes('失敗') || lower.includes('error')) {
+  // TESTER / QA / E2E / BUILD-FIX → PASS / FAIL
+  if (stageKey === 'TEST' || stageKey === 'QA' || stageKey === 'E2E' || stageKey === 'BUILD-FIX') {
+    // 排除 false positive：「no failures」「0 failed」「test passed without failure」
+    if ((lower.includes('fail') || lower.includes('失敗'))
+        && !lower.includes('no fail') && !lower.includes('0 fail') && !lower.includes('without fail')) {
       return { verdict: 'fail' };
     }
-    return { verdict: 'pass' };
-  }
-
-  // BUILD-FIX → PASS / FAIL
-  if (stageKey === 'BUILD-FIX') {
-    if (lower.includes('fail') || lower.includes('失敗') || lower.includes('error')) {
+    // 'error' 單獨檢查，排除 'error handling'、'0 errors'
+    if (lower.includes('error') && !lower.includes('0 error') && !lower.includes('no error')
+        && !lower.includes('error handling') && !lower.includes('error recovery')) {
       return { verdict: 'fail' };
     }
     return { verdict: 'pass' };

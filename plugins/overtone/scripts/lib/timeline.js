@@ -11,6 +11,9 @@ const { appendFileSync, readFileSync, mkdirSync } = require('fs');
 const { dirname } = require('path');
 const paths = require('./paths');
 const { timelineEvents } = require('./registry');
+const { atomicWrite } = require('./utils');
+
+const MAX_EVENTS = 2000;
 
 /**
  * 寫入一筆 timeline 事件
@@ -56,7 +59,16 @@ function query(sessionId, filter = {}) {
     return [];
   }
 
-  let events = lines.map((line) => JSON.parse(line));
+  // 截斷過長的 JSONL（保留最新的 MAX_EVENTS 筆）
+  if (lines.length > MAX_EVENTS) {
+    const trimmed = lines.slice(-MAX_EVENTS);
+    atomicWrite(filePath, trimmed.join('\n') + '\n');
+    lines = trimmed;
+  }
+
+  let events = lines.map((line) => {
+    try { return JSON.parse(line); } catch { return null; }
+  }).filter(Boolean);
 
   if (filter.type) {
     events = events.filter((e) => e.type === filter.type);

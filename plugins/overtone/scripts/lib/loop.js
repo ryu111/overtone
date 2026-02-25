@@ -14,10 +14,11 @@
  *   object  = { total, checked, allChecked }
  */
 
-const { readFileSync, writeFileSync, mkdirSync } = require('fs');
-const { join, dirname } = require('path');
+const { readFileSync } = require('fs');
+const { join } = require('path');
 const paths = require('./paths');
 const timeline = require('./timeline');
+const { atomicWrite } = require('./utils');
 
 // ── Loop 狀態讀寫 ──
 
@@ -48,9 +49,7 @@ function readLoop(sessionId) {
  * @param {object} loopData
  */
 function writeLoop(sessionId, loopData) {
-  const filePath = paths.session.loop(sessionId);
-  mkdirSync(dirname(filePath), { recursive: true });
-  writeFileSync(filePath, JSON.stringify(loopData, null, 2) + '\n', 'utf8');
+  atomicWrite(paths.session.loop(sessionId), loopData);
 }
 
 /**

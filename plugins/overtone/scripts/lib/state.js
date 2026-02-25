@@ -7,9 +7,9 @@
  * 原子寫入：先寫暫存檔再 rename，避免 JSON 損壞。
  */
 
-const { readFileSync, writeFileSync, mkdirSync, renameSync } = require('fs');
-const { dirname } = require('path');
+const { readFileSync } = require('fs');
 const paths = require('./paths');
+const { atomicWrite } = require('./utils');
 
 /**
  * 讀取 workflow 狀態
@@ -31,13 +31,7 @@ function readState(sessionId) {
  * @param {object} state
  */
 function writeState(sessionId, state) {
-  const filePath = paths.session.workflow(sessionId);
-  const dir = dirname(filePath);
-  mkdirSync(dir, { recursive: true });
-
-  const tmpPath = `${filePath}.tmp`;
-  writeFileSync(tmpPath, JSON.stringify(state, null, 2) + '\n', 'utf8');
-  renameSync(tmpPath, filePath);
+  atomicWrite(paths.session.workflow(sessionId), state);
 }
 
 /**

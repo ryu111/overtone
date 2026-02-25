@@ -90,7 +90,9 @@ class DashboardAdapter extends Adapter {
         controller._sseWrapper = wrapper;
         controller._sseSessionId = sessionId;
       },
-      cancel() {},
+      cancel() {
+        self._removeConnection(sessionId, wrapper);
+      },
     });
   }
 
@@ -116,7 +118,9 @@ class DashboardAdapter extends Adapter {
 
         controller._sseWrapper = wrapper;
       },
-      cancel() {},
+      cancel() {
+        self.allConnections.delete(wrapper);
+      },
     });
   }
 

@@ -13,10 +13,11 @@
  *   >= 0.7 自動應用 | < 0.2 自動刪除
  */
 
-const { readFileSync, writeFileSync, existsSync, mkdirSync } = require('fs');
+const { readFileSync, appendFileSync, existsSync, mkdirSync } = require('fs');
 const { dirname } = require('path');
 const paths = require('./paths');
 const { instinctDefaults } = require('./registry');
+const { atomicWrite } = require('./utils');
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -36,12 +37,18 @@ class Instinct {
       .filter(Boolean);
   }
 
-  /** 全量寫回（修改後用此取代 append-only） */
+  /** 全量寫回（僅用於 prune/decay 等需要刪減的操作） */
   _writeAll(sessionId, list) {
     const filePath = paths.session.observations(sessionId);
-    mkdirSync(dirname(filePath), { recursive: true });
     const content = list.map(item => JSON.stringify(item)).join('\n');
-    writeFileSync(filePath, content ? content + '\n' : '', 'utf8');
+    atomicWrite(filePath, content ? content + '\n' : '');
+  }
+
+  /** 追加單筆記錄（O(1)，用於 emit 新增） */
+  _append(sessionId, item) {
+    const filePath = paths.session.observations(sessionId);
+    mkdirSync(dirname(filePath), { recursive: true });
+    appendFileSync(filePath, JSON.stringify(item) + '\n', 'utf8');
   }
 
   /** 將分數夾在 [0, 1] 範圍內，並四捨五入到小數點後 4 位 */
@@ -73,18 +80,17 @@ class Instinct {
     const existing = list.find(i => i.tag === tag && i.type === type);
 
     if (existing) {
-      // 同 tag + type 已存在 → 確認（信心 +0.05）
+      // 同 tag + type 已存在 → 確認（信心 +0.05）— 需全量重寫
       existing.confidence = this._clamp(existing.confidence + instinctDefaults.confirmBoost);
       existing.count = (existing.count || 1) + 1;
       existing.lastSeen = new Date().toISOString();
-      // 更新 trigger/action 為最新觀察（保持最具代表性的描述）
       existing.trigger = trigger;
       existing.action = action;
       this._writeAll(sessionId, list);
       return existing;
     }
 
-    // 新建 instinct
+    // 新建 instinct — 使用 O(1) append
     const instinct = {
       id: this._newId(),
       ts: new Date().toISOString(),
@@ -97,8 +103,7 @@ class Instinct {
       count: 1,
     };
 
-    list.push(instinct);
-    this._writeAll(sessionId, list);
+    this._append(sessionId, instinct);
     return instinct;
   }
 

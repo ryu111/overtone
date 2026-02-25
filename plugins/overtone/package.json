@@ -1,0 +1,14 @@
+{
+  "name": "overtone",
+  "version": "0.10.0",
+  "private": true,
+  "description": "Overtone — BDD 驅動工作流自動化 Claude Code plugin",
+  "scripts": {
+    "server": "bun run scripts/server.js",
+    "validate": "bun run scripts/validate-agents.js",
+    "test": "bun test"
+  },
+  "engines": {
+    "bun": ">=1.0.0"
+  }
+}

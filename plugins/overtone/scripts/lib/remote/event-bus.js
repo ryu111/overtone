@@ -10,11 +10,11 @@
  *   ✅ 增量 JSONL 讀取
  */
 
-const { watch, existsSync, statSync, readFileSync, writeFileSync,
-        openSync, readSync, closeSync, fstatSync, mkdirSync } = require('fs');
-const { dirname } = require('path');
+const { watch, existsSync, statSync, readFileSync,
+        openSync, readSync, closeSync, fstatSync } = require('fs');
 const paths = require('../paths');
 const state = require('../state');
+const loop = require('../loop');
 const sessions = require('../dashboard/sessions');
 const { remoteCommands } = require('../registry');
 
@@ -105,23 +105,14 @@ class EventBus {
 
   // ── 控制命令實作 ──
 
-  /** 停止 Loop（複用 stop-loop.js 邏輯） */
+  /** 停止 Loop（統一使用 loop.js API） */
   _controlStop(sessionId) {
     if (!sessionId) return { ok: false, error: '缺少 sessionId' };
 
-    const loopPath = paths.session.loop(sessionId);
-    let loopState;
-    try {
-      loopState = JSON.parse(readFileSync(loopPath, 'utf8'));
-    } catch {
-      loopState = { iteration: 0, consecutiveErrors: 0, stopped: false };
-    }
-
+    const loopState = loop.readLoop(sessionId);
     loopState.stopped = true;
     loopState.stoppedAt = new Date().toISOString();
-
-    mkdirSync(dirname(loopPath), { recursive: true });
-    writeFileSync(loopPath, JSON.stringify(loopState, null, 2) + '\n', 'utf8');
+    loop.writeLoop(sessionId, loopState);
 
     return { ok: true, message: 'Loop 已標記為停止' };
   }

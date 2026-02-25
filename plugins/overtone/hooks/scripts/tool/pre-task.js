@@ -137,35 +137,36 @@ process.stdout.write(JSON.stringify({ result: '' }));
  * 從 Task 描述/prompt 中識別 Overtone agent
  */
 function identifyAgent(desc, prmt) {
-  const combined = `${desc} ${prmt}`;
+  const combined = ` ${desc} ${prmt} `;
   const agentNames = Object.values(stages).map((d) => d.agent);
 
+  // 精確匹配 agent 名稱（完整詞邊界）
   for (const name of agentNames) {
-    if (combined.includes(name)) return name;
+    const pattern = new RegExp(`\\b${name.replace(/-/g, '[-\\s]')}\\b`, 'i');
+    if (pattern.test(combined)) return name;
   }
 
-  // 嘗試用別名匹配
+  // 別名匹配（使用 word boundary 避免誤判）
   const aliases = {
-    'review': 'code-reviewer',
-    'reviewer': 'code-reviewer',
-    'test': 'tester',
-    'debug': 'debugger',
-    'plan': 'planner',
-    'architect': 'architect',
-    'design': 'designer',
-    'develop': 'developer',
+    'review(?:er)?': 'code-reviewer',
+    'test(?:er|ing)?': 'tester',
+    'debug(?:ger|ging)?': 'debugger',
+    'plan(?:ner|ning)?': 'planner',
+    'architect(?:ure)?': 'architect',
+    'design(?:er)?': 'designer',
+    'develop(?:er|ment)?': 'developer',
     'security': 'security-reviewer',
-    'database': 'database-reviewer',
-    'db review': 'database-reviewer',
+    'database|db.?review': 'database-reviewer',
     'e2e': 'e2e-runner',
-    'build': 'build-error-resolver',
-    'refactor': 'refactor-cleaner',
-    'doc': 'doc-updater',
-    'qa': 'qa',
+    'build.?(?:fix|error|resolve)': 'build-error-resolver',
+    'refactor|clean.?(?:up|code)': 'refactor-cleaner',
+    'doc(?:s|umentation)?\\s*(?:updat|sync)': 'doc-updater',
+    '\\bqa\\b': 'qa',
   };
 
-  for (const [alias, agent] of Object.entries(aliases)) {
-    if (combined.includes(alias)) return agent;
+  for (const [pattern, agent] of Object.entries(aliases)) {
+    const regex = new RegExp(`\\b${pattern}\\b`, 'i');
+    if (regex.test(combined)) return agent;
   }
 
   return null;

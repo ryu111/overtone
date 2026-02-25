@@ -8,13 +8,13 @@
  * 端口：OVERTONE_PORT 環境變數（預設 7777）
  */
 
-const { readFileSync } = require('fs');
-const { join, extname } = require('path');
+const { join, extname, resolve } = require('path');
 const pid = require('./lib/dashboard/pid');
 const sessions = require('./lib/dashboard/sessions');
 const state = require('./lib/state');
 const timeline = require('./lib/timeline');
 const { stages, workflows } = require('./lib/registry');
+const { escapeHtml } = require('./lib/utils');
 
 // ── Remote 模組 ──
 
@@ -148,7 +148,7 @@ function handleSSE(path) {
     'Content-Type': 'text/event-stream',
     'Cache-Control': 'no-cache',
     'Connection': 'keep-alive',
-    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Origin': `http://localhost:${PORT}`,
   };
 
   if (path === '/sse/all') {
@@ -209,6 +209,20 @@ async function handleAPI(path, params, req) {
     return json(ws);
   }
 
+  // GET /api/registry — 前端動態載入 registry（消除硬編碼重複）
+  if (path === '/api/registry') {
+    return json({
+      stages: Object.fromEntries(
+        Object.entries(stages).map(([k, v]) => [k, {
+          label: v.label, emoji: v.emoji, color: v.color, agent: v.agent,
+        }])
+      ),
+      workflows: Object.fromEntries(
+        Object.entries(workflows).map(([k, v]) => [k, { label: v.label }])
+      ),
+    });
+  }
+
   return json({ error: 'API 端點不存在' }, 404);
 }
 
@@ -236,13 +250,13 @@ async function handleControlAPI(sessionId, req) {
 
 // ── HTML 頁面 ──
 
-function serveIndexPage() {
+async function serveIndexPage() {
   try {
     const allSessions = sessions.listSessions();
     const activeSessions = allSessions.filter(s => s.isActive);
     const historySessions = allSessions.filter(s => !s.isActive);
 
-    const html = readFileSync(join(WEB_DIR, 'index.html'), 'utf8')
+    const html = (await Bun.file(join(WEB_DIR, 'index.html')).text())
       .replace('{{ACTIVE_SESSIONS}}', renderSessionCards(activeSessions))
       .replace('{{HISTORY_SESSIONS}}', renderSessionCards(historySessions))
       .replace('{{ACTIVE_COUNT}}', String(activeSessions.length))
@@ -256,10 +270,11 @@ function serveIndexPage() {
   }
 }
 
-function serveSessionPage(sessionId) {
+async function serveSessionPage(sessionId) {
   try {
-    const html = readFileSync(join(WEB_DIR, 'session.html'), 'utf8')
-      .replace(/\{\{SESSION_ID\}\}/g, sessionId);
+    const safeId = escapeHtml(sessionId);
+    const html = (await Bun.file(join(WEB_DIR, 'session.html')).text())
+      .replace(/\{\{SESSION_ID\}\}/g, safeId);
 
     return new Response(html, {
       headers: { 'Content-Type': 'text/html; charset=utf-8' },
@@ -277,15 +292,16 @@ function renderSessionCards(sessionList) {
   }
 
   return sessionList.map(s => {
-    const label = workflowLabels[s.workflowType] || s.workflowType || '未知';
+    const label = escapeHtml(workflowLabels[s.workflowType] || s.workflowType || '未知');
     const pct = s.progress.total > 0
       ? Math.round(s.progress.completed / s.progress.total * 100)
       : 0;
-    const time = formatDate(s.createdAt);
-    const sid8 = (s.sessionId || '').slice(0, 8);
+    const time = escapeHtml(formatDate(s.createdAt));
+    const sid = escapeHtml(s.sessionId || '');
+    const sid8 = escapeHtml((s.sessionId || '').slice(0, 8));
     const activeClass = s.isActive ? 'active' : '';
 
-    return `<a href="/s/${s.sessionId}" class="session-card ${activeClass}">
+    return `<a href="/s/${sid}" class="session-card ${activeClass}">
       <div class="session-header">
         <span class="workflow-type">${label}</span>
         <span class="session-time">${time}</span>
@@ -303,12 +319,19 @@ function renderSessionCards(sessionList) {
 
 // ── 靜態檔案 ──
 
-function serveStatic(path) {
+async function serveStatic(path) {
   const relativePath = path.replace('/static/', '');
-  const filePath = join(WEB_DIR, 'styles', relativePath);
+  const filePath = resolve(join(WEB_DIR, 'styles', relativePath));
+
+  // 路徑穿越防護：確保解析後的路徑仍在 styles 目錄內
+  const stylesDir = resolve(join(WEB_DIR, 'styles'));
+  if (!filePath.startsWith(stylesDir)) {
+    return new Response('404 Not Found', { status: 404 });
+  }
 
   try {
-    const content = readFileSync(filePath);
+    const file = Bun.file(filePath);
+    const content = await file.arrayBuffer();
     const ext = extname(filePath);
     const mime = MIME_TYPES[ext] || 'application/octet-stream';
     return new Response(content, {
@@ -326,7 +349,7 @@ function json(data, status = 200) {
     status,
     headers: {
       'Content-Type': 'application/json; charset=utf-8',
-      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Origin': `http://localhost:${PORT}`,
     },
   });
 }

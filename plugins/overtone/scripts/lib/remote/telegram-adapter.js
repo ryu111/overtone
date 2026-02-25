@@ -363,15 +363,21 @@ class TelegramAdapter extends Adapter {
     const url = `${API_BASE}${this.token}/${method}`;
     const hasBody = Object.keys(params).length > 0;
 
-    const res = await fetch(url, {
-      method: hasBody ? 'POST' : 'GET',
-      headers: hasBody ? { 'Content-Type': 'application/json' } : {},
-      body: hasBody ? JSON.stringify(params) : undefined,
-      signal,
-    });
+    let res;
+    try {
+      res = await fetch(url, {
+        method: hasBody ? 'POST' : 'GET',
+        headers: hasBody ? { 'Content-Type': 'application/json' } : {},
+        body: hasBody ? JSON.stringify(params) : undefined,
+        signal,
+      });
+    } catch (err) {
+      // 遮蔽 token：錯誤訊息只印 method 名稱，不印完整 URL
+      throw new Error(`Telegram API ${method} 網路錯誤：${err.message}`);
+    }
 
     if (!res.ok) {
-      throw new Error(`Telegram API 錯誤：${res.status} ${res.statusText}`);
+      throw new Error(`Telegram API ${method} 錯誤：${res.status} ${res.statusText}`);
     }
 
     return res.json();

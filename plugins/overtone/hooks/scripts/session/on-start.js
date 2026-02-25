@@ -63,10 +63,10 @@ const banner = [
   '',
 ].filter(Boolean).join('\n');
 
-// 自動開啟瀏覽器（macOS）
+// 自動開啟瀏覽器（macOS）— 使用 execFile 避免命令注入
 if (dashboardUrl) {
   setTimeout(() => {
-    try { require('child_process').exec(`open ${dashboardUrl}`); } catch {}
+    try { require('child_process').execFile('open', [dashboardUrl]); } catch {}
   }, 500);
 }
 
