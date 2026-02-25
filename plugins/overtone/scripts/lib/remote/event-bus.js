@@ -147,26 +147,34 @@ class EventBus {
     const timelinePath = paths.session.timeline(sessionId);
     const watcherState = { ww: null, tw: null, dw: null, lastSize: 0 };
 
-    // 監聽 workflow.json
+    // 監聽 workflow.json（50ms 防抖，避免 atomicWrite rename 觸發多次）
+    let workflowDebounce = null;
     try {
       if (existsSync(workflowPath)) {
         watcherState.ww = watch(workflowPath, () => {
-          const data = state.readState(sessionId);
-          if (data) this.push(sessionId, 'workflow', data);
+          clearTimeout(workflowDebounce);
+          workflowDebounce = setTimeout(() => {
+            const data = state.readState(sessionId);
+            if (data) this.push(sessionId, 'workflow', data);
+          }, 50);
         });
       }
     } catch {}
 
-    // 監聽 timeline.jsonl
+    // 監聽 timeline.jsonl（50ms 防抖）
+    let timelineDebounce = null;
     try {
       if (existsSync(timelinePath)) {
         watcherState.lastSize = this._getFileSize(timelinePath);
         watcherState.tw = watch(timelinePath, () => {
-          const newEvents = this._readNewLines(timelinePath, watcherState.lastSize);
-          watcherState.lastSize = this._getFileSize(timelinePath);
-          for (const event of newEvents) {
-            this.push(sessionId, 'timeline', event);
-          }
+          clearTimeout(timelineDebounce);
+          timelineDebounce = setTimeout(() => {
+            const newEvents = this._readNewLines(timelinePath, watcherState.lastSize);
+            watcherState.lastSize = this._getFileSize(timelinePath);
+            for (const event of newEvents) {
+              this.push(sessionId, 'timeline', event);
+            }
+          }, 50);
         });
       }
     } catch {}

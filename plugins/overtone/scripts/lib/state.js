@@ -7,7 +7,7 @@
  * 原子寫入：先寫暫存檔再 rename，避免 JSON 損壞。
  */
 
-const { readFileSync } = require('fs');
+const { readFileSync, statSync } = require('fs');
 const paths = require('./paths');
 const { atomicWrite } = require('./utils');
 
@@ -134,6 +134,47 @@ function removeActiveAgent(sessionId, agentName) {
   writeState(sessionId, state);
 }
 
+/**
+ * 原子化更新 state（Compare-and-Swap 模式）
+ *
+ * 讀取 state → 執行 modifier → 寫回前驗證 mtime 未變。
+ * 若被其他 hook 修改則重試（最多 3 次），最終 fallback 強制寫入。
+ *
+ * @param {string} sessionId
+ * @param {function} modifier - (state) => newState
+ * @returns {object} 更新後的 state
+ */
+function updateStateAtomic(sessionId, modifier) {
+  const MAX_RETRIES = 3;
+  const filePath = paths.session.workflow(sessionId);
+
+  for (let i = 0; i < MAX_RETRIES; i++) {
+    const current = readState(sessionId);
+    if (!current) throw new Error(`找不到 session 狀態：${sessionId}`);
+
+    let mtime;
+    try { mtime = statSync(filePath).mtimeMs; } catch { mtime = 0; }
+
+    const newState = modifier(current);
+
+    // CAS：寫入前再檢查 mtime
+    let currentMtime;
+    try { currentMtime = statSync(filePath).mtimeMs; } catch { currentMtime = 0; }
+
+    if (currentMtime !== mtime) continue; // 被其他 hook 修改，重試
+
+    writeState(sessionId, newState);
+    return newState;
+  }
+
+  // fallback：最後一次強制寫入
+  const current = readState(sessionId);
+  if (!current) throw new Error(`找不到 session 狀態：${sessionId}`);
+  const newState = modifier(current);
+  writeState(sessionId, newState);
+  return newState;
+}
+
 module.exports = {
   readState,
   writeState,
@@ -141,4 +182,5 @@ module.exports = {
   updateStage,
   setActiveAgent,
   removeActiveAgent,
+  updateStateAtomic,
 };

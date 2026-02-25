@@ -48,6 +48,24 @@ const PORT = parseInt(process.env.OVERTONE_PORT || '7777', 10);
 const WEB_DIR = join(__dirname, '..', 'web');
 const START_TIME = Date.now();
 
+/**
+ * 動態 CORS origin 解析
+ * 允許 localhost 和 192.168.x.x 區網，支援 OT_CORS_ORIGIN 環境變數覆蓋。
+ * @param {Request} req
+ * @returns {string}
+ */
+function getCorsOrigin(req) {
+  const origin = req.headers.get?.('origin') || req.headers?.origin;
+  const fallback = `http://localhost:${PORT}`;
+  const allowed = process.env.OT_CORS_ORIGIN || fallback;
+  if (!origin || origin === allowed) return allowed;
+  // 允許 localhost 和 192.168.x.x 區網
+  if (/^https?:\/\/(localhost|192\.168\.\d+\.\d+|127\.0\.0\.1)(:\d+)?$/.test(origin)) {
+    return origin;
+  }
+  return allowed;
+}
+
 // ── Workflow 中文標籤 ──
 
 const workflowLabels = {};
@@ -76,7 +94,7 @@ const server = Bun.serve({
 
     // SSE 端點
     if (path.startsWith('/sse/')) {
-      return handleSSE(path);
+      return handleSSE(path, req);
     }
 
     // API 端點
@@ -143,12 +161,12 @@ process.on('SIGINT', cleanup);
 
 // ── SSE 處理 ──
 
-function handleSSE(path) {
+function handleSSE(path, req) {
   const headers = {
     'Content-Type': 'text/event-stream',
     'Cache-Control': 'no-cache',
     'Connection': 'keep-alive',
-    'Access-Control-Allow-Origin': `http://localhost:${PORT}`,
+    'Access-Control-Allow-Origin': getCorsOrigin(req),
   };
 
   if (path === '/sse/all') {
@@ -344,12 +362,12 @@ async function serveStatic(path) {
 
 // ── 輔助 ──
 
-function json(data, status = 200) {
+function json(data, status = 200, req = null) {
   return new Response(JSON.stringify(data), {
     status,
     headers: {
       'Content-Type': 'application/json; charset=utf-8',
-      'Access-Control-Allow-Origin': `http://localhost:${PORT}`,
+      'Access-Control-Allow-Origin': req ? getCorsOrigin(req) : `http://localhost:${PORT}`,
     },
   });
 }

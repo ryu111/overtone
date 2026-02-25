@@ -1,6 +1,6 @@
 {
   "name": "overtone",
-  "version": "0.10.0",
+  "version": "0.11.0",
   "private": true,
   "description": "Overtone — BDD 驅動工作流自動化 Claude Code plugin",
   "scripts": {

@@ -115,3 +115,41 @@ describe('setActiveAgent / removeActiveAgent', () => {
     state.removeActiveAgent('nonexistent', 'developer');
   });
 });
+
+describe('updateStateAtomic', () => {
+  test('單次原子更新：合併多個修改', () => {
+    state.initState(TEST_SESSION, 'quick', ['DEV', 'REVIEW', 'TEST']);
+    state.setActiveAgent(TEST_SESSION, 'developer', 'DEV');
+
+    const result = state.updateStateAtomic(TEST_SESSION, (s) => {
+      delete s.activeAgents.developer;
+      s.stages.DEV.status = 'completed';
+      s.stages.DEV.result = 'pass';
+      s.failCount = 1;
+      // 推進 currentStage
+      const keys = Object.keys(s.stages);
+      const next = keys.find(k => s.stages[k].status === 'pending');
+      if (next) s.currentStage = next;
+      return s;
+    });
+
+    expect(result.activeAgents.developer).toBeUndefined();
+    expect(result.stages.DEV.status).toBe('completed');
+    expect(result.failCount).toBe(1);
+    expect(result.currentStage).toBe('REVIEW');
+  });
+
+  test('不存在的 session 拋出錯誤', () => {
+    expect(() => state.updateStateAtomic('nonexistent', s => s)).toThrow();
+  });
+
+  test('modifier 回傳值正確寫入', () => {
+    state.initState(TEST_SESSION, 'single', ['DEV']);
+    state.updateStateAtomic(TEST_SESSION, (s) => {
+      s.rejectCount = 5;
+      return s;
+    });
+    const s = state.readState(TEST_SESSION);
+    expect(s.rejectCount).toBe(5);
+  });
+});

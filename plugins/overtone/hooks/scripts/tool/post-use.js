@@ -30,7 +30,7 @@ async function main() {
     process.exit(0); // JSON 解析失敗，靜默退出
   }
 
-  const sessionId = input.session_id;
+  const sessionId = process.env.CLAUDE_SESSION_ID || input.session_id;
   if (!sessionId) process.exit(0);
 
   const toolName = input.tool_name || '';

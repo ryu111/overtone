@@ -38,6 +38,12 @@ function emit(sessionId, eventType, data = {}) {
   mkdirSync(dirname(filePath), { recursive: true });
   appendFileSync(filePath, JSON.stringify(event) + '\n', 'utf8');
 
+  // 定期截斷：每 100 次寫入檢查一次
+  if (!emit._counter) emit._counter = 0;
+  if (++emit._counter % 100 === 0) {
+    trimIfNeeded(sessionId);
+  }
+
   return event;
 }
 
@@ -57,13 +63,6 @@ function query(sessionId, filter = {}) {
     lines = readFileSync(filePath, 'utf8').trim().split('\n').filter(Boolean);
   } catch {
     return [];
-  }
-
-  // 截斷過長的 JSONL（保留最新的 MAX_EVENTS 筆）
-  if (lines.length > MAX_EVENTS) {
-    const trimmed = lines.slice(-MAX_EVENTS);
-    atomicWrite(filePath, trimmed.join('\n') + '\n');
-    lines = trimmed;
   }
 
   let events = lines.map((line) => {
@@ -92,6 +91,24 @@ function query(sessionId, filter = {}) {
 function latest(sessionId, eventType) {
   const results = query(sessionId, { type: eventType, limit: 1 });
   return results[0] || null;
+}
+
+/**
+ * 截斷過長的 JSONL（保留最新的 MAX_EVENTS 筆）
+ * 從 query() 分離為獨立函式，由 emit() 定期觸發。
+ * @param {string} sessionId
+ */
+function trimIfNeeded(sessionId) {
+  const filePath = paths.session.timeline(sessionId);
+  try {
+    const lines = readFileSync(filePath, 'utf8').trim().split('\n').filter(Boolean);
+    if (lines.length > MAX_EVENTS) {
+      const trimmed = lines.slice(-MAX_EVENTS);
+      atomicWrite(filePath, trimmed.join('\n') + '\n');
+    }
+  } catch {
+    // 檔案不存在或讀取失敗，跳過
+  }
 }
 
 module.exports = { emit, query, latest };

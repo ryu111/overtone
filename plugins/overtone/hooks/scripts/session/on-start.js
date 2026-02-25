@@ -45,8 +45,8 @@ if (sessionId && !dashboardPid.isRunning()) {
       env: { ...process.env, OVERTONE_PORT: port },
     });
     child.unref();
-  } catch {
-    // Dashboard 啟動失敗不阻擋 session
+  } catch (err) {
+    console.error(`[overtone] Dashboard 啟動失敗: ${err.message}`);
   }
 }
 
@@ -63,11 +63,13 @@ const banner = [
   '',
 ].filter(Boolean).join('\n');
 
-// 自動開啟瀏覽器（macOS）— 使用 execFile 避免命令注入
+// 自動開啟瀏覽器（macOS）— spawn+detached+unref 確保不被 hook 進程退出中斷
 if (dashboardUrl) {
-  setTimeout(() => {
-    try { require('child_process').execFile('open', [dashboardUrl]); } catch {}
-  }, 500);
+  try {
+    const { spawn: spawnOpen } = require('child_process');
+    const openProc = spawnOpen('open', [dashboardUrl], { detached: true, stdio: 'ignore' });
+    openProc.unref();
+  } catch {}
 }
 
 process.stdout.write(JSON.stringify({

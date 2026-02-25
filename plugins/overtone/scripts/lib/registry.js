@@ -65,6 +65,11 @@ const workflows = {
   'security-only': { label: '安全掃描',   stages: ['SECURITY'] },
   'build-fix':     { label: '修構建',     stages: ['BUILD-FIX'] },
   'e2e-only':      { label: 'E2E 測試',  stages: ['E2E'] },
+
+  // 特化模板（3 個，對應獨立 agent）
+  'diagnose':      { label: '診斷',       stages: ['DEBUG'] },
+  'clean':         { label: '重構清理',   stages: ['REFACTOR'] },
+  'db-review':     { label: 'DB審查',     stages: ['DB-REVIEW'] },
 };
 
 // 並行群組：同一群組內的 stages 由 ECC 原生並行（同一訊息多 Task）

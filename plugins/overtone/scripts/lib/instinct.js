@@ -24,17 +24,24 @@ const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 class Instinct {
   // ── 讀寫工具 ──
 
-  /** 讀取所有 instinct（JSONL 全量讀取） */
+  /** 讀取所有 instinct（JSONL 全量讀取，同 id 合併取最新） */
   _readAll(sessionId) {
     const filePath = paths.session.observations(sessionId);
     if (!existsSync(filePath)) return [];
 
-    return readFileSync(filePath, 'utf8')
+    const items = readFileSync(filePath, 'utf8')
       .trim()
       .split('\n')
       .filter(Boolean)
       .map(line => { try { return JSON.parse(line); } catch { return null; } })
       .filter(Boolean);
+
+    // 同 id 合併：後出現的記錄覆蓋先出現的（支援 append-only 更新）
+    const byId = new Map();
+    for (const item of items) {
+      byId.set(item.id, item);
+    }
+    return Array.from(byId.values());
   }
 
   /** 全量寫回（僅用於 prune/decay 等需要刪減的操作） */
@@ -80,13 +87,13 @@ class Instinct {
     const existing = list.find(i => i.tag === tag && i.type === type);
 
     if (existing) {
-      // 同 tag + type 已存在 → 確認（信心 +0.05）— 需全量重寫
+      // 同 tag + type 已存在 → 確認（信心 +0.05）— append-only 更新避免 race
       existing.confidence = this._clamp(existing.confidence + instinctDefaults.confirmBoost);
       existing.count = (existing.count || 1) + 1;
       existing.lastSeen = new Date().toISOString();
       existing.trigger = trigger;
       existing.action = action;
-      this._writeAll(sessionId, list);
+      this._append(sessionId, existing); // append 而非 _writeAll，_readAll 會自動合併
       return existing;
     }
 
@@ -120,7 +127,7 @@ class Instinct {
 
     item.confidence = this._clamp(item.confidence + instinctDefaults.confirmBoost);
     item.lastSeen = new Date().toISOString();
-    this._writeAll(sessionId, list);
+    this._append(sessionId, item); // append-only 更新
     return item;
   }
 
@@ -137,7 +144,7 @@ class Instinct {
 
     item.confidence = this._clamp(item.confidence + instinctDefaults.contradictionPenalty);
     item.lastSeen = new Date().toISOString();
-    this._writeAll(sessionId, list);
+    this._append(sessionId, item); // append-only 更新
     return item;
   }
 

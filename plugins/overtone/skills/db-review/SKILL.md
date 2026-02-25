@@ -10,7 +10,7 @@ disable-model-invocation: true
 
 使用 Bash 執行：
 ```bash
-node ${CLAUDE_PLUGIN_ROOT}/scripts/init-workflow.js review-only ${CLAUDE_SESSION_ID}
+node ${CLAUDE_PLUGIN_ROOT}/scripts/init-workflow.js db-review ${CLAUDE_SESSION_ID}
 ```
 
 ## Stage

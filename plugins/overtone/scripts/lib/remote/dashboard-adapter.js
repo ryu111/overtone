@@ -64,10 +64,11 @@ class DashboardAdapter extends Adapter {
   createSSEStream(sessionId) {
     const encoder = new TextEncoder();
     const self = this;
+    let wrapper; // 在 ReadableStream 外層宣告，start/cancel 共享
 
     return new ReadableStream({
       start(controller) {
-        const wrapper = {
+        wrapper = {
           enqueue(text) { controller.enqueue(encoder.encode(text)); },
         };
 
@@ -85,13 +86,9 @@ class DashboardAdapter extends Adapter {
         // 推送當前狀態
         const ws = state.readState(sessionId);
         if (ws) self._sendSSE(wrapper, 'workflow', JSON.stringify(ws));
-
-        // 儲存引用供 cancel 使用
-        controller._sseWrapper = wrapper;
-        controller._sseSessionId = sessionId;
       },
       cancel() {
-        self._removeConnection(sessionId, wrapper);
+        if (wrapper) self._removeConnection(sessionId, wrapper);
       },
     });
   }
@@ -103,10 +100,11 @@ class DashboardAdapter extends Adapter {
   createAllSSEStream() {
     const encoder = new TextEncoder();
     const self = this;
+    let wrapper; // 在 ReadableStream 外層宣告，start/cancel 共享
 
     return new ReadableStream({
       start(controller) {
-        const wrapper = {
+        wrapper = {
           enqueue(text) { controller.enqueue(encoder.encode(text)); },
         };
 
@@ -115,11 +113,9 @@ class DashboardAdapter extends Adapter {
         self._sendSSE(wrapper, 'connected', JSON.stringify({
           serverTime: new Date().toISOString(),
         }));
-
-        controller._sseWrapper = wrapper;
       },
       cancel() {
-        self.allConnections.delete(wrapper);
+        if (wrapper) self.allConnections.delete(wrapper);
       },
     });
   }

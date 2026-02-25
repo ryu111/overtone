@@ -19,10 +19,12 @@ const { dirname } = require('path');
  * @param {string} filePath - 目標檔案路徑
  * @param {object|string} data - 要寫入的資料（object 自動 JSON.stringify）
  */
+let _atomicCounter = 0;
+
 function atomicWrite(filePath, data) {
   mkdirSync(dirname(filePath), { recursive: true });
   const content = typeof data === 'string' ? data : JSON.stringify(data, null, 2) + '\n';
-  const tmp = `${filePath}.${process.pid}.${Date.now()}.tmp`;
+  const tmp = `${filePath}.${process.pid}.${Date.now()}.${_atomicCounter++}.tmp`;
   writeFileSync(tmp, content, 'utf8');
   renameSync(tmp, filePath);
 }

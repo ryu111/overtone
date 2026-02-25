@@ -6,17 +6,16 @@
  * 用於 SessionStart hook 判斷是否需要 spawn 新 server。
  */
 
-const { readFileSync, writeFileSync, unlinkSync, mkdirSync } = require('fs');
-const { dirname } = require('path');
+const { readFileSync, unlinkSync } = require('fs');
 const { DASHBOARD_FILE } = require('../paths');
+const { atomicWrite } = require('../utils');
 
 /**
  * 寫入 Dashboard 狀態
  * @param {{pid: number, port: number, startedAt: string}} info
  */
 function write(info) {
-  mkdirSync(dirname(DASHBOARD_FILE), { recursive: true });
-  writeFileSync(DASHBOARD_FILE, JSON.stringify(info, null, 2) + '\n', 'utf8');
+  atomicWrite(DASHBOARD_FILE, info);
 }
 
 /**

@@ -46,7 +46,7 @@ Layer 2: Hook 守衛（底層）— 記錄、擋、提示、通知
 
 所有 agent 使用 `bypassPermissions`。
 
-## 工作流模板（12 個）
+## 工作流模板（15 個）
 
 ```
 BDD 規則：含 PLAN/ARCH 的 workflow 在 DEV 前加 TEST:spec
@@ -60,6 +60,9 @@ tdd:        TEST:spec → DEV → TEST:verify
 debug:      DEBUG → DEV → TEST
 refactor:   ARCH → TEST:spec → DEV → REVIEW → TEST:verify
 review-only / security-only / build-fix / e2e-only
+diagnose:   DEBUG
+clean:      REFACTOR
+db-review:  DB-REVIEW
 ```
 
 ## 技術棧
@@ -75,24 +78,27 @@ review-only / security-only / build-fix / e2e-only
 ## 目錄結構
 
 ```
-overtone/
-├── .claude-plugin/       # Plugin manifest
-├── agents/               # 14 個 agent .md 檔
-├── skills/               # Skill 定義
-├── hooks/                # hooks.json + scripts/
-├── scripts/lib/          # 共用程式庫
-│   ├── registry.js       # SoT：stages/agents/workflows/events
-│   ├── paths.js          # 路徑解析
-│   ├── state.js          # workflow.json 讀寫
-│   ├── timeline.js       # 事件記錄
-│   ├── loop.js           # Loop 狀態
-│   └── instinct.js       # Instinct 觀察與信心
-├── web/                  # Dashboard 前端（htmx + Alpine.js）
+plugins/overtone/                # Plugin 根目錄
+├── .claude-plugin/              # Plugin manifest（plugin.json）
+├── agents/                      # 14 個 agent .md 檔
+├── skills/                      # 27 個 Skill 定義
+├── hooks/                       # hooks.json + scripts/
+├── scripts/lib/                 # 共用程式庫
+│   ├── registry.js              # SoT：stages/agents/workflows/events
+│   ├── paths.js                 # 路徑解析
+│   ├── state.js                 # workflow.json 讀寫（CAS 原子更新）
+│   ├── timeline.js              # 事件記錄
+│   ├── loop.js                  # Loop 狀態
+│   ├── instinct.js              # Instinct 觀察與信心
+│   ├── utils.js                 # 共用工具（atomicWrite、escapeHtml）
+│   ├── dashboard/               # Dashboard 程序管理
+│   └── remote/                  # EventBus + Adapter（Dashboard、Telegram）
+├── web/                         # Dashboard 前端（htmx + Alpine.js）
+├── tests/                       # 6 個測試檔（bun test）
 ├── docs/
-│   ├── workflow.md       # 完整設計文件（55 個決策）
-│   └── reference/        # ECC 分析參考文件
-├── templates/            # 模板檔案
-└── openspec/             # BDD spec + 規格文件
+│   ├── workflow.md              # 完整設計文件（55 個決策）
+│   └── reference/               # ECC 分析參考文件
+└── package.json                 # Bun 專案設定
 ```
 
 ## State 路徑
@@ -106,7 +112,7 @@ overtone/
 └── observations.jsonl    # Instinct 觀察
 ```
 
-## Hook 架構（6 個，~570 行）
+## Hook 架構（6 個，~930 行）
 
 | 事件 | 職責 |
 |------|------|
@@ -131,7 +137,7 @@ bun scripts/stop-loop.js {sessionId}
 
 # 初始化 workflow state（測試用）
 bun scripts/init-workflow.js {workflowType} {sessionId}
-# workflowType 可選：single / quick / standard / full / secure / tdd / debug / refactor / review-only / security-only / build-fix / e2e-only
+# workflowType 可選：single / quick / standard / full / secure / tdd / debug / refactor / review-only / security-only / build-fix / e2e-only / diagnose / clean / db-review
 ```
 
 ## 開發規範

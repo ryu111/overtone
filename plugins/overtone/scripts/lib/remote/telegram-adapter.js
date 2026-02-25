@@ -45,6 +45,7 @@ class TelegramAdapter extends Adapter {
 
     this.token = token;
     this.chatId = options.chatId || null;
+    this._authorizedChatId = options.chatId || null; // 白名單 ID（M-10）
     this.pushEvents = options.pushEvents || DEFAULT_PUSH_EVENTS;
     this.lastUpdateId = 0;
     this._polling = false;
@@ -141,6 +142,11 @@ class TelegramAdapter extends Adapter {
     const chatId = msg.chat.id;
     const text = msg.text.trim();
 
+    // 白名單驗證：TELEGRAM_CHAT_ID 已設定時，拒絕其他 chat 的控制命令（M-10）
+    if (this._authorizedChatId && String(chatId) !== String(this._authorizedChatId)) {
+      return;
+    }
+
     // 解析命令
     if (text.startsWith('/start')) {
       this._handleStart(chatId);
@@ -159,7 +165,10 @@ class TelegramAdapter extends Adapter {
 
   /** /start — 註冊 chat + 歡迎訊息 */
   _handleStart(chatId) {
-    this.chatId = String(chatId);
+    // 僅在未設定白名單時自動學習 chatId
+    if (!this._authorizedChatId) {
+      this.chatId = String(chatId);
+    }
     this._sendMessage(chatId, [
       '🎵 <b>Overtone Remote</b>',
       '',

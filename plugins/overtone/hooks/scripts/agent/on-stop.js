@@ -12,7 +12,7 @@
  */
 
 const { readFileSync } = require('fs');
-const state = require('../../../scripts/lib/state');
+const { readState, updateStateAtomic } = require('../../../scripts/lib/state');
 const timeline = require('../../../scripts/lib/timeline');
 const { stages, workflows, parallelGroups, retryDefaults } = require('../../../scripts/lib/registry');
 
@@ -47,7 +47,7 @@ if (!stageKey) {
 
 // ── 讀取當前狀態 ──
 
-const currentState = state.readState(sessionId);
+const currentState = readState(sessionId);
 if (!currentState) {
   process.stdout.write(JSON.stringify({ result: '' }));
   process.exit(0);
@@ -57,10 +57,6 @@ if (!currentState) {
 
 const result = parseResult(agentOutput, stageKey);
 
-// ── 移除 active agent ──
-
-state.removeActiveAgent(sessionId, agentName);
-
 // ── 找到此 agent 對應的 stage key（可能帶編號如 TEST:2）──
 
 const actualStageKey = findActualStageKey(currentState, stageKey);
@@ -69,12 +65,34 @@ if (!actualStageKey) {
   process.exit(0);
 }
 
-// ── 更新 stage 狀態 ──
+// ── 原子化更新：合併 removeActiveAgent + updateStage + failCount/rejectCount（H-2）──
 
-state.updateStage(sessionId, actualStageKey, {
-  status: 'completed',
-  result: result.verdict,
-  completedAt: new Date().toISOString(),
+const updatedState = updateStateAtomic(sessionId, (s) => {
+  // 1. 移除 active agent
+  delete s.activeAgents[agentName];
+
+  // 2. 更新 stage 狀態
+  if (s.stages[actualStageKey]) {
+    Object.assign(s.stages[actualStageKey], {
+      status: 'completed',
+      result: result.verdict,
+      completedAt: new Date().toISOString(),
+    });
+
+    // 自動推進 currentStage
+    const keys = Object.keys(s.stages);
+    const nextPending = keys.find((k) => s.stages[k].status === 'pending');
+    if (nextPending) s.currentStage = nextPending;
+  }
+
+  // 3. 更新 fail/reject 計數
+  if (result.verdict === 'fail') {
+    s.failCount = (s.failCount || 0) + 1;
+  } else if (result.verdict === 'reject') {
+    s.rejectCount = (s.rejectCount || 0) + 1;
+  }
+
+  return s;
 });
 
 // ── emit timeline 事件 ──
@@ -90,15 +108,11 @@ timeline.emit(sessionId, 'stage:complete', {
   result: result.verdict,
 });
 
-// ── 處理 FAIL / REJECT ──
+// ── 產生提示訊息 ──
 
-const updatedState = state.readState(sessionId);
 const messages = [];
 
 if (result.verdict === 'fail') {
-  updatedState.failCount = (updatedState.failCount || 0) + 1;
-  state.writeState(sessionId, updatedState);
-
   if (updatedState.failCount >= retryDefaults.maxRetries) {
     messages.push(`⛔ 已達重試上限（${retryDefaults.maxRetries} 次）。請人工介入。`);
     timeline.emit(sessionId, 'error:fatal', {
@@ -114,9 +128,6 @@ if (result.verdict === 'fail') {
     });
   }
 } else if (result.verdict === 'reject') {
-  updatedState.rejectCount = (updatedState.rejectCount || 0) + 1;
-  state.writeState(sessionId, updatedState);
-
   if (updatedState.rejectCount >= retryDefaults.maxRetries) {
     messages.push(`⛔ 審查拒絕已達上限（${retryDefaults.maxRetries} 次）。請人工介入。`);
     timeline.emit(sessionId, 'error:fatal', {
@@ -185,14 +196,16 @@ function parseResult(output, stageKey) {
 
   // TESTER / QA / E2E / BUILD-FIX → PASS / FAIL
   if (stageKey === 'TEST' || stageKey === 'QA' || stageKey === 'E2E' || stageKey === 'BUILD-FIX') {
-    // 排除 false positive：「no failures」「0 failed」「test passed without failure」
+    // 排除 false positive（M-3 擴充）
     if ((lower.includes('fail') || lower.includes('失敗'))
-        && !lower.includes('no fail') && !lower.includes('0 fail') && !lower.includes('without fail')) {
+        && !lower.includes('no fail') && !lower.includes('0 fail')
+        && !lower.includes('without fail') && !lower.includes('failure mode')) {
       return { verdict: 'fail' };
     }
-    // 'error' 單獨檢查，排除 'error handling'、'0 errors'
+    // 'error' 單獨檢查，排除 'error handling'、'0 errors'、'error-free'
     if (lower.includes('error') && !lower.includes('0 error') && !lower.includes('no error')
-        && !lower.includes('error handling') && !lower.includes('error recovery')) {
+        && !lower.includes('error handling') && !lower.includes('error recovery')
+        && !lower.includes('error-free') && !lower.includes('error free')) {
       return { verdict: 'fail' };
     }
     return { verdict: 'pass' };
