@@ -27,6 +27,9 @@
     <button @click="tab = 'timeline'" :class="{ active: tab === 'timeline' }">
       📜 時間軸
     </button>
+    <button @click="tab = 'history'; if (!passatk) fetchPassatk()" :class="{ active: tab === 'history' }">
+      📊 歷史
+    </button>
   </nav>
 
   <!-- ═══ Overview Tab ═══ -->
@@ -96,6 +99,62 @@
     <div class="empty-state" x-show="!workflow.workflowType">
       此 session 尚未啟動工作流。使用 /ot:auto 或指定 workflow 開始。
     </div>
+  </section>
+
+  <!-- ═══ History Tab ═══ -->
+  <section x-show="tab === 'history'" x-cloak class="tab-content">
+    <div class="section-header">
+      <h3>📊 Pass@k 統計</h3>
+      <button @click="fetchPassatk()" class="btn-sm">重新整理</button>
+    </div>
+
+    <template x-if="!passatk">
+      <div class="empty-state">載入中…</div>
+    </template>
+
+    <template x-if="passatk">
+      <div>
+        <!-- 整體摘要 -->
+        <div class="stats-row" style="margin-bottom:1rem">
+          <div class="stat-card">
+            <div class="stat-value" x-text="passatk.overall.stageCount ?? '-'"></div>
+            <div class="stat-label">階段數</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" x-text="passatk.overall.pass1Rate != null ? Math.round(passatk.overall.pass1Rate * 100) + '%' : '-'"></div>
+            <div class="stat-label">Pass@1 率</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" x-text="passatk.overall.pass3Rate != null ? Math.round(passatk.overall.pass3Rate * 100) + '%' : '-'"></div>
+            <div class="stat-label">Pass@3 率</div>
+          </div>
+        </div>
+
+        <!-- Stage 明細表格 -->
+        <table class="passatk-table">
+          <thead>
+            <tr>
+              <th>Stage</th>
+              <th>嘗試</th>
+              <th>Pass@1</th>
+              <th>Pass@3</th>
+              <th>Pass^3</th>
+            </tr>
+          </thead>
+          <tbody>
+            <template x-for="[stage, data] in Object.entries(passatk.stages)" :key="stage">
+              <tr>
+                <td x-text="stage"></td>
+                <td x-text="data.attempts.length"></td>
+                <td :class="data.pass1 ? 'pass' : 'fail'" x-text="data.pass1 ? '✅' : '❌'"></td>
+                <td :class="data.pass3 ? 'pass' : 'fail'" x-text="data.pass3 ? '✅' : '❌'"></td>
+                <td x-text="data.passConsecutive3 === null ? '—' : (data.passConsecutive3 ? '✅' : '❌')"></td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
+    </template>
   </section>
 
   <!-- ═══ Timeline Tab ═══ -->
@@ -172,6 +231,7 @@
       timelineFilter: '',
       categories: eventCategories,
       durationTimer: null,
+      passatk: null,
 
       // ── 計算屬性 ──
 
@@ -227,6 +287,13 @@
           const r = await fetch('/api/sessions/' + this.sessionId + '/timeline');
           if (r.ok) this.events = await r.json();
         } catch { /* 網路失敗靜默，SSE 會補送最新事件 */ }
+      },
+
+      async fetchPassatk() {
+        try {
+          const r = await fetch('/api/sessions/' + this.sessionId + '/passatk');
+          if (r.ok) this.passatk = await r.json();
+        } catch { /* 網路失敗靜默，可手動重試 */ }
       },
 
       // ── SSE 連線 ──

@@ -206,6 +206,13 @@ async function handleAPI(path, params, req) {
     return json(sessions.listSessions(filter));
   }
 
+  // GET /api/sessions/:id/passatk
+  const passatkMatch = path.match(/^\/api\/sessions\/([a-zA-Z0-9_-]+)\/passatk$/);
+  if (passatkMatch) {
+    const data = timeline.passAtK(passatkMatch[1]);
+    return json(data, 200, req);
+  }
+
   // GET /api/sessions/:id/timeline
   const timelineMatch = path.match(/^\/api\/sessions\/([a-zA-Z0-9_-]+)\/timeline$/);
   if (timelineMatch) {

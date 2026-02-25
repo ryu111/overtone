@@ -111,4 +111,61 @@ function trimIfNeeded(sessionId) {
   }
 }
 
-module.exports = { emit, query, latest };
+/**
+ * 計算 per-session pass@k 統計
+ * @param {string} sessionId
+ * @returns {{ sessionId, computed, stages, overall }}
+ */
+function passAtK(sessionId) {
+  const events = query(sessionId, { type: 'stage:complete' });
+
+  // 依 stage key 分組
+  const grouped = {};
+  for (const e of events) {
+    if (!e.stage) continue;
+    if (!grouped[e.stage]) grouped[e.stage] = [];
+    grouped[e.stage].push(e);
+  }
+
+  // 每個 stage 依 ts 排序並計算指標
+  const stages = {};
+  for (const [stageKey, stageEvents] of Object.entries(grouped)) {
+    const sorted = [...stageEvents].sort((a, b) => new Date(a.ts) - new Date(b.ts));
+    const attempts = sorted.map(e => ({ result: e.result, ts: e.ts }));
+    const n = attempts.length;
+
+    const pass1 = n >= 1 && attempts[0].result === 'pass';
+    const pass3 = n >= 1 && attempts.slice(0, 3).some(a => a.result === 'pass');
+    const passConsecutive3 = n >= 3
+      ? attempts.slice(-3).every(a => a.result === 'pass')
+      : null;
+
+    stages[stageKey] = { attempts, pass1, pass3, passConsecutive3 };
+  }
+
+  // 計算 overall
+  const stageCount = Object.keys(stages).length;
+  let pass1Count = 0;
+  let pass3Count = 0;
+  for (const s of Object.values(stages)) {
+    if (s.pass1) pass1Count++;
+    if (s.pass3) pass3Count++;
+  }
+
+  const overall = {
+    stageCount,
+    pass1Count,
+    pass3Count,
+    pass1Rate: stageCount > 0 ? parseFloat((pass1Count / stageCount).toFixed(4)) : null,
+    pass3Rate: stageCount > 0 ? parseFloat((pass3Count / stageCount).toFixed(4)) : null,
+  };
+
+  return {
+    sessionId,
+    computed: new Date().toISOString(),
+    stages,
+    overall,
+  };
+}
+
+module.exports = { emit, query, latest, passAtK };

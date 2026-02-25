@@ -520,3 +520,52 @@ section {
   .agent-list { grid-template-columns: 1fr; }
   .stats-grid { grid-template-columns: repeat(3, 1fr); }
 }
+
+/* ── History Tab ── */
+.passatk-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+.passatk-table th,
+.passatk-table td {
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border, #333);
+}
+.passatk-table th {
+  color: var(--text-muted, #888);
+  font-weight: 500;
+}
+.passatk-table td.pass { color: #4ade80; }
+.passatk-table td.fail { color: #f87171; }
+
+/* ── Section Header ── */
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--spacing);
+}
+
+.btn-sm {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--bg-hover);
+  border-radius: var(--radius-sm);
+  padding: 4px 12px;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.btn-sm:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+/* ── Stats Row（水平統計卡片列） ── */
+.stats-row {
+  display: flex;
+  gap: var(--spacing-sm);
+}

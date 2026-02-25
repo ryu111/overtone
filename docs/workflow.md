@@ -635,11 +635,11 @@ Handoff 檔案存在 session 目錄，compact 後 Main Agent 可重新讀取。
 
 ## V1 剩餘 Roadmap
 
-### Dashboard History Tab（session.html 第三個 Tab）
+### Dashboard History Tab（session.html 第三個 Tab）✅
 
-- [ ] History Tab UI（pass@1 / pass@3 / pass^3 統計表格）
-- [ ] pass@k 計算邏輯（從 timeline.jsonl 計算各 stage 的成功率）
-- [ ] timeline.js 新增 `passAtK(sessionId)` 查詢函式
+- [x] History Tab UI（pass@1 / pass@3 / pass^3 統計表格）
+- [x] pass@k 計算邏輯（從 timeline.jsonl 計算各 stage 的成功率）
+- [x] timeline.js 新增 `passAtK(sessionId)` 查詢函式
 
 ### 品質量化：Model Grader
 
