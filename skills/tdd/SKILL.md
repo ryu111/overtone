@@ -41,8 +41,9 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/init-workflow.js tdd ${CLAUDE_SESSION_ID}
 
 ## 失敗處理
 
-- **TEST FAIL**：failCount < 3 → 委派 debugger → developer → tester
-- 達到 3 次上限 → 停止，提示使用者介入
+TEST FAIL → debugger → developer → tester 迴圈（上限 3 次）。達到上限 → 停止，提示使用者介入。
+
+💡 完整流程與 retry 邏輯：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/auto/references/failure-handling.md`
 
 ## 完成條件
 

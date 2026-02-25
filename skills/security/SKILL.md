@@ -22,6 +22,9 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/init-workflow.js security-only ${CLAUDE_SESSI
 - **輸入**：使用者指定的掃描範圍（預設全專案）
 - **產出**：PASS / REJECT（含安全問題嚴重程度分級：Critical/High/Medium/Low）
 
+💡 OWASP Top 10 完整清單與修復指引：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/security/references/owasp-top10-checklist.md`
+💡 報告格式範例：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/security/examples/security-report.md`
+
 ## 失敗處理
 
 - **REJECT**：security-reviewer 輸出安全問題清單，使用者自行決定後續

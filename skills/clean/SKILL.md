@@ -20,6 +20,8 @@ disable-model-invocation: true
 3. 逐一確認後安全刪除（排除動態引用）
 4. 每次刪除後驗證 build + test
 
+💡 工具選擇指南與安全刪除策略：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/clean/references/dead-code-tools-guide.md`
+
 ## 使用場景
 
 - 定期清理專案中的死碼

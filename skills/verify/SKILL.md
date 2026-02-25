@@ -8,64 +8,20 @@ disable-model-invocation: true
 
 依序執行 6 個驗證階段。每階段根據專案類型自動偵測對應命令。
 
-## 階段 1: Build
+💡 完整語言×命令矩陣：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/verify/references/language-commands.md`
 
-偵測並執行構建命令：
-- **Node.js**：`npm run build` 或 `bun run build`
-- **Go**：`go build ./...`
-- **Rust**：`cargo build`
-- **Python**：跳過（通常無構建步驟）
-- **無 build script**：跳過
+## 階段摘要
 
-📋 失敗 → **停止**，回報完整錯誤訊息。
+| # | 階段 | 失敗時 | 說明 |
+|:-:|------|:------:|------|
+| 1 | Build | 📋 停止 | 偵測構建命令並執行 |
+| 2 | Types | 📋 停止 | 型別檢查（tsc/mypy/go vet） |
+| 3 | Lint | 💡 繼續 | 靜態分析，記錄警告數 |
+| 4 | Tests | 📋 停止 | 執行測試套件 |
+| 5 | Security | 💡 繼續 | 基本安全掃描 + .env 檢查 |
+| 6 | Diff | 📊 資訊 | git diff 變更摘要 |
 
-## 階段 2: Types
-
-偵測並執行型別檢查：
-- **TypeScript**：`npx tsc --noEmit`
-- **Python（有 mypy）**：`mypy .`
-- **Go**：`go vet ./...`
-- **無型別工具**：跳過
-
-📋 失敗 → **停止**，回報型別錯誤。
-
-## 階段 3: Lint
-
-偵測並執行靜態分析：
-- **Node.js**：`npx eslint .` 或 `npx biome check .`
-- **Python**：`ruff check .` 或 `flake8 .`
-- **Go**：`golangci-lint run`
-- **無 linter**：跳過
-
-💡 失敗 → **繼續**，記錄警告數量。Lint 不阻擋流程。
-
-## 階段 4: Tests
-
-偵測並執行測試：
-- **Node.js**：`npm test` 或 `bun test`
-- **Python**：`pytest`
-- **Go**：`go test ./...`
-- **Rust**：`cargo test`
-
-📋 失敗 → **停止**，回報失敗的測試案例。
-
-## 階段 5: Security
-
-執行基本安全掃描：
-- **Node.js**：`npm audit --audit-level=high`
-- **Python**：`pip audit`（如有安裝）
-- 💡 檢查是否有 `.env` 檔案被 git 追蹤
-
-💡 結果只報告，不阻擋流程。
-
-## 階段 6: Diff
-
-分析變更影響：
-- 執行 `git diff --stat` 顯示變更摘要
-- 列出新增/修改/刪除的檔案
-- 標注大幅變更的檔案
-
-💡 僅供參考，不判定 pass/fail。
+無對應工具時標記 ⏭️ 跳過，不報錯。
 
 ## 輸出格式
 

@@ -8,14 +8,9 @@ description: Overtone 核心工作流選擇器。分析使用者需求自動選�
 你是 Overtone 工作流引擎的 **Main Agent**。你的職責是分析使用者需求、選擇 workflow、依序委派專職 agent。
 
 ⛔ **MUST 不要自己寫碼** — 委派 developer agent 處理所有程式碼變更。
-
-## 覆寫語法
-
-使用者 prompt 中包含 `[workflow:xxx]` 時，直接使用指定的 workflow，跳過自動選擇。
+覆寫語法：使用者 prompt 中包含 `[workflow:xxx]` 時，直接使用指定的 workflow。
 
 ## 工作流選擇指南
-
-根據使用者需求特徵選擇 workflow：
 
 | 特徵 | Workflow | Stages |
 |------|----------|--------|
@@ -37,7 +32,7 @@ description: Overtone 核心工作流選擇器。分析使用者需求自動選�
 | 「清理死碼」「未使用依賴」 | `/ot:clean` (clean) | REFACTOR |
 | 以上都不適合 | 自訂序列 | 自行編排 agent 組合 |
 
-選好後，讀取對應的 workflow skill（如 `/ot:standard`）取得完整執行指引。
+選好後，讀取對應的 workflow skill 取得完整執行指引。💡 邊界情況範例：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/auto/examples/workflow-selection.md`
 
 ## 14 個 Agent 清單
 
@@ -60,86 +55,29 @@ description: Overtone 核心工作流選擇器。分析使用者需求自動選�
 
 ## 委派方式
 
-使用 **Task** 工具委派 agent。Task prompt 中 📋 MUST 包含：
-
-1. **agent 名稱**：讓 PreToolUse hook 識別
-2. **任務描述**：具體說明要做什麼
-3. **前一階段的 Handoff**：將上個 agent 產出的 Handoff 完整貼入
-4. **BDD spec 路徑**（若有）：`openspec/specs/` 下的檔案
-
-範例：
-```
-委派 developer agent：
-根據 architect 的設計方案實作 user authentication 功能。
-
-## Handoff from architect
-[貼入 architect 的完整 Handoff]
-
-## BDD Spec
-參考 openspec/specs/auth.md 中的行為規格。
-```
+使用 **Task** 工具委派 agent。Task prompt 中 📋 MUST 包含：(1) agent 名稱 (2) 任務描述 (3) 前一階段的 Handoff (4) BDD spec 路徑（若有）。
+💡 Handoff 格式與填寫範例：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/auto/references/handoff-protocol.md`
 
 ## 並行規則
 
-以下 stages 📋 MUST 同時委派（同一訊息中多個 Task 呼叫）：
-
-| 並行群組 | Stages | 使用於 |
-|----------|--------|--------|
-| quality | REVIEW + TEST | quick, standard |
-| verify | QA + E2E | full |
-| secure-quality | REVIEW + TEST + SECURITY | secure |
+同一並行群組 📋 MUST 在同一訊息中多個 Task 同時委派：quality（REVIEW + TEST）、verify（QA + E2E）、secure-quality（REVIEW + TEST + SECURITY）。
+💡 完整規則與語法範例：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/auto/references/parallel-groups.md`
 
 ## BDD 規則
 
-含 PLAN 或 ARCH 的 workflow：DEV 前 📋 MUST 加 TEST:spec。
-
-- **TEST:spec**（DEV 前）：委派 tester，要求撰寫 GIVEN/WHEN/THEN 行為規格
-- **TEST:verify**（DEV 後）：委派 tester，要求撰寫並執行測試驗證
+含 PLAN 或 ARCH 的 workflow：DEV 前 📋 MUST 加 TEST:spec。DEV 後的 TEST 使用 verify 模式。
+💡 BDD 語法與最佳實踐：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/auto/references/bdd-spec-guide.md`
 
 ## 失敗處理
 
-### TESTER FAIL（測試失敗）
-
-1. failCount < 3 → 委派 debugger（診斷）→ developer（修復）→ tester（重驗）
-2. failCount >= 3 → 停止，提示使用者介入
-
-### REVIEWER REJECT（審查拒絕）
-
-1. rejectCount < 3 → 委派 developer（帶 reject 原因修復）→ code-reviewer（再審）
-2. rejectCount >= 3 → 停止，提示使用者介入
-
-## Handoff 格式
-
-每個 agent 完成後輸出 Handoff，格式：
-
-```
-## HANDOFF: {from-agent} → {next-agent}
-
-### Context
-[做了什麼]
-
-### Findings
-[發現和結果]
-
-### Files Modified
-[修改的檔案清單]
-
-### Open Questions
-[未解決的問題]
-```
-
-將完整 Handoff 傳遞給下一個 agent 的 Task prompt。
+TEST FAIL → debugger → developer → tester（上限 3 次）。REVIEW REJECT → developer → code-reviewer（上限 3 次）。SECURITY REJECT（Critical/High）→ 必修復，不可忽略。
+💡 完整流程：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/auto/references/failure-handling.md`
 
 ## OpenSpec 整合
 
-- 大功能（standard/full/secure）→ 啟用 OpenSpec，PLAN 產出 proposal.md，ARCH 產出 design.md + tasks.md
-- 小任務（single/quick/debug）→ 跳過 OpenSpec
+大功能（standard/full/secure）→ 啟用 OpenSpec。小任務（single/quick/debug）→ 跳過。
 
 ## 完成條件
 
-工作流完成 = 所有 stages completed + **三信號**：
-1. lint 0 error
-2. test 0 fail
-3. code-review PASS
-
-確定性信號（lint/test）優先於 AI 判斷（review）。
+所有 stages completed + 三信號（lint 0 error + test 0 fail + code-review PASS）。確定性信號優先於 AI 判斷。
+💡 各 workflow 信號清單：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/auto/references/completion-signals.md`

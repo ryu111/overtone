@@ -93,11 +93,13 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/init-workflow.js full ${CLAUDE_SESSION_ID}
 
 📋 MUST 在 DEV 前執行 TEST:spec。含 DESIGN 階段的 BDD spec 應涵蓋 UI 行為。
 
+💡 BDD 語法與最佳實踐：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/auto/references/bdd-spec-guide.md`
+
 ## 失敗處理
 
-- **TEST/QA/E2E FAIL**：failCount < 3 → 委派 debugger → developer → 重驗
-- **REVIEW REJECT**：rejectCount < 3 → 委派 developer → code-reviewer
-- 達到 3 次上限 → 停止，提示使用者介入
+TEST/QA/E2E FAIL → debugger → developer → 重驗（上限 3 次）。REVIEW REJECT → developer 帶原因修復 → code-reviewer 再審（上限 3 次）。
+
+💡 完整流程與 retry 邏輯：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/auto/references/failure-handling.md`
 
 ## 完成條件
 

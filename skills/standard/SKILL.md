@@ -72,11 +72,13 @@ REVIEW + TEST:verify 屬於 `quality` 並行群組，📋 MUST 同時委派。
 
 📋 MUST 在 DEV 前執行 TEST:spec。tester 撰寫行為規格後，developer 依照規格實作。
 
+💡 BDD 語法與最佳實踐：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/auto/references/bdd-spec-guide.md`
+
 ## 失敗處理
 
-- **TEST FAIL**：failCount < 3 → 委派 debugger → developer → tester
-- **REVIEW REJECT**：rejectCount < 3 → 委派 developer（帶 reject 原因）→ code-reviewer
-- 達到 3 次上限 → 停止，提示使用者介入
+TEST FAIL → debugger → developer → tester 迴圈（上限 3 次）。REVIEW REJECT → developer 帶原因修復 → code-reviewer 再審（上限 3 次）。
+
+💡 完整流程與 retry 邏輯：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/auto/references/failure-handling.md`
 
 ## 完成條件
 

@@ -74,18 +74,15 @@ REVIEW + TEST:verify + SECURITY 屬於 `secure-quality` 並行群組，📋 MUST
 
 ## BDD 規則
 
-📋 MUST 在 DEV 前執行 TEST:spec。安全功能的 BDD spec 應涵蓋：
-- 正常認證/授權流程
-- 無效/過期 token 處理
-- 注入攻擊防護
-- 權限越界嘗試
+📋 MUST 在 DEV 前執行 TEST:spec。安全功能的 BDD spec 應涵蓋正常認證流程、無效 token 處理、注入攻擊防護、權限越界嘗試。
+
+💡 安全 BDD spec 要求與範例：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/auto/references/bdd-spec-guide.md`
 
 ## 失敗處理
 
-- **TEST FAIL**：failCount < 3 → 委派 debugger → developer → tester
-- **REVIEW REJECT**：rejectCount < 3 → 委派 developer → code-reviewer
-- **SECURITY REJECT（Critical/High）**：📋 MUST 修復後再重審，不可忽略
-- 達到 3 次上限 → 停止，提示使用者介入
+TEST FAIL → debugger → developer → tester 迴圈（上限 3 次）。REVIEW REJECT → developer → code-reviewer 再審（上限 3 次）。SECURITY REJECT（Critical/High）→ 📋 MUST 修復後重審，不可忽略。
+
+💡 完整流程與 retry 邏輯：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/auto/references/failure-handling.md`
 
 ## 完成條件
 

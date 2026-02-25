@@ -24,6 +24,9 @@ disable-model-invocation: true
 - **產出**：`openspec/specs/` 中的 GIVEN/WHEN/THEN 行為規格
 - 📋 每個 Feature 至少 3 個 Scenario（happy path + edge case + error）
 
+💡 BDD 完整方法論：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/test/references/bdd-methodology.md`
+💡 BDD spec 範例：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/test/examples/bdd-spec-samples.md`
+
 **Verify 模式**：
 - **輸入**：BDD spec（`openspec/specs/`）+ 程式碼變更
 - **產出**：測試結果（PASS / FAIL）
