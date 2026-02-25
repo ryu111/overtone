@@ -20,7 +20,7 @@ const sessionId = process.env.CLAUDE_SESSION_ID || '';
 
 // 如果使用者已手動輸入 /ot: 命令，不覆蓋
 if (userPrompt.startsWith('/ot:')) {
-  process.stdout.write(JSON.stringify({ result: '' }));
+  process.stdout.write(JSON.stringify({}));
   process.exit(0);
 }
 
@@ -54,4 +54,4 @@ if (currentState && currentState.currentStage) {
   ].join('\n');
 }
 
-process.stdout.write(JSON.stringify({ result: systemMessage }));
+process.stdout.write(JSON.stringify({ hookSpecificOutput: { additionalContext: systemMessage } }));
