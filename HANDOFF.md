@@ -5,7 +5,7 @@
 
 ## 背景
 
-Overtone 是 Vibe（Claude Code marketplace plugin）的進化版。Vibe 的 pipeline 系統過度工程化（15,000 行 hook 做了 ECC 本來就會做的事），Overtone 從零設計，保留 Vibe 的差異化功能（Dashboard、Remote、Timeline），簡化核心工作流到 ~4,270 行。
+Overtone 是 Vibe（Claude Code marketplace plugin）的進化版。Vibe 的 pipeline 系統過度工程化（15,000 行 hook 做了 ECC 本來就會做的事），Overtone 從零設計，保留 Vibe 的差異化功能（Dashboard、Remote、Timeline），簡化核心工作流。目前 scripts + hooks 約 3,700 行，全專案（含 agents/skills/web/tests）約 9,900 行。
 
 ### 借鏡的專案
 
@@ -20,94 +20,72 @@ Overtone 是 Vibe（Claude Code marketplace plugin）的進化版。Vibe 的 pip
 | 項目 | 狀態 | 說明 |
 |------|:----:|------|
 | 設計文件 | ✅ | `docs/workflow.md` v0.3（55 個決策） |
-| registry.js | ✅ | 14 stages、12 workflows、agentModels、timelineEvents、remoteCommands、instinctDefaults |
+| registry.js | ✅ | 14 stages、15 workflows、agentModels、timelineEvents、remoteCommands、instinctDefaults |
 | CLAUDE.md | ✅ | 專案規則文件 |
 | Plugin manifest | ✅ | plugin.json + marketplace.json |
 | ECC 參考文件 | ✅ | 4 份分析文件在 docs/reference/ |
 | 目錄骨架 | ✅ | agents/、skills/、hooks/、scripts/、web/、docs/ |
 | Phase 1 | ✅ | 核心 lib（paths/state/timeline/registry）+ 5 hook |
 | Phase 2 | ✅ | 14 agent .md prompt 檔案 |
-| Phase 3 | ✅ | 18 skill SKILL.md + 2 helper scripts |
+| Phase 3 | ✅ | 27 skill SKILL.md + helper scripts |
 | Phase 4 | ✅ | Dashboard（Bun HTTP + SSE + htmx + Alpine.js） |
 | Phase 5 | ✅ | Remote（EventBus + DashboardAdapter + TelegramAdapter） |
 | Phase 6 | ✅ | Instinct（instinct.js + PostToolUse hook）|
 | Phase 7 | ✅ | Loop 模式（loop.js + tasks.md checkbox）|
 | Phase 8 | ✅ | 補齊 4 個 agent skill + 清理 2 個廢棄空目錄 |
+| Phase 9 | ✅ | Agent frontmatter 補齊 + 4 個新 Skill 消除孤立 agent |
+| Phase 10 | ✅ | Skill 三層載入優化（16 個 references/examples + 14 個 SKILL.md 瘦身）|
+| Phase 11 | ✅ | v0.10.0 全面優化 — 安全修復 + 結構優化 + 測試覆蓋（6 個測試檔、81 tests）|
+| Phase 12 | ✅ | v0.11.0 審計修復 — CAS 原子更新 + CORS + 閉包 + 防抖 + 白名單（84 tests）|
 
-## 待實作
+## 設計規格記錄（存檔）
+
+> 以下為原始設計規格，所有 Phase 均已實作完成（Phase 1-12）。
+> 保留此區塊作為設計決策的歷史參考，實際實作可能有所調整。
+> 權威來源：程式碼本身 + `docs/workflow.md`
+
+<details>
+<summary>Phase 1-7 原始設計規格（點擊展開）</summary>
 
 ### Phase 1：核心基礎設施
 
-**目標**：讓最基本的工作流能跑
-
-| 優先 | 項目 | 行數預估 | 說明 |
-|:----:|------|:--------:|------|
-| P0 | `scripts/lib/paths.js` | ~60 | 統一路徑解析（~/.overtone/sessions/{id}/） |
-| P0 | `scripts/lib/state.js` | ~100 | workflow.json 讀寫（readState/writeState/updateStage） |
-| P0 | `scripts/lib/timeline.js` | ~80 | JSONL emit/query |
-| P0 | `hooks/hooks.json` 擴充 | - | 新增 5 個 hook 事件 |
-| P0 | `hooks/scripts/prompt/on-submit.js` | ~50 | UserPromptSubmit → systemMessage 指向 /ot:auto |
-| P0 | `hooks/scripts/agent/on-stop.js` | ~200 | SubagentStop: 記錄 + 提示 + 寫 state |
-| P0 | `hooks/scripts/session/on-start.js` | ~40 | 更新：初始化 + Dashboard spawn |
-| P0 | `hooks/scripts/tool/pre-task.js` | ~100 | PreToolUse(Task): 擋跳過必要階段 |
-| P0 | `hooks/scripts/session/on-stop.js` | ~120 | Stop: Loop + 完成度 + Dashboard |
+| 優先 | 項目 | 說明 |
+|:----:|------|------|
+| P0 | `scripts/lib/paths.js` | 統一路徑解析（~/.overtone/sessions/{id}/） |
+| P0 | `scripts/lib/state.js` | workflow.json 讀寫（含 CAS 原子更新） |
+| P0 | `scripts/lib/timeline.js` | JSONL emit/query |
+| P0 | `hooks/hooks.json` | 6 個 hook 事件 |
+| P0 | `hooks/scripts/prompt/on-submit.js` | UserPromptSubmit → systemMessage 指向 /ot:auto |
+| P0 | `hooks/scripts/agent/on-stop.js` | SubagentStop: 記錄 + 提示 + 寫 state |
+| P0 | `hooks/scripts/session/on-start.js` | 初始化 + Dashboard spawn |
+| P0 | `hooks/scripts/tool/pre-task.js` | PreToolUse(Task): 擋跳過必要階段 |
+| P0 | `hooks/scripts/session/on-stop.js` | Stop: Loop + 完成度 + Dashboard |
 
 ### Phase 2：Agent 檔案（14 個）
 
-**目標**：建立所有 agent 的 .md prompt
+每個 agent .md 包含：frontmatter（model、color、permissionMode）、角色定義、邊界清單(DO/DON'T)、輸出格式、停止條件、工具列表。
 
-每個 agent .md 需要包含：
-- frontmatter（model、color、permissionMode）
-- 角色定義（你是誰、做什麼）
-- 邊界清單（DO/DON'T）
-- 輸出格式（PIPELINE_ROUTE、Handoff）
-- 停止條件
-- 工具列表
+### Phase 3：核心 Skills（27 個）
 
-**優先順序**：developer → tester → code-reviewer → debugger → planner → architect → 其他
-
-### Phase 3：核心 Skills
-
-| 優先 | Skill | 說明 |
-|:----:|-------|------|
-| P0 | `/ot:auto` | 核心選擇器 — Main Agent 讀取後自行選擇 workflow |
-| P1 | `/ot:verify` | 統一 6 階段驗證（Build→Types→Lint→Tests→Security→Diff） |
-| P1 | 各 workflow skill | standard/full/secure/tdd/debug 等 workflow 的具體指引 |
-| P2 | `/ot:stop` | 退出 Loop |
-| P2 | `/ot:dashboard` | Dashboard 控制 |
-| P2 | `/ot:evolve` | 手動觸發 Instinct 進化 |
+`/ot:auto`（核心選擇器）、`/ot:verify`（驗證）、各 workflow skill、`/ot:stop`、`/ot:dashboard`、`/ot:evolve` 等。
 
 ### Phase 4：Dashboard
 
-| 項目 | 說明 |
-|------|------|
-| `scripts/server.js` | Bun HTTP + SSE server |
-| `web/index.html` | htmx + Alpine.js 三 Tab 頁面 |
-| `web/styles.css` | 簡潔樣式 |
-| Dashboard Adapter | EventBus → SSE 推送 |
+`scripts/server.js`（Bun HTTP + SSE）、`web/index.html`（htmx + Alpine.js）、Dashboard Adapter。
 
 ### Phase 5：Remote
 
-| 項目 | 說明 |
-|------|------|
-| `scripts/lib/remote/event-bus.js` | 核心 EventBus（5 軸） |
-| `scripts/lib/remote/adapter.js` | Adapter 介面定義 |
-| `scripts/lib/remote/dashboard-adapter.js` | WebSocket/SSE 雙向 |
-| `scripts/lib/remote/telegram-adapter.js` | Telegram Bot API |
+EventBus + Adapter 架構（Dashboard + Telegram）。
 
 ### Phase 6：Instinct 系統
 
-| 項目 | 說明 |
-|------|------|
-| `scripts/lib/instinct.js` | 觀察收集 + 信心分數 + 衰減 |
-| `hooks/scripts/tool/post-use.js` | PostToolUse: 自動收集觀察 |
+`instinct.js`（觀察收集 + 信心分數 + 衰減）、PostToolUse hook 自動收集。
 
 ### Phase 7：Loop 模式
 
-| 項目 | 說明 |
-|------|------|
-| `scripts/lib/loop.js` | Loop state 管理 |
-| Stop hook Loop 邏輯 | tasks.md checkbox 檢查 + 重注入 prompt |
+`loop.js`（Loop state 管理）、Stop hook（tasks.md checkbox 檢查 + 重注入 prompt）。
+
+</details>
 
 ## 關鍵設計決策摘要
 
