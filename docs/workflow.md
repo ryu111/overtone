@@ -1,6 +1,6 @@
 # Overtone Workflow 設計文件
 
-> 版本：v0.3 | 狀態：全 9 面向 55 個決策完成
+> 版本：v0.4 | 狀態：Phase 1-12 完成，V1 剩餘見 Roadmap 章節
 
 ## 設計哲學
 
@@ -57,7 +57,7 @@ Main Agent 讀取 `/ot:auto` Skill 內容後自行判斷最適合的工作流模
 
 ---
 
-## 工作流模板（12 個）
+## 工作流模板（15 個）
 
 ### 基本模板（5 個）
 
@@ -83,9 +83,17 @@ Main Agent 讀取 `/ot:auto` Skill 內容後自行判斷最適合的工作流模
 | 11 | `build-fix` | 修構建 | BUILD-FIX | 最小修復構建錯誤 |
 | 12 | `e2e-only` | E2E 測試 | E2E | 只跑端對端測試 |
 
+### 新增模板（3 個）
+
+| # | Key | 名稱 | Stages | 用途 |
+|:-:|-----|------|--------|------|
+| 13 | `diagnose` | 純診斷 | DEBUG | 只診斷不修復 |
+| 14 | `clean` | 死碼清理 | REFACTOR | 清理未使用程式碼 |
+| 15 | `db-review` | DB 審查 | DB-REVIEW | 資料庫專項審查 |
+
 ### 自訂序列
 
-無使用者語法。當 12 個模板都不適合時，Main Agent 自行判斷 agent 組合並依序委派。
+無使用者語法。當 15 個模板都不適合時，Main Agent 自行判斷 agent 組合並依序委派。
 
 ---
 
@@ -576,14 +584,14 @@ Remote Core（核心引擎）
 
 | 事件 | 職責 | 行數預估 |
 |------|------|:-------:|
-| **SessionStart** | 顯示 banner + 初始化狀態 + 啟動 Dashboard | ~40 |
-| **UserPromptSubmit** | 注入 systemMessage 指向 /ot:auto | ~50 |
-| **PreToolUse (Task)** | 擋跳過必要階段 | ~100 |
-| **SubagentStop** | 記錄結果 + 提示下一步 + 寫 workflow.json + emit timeline | ~200 |
-| **PostToolUse** | Instinct 觀察收集 | ~60 |
-| **Stop** | Loop 迴圈 + 完成度檢查 + Dashboard 通知 | ~120 |
+| **SessionStart** | 顯示 banner + 初始化狀態 + 啟動 Dashboard | ~60 |
+| **UserPromptSubmit** | 注入 systemMessage 指向 /ot:auto | ~80 |
+| **PreToolUse (Task)** | 擋跳過必要階段 | ~150 |
+| **SubagentStop** | 記錄結果 + 提示下一步 + 寫 workflow.json + emit timeline | ~380 |
+| **PostToolUse** | Instinct 觀察收集 | ~100 |
+| **Stop** | Loop 迴圈 + 完成度檢查 + Dashboard 通知 | ~160 |
 
-**總計：~570 行**
+**總計：~930 行**
 
 ### Hook 職責邊界
 
@@ -619,134 +627,40 @@ Handoff 檔案存在 session 目錄，compact 後 Main Agent 可重新讀取。
 
 ---
 
-## 程式碼量預估
+## 決策記錄
 
-| 模組 | Vibe 行數 | Overtone 預估 | 減少 |
-|------|:---------:|:------------:|:----:|
-| Hook 總計 | ~15,000 | ~570 | **-96%** |
-| 工作流核心 | ~4,947 | ~350 (registry + helpers) | **-93%** |
-| Dashboard server | ~800 | ~600 (htmx SSE) | -25% |
-| Dashboard 前端 | ~2,000 | ~1,200 (htmx+Alpine) | -40% |
-| Timeline | ~500 | ~400 | -20% |
-| Loop | ~300 | ~150 | -50% |
-| Instinct 系統 | 0 | ~400 | 新增 |
-| Remote Core | ~500 | ~600 (EventBus+Adapter) | +20% |
-| **合計** | ~24,047 | ~4,270 | **-82%** |
+55 個決策全部確認，詳見 git history。
 
 ---
 
-## 決策記錄（55 個）
+## V1 剩餘 Roadmap
 
-### 面向 1：核心工作流引擎（26 個）
+### Dashboard History Tab（session.html 第三個 Tab）
 
-| # | 決策 | 結果 | 來源 |
-|:-:|------|------|:----:|
-| 1.1 | 啟動機制 | Main Agent 主動選擇 | wk |
-| 1.2 | 人類確認 | 不確認，直接執行 | ECC |
-| 1.3 | 選擇表呈現 | Hook systemMessage + Skill 雙路徑 | - |
-| 1.4 | Hook 阻擋 | 只擋「跳過必要階段」 | - |
-| 1.5 | Main 寫碼 | Hook → /ot:auto → Skill 三層引導（不硬擋） | ECC+wk |
-| 1.6 | 完成判定 | stages 全 completed + lint/test 三信號 | Vibe |
-| 1.7 | 工作流種類 | 全部 ECC 工作流 + 手動/自動 | ECC |
-| 1.8 | 命令前綴 | `ot:` | - |
-| 1.9 | 自動觸發 | /ot:auto 由 Main Agent 判斷 | wk |
-| 1.10 | 失敗處理 | FAIL → DEBUG → DEV，3 次上限 | wk |
-| 1.11 | 上下文傳遞 | Handoff 檔案 | ECC |
-| 1.12 | Human Gate | 不保留 | ECC |
-| 1.13 | 自訂序列 | Main Agent 自行編排 | - |
-| 1.14 | Handoff 路徑 | ~/.overtone/sessions/{id}/handoffs/ | - |
-| 1.15 | 狀態設計 | workflow.json 含 activeAgents | - |
-| 1.16 | Context 壓縮 | 邏輯邊界提示 | ECC |
-| 1.17 | Loop | 預設開啟，V1 就做 | wk |
-| 1.18 | Loop 退出 | checkbox 完成 / /ot:stop / max iterations | wk |
-| 1.19 | 靜態並行 | 同一訊息多 Task（wk 風格） | wk |
-| 1.20 | 動態並行 | tasks.md (parallel) + files，V1 做 | wk |
-| 1.21 | 多模型分析 | V2 做 /ot:multi-review | ECC |
-| 1.22 | 自訂序列 | Main Agent 自行編排 | - |
-| 1.23 | 模板數量 | 12 個（5 基本 + 7 ECC） | ECC |
-| 1.24 | Timeline | 中等集 18 種事件 | - |
-| 1.25 | 失敗流程 | FAIL → DEBUGGER → DEV → TEST | wk |
-| 1.26 | 錯誤升級 | 不升級，統一 3 次上限 | wk |
+- [ ] History Tab UI（pass@1 / pass@3 / pass^3 統計表格）
+- [ ] pass@k 計算邏輯（從 timeline.jsonl 計算各 stage 的成功率）
+- [ ] timeline.js 新增 `passAtK(sessionId)` 查詢函式
 
-### 面向 2：Agent 系統設計（16 個）
+### 品質量化：Model Grader
 
-| # | 決策 | 結果 |
-|:-:|------|------|
-| 2.1 | Agent 數量 | 14 個（Vibe 12 - pipeline-architect + debugger + refactor-cleaner + database-reviewer） |
-| 2.2 | Model 策略 | 可設定，預設有分級 |
-| 2.3 | 權限分離 | 由 2.12 覆蓋 |
-| 2.4 | 信心過濾 | code-reviewer >80% |
-| 2.5 | Debugger 設計 | wk 風格：診斷 + Handoff（不寫碼） |
-| 2.6 | Refactor-cleaner | ECC 風格：knip/depcheck 自動化 |
-| 2.7 | 測試模式 | **BDD 導向** |
-| 2.8 | 語言特化 | 不採用，用 Knowledge Skills |
-| 2.9 | DB 審查 | 專職 database-reviewer |
-| 2.10 | Prompt 模式 | ECC 全套（信心+邊界+誤判+停止） |
-| 2.11 | 顏色 | 按功能歸類 6 組 |
-| 2.12 | permissionMode | 全部 bypassPermissions |
-| 2.13 | Model 分配 | 4 Opus + 9 Sonnet + 1 Haiku |
-| 2.14 | Agent 通訊 | 只用 Handoff 檔案 |
-| 2.15 | 擴充機制 | V2 再做 |
-| 2.16 | 最終清單 | 已確認 14 agent |
+- [ ] Haiku 評分整合（錯誤訊息友善度、API 命名清晰度、文件可讀性）
+- [ ] grader 結果儲存到 timeline.jsonl
+- [ ] History Tab 顯示 grader 分數
 
-### 面向 3：並行與編排（7 個）
+### `[workflow:xxx]` 覆寫語法
 
-| # | 決策 | 結果 |
-|:-:|------|------|
-| 3.1 | 並行上限 | 無硬上限，依 tasks.md |
-| 3.2 | 並行失敗 | 失敗隔離，其他繼續 |
-| 3.3 | 檔案衝突 | 不偵測，信任分配 |
-| 3.4 | 並行收斂 | Main Agent 自行收斂 |
-| 3.5 | 並行群組 | 三個夠用（quality/verify/secure-quality） |
-| 3.6 | 編排模式 | 順序 + 並行 |
-| 3.7 | 編排命令 | 不需要專門命令 |
+- [ ] `on-submit.js` 解析 prompt 中的 `[workflow:xxx]` 語法
+- [ ] 跳過 /ot:auto 判斷，直接啟動指定 workflow
 
-### 面向 4：Dashboard + Remote + Timeline（7 個）
+### Dashboard 動畫版（V1 尾聲）
 
-| # | 決策 | 結果 |
-|:-:|------|------|
-| 4.1 | Dashboard | 完整保留，提升穩定度 |
-| 4.2 | Remote | EventBus + Adapter 抽象化。V1: Dashboard + Telegram |
-| 4.3 | Timeline 儲存 | JSONL append-only |
-| 4.4 | 技術栈 | Bun + htmx + Alpine.js |
-| 4.5 | 內容版型 | 三 Tab 簡化版 + 動畫版（V1 尾聲） |
-| 4.6 | 自動啟動 | 自動 spawn + 自動開瀏覽器 |
-| 4.7 | 事件類型 | 18 種，8 分類，中文顯示 |
+- [ ] Stage 轉換動畫
+- [ ] Agent 活動動態指示器
 
-### 面向 5：持續學習（4 個）
+## V2 Planned（延後）
 
-| # | 決策 | 結果 |
-|:-:|------|------|
-| 5.1 | 學習機制 | ECC Instinct 系統 |
-| 5.2 | 觀察來源 | ECC 4 種 pattern |
-| 5.3 | 信心衰減 | ECC 完整分數系統 |
-| 5.4 | 進化目標 | Skill + Agent + Command |
+- `/ot:multi-review`（多模型審查）
+- Slack Adapter
+- Discord Adapter
+- 使用者自定義 Agent 擴充
 
-### 面向 6：驗證循環（2 個）
-
-| # | 決策 | 結果 |
-|:-:|------|------|
-| 6.1 | 統一驗證 | /ot:verify 統一 6 階段 + 保留單獨命令 |
-| 6.2 | 三信號 | 採用（lint + test + review） |
-
-### 面向 7：品質量化（2 個）
-
-| # | 決策 | 結果 |
-|:-:|------|------|
-| 7.1 | pass@k | 採用，記錄在 History Tab |
-| 7.2 | 品質系統 | BDD + pass@k + Model Grader |
-
-### 面向 8：OpenSpec（2 個）
-
-| # | 決策 | 結果 |
-|:-:|------|------|
-| 8.1 | OpenSpec | 可選模式，大功能自動啟用 |
-| 8.2 | 路徑 | 專案根 openspec/ |
-
-### 面向 9：BDD 整合（3 個）
-
-| # | 決策 | 結果 |
-|:-:|------|------|
-| 9.1 | BDD 格式 | Markdown GIVEN/WHEN/THEN |
-| 9.2 | Spec 位置 | openspec/specs/ |
-| 9.3 | 整合方式 | 含 PLAN/ARCH 的 workflow 加 TEST:spec 在 DEV 前 |
