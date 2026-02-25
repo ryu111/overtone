@@ -54,4 +54,4 @@ if (currentState && currentState.currentStage) {
   ].join('\n');
 }
 
-process.stdout.write(JSON.stringify({ hookSpecificOutput: { additionalContext: systemMessage } }));
+process.stdout.write(JSON.stringify({ additionalContext: systemMessage }));

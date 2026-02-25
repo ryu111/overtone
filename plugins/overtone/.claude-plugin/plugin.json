@@ -1,0 +1,23 @@
+{
+  "name": "ot",
+  "version": "0.9.0",
+  "description": "Overtone — 有規範的 Vibe。簡化工作流 + 即時監控 + 遠端控制。",
+  "skills": ["./skills/"],
+  "agents": [
+    "./agents/planner.md",
+    "./agents/architect.md",
+    "./agents/designer.md",
+    "./agents/developer.md",
+    "./agents/debugger.md",
+    "./agents/code-reviewer.md",
+    "./agents/security-reviewer.md",
+    "./agents/database-reviewer.md",
+    "./agents/tester.md",
+    "./agents/qa.md",
+    "./agents/e2e-runner.md",
+    "./agents/build-error-resolver.md",
+    "./agents/refactor-cleaner.md",
+    "./agents/doc-updater.md"
+  ],
+  "permissions": []
+}
