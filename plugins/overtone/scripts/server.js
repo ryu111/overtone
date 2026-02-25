@@ -339,11 +339,16 @@ function renderSessionCards(sessionList) {
 
 async function serveStatic(path) {
   const relativePath = path.replace('/static/', '');
-  const filePath = resolve(join(WEB_DIR, 'styles', relativePath));
+  const filePath = resolve(join(WEB_DIR, relativePath));
 
-  // 路徑穿越防護：確保解析後的路徑仍在 styles 目錄內
-  const stylesDir = resolve(join(WEB_DIR, 'styles'));
-  if (!filePath.startsWith(stylesDir)) {
+  // 路徑穿越防護：確保解析後的路徑仍在 web 目錄內
+  const webDirResolved = resolve(WEB_DIR);
+  if (!filePath.startsWith(webDirResolved + '/')) {
+    return new Response('404 Not Found', { status: 404 });
+  }
+
+  // 禁止直接存取 HTML 模板（含伺服端模板變數）
+  if (extname(filePath) === '.html') {
     return new Response('404 Not Found', { status: 404 });
   }
 

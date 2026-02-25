@@ -159,7 +159,7 @@ class EventBus {
           }, 50);
         });
       }
-    } catch {}
+    } catch { /* workflow.json 尚不存在或無法監聽 */ }
 
     // 監聽 timeline.jsonl（50ms 防抖）
     let timelineDebounce = null;
@@ -177,7 +177,7 @@ class EventBus {
           }, 50);
         });
       }
-    } catch {}
+    } catch { /* timeline.jsonl 尚不存在或無法監聽 */ }
 
     // 監聽 session 目錄（捕捉新建檔案）
     try {
@@ -193,7 +193,7 @@ class EventBus {
               // 推送初始狀態
               const data = state.readState(sessionId);
               if (data) this.push(sessionId, 'workflow', data);
-            } catch {}
+            } catch { /* watcher 建立失敗，下次檔案變更時重試 */ }
           }
           if (filename === 'timeline.jsonl' && !watcherState.tw) {
             try {
@@ -205,11 +205,11 @@ class EventBus {
                   this.push(sessionId, 'timeline', event);
                 }
               });
-            } catch {}
+            } catch { /* watcher 建立失敗，下次檔案變更時重試 */ }
           }
         });
       }
-    } catch {}
+    } catch { /* 目錄監聽不影響既有 watcher */ }
 
     this.watchers.set(sessionId, watcherState);
   }
@@ -255,7 +255,7 @@ class EventBus {
 
     // 斷開所有 Adapter
     for (const adapter of this.adapters) {
-      try { adapter.disconnect(); } catch {}
+      try { adapter.disconnect(); } catch { /* 斷開失敗不阻擋清理流程 */ }
     }
   }
 
