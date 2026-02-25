@@ -153,6 +153,35 @@
             </template>
           </tbody>
         </table>
+
+        <!-- Grader 評分 -->
+        <template x-if="graderScores.length > 0">
+          <div style="margin-top:1.5rem">
+            <h4 style="margin-bottom:0.5rem; color:var(--text-muted,#888)">Grader 品質評分</h4>
+            <table class="passatk-table">
+              <thead>
+                <tr>
+                  <th>Stage / Agent</th>
+                  <th>清晰度</th>
+                  <th>完整度</th>
+                  <th>可操作性</th>
+                  <th>綜合</th>
+                </tr>
+              </thead>
+              <tbody>
+                <template x-for="s in graderScores" :key="s.ts">
+                  <tr>
+                    <td x-text="s.stage + ' / ' + (s.agent || '-')"></td>
+                    <td :class="scoreClass(s.scores?.clarity)" x-text="s.scores?.clarity ?? '-'"></td>
+                    <td :class="scoreClass(s.scores?.completeness)" x-text="s.scores?.completeness ?? '-'"></td>
+                    <td :class="scoreClass(s.scores?.actionability)" x-text="s.scores?.actionability ?? '-'"></td>
+                    <td :class="scoreClass(s.scores?.overall)" x-text="s.scores?.overall ?? '-'"></td>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
+          </div>
+        </template>
       </div>
     </template>
   </section>
@@ -256,6 +285,9 @@
       get filteredEvents() {
         if (!this.timelineFilter) return this.events;
         return this.events.filter(e => e.category === this.timelineFilter);
+      },
+      get graderScores() {
+        return this.events.filter(e => e.type === 'grader:score');
       },
 
       // ── 生命週期 ──
@@ -386,6 +418,14 @@
         } catch {
           return iso;
         }
+      },
+
+      scoreClass(score) {
+        if (score == null) return '';
+        const n = parseFloat(score);
+        if (n >= 4) return 'score-high';
+        if (n >= 3) return 'score-mid';
+        return 'score-low';
       },
 
       formatEventDetail(event) {

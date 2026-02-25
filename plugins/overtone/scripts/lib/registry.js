@@ -127,6 +127,9 @@ const timelineEvents = {
   'parallel:start':     { label: '並行啟動',   category: 'parallel' },
   'parallel:converge':  { label: '並行收斂',   category: 'parallel' },
 
+  // grader 類（1）
+  'grader:score':       { label: 'Grader 評分', category: 'grader' },
+
   // error 類（1）
   'error:fatal':        { label: '嚴重錯誤',   category: 'error' },
 

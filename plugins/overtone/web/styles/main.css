@@ -569,3 +569,11 @@ section {
   display: flex;
   gap: var(--spacing-sm);
 }
+
+/* ── Grader 評分 ── */
+.score-high { color: #4ade80; }
+.score-mid  { color: #facc15; }
+.score-low  { color: #f87171; }
+
+/* grader 分類色條 */
+.timeline-event.cat-grader { border-left: 3px solid var(--color-pink); }

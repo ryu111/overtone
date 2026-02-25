@@ -641,11 +641,11 @@ Handoff 檔案存在 session 目錄，compact 後 Main Agent 可重新讀取。
 - [x] pass@k 計算邏輯（從 timeline.jsonl 計算各 stage 的成功率）
 - [x] timeline.js 新增 `passAtK(sessionId)` 查詢函式
 
-### 品質量化：Model Grader
+### 品質量化：Model Grader ✅
 
-- [ ] Haiku 評分整合（錯誤訊息友善度、API 命名清晰度、文件可讀性）
-- [ ] grader 結果儲存到 timeline.jsonl
-- [ ] History Tab 顯示 grader 分數
+- [x] Haiku 評分整合（clarity / completeness / actionability 三維度 1-5 分）
+- [x] grader 結果儲存到 timeline.jsonl（`grader:score` 事件）
+- [x] History Tab 顯示 grader 分數（表格 + 色彩視覺化）
 
 ### `[workflow:xxx]` 覆寫語法 ✅
 
