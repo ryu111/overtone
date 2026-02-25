@@ -15,10 +15,10 @@ description: Overtone 核心工作流選擇器。分析使用者需求自動選�
 | 特徵 | Workflow | Stages |
 |------|----------|--------|
 | 一行修改、改設定、改文字 | `/ot:dev` (single) | DEV |
-| 小 bug 修復、簡單功能 | `/ot:quick` (quick) | DEV → [REVIEW + TEST] |
-| 新功能、中型任務 | `/ot:standard` (standard) | PLAN → ARCH → T:spec → DEV → [R + T:verify] → DOCS |
-| 大型功能、跨模組 | `/ot:full` (full) | PLAN → ARCH → DESIGN → T:spec → DEV → [R + T:verify] → [QA + E2E] → DOCS |
-| 涉及認證/支付/安全 | `/ot:secure` (secure) | PLAN → ARCH → T:spec → DEV → [R + T:verify + SECURITY] → DOCS |
+| 小 bug 修復、簡單功能 | `/ot:quick` (quick) | DEV → [REVIEW + TEST] → RETRO |
+| 新功能、中型任務 | `/ot:standard` (standard) | PLAN → ARCH → T:spec → DEV → [R + T:verify] → RETRO → DOCS |
+| 大型功能、跨模組 | `/ot:full` (full) | PLAN → ARCH → DESIGN → T:spec → DEV → [R + T:verify] → [QA + E2E] → RETRO → DOCS |
+| 涉及認證/支付/安全 | `/ot:secure` (secure) | PLAN → ARCH → T:spec → DEV → [R + T:verify + SECURITY] → RETRO → DOCS |
 | 使用者要求先寫測試 | `/ot:tdd` (tdd) | TEST:spec → DEV → TEST:verify |
 | 「修 bug」「為什麼壞了」 | `/ot:debug` (debug) | DEBUG → DEV → TEST |
 | 「重構」「清理」 | `/ot:refactor` (refactor) | ARCH → T:spec → DEV → REVIEW → T:verify |
@@ -34,7 +34,7 @@ description: Overtone 核心工作流選擇器。分析使用者需求自動選�
 
 選好後，讀取對應的 workflow skill 取得完整執行指引。💡 邊界情況範例：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/auto/examples/workflow-selection.md`
 
-## 14 個 Agent 清單
+## 15 個 Agent 清單
 
 | Agent | Emoji | Stage | 做什麼 |
 |-------|:-----:|-------|--------|
@@ -51,6 +51,7 @@ description: Overtone 核心工作流選擇器。分析使用者需求自動選�
 | e2e-runner | 🌐 | E2E | E2E 自動化測試（Playwright/Cypress） |
 | build-error-resolver | 🔨 | BUILD-FIX | 最小化修復構建錯誤 |
 | refactor-cleaner | 🧹 | REFACTOR | 死碼清理（knip/depcheck） |
+| retrospective | 🔁 | RETRO | 最終回顧（Quality Gate 全通過後，信心 ≥70% 才報問題） |
 | doc-updater | 📝 | DOCS | 文件同步 |
 
 ## 委派方式

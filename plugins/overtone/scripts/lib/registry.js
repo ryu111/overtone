@@ -6,7 +6,7 @@
  * 所有模組統一從此處 import。
  */
 
-// Stage 定義（14 個 agent 對應 12 個 stage）
+// Stage 定義（15 個 stage，每個對應一個 agent）
 const stages = {
   PLAN:       { label: '規劃',     emoji: '📋', agent: 'planner',             color: 'purple' },
   ARCH:       { label: '架構',     emoji: '🏗️', agent: 'architect',           color: 'cyan'   },
@@ -21,16 +21,18 @@ const stages = {
   E2E:        { label: 'E2E',     emoji: '🌐', agent: 'e2e-runner',          color: 'green'  },
   'BUILD-FIX':{ label: '修構建',   emoji: '🔨', agent: 'build-error-resolver', color: 'orange' },
   REFACTOR:   { label: '清理',     emoji: '🧹', agent: 'refactor-cleaner',    color: 'blue'   },
+  RETRO:      { label: '回顧',     emoji: '🔁', agent: 'retrospective',       color: 'purple' },
   DOCS:       { label: '文件',     emoji: '📝', agent: 'doc-updater',         color: 'purple' },
 };
 
 // Agent Model 分配（可透過環境變數覆蓋）
 const agentModels = {
-  // Opus（4 個決策型）
+  // Opus（5 個決策型）
   'planner':           'opus',
   'architect':         'opus',
   'code-reviewer':     'opus',
   'security-reviewer': 'opus',
+  'retrospective':     'opus',
 
   // Sonnet（9 個執行型）
   'designer':            'sonnet',
@@ -52,10 +54,10 @@ const agentModels = {
 const workflows = {
   // 基本模板（5 個）
   'single':        { label: '單步修改',   stages: ['DEV'] },
-  'quick':         { label: '快速開發',   stages: ['DEV', 'REVIEW', 'TEST'] },
-  'standard':      { label: '標準功能',   stages: ['PLAN', 'ARCH', 'TEST', 'DEV', 'REVIEW', 'TEST', 'DOCS'] },
-  'full':          { label: '完整功能',   stages: ['PLAN', 'ARCH', 'DESIGN', 'TEST', 'DEV', 'REVIEW', 'TEST', 'QA', 'E2E', 'DOCS'] },
-  'secure':        { label: '高風險',     stages: ['PLAN', 'ARCH', 'TEST', 'DEV', 'REVIEW', 'TEST', 'SECURITY', 'DOCS'] },
+  'quick':         { label: '快速開發',   stages: ['DEV', 'REVIEW', 'TEST', 'RETRO'] },
+  'standard':      { label: '標準功能',   stages: ['PLAN', 'ARCH', 'TEST', 'DEV', 'REVIEW', 'TEST', 'RETRO', 'DOCS'] },
+  'full':          { label: '完整功能',   stages: ['PLAN', 'ARCH', 'DESIGN', 'TEST', 'DEV', 'REVIEW', 'TEST', 'QA', 'E2E', 'RETRO', 'DOCS'] },
+  'secure':        { label: '高風險',     stages: ['PLAN', 'ARCH', 'TEST', 'DEV', 'REVIEW', 'TEST', 'SECURITY', 'RETRO', 'DOCS'] },
 
   // 特化模板（7 個，來自 ECC）
   'tdd':           { label: '測試驅動',   stages: ['TEST', 'DEV', 'TEST'] },

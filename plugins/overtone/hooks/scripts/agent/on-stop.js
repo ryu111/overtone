@@ -139,6 +139,9 @@ if (result.verdict === 'fail') {
     messages.push(`🔙 審查拒絕（${updatedState.rejectCount}/${retryDefaults.maxRetries}）`);
     messages.push('⏭️ 下一步：委派 DEVELOPER 修復（帶 reject 原因）→ REVIEWER 再審');
   }
+} else if (result.verdict === 'issues') {
+  messages.push(`🔁 ${stages[stageKey]?.emoji || ''} ${stages[stageKey]?.label || stageKey}回顧完成：發現改善建議`);
+  messages.push('💡 可選：觸發 /ot:auto 新一輪優化（記錄 retroCount），或繼續完成剩餘 stages');
 } else {
   // PASS — 檢查並行收斂 + 提示下一步
   messages.push(`✅ ${stages[stageKey].emoji} ${stages[stageKey].label}完成`);
@@ -215,6 +218,17 @@ function parseResult(output, stageKey) {
         && !lower.includes('error handling') && !lower.includes('error recovery')
         && !lower.includes('error-free') && !lower.includes('error free')) {
       return { verdict: 'fail' };
+    }
+    return { verdict: 'pass' };
+  }
+
+  // RETRO → PASS / ISSUES（有改善建議，不算 fail）
+  // 排除 false positive：「no issues」「0 issues」等 PASS 情境的自然語言
+  if (stageKey === 'RETRO') {
+    if ((lower.includes('issues') || lower.includes('改善建議') || lower.includes('建議優化'))
+        && !lower.includes('no issues') && !lower.includes('0 issues')
+        && !lower.includes('no significant issues') && !lower.includes('without issues')) {
+      return { verdict: 'issues' };
     }
     return { verdict: 'pass' };
   }

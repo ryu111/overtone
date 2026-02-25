@@ -76,7 +76,15 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/init-workflow.js full ${CLAUDE_SESSION_ID}
   - **輸入**：developer 的 Handoff
   - **產出**：PASS / FAIL（端對端自動化測試）
 
-### 10. DOCS — 📝 文件
+### 10. RETRO — 🔁 迭代回顧
+
+委派 `retrospective` agent。
+
+- **輸入**：所有前面階段的 Handoff（含 QA + E2E 結果）
+- **產出**：PASS（無重要問題）/ ISSUES（有改善建議）
+- 💡 ISSUES → Main Agent 可選觸發 /ot:auto 新一輪優化（上限 3 次）
+
+### 11. DOCS — 📝 文件
 
 委派 `doc-updater` agent。
 
@@ -103,5 +111,5 @@ TEST/QA/E2E FAIL → debugger → developer → 重驗（上限 3 次）。REVIE
 
 ## 完成條件
 
-- ✅ 所有 10 個 stage 完成
-- ✅ lint 0 error + test 0 fail + code-review PASS + QA PASS + E2E PASS
+- ✅ 所有 11 個 stage 完成
+- ✅ lint 0 error + test 0 fail + code-review PASS + QA PASS + E2E PASS + RETRO PASS（或 ISSUES 已決策）

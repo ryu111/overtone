@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 'use strict';
 /**
- * validate-agents.js — 驗證 14 個 agent .md 檔案的正確性
+ * validate-agents.js — 驗證 15 個 agent .md 檔案的正確性
  *
  * 檢查項目：
- *   1. agents/ 目錄下有 14 個 .md 檔案
+ *   1. agents/ 目錄下有 15 個 .md 檔案
  *   2. 每個檔案有合法的 YAML frontmatter
  *   3. frontmatter.name 與 registry.js stages 中的 agent name 一一對應
  *   4. frontmatter.model 與 registry.js agentModels 一致
@@ -21,7 +21,7 @@ const { stages, agentModels } = require('./lib/registry');
 const AGENTS_DIR = join(__dirname, '..', 'agents');
 
 // 唯讀型 agent（不應有 Write/Edit 工具）
-const READ_ONLY_AGENTS = ['planner', 'architect', 'designer', 'code-reviewer', 'debugger'];
+const READ_ONLY_AGENTS = ['planner', 'architect', 'designer', 'code-reviewer', 'debugger', 'retrospective'];
 
 let errors = 0;
 let warnings = 0;

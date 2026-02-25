@@ -61,7 +61,15 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/init-workflow.js secure ${CLAUDE_SESSION_ID}
   - **輸入**：developer 的 Handoff + architect 的安全架構設計
   - **產出**：PASS / REJECT（含安全問題嚴重程度分級）
 
-### 8. DOCS — 📝 文件
+### 8. RETRO — 🔁 迭代回顧
+
+委派 `retrospective` agent。
+
+- **輸入**：所有前面階段的 Handoff（含安全審查結果）
+- **產出**：PASS（無重要問題）/ ISSUES（有改善建議）
+- 💡 ISSUES → Main Agent 可選觸發 /ot:auto 新一輪優化（上限 3 次）
+
+### 9. DOCS — 📝 文件
 
 委派 `doc-updater` agent。
 
@@ -86,5 +94,5 @@ TEST FAIL → debugger → developer → tester 迴圈（上限 3 次）。REVIE
 
 ## 完成條件
 
-- ✅ 所有 8 個 stage 完成
-- ✅ lint 0 error + test 0 fail + code-review PASS + security PASS
+- ✅ 所有 9 個 stage 完成
+- ✅ lint 0 error + test 0 fail + code-review PASS + security PASS + RETRO PASS（或 ISSUES 已決策）

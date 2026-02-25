@@ -96,3 +96,38 @@ code-reviewer REJECT → developer（帶 reject 原因修復）→ code-reviewer
 2. REVIEW REJECT 達到 3 次上限
 3. agent 回報無法處理的錯誤（如缺少必要依賴）
 4. 循環中出現相同的失敗原因（無進展）
+
+## RETRO ISSUES 處理
+
+當 retrospective agent 回報 ISSUES：
+
+```
+retrospective ISSUES → Main Agent 評估建議 → (選擇觸發 /ot:auto) → retrospective（上限 3 次）
+```
+
+### 流程細節
+
+1. **Main Agent 評估**
+   - 閱讀 retrospective 的 Handoff，了解具體改善建議
+   - 評估建議重要性和修復成本
+
+2. **選擇觸發新一輪**（可選）
+   - 建立新任務，觸發 /ot:auto 新一輪
+   - retroCount 遞增
+
+3. **選擇繼續完成**（可選）
+   - 將建議記錄到 Handoff
+   - 繼續完成剩餘 stages（如 DOCS）
+
+### 重試上限
+
+- `retroCount < 3` → 可繼續迭代
+- `retroCount >= 3` → **停止迭代**，繼續完成 workflow
+
+### 與其他失敗的差異
+
+| 類型 | 計數器 | 強制修復？ |
+|------|--------|-----------|
+| TEST FAIL | failCount | ✅ 是 |
+| REVIEW REJECT | rejectCount | ✅ 是 |
+| RETRO ISSUES | retroCount | ❌ 否（可選） |
