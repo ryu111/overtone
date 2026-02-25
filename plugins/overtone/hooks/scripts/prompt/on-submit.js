@@ -6,10 +6,12 @@
  * 觸發：每次使用者送出 prompt
  * 作用：在 system context 注入工作流選擇器指引
  * 例外：使用者已手動使用 /ot: 命令時不注入
+ * 覆寫：prompt 含 [workflow:xxx] 時直接指定 workflow，跳過 /ot:auto
  */
 
 const { readFileSync } = require('fs');
 const state = require('../../../scripts/lib/state');
+const { workflows } = require('../../../scripts/lib/registry');
 
 // 從 stdin 讀取 hook input
 const input = JSON.parse(readFileSync('/dev/stdin', 'utf8'));
@@ -24,11 +26,27 @@ if (userPrompt.startsWith('/ot:')) {
   process.exit(0);
 }
 
+// 解析 [workflow:xxx] 覆寫語法
+const workflowOverrideMatch = userPrompt.match(/\[workflow:([a-z0-9_-]+)\]/i);
+const workflowOverride = workflowOverrideMatch ? workflowOverrideMatch[1].toLowerCase() : null;
+
+// 驗證覆寫的 workflow key 是否合法（若不合法則忽略，回到正常流程）
+const validWorkflowOverride = workflowOverride && workflows[workflowOverride] ? workflowOverride : null;
+
 // 如果已有進行中的 workflow，提供狀態摘要而非重新觸發 /ot:auto
 const currentState = sessionId ? state.readState(sessionId) : null;
 let systemMessage;
 
-if (currentState && currentState.currentStage) {
+if (validWorkflowOverride) {
+  // 使用者指定了 workflow 覆寫 → 直接告知使用指定 workflow
+  const workflowDef = workflows[validWorkflowOverride];
+  systemMessage = [
+    `[Overtone] 使用者指定了 workflow：${validWorkflowOverride}（${workflowDef.label}）。`,
+    `請直接執行此 workflow，不需要執行 /ot:auto 判斷。`,
+    `讀取對應的 workflow skill：/ot:${validWorkflowOverride} 取得完整執行指引。`,
+    `⛔ MUST 依照 workflow skill 指引委派 agent，不要自己寫碼。`,
+  ].join('\n');
+} else if (currentState && currentState.currentStage) {
   const { currentStage, stages, workflowType, failCount, rejectCount } = currentState;
   const stageStatus = Object.entries(stages)
     .map(([k, v]) => {

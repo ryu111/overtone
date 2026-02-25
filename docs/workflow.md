@@ -647,10 +647,10 @@ Handoff 檔案存在 session 目錄，compact 後 Main Agent 可重新讀取。
 - [ ] grader 結果儲存到 timeline.jsonl
 - [ ] History Tab 顯示 grader 分數
 
-### `[workflow:xxx]` 覆寫語法
+### `[workflow:xxx]` 覆寫語法 ✅
 
-- [ ] `on-submit.js` 解析 prompt 中的 `[workflow:xxx]` 語法
-- [ ] 跳過 /ot:auto 判斷，直接啟動指定 workflow
+- [x] `on-submit.js` 解析 prompt 中的 `[workflow:xxx]` 語法
+- [x] 跳過 /ot:auto 判斷，直接啟動指定 workflow
 
 ### Dashboard 動畫版（V1 尾聲）
 
