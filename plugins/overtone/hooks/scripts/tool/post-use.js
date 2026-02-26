@@ -8,6 +8,7 @@
  * V1 偵測範圍：
  *   error_resolutions  — Bash 非零 exit code（指令失敗）
  *   tool_preferences   — Grep/Glob 工具使用偏好
+ *   wording_mismatch   — .md 文件 emoji-關鍵詞強度不匹配
  *
  * V2 預留：
  *   user_corrections   — 使用者糾正後的行為改變
@@ -17,6 +18,7 @@
  */
 
 const instinct = require('../../../scripts/lib/instinct');
+const fs = require('fs');
 
 // ── 主流程 ──
 
@@ -49,6 +51,32 @@ async function main() {
     }
   } catch {
     // 觀察失敗靜默處理，不影響工具執行
+  }
+
+  // V1 Pattern 3：wording_mismatch — .md 文件 emoji-關鍵詞不匹配偵測
+  if (toolName === 'Edit' || toolName === 'Write') {
+    const filePath = toolInput.file_path;
+    const wordingWarnings = detectWordingMismatch(filePath);
+    if (wordingWarnings.length > 0) {
+      try {
+        // 記錄到 Instinct 系統
+        instinct.emit(
+          sessionId,
+          'wording_mismatch',
+          `措詞不匹配（${wordingWarnings.length} 處，${filePath}）`,
+          '偵測到 emoji-關鍵詞不匹配',
+          'emoji-keyword'
+        );
+      } catch {
+        // Instinct emit 失敗靜默處理
+      }
+      // 輸出 systemMessage 警告
+      const output = {
+        result: `[Overtone 措詞檢查] 偵測到 emoji-關鍵詞不匹配（${filePath}）：\n${wordingWarnings.join('\n')}\n參考：docs/reference/wording-guide.md`,
+      };
+      process.stdout.write(JSON.stringify(output));
+      process.exit(0);
+    }
   }
 
   process.exit(0);
@@ -104,6 +132,71 @@ function observeSearchToolPreference(sessionId, toolName) {
   );
 }
 
+// ── Pattern 3：措詞不匹配偵測 ──
+
+/**
+ * 三個 emoji-關鍵詞不匹配規則
+ * - 💡（軟引導）不應搭配強制關鍵字（MUST/ALWAYS/NEVER）
+ * - 📋（強規則）不應搭配建議關鍵字（consider/may/could）
+ * - ⛔（硬阻擋）不應搭配軟語氣關鍵字（should/consider/may/prefer/could）
+ */
+const WORDING_RULES = [
+  {
+    pattern: /💡\s*(MUST|ALWAYS|NEVER|MUST\s*NOT)\b/,
+    emoji: '💡', level: '軟引導', matchLevel: '強規則/硬阻擋',
+    suggestion: '💡 應搭配 should/prefer，強制規則請改用 📋 或 ⛔',
+  },
+  {
+    pattern: /📋\s*(consider|may\s|could\s)/i,
+    emoji: '📋', level: '強規則', matchLevel: '建議用詞',
+    suggestion: '📋 應搭配 MUST/ALWAYS，建議請改用 🔧',
+  },
+  {
+    pattern: /⛔\s*(should|consider|may\s|prefer|could\s)/i,
+    emoji: '⛔', level: '硬阻擋', matchLevel: '軟引導/建議',
+    suggestion: '⛔ 應搭配 NEVER/MUST NOT，軟引導請改用 💡',
+  },
+];
+
+/**
+ * 掃描 .md 檔案，偵測 emoji-關鍵詞不匹配的行
+ * @param {string|undefined} filePath - 目標檔案路徑
+ * @returns {string[]} 警告訊息陣列（空陣列表示無問題）
+ */
+function detectWordingMismatch(filePath) {
+  // 只偵測 .md 檔案
+  if (!filePath?.endsWith('.md')) return [];
+
+  let content;
+  try {
+    content = fs.readFileSync(filePath, 'utf8');
+  } catch {
+    return [];
+  }
+
+  const warnings = [];
+  const lines = content.split('\n').slice(0, 1000); // 上限 1000 行
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    // 排除 Markdown 表格行（以 | 開頭），避免說明用的對照表產生誤報
+    if (line.trimStart().startsWith('|')) continue;
+
+    for (const rule of WORDING_RULES) {
+      const match = line.match(rule.pattern);
+      if (match) {
+        warnings.push(
+          `  第 ${i + 1} 行：${line.trim()}\n` +
+          `  → ${rule.emoji}（${rule.level}）不應搭配「${match[1]}」（${rule.matchLevel}）。${rule.suggestion}`
+        );
+        break; // 每行只報告第一個問題
+      }
+    }
+  }
+
+  return warnings;
+}
+
 // ── 輔助函式 ──
 
 /**
@@ -153,4 +246,9 @@ function readStdin() {
   });
 }
 
-main().catch(() => process.exit(0));
+if (require.main === module) {
+  main().catch(() => process.exit(0));
+}
+
+// 供測試使用
+module.exports = { detectWordingMismatch, WORDING_RULES };

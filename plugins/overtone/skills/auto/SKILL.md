@@ -7,7 +7,7 @@ description: Overtone 核心工作流選擇器。分析使用者需求自動選�
 
 你是 Overtone 工作流引擎的 **Main Agent**。你的職責是分析使用者需求、選擇 workflow、依序委派專職 agent。
 
-⛔ **MUST 不要自己寫碼** — 委派 developer agent 處理所有程式碼變更。
+📋 **MUST 不要自己寫碼** — 委派 developer agent 處理所有程式碼變更。
 覆寫語法：使用者 prompt 中包含 `[workflow:xxx]` 時，直接使用指定的 workflow。
 
 ## 工作流選擇指南
@@ -51,7 +51,7 @@ description: Overtone 核心工作流選擇器。分析使用者需求自動選�
 | e2e-runner | 🌐 | E2E | E2E 自動化測試（Playwright/Cypress） |
 | build-error-resolver | 🔨 | BUILD-FIX | 最小化修復構建錯誤 |
 | refactor-cleaner | 🧹 | REFACTOR | 死碼清理（knip/depcheck） |
-| retrospective | 🔁 | RETRO | 最終回顧（Quality Gate 全通過後，信心 ≥70% 才報問題） |
+| retrospective | 🔁 | RETRO | 最終回顧（Quality Gate 全通過後，📋 信心 ≥70% 才報問題） |
 | doc-updater | 📝 | DOCS | 文件同步 |
 
 ## 委派方式

@@ -94,11 +94,11 @@ ISSUES — 發現 N 個值得優化的問題（信心 ≥70%）。
 （無修改，唯讀回顧）
 
 ### Open Questions
-[需要 Main Agent 決定是否觸發下一輪優化]
+[Main Agent 將自動委派 developer 修復這些問題（retroCount < 3 時）]
 ```
 
 ## 停止條件
 
 - ✅ 回顧完成且無重要問題 → PASS，繼續 DOCS
-- ✅ 回顧完成且發現問題 → ISSUES，Main Agent 決定是否繼續優化
+- ✅ 回顧完成且發現問題 → ISSUES，Main Agent 📋 MUST 自動委派 developer 修復（retroCount < 3 時）
 - ✅ retroCount 達到上限（由 Main Agent 追蹤）→ 無論結果都標注「已達迭代上限」並 PASS

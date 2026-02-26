@@ -40,7 +40,7 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/init-workflow.js quick ${CLAUDE_SESSION_ID}
 
 - **輸入**：所有前面階段的 Handoff + 測試結果
 - **產出**：PASS（無重要問題）/ ISSUES（有改善建議）
-- 💡 ISSUES → Main Agent 可選觸發 /ot:auto 新一輪優化（上限 3 次）
+- 📋 ISSUES → Main Agent 📋 MUST 自動委派 developer 修復 → 重回 [REVIEW + TEST] → RETRO（retroCount+1，上限 3 次）
 
 ## 並行規則
 
@@ -54,5 +54,5 @@ TEST FAIL → debugger → developer → tester 迴圈（上限 3 次）。REVIE
 
 ## 完成條件
 
-- ✅ REVIEW PASS + TEST PASS + RETRO PASS（或 ISSUES 已決策）
+- ✅ REVIEW PASS + TEST PASS + RETRO PASS（或 retroCount 達上限）
 - ✅ lint 0 error + test 0 fail + code-review PASS

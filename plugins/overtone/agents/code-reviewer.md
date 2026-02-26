@@ -30,6 +30,7 @@ tools:
 - 📋 檢查 error handling 是否完整
 - 📋 確認沒有引入安全漏洞（硬編碼 secrets、SQL injection）
 - 💡 檢查測試覆蓋度是否合理
+- 💡 審查涉及 .md 文件的變更時，檢查指令強度用詞（emoji 符號與關鍵詞強度需匹配）；參考 `docs/reference/wording-guide.md` 的反模式清單，信心 ≥80% 才回報
 
 ## DON'T（⛔ NEVER）
 

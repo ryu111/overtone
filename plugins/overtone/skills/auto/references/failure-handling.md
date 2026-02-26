@@ -102,27 +102,27 @@ code-reviewer REJECT → developer（帶 reject 原因修復）→ code-reviewer
 當 retrospective agent 回報 ISSUES：
 
 ```
-retrospective ISSUES → Main Agent 評估建議 → (選擇觸發 /ot:auto) → retrospective（上限 3 次）
+retrospective ISSUES → developer（修復建議）→ [REVIEW + TEST] → retrospective（上限 3 次）
 ```
 
 ### 流程細節
 
-1. **Main Agent 評估**
-   - 閱讀 retrospective 的 Handoff，了解具體改善建議
-   - 評估建議重要性和修復成本
-
-2. **選擇觸發新一輪**（可選）
-   - 建立新任務，觸發 /ot:auto 新一輪
+1. **Main Agent 自動評估並觸發修復**
+   - 閱讀 retrospective 的 Handoff，理解具體改善建議
+   - 📋 MUST 自動委派 developer 修復所有 ISSUES（📋 MUST NOT 詢問用戶）
    - retroCount 遞增
 
-3. **選擇繼續完成**（可選）
-   - 將建議記錄到 Handoff
-   - 繼續完成剩餘 stages（如 DOCS）
+2. **重跑 quality gate**
+   - 📋 MUST 修復後重新並行執行 [REVIEW + TEST]，確認修復有效
+   - 通過後再次委派 retrospective 執行下一輪回顧
+
+3. **達到上限時**
+   - `retroCount >= 3` → 📋 MUST 停止迭代，繼續完成剩餘 stages（如 DOCS）
 
 ### 重試上限
 
-- `retroCount < 3` → 可繼續迭代
-- `retroCount >= 3` → **停止迭代**，繼續完成 workflow
+- `retroCount < 3` → 📋 MUST 繼續修復迴圈
+- `retroCount >= 3` → 📋 停止迭代，繼續完成 workflow
 
 ### 與其他失敗的差異
 
@@ -130,4 +130,4 @@ retrospective ISSUES → Main Agent 評估建議 → (選擇觸發 /ot:auto) →
 |------|--------|-----------|
 | TEST FAIL | failCount | ✅ 是 |
 | REVIEW REJECT | rejectCount | ✅ 是 |
-| RETRO ISSUES | retroCount | ❌ 否（可選） |
+| RETRO ISSUES | retroCount | ✅ 是（上限 3 次） |

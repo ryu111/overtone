@@ -35,7 +35,7 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/init-workflow.js secure ${CLAUDE_SESSION_ID}
 
 - **輸入**：architect 的 Handoff
 - **產出**：`openspec/specs/` 中的 GIVEN/WHEN/THEN 行為規格
-- 💡 安全相關功能的 BDD spec 應包含異常路徑和攻擊場景
+- 📋 安全相關功能的 BDD spec MUST 包含異常路徑和攻擊場景
 
 ### 4. DEV — 💻 開發
 
@@ -67,7 +67,7 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/init-workflow.js secure ${CLAUDE_SESSION_ID}
 
 - **輸入**：所有前面階段的 Handoff（含安全審查結果）
 - **產出**：PASS（無重要問題）/ ISSUES（有改善建議）
-- 💡 ISSUES → Main Agent 可選觸發 /ot:auto 新一輪優化（上限 3 次）
+- 📋 ISSUES → Main Agent 📋 MUST 自動委派 developer 修復 → 重回 [REVIEW + TEST] → RETRO（retroCount+1，上限 3 次）
 
 ### 9. DOCS — 📝 文件
 
@@ -95,4 +95,4 @@ TEST FAIL → debugger → developer → tester 迴圈（上限 3 次）。REVIE
 ## 完成條件
 
 - ✅ 所有 9 個 stage 完成
-- ✅ lint 0 error + test 0 fail + code-review PASS + security PASS + RETRO PASS（或 ISSUES 已決策）
+- ✅ lint 0 error + test 0 fail + code-review PASS + security PASS + RETRO PASS（或 retroCount 達上限）

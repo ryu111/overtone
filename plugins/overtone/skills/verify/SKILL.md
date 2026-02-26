@@ -16,9 +16,9 @@ disable-model-invocation: true
 |:-:|------|:------:|------|
 | 1 | Build | 📋 停止 | 偵測構建命令並執行 |
 | 2 | Types | 📋 停止 | 型別檢查（tsc/mypy/go vet） |
-| 3 | Lint | 💡 繼續 | 靜態分析，記錄警告數 |
+| 3 | Lint | 📋 繼續 | 靜態分析，記錄警告數 |
 | 4 | Tests | 📋 停止 | 執行測試套件 |
-| 5 | Security | 💡 繼續 | 基本安全掃描 + .env 檢查 |
+| 5 | Security | 📋 繼續 | 基本安全掃描 + .env 檢查 |
 | 6 | Diff | 📊 資訊 | git diff 變更摘要 |
 
 無對應工具時標記 ⏭️ 跳過，不報錯。
