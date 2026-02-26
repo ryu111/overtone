@@ -1,6 +1,6 @@
 {
   "name": "ot",
-  "version": "0.12.0",
+  "version": "0.12.1",
   "description": "Overtone — 有規範的 Vibe。簡化工作流 + 即時監控 + 遠端控制。",
   "skills": [
     "./skills/"
@@ -20,6 +20,7 @@
     "./agents/build-error-resolver.md",
     "./agents/refactor-cleaner.md",
     "./agents/retrospective.md",
-    "./agents/doc-updater.md"
+    "./agents/doc-updater.md",
+    "./agents/grader.md"
   ]
 }

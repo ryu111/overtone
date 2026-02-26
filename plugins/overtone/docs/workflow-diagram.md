@@ -70,7 +70,7 @@ flowchart TB
     PASS -->|"REJECT（≤3次）"| DEV
     PASS -->|"全部通過"| RETRO
 
-    subgraph RETRO_BOX["🔁 Retrospective Agent（待實作）"]
+    subgraph RETRO_BOX["🔁 Retrospective Agent（retroCount ≤3）"]
         RETRO["回顧所有產出\n信心門檻 70%"]
         RETRO --> RCHECK{"發現重要問題？"}
         RCHECK -->|"有（信心 ≥70%）"| ROUT["📝 輸出迭代回顧.md\n建立新任務"]

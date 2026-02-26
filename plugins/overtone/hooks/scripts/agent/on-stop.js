@@ -222,8 +222,9 @@ function parseResult(output, stageKey) {
         && !lower.includes('without fail') && !lower.includes('failure mode')) {
       return { verdict: 'fail' };
     }
-    // 'error' 單獨檢查，排除 'error handling'、'0 errors'、'error-free'
+    // 'error' 單獨檢查，排除 'error handling'、'0 errors'、'error-free'、'without error'
     if (lower.includes('error') && !lower.includes('0 error') && !lower.includes('no error')
+        && !lower.includes('without error')
         && !lower.includes('error handling') && !lower.includes('error recovery')
         && !lower.includes('error-free') && !lower.includes('error free')) {
       return { verdict: 'fail' };

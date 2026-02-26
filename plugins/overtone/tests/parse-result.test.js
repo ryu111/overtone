@@ -28,12 +28,17 @@ function parseResult(output, stageKey) {
   }
 
   if (stageKey === 'TEST' || stageKey === 'QA' || stageKey === 'E2E' || stageKey === 'BUILD-FIX') {
+    // 排除 false positive（M-3 擴充）
     if ((lower.includes('fail') || lower.includes('失敗'))
-        && !lower.includes('no fail') && !lower.includes('0 fail') && !lower.includes('without fail')) {
+        && !lower.includes('no fail') && !lower.includes('0 fail')
+        && !lower.includes('without fail') && !lower.includes('failure mode')) {
       return { verdict: 'fail' };
     }
+    // 'error' 單獨檢查，排除 'error handling'、'0 errors'、'error-free'、'without error'
     if (lower.includes('error') && !lower.includes('0 error') && !lower.includes('no error')
-        && !lower.includes('error handling') && !lower.includes('error recovery')) {
+        && !lower.includes('without error')
+        && !lower.includes('error handling') && !lower.includes('error recovery')
+        && !lower.includes('error-free') && !lower.includes('error free')) {
       return { verdict: 'fail' };
     }
     return { verdict: 'pass' };
@@ -140,6 +145,14 @@ describe('parseResult — TEST/QA/E2E stages', () => {
 
   test('BUILD-FIX 同樣適用', () => {
     expect(parseResult('Build failed: missing dependency', 'BUILD-FIX')).toEqual({ verdict: 'fail' });
+  });
+
+  test('failure mode → pass（false positive 防護）', () => {
+    expect(parseResult('all tests ran without error in failure mode analysis', 'TEST')).toEqual({ verdict: 'pass' });
+  });
+
+  test('error-free → pass（false positive 防護）', () => {
+    expect(parseResult('The test suite is now error-free after fixes', 'TEST')).toEqual({ verdict: 'pass' });
   });
 });
 
