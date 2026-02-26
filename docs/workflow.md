@@ -160,7 +160,7 @@ Main Agent 讀取 `/ot:auto` Skill 內容後自行判斷最適合的工作流模
 
 **tester (BDD)**：BDD 導向
 - 產出：Markdown GIVEN/WHEN/THEN spec → 轉為測試碼
-- Spec 存放：openspec/specs/
+- Spec 存放：specs/
 - 兩種模式：TEST:spec（寫規格，DEV 前）、TEST:verify（跑測試，DEV 後）
 
 **database-reviewer**：專職 DB 審查
@@ -340,7 +340,7 @@ rejectCount < 3？
 
 ### BDD Spec 格式
 
-Markdown GIVEN/WHEN/THEN，存放在 `openspec/specs/`：
+Markdown GIVEN/WHEN/THEN，存放在 `specs/`：
 
 ```markdown
 # Feature: 使用者登入
@@ -453,21 +453,21 @@ Instinct 建立（原子知識）
 
 ---
 
-## OpenSpec 整合
+## Specs 系統整合
 
 ### 可選模式
 
-/ot:auto 判斷是否啟用 OpenSpec：
+/ot:auto 判斷是否啟用 Specs 系統：
 
 ```
 大功能（standard/full/secure）
-  → 啟用 OpenSpec
+  → 啟用 Specs 系統
   → PLAN 產出 proposal.md
   → ARCH 產出 design.md + tasks.md
   → DEV 按 tasks.md 執行
 
 小任務（single/quick/debug）
-  → 跳過 OpenSpec
+  → 跳過 Specs 系統
   → 直接執行
 ```
 
@@ -475,9 +475,10 @@ Instinct 建立（原子知識）
 
 ```
 {project_root}/
-└── openspec/
-    ├── specs/         # BDD spec + 規格文件
-    └── changes/       # 執行中的變更
+└── specs/
+    ├── README.md      # Specs 系統文件
+    ├── (feature-name).md  # 功能規格
+    └── ...
 ```
 
 ---
@@ -542,9 +543,9 @@ Remote Core（核心引擎）
 └── config.json               # 全域設定
 
 {project_root}/
-└── openspec/
-    ├── specs/                # BDD spec + 規格文件（版控）
-    └── changes/              # 執行中的變更
+└── specs/
+    ├── README.md             # Specs 系統文件
+    └── (feature-name).md     # 功能規格檔（版控）
 ```
 
 ### workflow.json

@@ -74,7 +74,7 @@ db-review:  DB-REVIEW
 | Dashboard | Bun HTTP + htmx + Alpine.js (SSE) |
 | Remote | EventBus + Adapter（V1: Dashboard + Telegram） |
 | State | workflow.json + timeline.jsonl (JSONL append-only) |
-| Spec | OpenSpec（可選，大功能自動啟用） |
+| Spec | Specs 系統（可選，大功能自動啟用） |
 
 ## 目錄結構
 
@@ -95,7 +95,7 @@ plugins/overtone/                # Plugin 根目錄
 │   ├── dashboard/               # Dashboard 程序管理
 │   └── remote/                  # EventBus + Adapter（Dashboard、Telegram）
 ├── web/                         # Dashboard 前端（htmx + Alpine.js）
-├── tests/                       # 6 個測試檔（bun test）
+├── tests/                       # 13 個測試檔（bun test）
 ├── docs/
 │   ├── workflow.md              # 完整設計文件（55 個決策）
 │   └── reference/               # ECC 分析參考文件
@@ -113,7 +113,7 @@ plugins/overtone/                # Plugin 根目錄
 └── observations.jsonl    # Instinct 觀察
 ```
 
-## Hook 架構（6 個，~930 行）
+## Hook 架構（6 個，~1153 行）
 
 | 事件 | 職責 |
 |------|------|

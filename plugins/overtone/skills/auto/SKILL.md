@@ -74,9 +74,9 @@ description: Overtone 核心工作流選擇器。分析使用者需求自動選�
 TEST FAIL → debugger → developer → tester（上限 3 次）。REVIEW REJECT → developer → code-reviewer（上限 3 次）。SECURITY REJECT（Critical/High）→ 必修復，不可忽略。
 💡 完整流程：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/auto/references/failure-handling.md`
 
-## OpenSpec 整合
+## Specs 系統整合
 
-大功能（standard/full/secure）→ 啟用 OpenSpec。小任務（single/quick/debug）→ 跳過。
+大功能（standard/full/secure）→ 啟用 Specs 系統。小任務（single/quick/debug）→ 跳過。
 
 ## 完成條件
 
