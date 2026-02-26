@@ -46,7 +46,9 @@ specs/
 │   ├── in-progress/
 │   │   └── {feature}/       ← 正在進行（kebab-case）
 │   │       ├── tasks.md     ← frontmatter + checkbox list
-│   │       └── bdd.md       ← BDD 行為規格（有 TEST:spec 時）
+│   │       ├── bdd.md       ← BDD 行為規格（有 TEST:spec 時）
+│   │       ├── proposal.md  ← 需求分析（有 PLAN 時，planner 撰寫）
+│   │       └── design.md    ← 技術設計（有 ARCH 時，architect 撰寫）
 │   ├── backlog/
 │   │   └── {feature}/       ← 暫停或待辦
 │   └── archive/
@@ -63,19 +65,7 @@ specs/
 
 ## tasks.md 格式
 
-```markdown
----
-feature: {featureName}
-status: in-progress
-workflow: {workflowType}
-created: {ISO8601}
----
-
-## Tasks
-
-- [ ] tasks（依 workflow 類型自動生成）
-- [ ] bdd
-```
+格式見 `skills/specs/examples/tasks-sample.md`
 
 ## Workflow 與 Specs 的對應
 

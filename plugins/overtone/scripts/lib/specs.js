@@ -21,12 +21,26 @@ const {
 } = require('fs');
 const { join } = require('path');
 const { atomicWrite } = require('./utils');
+const matter = require('gray-matter');
 
 // ── 正規表達式 ──
 
-const FM_REGEX = /^---\n([\s\S]*?)\n---/;
-const KV_REGEX = /^(\w[\w-]*):\s*(.+)$/gm;
 const KEBAB_CASE_REGEX = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+
+// gray-matter engine：用 matchAll 解析 key: value，避免 js-yaml 的 timestamp 自動轉型
+const MATTER_OPTS = {
+  engines: {
+    yaml: {
+      parse: (str) => {
+        const result = {};
+        for (const [, k, v] of str.matchAll(/^([\w-]+):\s*(.+)$/gm)) {
+          result[k] = v.trim();
+        }
+        return result;
+      },
+    },
+  },
+};
 const CHECKBOX_UNCHECKED_REGEX = /^[\s]*-\s\[ \]/gm;
 const CHECKBOX_CHECKED_REGEX = /^[\s]*-\s\[x\]/gmi;
 
@@ -67,7 +81,7 @@ function isValidFeatureName(name) {
 // ── Frontmatter 讀寫 ──
 
 /**
- * 讀取 tasks.md 的 YAML frontmatter（純 regex，不使用 yaml 解析器）
+ * 讀取 tasks.md 的 YAML frontmatter
  * @param {string} tasksPath
  * @returns {object|null} 欄位物件；檔案不存在或無 frontmatter 時回傳 null
  */
@@ -79,20 +93,12 @@ function readTasksFrontmatter(tasksPath) {
     return null;
   }
 
-  const match = content.match(FM_REGEX);
-  if (!match) return null;
-
-  const block = match[1];
-  const result = {};
-
-  // KV_REGEX 是有狀態的，重設 lastIndex
-  KV_REGEX.lastIndex = 0;
-  let kv;
-  while ((kv = KV_REGEX.exec(block)) !== null) {
-    result[kv[1]] = kv[2].trim();
+  try {
+    const parsed = matter(content, MATTER_OPTS);
+    return Object.keys(parsed.data).length ? parsed.data : null;
+  } catch {
+    return null;
   }
-
-  return result;
 }
 
 /**
@@ -105,28 +111,18 @@ function updateTasksFrontmatter(tasksPath, updates) {
     throw new Error(`檔案不存在：${tasksPath}`);
   }
 
-  let content = readFileSync(tasksPath, 'utf8');
-  const match = content.match(FM_REGEX);
+  const content = readFileSync(tasksPath, 'utf8');
+  const parsed = matter(content, MATTER_OPTS);
 
-  if (!match) {
+  if (!matter.test(content)) {
     // 無 frontmatter，直接在開頭加
-    const fm = buildFrontmatter(updates);
-    content = fm + '\n' + content;
-    atomicWrite(tasksPath, content);
+    atomicWrite(tasksPath, buildFrontmatter(updates) + '\n' + content);
     return;
   }
 
-  // 解析現有 frontmatter
-  const existing = readTasksFrontmatter(tasksPath) || {};
-  const merged = { ...existing, ...updates };
-
-  // 重建 frontmatter 區塊
-  const newFm = buildFrontmatter(merged);
-
-  // 取得 frontmatter 後面的內文
-  const after = content.slice(match[0].length);
-
-  atomicWrite(tasksPath, newFm + after);
+  // 合併並重建（讀取用 gray-matter，寫入用 buildFrontmatter 保持格式可控）
+  const merged = { ...parsed.data, ...updates };
+  atomicWrite(tasksPath, buildFrontmatter(merged) + parsed.content);
 }
 
 /**

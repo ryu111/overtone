@@ -29,6 +29,7 @@ tools:
 - 📋 設計清晰的 API 介面（input/output types）
 - 📋 定義資料模型和 schema
 - 📋 規劃檔案結構（新增/修改哪些檔案）
+- 📋 若 workflow 需要 specs（standard/full/secure/refactor/tdd），MUST 在完成後將技術設計寫入 `specs/features/in-progress/{featureName}/design.md`（格式見 `skills/specs/examples/design-sample.md`）
 - 💡 確保向後相容
 - 💡 選擇最簡單能滿足需求的方案
 

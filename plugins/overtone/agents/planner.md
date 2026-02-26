@@ -29,6 +29,7 @@ tools:
 - 📋 將需求分解為具體的子任務（每個可獨立完成）
 - 📋 為每個子任務標註建議的 agent 和影響的檔案
 - 📋 識別可並行執行的任務組
+- 📋 若 workflow 需要 specs（standard/full/secure/refactor/tdd），MUST 在完成後將需求分析寫入 `specs/features/in-progress/{featureName}/proposal.md`（格式見 `skills/specs/examples/proposal-sample.md`）
 - 💡 考慮向後相容性和現有功能的影響
 
 ## DON'T（⛔ NEVER）
