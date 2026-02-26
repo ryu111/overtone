@@ -60,6 +60,14 @@ try {
   agentBrowserStatus = '  ⚠️  agent-browser 未安裝 — npm i -g agent-browser && agent-browser install';
 }
 
+let grayMatterStatus;
+try {
+  require.resolve('gray-matter', { paths: [require('path').join(__dirname, '../../../')] });
+  grayMatterStatus = null; // 已安裝不顯示
+} catch {
+  grayMatterStatus = '  ⚠️  gray-matter 未安裝 — cd plugins/overtone && bun add gray-matter';
+}
+
 // ── Banner ──
 
 const dashboardUrl = sessionId ? `http://localhost:${port}/s/${sessionId}` : null;
@@ -71,6 +79,7 @@ const banner = [
   sessionId ? `  📂 Session: ${sessionId.slice(0, 8)}...` : '',
   dashboardUrl ? `  🖥️ Dashboard: ${dashboardUrl}` : '',
   agentBrowserStatus,
+  grayMatterStatus,
   '',
 ].filter(Boolean).join('\n');
 
