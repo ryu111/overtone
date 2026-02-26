@@ -572,8 +572,8 @@ bun scripts/server.js
 
 V1 視為完整驗證通過的條件（全部同時成立）：
 
-- [ ] `bun test` 全部 93 個測試通過
-- [ ] `tests/on-submit.test.js` 新增後通過（F3 + F7）
-- [ ] `tests/timeline.test.js` 補充後 emit/query/latest 測試通過（F8）
-- [ ] F5 Loop、F6 SubagentStop 整合測試腳本執行成功
+- [x] `bun test` 全部測試通過（288 pass，2026-02-26）
+- [x] `tests/on-submit.test.js` 新增後通過（F3 + F7，2026-02-26）
+- [x] `tests/timeline.test.js` 補充後 emit/query/latest 測試通過（F8，2026-02-26）
+- [x] F5 Loop、F6 SubagentStop 整合測試腳本執行成功（2026-02-26）
 - [ ] 瀏覽器手動確認 F1 History Tab、F2 Grader、F4 動畫
