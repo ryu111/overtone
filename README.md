@@ -81,5 +81,5 @@ cd plugins/overtone && bun test
 
 - [`CLAUDE.md`](CLAUDE.md) — 專案規則與設計原則
 - [`HANDOFF.md`](HANDOFF.md) — 實作交接文件
-- [`docs/workflow.md`](docs/workflow.md) — 完整設計文件（v0.5，並行機制 D1–D4 修復 + mul-dev 新增）
+- [`docs/spec/overtone.md`](docs/spec/overtone.md) — 完整設計文件（v0.6，並行機制 D1–D4 修復 + mul-dev 新增）
 - [`docs/reference/parallel-defects.md`](docs/reference/parallel-defects.md) — 並行機制 4 項缺陷分析與修復

@@ -80,9 +80,19 @@ db-review:  DB-REVIEW
 
 ```
 docs/                            # 專案文件目錄（⚠️ 不在 plugin 下）
-├── workflow.md                  # 完整設計文件
+├── spec/                        # 規格文件
+│   ├── overtone.md              # 主規格索引
+│   ├── overtone-架構.md         # 三層架構、Hook、State
+│   ├── overtone-工作流.md       # 15 個 workflow 模板
+│   ├── overtone-agents.md       # 15 個 agent
+│   ├── overtone-並行.md         # 並行、Loop、Mul-Dev
+│   ├── overtone-子系統.md       # Specs、Dashboard、Timeline
+│   ├── overtone-驗證品質.md     # 三信號、pass@k、Grader
+│   └── workflow-diagram.md      # 架構圖（Mermaid）
+├── roadmap/
+│   └── v1.md                    # V1 進度與驗證報告
 ├── reference/                   # ECC 分析、措詞指南等參考文件
-└── ...（其他設計文件、研究文件）
+└── status.md                    # 現況快讀
 
 plugins/overtone/                # Plugin 根目錄
 ├── .claude-plugin/              # Plugin manifest（plugin.json）
@@ -158,7 +168,8 @@ bun scripts/init-workflow.js {workflowType} {sessionId}
 
 | 文件 | 用途 |
 |------|------|
-| `docs/workflow.md` | 完整設計文件（v0.3，55 個決策） |
+| `docs/spec/overtone.md` | 完整規格索引（v0.6，55 個決策） |
+| `docs/status.md` | 現況快讀（版本狀態、核心指標、近期變更） |
 | `scripts/lib/registry.js` | SoT — 所有映射定義 |
 | `docs/reference/wording-guide.md` | 措詞正確性指南（決策樹 + 反模式 + 場景範例） |
 | `docs/reference/ecc-*.md` | ECC 架構分析（4 份參考） |

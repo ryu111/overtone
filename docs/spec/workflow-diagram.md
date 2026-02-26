@@ -1,4 +1,4 @@
-> 本文件是 [workflow.md](workflow.md) 的視覺化補充。
+> 本文件是 [Overtone 規格文件](overtone.md) 的視覺化補充。
 > 最後對齊版本：v0.6（含 Mul-Dev、D1-D4 修復）
 
 # Overtone 工作流架構圖
