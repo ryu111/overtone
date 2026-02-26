@@ -488,6 +488,116 @@ describe('場景 9：timeline 事件驗證', () => {
 // 場景 10：REJECT 達到上限
 // ────────────────────────────────────────────────────────────────────────────
 
+
+// ────────────────────────────────────────────────────────────────────────────
+// 場景 11：RETRO PASS / ISSUES
+// ────────────────────────────────────────────────────────────────────────────
+
+describe('場景 11：RETRO — 迭代回顧', () => {
+  test('RETRO PASS → result 含 ✅ 和 回顧，retroCount 未遞增', async () => {
+    const sessionId = newSessionId();
+    createdSessions.push(sessionId);
+
+    mkdirSync(paths.sessionDir(sessionId), { recursive: true });
+    // quick workflow 含 RETRO stage：DEV → REVIEW → TEST → RETRO
+    state.initState(sessionId, 'quick', ['DEV', 'REVIEW', 'TEST', 'RETRO']);
+    state.updateStateAtomic(sessionId, (s) => {
+      s.stages['DEV'].status = 'completed';
+      s.stages['DEV'].result = 'pass';
+      s.stages['REVIEW'].status = 'completed';
+      s.stages['REVIEW'].result = 'pass';
+      s.stages['TEST'].status = 'completed';
+      s.stages['TEST'].result = 'pass';
+      s.stages['RETRO'].status = 'active';
+      s.currentStage = 'RETRO';
+      return s;
+    });
+
+    const result = await runHook(
+      { subagent_name: 'retrospective', output: '回顧完成，無重要問題。PASS' },
+      sessionId
+    );
+
+    // result 包含 ✅
+    expect(result.result).toContain('✅');
+    // result 包含「回顧」字樣
+    expect(result.result).toContain('回顧');
+
+    // retroCount 不應遞增（PASS 不計）
+    const updatedState = state.readState(sessionId);
+    expect(updatedState.retroCount || 0).toBe(0);
+  });
+
+  test('RETRO ISSUES → result 含 🔁 和 改善建議，retroCount = 1', async () => {
+    const sessionId = newSessionId();
+    createdSessions.push(sessionId);
+
+    mkdirSync(paths.sessionDir(sessionId), { recursive: true });
+    state.initState(sessionId, 'quick', ['DEV', 'REVIEW', 'TEST', 'RETRO']);
+    state.updateStateAtomic(sessionId, (s) => {
+      s.stages['DEV'].status = 'completed';
+      s.stages['DEV'].result = 'pass';
+      s.stages['REVIEW'].status = 'completed';
+      s.stages['REVIEW'].result = 'pass';
+      s.stages['TEST'].status = 'completed';
+      s.stages['TEST'].result = 'pass';
+      s.stages['RETRO'].status = 'active';
+      s.currentStage = 'RETRO';
+      return s;
+    });
+
+    const result = await runHook(
+      { subagent_name: 'retrospective', output: '發現 2 個改善建議，建議下一輪優化架構' },
+      sessionId
+    );
+
+    // result 包含 🔁
+    expect(result.result).toContain('🔁');
+    // result 包含「改善建議」
+    expect(result.result).toContain('改善建議');
+
+    // retroCount 應遞增為 1
+    const updatedState = state.readState(sessionId);
+    expect(updatedState.retroCount).toBe(1);
+  });
+
+  test('RETRO ISSUES 達到上限（retroCount = 3）→ result 含 ⛔ 和迭代上限提示', async () => {
+    const sessionId = newSessionId();
+    createdSessions.push(sessionId);
+
+    mkdirSync(paths.sessionDir(sessionId), { recursive: true });
+    state.initState(sessionId, 'quick', ['DEV', 'REVIEW', 'TEST', 'RETRO']);
+    state.updateStateAtomic(sessionId, (s) => {
+      s.stages['DEV'].status = 'completed';
+      s.stages['DEV'].result = 'pass';
+      s.stages['REVIEW'].status = 'completed';
+      s.stages['REVIEW'].result = 'pass';
+      s.stages['TEST'].status = 'completed';
+      s.stages['TEST'].result = 'pass';
+      s.stages['RETRO'].status = 'active';
+      s.currentStage = 'RETRO';
+      s.retroCount = 2; // 再一次就達到上限 3
+      return s;
+    });
+
+    const result = await runHook(
+      { subagent_name: 'retrospective', output: '仍有 issues 需要改善建議' },
+      sessionId
+    );
+
+    // result 包含 ⛔
+    expect(result.result).toContain('⛔');
+
+    // retroCount 應為 3
+    const updatedState = state.readState(sessionId);
+    expect(updatedState.retroCount).toBe(3);
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// 場景 10：REJECT 達到上限
+// ────────────────────────────────────────────────────────────────────────────
+
 describe('場景 10：REJECT 達到上限', () => {
   test('rejectCount 達到 3 → result 含 ⛔ 和人工介入提示', async () => {
     const sessionId = newSessionId();

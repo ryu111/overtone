@@ -15,7 +15,7 @@ Overtone 是 Claude Code plugin，提供 BDD 驅動的工作流自動化 + 即�
 2. **狀態最小化**：只記必要的 — 誰做了什麼、結果是什麼
 3. **BDD 驅動**：先定義行為（GIVEN/WHEN/THEN）再寫碼
 4. **Loop 預設**：任務完成自動繼續下一個
-5. **Agent 專職**：14 個 agent 各司其職，Handoff 檔案傳遞 context
+5. **Agent 專職**：15 個 agent 各司其職，Handoff 檔案傳遞 context
 
 ## 三層架構
 
@@ -25,7 +25,7 @@ Layer 1: Skill 引導（內圈）— Hook → /ot:auto → Workflow Skill → �
 Layer 2: Hook 守衛（底層）— 記錄、擋、提示、通知
 ```
 
-## Agent 配置（14 個）
+## Agent 配置（15 個）
 
 | 色彩 | Agent | Model | 功能 |
 |:----:|-------|:-----:|:----:|
@@ -43,6 +43,7 @@ Layer 2: Hook 守衛（底層）— 記錄、擋、提示、通知
 | orange | build-error-resolver | sonnet | 修構建 |
 | blue | refactor-cleaner | sonnet | 死碼清理 |
 | purple | doc-updater | haiku | 文件 |
+| purple | retrospective | opus | 迭代回顧，信心 ≥70% 才報告問題 |
 
 所有 agent 使用 `bypassPermissions`。
 
@@ -52,10 +53,10 @@ Layer 2: Hook 守衛（底層）— 記錄、擋、提示、通知
 BDD 規則：含 PLAN/ARCH 的 workflow 在 DEV 前加 TEST:spec
 
 single:     DEV
-quick:      DEV → [REVIEW + TEST]
-standard:   PLAN → ARCH → TEST:spec → DEV → [REVIEW + TEST:verify] → DOCS
-full:       PLAN → ARCH → DESIGN → TEST:spec → DEV → [R+T:verify] → [QA+E2E] → DOCS
-secure:     PLAN → ARCH → TEST:spec → DEV → [R+T:verify+SECURITY] → DOCS
+quick:      DEV → [REVIEW + TEST] → RETRO
+standard:   PLAN → ARCH → TEST:spec → DEV → [REVIEW + TEST:verify] → RETRO → DOCS
+full:       PLAN → ARCH → DESIGN → TEST:spec → DEV → [R+T:verify] → [QA+E2E] → RETRO → DOCS
+secure:     PLAN → ARCH → TEST:spec → DEV → [R+T:verify+SECURITY] → RETRO → DOCS
 tdd:        TEST:spec → DEV → TEST:verify
 debug:      DEBUG → DEV → TEST
 refactor:   ARCH → TEST:spec → DEV → REVIEW → TEST:verify
@@ -80,7 +81,7 @@ db-review:  DB-REVIEW
 ```
 plugins/overtone/                # Plugin 根目錄
 ├── .claude-plugin/              # Plugin manifest（plugin.json）
-├── agents/                      # 14 個 agent .md 檔
+├── agents/                      # 15 個 agent .md 檔
 ├── skills/                      # 27 個 Skill 定義
 ├── hooks/                       # hooks.json + scripts/
 ├── scripts/lib/                 # 共用程式庫
@@ -129,7 +130,7 @@ plugins/overtone/                # Plugin 根目錄
 # 啟動 Dashboard 監控面板（port 7777）
 bun scripts/server.js
 
-# 驗證所有 14 個 agent 設定是否完整
+# 驗證所有 15 個 agent 設定是否完整
 bun scripts/validate-agents.js
 
 # 手動停止 Loop（需提供 sessionId）

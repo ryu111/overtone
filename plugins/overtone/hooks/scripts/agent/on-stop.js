@@ -140,8 +140,17 @@ if (result.verdict === 'fail') {
     messages.push('⏭️ 下一步：委派 DEVELOPER 修復（帶 reject 原因）→ REVIEWER 再審');
   }
 } else if (result.verdict === 'issues') {
-  messages.push(`🔁 ${stages[stageKey]?.emoji || ''} ${stages[stageKey]?.label || stageKey}回顧完成：發現改善建議`);
-  messages.push('💡 可選：觸發 /ot:auto 新一輪優化（記錄 retroCount），或繼續完成剩餘 stages');
+  // 遞增 retroCount
+  const withRetro = updateStateAtomic(sessionId, (s) => {
+    s.retroCount = (s.retroCount || 0) + 1;
+    return s;
+  });
+  messages.push(`🔁 ${stages[stageKey]?.emoji || ''} ${stages[stageKey]?.label || stageKey}回顧完成：發現改善建議（retroCount: ${withRetro.retroCount}/3）`);
+  if (withRetro.retroCount >= 3) {
+    messages.push('⛔ 已達迭代上限（3 次），建議繼續完成剩餘 stages（如 DOCS）');
+  } else {
+    messages.push('💡 可選：觸發 /ot:auto 新一輪優化，或繼續完成剩餘 stages');
+  }
 } else {
   // PASS — 檢查並行收斂 + 提示下一步
   messages.push(`✅ ${stages[stageKey].emoji} ${stages[stageKey].label}完成`);

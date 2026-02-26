@@ -71,6 +71,7 @@ function initState(sessionId, workflowType, stageList) {
     activeAgents: {},
     failCount: 0,
     rejectCount: 0,
+    retroCount: 0,
   };
 
   writeState(sessionId, state);

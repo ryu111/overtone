@@ -1,7 +1,7 @@
 ---
 name: grader
 description: 品質評審。快速評估前一個 agent 的輸出品質，寫入 grader:score 事件。由 Main Agent 在 SubagentStop 後可選委派。
-model: claude-haiku-4-5-20251001
+model: haiku
 color: purple
 permissionMode: bypassPermissions
 tools:

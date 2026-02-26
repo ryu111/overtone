@@ -39,6 +39,17 @@ function parseResult(output, stageKey) {
     return { verdict: 'pass' };
   }
 
+  // RETRO → PASS / ISSUES（有改善建議，不算 fail）
+  // 排除 false positive：「no issues」「0 issues」等 PASS 情境的自然語言
+  if (stageKey === 'RETRO') {
+    if ((lower.includes('issues') || lower.includes('改善建議') || lower.includes('建議優化'))
+        && !lower.includes('no issues') && !lower.includes('0 issues')
+        && !lower.includes('no significant issues') && !lower.includes('without issues')) {
+      return { verdict: 'issues' };
+    }
+    return { verdict: 'pass' };
+  }
+
   return { verdict: 'pass' };
 }
 
@@ -129,6 +140,40 @@ describe('parseResult — TEST/QA/E2E stages', () => {
 
   test('BUILD-FIX 同樣適用', () => {
     expect(parseResult('Build failed: missing dependency', 'BUILD-FIX')).toEqual({ verdict: 'fail' });
+  });
+});
+
+describe('parseResult — RETRO stage', () => {
+  test('has issues found → issues（RETRO）', () => {
+    expect(parseResult('has issues found in the codebase', 'RETRO')).toEqual({ verdict: 'issues' });
+  });
+
+  test('there are 改善建議 to consider → issues（RETRO）', () => {
+    expect(parseResult('there are 改善建議 to consider', 'RETRO')).toEqual({ verdict: 'issues' });
+  });
+
+  test('建議優化架構 → issues（RETRO）', () => {
+    expect(parseResult('建議優化架構以提升效能', 'RETRO')).toEqual({ verdict: 'issues' });
+  });
+
+  test('0 issues found → pass（RETRO）[false positive 防護]', () => {
+    expect(parseResult('0 issues found in this iteration', 'RETRO')).toEqual({ verdict: 'pass' });
+  });
+
+  test('no issues → pass（RETRO）[false positive 防護]', () => {
+    expect(parseResult('回顧完成，no issues 發現', 'RETRO')).toEqual({ verdict: 'pass' });
+  });
+
+  test('no significant issues → pass（RETRO）[false positive 防護]', () => {
+    expect(parseResult('no significant issues were found during retrospective', 'RETRO')).toEqual({ verdict: 'pass' });
+  });
+
+  test('completed without issues → pass（RETRO）[false positive 防護]', () => {
+    expect(parseResult('Sprint completed without issues', 'RETRO')).toEqual({ verdict: 'pass' });
+  });
+
+  test('PASS → pass（RETRO）', () => {
+    expect(parseResult('回顧完成，品質良好。PASS', 'RETRO')).toEqual({ verdict: 'pass' });
   });
 });
 
