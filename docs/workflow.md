@@ -1,6 +1,6 @@
 # Overtone Workflow 設計文件
 
-> 版本：v0.5 | 狀態：Phase 1-12 完成 + 並行機制 D1–D4 修復 + mul-dev 新增，V1 剩餘見 Roadmap 章節
+> 版本：v0.6 | 狀態：Phase 1-12 完成 + 並行機制 D1–D4 修復 + mul-dev 新增 + mul-dev TaskList 同步，V1 剩餘見 Roadmap 章節
 
 ## 設計哲學
 
@@ -67,9 +67,9 @@ Main Agent 讀取 `/ot:auto` Skill 內容後自行判斷最適合的工作流模
 |:-:|-----|------|--------|:----:|
 | 1 | `single` | 單步修改 | DEV | - |
 | 2 | `quick` | 快速開發 | DEV → [R+T] | R+T |
-| 3 | `standard` | 標準功能 | PLAN → ARCH → T:spec → DEV → [R+T:verify] → DOCS | R+T |
-| 4 | `full` | 完整功能 | PLAN → ARCH → DESIGN → T:spec → DEV → [R+T:verify] → [QA+E2E] → DOCS | 兩組 |
-| 5 | `secure` | 高風險 | PLAN → ARCH → T:spec → DEV → [R+T:verify+S] → DOCS | R+T+S |
+| 3 | `standard` | 標準功能 | PLAN → ARCH → T:spec → DEV → [R+T:verify] → RETRO → DOCS | R+T |
+| 4 | `full` | 完整功能 | PLAN → ARCH → DESIGN → T:spec → DEV → [R+T:verify] → [QA+E2E] → RETRO → DOCS | 兩組 |
+| 5 | `secure` | 高風險 | PLAN → ARCH → T:spec → DEV → [R+T:verify+S] → RETRO → DOCS | R+T+S |
 
 > **BDD 規則**：所有含 PLAN/ARCH 的 workflow 在 DEV 前加入 TEST:spec（寫 BDD 行為規格）
 
@@ -79,7 +79,7 @@ Main Agent 讀取 `/ot:auto` Skill 內容後自行判斷最適合的工作流模
 |:-:|-----|------|--------|------|
 | 6 | `tdd` | 測試驅動 | TEST:spec → DEV → TEST:verify | BDD 先行 |
 | 7 | `debug` | 除錯 | DEBUG → DEV → TEST | 先診斷再修復 |
-| 8 | `refactor` | 重構 | ARCH → TEST:spec → DEV → REVIEW → TEST:verify | 先設計再重構 |
+| 8 | `refactor` | 重構 | ARCH → TEST:spec → DEV → [R+T:verify] | 先設計再重構，R+T 並行 |
 | 9 | `review-only` | 純審查 | REVIEW | 只審查不寫碼 |
 | 10 | `security-only` | 安全掃描 | SECURITY | 只掃描不修復 |
 | 11 | `build-fix` | 修構建 | BUILD-FIX | 最小修復構建錯誤 |
@@ -120,6 +120,8 @@ Main Agent 讀取 `/ot:auto` Skill 內容後自行判斷最適合的工作流模
 | 13 | refactor-cleaner | sonnet | blue | 死碼清理 | bypassPermissions |
 | 14 | retrospective | opus | purple | 迭代回顧 | bypassPermissions |
 | 15 | doc-updater | haiku | purple | 文件 | bypassPermissions |
+
+> 另有 **grader agent**（Haiku）作為可選的品質評分工具，非 workflow stage agent，由 Main Agent 在 SubagentStop 後可選委派。
 
 ### Model 分級
 
@@ -338,6 +340,17 @@ DEV 階段可進一步分解為多個並行子任務（Phase），通過 **mul-d
 **判斷標準**：操作不同檔案 ∧ 無邏輯依賴 → parallel；否則 sequential。
 
 **失敗隔離**：某子任務 FAIL → 只重試該子任務；整個 Phase FAIL → 不進入下一 Phase。
+
+#### TaskList 同步
+
+Mul-Dev 執行期間同步維護 TaskList，提供可見性（不取代 workflow.json）：
+
+| 時機 | 操作 |
+|------|------|
+| DEV 啟動，分析出子任務 | 每個子任務 `TaskCreate`（subject = Phase 子任務描述） |
+| 委派前 | `TaskUpdate → in_progress` |
+| 子任務完成後 | `TaskUpdate → completed`；Mode A 同時回寫 tasks.md checkbox |
+| 退化（無法分解）時 | 仍建立一個 `TaskCreate`，操作同一般流程 |
 
 詳見 `skills/mul-dev/SKILL.md`。
 
@@ -563,9 +576,11 @@ Instinct 建立（原子知識）
 ```
 {project_root}/
 └── specs/
-    ├── README.md      # Specs 系統文件
-    ├── (feature-name).md  # 功能規格
-    └── ...
+    └── features/
+        ├── in-progress/<feature>/    # 進行中
+        ├── paused/                   # 暫停
+        ├── backlog/                  # 待辦
+        └── archive/YYYY-MM-DD_<feature>/  # 已完成（扁平）
 ```
 
 ---
@@ -596,7 +611,7 @@ Remote Core（核心引擎）
        └─ WebhookAdapter      單向 fallback
 ```
 
-### Timeline（18 種事件）
+### Timeline（21 種事件）
 
 | 分類 | 事件 | 說明 |
 |------|------|------|
@@ -607,6 +622,8 @@ Remote Core（核心引擎）
 | **handoff** | create | Handoff 檔案建立 |
 | **parallel** | start, converge | 並行群組 |
 | **error** | fatal | 不可恢復錯誤 |
+| **grader** | score | Grader 品質評分結果 |
+| **specs** | init, archive | Specs 功能初始化與歸檔 |
 | **session** | start, end | Session 生命週期 |
 
 儲存：`~/.overtone/sessions/{id}/timeline.jsonl`（append-only）。
@@ -623,7 +640,7 @@ Remote Core（核心引擎）
 ├── sessions/
 │   └── {sessionId}/
 │       ├── workflow.json     # 工作流狀態
-│       ├── timeline.jsonl    # 事件記錄（18 種）
+│       ├── timeline.jsonl    # 事件記錄（21 種）
 │       ├── handoffs/         # Handoff 檔案
 │       ├── loop.json         # Loop 狀態
 │       └── observations.jsonl # Instinct 觀察
@@ -631,8 +648,11 @@ Remote Core（核心引擎）
 
 {project_root}/
 └── specs/
-    ├── README.md             # Specs 系統文件
-    └── (feature-name).md     # 功能規格檔（版控）
+    └── features/
+        ├── in-progress/<feature>/    # 進行中
+        ├── paused/                   # 暫停
+        ├── backlog/                  # 待辦
+        └── archive/YYYY-MM-DD_<feature>/  # 已完成（扁平）
 ```
 
 ### workflow.json
@@ -679,7 +699,7 @@ Remote Core（核心引擎）
 | **PostToolUse** | Instinct 觀察收集 | ~100 |
 | **Stop** | Loop 迴圈 + 完成度檢查 + Dashboard 通知 | ~160 |
 
-**總計：~930 行**
+**總計：~1153 行**
 
 ### Hook 職責邊界
 
@@ -744,6 +764,20 @@ Handoff 檔案存在 session 目錄，compact 後 Main Agent 可重新讀取。
 
 - [x] Stage 轉換動畫（active 光暈脈動 + completed 閃光確認）
 - [x] Agent 活動動態指示器（spinner + 邊框脈動 + 進場動畫）
+
+### DEV 階段內部並行：Mul-Dev 機制 ✅
+
+- [x] Mode A（有 specs）：architect 寫入 Dev Phases，Main Agent 按 Phase 調度
+- [x] Mode B（無 specs）：Main Agent 自行分析子任務
+- [x] TaskList 同步（TaskCreate / TaskUpdate）
+- [x] 失敗隔離 + 退化條件
+
+### 並行機制缺陷修復（D1-D4）✅
+
+- [x] D1 TOCTOU：updateStateAtomic jitter retry
+- [x] D2 hint 過時：getNextStageHint() 先檢查 activeAgents
+- [x] D3 雙重失敗協調：FAIL > REJECT 優先順序
+- [x] D4 parallelGroups：改為 per-workflow 動態推導
 
 ## V2 Planned（延後）
 

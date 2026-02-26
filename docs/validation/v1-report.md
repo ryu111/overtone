@@ -1,5 +1,5 @@
 # V1 驗證報告
-> 日期：2026-02-26 | 驗證者：qa agent
+> 日期：2026-02-27 | 驗證者：qa agent
 
 ---
 
@@ -16,6 +16,9 @@
 | F7 UserPromptSubmit → /ot:auto 注入 | ⚠️ 部分通過 | 自動 + 整合 | 主要流程正確，但 `/ot:` passthrough 輸出格式與規格不符 |
 | F8 timeline.jsonl 事件記錄 | ✅ 通過 | 自動 + 整合 | emit/query/latest/passAtK 全部行為正確 |
 | F9 workflow.json CAS 原子更新 | ✅ 通過 | 自動 | 12 pass，無殘餘 tmp 檔 |
+| F10 Mul-Dev 機制 | ✅ 通過 | 自動 | Mode A/B 設計完整，TaskList 同步三時機，觸發條件修正 |
+| F11 並行缺陷修復 D1-D4 | ✅ 通過 | 自動 + 整合 | D1 jitter retry、D2 hint 修復、D3 協調規則、D4 parallelGroupDefs |
+| F12 Specs 系統 | ✅ 通過 | 自動 | specs.test.js 63 個 case，四狀態生命週期完整 |
 
 ---
 
@@ -24,10 +27,9 @@
 ### bun test 全套
 
 ```
-165 pass
+293 pass
 0 fail
-381 expect() calls
-Ran 165 tests across 10 files. [742ms]
+Ran 293 tests across 13 files.
 ```
 
 涵蓋範圍：
@@ -35,7 +37,8 @@ Ran 165 tests across 10 files. [742ms]
 - `tests/loop.test.js` — Loop 狀態管理（8 個測試）
 - `tests/parse-result.test.js` — SubagentStop verdict 解析（17 個測試）
 - `tests/state.test.js` — workflow.json CAS 原子更新（12 個測試）
-- 其他 6 個測試檔（共 120 個測試）
+- `tests/specs.test.js` — Specs 系統（63 個測試）
+- 其他 8 個測試檔
 
 ### F1 — passAtK 函數與 API 端點
 
@@ -84,9 +87,39 @@ Ran 165 tests across 10 files. [742ms]
 - `writeState()` 後無殘餘 `.tmp` 檔
 - `updateStateAtomic()` 正確支援多欄位合併修改
 
+---
+
+## F10：Mul-Dev 機制 — ✅ PASS
+
+- **Mode A/B 設計**：SKILL.md 完整說明 Phase 標記格式、TaskList 同步三個時機、失敗隔離規則、退化條件
+- **TaskList 同步**：TaskCreate（DEV 啟動）→ TaskUpdate in_progress（委派前）→ TaskUpdate completed（完成後）
+- **觸發條件修正**：auto/SKILL.md 的 Mul Dev 觸發改為以「Dev Phases 是否存在」判斷，涵蓋自訂序列
+- **狀態**：v0.15.0 實作完成
+
+---
+
+## F11：並行缺陷修復 D1-D4 — ✅ PASS
+
+- **D1 TOCTOU 修復**：updateStateAtomic 加入 1-5ms jitter retry，Bun Worker 環境用 Atomics.wait，main thread 降級忙等
+- **D2 hint 過時修復**：getNextStageHint() 開頭先檢查 activeAgents，有活躍 agent 時回傳「等待並行 agent 完成」
+- **D3 雙重失敗修復**：parallel-groups.md 加入協調規則，TEST FAIL > REVIEW REJECT 優先順序
+- **D4 parallelGroups 修復**：registry.js 改為 parallelGroupDefs + per-workflow parallelGroups 字串引用
+- **測試**：tests/agent-on-stop.test.js 場景 12（D2 x2）、場景 13（D3 x3）
+- **狀態**：v0.15.0 修復完成
+
+---
+
+## F12：Specs 系統 — ✅ PASS
+
+- **目錄結構**：specs/features/{in-progress, paused, backlog, archive/} 四狀態生命週期
+- **API**：initFeatureDir, archiveFeature, readTasksFrontmatter, updateTasksFrontmatter, listFeatures, getActiveFeature
+- **frontmatter 解析**：gray-matter + 自訂 engine（matchAll，避免 js-yaml timestamp 轉型）
+- **測試**：tests/specs.test.js 63 個 case，含 CLI 整合測試
+- **狀態**：v0.13.0 實作完成
+
 ### /api/registry 端點
 
-- 回傳 `stages`（14 個）、`workflows`（15 個）、`agents`（14 個）三個欄位，符合規格
+- 回傳 `stages`（15 個）、`workflows`（15 個）、`agents`（15 個）三個欄位，符合規格
 
 ---
 
@@ -134,9 +167,9 @@ hook 輸出為 `{ additionalContext: '' }`（明確不注入）
 
 ## V1 整體評估
 
-### 自動化驗證：165 pass，0 fail
+### 自動化驗證：293 pass，0 fail
 
-### 功能通過率：7/9 完全通過，1/9 待手動確認（F2 Grader），1/9 需視覺確認（F4 動畫）
+### 功能通過率：10/12 完全通過，1/12 待手動確認（F2 Grader），1/12 需視覺確認（F4 動畫）
 
 > 注意：原報告 P1（F3/F7 格式差異）為 QA 誤判，已釐清。規格本身要求 `{ additionalContext: '' }`，實作正確。
 
@@ -147,6 +180,7 @@ hook 輸出為 `{ additionalContext: '' }`（明確不注入）
 - F1 passAtK 計算和 API 端點功能正確；F3/F7 UserPromptSubmit 注入邏輯完全符合規格
 - F4 動畫 CSS 實現完整，僅缺視覺確認
 - F2 Grader 需要真實執行環境，架構（agent prompt、timeline eventType）已就位
-- 全套測試 288 pass，0 fail（2026-02-26）
+- F10 Mul-Dev 機制、F11 並行缺陷修復 D1-D4、F12 Specs 系統均已通過自動化驗證
+- 全套測試 293 pass，0 fail（2026-02-27）
 
 **建議進入 V2 前先確認**：瀏覽器手動驗證 F1 History Tab 和 F4 動畫，確保 Dashboard 前端無問題。

@@ -2,6 +2,7 @@
 
 > 版本：V1 Roadmap 完整功能驗證文件
 > 建立日期：2026-02-26
+> 最後更新：2026-02-27
 > 狀態：待驗證
 
 本文件定義 Overtone Plugin V1 的每個功能的通過標準、驗證方式與測試覆蓋狀態。
@@ -515,6 +516,142 @@ bun test tests/state.test.js
 
 ---
 
+### F10. Mul-Dev 機制（v0.15.0 新增）
+
+**功能描述**
+
+`skills/mul-dev/SKILL.md` 定義多開發者並行機制，支援 Mode A（architect 預先寫入 Dev Phases）與 Mode B（Main Agent 自行分析並行可行性）。子任務使用 TaskList 同步，確保 TaskCreate → TaskUpdate in_progress → TaskUpdate completed 三個時機正確執行，並在某子任務失敗時隔離重試，不影響同 Phase 其他子任務。
+
+**程式碼位置**
+
+- `plugins/overtone/skills/mul-dev/SKILL.md` — Mul-Dev Skill 定義（Phase 標記格式、TaskList 同步說明、退化條件）
+
+**驗證標準**
+
+下列所有條件同時成立才算通過：
+
+1. Mode A：architect 寫入 Dev Phases 後，Main Agent 正確解析 sequential/parallel 標記並按 Phase 調度
+2. Mode B：Main Agent 自行分析子任務，正確判斷並行可行性
+3. TaskList 同步：TaskCreate → TaskUpdate in_progress → TaskUpdate completed 三個時機正確執行
+4. 失敗隔離：某子任務 FAIL 只重試該子任務，不影響同 Phase 其他子任務
+5. 退化條件：單一子任務或分析後無並行機會時，退化為單一 developer
+
+**驗證方式**
+
+```bash
+# 讀取 SKILL.md 確認以下要素完整：
+# - Phase 標記格式（sequential / parallel 標記）
+# - TaskList 同步說明（TaskCreate / TaskUpdate 三時機）
+# - 退化條件說明
+cat plugins/overtone/skills/mul-dev/SKILL.md
+```
+
+**測試覆蓋狀態**
+
+| 項目 | 狀態 | 說明 |
+|------|------|------|
+| Phase 標記解析 | 未覆蓋 | Skill 文件層級功能，需手動驗證 Mode A 實際工作流 |
+| TaskList 同步時機 | 未覆蓋 | 需手動執行並行工作流並觀察 TaskCreate/TaskUpdate 順序 |
+| 失敗隔離 | 未覆蓋 | 需手動注入子任務失敗情境，確認其他子任務不受影響 |
+| 退化條件 | 未覆蓋 | Skill 文件層級功能，無獨立測試檔 |
+
+---
+
+### F11. 並行缺陷修復 D1-D4（v0.15.0 修復）
+
+**功能描述**
+
+v0.15.0 修復四項並行機制缺陷：D1（TOCTOU 競爭）、D2（hint 過時推進）、D3（雙重失敗優先順序）、D4（parallelGroups 硬編碼）。修復後各場景的行為符合預期。
+
+**程式碼位置**
+
+- `scripts/lib/state.js` — `updateStateAtomic()` CAS + jitter retry（D1）
+- `hooks/scripts/agent/on-stop.js` — `getNextStageHint()` 活躍 agent 檢查（D2）、雙重失敗優先順序（D3）
+- `scripts/lib/registry.js` — parallelGroups 動態推導（D4）
+
+**驗證標準**
+
+下列所有條件同時成立才算通過：
+
+1. D1（TOCTOU）：`updateStateAtomic()` 在 CAS 衝突時加 jitter retry（1-5ms），縮小競爭窗口
+2. D2（hint 過時）：`getNextStageHint()` 先檢查 `activeAgents`，有活躍 agent 時不提示下一步
+3. D3（雙重失敗）：FAIL + REJECT 同時發生時，優先顯示 TEST FAIL 的處理建議
+4. D4（parallelGroups 硬編碼）：改為 per-workflow 透過 `parallelGroups` 字串引用動態推導
+
+**驗證方式**
+
+```bash
+# D2 / D3 場景測試
+cd plugins/overtone
+bun test tests/agent-on-stop.test.js
+
+# D1 CAS + jitter 機制測試
+bun test tests/state.test.js
+```
+
+**測試覆蓋狀態**
+
+| 項目 | 狀態 | 說明 |
+|------|------|------|
+| D1 CAS + jitter retry | 已覆蓋 | `tests/state.test.js` — CAS 衝突 + jitter 機制 |
+| D2 活躍 agent 時不推進 | 已覆蓋 | `tests/agent-on-stop.test.js` — 有活躍 agent 場景 |
+| D3 雙重失敗優先順序 | 已覆蓋 | `tests/agent-on-stop.test.js` — FAIL + REJECT 同時發生場景 |
+| D4 parallelGroups 動態推導 | 未覆蓋 | 需手動確認各 workflow 的 parallelGroups 設定正確 |
+
+---
+
+### F12. Specs 系統（v0.13.0 新增）
+
+**功能描述**
+
+`scripts/lib/specs.js` 提供 disk-based Feature Record 管理，支援 in-progress、paused、backlog、archive 四種狀態。提供完整 API 管理 feature 生命週期：`initFeatureDir()`、`archiveFeature()`、`readTasksFrontmatter()`、`updateTasksFrontmatter()`、`listFeatures()`、`getActiveFeature()`、`isValidFeatureName()` 等。YAML frontmatter 解析使用 gray-matter + 自訂 engine（matchAll），避免 js-yaml 的 timestamp 自動轉型問題。
+
+**程式碼位置**
+
+- `scripts/lib/specs.js` — Specs 系統主程式（完整 API）
+- `specs/features/` — Feature 目錄（in-progress / paused / backlog / archive）
+
+**驗證標準**
+
+下列所有條件同時成立才算通過：
+
+1. `bun test tests/specs.test.js` 輸出 `63 pass, 0 fail`
+2. `initFeatureDir()` 正確建立 feature 目錄結構（含 bdd.md、tasks.md 等）
+3. `archiveFeature()` 正確歸檔到 `archive/YYYY-MM-DD_<feature>/` 扁平結構
+4. `readTasksFrontmatter()` / `updateTasksFrontmatter()` 正確讀寫 YAML frontmatter（含自訂 engine 避免 timestamp 轉型）
+5. `listFeatures()` / `getActiveFeature()` 正確列出與取得進行中 feature
+6. `isValidFeatureName()` 正確驗證 kebab-case
+
+**驗證方式**
+
+```bash
+# 步驟 1：Unit test（完整覆蓋）
+cd plugins/overtone
+bun test tests/specs.test.js
+# 預期：63 pass, 0 fail
+
+# 步驟 2：確認 63 個測試涵蓋：
+#   - isValidFeatureName: kebab-case 驗證
+#   - initFeatureDir: 目錄結構建立
+#   - archiveFeature: YYYY-MM-DD_<feature> 扁平結構
+#   - readTasksFrontmatter / updateTasksFrontmatter: YAML 讀寫 + timestamp 防護
+#   - listFeatures / getActiveFeature: 列出與取得 in-progress feature
+#   - CLI 整合測試
+```
+
+**測試覆蓋狀態**
+
+| 項目 | 狀態 | 說明 |
+|------|------|------|
+| `isValidFeatureName()` kebab-case 驗證 | 已覆蓋 | `tests/specs.test.js` 63 個 case |
+| `initFeatureDir()` 目錄結構 | 已覆蓋 | `tests/specs.test.js` 63 個 case |
+| `archiveFeature()` 歸檔 | 已覆蓋 | `tests/specs.test.js` 63 個 case |
+| `readTasksFrontmatter()` / `updateTasksFrontmatter()` | 已覆蓋 | `tests/specs.test.js` — 含 timestamp 自訂 engine 測試 |
+| `listFeatures()` / `getActiveFeature()` | 已覆蓋 | `tests/specs.test.js` 63 個 case |
+| CLI 整合測試 | 已覆蓋 | `tests/specs.test.js` — 含 CLI 呼叫整合場景 |
+
+---
+
 ## 整體驗證策略
 
 ### 目前狀態摘要
@@ -523,15 +660,18 @@ bun test tests/state.test.js
 |------|:---------:|:--------:|:--------:|
 | F1. Dashboard History Tab（passAtK） | 8/8 通過 | 缺 API 測試 | 缺前端確認 |
 | F2. Model Grader | 無 | 無 | 未執行 |
-| F3. `[workflow:xxx]` 覆寫語法 | 無 | 無 | 未執行 |
+| F3. `[workflow:xxx]` 覆寫語法 | ✅ | 無 | 未執行 |
 | F4. Dashboard 動畫版 | 不適用 | 不適用 | 未執行 |
 | F5. Loop 機制 | 8/8 通過 | 缺完整流程 | 未執行 |
 | F6. SubagentStop 記錄 | 17/17 通過 | 缺完整流程 | 未執行 |
-| F7. UserPromptSubmit 注入 | 無 | 無 | 未執行 |
+| F7. UserPromptSubmit 注入 | ✅ | 無 | 未執行 |
 | F8. timeline.jsonl 事件記錄 | 8/8（passAtK） | 無 emit/query/latest | 未執行 |
 | F9. workflow.json CAS 原子更新 | 12/12 通過 | 完整 | N/A |
+| F10. Mul-Dev 機制 | 不適用 | 不適用 | 未執行 |
+| F11. 並行缺陷修復 D1-D4 | ✅（D1-D3）| 不適用 | 未執行（D4）|
+| F12. Specs 系統 | 63/63 通過 | 含 CLI 整合 | N/A |
 
-**目前通過測試總數：45 個（93 個中的 45 個直接相關）**
+**目前通過測試總數：293 pass（13 個測試檔）**
 
 ### 驗證執行順序建議
 
@@ -540,7 +680,7 @@ bun test tests/state.test.js
 ```bash
 cd plugins/overtone
 bun test
-# 預期：93 pass, 0 fail（涵蓋 F1 passAtK、F5 Loop、F6 parseResult、F9 CAS）
+# 預期：293 pass, 0 fail（涵蓋 F1 passAtK、F5 Loop、F6 parseResult、F9 CAS）
 ```
 
 **Phase 2：需補充的 Unit Tests（優先順序由高到低）**
@@ -572,7 +712,7 @@ bun scripts/server.js
 
 V1 視為完整驗證通過的條件（全部同時成立）：
 
-- [x] `bun test` 全部測試通過（288 pass，2026-02-26）
+- [x] `bun test` 全部測試通過（293 pass, 13 個測試檔，2026-02-27）
 - [x] `tests/on-submit.test.js` 新增後通過（F3 + F7，2026-02-26）
 - [x] `tests/timeline.test.js` 補充後 emit/query/latest 測試通過（F8，2026-02-26）
 - [x] F5 Loop、F6 SubagentStop 整合測試腳本執行成功（2026-02-26）

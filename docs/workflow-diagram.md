@@ -1,4 +1,5 @@
 > 本文件是 [workflow.md](workflow.md) 的視覺化補充。
+> 最後對齊版本：v0.6（含 Mul-Dev、D1-D4 修復）
 
 # Overtone 工作流架構圖
 
@@ -22,7 +23,7 @@ flowchart TB
         US["UserPromptSubmit\n注入 /ot:auto 指引"]
         MA["Main Agent\n讀取 /ot:auto"]
         WF["Workflow Skill\nquick / standard / full..."]
-        AG["依序委派\n14 個 Agents"]
+        AG["依序委派\n15 個 Agents"]
         US --> MA --> WF --> AG
     end
 
@@ -30,7 +31,7 @@ flowchart TB
         direction LR
         PT["PreToolUse(Task)\n擋跳過必要階段"]
         SS["SubagentStop\n記錄結果 + 更新 state\n+ emit timeline"]
-        PO["PostToolUse\nInstinct 觀察收集"]
+        PO["PostToolUse\nInstinct 觀察收集\n+ 措詞偵測（emoji-關鍵詞不匹配警告）"]
     end
 
     CONT -.->|"觸發下一輪 prompt"| L1
@@ -53,7 +54,7 @@ flowchart TB
     MAIN --> WFSEL{"workflow 類型"}
 
     WFSEL -->|"standard / full / secure"| PLAN["📋 PLAN — planner"]
-    WFSEL -->|"quick / debug / tdd..."| DEV
+    WFSEL -->|"quick（DEV→REVIEW+TEST→RETRO）\n/ debug / tdd..."| DEV
 
     PLAN --> ARCH["🏗️ ARCH — architect"]
     ARCH --> TSPEC["🧪 TEST:spec — tester\nGIVEN / WHEN / THEN"]
@@ -90,6 +91,12 @@ flowchart TB
 
     LOOP -.->|"下一輪"| PROMPT
 ```
+
+### 圖 2 補充說明
+
+**Mul-Dev（多開發者並行）**：DEV 階段內部可拆分為多個 Phase。每個 Phase 對應一組獨立子任務，Main Agent 在同一訊息中並行發出多個 Task（parallel Phase），各 developer sub-agent 同時執行，互不阻塞，最後由 TaskList 同步機制確認全部完成後才進入下一階段。
+
+**quick workflow 完整流程**：`DEV → [REVIEW + TEST]（並行）→ RETRO`。雖然圖中 quick 分支直接進入 DEV，但後續仍會通過 Quality Gate 並執行 RETRO（Retrospective Agent）。
 
 ---
 
