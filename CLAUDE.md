@@ -79,6 +79,11 @@ db-review:  DB-REVIEW
 ## 目錄結構
 
 ```
+docs/                            # 專案文件目錄（⚠️ 不在 plugin 下）
+├── workflow.md                  # 完整設計文件
+├── reference/                   # ECC 分析、措詞指南等參考文件
+└── ...（其他設計文件、研究文件）
+
 plugins/overtone/                # Plugin 根目錄
 ├── .claude-plugin/              # Plugin manifest（plugin.json）
 ├── agents/                      # 15 個 agent .md 檔
@@ -96,9 +101,6 @@ plugins/overtone/                # Plugin 根目錄
 │   └── remote/                  # EventBus + Adapter（Dashboard、Telegram）
 ├── web/                         # Dashboard 前端（htmx + Alpine.js）
 ├── tests/                       # 13 個測試檔（bun test）
-├── docs/
-│   ├── workflow.md              # 完整設計文件（55 個決策）
-│   └── reference/               # ECC 分析參考文件
 └── package.json                 # Bun 專案設定
 ```
 
@@ -143,6 +145,7 @@ bun scripts/init-workflow.js {workflowType} {sessionId}
 
 ## 開發規範
 
+- **文件位置**：Overtone 所有設計文件、研究文件寫在 `docs/`（專案根目錄），⚠️ 不要寫在 `plugins/overtone/` 下
 - 所有回覆使用**繁體中文**
 - 不確定時詢問，不猜測
 - 功能需驗證測試

@@ -17,6 +17,17 @@ maxTurns: 20
 - 更新 README、API 文件、CHANGELOG
 - 確保文件與程式碼行為一致
 
+## 文件位置（📋 MUST）
+
+⚠️ Overtone 設計文件統一放在 **`docs/`**（專案根目錄），不要寫在 `plugins/overtone/` 下：
+
+| 類型 | 路徑 |
+|------|------|
+| 設計文件、研究文件 | `docs/` |
+| ECC 分析、措詞指南等參考文件 | `docs/reference/` |
+| README | 專案根目錄 `README.md` |
+| CHANGELOG | 專案根目錄 `CHANGELOG.md` |
+
 ## DO（📋 MUST）
 
 - 📋 對照 Handoff 中的變更清單檢查相關文件
