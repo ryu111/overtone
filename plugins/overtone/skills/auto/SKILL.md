@@ -64,6 +64,11 @@ description: Overtone 核心工作流選擇器。分析使用者需求自動選�
 同一並行群組 📋 MUST 在同一訊息中多個 Task 同時委派：quality（REVIEW + TEST）、verify（QA + E2E）、secure-quality（REVIEW + TEST + SECURITY）。
 💡 完整規則與語法範例：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/auto/references/parallel-groups.md`
 
+**Mul Dev**（DEV 內部並行）：
+- 有 specs（standard / full / secure / tdd / refactor）：architect 已在 `tasks.md` 寫入 `## Dev Phases` → DEV 階段讀取並按 Phase 調度（parallel Phase 同一訊息多個 Task，sequential Phase 單一 Task）
+- 無 specs（quick / debug / single）：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/mul-dev/SKILL.md` → 自行分析任務，判斷是否有可並行子任務 → 有則同一訊息多個 Task，無則單一 developer
+- 分析後只有一個 Phase 或無獨立子任務 → 退化為單一 developer，不強制分解
+
 ## BDD 規則
 
 含 PLAN 或 ARCH 的 workflow：DEV 前 📋 MUST 加 TEST:spec。DEV 後的 TEST 使用 verify 模式。

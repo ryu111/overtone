@@ -30,6 +30,7 @@ tools:
 - 📋 定義資料模型和 schema
 - 📋 規劃檔案結構（新增/修改哪些檔案）
 - 📋 若 workflow 需要 specs（standard/full/secure/refactor/tdd），MUST 在完成後將技術設計寫入 `specs/features/in-progress/{featureName}/design.md`（格式見 `skills/specs/examples/design-sample.md`）
+- 📋 若 workflow 需要 specs，MUST 在 design.md 完成後分析子任務依賴關係，將 Dev Phases 追加寫入 `specs/features/in-progress/{featureName}/tasks.md` 的 `## Dev Phases` 區塊（格式見 `skills/mul-dev/SKILL.md`）；若所有子任務都有依賴（無法並行），可省略 Dev Phases 區塊
 - 💡 確保向後相容
 - 💡 選擇最簡單能滿足需求的方案
 
@@ -69,8 +70,17 @@ tools:
 **檔案結構**：
 - [新增/修改的檔案清單和用途]
 
+**Dev Phases**（若有可並行子任務）：
+
+    ### Phase 1: 名稱 (sequential)
+    - [ ] 子任務描述 | files: 路徑
+
+    ### Phase 2: 名稱 (parallel)
+    - [ ] 子任務 A | files: 路徑
+    - [ ] 子任務 B | files: 路徑
+
 ### Files Modified
-（無修改，唯讀設計）
+（設計階段唯讀，若有 specs 則更新 design.md 和 tasks.md）
 
 ### Open Questions
 [需要 developer 在實作時決定的細節]
