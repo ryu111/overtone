@@ -123,6 +123,57 @@ Task: 委派 developer 建立基礎建設
 
 ---
 
+## TaskList 同步
+
+Main Agent 應在 DEV 階段的關鍵時機操作 TaskList，讓使用者即時看到執行進度。
+
+### 時機一：DEV 階段啟動時（建立 todo items）
+
+**Mode A（有 specs）**：
+
+讀取 `tasks.md` 的 `## Dev Phases` 區塊，為每個 `- [ ]` 子任務建立一個 TaskCreate。
+
+- subject 格式：`[Phase N] 子任務描述`
+- 範例：
+  - `[Phase 1] 建立 User model`
+  - `[Phase 2] 實作 GET /users`
+  - `[Phase 2] 實作 POST /users`
+
+所有子任務一次建立完畢（可並行呼叫多個 TaskCreate），再開始執行第一個 Phase。
+
+**Mode B（無 specs）**：
+
+Main Agent 自行分析出子任務後，同樣用 TaskCreate 為每個子任務建立 todo item。
+
+- subject 格式與 Mode A 相同：`[Phase N] 子任務描述`
+- 若分析後只有單一子任務（退化為單一 developer），仍建立一個 TaskCreate，subject：`[Phase 1] 任務描述`
+
+### 時機二：委派 developer Task 前（標記執行中）
+
+在同一訊息發出 Task 之前，先呼叫 TaskUpdate 將對應項目標記為執行中：
+
+- status：`in_progress`
+- `activeForm` 可選填：`開發中：子任務描述`
+
+Parallel Phase 同時委派多個子任務時，對應的多個 TaskUpdate 也在同一訊息一起發出。
+
+### 時機三：developer 回報完成後（標記已完成）
+
+developer Task 回傳結果後：
+
+1. 呼叫 TaskUpdate 將對應項目標記為已完成：status → `completed`
+2. **Mode A 限定**：同時用 Edit 工具更新 `tasks.md` 中的 checkbox：`- [ ]` → `- [x]`
+
+若同一 Parallel Phase 的多個子任務同時完成，對應的多個 TaskUpdate 一起發出。
+
+### 注意事項
+
+- TaskList 只負責**可見性**，工作流進度追蹤仍依賴 `workflow.json`（不重複）
+- 不需要為「整個 DEV 階段」建立一個父級 TaskCreate，子任務 item 已足夠
+- 子任務重試時不建立新的 TaskCreate，沿用原有 item 並再次標記為 `in_progress`
+
+---
+
 ## 失敗隔離
 
 - **某子任務 FAIL** → 只重試該失敗的子任務，不影響同 Phase 其他子任務
@@ -140,7 +191,7 @@ Task: 委派 developer 建立基礎建設
 3. **Mode B 分析後無並行機會**：所有子任務都有依賴關係
 4. **子任務數量為 1**：無需分拆，直接單一 developer
 
-退化後正常執行標準的單一 developer 流程。
+退化後正常執行標準的單一 developer 流程。退化時 TaskList 操作仍完整執行（TaskCreate → TaskUpdate in_progress → TaskUpdate completed），流程與一般 Phase 相同。
 
 ---
 
