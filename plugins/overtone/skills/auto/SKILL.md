@@ -65,8 +65,8 @@ description: Overtone 核心工作流選擇器。分析使用者需求自動選�
 💡 完整規則與語法範例：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/auto/references/parallel-groups.md`
 
 **Mul Dev**（DEV 內部並行）：
-- 有 specs（standard / full / secure / tdd / refactor）：architect 已在 `tasks.md` 寫入 `## Dev Phases` → DEV 階段讀取並按 Phase 調度（parallel Phase 同一訊息多個 Task，sequential Phase 單一 Task）
-- 無 specs（quick / debug / single）：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/mul-dev/SKILL.md` → 自行分析任務，判斷是否有可並行子任務 → 有則同一訊息多個 Task，無則單一 developer
+- **有 Dev Phases**（tasks.md 中存在 `## Dev Phases` 區塊）：按 Phase 調度（parallel Phase 同一訊息多個 Task，sequential Phase 單一 Task）
+- **無 Dev Phases**（無 tasks.md 或 tasks.md 中沒有 `## Dev Phases`）：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/mul-dev/SKILL.md` → 自行分析任務，判斷是否有可並行子任務 → 有則同一訊息多個 Task，無則單一 developer
 - 分析後只有一個 Phase 或無獨立子任務 → 退化為單一 developer，不強制分解
 
 ## BDD 規則
