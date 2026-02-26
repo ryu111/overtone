@@ -17,7 +17,7 @@
 - **D2 hint 過時**：`on-stop.js` 的 `getNextStageHint()` 檢查 `activeAgents` 是否為空
 - **D3 雙重失敗協調**：FAIL + REJECT 同時發生時，TEST FAIL > REVIEW REJECT 優先
 - **D4 並行硬編碼**：將 `parallelGroups` 移入各 workflow 定義，透過字串引用 `parallelGroupDefs`
-- 詳見 `docs/parallel-defects.md`
+- 詳見 `docs/reference/parallel-defects.md`
 
 ### 架構改進
 - `registry.js`：新增全域 `parallelGroupDefs`，各 workflow 透過 `parallelGroups` 欄位引用群組名
@@ -26,7 +26,7 @@
 
 ### 文檔
 - 更新 `docs/workflow.md` 至 v0.5：並行缺陷修復、mul-dev 機制、15 agent 系統
-- 新增 `docs/parallel-defects.md`：4 項缺陷分析 + 修復方向
+- 新增 `docs/reference/parallel-defects.md`：4 項缺陷分析 + 修復方向
 
 ---
 

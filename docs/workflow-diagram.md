@@ -1,3 +1,5 @@
+> 本文件是 [workflow.md](workflow.md) 的視覺化補充。
+
 # Overtone 工作流架構圖
 
 ## 圖 1 — 三層架構全覽

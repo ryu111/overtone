@@ -20,6 +20,8 @@
 
 ## 架構概覽：三層模型
 
+視覺化版本詳見 [workflow-diagram.md](workflow-diagram.md)。
+
 ```
 Layer 0: Loop（外圈）
   └─ Stop hook 截獲退出 → 檢查 checkbox → 有未完成任務自動繼續
@@ -259,7 +261,7 @@ Stop hook 截獲 Claude 退出：
 | **D3 雙重失敗** | FAIL + REJECT 同時發生時缺乏明確優先順序 | TEST FAIL > REVIEW REJECT 優先，統一協調提示 |
 | **D4 並行硬編碼** | `parallelGroups` 無法自訂，所有 workflow 共用固定群組 | 移入 workflow 定義，各 workflow 透過 `parallelGroups` 欄位引用群組名 |
 
-詳見 `docs/parallel-defects.md`。
+詳見 `docs/reference/parallel-defects.md`。
 
 ### 靜態並行（registry 定義 + 動態推導）
 

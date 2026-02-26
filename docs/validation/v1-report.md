@@ -107,7 +107,7 @@ Ran 165 tests across 10 files. [742ms]
 
 ### P1 — ~~`/ot:` passthrough 輸出格式與規格不符~~ ✅ 誤判，已釐清
 
-**釐清結果**：v1-validation.md F3 第 132 行和 F7 第 351 行規格原文為：
+**釐清結果**：v1-checklist.md F3 第 132 行和 F7 第 351 行規格原文為：
 
 ```
 hook 輸出為 `{ additionalContext: '' }`（明確不注入）
