@@ -45,6 +45,40 @@ Task 3: security-reviewer（SECURITY）
 3. **失敗處理不影響其他**：處理 REVIEW REJECT 時，TEST 的結果保留不重做
 4. **二次並行群組依賴第一組**：full workflow 中 [QA + E2E] 等 [REVIEW + TEST] 全部通過後才開始
 
+## 雙重失敗協調規則
+
+並行群組中同時發生多個失敗時，優先順序如下：
+
+**優先順序：TEST FAIL > REVIEW REJECT**
+
+理由：TEST FAIL 代表程式碼根本有問題，REVIEW REJECT 只是品質問題。先修測試失敗後，審查問題通常一起解決。
+
+### 協調提示（同時發生時）
+
+📋 MUST 以 TEST FAIL 為主要失敗路徑：
+
+```
+主要失敗（TEST FAIL）：委派 DEBUGGER 分析根因 → DEVELOPER 修復
+帶入 REJECT 原因：DEVELOPER 修復時同時帶入 REVIEW 的 reject 原因
+重做順序：DEVELOPER 修復 → 再次並行 [REVIEW + TEST]
+```
+
+不可分別進入兩個獨立的修復路徑，會導致無限迴圈。
+
+### 單一失敗（REVIEW REJECT，TEST PASS）
+
+```
+委派 DEVELOPER 修復（帶 reject 原因）→ REVIEWER 再審
+TEST 結果保留，不重做
+```
+
+### 單一失敗（TEST FAIL，REVIEW PASS）
+
+```
+委派 DEBUGGER 分析根因 → DEVELOPER 修復 → TESTER 驗證
+REVIEW 結果保留，不重做
+```
+
 ## 不可並行的情況
 
 以下 stages 📋 MUST 序列執行，不可並行：

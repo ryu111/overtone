@@ -123,7 +123,13 @@ if (result.verdict === 'fail') {
     });
   } else {
     messages.push(`❌ ${stages[stageKey].emoji} ${stages[stageKey].label}失敗（${updatedState.failCount}/${retryDefaults.maxRetries}）`);
-    messages.push('⏭️ 下一步：委派 DEBUGGER 分析根因 → DEVELOPER 修復 → TESTER 驗證');
+    // D3：若同時有 REVIEW REJECT（rejectCount > 0），輸出整合協調提示
+    if (updatedState.rejectCount > 0) {
+      messages.push('⚠️ 並行群組雙重失敗（TEST FAIL + REVIEW REJECT）');
+      messages.push('⏭️ 協調策略（TEST FAIL > REVIEW REJECT）：委派 DEBUGGER 分析根因 → DEVELOPER 修復（同時帶入 REVIEW reject 原因）→ 再次並行 [REVIEW + TEST]');
+    } else {
+      messages.push('⏭️ 下一步：委派 DEBUGGER 分析根因 → DEVELOPER 修復 → TESTER 驗證');
+    }
     timeline.emit(sessionId, 'stage:retry', {
       stage: actualStageKey,
       failCount: updatedState.failCount,
@@ -138,7 +144,13 @@ if (result.verdict === 'fail') {
     });
   } else {
     messages.push(`🔙 審查拒絕（${updatedState.rejectCount}/${retryDefaults.maxRetries}）`);
-    messages.push('⏭️ 下一步：委派 DEVELOPER 修復（帶 reject 原因）→ REVIEWER 再審');
+    // D3：若同時有 TEST FAIL（failCount > 0），提示 TEST FAIL 優先
+    if (updatedState.failCount > 0) {
+      messages.push('⚠️ 並行群組雙重失敗（TEST FAIL + REVIEW REJECT）');
+      messages.push('⏭️ 協調策略（TEST FAIL > REVIEW REJECT）：等待 TEST 結果，以 TEST FAIL 路徑為主（DEBUGGER → DEVELOPER → 再次並行 [REVIEW + TEST]），REVIEW reject 原因一併帶入');
+    } else {
+      messages.push('⏭️ 下一步：委派 DEVELOPER 修復（帶 reject 原因）→ REVIEWER 再審');
+    }
   }
 } else if (result.verdict === 'issues') {
   // 遞增 retroCount
@@ -317,6 +329,12 @@ function checkParallelConvergence(currentState) {
 function getNextStageHint(currentState) {
   const nextStage = currentState.currentStage;
   if (!nextStage) return null;
+
+  // D2：若仍有 active agent，不推進到下一步，提示等待
+  const activeAgentKeys = Object.keys(currentState.activeAgents || {});
+  if (activeAgentKeys.length > 0) {
+    return `等待並行 agent 完成：${activeAgentKeys.join(', ')}`;
+  }
 
   const allCompleted = Object.values(currentState.stages).every(
     (s) => s.status === 'completed'

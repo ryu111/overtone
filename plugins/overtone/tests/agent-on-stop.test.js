@@ -626,3 +626,162 @@ describe('場景 10：REJECT 達到上限', () => {
     expect(result.result).toContain('人工介入');
   });
 });
+
+// ────────────────────────────────────────────────────────────────────────────
+// 場景 12：D2 修復 — 並行 agent 未全部完成時不推進 hint
+// ────────────────────────────────────────────────────────────────────────────
+
+describe('場景 12：D2 — 並行 agent 未完成時 hint 等待', () => {
+  test('REVIEW 完成但 TEST 仍 active（activeAgents 有 tester）→ hint 含「等待並行 agent」', async () => {
+    const sessionId = newSessionId();
+    createdSessions.push(sessionId);
+
+    mkdirSync(paths.sessionDir(sessionId), { recursive: true });
+    // quick workflow: DEV → REVIEW → TEST
+    state.initState(sessionId, 'quick', ['DEV', 'REVIEW', 'TEST']);
+    state.updateStateAtomic(sessionId, (s) => {
+      s.stages['DEV'].status = 'completed';
+      s.stages['DEV'].result = 'pass';
+      // 兩個都 active（模擬並行）
+      s.stages['REVIEW'].status = 'active';
+      s.stages['TEST'].status = 'active';
+      s.currentStage = 'REVIEW';
+      // tester 仍在執行中
+      s.activeAgents['tester'] = { stage: 'TEST', startedAt: new Date().toISOString() };
+      return s;
+    });
+
+    // REVIEW 完成
+    const result = await runHook(
+      { subagent_name: 'code-reviewer', output: 'LGTM, code looks good, approved' },
+      sessionId
+    );
+
+    // 因 tester 仍 active，hint 應提示等待而非推進到 RETRO
+    expect(result.result).toContain('等待並行 agent');
+    expect(result.result).not.toContain('RETRO');
+  });
+
+  test('REVIEW 完成且 activeAgents 為空 → hint 正常推進（不含「等待」）', async () => {
+    const sessionId = newSessionId();
+    createdSessions.push(sessionId);
+
+    mkdirSync(paths.sessionDir(sessionId), { recursive: true });
+    // quick workflow: DEV → REVIEW → TEST → RETRO
+    state.initState(sessionId, 'quick', ['DEV', 'REVIEW', 'TEST', 'RETRO']);
+    state.updateStateAtomic(sessionId, (s) => {
+      s.stages['DEV'].status = 'completed';
+      s.stages['DEV'].result = 'pass';
+      s.stages['REVIEW'].status = 'active';
+      s.currentStage = 'REVIEW';
+      // activeAgents 為空（無其他並行 agent）
+      s.activeAgents = {};
+      return s;
+    });
+
+    // REVIEW 完成
+    const result = await runHook(
+      { subagent_name: 'code-reviewer', output: 'LGTM no issues' },
+      sessionId
+    );
+
+    // hint 不含等待提示
+    expect(result.result).not.toContain('等待並行 agent');
+    // 應推進到 TEST
+    expect(result.result).toContain('✅');
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// 場景 13：D3 修復 — 雙重失敗協調提示
+// ────────────────────────────────────────────────────────────────────────────
+
+describe('場景 13：D3 — 雙重失敗協調提示', () => {
+  test('TEST FAIL 且 rejectCount > 0 → 輸出整合協調提示', async () => {
+    const sessionId = newSessionId();
+    createdSessions.push(sessionId);
+
+    mkdirSync(paths.sessionDir(sessionId), { recursive: true });
+    state.initState(sessionId, 'quick', ['DEV', 'REVIEW', 'TEST']);
+    state.updateStateAtomic(sessionId, (s) => {
+      s.stages['DEV'].status = 'completed';
+      s.stages['DEV'].result = 'pass';
+      s.stages['REVIEW'].status = 'completed';
+      s.stages['REVIEW'].result = 'reject'; // REVIEW 已 reject
+      s.stages['TEST'].status = 'active';
+      s.currentStage = 'TEST';
+      s.rejectCount = 1; // 已有 REVIEW REJECT
+      return s;
+    });
+
+    // TEST 失敗
+    const result = await runHook(
+      { subagent_name: 'tester', output: '3 tests failed with errors' },
+      sessionId
+    );
+
+    // 應包含雙重失敗警告
+    expect(result.result).toContain('雙重失敗');
+    // 應包含協調策略
+    expect(result.result).toContain('協調策略');
+    // 應提到 DEBUGGER
+    expect(result.result.toUpperCase()).toContain('DEBUGGER');
+  });
+
+  test('REVIEW REJECT 且 failCount > 0 → 輸出整合協調提示（TEST FAIL 優先）', async () => {
+    const sessionId = newSessionId();
+    createdSessions.push(sessionId);
+
+    mkdirSync(paths.sessionDir(sessionId), { recursive: true });
+    state.initState(sessionId, 'quick', ['DEV', 'REVIEW', 'TEST']);
+    state.updateStateAtomic(sessionId, (s) => {
+      s.stages['DEV'].status = 'completed';
+      s.stages['DEV'].result = 'pass';
+      s.stages['REVIEW'].status = 'active';
+      s.stages['TEST'].status = 'completed';
+      s.stages['TEST'].result = 'fail'; // TEST 已 fail
+      s.currentStage = 'REVIEW';
+      s.failCount = 1; // 已有 TEST FAIL
+      return s;
+    });
+
+    // REVIEW 拒絕
+    const result = await runHook(
+      { subagent_name: 'code-reviewer', output: 'I reject this, multiple issues' },
+      sessionId
+    );
+
+    // 應包含雙重失敗警告
+    expect(result.result).toContain('雙重失敗');
+    // 應包含協調策略（TEST FAIL 優先）
+    expect(result.result).toContain('協調策略');
+  });
+
+  test('單一 TEST FAIL（rejectCount = 0）→ 一般失敗提示，不含雙重失敗', async () => {
+    const sessionId = newSessionId();
+    createdSessions.push(sessionId);
+
+    mkdirSync(paths.sessionDir(sessionId), { recursive: true });
+    state.initState(sessionId, 'quick', ['DEV', 'REVIEW', 'TEST']);
+    state.updateStateAtomic(sessionId, (s) => {
+      s.stages['DEV'].status = 'completed';
+      s.stages['DEV'].result = 'pass';
+      s.stages['REVIEW'].status = 'completed';
+      s.stages['REVIEW'].result = 'pass';
+      s.stages['TEST'].status = 'active';
+      s.currentStage = 'TEST';
+      s.rejectCount = 0; // 無 REVIEW REJECT
+      return s;
+    });
+
+    const result = await runHook(
+      { subagent_name: 'tester', output: '2 tests failed' },
+      sessionId
+    );
+
+    // 不應包含雙重失敗
+    expect(result.result).not.toContain('雙重失敗');
+    // 一般 DEBUGGER 提示
+    expect(result.result.toUpperCase()).toContain('DEBUGGER');
+  });
+});

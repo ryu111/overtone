@@ -142,7 +142,10 @@ function removeActiveAgent(sessionId, agentName) {
  * 原子化更新 state（Compare-and-Swap 模式）
  *
  * 讀取 state → 執行 modifier → 寫回前驗證 mtime 未變。
- * 若被其他 hook 修改則重試（最多 3 次），最終 fallback 強制寫入。
+ * 若被其他 hook 修改則重試（最多 3 次 + exponential jitter），最終 fallback 強制寫入。
+ *
+ * D1 修復：在每次 retry 前加入 1–5ms 隨機 jitter，縮小 TOCTOU 窗口。
+ * Atomics.wait 在 Worker 環境有效，main thread 環境會拋錯 → catch 後降級為忙等短循環。
  *
  * @param {string} sessionId
  * @param {function} modifier - (state) => newState
@@ -165,7 +168,19 @@ function updateStateAtomic(sessionId, modifier) {
     let currentMtime;
     try { currentMtime = statSync(filePath).mtimeMs; } catch { currentMtime = 0; }
 
-    if (currentMtime !== mtime) continue; // 被其他 hook 修改，重試
+    if (currentMtime !== mtime) {
+      // D1：加入 1–5ms 隨機 jitter，縮小 TOCTOU 競爭窗口
+      const jitterMs = Math.random() * 4 + 1; // 1.0 ~ 5.0 ms
+      try {
+        // Worker 環境：Atomics.wait 實際阻塞
+        Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, jitterMs);
+      } catch {
+        // main thread 環境：Atomics.wait 不可用，改用忙等短循環
+        const deadline = Date.now() + Math.ceil(jitterMs);
+        while (Date.now() < deadline) { /* spin */ }
+      }
+      continue; // 被其他 hook 修改，重試
+    }
 
     writeState(sessionId, newState);
     return newState;

@@ -49,37 +49,54 @@ const agentModels = {
   'doc-updater':         'haiku',
 };
 
-// 工作流模板（12 個）
+// 工作流模板（15 個）
 // BDD 規則：含 PLAN/ARCH 的 workflow 在 DEV 前加入 TEST:spec
+// D4：parallelGroups 移入各 workflow 定義（per-workflow 自訂），
+//     使用 groupName 字串引用，避免在每個 workflow 重複定義成員陣列
 const workflows = {
   // 基本模板（5 個）
-  'single':        { label: '單步修改',   stages: ['DEV'] },
-  'quick':         { label: '快速開發',   stages: ['DEV', 'REVIEW', 'TEST', 'RETRO'] },
-  'standard':      { label: '標準功能',   stages: ['PLAN', 'ARCH', 'TEST', 'DEV', 'REVIEW', 'TEST', 'RETRO', 'DOCS'] },
-  'full':          { label: '完整功能',   stages: ['PLAN', 'ARCH', 'DESIGN', 'TEST', 'DEV', 'REVIEW', 'TEST', 'QA', 'E2E', 'RETRO', 'DOCS'] },
-  'secure':        { label: '高風險',     stages: ['PLAN', 'ARCH', 'TEST', 'DEV', 'REVIEW', 'TEST', 'SECURITY', 'RETRO', 'DOCS'] },
+  'single':        { label: '單步修改',   stages: ['DEV'],                                                                     parallelGroups: [] },
+  'quick':         { label: '快速開發',   stages: ['DEV', 'REVIEW', 'TEST', 'RETRO'],                                          parallelGroups: ['quality'] },
+  'standard':      { label: '標準功能',   stages: ['PLAN', 'ARCH', 'TEST', 'DEV', 'REVIEW', 'TEST', 'RETRO', 'DOCS'],          parallelGroups: ['quality'] },
+  'full':          { label: '完整功能',   stages: ['PLAN', 'ARCH', 'DESIGN', 'TEST', 'DEV', 'REVIEW', 'TEST', 'QA', 'E2E', 'RETRO', 'DOCS'], parallelGroups: ['quality', 'verify'] },
+  'secure':        { label: '高風險',     stages: ['PLAN', 'ARCH', 'TEST', 'DEV', 'REVIEW', 'TEST', 'SECURITY', 'RETRO', 'DOCS'], parallelGroups: ['secure-quality'] },
 
   // 特化模板（7 個，來自 ECC）
-  'tdd':           { label: '測試驅動',   stages: ['TEST', 'DEV', 'TEST'] },
-  'debug':         { label: '除錯',       stages: ['DEBUG', 'DEV', 'TEST'] },
-  'refactor':      { label: '重構',       stages: ['ARCH', 'TEST', 'DEV', 'REVIEW', 'TEST'] },
-  'review-only':   { label: '純審查',     stages: ['REVIEW'] },
-  'security-only': { label: '安全掃描',   stages: ['SECURITY'] },
-  'build-fix':     { label: '修構建',     stages: ['BUILD-FIX'] },
-  'e2e-only':      { label: 'E2E 測試',  stages: ['E2E'] },
+  'tdd':           { label: '測試驅動',   stages: ['TEST', 'DEV', 'TEST'],                                                     parallelGroups: [] },
+  'debug':         { label: '除錯',       stages: ['DEBUG', 'DEV', 'TEST'],                                                    parallelGroups: [] },
+  'refactor':      { label: '重構',       stages: ['ARCH', 'TEST', 'DEV', 'REVIEW', 'TEST'],                                   parallelGroups: ['quality'] },
+  'review-only':   { label: '純審查',     stages: ['REVIEW'],                                                                  parallelGroups: [] },
+  'security-only': { label: '安全掃描',   stages: ['SECURITY'],                                                                parallelGroups: [] },
+  'build-fix':     { label: '修構建',     stages: ['BUILD-FIX'],                                                               parallelGroups: [] },
+  'e2e-only':      { label: 'E2E 測試',  stages: ['E2E'],                                                                     parallelGroups: [] },
 
   // 特化模板（3 個，對應獨立 agent）
-  'diagnose':      { label: '診斷',       stages: ['DEBUG'] },
-  'clean':         { label: '重構清理',   stages: ['REFACTOR'] },
-  'db-review':     { label: 'DB審查',     stages: ['DB-REVIEW'] },
+  'diagnose':      { label: '診斷',       stages: ['DEBUG'],                                                                   parallelGroups: [] },
+  'clean':         { label: '重構清理',   stages: ['REFACTOR'],                                                                parallelGroups: [] },
+  'db-review':     { label: 'DB審查',     stages: ['DB-REVIEW'],                                                               parallelGroups: [] },
 };
 
-// 並行群組：同一群組內的 stages 由 ECC 原生並行（同一訊息多 Task）
-const parallelGroups = {
+// 並行群組成員定義（全域 registry，各 workflow 透過 parallelGroups 欄位引用群組名）
+// D4：此為 canonical 成員定義，workflow 層的 parallelGroups 欄位是引用列表（非重複定義）
+const parallelGroupDefs = {
   'quality':        ['REVIEW', 'TEST'],
   'verify':         ['QA', 'E2E'],
   'secure-quality': ['REVIEW', 'TEST', 'SECURITY'],
 };
+
+// 向後相容：parallelGroups 從 workflows 動態推導（所有唯一群組名對應的成員定義）
+// 外部模組 import parallelGroups 仍可正常使用，行為與舊版完全一致
+const parallelGroups = (() => {
+  const result = {};
+  for (const wf of Object.values(workflows)) {
+    for (const groupName of (wf.parallelGroups || [])) {
+      if (parallelGroupDefs[groupName] && !result[groupName]) {
+        result[groupName] = parallelGroupDefs[groupName];
+      }
+    }
+  }
+  return result;
+})();
 
 // 預設序列（/ot:auto 參考）
 const orchestratePresets = {
@@ -188,6 +205,7 @@ module.exports = {
   agentModels,
   workflows,
   parallelGroups,
+  parallelGroupDefs,
   orchestratePresets,
   loopDefaults,
   retryDefaults,
