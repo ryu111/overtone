@@ -119,6 +119,41 @@ V1 固定 15 個 agent。V2 再考慮使用者自定義擴充。
 └── ...
 ```
 
+### Developer Handoff 動態 Test Scope（v0.15.1+）
+
+Developer 在 Handoff 中加入 `### Test Scope` 區段，動態指定下游測試調度：
+
+```markdown
+## HANDOFF: architect → developer
+
+### Context
+[實作的功能描述]
+
+### Findings
+[關鍵實作決策]
+
+### Files Modified
+[變更檔案清單]
+
+### Test Scope
+目標 workflow：standard / full / quick
+- **Unit Tests**：路徑 tests/unit/xxx.test.js
+  - 已實作 5 個 case，覆蓋核心邏輯
+- **Integration Tests**：路徑 tests/integration/yyy.test.js
+  - 新增 3 個 case，驗證 I/O 串接
+- **E2E Tests**：路徑 tests/e2e/agent-browser.test.js
+  - 可選，大功能自動啟用
+
+### Open Questions
+[未解決項]
+```
+
+**說明**：
+- Test Scope 由 developer 填寫，tester 據此決定是否新增額外測試
+- `目標 workflow` 指該功能應在哪種 workflow 中啟用（standard/full/quick 等）
+- 若無 Test Scope，tester 按預設行為：DEV → TEST:verify（事後驗證）
+- 含 PLAN/ARCH 的大功能自動啟用 TEST:spec（BDD 規格）
+
 ---
 
 ## BDD 整合

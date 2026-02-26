@@ -60,6 +60,17 @@ maxTurns: 50
 ### Files Modified
 [變更的檔案清單，每個標明新增/修改/刪除]
 
+### Test Scope
+| Scope | 標記 | 說明 |
+|-------|------|------|
+| unit | ✅/--/⚠️ | [說明] |
+| integration | ✅/--/⚠️ | [說明] |
+| e2e | ✅/--/⚠️ | [說明] |
+| qa | ✅/--/⚠️ | [說明] |
+
+標記說明：✅ main agent 委派對應測試 agent；⚠️ main agent 自行判斷；-- 跳過。
+刪除功能時，在 Test Scope 標記對應 scope 為「待清理」並說明哪個測試檔需要刪除。
+
 ### Open Questions
 [需要 reviewer/tester 特別注意的項目]
 ```

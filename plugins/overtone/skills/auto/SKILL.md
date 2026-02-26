@@ -64,6 +64,13 @@ description: Overtone 核心工作流選擇器。分析使用者需求自動選�
 同一並行群組 📋 MUST 在同一訊息中多個 Task 同時委派：quality（REVIEW + TEST）、verify（QA + E2E）、secure-quality（REVIEW + TEST + SECURITY）。
 💡 完整規則與語法範例：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/auto/references/parallel-groups.md`
 
+### Test Scope 動態調度
+
+DEV 完成後，讀取 developer Handoff 的 `### Test Scope` 區塊，動態決定委派哪些測試 agent：
+- `unit`/`integration` ✅ → 委派 tester（TEST:verify）；`e2e` ✅ → 委派 e2e-runner（E2E）；`qa` ✅ → 委派 qa（QA）
+- 標記為 `⚠️` → main agent 自行判斷是否委派；全部 `--` → 跳過所有測試 agent；`### Test Scope` 完全缺失 → 預設委派 tester
+- 💡 完整調度規則：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/auto/references/test-scope-dispatch.md`
+
 **Mul Dev**（DEV 內部並行）：
 - **有 Dev Phases**（tasks.md 中存在 `## Dev Phases` 區塊）：按 Phase 調度（parallel Phase 同一訊息多個 Task，sequential Phase 單一 Task）
 - **無 Dev Phases**（無 tasks.md 或 tasks.md 中沒有 `## Dev Phases`）：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/mul-dev/SKILL.md` → 自行分析任務，判斷是否有可並行子任務 → 有則同一訊息多個 Task，無則單一 developer

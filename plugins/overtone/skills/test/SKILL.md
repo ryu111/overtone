@@ -31,6 +31,7 @@ disable-model-invocation: true
 - **輸入**：BDD spec（`specs/features/in-progress/{featureName}/bdd.md`）+ 程式碼變更
 - **產出**：測試結果（PASS / FAIL）
 - 📋 對照 BDD spec 逐條撰寫並執行測試
+- 📋 **路徑慣例**：unit 測試放 `tests/unit/`，integration 測試放 `tests/integration/`；跨目錄 require 使用 `tests/helpers/paths.js` 管理
 
 ## 使用場景
 

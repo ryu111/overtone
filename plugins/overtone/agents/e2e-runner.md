@@ -21,6 +21,7 @@ maxTurns: 50
 ## DO（📋 MUST）
 
 - 📋 偵測並使用專案現有的 E2E 框架和配置
+- 📋 E2E 測試存放於 `tests/e2e/` 目錄，檔案命名為 `*.spec.js`
 - 📋 按 BDD spec 的使用者流程撰寫測試
 - 📋 使用 data-testid 或 accessible role 選取元素（避免脆弱的 CSS selector）
 - 📋 加入合理的 wait/timeout 處理非同步操作

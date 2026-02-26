@@ -22,6 +22,7 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/init-workflow.js e2e-only ${CLAUDE_SESSION_ID
 - **輸入**：使用者指定的測試範圍或全部 E2E 測試
 - **產出**：PASS / FAIL（含測試結果摘要）
 - 💡 agent 自動偵測 E2E 框架（Playwright/Cypress/Puppeteer）
+- 📋 **路徑慣例**：E2E 測試放 `tests/e2e/`，命名 `*.spec.js`；瀏覽器操作使用 agent-browser CLI（定義於 e2e-runner agent prompt）
 
 ## 完成條件
 

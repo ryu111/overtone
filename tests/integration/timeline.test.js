@@ -3,9 +3,10 @@ const { test, expect, beforeEach, afterEach, describe } = require('bun:test');
 const { mkdirSync, rmSync, appendFileSync, readFileSync, existsSync } = require('fs');
 const { join } = require('path');
 const { homedir } = require('os');
+const { SCRIPTS_LIB } = require('../helpers/paths');
 
-const timeline = require('../scripts/lib/timeline');
-const paths = require('../scripts/lib/paths');
+const timeline = require(join(SCRIPTS_LIB, 'timeline'));
+const paths = require(join(SCRIPTS_LIB, 'paths'));
 
 // 使用獨立的測試 session ID 避免污染
 const TEST_SESSION = `test_timeline_${Date.now()}`;

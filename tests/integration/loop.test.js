@@ -3,12 +3,13 @@ const { test, expect, beforeEach, afterEach, describe } = require('bun:test');
 const { mkdirSync, rmSync, writeFileSync } = require('fs');
 const { join } = require('path');
 const { homedir } = require('os');
+const { SCRIPTS_LIB } = require('../helpers/paths');
 
 const TEST_SESSION = `test_loop_${Date.now()}`;
 const SESSION_DIR = join(homedir(), '.overtone', 'sessions', TEST_SESSION);
 
-const loop = require('../scripts/lib/loop');
-const paths = require('../scripts/lib/paths');
+const loop = require(join(SCRIPTS_LIB, 'loop'));
+const paths = require(join(SCRIPTS_LIB, 'paths'));
 
 beforeEach(() => {
   mkdirSync(SESSION_DIR, { recursive: true });

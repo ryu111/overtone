@@ -9,9 +9,10 @@ const { test, expect, beforeAll, afterAll, describe } = require('bun:test');
 const { mkdirSync, rmSync, appendFileSync } = require('fs');
 const { join } = require('path');
 const { homedir } = require('os');
+const { SCRIPTS_LIB, SCRIPTS_DIR } = require('../helpers/paths');
 
-const state = require('../scripts/lib/state');
-const paths = require('../scripts/lib/paths');
+const state = require(join(SCRIPTS_LIB, 'state'));
+const paths = require(join(SCRIPTS_LIB, 'paths'));
 
 // ── 常數 ──
 
@@ -92,7 +93,7 @@ beforeAll(async () => {
   writeStageCompleteEvent(TEST_SESSION, 'REVIEW', 'pass', '2026-02-26T00:02:00.000Z');
 
   // 啟動 server 子進程
-  const serverScript = join(__dirname, '..', 'scripts', 'server.js');
+  const serverScript = join(SCRIPTS_DIR, 'server.js');
   serverProcess = Bun.spawn(['bun', serverScript], {
     env: {
       ...process.env,

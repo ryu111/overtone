@@ -6,7 +6,7 @@
   "scripts": {
     "server": "bun run scripts/server.js",
     "validate": "bun run scripts/validate-agents.js",
-    "test": "bun test"
+    "test": "bun test ../../tests"
   },
   "engines": {
     "bun": ">=1.0.0"

@@ -28,6 +28,7 @@ tools:
 - 📋 對照 BDD spec（`specs/features/in-progress/{featureName}/bdd.md`）逐條驗證
 - 📋 嘗試邊界條件（空值、極大值、特殊字元）
 - 📋 驗證錯誤處理（錯誤訊息是否友善、是否有 fallback）
+- 📋 完成後將驗證報告寫入 `specs/features/in-progress/{featureName}/qa-handoff.md`
 - 💡 從使用者角度評估流程是否直覺
 - 💡 檢查不同輸入組合的交互影響
 
@@ -59,7 +60,7 @@ agent-browser close
 
 ## 輸出
 
-完成後 📋 MUST 在回覆最後輸出 Handoff：
+完成後 📋 MUST 將驗證報告寫入 `specs/features/in-progress/{featureName}/qa-handoff.md`，並在回覆最後輸出 Handoff：
 
 ```
 ## HANDOFF: qa → {next-agent}

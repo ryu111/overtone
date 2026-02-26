@@ -1,8 +1,9 @@
 'use strict';
 const { test, expect, describe } = require('bun:test');
-const { atomicWrite, escapeHtml } = require('../scripts/lib/utils');
-const { mkdirSync, rmSync, readFileSync, readdirSync } = require('fs');
 const { join } = require('path');
+const { SCRIPTS_LIB } = require('../helpers/paths');
+const { atomicWrite, escapeHtml } = require(join(SCRIPTS_LIB, 'utils'));
+const { mkdirSync, rmSync, readFileSync, readdirSync } = require('fs');
 const { tmpdir } = require('os');
 
 const TEST_DIR = join(tmpdir(), `overtone-utils-test-${Date.now()}`);

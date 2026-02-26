@@ -1,6 +1,8 @@
 'use strict';
 const { test, expect, describe } = require('bun:test');
-const { stages } = require('../scripts/lib/registry');
+const { join } = require('path');
+const { SCRIPTS_LIB } = require('../helpers/paths');
+const { stages } = require(join(SCRIPTS_LIB, 'registry'));
 
 // 從 pre-task.js 提取 identifyAgent 邏輯
 function identifyAgent(desc, prmt) {

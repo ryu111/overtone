@@ -3,12 +3,13 @@ const { test, expect, beforeEach, afterEach, describe } = require('bun:test');
 const { mkdirSync, rmSync, existsSync, readFileSync } = require('fs');
 const { join } = require('path');
 const { homedir } = require('os');
+const { SCRIPTS_LIB } = require('../helpers/paths');
 
 // 使用獨立的測試 session ID 避免污染
 const TEST_SESSION = `test_state_${Date.now()}`;
 const SESSION_DIR = join(homedir(), '.overtone', 'sessions', TEST_SESSION);
 
-const state = require('../scripts/lib/state');
+const state = require(join(SCRIPTS_LIB, 'state'));
 
 beforeEach(() => {
   mkdirSync(SESSION_DIR, { recursive: true });
@@ -25,7 +26,7 @@ describe('readState', () => {
 
   test('損壞的 JSON 回傳 null', () => {
     const { writeFileSync } = require('fs');
-    const paths = require('../scripts/lib/paths');
+    const paths = require(join(SCRIPTS_LIB, 'paths'));
     writeFileSync(paths.session.workflow(TEST_SESSION), 'not valid json', 'utf8');
     expect(state.readState(TEST_SESSION)).toBeNull();
   });
@@ -41,7 +42,7 @@ describe('writeState / readState 往返', () => {
 
   test('原子寫入不留殘餘 tmp 檔案', () => {
     state.writeState(TEST_SESSION, { test: true });
-    const paths = require('../scripts/lib/paths');
+    const paths = require(join(SCRIPTS_LIB, 'paths'));
     const dir = require('path').dirname(paths.session.workflow(TEST_SESSION));
     const files = require('fs').readdirSync(dir);
     const tmpFiles = files.filter(f => f.endsWith('.tmp'));

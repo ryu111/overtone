@@ -11,22 +11,16 @@
 const { test, expect, describe, beforeAll, afterAll, afterEach } = require('bun:test');
 const { mkdirSync, rmSync } = require('fs');
 const { join } = require('path');
+const { HOOKS_DIR, SCRIPTS_LIB } = require('../helpers/paths');
 
 // ── 路徑設定 ──
 
-const HOOK_PATH = join(
-  __dirname,
-  '../hooks/scripts/agent/on-stop.js'
-);
+const HOOK_PATH = join(HOOKS_DIR, 'agent', 'on-stop.js');
 
-const STATE_LIB_PATH = join(__dirname, '../scripts/lib/state');
-const TIMELINE_LIB_PATH = join(__dirname, '../scripts/lib/timeline');
-const PATHS_LIB_PATH = join(__dirname, '../scripts/lib/paths');
-
-const paths = require(PATHS_LIB_PATH);
-const state = require(STATE_LIB_PATH);
-const timeline = require(TIMELINE_LIB_PATH);
-const { workflows } = require('../scripts/lib/registry');
+const paths = require(join(SCRIPTS_LIB, 'paths'));
+const state = require(join(SCRIPTS_LIB, 'state'));
+const timeline = require(join(SCRIPTS_LIB, 'timeline'));
+const { workflows } = require(join(SCRIPTS_LIB, 'registry'));
 
 // ── 輔助函式 ──
 

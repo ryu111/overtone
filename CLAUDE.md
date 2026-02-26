@@ -79,6 +79,12 @@ db-review:  DB-REVIEW
 ## 目錄結構
 
 ```
+tests/                           # 專案測試目錄（⚠️ 不在 plugin 下）
+├── unit/                        # 單元測試（純函數，無 I/O）
+├── integration/                 # 整合測試（真實 I/O）
+├── e2e/                         # E2E 測試（agent-browser）
+└── helpers/                     # 共用路徑 helper
+
 docs/                            # 專案文件目錄（⚠️ 不在 plugin 下）
 ├── spec/                        # 規格文件
 │   ├── overtone.md              # 主規格索引
@@ -110,7 +116,6 @@ plugins/overtone/                # Plugin 根目錄
 │   ├── dashboard/               # Dashboard 程序管理
 │   └── remote/                  # EventBus + Adapter（Dashboard、Telegram）
 ├── web/                         # Dashboard 前端（htmx + Alpine.js）
-├── tests/                       # 13 個測試檔（bun test）
 └── package.json                 # Bun 專案設定
 ```
 
@@ -139,6 +144,9 @@ plugins/overtone/                # Plugin 根目錄
 ## 常用指令
 
 ```bash
+# 執行所有測試（從專案根目錄）
+bun test
+
 # 啟動 Dashboard 監控面板（port 7777）
 bun scripts/server.js
 

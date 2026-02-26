@@ -15,8 +15,9 @@ const {
 } = require('fs');
 const os = require('os');
 const path = require('path');
+const { SCRIPTS_LIB, SCRIPTS_DIR } = require('../helpers/paths');
 
-const specs = require('../scripts/lib/specs');
+const specs = require(path.join(SCRIPTS_LIB, 'specs'));
 
 // ── 臨時目錄工具 ──
 
@@ -562,8 +563,6 @@ describe('getActiveFeature', () => {
 });
 
 // ── CLI 腳本整合測試 ──
-
-const SCRIPTS_DIR = path.join(__dirname, '../scripts');
 
 /**
  * 執行 CLI 腳本，傳入參數和 cwd

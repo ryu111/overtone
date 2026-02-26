@@ -12,24 +12,19 @@
  */
 
 const { test, expect, describe, afterAll } = require('bun:test');
-const { mkdirSync, rmSync, existsSync } = require('fs');
+const { mkdirSync, rmSync, existsSync, mkdtempSync } = require('fs');
 const { join } = require('path');
 const os = require('os');
+const { HOOKS_DIR, SCRIPTS_LIB } = require('../helpers/paths');
 
 // ── 路徑設定 ──
 
-const HOOK_PATH = join(
-  __dirname,
-  '../hooks/scripts/session/on-stop.js'
-);
+const HOOK_PATH = join(HOOKS_DIR, 'session', 'on-stop.js');
 
-const PATHS_LIB_PATH = join(__dirname, '../scripts/lib/paths');
-const STATE_LIB_PATH = join(__dirname, '../scripts/lib/state');
-const LOOP_LIB_PATH  = join(__dirname, '../scripts/lib/loop');
-
-const paths = require(PATHS_LIB_PATH);
-const state = require(STATE_LIB_PATH);
-const loop  = require(LOOP_LIB_PATH);
+const paths = require(join(SCRIPTS_LIB, 'paths'));
+const state = require(join(SCRIPTS_LIB, 'state'));
+const loop  = require(join(SCRIPTS_LIB, 'loop'));
+const specs = require(join(SCRIPTS_LIB, 'specs'));
 
 // ── 輔助函式 ──
 
@@ -243,10 +238,6 @@ describe('Stop hook 場景 5：無 workflow 狀態 → 允許退出', () => {
 // ────────────────────────────────────────────────────────────────────────────
 // 場景 6：Specs archive 整合 — workflow 完成且有 featureName → 自動歸檔
 // ────────────────────────────────────────────────────────────────────────────
-
-// 輔助：建立臨時專案根目錄（含 specs feature 結構）
-const { mkdtempSync } = require('fs');
-const specs = require('../scripts/lib/specs');
 
 // 收集需清理的臨時目錄
 const createdTmpDirs = [];

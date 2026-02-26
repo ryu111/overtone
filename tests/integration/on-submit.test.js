@@ -3,16 +3,11 @@ const { test, expect, describe, beforeAll, afterAll } = require('bun:test');
 const { mkdirSync, rmSync, writeFileSync } = require('fs');
 const { join } = require('path');
 const { homedir } = require('os');
+const { HOOKS_DIR, SCRIPTS_LIB } = require('../helpers/paths');
 
 // ── 路徑設定 ──
 
-const HOOK_PATH = join(
-  __dirname,
-  '../hooks/scripts/prompt/on-submit.js'
-);
-
-const STATE_LIB_PATH = join(__dirname, '../scripts/lib/state');
-const PATHS_LIB_PATH = join(__dirname, '../scripts/lib/paths');
+const HOOK_PATH = join(HOOKS_DIR, 'prompt', 'on-submit.js');
 
 // ── 輔助函式 ──
 
@@ -37,9 +32,9 @@ async function runHook(input, env = {}) {
 // ── 場景 8 所需的 session 管理 ──
 
 const TEST_SESSION = `test_on_submit_${Date.now()}`;
-const paths = require(PATHS_LIB_PATH);
+const paths = require(join(SCRIPTS_LIB, 'paths'));
 const SESSION_DIR = paths.sessionDir(TEST_SESSION);
-const state = require(STATE_LIB_PATH);
+const state = require(join(SCRIPTS_LIB, 'state'));
 
 beforeAll(() => {
   // 建立測試 session 目錄，供場景 8 使用
