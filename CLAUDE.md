@@ -121,7 +121,7 @@ plugins/overtone/                # Plugin 根目錄
 | UserPromptSubmit | systemMessage → /ot:auto |
 | PreToolUse(Task) | 擋跳過必要階段 |
 | SubagentStop | 記錄結果 + 提示下一步 + 寫 state + emit timeline |
-| PostToolUse | Instinct 觀察收集 |
+| PostToolUse | Instinct 觀察收集 + .md 措詞偵測（emoji-關鍵詞不匹配警告） |
 | Stop | Loop 迴圈 + 完成度 + Dashboard 通知 |
 
 ## 常用指令
@@ -157,4 +157,5 @@ bun scripts/init-workflow.js {workflowType} {sessionId}
 |------|------|
 | `docs/workflow.md` | 完整設計文件（v0.3，55 個決策） |
 | `scripts/lib/registry.js` | SoT — 所有映射定義 |
+| `docs/reference/wording-guide.md` | 措詞正確性指南（決策樹 + 反模式 + 場景範例） |
 | `docs/reference/ecc-*.md` | ECC 架構分析（4 份參考） |
