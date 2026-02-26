@@ -2,6 +2,34 @@
 
 所有重要變更記錄於此文件。
 
+## [0.15.0] - 2026-02-26（並行機制優化 + mul-dev 新增）
+
+### 功能新增
+- **mul-dev skill**：DEV 階段內部並行機制
+  - Mode A（有 specs）：architect 在 ARCH 後寫入 `## Dev Phases` 區塊
+  - Mode B（無 specs）：Main Agent 自行判斷可並行子任務
+  - Phase 標記：`(sequential)` / `(parallel)` / `(sequential, depends: N)` / `(parallel, depends: N)`
+  - 失敗隔離：子任務重試不影響同 Phase 其他子任務
+  - 詳見 `skills/mul-dev/SKILL.md`
+
+### 並行機制缺陷修復（D1–D4）
+- **D1 TOCTOU**：`state.js` 的 `updateStateAtomic` 加入 1–5ms jitter retry + Atomics.wait 優先
+- **D2 hint 過時**：`on-stop.js` 的 `getNextStageHint()` 檢查 `activeAgents` 是否為空
+- **D3 雙重失敗協調**：FAIL + REJECT 同時發生時，TEST FAIL > REVIEW REJECT 優先
+- **D4 並行硬編碼**：將 `parallelGroups` 移入各 workflow 定義，透過字串引用 `parallelGroupDefs`
+- 詳見 `docs/parallel-defects.md`
+
+### 架構改進
+- `registry.js`：新增全域 `parallelGroupDefs`，各 workflow 透過 `parallelGroups` 欄位引用群組名
+- `parallelGroups` 向後相容：外部 import 時動態推導為舊格式（群組名 → 成員陣列）
+- Agent 擴充至 15 個（加 retrospective agent）
+
+### 文檔
+- 更新 `docs/workflow.md` 至 v0.5：並行缺陷修復、mul-dev 機制、15 agent 系統
+- 新增 `docs/parallel-defects.md`：4 項缺陷分析 + 修復方向
+
+---
+
 ## [0.11.0] - 2026-02-26
 
 ### 安全修復

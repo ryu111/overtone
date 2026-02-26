@@ -1,6 +1,6 @@
 # Overtone Workflow 設計文件
 
-> 版本：v0.4 | 狀態：Phase 1-12 完成，V1 剩餘見 Roadmap 章節
+> 版本：v0.5 | 狀態：Phase 1-12 完成 + 並行機制 D1–D4 修復 + mul-dev 新增，V1 剩餘見 Roadmap 章節
 
 ## 設計哲學
 
@@ -14,7 +14,7 @@
 | **Skill 做指引** | 告訴 Main Agent 下一步做什麼，讓它自己決定怎麼做 | wk 的成功模式 |
 | **Loop 預設** | 預設 loop 模式，任務完成自動繼續下一個 | wk ralph-loop |
 | **BDD 驅動** | 先定義行為（BDD spec）再寫碼 | 面向 9 決策 |
-| **Agent 專職** | 14 個專職 agent，各司其職 | ECC + Vibe 混合 |
+| **Agent 專職** | 15 個專職 agent，各司其職 | ECC + Vibe 混合 |
 
 ---
 
@@ -97,7 +97,7 @@ Main Agent 讀取 `/ot:auto` Skill 內容後自行判斷最適合的工作流模
 
 ---
 
-## Agent 系統（14 個）
+## Agent 系統（15 個）
 
 ### Agent 清單
 
@@ -116,19 +116,20 @@ Main Agent 讀取 `/ot:auto` Skill 內容後自行判斷最適合的工作流模
 | 11 | e2e-runner | sonnet | green | E2E | bypassPermissions |
 | 12 | build-error-resolver | sonnet | orange | 修構建 | bypassPermissions |
 | 13 | refactor-cleaner | sonnet | blue | 死碼清理 | bypassPermissions |
-| 14 | doc-updater | haiku | purple | 文件 | bypassPermissions |
+| 14 | retrospective | opus | purple | 迭代回顧 | bypassPermissions |
+| 15 | doc-updater | haiku | purple | 文件 | bypassPermissions |
 
 ### Model 分級
 
-- **Opus**（4 個決策型）：planner、architect、code-reviewer、security-reviewer
+- **Opus**（5 個決策型）：planner、architect、code-reviewer、security-reviewer、retrospective
 - **Sonnet**（9 個執行型）：其他所有
 - **Haiku**（1 個簡單）：doc-updater
 
-### 色彩分組（6 組）
+### 色彩分組（8 組）
 
 | 色彩 | 組別 | Agents |
 |:----:|------|--------|
-| purple | 規劃類 | planner、doc-updater |
+| purple | 規劃類 | planner、retrospective、doc-updater |
 | cyan | 設計類 | architect、designer |
 | yellow | 執行類 | developer、qa |
 | blue | 分析類 | code-reviewer、refactor-cleaner |
@@ -173,7 +174,7 @@ Main Agent 讀取 `/ot:auto` Skill 內容後自行判斷最適合的工作流模
 
 ### 擴充機制
 
-V1 固定 14 個 agent。V2 再考慮使用者自定義擴充。
+V1 固定 15 個 agent。V2 再考慮使用者自定義擴充。
 
 ---
 
@@ -247,17 +248,48 @@ Stop hook 截獲 Claude 退出：
 - **不偵測檔案衝突**：信任 tasks.md 分配
 - **Main Agent 收斂**：hook 記錄結果，全部完成後提示 Main
 
-### 靜態並行（registry 定義）
+### 並行缺陷修復（D1–D4）
 
-registry.js 的 `parallelGroups` 定義哪些 stages 可以並行：
+經實戰驗證，多 agent 並行時存在 4 項設計缺陷，已全數修復：
+
+| 缺陷 | 根因 | 修復 |
+|------|------|------|
+| **D1 TOCTOU** | `updateStateAtomic` mtime 讀寫間衝突 | 1–5ms jitter retry + Atomics.wait 優先 |
+| **D2 hint 過時** | 第一完成 agent 的 hint 可能跳過未完成的並行 agent | `getNextStageHint()` 檢查 `activeAgents` 是否為空 |
+| **D3 雙重失敗** | FAIL + REJECT 同時發生時缺乏明確優先順序 | TEST FAIL > REVIEW REJECT 優先，統一協調提示 |
+| **D4 並行硬編碼** | `parallelGroups` 無法自訂，所有 workflow 共用固定群組 | 移入 workflow 定義，各 workflow 透過 `parallelGroups` 欄位引用群組名 |
+
+詳見 `docs/parallel-defects.md`。
+
+### 靜態並行（registry 定義 + 動態推導）
+
+registry.js 定義全域 `parallelGroupDefs`：
 
 ```javascript
-parallelGroups: {
-  'quality':  ['REVIEW', 'TEST'],
-  'verify':   ['QA', 'E2E'],
+parallelGroupDefs: {
+  'quality':        ['REVIEW', 'TEST'],
+  'verify':         ['QA', 'E2E'],
   'secure-quality': ['REVIEW', 'TEST', 'SECURITY'],
 }
 ```
+
+各 workflow 在定義中透過字串引用（避免重複）：
+
+```javascript
+workflows: {
+  'standard': {
+    stages: [...],
+    parallelGroups: ['quality'],     // 只列群組名，成員定義在 parallelGroupDefs
+  },
+  'full': {
+    stages: [...],
+    parallelGroups: ['quality', 'verify'],
+  },
+  ...
+}
+```
+
+**向後相容**：外部模組 import `parallelGroups` 時，動態推導為舊格式（群組名 → 成員陣列）。
 
 ### 動態並行（tasks.md parallel）
 
@@ -268,9 +300,48 @@ parallelGroups: {
 - [ ] 2.3 建立 OrderService | agent: developer | files: src/services/order.ts
 ```
 
+### DEV 階段內部並行：Mul-Dev 機制
+
+DEV 階段可進一步分解為多個並行子任務（Phase），通過 **mul-dev skill** 協調。
+
+**兩種模式**：
+
+| 模式 | 觸發條件 | 分析者 | Phase 存放位置 |
+|------|--------|--------|:----:|
+| **Mode A** | 有 specs（standard/full/secure/refactor） | architect | `tasks.md` → `## Dev Phases` 區塊 |
+| **Mode B** | 無 specs（quick/debug/single） | Main Agent | context window 自行判斷 |
+
+**Phase 標記格式**：
+
+```markdown
+## Dev Phases
+
+### Phase 1: 基礎建設 (sequential)
+- [ ] 建立資料模型 | files: src/models/user.ts
+- [ ] 設定路由骨架 | files: src/routes/index.ts
+
+### Phase 2: 核心功能 (parallel)
+- [ ] 實作 CRUD API | files: src/handlers/user.ts
+- [ ] 實作認證中間件 | files: src/middleware/auth.ts
+- [ ] 撰寫單元測試 | files: tests/user.test.ts
+
+### Phase 3: 整合 (sequential, depends: 2)
+- [ ] 整合 CRUD 與認證 | files: src/routes/user.ts
+```
+
+- `(sequential)`：Phase 內子任務依序執行（單一 developer）
+- `(parallel)`：Phase 內子任務同一訊息並行（多個 developer Task）
+- `(depends: N)`：非前一 Phase 時標注跨越依賴
+
+**判斷標準**：操作不同檔案 ∧ 無邏輯依賴 → parallel；否則 sequential。
+
+**失敗隔離**：某子任務 FAIL → 只重試該子任務；整個 Phase FAIL → 不進入下一 Phase。
+
+詳見 `skills/mul-dev/SKILL.md`。
+
 ### 編排模式
 
-**順序 + 並行**兩種，不需要 DAG、不需要 /ot:orchestrate 專門命令。
+**順序 + 並行 + Phase 依賴**：不需要 DAG、不需要 /ot:orchestrate 專門命令。
 
 ---
 
@@ -297,6 +368,20 @@ rejectCount < 3？
 ├─ 是 → 委派 DEVELOPER 修復（帶 reject 原因）→ 委派 REVIEWER 再審
 └─ 否 → 暫停，提示使用者介入
 ```
+
+### 雙重失敗協調（D3 修復）
+
+REVIEW REJECT + TEST FAIL 同時發生時，優先順序明確為 **TEST FAIL > REVIEW REJECT**。
+
+**理由**：測試失敗表示代碼根本有問題；審查拒絕只是品質問題。
+
+**協調行為**：
+1. 先分析 TEST FAIL 的根因（DEBUGGER）
+2. DEVELOPER 修復根本問題
+3. TESTER 再驗證
+4. 若 REVIEW 仍需要修改，帶上本輪修正一起重審
+
+這樣避免進入「REVIEW 修了但 TEST 沒修，反覆 REJECT」的無限迴圈。
 
 ### 重試上限
 
