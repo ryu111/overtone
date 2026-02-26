@@ -6,13 +6,15 @@
  *   - 有未完成 stages → block（decision: 'block'）
  *   - 手動停止（loop.stopped = true）→ 允許退出
  *   - 無 sessionId → 直接允許退出
+ *   - Specs archive 整合：workflow 完成且有 featureName → 自動歸檔
  *
  * 策略：使用 Bun.spawn 執行真實 Stop hook 子進程，傳入 stdin + 環境變數驗證行為。
  */
 
 const { test, expect, describe, afterAll } = require('bun:test');
-const { mkdirSync, rmSync } = require('fs');
+const { mkdirSync, rmSync, existsSync } = require('fs');
 const { join } = require('path');
+const os = require('os');
 
 // ── 路徑設定 ──
 
@@ -233,6 +235,90 @@ describe('Stop hook 場景 5：無 workflow 狀態 → 允許退出', () => {
     );
 
     const parsed = JSON.parse(output);
+    expect(parsed.decision).not.toBe('block');
+    expect(exitCode).toBe(0);
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// 場景 6：Specs archive 整合 — workflow 完成且有 featureName → 自動歸檔
+// ────────────────────────────────────────────────────────────────────────────
+
+// 輔助：建立臨時專案根目錄（含 specs feature 結構）
+const { mkdtempSync } = require('fs');
+const specs = require('../scripts/lib/specs');
+
+// 收集需清理的臨時目錄
+const createdTmpDirs = [];
+
+afterAll(() => {
+  for (const d of createdTmpDirs) {
+    rmSync(d, { recursive: true, force: true });
+  }
+});
+
+describe('Stop hook 場景 6：Specs archive 整合', () => {
+  test('workflow 完成且有 featureName → specs feature 自動歸檔', async () => {
+    const sessionId = newSessionId();
+    createdSessions.push(sessionId);
+
+    // 建立臨時專案根目錄並初始化 specs feature
+    const projectRoot = mkdtempSync(join(os.tmpdir(), 'overtone-stop-specs-'));
+    createdTmpDirs.push(projectRoot);
+    specs.initFeatureDir(projectRoot, 'my-feature', 'single');
+
+    const inProgressPath = specs.featurePath(projectRoot, 'my-feature');
+    expect(existsSync(inProgressPath)).toBe(true);
+
+    // 初始化 single workflow（DEV）並標記完成
+    mkdirSync(paths.sessionDir(sessionId), { recursive: true });
+    state.initState(sessionId, 'single', ['DEV'], { featureName: 'my-feature' });
+    state.updateStateAtomic(sessionId, (s) => {
+      s.stages['DEV'].status = 'completed';
+      s.stages['DEV'].result = 'pass';
+      return s;
+    });
+
+    const { output, exitCode } = await runStopHook(
+      { stop_reason: 'end_turn', cwd: projectRoot },
+      sessionId
+    );
+
+    const parsed = JSON.parse(output);
+    // 應允許退出（workflow 完成）
+    expect(parsed.decision).not.toBe('block');
+    expect(exitCode).toBe(0);
+
+    // specs feature 應已從 in-progress 移出（歸檔）
+    expect(existsSync(inProgressPath)).toBe(false);
+    // archive 目錄下應有歸檔目錄
+    const archDir = specs.archiveDir(projectRoot);
+    expect(existsSync(archDir)).toBe(true);
+  });
+
+  test('workflow 完成但 featureName 不存在於 in-progress → 仍允許退出（不 block）', async () => {
+    const sessionId = newSessionId();
+    createdSessions.push(sessionId);
+
+    // 建立臨時專案根目錄但不建立 specs feature（模擬已手動移動的情況）
+    const projectRoot = mkdtempSync(join(os.tmpdir(), 'overtone-stop-specs-nofeature-'));
+    createdTmpDirs.push(projectRoot);
+
+    mkdirSync(paths.sessionDir(sessionId), { recursive: true });
+    state.initState(sessionId, 'single', ['DEV'], { featureName: 'missing-feature' });
+    state.updateStateAtomic(sessionId, (s) => {
+      s.stages['DEV'].status = 'completed';
+      s.stages['DEV'].result = 'pass';
+      return s;
+    });
+
+    const { output, exitCode } = await runStopHook(
+      { stop_reason: 'end_turn', cwd: projectRoot },
+      sessionId
+    );
+
+    const parsed = JSON.parse(output);
+    // 歸檔失敗不阻擋退出
     expect(parsed.decision).not.toBe('block');
     expect(exitCode).toBe(0);
   });

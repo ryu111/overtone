@@ -41,7 +41,7 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/init-workflow.js full ${CLAUDE_SESSION_ID}
 委派 `tester` agent（mode: spec）。
 
 - **輸入**：architect + designer 的 Handoff
-- **產出**：`openspec/specs/` 中的 GIVEN/WHEN/THEN 行為規格
+- **產出**：`specs/features/in-progress/{featureName}/bdd.md` 中的 GIVEN/WHEN/THEN 行為規格
 - 此階段撰寫行為規格，不寫測試碼
 
 ### 5. DEV — 💻 開發

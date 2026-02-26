@@ -34,7 +34,7 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/init-workflow.js secure ${CLAUDE_SESSION_ID}
 委派 `tester` agent（mode: spec）。
 
 - **輸入**：architect 的 Handoff
-- **產出**：`openspec/specs/` 中的 GIVEN/WHEN/THEN 行為規格
+- **產出**：`specs/features/in-progress/{featureName}/bdd.md` 中的 GIVEN/WHEN/THEN 行為規格
 - 📋 安全相關功能的 BDD spec MUST 包含異常路徑和攻擊場景
 
 ### 4. DEV — 💻 開發

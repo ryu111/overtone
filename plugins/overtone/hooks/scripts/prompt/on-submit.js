@@ -17,8 +17,9 @@ const { workflows } = require('../../../scripts/lib/registry');
 const input = JSON.parse(readFileSync('/dev/stdin', 'utf8'));
 const userPrompt = (input.user_prompt || '').trim();
 
-// 取得 session ID（由環境變數提供）
+// 取得 session ID 和 projectRoot（由環境變數/input 提供）
 const sessionId = process.env.CLAUDE_SESSION_ID || '';
+const projectRoot = input.cwd || process.cwd();
 
 // 如果使用者已手動輸入 /ot: 命令，不覆蓋
 if (userPrompt.startsWith('/ot:')) {
@@ -35,6 +36,22 @@ const validWorkflowOverride = workflowOverride && workflows[workflowOverride] ? 
 
 // 如果已有進行中的 workflow，提供狀態摘要而非重新觸發 /ot:auto
 const currentState = sessionId ? state.readState(sessionId) : null;
+
+// 讀取活躍 feature（靜默失敗）
+let activeFeatureContext = '';
+try {
+  const specsLib = require('../../../scripts/lib/specs');
+  const active = specsLib.getActiveFeature(projectRoot);
+  if (active) {
+    const checked = active.tasks ? active.tasks.checked : 0;
+    const total = active.tasks ? active.tasks.total : 0;
+    const taskInfo = total > 0 ? `（${checked}/${total} tasks 完成）` : '';
+    activeFeatureContext = `📂 活躍 Feature：${active.name}${taskInfo}（specs/features/in-progress/${active.name}/）`;
+  }
+} catch {
+  // 靜默忽略
+}
+
 let systemMessage;
 
 if (validWorkflowOverride) {
@@ -61,6 +78,7 @@ if (validWorkflowOverride) {
     `目前階段：${currentStage}`,
     failCount > 0 ? `失敗次數：${failCount}/3` : '',
     rejectCount > 0 ? `拒絕次數：${rejectCount}/3` : '',
+    activeFeatureContext || '',
     '請依照目前階段繼續執行。如需查看工作流指引，請使用 /ot:auto。',
   ].filter(Boolean).join('\n');
 } else {
@@ -69,7 +87,8 @@ if (validWorkflowOverride) {
     '[Overtone] 請先閱讀 /ot:auto 工作流選擇器來決定最適合的工作流。',
     '根據使用者需求自動選擇：single/quick/standard/full/secure/tdd/debug/refactor 等 12 種模板。',
     '⛔ 選好工作流後，MUST 依照 workflow skill 指引委派 agent，不要自己寫碼。',
-  ].join('\n');
+    activeFeatureContext || '',
+  ].filter(Boolean).join('\n');
 }
 
 process.stdout.write(JSON.stringify({ additionalContext: systemMessage }));

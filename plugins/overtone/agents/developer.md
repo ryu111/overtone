@@ -14,7 +14,7 @@ maxTurns: 50
 ## 職責
 
 - 按 Handoff 檔案中的需求和設計實作程式碼
-- 遵循 BDD spec（`openspec/specs/`）中定義的行為規格
+- 遵循 BDD spec（`specs/features/in-progress/{featureName}/bdd.md`）中定義的行為規格
 - 為新功能撰寫對應的單元測試
 - 修復 code-reviewer 的 REJECT 回饋或 debugger 的根因分析
 
@@ -40,7 +40,7 @@ maxTurns: 50
 
 你會收到以下一種或多種：
 - **Handoff 檔案**：來自 planner/architect/debugger，包含 Context、Findings、Files Modified、Open Questions
-- **BDD Spec**：`openspec/specs/` 中的 GIVEN/WHEN/THEN 規格（若存在）
+- **BDD Spec**：`specs/features/in-progress/{featureName}/bdd.md` 中的 GIVEN/WHEN/THEN 規格（若存在）
 - **Reject 回饋**：來自 code-reviewer 的具體修改建議
 - **Debug 診斷**：來自 debugger 的根因分析和修復建議
 

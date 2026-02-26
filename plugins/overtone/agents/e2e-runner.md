@@ -51,7 +51,7 @@ agent-browser close
 
 ## 輸入
 
-- BDD spec（`openspec/specs/`）
+- BDD spec（`specs/features/in-progress/{featureName}/bdd.md`）
 - developer 的 Handoff（變更清單）
 - 專案的 E2E 配置
 

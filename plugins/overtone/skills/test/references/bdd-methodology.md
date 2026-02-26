@@ -119,7 +119,7 @@ Feature: 使用者認證
 4. 使用 tag 分類場景
 5. 安全功能額外加攻擊場景
 
-**產出位置**：`openspec/specs/{feature}.md`
+**產出位置**：`specs/features/in-progress/{featureName}/bdd.md`
 
 ### verify 模式（DEV 後）
 
@@ -155,11 +155,16 @@ describe('Feature: 使用者認證', () => {
 ### 單功能檔案
 
 ```
-openspec/specs/
-├── auth.md              # 認證相關所有場景
-├── user-crud.md         # 使用者 CRUD
-├── order.md             # 訂單流程
-└── notification.md      # 通知系統
+specs/features/in-progress/
+├── auth/
+│   ├── tasks.md         # 工作清單
+│   └── bdd.md           # 認證相關所有場景
+├── user-crud/
+│   ├── tasks.md
+│   └── bdd.md           # 使用者 CRUD
+└── order/
+    ├── tasks.md
+    └── bdd.md           # 訂單流程
 ```
 
 ### 命名慣例

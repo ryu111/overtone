@@ -10,7 +10,7 @@ disable-model-invocation: true
 
 委派 `qa` agent。
 
-- **輸入**：BDD spec（`openspec/specs/`）+ developer/tester 的 Handoff
+- **輸入**：BDD spec（`specs/features/in-progress/{featureName}/bdd.md`）+ developer/tester 的 Handoff
 - **產出**：Handoff（每個 scenario 的 PASS/FAIL + 探索發現）
 
 ## 使用場景

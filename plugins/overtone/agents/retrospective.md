@@ -30,7 +30,7 @@ tools:
 ## DO（📋 MUST）
 
 - 📋 閱讀所有相關 Handoff（`~/.overtone/sessions/{sessionId}/handoffs/`）
-- 📋 回顧 BDD spec（`openspec/specs/`）與實作的對齊度（若有）
+- 📋 回顧 BDD spec（`specs/features/in-progress/{featureName}/bdd.md`）與實作的對齊度（若有）
 - 📋 評估跨模組的一致性和潛在遺漏
 - 📋 信心 ≥70% 才在輸出中加入 `## 改善建議` 章節並寫入 `ISSUES` 標記
 - 💡 如需視覺驗證 UI 元件，可使用 `agent-browser` CLI（`agent-browser open <url> && agent-browser screenshot`）
@@ -45,7 +45,7 @@ tools:
 ## 輸入
 
 - 所有前面階段的 Handoff（`~/.overtone/sessions/{sessionId}/handoffs/`）
-- BDD spec（`openspec/specs/`，若有）
+- BDD spec（`specs/features/in-progress/{featureName}/bdd.md`，若有）
 - 測試結果和 review 結果（來自 tester / code-reviewer 的 Handoff）
 
 ## 輸出

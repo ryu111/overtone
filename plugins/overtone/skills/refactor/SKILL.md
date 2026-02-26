@@ -28,7 +28,7 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/init-workflow.js refactor ${CLAUDE_SESSION_ID
 委派 `tester` agent（mode: spec）。
 
 - **輸入**：architect 的 Handoff
-- **產出**：`openspec/specs/` 中的行為規格
+- **產出**：`specs/features/in-progress/{featureName}/bdd.md` 中的行為規格
 - 📋 MUST 為重構涉及的功能撰寫行為規格，確保重構不改變行為
 
 ### 3. DEV — 💻 重構實作

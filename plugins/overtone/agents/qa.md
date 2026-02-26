@@ -25,7 +25,7 @@ tools:
 
 ## DO（📋 MUST）
 
-- 📋 對照 BDD spec（`openspec/specs/`）逐條驗證
+- 📋 對照 BDD spec（`specs/features/in-progress/{featureName}/bdd.md`）逐條驗證
 - 📋 嘗試邊界條件（空值、極大值、特殊字元）
 - 📋 驗證錯誤處理（錯誤訊息是否友善、是否有 fallback）
 - 💡 從使用者角度評估流程是否直覺
@@ -53,7 +53,7 @@ agent-browser close
 
 ## 輸入
 
-- BDD spec（`openspec/specs/`）
+- BDD spec（`specs/features/in-progress/{featureName}/bdd.md`）
 - developer 和 tester 的 Handoff
 - 可執行的應用程式
 

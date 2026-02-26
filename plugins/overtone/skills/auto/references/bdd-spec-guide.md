@@ -39,7 +39,7 @@ Feature: [功能名稱]
 
 - **時機**：在 developer 開始寫碼前
 - **目的**：定義「做完長什麼樣」
-- **產出**：`openspec/specs/{feature}.md` 中的行為規格
+- **產出**：`specs/features/in-progress/{featureName}/bdd.md` 中的行為規格
 - **誰寫**：tester agent（mode: spec）
 - **輸入**：architect 或 planner 的 Handoff
 
@@ -99,25 +99,27 @@ Scenario: 阻擋 SQL injection 攻擊
 4. **權限越界嘗試**（水平/垂直提權）
 5. **暴力破解防護**（rate limiting）
 
-## OpenSpec 整合
+## Specs 目錄整合
 
-BDD spec 存放在 `openspec/specs/` 目錄下：
+BDD spec 存放在 `specs/features/in-progress/{featureName}/` 目錄下：
 
 ```
-openspec/
-├── specs/
-│   ├── auth.md        # 認證行為規格
-│   ├── user-crud.md   # 使用者 CRUD 行為規格
-│   └── payment.md     # 支付行為規格
-├── proposal.md        # PLAN 產出（大功能）
-└── design.md          # ARCH 產出（大功能）
+specs/
+├── features/
+│   ├── in-progress/
+│   │   └── {featureName}/
+│   │       ├── tasks.md   # 工作清單 + frontmatter
+│   │       └── bdd.md     # BDD 行為規格
+│   ├── backlog/           # 待辦 feature
+│   └── archive/           # 已完成（自動歸檔）
+└── README.md
 ```
 
-### 何時啟用 OpenSpec
+### 何時建立 BDD spec
 
-- **大功能**（standard/full/secure）→ 啟用完整 OpenSpec（proposal + design + specs）
-- **中型任務**（tdd/refactor）→ 只啟用 specs
-- **小任務**（single/quick/debug）→ 跳過 OpenSpec
+- **大中型功能**（standard/full/secure/refactor/tdd）→ 建立 tasks.md + bdd.md
+- **快速任務**（quick/debug）→ 只建立 tasks.md
+- **小任務**（single/review-only 等）→ 跳過 specs
 
 ## Tag 分類
 

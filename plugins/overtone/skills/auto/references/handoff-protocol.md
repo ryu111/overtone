@@ -68,7 +68,7 @@
 {完整貼入 Handoff}
 
 ## BDD Spec
-參考 openspec/specs/{feature}.md 中的行為規格。
+參考 specs/features/in-progress/{featureName}/bdd.md 中的行為規格。
 ```
 
 ### 多 Handoff 傳遞
@@ -84,7 +84,7 @@
 {designer 的完整 Handoff}
 
 ## BDD Spec
-參考 openspec/specs/{feature}.md
+參考 specs/features/in-progress/{featureName}/bdd.md
 ```
 
 ## Agent → Agent 傳遞方式

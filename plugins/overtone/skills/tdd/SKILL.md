@@ -20,7 +20,7 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/init-workflow.js tdd ${CLAUDE_SESSION_ID}
 委派 `tester` agent（mode: spec）。
 
 - **輸入**：使用者需求
-- **產出**：`openspec/specs/` 中的 GIVEN/WHEN/THEN 行為規格
+- **產出**：`specs/features/in-progress/{featureName}/bdd.md` 中的 GIVEN/WHEN/THEN 行為規格
 - 📋 MUST 先定義行為，再寫碼
 - 💡 至少包含 3 個場景：happy path、edge case、error case
 

@@ -39,9 +39,11 @@ function writeState(sessionId, state) {
  * @param {string} sessionId
  * @param {string} workflowType - registry 中的 workflow key
  * @param {string[]} stageList - 要執行的 stage 清單
+ * @param {object} [options={}] - 額外選項
+ * @param {string} [options.featureName] - 對應的 specs feature 名稱（kebab-case）
  * @returns {object} 新建的狀態
  */
-function initState(sessionId, workflowType, stageList) {
+function initState(sessionId, workflowType, stageList, options = {}) {
   // 為重複的 stage 名稱加上編號（如 TEST 出現兩次 → TEST, TEST:2）
   const seen = {};
   const stageKeys = stageList.map((s) => {
@@ -72,6 +74,7 @@ function initState(sessionId, workflowType, stageList) {
     failCount: 0,
     rejectCount: 0,
     retroCount: 0,
+    featureName: options.featureName || null,
   };
 
   writeState(sessionId, state);

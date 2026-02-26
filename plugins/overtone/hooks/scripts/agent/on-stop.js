@@ -21,6 +21,7 @@ const paths = require('../../../scripts/lib/paths');
 
 const input = JSON.parse(readFileSync('/dev/stdin', 'utf8'));
 const sessionId = process.env.CLAUDE_SESSION_ID || '';
+const projectRoot = input.cwd || process.cwd();
 
 // 取得 agent 資訊
 const agentName = (input.subagent_name || '').trim();
@@ -154,6 +155,20 @@ if (result.verdict === 'fail') {
 } else {
   // PASS — 檢查並行收斂 + 提示下一步
   messages.push(`✅ ${stages[stageKey].emoji} ${stages[stageKey].label}完成`);
+
+  // Specs 路徑提示
+  try {
+    const specsLib = require('../../../scripts/lib/specs');
+    const active = specsLib.getActiveFeature(projectRoot);
+    if (active) {
+      const checked = active.tasks ? active.tasks.checked : 0;
+      const total = active.tasks ? active.tasks.total : 0;
+      const taskInfo = total > 0 ? ` (${checked}/${total} tasks)` : '';
+      messages.push(`📂 Specs：specs/features/in-progress/${active.name}/${taskInfo}`);
+    }
+  } catch {
+    // specs 提示失敗不影響主流程
+  }
 
   // 並行群組收斂偵測
   const convergence = checkParallelConvergence(updatedState);

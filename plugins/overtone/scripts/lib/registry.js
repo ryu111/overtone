@@ -132,6 +132,10 @@ const timelineEvents = {
   // grader 類（1）
   'grader:score':       { label: 'Grader 評分', category: 'grader' },
 
+  // specs 類（2）
+  'specs:init':         { label: 'Specs 初始化', category: 'specs' },
+  'specs:archive':      { label: 'Specs 歸檔',   category: 'specs' },
+
   // error 類（1）
   'error:fatal':        { label: '嚴重錯誤',   category: 'error' },
 
@@ -145,6 +149,26 @@ const remoteCommands = {
   stop:     { label: '停止 Loop',     description: '標記 Loop 為停止狀態' },
   status:   { label: '查詢狀態',      description: '查詢工作流目前狀態' },
   sessions: { label: '列出工作階段',   description: '列出所有進行中/已完成的工作階段' },
+};
+
+// Specs 設定：每種 workflow 對應的 specs 文件類型
+// 含 PLAN/ARCH/TEST 的 workflow 需要 bdd 規格，其他只需 tasks
+const specsConfig = {
+  'full':          ['tasks', 'bdd'],
+  'standard':      ['tasks', 'bdd'],
+  'secure':        ['tasks', 'bdd'],
+  'refactor':      ['tasks', 'bdd'],
+  'tdd':           ['tasks', 'bdd'],
+  'quick':         ['tasks'],
+  'debug':         ['tasks'],
+  'single':        [],
+  'review-only':   [],
+  'security-only': [],
+  'build-fix':     [],
+  'e2e-only':      [],
+  'diagnose':      [],
+  'clean':         [],
+  'db-review':     [],
 };
 
 // Instinct 信心分數設定
@@ -170,4 +194,5 @@ module.exports = {
   timelineEvents,
   remoteCommands,
   instinctDefaults,
+  specsConfig,
 };

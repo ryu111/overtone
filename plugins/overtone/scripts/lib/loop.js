@@ -4,7 +4,7 @@
  * loop.js — Loop 狀態管理 + tasks.md Checkbox 解析
  *
  * 提供 Stop hook 所需的 loop 狀態 I/O，以及
- * openspec/changes/tasks.md 的 checkbox 完成度查詢。
+ * specs/features/in-progress/{feature}/tasks.md 的 checkbox 完成度查詢。
  *
  * loop.json 結構：
  *   { iteration, stopped, consecutiveErrors, startedAt, stoppedAt?, stopReason? }
@@ -15,7 +15,6 @@
  */
 
 const { readFileSync } = require('fs');
-const { join } = require('path');
 const paths = require('./paths');
 const timeline = require('./timeline');
 const { atomicWrite } = require('./utils');
@@ -79,36 +78,34 @@ function exitLoop(sessionId, loopData, reason) {
 // ── tasks.md Checkbox 解析 ──
 
 /**
- * 讀取 openspec/changes/tasks.md 的 checkbox 完成度。
+ * 讀取當前活躍 feature 的 tasks.md checkbox 完成度。
+ *
+ * 動態查詢 specs/features/in-progress/ 下的活躍 feature，
+ * 讀取其 tasks.md checkbox 狀態。
  *
  * @param {string} projectRoot - 專案根目錄（來自 Stop hook 的 input.cwd）
  * @returns {{ total: number, checked: number, allChecked: boolean } | null}
- *   null = tasks.md 不存在、讀取失敗、或無任何 checkbox
+ *   null = 無活躍 feature、tasks.md 不存在、或無任何 checkbox
  *          → 呼叫方應 fallback 到純 workflow stage 完成度判斷
  */
 function readTasksStatus(projectRoot) {
   if (!projectRoot) return null;
 
-  const tasksPath = join(paths.project.changes(projectRoot), 'tasks.md');
-
-  let content;
   try {
-    content = readFileSync(tasksPath, 'utf8');
+    const specsLib = require('./specs');
+    const active = specsLib.getActiveFeature(projectRoot);
+    if (!active) return null;
+
+    const tasksPath = paths.project.featureTasks(projectRoot, active.name);
+    const result = specsLib.readTasksCheckboxes(tasksPath);
+
+    // 無任何 checkbox → 視同不適用
+    if (!result || result.total === 0) return null;
+
+    return result;
   } catch {
-    return null; // 檔案不存在或無讀取權限 → 靜默 fallback
+    return null; // 任何錯誤均靜默 fallback
   }
-
-  // 偵測 checkbox 格式：- [ ] 或 - [x] / - [X]（行首允許縮排，支援巢狀列表）
-  const uncheckedMatches = content.match(/^[\s]*-\s\[ \]/gm) || [];
-  const checkedMatches   = content.match(/^[\s]*-\s\[x\]/gmi) || [];
-
-  const checked = checkedMatches.length;
-  const total   = uncheckedMatches.length + checked;
-
-  // 無任何 checkbox → 視同不適用（pure-prose tasks.md）
-  if (total === 0) return null;
-
-  return { total, checked, allChecked: checked === total };
 }
 
 module.exports = { readLoop, writeLoop, exitLoop, readTasksStatus };

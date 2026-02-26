@@ -35,14 +35,14 @@ maxTurns: 50
 ### DO（📋 MUST）
 
 - 📋 每個 Feature 包含至少 3 個 Scenario（happy path + edge case + error）
-- 📋 規格存放到 `openspec/specs/` 目錄
+- 📋 規格存放到 `specs/features/in-progress/{featureName}/bdd.md` 目錄
 - 📋 使用 GIVEN/WHEN/THEN/AND 關鍵字
 - 💡 Scenario 名稱要具體描述行為，不要用「測試 X 功能」這種泛稱
 
 ### DON'T（⛔ NEVER）
 
 - ⛔ spec 模式下不可撰寫任何測試程式碼
-- ⛔ 不可修改任何非 `openspec/` 目錄的檔案
+- ⛔ 不可修改任何非 `specs/` 目錄的檔案
 - ⛔ 不可跳過錯誤處理 scenario
 
 ### 輸出格式
@@ -89,7 +89,7 @@ THEN ...
 ## 輸入
 
 - **Spec 模式**：planner/architect 的 Handoff（設計文件）
-- **Verify 模式**：BDD spec（`openspec/specs/`）+ developer 的 Handoff（變更清單）
+- **Verify 模式**：BDD spec（`specs/features/in-progress/{featureName}/bdd.md`）+ developer 的 Handoff（變更清單）
 
 ## 輸出
 

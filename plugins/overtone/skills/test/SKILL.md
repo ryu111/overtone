@@ -12,7 +12,7 @@ disable-model-invocation: true
 
 | 關鍵字 | 模式 | tester 做什麼 |
 |--------|------|--------------|
-| `spec`、「寫規格」、「定義行為」 | **spec** | 撰寫 GIVEN/WHEN/THEN 行為規格到 `openspec/specs/` |
+| `spec`、「寫規格」、「定義行為」 | **spec** | 撰寫 GIVEN/WHEN/THEN 行為規格到 `specs/features/in-progress/{featureName}/bdd.md` |
 | `verify`、「跑測試」、「驗證」、無指定 | **verify** | 撰寫並執行測試程式碼 |
 
 ## Stage
@@ -21,14 +21,14 @@ disable-model-invocation: true
 
 **Spec 模式**：
 - **輸入**：使用者需求描述或前階段 Handoff
-- **產出**：`openspec/specs/` 中的 GIVEN/WHEN/THEN 行為規格
+- **產出**：`specs/features/in-progress/{featureName}/bdd.md` 中的 GIVEN/WHEN/THEN 行為規格
 - 📋 每個 Feature 至少 3 個 Scenario（happy path + edge case + error）
 
 💡 BDD 完整方法論：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/test/references/bdd-methodology.md`
 💡 BDD spec 範例：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/test/examples/bdd-spec-samples.md`
 
 **Verify 模式**：
-- **輸入**：BDD spec（`openspec/specs/`）+ 程式碼變更
+- **輸入**：BDD spec（`specs/features/in-progress/{featureName}/bdd.md`）+ 程式碼變更
 - **產出**：測試結果（PASS / FAIL）
 - 📋 對照 BDD spec 逐條撰寫並執行測試
 

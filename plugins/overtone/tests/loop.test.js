@@ -75,11 +75,24 @@ describe('readTasksStatus', () => {
     expect(loop.readTasksStatus(null)).toBeNull();
   });
 
-  test('有 checkbox 的 tasks.md 正確計數', () => {
-    const tasksDir = join(SESSION_DIR, 'openspec', 'changes');
-    mkdirSync(tasksDir, { recursive: true });
-    writeFileSync(join(tasksDir, 'tasks.md'), [
-      '# Tasks',
+  test('無 in-progress feature 時回傳 null', () => {
+    // SESSION_DIR 下沒有 specs/features/in-progress/ → null
+    expect(loop.readTasksStatus(SESSION_DIR)).toBeNull();
+  });
+
+  test('有 in-progress feature 且有 checkbox 的 tasks.md 正確計數', () => {
+    const featureDir = join(SESSION_DIR, 'specs', 'features', 'in-progress', 'my-feature');
+    mkdirSync(featureDir, { recursive: true });
+    writeFileSync(join(featureDir, 'tasks.md'), [
+      '---',
+      'feature: my-feature',
+      'status: in-progress',
+      'workflow: standard',
+      'created: 2026-02-26T00:00:00Z',
+      '---',
+      '',
+      '## Tasks',
+      '',
       '- [x] 完成設計',
       '- [x] 寫測試',
       '- [ ] 實作功能',
@@ -94,18 +107,43 @@ describe('readTasksStatus', () => {
   });
 
   test('全部完成回傳 allChecked = true', () => {
-    const tasksDir = join(SESSION_DIR, 'openspec', 'changes');
-    mkdirSync(tasksDir, { recursive: true });
-    writeFileSync(join(tasksDir, 'tasks.md'), '- [x] Done\n- [X] Also done\n');
+    const featureDir = join(SESSION_DIR, 'specs', 'features', 'in-progress', 'my-feature');
+    mkdirSync(featureDir, { recursive: true });
+    writeFileSync(join(featureDir, 'tasks.md'), [
+      '---',
+      'feature: my-feature',
+      'status: in-progress',
+      'workflow: standard',
+      'created: 2026-02-26T00:00:00Z',
+      '---',
+      '',
+      '## Tasks',
+      '',
+      '- [x] Done',
+      '- [x] Also done',
+    ].join('\n'));
 
     const result = loop.readTasksStatus(SESSION_DIR);
+    expect(result).not.toBeNull();
     expect(result.allChecked).toBe(true);
   });
 
   test('無 checkbox 的純文字回傳 null', () => {
-    const tasksDir = join(SESSION_DIR, 'openspec', 'changes');
-    mkdirSync(tasksDir, { recursive: true });
-    writeFileSync(join(tasksDir, 'tasks.md'), '# Just prose\nNo checkboxes here.\n');
+    const featureDir = join(SESSION_DIR, 'specs', 'features', 'in-progress', 'my-feature');
+    mkdirSync(featureDir, { recursive: true });
+    writeFileSync(join(featureDir, 'tasks.md'), [
+      '---',
+      'feature: my-feature',
+      'status: in-progress',
+      'workflow: standard',
+      'created: 2026-02-26T00:00:00Z',
+      '---',
+      '',
+      '## Tasks',
+      '',
+      '# Just prose',
+      'No checkboxes here.',
+    ].join('\n'));
 
     expect(loop.readTasksStatus(SESSION_DIR)).toBeNull();
   });

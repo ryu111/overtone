@@ -84,6 +84,21 @@ const allCompleted = allStagesCompleted && (tasksStatus === null || tasksStatus.
 if (allCompleted) {
   loop.exitLoop(sessionId, loopState, '工作流完成');
 
+  // Specs 自動歸檔：workflow 完成且有對應 feature 時
+  if (currentState.featureName) {
+    try {
+      const specs = require('../../../scripts/lib/specs');
+      const archivePath = specs.archiveFeature(projectRoot, currentState.featureName);
+      timeline.emit(sessionId, 'specs:archive', {
+        featureName: currentState.featureName,
+        archivePath,
+      });
+    } catch (archErr) {
+      // 歸檔失敗不阻擋正常退出（可能已手動移動或不存在）
+      process.stderr.write(`[overtone/specs] 警告：歸檔失敗 — ${archErr.message}\n`);
+    }
+  }
+
   const summary = buildCompletionSummary(currentState);
   timeline.emit(sessionId, 'workflow:complete', {
     workflowType: currentState.workflowType,

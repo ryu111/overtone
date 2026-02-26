@@ -5,7 +5,7 @@
  *
  * 所有 Overtone 檔案路徑從此處取得。
  * Session 路徑：~/.overtone/sessions/{sessionId}/
- * 專案路徑：{projectRoot}/openspec/
+ * 專案路徑：{projectRoot}/specs/features/
  */
 
 const { join } = require('path');
@@ -57,9 +57,12 @@ const DASHBOARD_FILE = join(OVERTONE_HOME, 'dashboard.json');
 // ── 專案路徑（相對於專案根目錄）──
 
 const project = {
-  openspec:    (root) => join(root, 'openspec'),
-  specs:       (root) => join(root, 'openspec', 'specs'),
-  changes:     (root) => join(root, 'openspec', 'changes'),
+  specsRoot:      (root) => join(root, 'specs'),
+  feature:        (root, name) => join(root, 'specs', 'features', 'in-progress', name),
+  featureTasks:   (root, name) => join(root, 'specs', 'features', 'in-progress', name, 'tasks.md'),
+  backlog:        (root) => join(root, 'specs', 'features', 'backlog'),
+  backlogFeature: (root, name) => join(root, 'specs', 'features', 'backlog', name),
+  archive:        (root) => join(root, 'specs', 'features', 'archive'),
 };
 
 module.exports = {

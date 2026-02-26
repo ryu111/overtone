@@ -54,7 +54,7 @@ tools:
 ## 輸入
 
 - developer 的 Handoff（變更清單 + 決策說明）
-- BDD spec（`openspec/specs/`，若存在）
+- BDD spec（`specs/features/in-progress/{featureName}/bdd.md`，若存在）
 - 程式碼差異（`git diff`）
 
 ## 輸出
