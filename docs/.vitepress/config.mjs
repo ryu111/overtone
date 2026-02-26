@@ -4,6 +4,7 @@ export default defineConfig({
   title: 'Overtone',
   description: 'BDD 驅動的工作流自動化 Claude Code Plugin',
   lang: 'zh-TW',
+  base: '/overtone/',
 
   themeConfig: {
     nav: [
