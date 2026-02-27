@@ -130,10 +130,10 @@ describe('GET /api/registry', () => {
     expect(body).toHaveProperty('agents');
   });
 
-  test('agents 包含正確欄位（model、color）且涵蓋 15 個 agent', async () => {
+  test('agents 包含正確欄位（model、color）且涵蓋 16 個 agent', async () => {
     const { body } = await get('/api/registry');
     expect(typeof body.agents).toBe('object');
-    expect(Object.keys(body.agents).length).toBe(15);
+    expect(Object.keys(body.agents).length).toBe(16);
     const dev = body.agents['developer'];
     expect(dev).toBeDefined();
     expect(dev).toHaveProperty('model');

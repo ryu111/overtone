@@ -7,9 +7,9 @@ const {
 } = require('../../plugins/overtone/scripts/lib/registry');
 
 describe('registry.js 資料完整性', () => {
-  describe('所有 15 個 agent 名稱符合 kebab-case 格式', () => {
-    test('stages 共有 15 個項目', () => {
-      expect(Object.keys(stages).length).toBe(15);
+  describe('所有 16 個 agent 名稱符合 kebab-case 格式', () => {
+    test('stages 共有 16 個項目', () => {
+      expect(Object.keys(stages).length).toBe(16);
     });
 
     test('每個 agent 名稱只包含小寫英文字母、數字與連字符', () => {

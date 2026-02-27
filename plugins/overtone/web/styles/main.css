@@ -38,14 +38,15 @@
   --status-pending: #484f58;
 
   /* Agent 語義色（與 registry.js stages[].color 完全對齊，禁止修改） */
-  --color-purple: #a855f7;
-  --color-cyan:   #22d3ee;
-  --color-yellow: #eab308;
-  --color-blue:   #3b82f6;
-  --color-red:    #ef4444;
-  --color-orange: #f97316;
-  --color-pink:   #ec4899;
-  --color-green:  #22c55e;
+  --color-purple:  #a855f7;
+  --color-cyan:    #22d3ee;
+  --color-yellow:  #eab308;
+  --color-blue:    #3b82f6;
+  --color-red:     #ef4444;
+  --color-orange:  #f97316;
+  --color-pink:    #ec4899;
+  --color-green:   #22c55e;
+  --color-emerald: #10b981;
 
   /* 間距 tokens */
   --space-xs:  4px;
@@ -134,6 +135,10 @@
 @keyframes agent-pulse-green {
   0%, 100% { box-shadow: 0 0 0 0 rgba(34,197,94,0.6); }
   50%       { box-shadow: 0 0 0 6px rgba(34,197,94,0); }
+}
+@keyframes agent-pulse-emerald {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(16,185,129,0.6); }
+  50%       { box-shadow: 0 0 0 6px rgba(16,185,129,0); }
 }
 
 /* Agent 卡片進場 */
@@ -898,7 +903,8 @@ section {
 .agent-dot.standby.color-red    { background: var(--color-red);    }
 .agent-dot.standby.color-orange { background: var(--color-orange); }
 .agent-dot.standby.color-pink   { background: var(--color-pink);   }
-.agent-dot.standby.color-green  { background: var(--color-green);  }
+.agent-dot.standby.color-green   { background: var(--color-green);   }
+.agent-dot.standby.color-emerald { background: var(--color-emerald); }
 
 /* 執行中：顏色 + 對應脈動動畫 */
 .agent-dot.active.color-purple { background: var(--color-purple); animation: agent-pulse-purple 1.5s ease-in-out infinite; }
@@ -908,7 +914,8 @@ section {
 .agent-dot.active.color-red    { background: var(--color-red);    animation: agent-pulse-red    1.5s ease-in-out infinite; }
 .agent-dot.active.color-orange { background: var(--color-orange); animation: agent-pulse-orange 1.5s ease-in-out infinite; }
 .agent-dot.active.color-pink   { background: var(--color-pink);   animation: agent-pulse-pink   1.5s ease-in-out infinite; }
-.agent-dot.active.color-green  { background: var(--color-green);  animation: agent-pulse-green  1.5s ease-in-out infinite; }
+.agent-dot.active.color-green   { background: var(--color-green);   animation: agent-pulse-green   1.5s ease-in-out infinite; }
+.agent-dot.active.color-emerald { background: var(--color-emerald); animation: agent-pulse-emerald 1.5s ease-in-out infinite; }
 
 /* Agent 卡片 */
 .agent-card {

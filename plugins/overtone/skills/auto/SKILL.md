@@ -30,14 +30,18 @@ description: Overtone 核心工作流選擇器。分析使用者需求自動選�
 | 「為什麼壞了」（只診斷） | `/ot:diagnose` (diagnose) | DEBUG |
 | 「DB 審查」「N+1」「migration」 | `/ot:db-review` (db-review) | DB-REVIEW |
 | 「清理死碼」「未使用依賴」 | `/ot:clean` (clean) | REFACTOR |
+| 從零到一、MVP 規劃、大方向 | `/ot:pm` (product) | PM → PLAN → ARCH → T:spec → DEV → [R+T] → RETRO → DOCS |
+| 完整產品開發（含 UI 設計） | `/ot:pm` (product-full) | PM → PLAN → ARCH → DESIGN → T:spec → DEV → [R+T] → [QA+E2E] → RETRO → DOCS |
+| 純產品探索、需求釐清 | `/ot:pm` (discovery) | PM |
 | 以上都不適合 | 自訂序列 | 自行編排 agent 組合 |
 
 選好後，讀取對應的 workflow skill 取得完整執行指引。💡 邊界情況範例：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/auto/examples/workflow-selection.md`
 
-## 15 個 Agent 清單
+## 16 個 Agent 清單
 
 | Agent | Emoji | Stage | 做什麼 |
 |-------|:-----:|-------|--------|
+| product-manager | 🎯 | PM | 產品分析、需求探索、方案比較、drift 偵測 |
 | planner | 📋 | PLAN | 需求分解、任務拆分、優先順序 |
 | architect | 🏗️ | ARCH | API 介面、資料模型、檔案結構 |
 | designer | 🎨 | DESIGN | UI/UX 元件、互動流程（只在 full workflow） |

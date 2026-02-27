@@ -286,6 +286,11 @@ function parseResult(output, stageKey) {
     return { verdict: 'pass' };
   }
 
+  // PM → 預設 pass（advisory 角色，不存在 fail/reject）
+  if (stageKey === 'PM') {
+    return { verdict: 'pass' };
+  }
+
   // RETRO → PASS / ISSUES（有改善建議，不算 fail）
   // 排除 false positive：「no issues」「0 issues」等 PASS 情境的自然語言
   if (stageKey === 'RETRO') {

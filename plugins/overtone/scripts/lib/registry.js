@@ -6,8 +6,9 @@
  * 所有模組統一從此處 import。
  */
 
-// Stage 定義（15 個 stage，每個對應一個 agent）
+// Stage 定義（16 個 stage，每個對應一個 agent）
 const stages = {
+  PM:         { label: '產品',     emoji: '🎯', agent: 'product-manager',     color: 'emerald' },
   PLAN:       { label: '規劃',     emoji: '📋', agent: 'planner',             color: 'purple' },
   ARCH:       { label: '架構',     emoji: '🏗️', agent: 'architect',           color: 'cyan'   },
   DESIGN:     { label: '設計',     emoji: '🎨', agent: 'designer',            color: 'cyan'   },
@@ -27,7 +28,8 @@ const stages = {
 
 // Agent Model 分配（可透過環境變數覆蓋）
 const agentModels = {
-  // Opus（5 個決策型）
+  // Opus（6 個決策型）
+  'product-manager':   'opus',
   'planner':           'opus',
   'architect':         'opus',
   'code-reviewer':     'opus',
@@ -49,7 +51,7 @@ const agentModels = {
   'doc-updater':         'haiku',
 };
 
-// 工作流模板（15 個）
+// 工作流模板（18 個）
 // BDD 規則：含 PLAN/ARCH 的 workflow 在 DEV 前加入 TEST:spec
 // D4：parallelGroups 移入各 workflow 定義（per-workflow 自訂），
 //     使用 groupName 字串引用，避免在每個 workflow 重複定義成員陣列
@@ -74,6 +76,11 @@ const workflows = {
   'diagnose':      { label: '診斷',       stages: ['DEBUG'],                                                                   parallelGroups: [] },
   'clean':         { label: '重構清理',   stages: ['REFACTOR'],                                                                parallelGroups: [] },
   'db-review':     { label: 'DB審查',     stages: ['DB-REVIEW'],                                                               parallelGroups: [] },
+
+  // 產品模板（3 個，PM agent 驅動）
+  'product':       { label: '產品功能',   stages: ['PM', 'PLAN', 'ARCH', 'TEST', 'DEV', 'REVIEW', 'TEST', 'RETRO', 'DOCS'],    parallelGroups: ['quality'] },
+  'product-full':  { label: '產品完整',   stages: ['PM', 'PLAN', 'ARCH', 'DESIGN', 'TEST', 'DEV', 'REVIEW', 'TEST', 'QA', 'E2E', 'RETRO', 'DOCS'], parallelGroups: ['quality', 'verify'] },
+  'discovery':     { label: '產品探索',   stages: ['PM'],                                                                      parallelGroups: [] },
 };
 
 // 並行群組成員定義（全域 registry，各 workflow 透過 parallelGroups 欄位引用群組名）
@@ -186,6 +193,9 @@ const specsConfig = {
   'diagnose':      [],
   'clean':         [],
   'db-review':     [],
+  'product':       ['tasks', 'bdd'],
+  'product-full':  ['tasks', 'bdd'],
+  'discovery':     [],
 };
 
 // Instinct 信心分數設定
