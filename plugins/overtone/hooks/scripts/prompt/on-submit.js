@@ -15,7 +15,8 @@ const { workflows } = require('../../../scripts/lib/registry');
 
 // 從 stdin 讀取 hook input
 const input = JSON.parse(readFileSync('/dev/stdin', 'utf8'));
-const userPrompt = (input.user_prompt || '').trim();
+// Claude Code 真實 hook 傳 `prompt`，手動測試或舊版傳 `user_prompt`，兩者都支援
+const userPrompt = (input.prompt || input.user_prompt || '').trim();
 
 // 取得 session ID 和 projectRoot
 // session ID 優先從 hook input JSON（stdin）讀取，環境變數作為 fallback
