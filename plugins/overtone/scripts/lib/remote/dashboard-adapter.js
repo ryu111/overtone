@@ -86,9 +86,17 @@ class DashboardAdapter extends Adapter {
         // 推送當前狀態
         const ws = state.readState(sessionId);
         if (ws) self._sendSSE(wrapper, 'workflow', JSON.stringify(ws));
+
+        // 心跳：每 30 秒發送，防止 proxy/browser 閒置超時斷線
+        wrapper._heartbeatTimer = setInterval(() => {
+          self._sendSSE(wrapper, 'heartbeat', JSON.stringify({ ts: new Date().toISOString() }));
+        }, 30000);
       },
       cancel() {
-        if (wrapper) self._removeConnection(sessionId, wrapper);
+        if (wrapper) {
+          clearInterval(wrapper._heartbeatTimer);
+          self._removeConnection(sessionId, wrapper);
+        }
       },
     });
   }
@@ -113,9 +121,17 @@ class DashboardAdapter extends Adapter {
         self._sendSSE(wrapper, 'connected', JSON.stringify({
           serverTime: new Date().toISOString(),
         }));
+
+        // 心跳：每 30 秒發送，防止 proxy/browser 閒置超時斷線
+        wrapper._heartbeatTimer = setInterval(() => {
+          self._sendSSE(wrapper, 'heartbeat', JSON.stringify({ ts: new Date().toISOString() }));
+        }, 30000);
       },
       cancel() {
-        if (wrapper) self.allConnections.delete(wrapper);
+        if (wrapper) {
+          clearInterval(wrapper._heartbeatTimer);
+          self.allConnections.delete(wrapper);
+        }
       },
     });
   }

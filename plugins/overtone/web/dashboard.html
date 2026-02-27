@@ -360,6 +360,7 @@
       _allEventSource: null,
       _reconnectAttempts: 0,
       _reconnectTimer: null,
+      _disconnectDebounceTimer: null,
 
       // Registry 靜態資料
       registry: { parallelGroupDefs: {}, workflows: {}, stages: {}, agents: {} },
@@ -557,6 +558,8 @@
         const es = new EventSource('/sse/' + sessionId);
 
         es.addEventListener('connected', () => {
+          clearTimeout(this._disconnectDebounceTimer);
+          this._disconnectDebounceTimer = null;
           this.isConnected = true;
           this._reconnectAttempts = 0;
         });
@@ -580,11 +583,19 @@
         });
 
         es.addEventListener('heartbeat', () => {
+          clearTimeout(this._disconnectDebounceTimer);
+          this._disconnectDebounceTimer = null;
           this.isConnected = true;
         });
 
         es.onerror = () => {
-          this.isConnected = false;
+          // debounce：短暫斷線（重連中）不立刻顯示「連線中」，3 秒後仍未恢復才更新狀態
+          if (!this._disconnectDebounceTimer) {
+            this._disconnectDebounceTimer = setTimeout(() => {
+              this._disconnectDebounceTimer = null;
+              this.isConnected = false;
+            }, 3000);
+          }
           if (this._sessionEventSource) {
             this._sessionEventSource.close();
             this._sessionEventSource = null;
@@ -596,10 +607,10 @@
       },
 
       disconnectSessionSSE() {
-        if (this._reconnectTimer) {
-          clearTimeout(this._reconnectTimer);
-          this._reconnectTimer = null;
-        }
+        clearTimeout(this._reconnectTimer);
+        this._reconnectTimer = null;
+        clearTimeout(this._disconnectDebounceTimer);
+        this._disconnectDebounceTimer = null;
         if (this._sessionEventSource) {
           this._sessionEventSource.close();
           this._sessionEventSource = null;
