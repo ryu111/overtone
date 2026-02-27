@@ -32,7 +32,7 @@
 
 ## Backlog
 
-- passatk（Pass@k 統計）：設計規格已定義，`specs/features/backlog/passatk/`
+- passatk Dashboard UI：後端 `/api/sessions/:id/passatk` 已實作，前端 dashboard.html 未整合顯示
 
 ## 文件索引
 
