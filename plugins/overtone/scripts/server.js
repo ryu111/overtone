@@ -87,7 +87,9 @@ const MIME_TYPES = {
 
 // ── 路由 ──
 
-const server = Bun.serve({
+let server;
+try {
+  server = Bun.serve({
   port: PORT,
   async fetch(req) {
     const url = new URL(req.url);
@@ -133,7 +135,14 @@ const server = Bun.serve({
 
     return new Response('404 Not Found', { status: 404 });
   },
-});
+  });
+} catch (err) {
+  if (err.code === 'EADDRINUSE' || err.message?.includes('address already in use')) {
+    console.error(`[overtone] Port ${PORT} 已被佔用，Dashboard 已有 instance 在執行中`);
+    process.exit(0);
+  }
+  throw err;
+}
 
 // ── 寫入 PID ──
 

@@ -7,6 +7,7 @@
  */
 
 const { readFileSync, unlinkSync } = require('fs');
+const { execSync } = require('child_process');
 const { DASHBOARD_FILE } = require('../paths');
 const { atomicWrite } = require('../utils');
 
@@ -42,22 +43,56 @@ function remove() {
 }
 
 /**
- * 檢查 Dashboard server 是否在執行中
- * @returns {boolean}
+ * 同步 HTTP port probe — 用 execSync + curl 偵測 Overtone server
+ *
+ * 呼叫 curl GET http://localhost:{port}/health，timeout 1 秒。
+ * 解析 JSON 回應，確認 ok === true 才視為 Overtone server。
+ * 任何錯誤（timeout、connection refused、非 JSON）回傳 false。
+ *
+ * @param {number} port - 要探測的 port
+ * @returns {boolean} true 表示 port 上有 Overtone server 在跑
  */
-function isRunning() {
-  const info = read();
-  if (!info || !info.pid) return false;
-
+function probePort(port) {
   try {
-    // 信號 0 只檢查進程是否存在，不實際發送信號
-    process.kill(info.pid, 0);
-    return true;
+    const result = execSync(
+      `curl -s --connect-timeout 1 --max-time 1 http://localhost:${port}/health`,
+      { encoding: 'utf8', timeout: 2000 },
+    );
+    const data = JSON.parse(result);
+    return data.ok === true;
   } catch {
-    // 進程不存在，清理殘留的 PID 檔案
-    remove();
     return false;
   }
+}
+
+/**
+ * 檢查 Dashboard server 是否在執行中
+ *
+ * 三層偵測策略：
+ *   1. 讀取 PID 檔案 + process.kill(pid, 0) 驗證進程存在
+ *   2. 若 PID 檢查失敗，嘗試 HTTP port probe（GET /health）
+ *      — 偵測「server 存活但 PID 檔案 stale/不存在」的情況
+ *
+ * @param {object} [opts]
+ * @param {number} [opts.port] - 要探測的 port（預設 7777）
+ * @returns {boolean}
+ */
+function isRunning(opts) {
+  const info = read();
+  if (info && info.pid) {
+    try {
+      // 信號 0 只檢查進程是否存在，不實際發送信號
+      process.kill(info.pid, 0);
+      return true;
+    } catch {
+      // 進程不存在，清理殘留的 PID 檔案
+      remove();
+    }
+  }
+
+  // PID 檢查失敗（檔案不存在或進程已死）→ fallback 到 port probe
+  const port = (opts && opts.port) || 7777;
+  return probePort(port);
 }
 
 /**
@@ -70,4 +105,4 @@ function getUrl() {
   return `http://localhost:${info.port}`;
 }
 
-module.exports = { write, read, remove, isRunning, getUrl };
+module.exports = { write, read, remove, isRunning, probePort, getUrl };

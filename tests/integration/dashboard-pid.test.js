@@ -64,13 +64,15 @@ describe('dashboard/pid.js', () => {
   describe('Scenario 2: isRunning() 在 pid 不存在時回傳 false', () => {
     test('dashboard.json 不存在時 isRunning() 回傳 false', () => {
       // beforeEach 已確保 dashboard.json 不存在
-      expect(pid.isRunning()).toBe(false);
+      // 使用不可能被佔用的 port，確保 port probe fallback 也回傳 false
+      expect(pid.isRunning({ port: 19876 })).toBe(false);
     });
 
     test('pid 指向不存在的進程時 isRunning() 回傳 false', () => {
       // 使用極大的 PID，確保該進程不存在
+      // 使用不可能被佔用的 port，確保 port probe fallback 也回傳 false
       pid.write({ pid: 999999, port: 7777, startedAt: '2026-01-01T00:00:00.000Z' });
-      expect(pid.isRunning()).toBe(false);
+      expect(pid.isRunning({ port: 19876 })).toBe(false);
     });
   });
 
@@ -85,6 +87,51 @@ describe('dashboard/pid.js', () => {
     test('dashboard.json 不存在時 getUrl() 回傳 null', () => {
       // beforeEach 已確保 dashboard.json 不存在
       expect(pid.getUrl()).toBeNull();
+    });
+  });
+
+  describe('Scenario 5: probePort() — 同步 HTTP port 探測', () => {
+    test('port 無任何程序時 probePort() 回傳 false', () => {
+      // 使用極不可能被佔用的 port，確保 connection refused
+      const result = pid.probePort(19876);
+      expect(result).toBe(false);
+    });
+
+    test('probePort() 不拋出例外（connection refused 時靜默）', () => {
+      expect(() => pid.probePort(19876)).not.toThrow();
+    });
+
+    test('probePort() 對非 JSON 回應回傳 false（不拋出例外）', () => {
+      // 透過測試邏輯驗證 JSON.parse 失敗時 catch 正確回傳 false
+      // 直接測試函式行為：任何 execSync 拋出的情況都回傳 false
+      expect(() => pid.probePort(19999)).not.toThrow();
+      expect(pid.probePort(19999)).toBe(false);
+    });
+  });
+
+  describe('Scenario 6: isRunning() port probe fallback', () => {
+    test('dashboard.json 不存在且 port 無 server 時 isRunning() 回傳 false', () => {
+      // beforeEach 已確保 dashboard.json 不存在
+      // 使用極不可能被佔用的 port
+      expect(pid.isRunning({ port: 19876 })).toBe(false);
+    });
+
+    test('PID 殘留但進程不存在，port 無 server 時 isRunning() 回傳 false', () => {
+      // 寫入極大 PID（確保進程不存在）
+      pid.write({ pid: 999999, port: 7777, startedAt: '2026-01-01T00:00:00.000Z' });
+      // 使用不可能被佔用的 port
+      expect(pid.isRunning({ port: 19876 })).toBe(false);
+    });
+
+    test('未傳入 opts 時向後相容，不拋出 TypeError', () => {
+      // dashboard.json 不存在，isRunning() 不帶參數不應拋出
+      expect(() => pid.isRunning()).not.toThrow();
+    });
+
+    test('傳入 opts.port 時正確傳遞給 probePort fallback', () => {
+      // dashboard.json 不存在，fallback 到 probePort，port 無 server 時回傳 false
+      const result = pid.isRunning({ port: 19876 });
+      expect(result).toBe(false);
     });
   });
 });

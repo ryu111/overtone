@@ -8,7 +8,7 @@
  *   ✅ 顯示 banner
  *   ✅ 初始化 session 目錄
  *   ✅ emit session:start timeline 事件
- *   ✅ 啟動 Dashboard + 開啟瀏覽器
+ *   ✅ 啟動 Dashboard（OVERTONE_NO_DASHBOARD=1 可跳過）
  */
 
 const { mkdirSync, readFileSync } = require('fs');
@@ -41,8 +41,11 @@ if (sessionId) {
 const dashboardPid = require('../../../scripts/lib/dashboard/pid');
 const port = process.env.OVERTONE_PORT || '7777';
 
-// 記錄 Dashboard 是否為首次啟動，用於決定是否開啟瀏覽器
-const shouldSpawnDashboard = sessionId && !dashboardPid.isRunning();
+// OVERTONE_NO_DASHBOARD=1 完全跳過 Dashboard spawn（測試環境使用）
+const skipDashboard = process.env.OVERTONE_NO_DASHBOARD;
+const shouldSpawnDashboard = sessionId
+  && !skipDashboard
+  && !dashboardPid.isRunning({ port: parseInt(port, 10) });
 
 if (shouldSpawnDashboard) {
   try {
@@ -91,16 +94,6 @@ const banner = [
   grayMatterStatus,
   '',
 ].filter(Boolean).join('\n');
-
-// 自動開啟瀏覽器（macOS）— 只在 Dashboard 首次啟動時開啟，避免每個 session 都開新標籤
-// OVERTONE_NO_BROWSER=1 可跳過（測試環境使用）
-if (shouldSpawnDashboard && dashboardUrl && !process.env.OVERTONE_NO_BROWSER) {
-  try {
-    const { spawn: spawnOpen } = require('child_process');
-    const openProc = spawnOpen('open', [dashboardUrl], { detached: true, stdio: 'ignore' });
-    openProc.unref();
-  } catch {}
-}
 
 // ── 未完成任務注入（disk-based TaskList 恢復）──
 // context compact 後 in-memory TaskList 歸零，此處讀取 specs/features/in-progress 的 tasks.md
