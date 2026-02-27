@@ -2,14 +2,15 @@
 /**
  * session-start.test.js — on-start.js hook 整合測試
  *
- * 驗證 SessionStart hook 的三個核心行為：
+ * 驗證 SessionStart hook 的四個核心行為：
  *   1. 傳入有效 session_id 時 exit 0 並建立 session 目錄
  *   2. 建立目錄後向 timeline 寫入 session:start 事件
  *   3. 無 session_id 時靜默跳過，exit 0
+ *   4. 有未完成 specs tasks 時，輸出含 systemMessage 的 pending tasks 提示
  */
 
 const { test, expect, describe, afterAll } = require('bun:test');
-const { existsSync, rmSync, readFileSync } = require('fs');
+const { existsSync, rmSync, readFileSync, mkdirSync, writeFileSync } = require('fs');
 const { join } = require('path');
 const { homedir } = require('os');
 const { HOOKS_DIR, SCRIPTS_LIB } = require('../helpers/paths');
@@ -23,6 +24,11 @@ const paths = require(join(SCRIPTS_LIB, 'paths'));
 const TIMESTAMP = Date.now();
 const SESSION_1 = `test-start-001-${TIMESTAMP}`;
 const SESSION_2 = `test-start-002-${TIMESTAMP}`;
+
+// 用於場景 4 的暫存 feature 目錄（建在隔離的 tmp projectRoot 下）
+const TMP_PROJECT_ROOT = join(homedir(), '.overtone', 'test-tmp', `session-start-${TIMESTAMP}`);
+const TMP_FEATURE_NAME = 'pending-tasks-test';
+const TMP_FEATURE_DIR = join(TMP_PROJECT_ROOT, 'specs', 'features', 'in-progress', TMP_FEATURE_NAME);
 
 // ── 輔助函式 ──
 
@@ -61,6 +67,8 @@ afterAll(() => {
     const dir = paths.sessionDir(sessionId);
     rmSync(dir, { recursive: true, force: true });
   }
+  // 清理場景 4 的暫存 feature
+  rmSync(TMP_PROJECT_ROOT, { recursive: true, force: true });
 });
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -129,5 +137,89 @@ describe('場景 3：無 session_id — 靜默跳過，exit 0', () => {
       stderr: 'pipe',
     });
     expect(proc.exitCode).toBe(0);
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// 場景 4：有未完成 specs tasks 時，輸出含 systemMessage 的 pending tasks 提示
+// ────────────────────────────────────────────────────────────────────────────
+
+describe('場景 4：有未完成 tasks — 輸出 systemMessage', () => {
+  test('setup: 建立暫存 in-progress feature 目錄及 tasks.md', () => {
+    mkdirSync(TMP_FEATURE_DIR, { recursive: true });
+    writeFileSync(join(TMP_FEATURE_DIR, 'tasks.md'), [
+      '---',
+      'feature: pending-tasks-test',
+      'status: in-progress',
+      'workflow: standard',
+      '---',
+      '',
+      '## Tasks',
+      '',
+      '- [x] PLAN',
+      '- [ ] ARCH',
+      '- [ ] DEV',
+    ].join('\n'));
+    expect(existsSync(join(TMP_FEATURE_DIR, 'tasks.md'))).toBe(true);
+  });
+
+  test('hook 輸出 JSON 含 systemMessage 字段', () => {
+    const result = runHook({ cwd: TMP_PROJECT_ROOT });
+    expect(result.exitCode).toBe(0);
+
+    const output = JSON.parse(result.stdout);
+    expect(output.systemMessage).toBeDefined();
+  });
+
+  test('systemMessage 包含 feature 名稱', () => {
+    const result = runHook({ cwd: TMP_PROJECT_ROOT });
+    const output = JSON.parse(result.stdout);
+    expect(output.systemMessage).toContain('pending-tasks-test');
+  });
+
+  test('systemMessage 包含未完成任務（ARCH、DEV）', () => {
+    const result = runHook({ cwd: TMP_PROJECT_ROOT });
+    const output = JSON.parse(result.stdout);
+    expect(output.systemMessage).toContain('ARCH');
+    expect(output.systemMessage).toContain('DEV');
+  });
+
+  test('systemMessage 不包含已完成任務（PLAN）', () => {
+    const result = runHook({ cwd: TMP_PROJECT_ROOT });
+    const output = JSON.parse(result.stdout);
+    // PLAN 已完成，不應出現在未完成列表中
+    // 注意：PLAN 出現在 feature 名稱統計行不算，要確認不在 checkbox 列表中
+    const lines = output.systemMessage.split('\n');
+    const checkboxLines = lines.filter(l => l.startsWith('- [ ]'));
+    expect(checkboxLines.some(l => l.includes('PLAN'))).toBe(false);
+  });
+
+  test('所有任務完成時 hook 輸出不含 systemMessage', () => {
+    // 建立另一個所有 checkbox 都勾選的 feature
+    const allDoneFeatureName = 'all-done-feature';
+    const allDoneFeatureDir = join(TMP_PROJECT_ROOT, 'specs', 'features', 'in-progress', allDoneFeatureName);
+    // 注意：只能有一個 in-progress feature（getActiveFeature 取字母序第一個）
+    // 先移除原本的 feature，建立全勾的 feature
+    rmSync(TMP_FEATURE_DIR, { recursive: true, force: true });
+    mkdirSync(allDoneFeatureDir, { recursive: true });
+    writeFileSync(join(allDoneFeatureDir, 'tasks.md'), [
+      '---',
+      'feature: all-done-feature',
+      'status: in-progress',
+      'workflow: standard',
+      '---',
+      '',
+      '## Tasks',
+      '',
+      '- [x] PLAN',
+      '- [x] DEV',
+    ].join('\n'));
+
+    const result = runHook({ cwd: TMP_PROJECT_ROOT });
+    expect(result.exitCode).toBe(0);
+
+    const output = JSON.parse(result.stdout);
+    // 全部完成時不應注入 systemMessage
+    expect(output.systemMessage).toBeUndefined();
   });
 });

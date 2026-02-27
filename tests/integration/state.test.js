@@ -117,6 +117,26 @@ describe('setActiveAgent / removeActiveAgent', () => {
   });
 });
 
+describe('setFeatureName', () => {
+  test('設定 featureName 後能正確讀回', () => {
+    state.initState(TEST_SESSION, 'standard', ['PLAN', 'DEV']);
+    state.setFeatureName(TEST_SESSION, 'my-feature');
+    const s = state.readState(TEST_SESSION);
+    expect(s.featureName).toBe('my-feature');
+  });
+
+  test('覆蓋已有的 featureName', () => {
+    state.initState(TEST_SESSION, 'quick', ['DEV'], { featureName: 'old-feature' });
+    state.setFeatureName(TEST_SESSION, 'new-feature');
+    const s = state.readState(TEST_SESSION);
+    expect(s.featureName).toBe('new-feature');
+  });
+
+  test('不存在的 session 靜默忽略（不拋出）', () => {
+    expect(() => state.setFeatureName('nonexistent_session', 'my-feature')).not.toThrow();
+  });
+});
+
 describe('updateStateAtomic', () => {
   test('單次原子更新：合併多個修改', () => {
     state.initState(TEST_SESSION, 'quick', ['DEV', 'REVIEW', 'TEST']);

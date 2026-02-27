@@ -12,9 +12,11 @@
  */
 
 const { mkdirSync, readFileSync } = require('fs');
+const path = require('path');
 const pkg = require('../../../.claude-plugin/plugin.json');
 const paths = require('../../../scripts/lib/paths');
 const timeline = require('../../../scripts/lib/timeline');
+const specs = require('../../../scripts/lib/specs');
 
 // session ID 優先從 hook stdin JSON 讀取，環境變數作為 fallback
 let input = {};
@@ -44,7 +46,7 @@ const shouldSpawnDashboard = sessionId && !dashboardPid.isRunning();
 if (shouldSpawnDashboard) {
   try {
     const { spawn: spawnChild } = require('child_process');
-    const serverPath = require('path').join(__dirname, '../../../scripts/server.js');
+    const serverPath = path.join(__dirname, '../../../scripts/server.js');
     const child = spawnChild('bun', ['run', serverPath], {
       detached: true,
       stdio: 'ignore',
@@ -68,7 +70,7 @@ try {
 
 let grayMatterStatus;
 try {
-  require.resolve('gray-matter', { paths: [require('path').join(__dirname, '../../../')] });
+  require.resolve('gray-matter', { paths: [path.join(__dirname, '../../../')] });
   grayMatterStatus = null; // 已安裝不顯示
 } catch {
   grayMatterStatus = '  ⚠️  gray-matter 未安裝 — cd plugins/overtone && bun add gray-matter';
@@ -99,6 +101,37 @@ if (shouldSpawnDashboard && dashboardUrl && !process.env.OVERTONE_NO_BROWSER) {
   } catch {}
 }
 
-process.stdout.write(JSON.stringify({
-  result: banner,
-}));
+// ── 未完成任務注入（disk-based TaskList 恢復）──
+// context compact 後 in-memory TaskList 歸零，此處讀取 specs/features/in-progress 的 tasks.md
+// 注入 systemMessage，讓 Main Agent resume 後能重建 TaskList。
+
+let pendingTasksMsg = null;
+const projectRoot = input.cwd || process.env.CLAUDE_PROJECT_ROOT || process.cwd();
+try {
+  const activeFeature = specs.getActiveFeature(projectRoot);
+  if (activeFeature) {
+    const checkboxes = activeFeature.tasks;
+    if (checkboxes && !checkboxes.allChecked && checkboxes.total > 0) {
+      const unchecked = checkboxes.unchecked || [];
+      const lines = [
+        `📋 **未完成任務（上次 session 中斷）**`,
+        `Feature：${activeFeature.name}（${checkboxes.checked}/${checkboxes.total} 完成）`,
+        ...unchecked.slice(0, 5).map(t => `- [ ] ${t}`),
+      ];
+      if (unchecked.length > 5) {
+        lines.push(`... 還有 ${unchecked.length - 5} 個`);
+      }
+      lines.push(`→ 請使用 TaskCreate 重建以上任務的 TaskList，然後繼續執行。`);
+      pendingTasksMsg = lines.join('\n');
+    }
+  }
+} catch {
+  // 忽略，不阻擋 session 啟動
+}
+
+const output = { result: banner };
+if (pendingTasksMsg) {
+  output.systemMessage = pendingTasksMsg;
+}
+
+process.stdout.write(JSON.stringify(output));

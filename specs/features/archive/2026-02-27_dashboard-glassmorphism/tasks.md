@@ -1,11 +1,11 @@
 ---
 feature: dashboard-glassmorphism
 workflow: standard
-status: completed
+status: archived
 created: 2026-02-27
 completed: 2026-02-27
+archivedAt: 2026-02-27T11:59:48.356Z
 ---
-
 # Tasks: Dashboard Glassmorphism 重設計
 
 ## Checklist

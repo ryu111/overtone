@@ -139,6 +139,18 @@ function removeActiveAgent(sessionId, agentName) {
 }
 
 /**
+ * 設定對應的 Specs feature 名稱
+ * 由 /ot:auto skill 或 workflow skill 在大功能初始化 Specs 時呼叫
+ * @param {string} sessionId
+ * @param {string} name - feature 名稱（kebab-case）
+ */
+function setFeatureName(sessionId, name) {
+  const current = readState(sessionId);
+  if (!current) return;
+  atomicWrite(paths.session.workflow(sessionId), JSON.stringify({ ...current, featureName: name }, null, 2));
+}
+
+/**
  * 原子化更新 state（Compare-and-Swap 模式）
  *
  * 讀取 state → 執行 modifier → 寫回前驗證 mtime 未變。
@@ -201,5 +213,6 @@ module.exports = {
   updateStage,
   setActiveAgent,
   removeActiveAgent,
+  setFeatureName,
   updateStateAtomic,
 };

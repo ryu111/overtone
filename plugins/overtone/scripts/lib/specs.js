@@ -43,6 +43,8 @@ const MATTER_OPTS = {
 };
 const CHECKBOX_UNCHECKED_REGEX = /^[\s]*-\s\[ \]/gm;
 const CHECKBOX_CHECKED_REGEX = /^[\s]*-\s\[x\]/gmi;
+// 擷取未勾選 checkbox 的任務文字（- [ ] 之後的內容）
+const CHECKBOX_UNCHECKED_TEXT_REGEX = /^[\s]*-\s\[ \]\s*(.+)$/gm;
 
 // ── 路徑輔助 ──
 
@@ -140,7 +142,8 @@ function buildFrontmatter(fields) {
 /**
  * 讀取 tasks.md 中 ## Tasks 區塊後的 checkbox 完成度
  * @param {string} tasksPath
- * @returns {{ total: number, checked: number, allChecked: boolean } | null}
+ * @returns {{ total: number, checked: number, allChecked: boolean, unchecked: string[] } | null}
+ *   unchecked: 未完成任務的文字陣列（供 SessionStart hook 重建 TaskList 使用）
  */
 function readTasksCheckboxes(tasksPath) {
   let content;
@@ -156,12 +159,19 @@ function readTasksCheckboxes(tasksPath) {
 
   CHECKBOX_UNCHECKED_REGEX.lastIndex = 0;
   CHECKBOX_CHECKED_REGEX.lastIndex = 0;
+  CHECKBOX_UNCHECKED_TEXT_REGEX.lastIndex = 0;
 
-  const unchecked = (relevantContent.match(CHECKBOX_UNCHECKED_REGEX) || []).length;
+  const uncheckedCount = (relevantContent.match(CHECKBOX_UNCHECKED_REGEX) || []).length;
   const checked = (relevantContent.match(CHECKBOX_CHECKED_REGEX) || []).length;
-  const total = unchecked + checked;
+  const total = uncheckedCount + checked;
 
-  return { total, checked, allChecked: total > 0 && checked === total };
+  // 擷取未勾選任務的文字陣列
+  const unchecked = [];
+  for (const [, text] of relevantContent.matchAll(CHECKBOX_UNCHECKED_TEXT_REGEX)) {
+    unchecked.push(text.trim());
+  }
+
+  return { total, checked, allChecked: total > 0 && checked === total, unchecked };
 }
 
 // ── Feature 目錄管理 ──
