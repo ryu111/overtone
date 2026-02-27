@@ -42,7 +42,12 @@ async function main() {
   try {
     // V1 Pattern 1：error_resolutions — Bash 非零 exit code
     if (toolName === 'Bash') {
-      observeBashError(sessionId, toolInput, toolResponse);
+      const errorGuard = observeBashError(sessionId, toolInput, toolResponse);
+      if (errorGuard) {
+        // 重大 Bash 錯誤 → 注入自我修復指令給 Main Agent
+        process.stdout.write(JSON.stringify({ result: errorGuard }));
+        process.exit(0);
+      }
     }
 
     // V1 Pattern 2：tool_preferences — 搜尋工具選擇偏好
@@ -89,6 +94,7 @@ async function main() {
  * @param {string} sessionId
  * @param {object} toolInput - { command: string }
  * @param {object} toolResponse - { stdout, stderr, exit_code, ... }
+ * @returns {string|null} 重大錯誤時回傳自我修復指令，否則 null
  */
 function observeBashError(sessionId, toolInput, toolResponse) {
   // 取得 exit code（Claude Code 的 Bash 結果格式）
@@ -97,10 +103,10 @@ function observeBashError(sessionId, toolInput, toolResponse) {
     ?? toolResponse.returncode;
 
   // 非零 exit code 表示指令失敗
-  if (exitCode === null || exitCode === undefined || exitCode === 0) return;
+  if (exitCode === null || exitCode === undefined || exitCode === 0) return null;
 
   const command = (toolInput.command || '').trim();
-  if (!command) return;
+  if (!command) return null;
 
   // 提取主要指令名稱作為 tag
   const tag = extractCommandTag(command);
@@ -114,6 +120,26 @@ function observeBashError(sessionId, toolInput, toolResponse) {
   const action = `偵測到 ${tag} 指令失敗（exit code ${exitCode}）`;
 
   instinct.emit(sessionId, 'error_resolutions', trigger, action, `cmd-${tag}`);
+
+  // 判斷是否為重大錯誤（需要自我修復介入）
+  // 條件：(1) 重要工具指令 (2) 有實質 stderr (3) 非預期的輕微失敗
+  const isSignificantTool = ['node', 'bun', 'npm', 'yarn', 'git', 'python', 'tsc', 'eslint', 'jest'].includes(tag);
+  const hasSubstantialError = stderr.length > 20;
+
+  if (isSignificantTool && hasSubstantialError) {
+    return [
+      `[Overtone 錯誤守衛] 偵測到重大 Bash 錯誤（${tag} exit ${exitCode}）`,
+      `錯誤：${stderr.slice(0, 120)}`,
+      '',
+      '⛔ MUST NOT 用 workaround 繞過此錯誤（如硬編碼、跳過、重試相同指令）',
+      '📋 MUST 立即在同一訊息並行委派：',
+      `  1. debugger — 診斷根因（為什麼 ${tag} 失敗？）`,
+      '  2. developer — 取得診斷結果後修復根本原因',
+      '治本後才繼續主流程。',
+    ].join('\n');
+  }
+
+  return null;
 }
 
 /**
