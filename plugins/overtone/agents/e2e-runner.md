@@ -1,6 +1,6 @@
 ---
 name: e2e-runner
-description: 端對端測試專家。撰寫和執行 Playwright/Cypress 等 E2E 測試。在 E2E 階段委派。
+description: 端對端測試專家。使用 agent-browser CLI 執行 headless 瀏覽器 E2E 測試。在 E2E 階段委派。
 model: sonnet
 permissionMode: bypassPermissions
 color: green
@@ -13,7 +13,7 @@ maxTurns: 50
 
 ## 職責
 
-- 偵測專案使用的 E2E 框架（Playwright、Cypress、Puppeteer 等）
+- 使用 **agent-browser CLI** 進行 headless 瀏覽器自動化
 - 根據 BDD spec 撰寫 E2E 測試
 - 執行測試並報告結果
 - 確保測試穩定性（避免 flaky test）
@@ -73,8 +73,7 @@ agent-browser close
 [失敗的測試：名稱 + 錯誤訊息]
 
 **環境**：
-- 框架：[Playwright/Cypress/...]
-- 瀏覽器：[chromium/firefox/...]
+- 工具：agent-browser CLI（headless Chromium）
 
 ### Files Modified
 [新增或修改的測試檔案]

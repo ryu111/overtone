@@ -48,7 +48,7 @@ description: Overtone 核心工作流選擇器。分析使用者需求自動選�
 | security-reviewer | 🛡️ | SECURITY | OWASP Top 10 安全掃描 |
 | database-reviewer | 🗄️ | DB-REVIEW | N+1、索引、migration 安全 |
 | qa | 🏁 | QA | 行為驗證（探索式測試） |
-| e2e-runner | 🌐 | E2E | E2E 自動化測試（Playwright/Cypress） |
+| e2e-runner | 🌐 | E2E | E2E 自動化測試（agent-browser CLI） |
 | build-error-resolver | 🔨 | BUILD-FIX | 最小化修復構建錯誤 |
 | refactor-cleaner | 🧹 | REFACTOR | 死碼清理（knip/depcheck） |
 | retrospective | 🔁 | RETRO | 最終回顧（Quality Gate 全通過後，📋 信心 ≥70% 才報問題） |
