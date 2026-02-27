@@ -5,6 +5,7 @@
  * 提供跨模組使用的基礎工具：
  *   ✅ atomicWrite — 原子寫入（tmp+rename，避免 race condition）
  *   ✅ escapeHtml — HTML entity 編碼（防 XSS）
+ *   ✅ clamp     — 數值夾限（確保 value 在 [min, max] 區間內）
  */
 
 const { writeFileSync, renameSync, mkdirSync } = require('fs');
@@ -48,4 +49,16 @@ function escapeHtml(str) {
     .replace(/'/g, '&#39;');
 }
 
-module.exports = { atomicWrite, escapeHtml };
+/**
+ * 數值夾限（確保 value 在 [min, max] 區間內）
+ *
+ * @param {number} value - 輸入值
+ * @param {number} min   - 最小值（含）
+ * @param {number} max   - 最大值（含）
+ * @returns {number} 夾限後的值
+ */
+function clamp(value, min, max) {
+  return Math.min(Math.max(value, min), max);
+}
+
+module.exports = { atomicWrite, escapeHtml, clamp };
