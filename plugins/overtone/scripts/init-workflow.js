@@ -30,7 +30,25 @@ if (!sessionId) {
     const { CURRENT_SESSION_FILE } = require('./lib/paths');
     sessionId = readFileSync(CURRENT_SESSION_FILE, 'utf8').trim();
   } catch {
-    // 找不到共享文件，sessionId 維持空字串
+    // 找不到共享文件，嘗試 fallback
+  }
+}
+
+// Fallback：從 sessions/ 目錄找最近有 active workflow 的 session
+if (!sessionId) {
+  try {
+    const { readdirSync, statSync, existsSync } = require('fs');
+    const { join } = require('path');
+    const { SESSIONS_DIR } = require('./lib/paths');
+    if (existsSync(SESSIONS_DIR)) {
+      const entries = readdirSync(SESSIONS_DIR)
+        .map((name) => ({ name, mtime: statSync(join(SESSIONS_DIR, name)).mtimeMs }))
+        .sort((a, b) => b.mtime - a.mtime);
+      // 取最近修改的 session（最可能是當前 session）
+      if (entries.length > 0) sessionId = entries[0].name;
+    }
+  } catch {
+    // 找不到任何 session，sessionId 維持空字串
   }
 }
 

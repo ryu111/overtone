@@ -105,31 +105,30 @@ describe('Session ID Bridge — init-workflow.js fallback 讀取', () => {
     expect(Object.keys(wfData.stages)).toContain('DEV');
   });
 
-  test('.current-session-id 不存在時 init-workflow.js 應以 exit code 1 失敗', () => {
-    // 確保共享文件不存在（或包含不同值）
-    // 我們不寫入任何 sessionId，並移除現有文件（如果是我們的 ID）
+  test('.current-session-id 不存在時，fallback 從 sessions 目錄找最近 session', () => {
+    // 先建立一個測試 session 目錄（確保 fallback 有東西可找）
+    const testSessionId = `fallback-test-session-${Date.now()}`;
+    const testSessionDir = path.join(SESSIONS_DIR, testSessionId);
+    mkdirSync(testSessionDir, { recursive: true });
+
     let previousId = null;
     if (existsSync(CURRENT_SESSION_FILE)) {
       previousId = readFileSync(CURRENT_SESSION_FILE, 'utf8').trim();
-      // 臨時移除讓測試環境模擬「找不到 session ID」
       rmSync(CURRENT_SESSION_FILE, { force: true });
     }
 
     try {
-      const { stderr, exitCode } = runCLI(
+      const { exitCode } = runCLI(
         path.join(SCRIPTS_DIR, 'init-workflow.js'),
-        ['quick'],  // 不傳 sessionId
+        ['quick'],
         { cwd: PROJECT_ROOT }
       );
-
-      // 若找不到 sessionId，應 exit code 1 並輸出用法說明
-      expect(exitCode).toBe(1);
-      expect(stderr).toContain('用法');
+      // fallback 找到 testSessionDir → 成功初始化（exit 0）
+      expect(exitCode).toBe(0);
     } finally {
-      // 恢復原本的 .current-session-id（若原本存在）
-      if (previousId) {
-        writeFileSync(CURRENT_SESSION_FILE, previousId, 'utf8');
-      }
+      // 清理測試 session 和 workflow.json
+      rmSync(testSessionDir, { recursive: true, force: true });
+      if (previousId) writeFileSync(CURRENT_SESSION_FILE, previousId, 'utf8');
     }
   });
 
