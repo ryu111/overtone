@@ -19,7 +19,7 @@
   <!-- ── Header ── -->
   <header class="dashboard-header">
     <div class="logo">
-      <span class="logo-icon">O</span>
+      <span class="logo-icon">🎵</span>
       Overtone
     </div>
     <div class="header-spacer"></div>
@@ -29,9 +29,22 @@
     <template x-if="pipeline.workflowType">
       <span class="workflow-badge" x-text="getWorkflowLabel(pipeline.workflowType)"></span>
     </template>
-    <div class="connection-dot" :class="isConnected ? 'online' : ''"
-         x-text="isConnected ? '已連線' : '連線中...'"></div>
+    <div class="connection-dot" :class="connectionStatusClass"
+         x-text="connectionStatusText"></div>
   </header>
+
+  <!-- 斷線橫幅（重連中或斷線時顯示） -->
+  <div class="disconnect-banner" x-show="!isConnected" x-cloak>
+    <template x-if="_reconnectAttempts < 5 && _reconnectAttempts > 0">
+      <span>SSE 連線中斷，自動重連中（<span x-text="_reconnectAttempts"></span>/5）…</span>
+    </template>
+    <template x-if="_reconnectAttempts >= 5">
+      <span>連線已中斷，請重新整理頁面</span>
+    </template>
+    <template x-if="_reconnectAttempts === 0">
+      <span>正在建立連線…</span>
+    </template>
+  </div>
 
   <!-- ── Dashboard Layout（sidebar + main panel） ── -->
   <div class="dashboard-layout">
@@ -53,8 +66,10 @@
           <div class="session-item-workflow"
                x-text="session.workflowType ? getWorkflowLabel(session.workflowType) : '無工作流'">
           </div>
-          <div class="session-item-id" x-text="session.sessionId.slice(0, 12) + '...'"></div>
-          <div class="session-item-time" x-text="formatTime(session.createdAt)"></div>
+          <div class="session-item-meta">
+            <span class="session-item-id" x-text="session.sessionId.slice(0, 12) + '...'"></span>
+            <span class="session-item-time" x-text="formatTime(session.createdAt)"></span>
+          </div>
           <div class="session-item-status">
             <span class="status-pill"
                   :class="session.status === 'completed' ? 'pass' : (session.status === 'active' ? 'active' : '')"
@@ -188,7 +203,7 @@
       <!-- ═══ Timeline Tab ═══ -->
       <div x-show="activeTab === 'timeline'" class="tab-content" x-cloak>
 
-        <!-- 分類篩選 -->
+        <!-- 分類篩選 + scroll lock -->
         <div class="filter-bar">
           <button class="filter-chip" :class="{ active: !timelineFilter }" @click="timelineFilter = ''">全部</button>
           <template x-for="cat in timelineCategories" :key="cat.key">
@@ -198,11 +213,16 @@
                     x-text="cat.label">
             </button>
           </template>
+          <button class="scroll-lock-btn"
+                  :class="{ active: autoScrollTimeline }"
+                  @click="autoScrollTimeline = !autoScrollTimeline"
+                  x-text="autoScrollTimeline ? '↓ 跟隨' : '⏸ 暫停'">
+          </button>
         </div>
 
         <!-- 事件列表 -->
         <div class="timeline-container">
-          <div class="timeline-list" x-ref="timelineList">
+          <div class="timeline-list" x-ref="timelineList" @scroll.passive="onTimelineScroll($event)">
             <template x-for="(event, idx) in filteredTimelineEvents" :key="event.ts + '-' + event.type + '-' + idx">
               <div class="timeline-event"
                    :class="window.OT.timeline.getCategoryClass(event.type)">
@@ -354,6 +374,7 @@
       activeTab: 'pipeline',
       isConnected: false,
       confettiPlayed: false,
+      autoScrollTimeline: true,
 
       // SSE 連線管理
       _sessionEventSource: null,
@@ -366,6 +387,20 @@
       registry: { parallelGroupDefs: {}, workflows: {}, stages: {}, agents: {} },
 
       // ── Computed ──
+
+      get connectionStatusText() {
+        if (this.isConnected) return '已連線';
+        if (this._reconnectAttempts >= 5) return '斷線';
+        if (this._reconnectAttempts > 0) return '重連中（' + this._reconnectAttempts + '/5）';
+        return '連線中…';
+      },
+
+      get connectionStatusClass() {
+        if (this.isConnected) return 'online';
+        if (this._reconnectAttempts >= 5) return 'failed';
+        if (this._reconnectAttempts > 0) return 'reconnecting';
+        return '';
+      },
 
       get pipelineSegments() {
         if (!window.OT || !window.OT.pipeline) return [];
@@ -465,6 +500,7 @@
         this.passatk = { overall: null, stages: {} };
         this.confettiPlayed = false;
         this.activeTab = 'pipeline';
+        this.autoScrollTimeline = true;
         this._reconnectAttempts = 0;
 
         // 載入 REST 初始狀態
@@ -589,12 +625,12 @@
         });
 
         es.onerror = () => {
-          // debounce：短暫斷線（重連中）不立刻顯示「連線中」，3 秒後仍未恢復才更新狀態
+          // debounce：短暫斷線（重連中）不立刻顯示「連線中」，1 秒後仍未恢復才更新狀態
           if (!this._disconnectDebounceTimer) {
             this._disconnectDebounceTimer = setTimeout(() => {
               this._disconnectDebounceTimer = null;
               this.isConnected = false;
-            }, 3000);
+            }, 1000);
           }
           if (this._sessionEventSource) {
             this._sessionEventSource.close();
@@ -634,11 +670,16 @@
       handleSSETimelineEvent(event) {
         this.timeline.events.push(event);
 
-        // 觸發 timeline slide-in 動畫
+        // 觸發 timeline slide-in 動畫 + 自動跟隨 scroll
         if (this.activeTab === 'timeline') {
           this.$nextTick(() => {
             const el = this.$refs.timelineList;
-            if (el) window.OT.timeline.animateNewEvent(el, event);
+            if (el) {
+              window.OT.timeline.animateNewEvent(el, event);
+              if (this.autoScrollTimeline) {
+                el.scrollTop = el.scrollHeight;
+              }
+            }
           });
         }
 
@@ -795,6 +836,19 @@
 
       getAgentColorName(name) {
         return (this.registry.agents || {})[name]?.color || 'purple';
+      },
+
+      // ── 輔助：Timeline scroll ──
+
+      onTimelineScroll(e) {
+        const el = e.target;
+        // 距離底部 < 40px 視為「在底部」→ 自動重新鎖定
+        const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 40;
+        if (atBottom) {
+          this.autoScrollTimeline = true;
+        } else {
+          this.autoScrollTimeline = false;
+        }
       },
 
       // ── 輔助：時間 ──

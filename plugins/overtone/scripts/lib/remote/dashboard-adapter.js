@@ -87,10 +87,10 @@ class DashboardAdapter extends Adapter {
         const ws = state.readState(sessionId);
         if (ws) self._sendSSE(wrapper, 'workflow', JSON.stringify(ws));
 
-        // 心跳：每 30 秒發送，防止 proxy/browser 閒置超時斷線
+        // 心跳：每 15 秒發送，防止 proxy/browser 閒置超時斷線
         wrapper._heartbeatTimer = setInterval(() => {
           self._sendSSE(wrapper, 'heartbeat', JSON.stringify({ ts: new Date().toISOString() }));
-        }, 30000);
+        }, 15000);
       },
       cancel() {
         if (wrapper) {
@@ -122,10 +122,10 @@ class DashboardAdapter extends Adapter {
           serverTime: new Date().toISOString(),
         }));
 
-        // 心跳：每 30 秒發送，防止 proxy/browser 閒置超時斷線
+        // 心跳：每 15 秒發送，防止 proxy/browser 閒置超時斷線
         wrapper._heartbeatTimer = setInterval(() => {
           self._sendSSE(wrapper, 'heartbeat', JSON.stringify({ ts: new Date().toISOString() }));
-        }, 30000);
+        }, 15000);
       },
       cancel() {
         if (wrapper) {
