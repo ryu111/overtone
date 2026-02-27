@@ -170,6 +170,16 @@
               <div class="stat-value" x-text="calcDuration(pipeline.createdAt)"></div>
               <div class="stat-label">經過時間</div>
             </div>
+            <div class="stat-card">
+              <div class="stat-value"
+                   x-text="passatk.overall ? Math.round(passatk.overall.pass1Rate * 100) + '%' : '—'"></div>
+              <div class="stat-label">pass@1</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value"
+                   x-text="passatk.overall ? Math.round(passatk.overall.pass3Rate * 100) + '%' : '—'"></div>
+              <div class="stat-label">pass@3</div>
+            </div>
           </div>
         </template>
 
@@ -337,6 +347,9 @@
       // Agents
       agents: {},
 
+      // Pass@k 統計
+      passatk: { overall: null, stages: {} },
+
       // UI 狀態
       activeTab: 'pipeline',
       isConnected: false,
@@ -448,6 +461,7 @@
         this.pipeline = { stages: {}, workflowType: '', parallelGroups: [], failCount: 0, rejectCount: 0, createdAt: null };
         this.timeline = { events: [] };
         this.agents = {};
+        this.passatk = { overall: null, stages: {} };
         this.confettiPlayed = false;
         this.activeTab = 'pipeline';
         this._reconnectAttempts = 0;
@@ -456,6 +470,7 @@
         await Promise.all([
           this.fetchSessionState(id),
           this.fetchSessionTimeline(id),
+          this.fetchPassatk(id),
         ]);
 
         // 建立新 SSE 連線
@@ -482,6 +497,18 @@
           if (r.ok) {
             const events = await r.json();
             this.timeline = { events: events || [] };
+          }
+        } catch {
+          // 靜默
+        }
+      },
+
+      async fetchPassatk(sessionId) {
+        try {
+          const r = await fetch('/api/sessions/' + sessionId + '/passatk');
+          if (r.ok) {
+            const data = await r.json();
+            this.passatk = data;
           }
         } catch {
           // 靜默
