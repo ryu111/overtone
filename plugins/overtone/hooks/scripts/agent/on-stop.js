@@ -24,8 +24,10 @@ const sessionId = input.session_id || process.env.CLAUDE_SESSION_ID || '';
 const projectRoot = input.cwd || process.cwd();
 
 // 取得 agent 資訊
-const agentName = (input.subagent_name || '').trim();
-const agentOutput = (input.output || '').trim();
+// Claude Code SubagentStop 傳 agent_type（如 "ot:developer"），需剝除 "ot:" 前綴
+const rawAgentType = (input.agent_type || '').trim();
+const agentName = rawAgentType.startsWith('ot:') ? rawAgentType.slice(3) : rawAgentType;
+const agentOutput = (input.last_assistant_message || '').trim();
 
 // 無 session 或無 agent 名稱 → 跳過
 if (!sessionId || !agentName) {

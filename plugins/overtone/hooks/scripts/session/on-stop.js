@@ -22,7 +22,6 @@ const { stages, loopDefaults } = require('../../../scripts/lib/registry');
 
 const input = JSON.parse(readFileSync('/dev/stdin', 'utf8'));
 const sessionId = input.session_id || process.env.CLAUDE_SESSION_ID || '';
-const stopReason = (input.stop_reason || '').trim();
 const projectRoot = input.cwd || '';
 
 // 無 session → 不擋

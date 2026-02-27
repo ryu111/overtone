@@ -103,7 +103,7 @@ describe('場景 1：PASS — developer agent 完成', () => {
     setupWorkflowWithActiveStage(sessionId, 'quick', 'DEV');
 
     const result = await runHook(
-      { subagent_name: 'developer', output: 'VERDICT: pass 開發完成' },
+      { agent_type: 'ot:developer', last_assistant_message: 'VERDICT: pass 開發完成' },
       sessionId
     );
 
@@ -147,7 +147,7 @@ describe('場景 2：FAIL — tester agent 失敗', () => {
     });
 
     const result = await runHook(
-      { subagent_name: 'tester', output: '測試失敗 3 tests fail' },
+      { agent_type: 'ot:tester', last_assistant_message: '測試失敗 3 tests fail' },
       sessionId
     );
 
@@ -184,7 +184,7 @@ describe('場景 3：REJECT — code-reviewer 拒絕', () => {
     });
 
     const result = await runHook(
-      { subagent_name: 'code-reviewer', output: '拒絕，程式碼有安全問題 reject' },
+      { agent_type: 'ot:code-reviewer', last_assistant_message: '拒絕，程式碼有安全問題 reject' },
       sessionId
     );
 
@@ -221,7 +221,7 @@ describe('場景 4：FAIL 達到上限', () => {
     });
 
     const result = await runHook(
-      { subagent_name: 'tester', output: '3 tests failed' },
+      { agent_type: 'ot:tester', last_assistant_message: '3 tests failed' },
       sessionId
     );
 
@@ -245,7 +245,7 @@ describe('場景 5：無 sessionId 跳過', () => {
   test('無 CLAUDE_SESSION_ID → result 為空字串', async () => {
     // 不傳入 sessionId（傳 undefined → 刪除環境變數）
     const result = await runHook(
-      { subagent_name: 'developer', output: '任意輸出' },
+      { agent_type: 'ot:developer', last_assistant_message: '任意輸出' },
       undefined
     );
 
@@ -254,7 +254,7 @@ describe('場景 5：無 sessionId 跳過', () => {
 
   test('CLAUDE_SESSION_ID 為空字串 → result 為空字串', async () => {
     const result = await runHook(
-      { subagent_name: 'developer', output: '任意輸出' },
+      { agent_type: 'ot:developer', last_assistant_message: '任意輸出' },
       ''
     );
 
@@ -275,14 +275,14 @@ describe('場景 6：非 Overtone agent 跳過', () => {
     state.initState(sessionId, 'quick', ['DEV', 'REVIEW', 'TEST']);
 
     const result = await runHook(
-      { subagent_name: 'unknown-agent', output: '未知的 agent 輸出' },
+      { agent_type: 'ot:unknown-agent', last_assistant_message: '未知的 agent 輸出' },
       sessionId
     );
 
     expect(result.result).toBe('');
   });
 
-  test('subagent_name 為空 → result 為空字串', async () => {
+  test('agent_type 為空 → result 為空字串', async () => {
     const sessionId = newSessionId();
     createdSessions.push(sessionId);
 
@@ -290,7 +290,7 @@ describe('場景 6：非 Overtone agent 跳過', () => {
     state.initState(sessionId, 'quick', ['DEV', 'REVIEW', 'TEST']);
 
     const result = await runHook(
-      { subagent_name: '', output: '任意輸出' },
+      { agent_type: 'ot:', last_assistant_message: '任意輸出' },
       sessionId
     );
 
@@ -316,7 +316,7 @@ describe('場景 7：PASS — 所有 stages 完成', () => {
     });
 
     const result = await runHook(
-      { subagent_name: 'developer', output: 'VERDICT: pass 開發完成' },
+      { agent_type: 'ot:developer', last_assistant_message: 'VERDICT: pass 開發完成' },
       sessionId
     );
 
@@ -353,7 +353,7 @@ describe('場景 8：並行收斂偵測', () => {
 
     // REVIEW 完成
     const result = await runHook(
-      { subagent_name: 'code-reviewer', output: 'code looks good, no issues found' },
+      { agent_type: 'ot:code-reviewer', last_assistant_message: 'code looks good, no issues found' },
       sessionId
     );
 
@@ -385,7 +385,7 @@ describe('場景 8：並行收斂偵測', () => {
 
     // TEST 完成 → 觸發並行群組收斂（REVIEW + TEST 都 completed）
     const result = await runHook(
-      { subagent_name: 'tester', output: 'all tests passed successfully' },
+      { agent_type: 'ot:tester', last_assistant_message: 'all tests passed successfully' },
       sessionId
     );
 
@@ -417,7 +417,7 @@ describe('場景 9：timeline 事件驗證', () => {
     });
 
     await runHook(
-      { subagent_name: 'developer', output: 'VERDICT: pass 完成' },
+      { agent_type: 'ot:developer', last_assistant_message: 'VERDICT: pass 完成' },
       sessionId
     );
 
@@ -443,7 +443,7 @@ describe('場景 9：timeline 事件驗證', () => {
     });
 
     await runHook(
-      { subagent_name: 'tester', output: '5 tests failed with errors' },
+      { agent_type: 'ot:tester', last_assistant_message: '5 tests failed with errors' },
       sessionId
     );
 
@@ -469,7 +469,7 @@ describe('場景 9：timeline 事件驗證', () => {
     });
 
     await runHook(
-      { subagent_name: 'tester', output: 'tests failed critical failure' },
+      { agent_type: 'ot:tester', last_assistant_message: 'tests failed critical failure' },
       sessionId
     );
 
@@ -508,7 +508,7 @@ describe('場景 11：RETRO — 迭代回顧', () => {
     });
 
     const result = await runHook(
-      { subagent_name: 'retrospective', output: '回顧完成，無重要問題。PASS' },
+      { agent_type: 'ot:retrospective', last_assistant_message: '回顧完成，無重要問題。PASS' },
       sessionId
     );
 
@@ -541,7 +541,7 @@ describe('場景 11：RETRO — 迭代回顧', () => {
     });
 
     const result = await runHook(
-      { subagent_name: 'retrospective', output: '發現 2 個改善建議，建議下一輪優化架構' },
+      { agent_type: 'ot:retrospective', last_assistant_message: '發現 2 個改善建議，建議下一輪優化架構' },
       sessionId
     );
 
@@ -575,7 +575,7 @@ describe('場景 11：RETRO — 迭代回顧', () => {
     });
 
     const result = await runHook(
-      { subagent_name: 'retrospective', output: '仍有 issues 需要改善建議' },
+      { agent_type: 'ot:retrospective', last_assistant_message: '仍有 issues 需要改善建議' },
       sessionId
     );
 
@@ -609,7 +609,7 @@ describe('場景 10：REJECT 達到上限', () => {
     });
 
     const result = await runHook(
-      { subagent_name: 'code-reviewer', output: 'I must reject this, multiple security issues' },
+      { agent_type: 'ot:code-reviewer', last_assistant_message: 'I must reject this, multiple security issues' },
       sessionId
     );
 
@@ -647,7 +647,7 @@ describe('場景 12：D2 — 並行 agent 未完成時 hint 等待', () => {
 
     // REVIEW 完成
     const result = await runHook(
-      { subagent_name: 'code-reviewer', output: 'LGTM, code looks good, approved' },
+      { agent_type: 'ot:code-reviewer', last_assistant_message: 'LGTM, code looks good, approved' },
       sessionId
     );
 
@@ -675,7 +675,7 @@ describe('場景 12：D2 — 並行 agent 未完成時 hint 等待', () => {
 
     // REVIEW 完成
     const result = await runHook(
-      { subagent_name: 'code-reviewer', output: 'LGTM no issues' },
+      { agent_type: 'ot:code-reviewer', last_assistant_message: 'LGTM no issues' },
       sessionId
     );
 
@@ -710,7 +710,7 @@ describe('場景 13：D3 — 雙重失敗協調提示', () => {
 
     // TEST 失敗
     const result = await runHook(
-      { subagent_name: 'tester', output: '3 tests failed with errors' },
+      { agent_type: 'ot:tester', last_assistant_message: '3 tests failed with errors' },
       sessionId
     );
 
@@ -741,7 +741,7 @@ describe('場景 13：D3 — 雙重失敗協調提示', () => {
 
     // REVIEW 拒絕
     const result = await runHook(
-      { subagent_name: 'code-reviewer', output: 'I reject this, multiple issues' },
+      { agent_type: 'ot:code-reviewer', last_assistant_message: 'I reject this, multiple issues' },
       sessionId
     );
 
@@ -769,7 +769,7 @@ describe('場景 13：D3 — 雙重失敗協調提示', () => {
     });
 
     const result = await runHook(
-      { subagent_name: 'tester', output: '2 tests failed' },
+      { agent_type: 'ot:tester', last_assistant_message: '2 tests failed' },
       sessionId
     );
 
