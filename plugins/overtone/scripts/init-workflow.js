@@ -3,7 +3,7 @@
 /**
  * init-workflow.js — 初始化 workflow 狀態
  *
- * 用法：node init-workflow.js <workflowType> <sessionId> [featureName]
+ * 用法：node init-workflow.js <workflowType> [sessionId] [featureName]
  *
  * 從 registry.js 取得 workflow 的 stage 清單，
  * 呼叫 state.initState() 建立 workflow.json，
@@ -11,16 +11,32 @@
  *
  * 若提供 featureName，且 workflow 有對應 specs 設定，
  * 會同時初始化 specs feature 目錄並 emit specs:init 事件。
+ *
+ * 注意：sessionId 可省略。若省略（或空字串），會嘗試從
+ * ~/.overtone/.current-session-id 讀取。
+ * 這是為了支援 Skill 中的 Bash 工具呼叫環境（沒有 CLAUDE_SESSION_ID 環境變數）。
  */
 
 const { workflows, specsConfig } = require('./lib/registry');
 const state = require('./lib/state');
 const timeline = require('./lib/timeline');
 
-const [workflowType, sessionId, featureName] = process.argv.slice(2);
+let [workflowType, sessionId, featureName] = process.argv.slice(2);
+
+// 若 sessionId 為空，從共享文件讀取（Bash 工具環境無 CLAUDE_SESSION_ID）
+if (!sessionId) {
+  try {
+    const { readFileSync } = require('fs');
+    const { CURRENT_SESSION_FILE } = require('./lib/paths');
+    sessionId = readFileSync(CURRENT_SESSION_FILE, 'utf8').trim();
+  } catch {
+    // 找不到共享文件，sessionId 維持空字串
+  }
+}
 
 if (!workflowType || !sessionId) {
-  console.error('用法：node init-workflow.js <workflowType> <sessionId> [featureName]');
+  console.error('用法：node init-workflow.js <workflowType> [sessionId] [featureName]');
+  console.error('注意：sessionId 可省略，會自動從 ~/.overtone/.current-session-id 讀取');
   process.exit(1);
 }
 

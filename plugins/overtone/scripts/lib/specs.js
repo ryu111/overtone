@@ -176,11 +176,22 @@ function readTasksCheckboxes(tasksPath) {
 function buildTasksMd(featureName, workflowType, status) {
   const created = new Date().toISOString();
 
-  const { specsConfig } = require('./registry');
-  const config = specsConfig[workflowType] || [];
+  const { workflows, specsConfig } = require('./registry');
 
-  // 依 specsConfig 生成 checkbox
-  const checkboxes = config.map((item) => `- [ ] ${item}`).join('\n');
+  // 只有 specsConfig 非空的 workflow 才用 stages 生成 checkbox，
+  // 讓 SubagentStop hook 能在 stage 完成時自動勾選。
+  // specsConfig 為空（如 single）的 workflow 不需要 specs 整合，
+  // 生成空 checkbox 清單（total=0 → readTasksStatus 回傳 null → fallback 到純 stage 判斷）。
+  const config = specsConfig[workflowType] || [];
+  let checkboxes = '';
+
+  if (config.length > 0) {
+    const workflow = workflows[workflowType];
+    // 去重並保持順序（例：standard 的 TEST 出現兩次，只保留一個）
+    const rawStages = workflow ? workflow.stages : [];
+    const uniqueStages = [...new Set(rawStages)];
+    checkboxes = uniqueStages.map((stage) => `- [ ] ${stage}`).join('\n');
+  }
 
   return [
     '---',

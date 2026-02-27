@@ -755,3 +755,123 @@ describe('CLI: specs-list.js', () => {
     expect(stdout).toContain('Backlog');
   });
 });
+
+// ── tasks.md checkbox — buildTasksMd workflow stages 驗證 ──
+// 修復：buildTasksMd 應用 workflow stages 生成 checkbox，而非文件類型
+
+describe('buildTasksMd — tasks.md checkbox 內容驗證', () => {
+  test('standard workflow 的 tasks.md checkbox 應為 workflow stages 而非文件類型', () => {
+    // standard workflow stages: ['PLAN', 'ARCH', 'TEST', 'DEV', 'REVIEW', 'TEST', 'RETRO', 'DOCS']
+    // 去重後：PLAN, ARCH, TEST, DEV, REVIEW, RETRO, DOCS
+    const result = specs.initFeatureDir(tmpDir, 'test-feature', 'standard');
+    const tasksPath = path.join(result, 'tasks.md');
+    const content = readFileSync(tasksPath, 'utf8');
+
+    // 應包含 workflow stages 的 checkbox
+    expect(content).toContain('- [ ] PLAN');
+    expect(content).toContain('- [ ] ARCH');
+    expect(content).toContain('- [ ] DEV');
+    expect(content).toContain('- [ ] TEST');
+    expect(content).toContain('- [ ] REVIEW');
+    expect(content).toContain('- [ ] RETRO');
+    expect(content).toContain('- [ ] DOCS');
+
+    // 不應包含文件類型名稱（舊的錯誤格式）
+    expect(content).not.toContain('- [ ] tasks');
+    expect(content).not.toContain('- [ ] bdd');
+  });
+
+  test('full workflow 的 tasks.md checkbox 應包含 DESIGN、QA、E2E stages', () => {
+    // full workflow stages: ['PLAN', 'ARCH', 'DESIGN', 'TEST', 'DEV', 'REVIEW', 'TEST', 'QA', 'E2E', 'RETRO', 'DOCS']
+    const result = specs.initFeatureDir(tmpDir, 'full-feature', 'full');
+    const tasksPath = path.join(result, 'tasks.md');
+    const content = readFileSync(tasksPath, 'utf8');
+
+    expect(content).toContain('- [ ] PLAN');
+    expect(content).toContain('- [ ] ARCH');
+    expect(content).toContain('- [ ] DESIGN');
+    expect(content).toContain('- [ ] TEST');
+    expect(content).toContain('- [ ] DEV');
+    expect(content).toContain('- [ ] REVIEW');
+    expect(content).toContain('- [ ] QA');
+    expect(content).toContain('- [ ] E2E');
+    expect(content).toContain('- [ ] RETRO');
+    expect(content).toContain('- [ ] DOCS');
+
+    // 不應包含文件類型名稱
+    expect(content).not.toContain('- [ ] tasks');
+    expect(content).not.toContain('- [ ] bdd');
+  });
+
+  test('quick workflow（specsConfig 有 tasks）的 checkbox 應為 workflow stages', () => {
+    // quick workflow stages: ['DEV', 'REVIEW', 'TEST', 'RETRO']
+    const result = specs.initFeatureDir(tmpDir, 'quick-feature', 'quick');
+    const tasksPath = path.join(result, 'tasks.md');
+    const content = readFileSync(tasksPath, 'utf8');
+
+    expect(content).toContain('- [ ] DEV');
+    expect(content).toContain('- [ ] REVIEW');
+    expect(content).toContain('- [ ] TEST');
+    expect(content).toContain('- [ ] RETRO');
+
+    // 不應包含文件類型名稱
+    expect(content).not.toContain('- [ ] tasks');
+  });
+
+  test('standard workflow 的 checkbox 不重複（TEST 出現兩次但只有一個 checkbox）', () => {
+    // standard stages 含兩個 TEST，去重後只應出現一次
+    const result = specs.initFeatureDir(tmpDir, 'no-dup-feature', 'standard');
+    const tasksPath = path.join(result, 'tasks.md');
+    const content = readFileSync(tasksPath, 'utf8');
+
+    // 計算 '- [ ] TEST' 出現次數
+    const testCheckboxCount = (content.match(/- \[ \] TEST/g) || []).length;
+    expect(testCheckboxCount).toBe(1);
+  });
+
+  test('readTasksCheckboxes 能正確統計 workflow stages checkbox', () => {
+    // standard 去重 stages：PLAN, ARCH, TEST, DEV, REVIEW, RETRO, DOCS = 7 個
+    const result = specs.initFeatureDir(tmpDir, 'count-feature', 'standard');
+    const tasksPath = path.join(result, 'tasks.md');
+
+    const stats = specs.readTasksCheckboxes(tasksPath);
+    expect(stats).not.toBeNull();
+    expect(stats.total).toBe(7);
+    expect(stats.checked).toBe(0);
+    expect(stats.allChecked).toBe(false);
+  });
+});
+
+// ── buildTasksMd — single workflow（specsConfig 空）不生成 checkbox ──
+
+describe('buildTasksMd — specsConfig 空的 workflow 不生成 checkbox', () => {
+  test('single workflow 的 specsConfig 為空，initFeatureDir 不被呼叫但 buildTasksMd 生成空 checkbox', () => {
+    // single 的 specsConfig = [] → buildTasksMd 內 config.length === 0 → 不生成 checkbox
+    // 驗證 buildTasksMd 邏輯：直接呼叫 initFeatureDir（即使 single 不通過 init-workflow.js 的 specsConfig 判斷）
+    const result = specs.initFeatureDir(tmpDir, 'single-feature', 'single');
+    const tasksPath = path.join(result, 'tasks.md');
+    const content = readFileSync(tasksPath, 'utf8');
+
+    // single 的 specsConfig 為空，不應有任何 stage checkbox
+    expect(content).not.toContain('- [ ] DEV');
+    expect(content).not.toContain('- [ ] tasks');
+    expect(content).not.toContain('- [ ] bdd');
+
+    // tasks.md 應仍存在，只是沒有 checkbox
+    const stats = specs.readTasksCheckboxes(tasksPath);
+    expect(stats).not.toBeNull();
+    expect(stats.total).toBe(0);
+  });
+
+  test('diagnose workflow（specsConfig 空）同樣不生成 checkbox', () => {
+    const result = specs.initFeatureDir(tmpDir, 'diagnose-feature', 'diagnose');
+    const tasksPath = path.join(result, 'tasks.md');
+    const content = readFileSync(tasksPath, 'utf8');
+
+    expect(content).not.toContain('- [ ] DEBUG');
+    expect(content).not.toContain('- [ ] tasks');
+
+    const stats = specs.readTasksCheckboxes(tasksPath);
+    expect(stats.total).toBe(0);
+  });
+});

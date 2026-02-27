@@ -21,6 +21,19 @@ const userPrompt = (input.user_prompt || '').trim();
 const sessionId = process.env.CLAUDE_SESSION_ID || '';
 const projectRoot = input.cwd || process.cwd();
 
+// 將 sessionId 寫入共享文件，讓 Skill 中的 Bash 工具呼叫（如 init-workflow.js）能讀到
+// Bash 工具環境沒有 CLAUDE_SESSION_ID 環境變數，需靠此橋接
+if (sessionId) {
+  try {
+    const { writeFileSync, mkdirSync } = require('fs');
+    const { CURRENT_SESSION_FILE, OVERTONE_HOME } = require('../../../scripts/lib/paths');
+    mkdirSync(OVERTONE_HOME, { recursive: true });
+    writeFileSync(CURRENT_SESSION_FILE, sessionId, 'utf8');
+  } catch {
+    // 靜默失敗，不阻擋主流程
+  }
+}
+
 // 如果使用者已手動輸入 /ot: 命令，不覆蓋
 if (userPrompt.startsWith('/ot:')) {
   process.stdout.write(JSON.stringify({ additionalContext: '' }));

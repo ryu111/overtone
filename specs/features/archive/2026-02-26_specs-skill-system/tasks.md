@@ -1,10 +1,10 @@
 ---
 feature: specs-skill-system
-status: in-progress
+status: archived
 workflow: standard
 created: 2026-02-26T00:00:00Z
+archivedAt: 2026-02-26T23:46:34.988Z
 ---
-
 ## Tasks
 
 - [x] 規劃 Specs Skill 系統設計（planner）

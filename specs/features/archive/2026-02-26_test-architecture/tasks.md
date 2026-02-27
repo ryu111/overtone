@@ -1,10 +1,10 @@
 ---
 feature: test-architecture
-status: in-progress
+status: archived
 workflow: standard
 created: 2026-02-26T22:55:21.380Z
+archivedAt: 2026-02-26T23:46:34.987Z
 ---
-
 ## Tasks
 
 - [ ] proposal（需求分析）

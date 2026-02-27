@@ -16,6 +16,11 @@ const { homedir } = require('os');
 const OVERTONE_HOME = join(homedir(), '.overtone');
 const SESSIONS_DIR = join(OVERTONE_HOME, 'sessions');
 
+// Bash 工具環境沒有 CLAUDE_SESSION_ID 環境變數，
+// UserPromptSubmit hook 會將當前 session ID 寫入此檔，
+// 讓 Skill 中的 Bash 工具呼叫（如 init-workflow.js）能讀到正確的 session ID
+const CURRENT_SESSION_FILE = join(OVERTONE_HOME, '.current-session-id');
+
 // ── Session 路徑解析 ──
 
 /**
@@ -68,6 +73,7 @@ const project = {
 module.exports = {
   OVERTONE_HOME,
   SESSIONS_DIR,
+  CURRENT_SESSION_FILE,
   CONFIG_FILE,
   DASHBOARD_FILE,
   sessionDir,

@@ -157,8 +157,9 @@ bun scripts/validate-agents.js
 bun scripts/stop-loop.js {sessionId}
 
 # 初始化 workflow state（測試用）
-bun scripts/init-workflow.js {workflowType} {sessionId}
+bun scripts/init-workflow.js {workflowType} [{sessionId}]
 # workflowType 可選：single / quick / standard / full / secure / tdd / debug / refactor / review-only / security-only / build-fix / e2e-only / diagnose / clean / db-review
+# sessionId 可選，空時從 ~/.overtone/.current-session-id fallback 讀取（UserPromptSubmit hook 自動寫入）
 ```
 
 ## 開發規範
