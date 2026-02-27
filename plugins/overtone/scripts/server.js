@@ -13,8 +13,7 @@ const pid = require('./lib/dashboard/pid');
 const sessions = require('./lib/dashboard/sessions');
 const state = require('./lib/state');
 const timeline = require('./lib/timeline');
-const { stages, agentModels, workflows } = require('./lib/registry');
-const { escapeHtml } = require('./lib/utils');
+const { stages, agentModels, workflows, parallelGroupDefs } = require('./lib/registry');
 
 // ── Remote 模組 ──
 
@@ -64,13 +63,6 @@ function getCorsOrigin(req) {
     return origin;
   }
   return allowed;
-}
-
-// ── Workflow 中文標籤 ──
-
-const workflowLabels = {};
-for (const [key, wf] of Object.entries(workflows)) {
-  workflowLabels[key] = wf.label;
 }
 
 // ── Agent 色彩反向映射（從 stages 提取）──
@@ -124,20 +116,19 @@ const server = Bun.serve({
       });
     }
 
-    // Session 頁面
-    const sessionMatch = path.match(/^\/s\/([a-zA-Z0-9_-]+)$/);
-    if (sessionMatch) {
-      return serveSessionPage(sessionMatch[1]);
-    }
-
     // 靜態檔案
     if (path.startsWith('/static/')) {
       return serveStatic(path);
     }
 
-    // 首頁
+    // 靜態 JS 模組
+    if (path.startsWith('/js/')) {
+      return serveJsModule(path);
+    }
+
+    // 首頁 — serve dashboard.html（SPA）
     if (path === '/' || path === '/index.html') {
-      return serveIndexPage();
+      return serveDashboard();
     }
 
     return new Response('404 Not Found', { status: 404 });
@@ -254,13 +245,17 @@ async function handleAPI(path, params, req) {
         }])
       ),
       workflows: Object.fromEntries(
-        Object.entries(workflows).map(([k, v]) => [k, { label: v.label }])
+        Object.entries(workflows).map(([k, v]) => [k, {
+          label: v.label,
+          parallelGroups: v.parallelGroups || [],
+        }])
       ),
       agents: Object.fromEntries(
         Object.entries(agentModels).map(([name, model]) => [name, {
           model, color: agentColors[name] || 'unknown',
         }])
       ),
+      parallelGroupDefs,
     }, 200, req);
   }
 
@@ -291,71 +286,44 @@ async function handleControlAPI(sessionId, req) {
 
 // ── HTML 頁面 ──
 
-async function serveIndexPage() {
+async function serveDashboard() {
   try {
-    const allSessions = sessions.listSessions();
-    const activeSessions = allSessions.filter(s => s.isActive);
-    const historySessions = allSessions.filter(s => !s.isActive);
-
-    const html = (await Bun.file(join(WEB_DIR, 'index.html')).text())
-      .replace('{{ACTIVE_SESSIONS}}', renderSessionCards(activeSessions))
-      .replace('{{HISTORY_SESSIONS}}', renderSessionCards(historySessions))
-      .replace('{{ACTIVE_COUNT}}', String(activeSessions.length))
-      .replace('{{HISTORY_COUNT}}', String(historySessions.length));
-
-    return new Response(html, {
+    const file = Bun.file(join(WEB_DIR, 'dashboard.html'));
+    const content = await file.arrayBuffer();
+    return new Response(content, {
       headers: { 'Content-Type': 'text/html; charset=utf-8' },
     });
   } catch {
-    return new Response('Dashboard 首頁載入失敗', { status: 500 });
+    return new Response('Dashboard 頁面載入失敗', { status: 500 });
   }
 }
 
-async function serveSessionPage(sessionId) {
-  try {
-    const safeId = escapeHtml(sessionId);
-    const html = (await Bun.file(join(WEB_DIR, 'session.html')).text())
-      .replace(/\{\{SESSION_ID\}\}/g, safeId);
+// ── JS 模組靜態服務 ──
 
-    return new Response(html, {
-      headers: { 'Content-Type': 'text/html; charset=utf-8' },
+async function serveJsModule(path) {
+  const fileName = path.slice('/js/'.length);
+  if (!fileName || fileName.includes('..')) {
+    return new Response('404 Not Found', { status: 404 });
+  }
+
+  const filePath = resolve(join(WEB_DIR, 'js', fileName));
+  const webDirResolved = resolve(WEB_DIR);
+  if (!filePath.startsWith(webDirResolved + '/')) {
+    return new Response('404 Not Found', { status: 404 });
+  }
+
+  try {
+    const file = Bun.file(filePath);
+    const content = await file.arrayBuffer();
+    return new Response(content, {
+      headers: {
+        'Content-Type': 'application/javascript; charset=utf-8',
+        'Cache-Control': 'public, max-age=3600',
+      },
     });
   } catch {
-    return new Response('Session 頁面載入失敗', { status: 500 });
+    return new Response('404 Not Found', { status: 404 });
   }
-}
-
-// ── Session 卡片渲染 ──
-
-function renderSessionCards(sessionList) {
-  if (sessionList.length === 0) {
-    return '<div class="empty-state">無工作階段</div>';
-  }
-
-  return sessionList.map(s => {
-    const label = escapeHtml(workflowLabels[s.workflowType] || s.workflowType || '未知');
-    const pct = s.progress.total > 0
-      ? Math.round(s.progress.completed / s.progress.total * 100)
-      : 0;
-    const time = escapeHtml(formatDate(s.createdAt));
-    const sid = escapeHtml(s.sessionId || '');
-    const sid8 = escapeHtml((s.sessionId || '').slice(0, 8));
-    const activeClass = s.isActive ? 'active' : '';
-
-    return `<a href="/s/${sid}" class="session-card ${activeClass}">
-      <div class="session-header">
-        <span class="workflow-type">${label}</span>
-        <span class="session-time">${time}</span>
-      </div>
-      <div class="progress-mini">
-        <div class="progress-fill" style="width: ${pct}%"></div>
-      </div>
-      <div class="session-stats">
-        <span>${s.progress.completed}/${s.progress.total} 階段</span>
-        <span class="session-id">${sid8}...</span>
-      </div>
-    </a>`;
-  }).join('\n');
 }
 
 // ── 靜態檔案 ──
@@ -400,16 +368,3 @@ function json(data, status = 200, req = null) {
   });
 }
 
-function formatDate(iso) {
-  if (!iso) return '-';
-  try {
-    const d = new Date(iso);
-    return d.toLocaleString('zh-TW', {
-      month: '2-digit', day: '2-digit',
-      hour: '2-digit', minute: '2-digit',
-      hour12: false,
-    });
-  } catch {
-    return iso;
-  }
-}

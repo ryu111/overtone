@@ -159,6 +159,111 @@ describe('GET /api/registry', () => {
     expect(devStage).toHaveProperty('agent');
     expect(devStage.agent).toBe('developer');
   });
+
+  test('回傳包含 parallelGroupDefs 欄位（Scenario 2-1）', async () => {
+    const { body } = await get('/api/registry');
+    expect(body).toHaveProperty('parallelGroupDefs');
+    expect(typeof body.parallelGroupDefs).toBe('object');
+    expect(body.parallelGroupDefs).toHaveProperty('quality');
+    expect(body.parallelGroupDefs).toHaveProperty('verify');
+    expect(body.parallelGroupDefs).toHaveProperty('secure-quality');
+    expect(body.parallelGroupDefs.quality).toContain('REVIEW');
+    expect(body.parallelGroupDefs.quality).toContain('TEST');
+    expect(body.parallelGroupDefs.verify).toContain('QA');
+    expect(body.parallelGroupDefs.verify).toContain('E2E');
+    expect(body.parallelGroupDefs['secure-quality']).toContain('REVIEW');
+    expect(body.parallelGroupDefs['secure-quality']).toContain('TEST');
+    expect(body.parallelGroupDefs['secure-quality']).toContain('SECURITY');
+  });
+
+  test('workflows 每條含 parallelGroups 欄位（Scenario 2-2）', async () => {
+    const { body } = await get('/api/registry');
+    expect(body.workflows.standard).toHaveProperty('parallelGroups');
+    expect(body.workflows.full).toHaveProperty('parallelGroups');
+    expect(body.workflows.single).toHaveProperty('parallelGroups');
+    expect(body.workflows.standard.parallelGroups).toContain('quality');
+    expect(body.workflows.full.parallelGroups).toContain('quality');
+    expect(body.workflows.full.parallelGroups).toContain('verify');
+    expect(body.workflows.single.parallelGroups).toEqual([]);
+  });
+
+  test('workflows 同時包含 label 和 parallelGroups（Scenario 2-4 向後相容）', async () => {
+    const { body } = await get('/api/registry');
+    expect(typeof body.workflows.standard.label).toBe('string');
+    expect(body.workflows.standard.label.length).toBeGreaterThan(0);
+    expect(Array.isArray(body.workflows.standard.parallelGroups)).toBe(true);
+  });
+});
+
+// ─────────────────────────────────────────────
+// 1b. Feature 3 — GET / 與靜態 JS 模組路由（Scenario 3-1 ~ 3-4）
+// ─────────────────────────────────────────────
+
+// Scenario 3-1 + 3-2：GET / 回傳 dashboard.html 且不含 SSR template 標記
+describe('GET /（Scenario 3-1 ~ 3-2）', () => {
+  test('Scenario 3-1：status 200 且 Content-Type 包含 text/html', async () => {
+    const { status, headers } = await get('/');
+    expect(status).toBe(200);
+    const contentType = headers.get('content-type') || '';
+    expect(contentType).toContain('text/html');
+  });
+
+  test('Scenario 3-1：回應 body 包含 html 標記（非空 HTML）', async () => {
+    const res = await fetch(`${BASE_URL}/`);
+    const body = await res.text();
+    expect(body.toLowerCase()).toContain('<html');
+  });
+
+  test('Scenario 3-2：回應 body 不含 {{SESSION_LIST}} SSR 模板標記', async () => {
+    const res = await fetch(`${BASE_URL}/`);
+    const body = await res.text();
+    expect(body).not.toContain('{{SESSION_LIST}}');
+  });
+
+  test('Scenario 3-2：回應 body 不含 renderSessionCards', async () => {
+    const res = await fetch(`${BASE_URL}/`);
+    const body = await res.text();
+    expect(body).not.toContain('renderSessionCards');
+  });
+
+  test('Scenario 3-2：回應 body 不含未展開的 mustache 語法（{{...}}）', async () => {
+    const res = await fetch(`${BASE_URL}/`);
+    const body = await res.text();
+    expect(body).not.toMatch(/\{\{[^}]+\}\}/);
+  });
+});
+
+// Scenario 3-3：靜態 JS 模組路由可正確取得
+describe('GET /js/:file（Scenario 3-3）', () => {
+  test('GET /js/pipeline.js — status 200 且 Content-Type 包含 javascript', async () => {
+    const { status, headers } = await get('/js/pipeline.js');
+    expect(status).toBe(200);
+    const contentType = headers.get('content-type') || '';
+    expect(contentType).toContain('javascript');
+  });
+
+  test('GET /js/timeline.js — status 200', async () => {
+    const { status } = await get('/js/timeline.js');
+    expect(status).toBe(200);
+  });
+
+  test('GET /js/confetti.js — status 200', async () => {
+    const { status } = await get('/js/confetti.js');
+    expect(status).toBe(200);
+  });
+
+  test('GET /js/（空路徑）— status 404', async () => {
+    const { status } = await get('/js/');
+    expect(status).toBe(404);
+  });
+});
+
+// Scenario 3-4：移除 /s/:sessionId 路由後回傳 404
+describe('GET /s/:sessionId（已移除路由，Scenario 3-4）', () => {
+  test('GET /s/some-session-id — status 404', async () => {
+    const { status } = await get('/s/some-session-id');
+    expect(status).toBe(404);
+  });
 });
 
 // ─────────────────────────────────────────────

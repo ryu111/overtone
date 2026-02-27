@@ -1,0 +1,2123 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Overtone Dashboard — Design Mockup</title>
+  <style>
+    /* ═══════════════════════════════════════════
+       CSS 設計系統變數
+       ═══════════════════════════════════════════ */
+    :root {
+      /* 背景層 */
+      --bg-canvas:    #0a0a0f;
+      --bg-primary:   #0d1117;
+      --bg-secondary: #161b22;
+      --bg-tertiary:  #21262d;
+      --bg-hover:     #292e36;
+
+      /* 玻璃態 */
+      --glass-surface:      rgba(255,255,255,0.05);
+      --glass-hover:        rgba(255,255,255,0.08);
+      --glass-border:       rgba(255,255,255,0.12);
+      --glass-border-active:rgba(124,58,237,0.6);
+
+      /* 強調色 */
+      --accent:       #7c3aed;
+      --accent-glow:  rgba(124,58,237,0.4);
+      --accent-light: #a78bfa;
+
+      /* 文字 */
+      --text-primary:   #e6edf3;
+      --text-secondary: #8b949e;
+      --text-muted:     #484f58;
+      --text-glow:      #c4b5fd;
+
+      /* 狀態 */
+      --status-pass:    #22c55e;
+      --status-fail:    #ef4444;
+      --status-reject:  #f97316;
+      --status-active:  #eab308;
+      --status-pending: #484f58;
+
+      /* Agent 語義色（與 registry.js 對齊，禁止修改） */
+      --color-purple: #a855f7;
+      --color-cyan:   #22d3ee;
+      --color-yellow: #eab308;
+      --color-blue:   #3b82f6;
+      --color-red:    #ef4444;
+      --color-orange: #f97316;
+      --color-pink:   #ec4899;
+      --color-green:  #22c55e;
+
+      /* 間距 tokens */
+      --space-xs:  4px;
+      --space-sm:  8px;
+      --space-md:  16px;
+      --space-lg:  24px;
+      --space-xl:  32px;
+      --space-2xl: 48px;
+
+      /* 圓角 */
+      --radius-sm: 4px;
+      --radius:    12px;
+      --radius-lg: 16px;
+
+      /* 字型 */
+      --font-ui:   -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+      --font-mono: 'SF Mono', 'Fira Code', Consolas, 'Courier New', monospace;
+    }
+
+    /* ═══════════════════════════════════════════
+       全域重置與 Base
+       ═══════════════════════════════════════════ */
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: var(--font-ui);
+      background: var(--bg-canvas);
+      color: var(--text-primary);
+      line-height: 1.5;
+      min-height: 100vh;
+    }
+
+    /* ═══════════════════════════════════════════
+       Keyframes
+       ═══════════════════════════════════════════ */
+    @keyframes stage-slide-in {
+      from { opacity: 0; transform: translateX(-20px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+
+    @keyframes stage-activate-glow {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(234,179,8,0.5); }
+      50%       { box-shadow: 0 0 0 8px rgba(234,179,8,0); }
+    }
+
+    @keyframes stage-complete-flash {
+      0%   { transform: scale(1); box-shadow: none; }
+      40%  { transform: scale(1.04); box-shadow: 0 0 16px rgba(34,197,94,0.6); }
+      100% { transform: scale(1); box-shadow: 0 0 8px rgba(34,197,94,0.2); }
+    }
+
+    @keyframes agent-pulse-purple {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(168,85,247,0.6); }
+      50%       { box-shadow: 0 0 0 6px rgba(168,85,247,0); }
+    }
+    @keyframes agent-pulse-cyan {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(34,211,238,0.6); }
+      50%       { box-shadow: 0 0 0 6px rgba(34,211,238,0); }
+    }
+    @keyframes agent-pulse-yellow {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(234,179,8,0.6); }
+      50%       { box-shadow: 0 0 0 6px rgba(234,179,8,0); }
+    }
+    @keyframes agent-pulse-blue {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(59,130,246,0.6); }
+      50%       { box-shadow: 0 0 0 6px rgba(59,130,246,0); }
+    }
+    @keyframes agent-pulse-red {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.6); }
+      50%       { box-shadow: 0 0 0 6px rgba(239,68,68,0); }
+    }
+    @keyframes agent-pulse-orange {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(249,115,22,0.6); }
+      50%       { box-shadow: 0 0 0 6px rgba(249,115,22,0); }
+    }
+    @keyframes agent-pulse-pink {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(236,72,153,0.6); }
+      50%       { box-shadow: 0 0 0 6px rgba(236,72,153,0); }
+    }
+    @keyframes agent-pulse-green {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(34,197,94,0.6); }
+      50%       { box-shadow: 0 0 0 6px rgba(34,197,94,0); }
+    }
+
+    @keyframes agent-enter {
+      from { opacity: 0; transform: translateX(-12px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+
+    @keyframes dot-pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(34,197,94,0.6); }
+      50%       { box-shadow: 0 0 0 4px rgba(34,197,94,0); }
+    }
+
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to   { transform: rotate(360deg); }
+    }
+
+    @keyframes timeline-slide {
+      from { opacity: 0; transform: translateY(-8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes glass-shimmer {
+      0%   { background-position: -200% center; }
+      100% { background-position: 200% center; }
+    }
+
+    @keyframes confetti-fall {
+      0%   { transform: translateY(0) rotate(0deg); opacity: 1; }
+      100% { transform: translateY(80px) rotate(720deg); opacity: 0; }
+    }
+
+    @keyframes float-badge {
+      0%, 100% { transform: translateY(0); }
+      50%       { transform: translateY(-3px); }
+    }
+
+    /* ═══════════════════════════════════════════
+       Mockup 導覽 Section Nav
+       ═══════════════════════════════════════════ */
+    .mockup-nav {
+      position: sticky;
+      top: 0;
+      z-index: 999;
+      background: rgba(10,10,15,0.9);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--glass-border);
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      padding: var(--space-sm) var(--space-lg);
+      overflow-x: auto;
+    }
+
+    .mockup-nav-title {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--text-glow);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      white-space: nowrap;
+      margin-right: var(--space-sm);
+    }
+
+    .mockup-nav-link {
+      text-decoration: none;
+      color: var(--text-secondary);
+      font-size: 0.8rem;
+      padding: 4px 10px;
+      border-radius: var(--radius-sm);
+      border: 1px solid transparent;
+      white-space: nowrap;
+      transition: all 0.15s ease;
+    }
+
+    .mockup-nav-link:hover {
+      color: var(--text-primary);
+      background: var(--glass-surface);
+      border-color: var(--glass-border);
+    }
+
+    /* ═══════════════════════════════════════════
+       Mockup 章節容器
+       ═══════════════════════════════════════════ */
+    .mockup-section {
+      padding: var(--space-xl) var(--space-lg);
+      max-width: 1300px;
+      margin: 0 auto;
+    }
+
+    .mockup-section + .mockup-section {
+      border-top: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .section-title {
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: var(--accent-light);
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      margin-bottom: var(--space-md);
+    }
+
+    .section-heading {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: var(--space-xs);
+    }
+
+    .section-desc {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      margin-bottom: var(--space-lg);
+      line-height: 1.6;
+    }
+
+    .showcase-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--space-md);
+      align-items: flex-start;
+    }
+
+    .showcase-label {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      margin-top: var(--space-xs);
+      text-align: center;
+      font-family: var(--font-mono);
+    }
+
+    /* ═══════════════════════════════════════════
+       色卡展示
+       ═══════════════════════════════════════════ */
+    .color-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: var(--space-sm);
+    }
+
+    .color-swatch {
+      border-radius: var(--radius);
+      overflow: hidden;
+      border: 1px solid var(--glass-border);
+    }
+
+    .color-swatch-block {
+      height: 64px;
+      width: 100%;
+    }
+
+    .color-swatch-info {
+      padding: var(--space-sm);
+      background: var(--bg-secondary);
+    }
+
+    .color-swatch-name {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .color-swatch-hex {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+    }
+
+    .color-swatch-use {
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .color-group-title {
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: var(--space-sm);
+      margin-top: var(--space-lg);
+    }
+
+    /* ═══════════════════════════════════════════
+       字型展示
+       ═══════════════════════════════════════════ */
+    .type-sample {
+      padding: var(--space-md);
+      background: var(--glass-surface);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius);
+      margin-bottom: var(--space-sm);
+      display: flex;
+      align-items: baseline;
+      gap: var(--space-md);
+    }
+
+    .type-meta {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+      white-space: nowrap;
+      min-width: 120px;
+    }
+
+    /* ═══════════════════════════════════════════
+       間距 Token 展示
+       ═══════════════════════════════════════════ */
+    .spacing-row {
+      display: flex;
+      align-items: center;
+      gap: var(--space-md);
+      margin-bottom: var(--space-sm);
+    }
+
+    .spacing-bar {
+      background: linear-gradient(90deg, var(--accent), var(--color-cyan));
+      border-radius: 2px;
+      height: 20px;
+    }
+
+    .spacing-meta {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+      min-width: 120px;
+    }
+
+    /* ═══════════════════════════════════════════
+       Glass 樣式基礎元件
+       ═══════════════════════════════════════════ */
+    .glass {
+      background: var(--glass-surface);
+      backdrop-filter: blur(12px) saturate(180%);
+      -webkit-backdrop-filter: blur(12px) saturate(180%);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4),
+                  inset 0 1px 0 rgba(255,255,255,0.08);
+    }
+
+    .glass:hover {
+      background: var(--glass-hover);
+      border-color: rgba(255,255,255,0.18);
+    }
+
+    /* ═══════════════════════════════════════════
+       Stage 卡片
+       ═══════════════════════════════════════════ */
+    .stage-card {
+      flex: 0 0 auto;
+      width: 88px;
+      text-align: center;
+      padding: var(--space-sm);
+      border-radius: var(--radius);
+      background: var(--glass-surface);
+      backdrop-filter: blur(8px);
+      border: 1px solid var(--glass-border);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.3),
+                  inset 0 1px 0 rgba(255,255,255,0.06);
+      transition: all 0.3s ease-out;
+      cursor: default;
+      animation: stage-slide-in 0.4s cubic-bezier(0.16,1,0.3,1) both;
+    }
+
+    .stage-card.pending {
+      opacity: 0.5;
+    }
+
+    .stage-card.active {
+      border-color: rgba(234,179,8,0.6);
+      background: rgba(234,179,8,0.08);
+      box-shadow: 0 0 0 0 rgba(234,179,8,0.5),
+                  0 4px 16px rgba(0,0,0,0.3),
+                  inset 0 1px 0 rgba(255,255,255,0.06);
+      animation: stage-slide-in 0.4s cubic-bezier(0.16,1,0.3,1) both,
+                 stage-activate-glow 2s ease-in-out infinite 0.4s;
+    }
+
+    .stage-card.completed {
+      border-color: rgba(34,197,94,0.4);
+      background: rgba(34,197,94,0.06);
+      animation: stage-complete-flash 0.6s cubic-bezier(0.34,1.56,0.64,1) both;
+    }
+
+    .stage-card.failed {
+      border-color: rgba(239,68,68,0.5);
+      background: rgba(239,68,68,0.06);
+    }
+
+    .stage-icon {
+      font-size: 1.4rem;
+      margin-bottom: 4px;
+      display: block;
+    }
+
+    .stage-label {
+      font-size: 0.68rem;
+      color: var(--text-secondary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .stage-status-icon {
+      font-size: 0.85rem;
+      margin-top: 4px;
+      min-height: 1.2em;
+      display: block;
+    }
+
+    /* 連線箭頭 */
+    .pipeline-connector {
+      flex: 0 0 auto;
+      display: flex;
+      align-items: center;
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      padding: 0 2px;
+      align-self: center;
+    }
+
+    /* 並行群組 */
+    .parallel-group {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-xs);
+      align-items: center;
+    }
+
+    .parallel-group-label {
+      font-size: 0.6rem;
+      color: var(--accent-light);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 2px;
+    }
+
+    .parallel-stages {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    /* ═══════════════════════════════════════════
+       Agent 燈號
+       ═══════════════════════════════════════════ */
+    .agent-dot {
+      display: inline-block;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .agent-dot.size-sm { width: 12px; height: 12px; }
+    .agent-dot.size-md { width: 16px; height: 16px; }
+
+    .agent-dot.standby  { opacity: 0.35; }
+    .agent-dot.active   { opacity: 1; }
+    .agent-dot.completed { opacity: 1; background: var(--status-pass) !important; }
+    .agent-dot.failed    { opacity: 1; background: var(--status-fail) !important; }
+
+    .agent-dot.active.color-purple { background: var(--color-purple); animation: agent-pulse-purple 1.5s ease-in-out infinite; }
+    .agent-dot.active.color-cyan   { background: var(--color-cyan);   animation: agent-pulse-cyan   1.5s ease-in-out infinite; }
+    .agent-dot.active.color-yellow { background: var(--color-yellow); animation: agent-pulse-yellow 1.5s ease-in-out infinite; }
+    .agent-dot.active.color-blue   { background: var(--color-blue);   animation: agent-pulse-blue   1.5s ease-in-out infinite; }
+    .agent-dot.active.color-red    { background: var(--color-red);    animation: agent-pulse-red    1.5s ease-in-out infinite; }
+    .agent-dot.active.color-orange { background: var(--color-orange); animation: agent-pulse-orange 1.5s ease-in-out infinite; }
+    .agent-dot.active.color-pink   { background: var(--color-pink);   animation: agent-pulse-pink   1.5s ease-in-out infinite; }
+    .agent-dot.active.color-green  { background: var(--color-green);  animation: agent-pulse-green  1.5s ease-in-out infinite; }
+
+    .agent-dot.standby.color-purple { background: var(--color-purple); }
+    .agent-dot.standby.color-cyan   { background: var(--color-cyan);   }
+    .agent-dot.standby.color-yellow { background: var(--color-yellow); }
+    .agent-dot.standby.color-blue   { background: var(--color-blue);   }
+    .agent-dot.standby.color-red    { background: var(--color-red);    }
+    .agent-dot.standby.color-orange { background: var(--color-orange); }
+    .agent-dot.standby.color-pink   { background: var(--color-pink);   }
+    .agent-dot.standby.color-green  { background: var(--color-green);  }
+
+    /* Agent 卡片 */
+    .agent-card {
+      background: var(--glass-surface);
+      backdrop-filter: blur(8px);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius);
+      padding: var(--space-sm) var(--space-md);
+      border-left: 3px solid var(--text-muted);
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      position: relative;
+      animation: agent-enter 0.3s ease-out;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+      min-width: 200px;
+    }
+
+    .agent-card-header {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      justify-content: space-between;
+    }
+
+    .agent-card-name {
+      font-weight: 600;
+      font-size: 0.875rem;
+      display: flex;
+      align-items: center;
+      gap: var(--space-xs);
+    }
+
+    .agent-model-badge {
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      background: rgba(255,255,255,0.06);
+      padding: 1px 6px;
+      border-radius: var(--radius-sm);
+      font-family: var(--font-mono);
+    }
+
+    .agent-card-stage {
+      font-size: 0.78rem;
+      color: var(--text-secondary);
+    }
+
+    .agent-card-duration {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+    }
+
+    .agent-card-spinner {
+      position: absolute;
+      top: var(--space-sm);
+      right: var(--space-sm);
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      border: 2px solid transparent;
+      border-top-color: currentColor;
+      border-right-color: currentColor;
+      animation: spin 1s linear infinite;
+      opacity: 0.5;
+    }
+
+    /* ═══════════════════════════════════════════
+       Timeline 事件
+       ═══════════════════════════════════════════ */
+    .timeline-container {
+      background: var(--glass-surface);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+
+    .timeline-event {
+      display: grid;
+      grid-template-columns: 76px 130px 1fr;
+      gap: var(--space-sm);
+      padding: var(--space-sm) var(--space-md);
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      font-size: 0.82rem;
+      transition: background 0.15s;
+      border-left: 3px solid transparent;
+      animation: timeline-slide 0.3s ease-out;
+    }
+
+    .timeline-event:last-child { border-bottom: none; }
+
+    .timeline-event:hover { background: rgba(255,255,255,0.04); }
+
+    .timeline-event.cat-workflow { border-left-color: var(--color-purple); }
+    .timeline-event.cat-stage    { border-left-color: var(--color-cyan); }
+    .timeline-event.cat-agent    { border-left-color: var(--color-blue); }
+    .timeline-event.cat-loop     { border-left-color: var(--color-yellow); }
+    .timeline-event.cat-handoff  { border-left-color: var(--color-green); }
+    .timeline-event.cat-parallel { border-left-color: var(--color-orange); }
+    .timeline-event.cat-error    { border-left-color: var(--color-red); }
+    .timeline-event.cat-session  { border-left-color: var(--text-muted); }
+    .timeline-event.cat-grader   { border-left-color: var(--color-pink); }
+
+    .event-time {
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+    }
+
+    .event-label {
+      color: var(--text-primary);
+      font-weight: 500;
+    }
+
+    .event-detail {
+      color: var(--text-secondary);
+    }
+
+    /* ═══════════════════════════════════════════
+       Tab Bar
+       ═══════════════════════════════════════════ */
+    .tab-bar {
+      display: flex;
+      gap: 2px;
+      background: rgba(13,17,23,0.85);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--glass-border);
+      padding: 0 var(--space-lg);
+    }
+
+    .tab-btn {
+      background: none;
+      border: none;
+      padding: 12px var(--space-md);
+      color: var(--text-secondary);
+      font-size: 0.875rem;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: color 0.15s, border-color 0.15s;
+      font-family: var(--font-ui);
+    }
+
+    .tab-btn:hover {
+      color: var(--text-primary);
+      border-bottom-color: var(--accent-glow);
+    }
+
+    .tab-btn.active {
+      color: var(--text-primary);
+      border-bottom-color: var(--accent);
+    }
+
+    /* ═══════════════════════════════════════════
+       Dashboard Header
+       ═══════════════════════════════════════════ */
+    .dashboard-header {
+      display: flex;
+      align-items: center;
+      gap: var(--space-md);
+      padding: var(--space-md) var(--space-lg);
+      background: rgba(13,17,23,0.9);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--glass-border);
+    }
+
+    .logo {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: var(--space-xs);
+    }
+
+    .logo-icon {
+      display: inline-flex;
+      width: 28px;
+      height: 28px;
+      background: linear-gradient(135deg, var(--accent), var(--color-cyan));
+      border-radius: var(--radius-sm);
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+      box-shadow: 0 0 12px var(--accent-glow);
+    }
+
+    .session-id-badge {
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      background: var(--glass-surface);
+      padding: 2px 8px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--glass-border);
+    }
+
+    .header-spacer { flex: 1; }
+
+    .workflow-badge {
+      font-size: 0.78rem;
+      color: var(--accent-light);
+      background: rgba(124,58,237,0.15);
+      padding: 3px 10px;
+      border-radius: var(--radius-sm);
+      border: 1px solid rgba(124,58,237,0.3);
+      animation: float-badge 3s ease-in-out infinite;
+    }
+
+    .connection-dot {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.78rem;
+      color: var(--text-secondary);
+    }
+
+    .connection-dot::before {
+      content: '';
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--status-pass);
+      animation: dot-pulse 1.5s ease-in-out infinite;
+      display: inline-block;
+    }
+
+    /* ═══════════════════════════════════════════
+       Progress Bar
+       ═══════════════════════════════════════════ */
+    .progress-track {
+      height: 4px;
+      background: rgba(255,255,255,0.06);
+      border-radius: 2px;
+      overflow: hidden;
+      margin-bottom: var(--space-xs);
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), var(--color-cyan));
+      border-radius: inherit;
+      transition: width 0.5s ease;
+    }
+
+    .progress-text {
+      font-size: 0.78rem;
+      color: var(--text-secondary);
+      font-family: var(--font-mono);
+    }
+
+    /* ═══════════════════════════════════════════
+       Stats 卡片
+       ═══════════════════════════════════════════ */
+    .stat-card {
+      background: var(--glass-surface);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius);
+      padding: var(--space-md);
+      text-align: center;
+      flex: 1;
+      min-width: 100px;
+    }
+
+    .stat-value {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      font-family: var(--font-mono);
+    }
+
+    .stat-label {
+      font-size: 0.72rem;
+      color: var(--text-secondary);
+      margin-top: 4px;
+    }
+
+    /* ═══════════════════════════════════════════
+       連線類別篩選
+       ═══════════════════════════════════════════ */
+    .filter-bar {
+      display: flex;
+      gap: var(--space-xs);
+      flex-wrap: wrap;
+      padding: var(--space-sm) var(--space-md);
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      background: rgba(0,0,0,0.2);
+    }
+
+    .filter-chip {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-sm);
+      padding: 3px 10px;
+      color: var(--text-secondary);
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .filter-chip:hover {
+      background: var(--glass-hover);
+      color: var(--text-primary);
+    }
+
+    .filter-chip.active {
+      background: rgba(124,58,237,0.2);
+      border-color: rgba(124,58,237,0.5);
+      color: var(--accent-light);
+    }
+
+    /* ═══════════════════════════════════════════
+       Confetti Demo
+       ═══════════════════════════════════════════ */
+    .confetti-container {
+      position: relative;
+      overflow: hidden;
+      height: 80px;
+      border-radius: var(--radius);
+      background: rgba(34,197,94,0.06);
+      border: 1px solid rgba(34,197,94,0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+      color: var(--status-pass);
+    }
+
+    .confetti-piece {
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      border-radius: 2px;
+      animation: confetti-fall 1.2s ease-in forwards;
+    }
+
+    /* ═══════════════════════════════════════════
+       Mini Dashboard 預覽
+       ═══════════════════════════════════════════ */
+    .mini-dashboard {
+      background: var(--bg-primary);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      box-shadow: 0 24px 64px rgba(0,0,0,0.6),
+                  0 0 0 1px rgba(255,255,255,0.05);
+    }
+
+    .mini-dashboard-body {
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      min-height: 480px;
+    }
+
+    .mini-left {
+      padding: var(--space-lg);
+      border-right: 1px solid var(--glass-border);
+    }
+
+    .mini-right {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .mini-section-title {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: var(--space-md);
+      display: flex;
+      align-items: center;
+      gap: var(--space-xs);
+    }
+
+    .mini-section-title::before {
+      content: '';
+      display: inline-block;
+      width: 3px;
+      height: 12px;
+      background: var(--accent);
+      border-radius: 2px;
+    }
+
+    .pipeline-wrapper {
+      display: flex;
+      align-items: center;
+      gap: var(--space-xs);
+      overflow-x: auto;
+      padding-bottom: var(--space-sm);
+      scrollbar-width: none;
+      margin-bottom: var(--space-lg);
+    }
+
+    .agent-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--space-sm);
+    }
+
+    .timeline-header {
+      padding: var(--space-sm) var(--space-md);
+      border-bottom: 1px solid var(--glass-border);
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      background: rgba(0,0,0,0.2);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .timeline-scroll {
+      flex: 1;
+      overflow-y: auto;
+      scrollbar-width: thin;
+    }
+
+    /* ═══════════════════════════════════════════
+       History Session 卡片
+       ═══════════════════════════════════════════ */
+    .history-card {
+      background: var(--glass-surface);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius);
+      padding: var(--space-md);
+      margin-bottom: var(--space-sm);
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+
+    .history-card:hover {
+      background: var(--glass-hover);
+      border-color: rgba(255,255,255,0.18);
+      transform: translateY(-1px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+    }
+
+    .history-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: var(--space-sm);
+    }
+
+    .workflow-type-label {
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+
+    .session-time {
+      font-size: 0.78rem;
+      color: var(--text-secondary);
+      font-family: var(--font-mono);
+    }
+
+    .history-card-stats {
+      display: flex;
+      gap: var(--space-md);
+      font-size: 0.78rem;
+      color: var(--text-secondary);
+    }
+
+    .session-id-mono {
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      color: var(--text-muted);
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.72rem;
+      padding: 2px 8px;
+      border-radius: 999px;
+    }
+
+    .status-pill.pass {
+      background: rgba(34,197,94,0.15);
+      color: var(--status-pass);
+      border: 1px solid rgba(34,197,94,0.3);
+    }
+
+    .status-pill.fail {
+      background: rgba(239,68,68,0.12);
+      color: var(--status-fail);
+      border: 1px solid rgba(239,68,68,0.3);
+    }
+
+    .status-pill.active {
+      background: rgba(234,179,8,0.12);
+      color: var(--status-active);
+      border: 1px solid rgba(234,179,8,0.3);
+    }
+
+    /* ═══════════════════════════════════════════
+       Scrollbar 樣式
+       ═══════════════════════════════════════════ */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255,255,255,0.1);
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.18); }
+
+    /* ═══════════════════════════════════════════
+       prefers-reduced-motion 保護
+       ═══════════════════════════════════════════ */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.001ms !important;
+        transition-duration: 0.001ms !important;
+      }
+    }
+
+    /* ═══════════════════════════════════════════
+       輔助工具
+       ═══════════════════════════════════════════ */
+    .flex { display: flex; }
+    .flex-col { display: flex; flex-direction: column; }
+    .gap-xs { gap: var(--space-xs); }
+    .gap-sm { gap: var(--space-sm); }
+    .gap-md { gap: var(--space-md); }
+    .mb-sm { margin-bottom: var(--space-sm); }
+    .mb-md { margin-bottom: var(--space-md); }
+    .mb-lg { margin-bottom: var(--space-lg); }
+    .mt-lg { margin-top: var(--space-lg); }
+    .text-muted { color: var(--text-muted); font-size: 0.78rem; }
+    .mono { font-family: var(--font-mono); }
+  </style>
+</head>
+<body>
+
+  <!-- ═══════════════════════════════════════════
+       Mockup 導覽列
+       ═══════════════════════════════════════════ -->
+  <nav class="mockup-nav">
+    <span class="mockup-nav-title">Overtone Design Mockup</span>
+    <a class="mockup-nav-link" href="#colors">色彩系統</a>
+    <a class="mockup-nav-link" href="#typography">字型</a>
+    <a class="mockup-nav-link" href="#spacing">間距</a>
+    <a class="mockup-nav-link" href="#glass">玻璃態</a>
+    <a class="mockup-nav-link" href="#stages">Stage 卡片</a>
+    <a class="mockup-nav-link" href="#agents">Agent 燈號</a>
+    <a class="mockup-nav-link" href="#timeline">Timeline</a>
+    <a class="mockup-nav-link" href="#tabs">Tab Bar</a>
+    <a class="mockup-nav-link" href="#history">History</a>
+    <a class="mockup-nav-link" href="#dashboard">Dashboard 預覽</a>
+  </nav>
+
+  <!-- ═══════════════════════════════════════════
+       1. 色彩系統
+       ═══════════════════════════════════════════ -->
+  <section class="mockup-section" id="colors">
+    <div class="section-title">01 — 色彩系統</div>
+    <h2 class="section-heading">Color System</h2>
+    <p class="section-desc">Glassmorphism 主題色盤，以 #0a0a0f 深空黑為底，#7c3aed 品牌紫為強調，並保留 8 個 Agent 語義色（與 registry.js 完全對齊）。</p>
+
+    <div class="color-group-title">背景層 / 玻璃態</div>
+    <div class="color-grid">
+      <div class="color-swatch">
+        <div class="color-swatch-block" style="background:#0a0a0f;"></div>
+        <div class="color-swatch-info">
+          <div class="color-swatch-name">Canvas</div>
+          <div class="color-swatch-hex">#0a0a0f</div>
+          <div class="color-swatch-use">全頁最底層</div>
+        </div>
+      </div>
+      <div class="color-swatch">
+        <div class="color-swatch-block" style="background:#0d1117;"></div>
+        <div class="color-swatch-info">
+          <div class="color-swatch-name">BG Primary</div>
+          <div class="color-swatch-hex">#0d1117</div>
+          <div class="color-swatch-use">Body 背景</div>
+        </div>
+      </div>
+      <div class="color-swatch">
+        <div class="color-swatch-block" style="background:#161b22;"></div>
+        <div class="color-swatch-info">
+          <div class="color-swatch-name">BG Secondary</div>
+          <div class="color-swatch-hex">#161b22</div>
+          <div class="color-swatch-use">Header / Panel</div>
+        </div>
+      </div>
+      <div class="color-swatch">
+        <div class="color-swatch-block" style="background:#21262d;"></div>
+        <div class="color-swatch-info">
+          <div class="color-swatch-name">BG Tertiary</div>
+          <div class="color-swatch-hex">#21262d</div>
+          <div class="color-swatch-use">卡片 / 輸入</div>
+        </div>
+      </div>
+      <div class="color-swatch">
+        <div class="color-swatch-block" style="background:rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);"></div>
+        <div class="color-swatch-info">
+          <div class="color-swatch-name">Glass Surface</div>
+          <div class="color-swatch-hex">rgba(255,255,255,0.05)</div>
+          <div class="color-swatch-use">玻璃態表面</div>
+        </div>
+      </div>
+      <div class="color-swatch">
+        <div class="color-swatch-block" style="background:rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.15);"></div>
+        <div class="color-swatch-info">
+          <div class="color-swatch-name">Glass Border</div>
+          <div class="color-swatch-hex">rgba(255,255,255,0.12)</div>
+          <div class="color-swatch-use">玻璃邊框</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="color-group-title">強調色 / 品牌色</div>
+    <div class="color-grid">
+      <div class="color-swatch">
+        <div class="color-swatch-block" style="background:#7c3aed; box-shadow: 0 0 20px rgba(124,58,237,0.4);"></div>
+        <div class="color-swatch-info">
+          <div class="color-swatch-name">Accent</div>
+          <div class="color-swatch-hex">#7c3aed</div>
+          <div class="color-swatch-use">品牌強調色</div>
+        </div>
+      </div>
+      <div class="color-swatch">
+        <div class="color-swatch-block" style="background:#a78bfa;"></div>
+        <div class="color-swatch-info">
+          <div class="color-swatch-name">Accent Light</div>
+          <div class="color-swatch-hex">#a78bfa</div>
+          <div class="color-swatch-use">輕量強調</div>
+        </div>
+      </div>
+      <div class="color-swatch">
+        <div class="color-swatch-block" style="background:#c4b5fd;"></div>
+        <div class="color-swatch-info">
+          <div class="color-swatch-name">Text Glow</div>
+          <div class="color-swatch-hex">#c4b5fd</div>
+          <div class="color-swatch-use">標題光暈</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="color-group-title">狀態色</div>
+    <div class="color-grid">
+      <div class="color-swatch">
+        <div class="color-swatch-block" style="background:#22c55e;"></div>
+        <div class="color-swatch-info">
+          <div class="color-swatch-name">Pass</div>
+          <div class="color-swatch-hex">#22c55e</div>
+          <div class="color-swatch-use">完成 / 通過</div>
+        </div>
+      </div>
+      <div class="color-swatch">
+        <div class="color-swatch-block" style="background:#ef4444;"></div>
+        <div class="color-swatch-info">
+          <div class="color-swatch-name">Fail</div>
+          <div class="color-swatch-hex">#ef4444</div>
+          <div class="color-swatch-use">失敗 / 錯誤</div>
+        </div>
+      </div>
+      <div class="color-swatch">
+        <div class="color-swatch-block" style="background:#f97316;"></div>
+        <div class="color-swatch-info">
+          <div class="color-swatch-name">Reject</div>
+          <div class="color-swatch-hex">#f97316</div>
+          <div class="color-swatch-use">審查拒絕</div>
+        </div>
+      </div>
+      <div class="color-swatch">
+        <div class="color-swatch-block" style="background:#eab308;"></div>
+        <div class="color-swatch-info">
+          <div class="color-swatch-name">Active</div>
+          <div class="color-swatch-hex">#eab308</div>
+          <div class="color-swatch-use">執行中</div>
+        </div>
+      </div>
+      <div class="color-swatch">
+        <div class="color-swatch-block" style="background:#484f58;"></div>
+        <div class="color-swatch-info">
+          <div class="color-swatch-name">Pending</div>
+          <div class="color-swatch-hex">#484f58</div>
+          <div class="color-swatch-use">待機</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="color-group-title">Agent 語義色（registry.js SoT — 禁止修改）</div>
+    <div class="color-grid">
+      <div class="color-swatch">
+        <div class="color-swatch-block" style="background:#a855f7; box-shadow: 0 0 16px rgba(168,85,247,0.4);"></div>
+        <div class="color-swatch-info">
+          <div class="color-swatch-name">Purple</div>
+          <div class="color-swatch-hex">#a855f7</div>
+          <div class="color-swatch-use">planner / retro / docs</div>
+        </div>
+      </div>
+      <div class="color-swatch">
+        <div class="color-swatch-block" style="background:#22d3ee; box-shadow: 0 0 16px rgba(34,211,238,0.4);"></div>
+        <div class="color-swatch-info">
+          <div class="color-swatch-name">Cyan</div>
+          <div class="color-swatch-hex">#22d3ee</div>
+          <div class="color-swatch-use">architect / designer</div>
+        </div>
+      </div>
+      <div class="color-swatch">
+        <div class="color-swatch-block" style="background:#eab308; box-shadow: 0 0 16px rgba(234,179,8,0.4);"></div>
+        <div class="color-swatch-info">
+          <div class="color-swatch-name">Yellow</div>
+          <div class="color-swatch-hex">#eab308</div>
+          <div class="color-swatch-use">developer / qa</div>
+        </div>
+      </div>
+      <div class="color-swatch">
+        <div class="color-swatch-block" style="background:#3b82f6; box-shadow: 0 0 16px rgba(59,130,246,0.4);"></div>
+        <div class="color-swatch-info">
+          <div class="color-swatch-name">Blue</div>
+          <div class="color-swatch-hex">#3b82f6</div>
+          <div class="color-swatch-use">reviewer / refactor</div>
+        </div>
+      </div>
+      <div class="color-swatch">
+        <div class="color-swatch-block" style="background:#ef4444; box-shadow: 0 0 16px rgba(239,68,68,0.4);"></div>
+        <div class="color-swatch-info">
+          <div class="color-swatch-name">Red</div>
+          <div class="color-swatch-hex">#ef4444</div>
+          <div class="color-swatch-use">security / db-review</div>
+        </div>
+      </div>
+      <div class="color-swatch">
+        <div class="color-swatch-block" style="background:#f97316; box-shadow: 0 0 16px rgba(249,115,22,0.4);"></div>
+        <div class="color-swatch-info">
+          <div class="color-swatch-name">Orange</div>
+          <div class="color-swatch-hex">#f97316</div>
+          <div class="color-swatch-use">debugger / build-fix</div>
+        </div>
+      </div>
+      <div class="color-swatch">
+        <div class="color-swatch-block" style="background:#ec4899; box-shadow: 0 0 16px rgba(236,72,153,0.4);"></div>
+        <div class="color-swatch-info">
+          <div class="color-swatch-name">Pink</div>
+          <div class="color-swatch-hex">#ec4899</div>
+          <div class="color-swatch-use">tester</div>
+        </div>
+      </div>
+      <div class="color-swatch">
+        <div class="color-swatch-block" style="background:#22c55e; box-shadow: 0 0 16px rgba(34,197,94,0.4);"></div>
+        <div class="color-swatch-info">
+          <div class="color-swatch-name">Green</div>
+          <div class="color-swatch-hex">#22c55e</div>
+          <div class="color-swatch-use">e2e-runner</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════
+       2. 字型規格
+       ═══════════════════════════════════════════ -->
+  <section class="mockup-section" id="typography">
+    <div class="section-title">02 — 字型系統</div>
+    <h2 class="section-heading">Typography Scale</h2>
+    <p class="section-desc">系統 UI 字型為主，等寬字型用於技術資訊（Session ID / Timestamp / 數值）。</p>
+
+    <div class="type-sample">
+      <span class="type-meta">Display / 1.5rem / 700</span>
+      <span style="font-size:1.5rem; font-weight:700; color:var(--text-primary);">Overtone Dashboard</span>
+    </div>
+    <div class="type-sample">
+      <span class="type-meta">H1 / 1.25rem / 600</span>
+      <span style="font-size:1.25rem; font-weight:600; color:var(--text-primary);">工作流執行概覽</span>
+    </div>
+    <div class="type-sample">
+      <span class="type-meta">H2 / 1.1rem / 600</span>
+      <span style="font-size:1.1rem; font-weight:600; color:var(--text-primary);">Stage 管線</span>
+    </div>
+    <div class="type-sample">
+      <span class="type-meta">Body / 0.875rem / 400</span>
+      <span style="font-size:0.875rem; color:var(--text-primary);">此 session 正在執行 standard 工作流，包含 8 個階段。</span>
+    </div>
+    <div class="type-sample">
+      <span class="type-meta">Small / 0.8rem / 400</span>
+      <span style="font-size:0.8rem; color:var(--text-secondary);">最後更新：2026-02-27 · 3 個 Agent 執行中</span>
+    </div>
+    <div class="type-sample">
+      <span class="type-meta">Micro / 0.75rem / 400</span>
+      <span style="font-size:0.75rem; color:var(--text-muted);">session: a3f9d2b1</span>
+    </div>
+    <div class="type-sample">
+      <span class="type-meta">Mono / 0.8rem / 400</span>
+      <span style="font-size:0.8rem; font-family:var(--font-mono); color:var(--text-primary);">14:32:07 · a3f9d2b1-e4c2...</span>
+    </div>
+    <div class="type-sample">
+      <span class="type-meta">Glow Text</span>
+      <span style="font-size:1.1rem; font-weight:600; color:var(--text-glow); text-shadow: 0 0 20px rgba(196,181,253,0.5);">DESIGN SYSTEM</span>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════
+       3. 間距 Token
+       ═══════════════════════════════════════════ -->
+  <section class="mockup-section" id="spacing">
+    <div class="section-title">03 — 間距系統</div>
+    <h2 class="section-heading">Spacing Tokens</h2>
+    <p class="section-desc">8px 為基礎倍數，xs=4 / sm=8 / md=16 / lg=24 / xl=32 / 2xl=48。</p>
+
+    <div>
+      <div class="spacing-row">
+        <span class="spacing-meta">--space-xs / 4px</span>
+        <div class="spacing-bar" style="width:4px;"></div>
+      </div>
+      <div class="spacing-row">
+        <span class="spacing-meta">--space-sm / 8px</span>
+        <div class="spacing-bar" style="width:8px;"></div>
+      </div>
+      <div class="spacing-row">
+        <span class="spacing-meta">--space-md / 16px</span>
+        <div class="spacing-bar" style="width:16px;"></div>
+      </div>
+      <div class="spacing-row">
+        <span class="spacing-meta">--space-lg / 24px</span>
+        <div class="spacing-bar" style="width:24px;"></div>
+      </div>
+      <div class="spacing-row">
+        <span class="spacing-meta">--space-xl / 32px</span>
+        <div class="spacing-bar" style="width:32px;"></div>
+      </div>
+      <div class="spacing-row">
+        <span class="spacing-meta">--space-2xl / 48px</span>
+        <div class="spacing-bar" style="width:48px;"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════
+       4. Glassmorphism 效果
+       ═══════════════════════════════════════════ -->
+  <section class="mockup-section" id="glass">
+    <div class="section-title">04 — 玻璃態效果</div>
+    <h2 class="section-heading">Glassmorphism Parameters</h2>
+    <p class="section-desc">blur(12px) saturate(180%) + rgba(255,255,255,0.05) 表面 + rgba(255,255,255,0.12) 邊框 + inset 內高光。</p>
+
+    <div class="showcase-row" style="background: linear-gradient(135deg, #1a0a3e 0%, #0a1a3e 50%, #0a3e1a 100%); padding: var(--space-xl); border-radius: var(--radius-lg); gap: var(--space-lg);">
+
+      <!-- 基礎玻璃卡片 -->
+      <div style="flex:1; min-width:200px;">
+        <div class="glass" style="padding: var(--space-lg);">
+          <div style="font-weight:600; margin-bottom:var(--space-sm);">基礎玻璃卡片</div>
+          <div style="font-size:0.82rem; color:var(--text-secondary);">backdrop-filter: blur(12px) saturate(180%)</div>
+          <div style="font-size:0.82rem; color:var(--text-secondary);">background: rgba(255,255,255,0.05)</div>
+        </div>
+        <div class="showcase-label">.glass — 標準玻璃態</div>
+      </div>
+
+      <!-- Active 邊框玻璃 -->
+      <div style="flex:1; min-width:200px;">
+        <div class="glass" style="padding: var(--space-lg); border-color: var(--glass-border-active); box-shadow: 0 8px 32px rgba(0,0,0,0.4), 0 0 20px rgba(124,58,237,0.3), inset 0 1px 0 rgba(255,255,255,0.08);">
+          <div style="font-weight:600; margin-bottom:var(--space-sm); color:var(--accent-light);">Active 玻璃卡片</div>
+          <div style="font-size:0.82rem; color:var(--text-secondary);">border: rgba(124,58,237,0.6)</div>
+          <div style="font-size:0.82rem; color:var(--text-secondary);">glow: rgba(124,58,237,0.3)</div>
+        </div>
+        <div class="showcase-label">.glass + active — 強調光暈</div>
+      </div>
+
+      <!-- 深色玻璃 -->
+      <div style="flex:1; min-width:200px;">
+        <div style="padding: var(--space-lg); border-radius: var(--radius); background: rgba(0,0,0,0.4); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.06); box-shadow: 0 4px 16px rgba(0,0,0,0.5);">
+          <div style="font-weight:600; margin-bottom:var(--space-sm);">深色玻璃面板</div>
+          <div style="font-size:0.82rem; color:var(--text-secondary);">background: rgba(0,0,0,0.4)</div>
+          <div style="font-size:0.82rem; color:var(--text-secondary);">blur: 8px (輕量)</div>
+        </div>
+        <div class="showcase-label">Panel 背景 — Timeline / Header</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════
+       5. Stage 卡片
+       ═══════════════════════════════════════════ -->
+  <section class="mockup-section" id="stages">
+    <div class="section-title">05 — Stage 卡片</div>
+    <h2 class="section-heading">Pipeline Stage Cards</h2>
+    <p class="section-desc">四種狀態：pending（待機）/ active（執行中，黃光脈衝）/ completed（完成，綠光閃光）/ failed（失敗，紅邊框靜態）。並行 Stage 以垂直分支呈現。</p>
+
+    <div class="showcase-row mb-lg">
+      <div>
+        <div class="stage-card pending" style="animation: none;">
+          <span class="stage-icon">📋</span>
+          <div class="stage-label">規劃</div>
+          <span class="stage-status-icon">⬜</span>
+        </div>
+        <div class="showcase-label">pending</div>
+      </div>
+
+      <div style="align-self:center; color:var(--text-muted); font-size:0.75rem;">→</div>
+
+      <div>
+        <div class="stage-card active">
+          <span class="stage-icon">🏗️</span>
+          <div class="stage-label">架構</div>
+          <span class="stage-status-icon" style="animation: none;">⏳</span>
+        </div>
+        <div class="showcase-label">active (pulse)</div>
+      </div>
+
+      <div style="align-self:center; color:var(--text-muted); font-size:0.75rem;">→</div>
+
+      <div>
+        <div class="stage-card completed">
+          <span class="stage-icon">💻</span>
+          <div class="stage-label">開發</div>
+          <span class="stage-status-icon">✅</span>
+        </div>
+        <div class="showcase-label">completed (flash)</div>
+      </div>
+
+      <div style="align-self:center; color:var(--text-muted); font-size:0.75rem;">→</div>
+
+      <div>
+        <div class="stage-card failed" style="animation:none;">
+          <span class="stage-icon">🔍</span>
+          <div class="stage-label">審查</div>
+          <span class="stage-status-icon">❌</span>
+        </div>
+        <div class="showcase-label">failed</div>
+      </div>
+    </div>
+
+    <!-- 並行群組展示 -->
+    <div style="margin-top:var(--space-lg);">
+      <div style="font-size:0.8rem; color:var(--text-secondary); margin-bottom:var(--space-md);">並行 Stage 群組（quality: REVIEW + TEST）</div>
+      <div class="pipeline-wrapper">
+        <div class="stage-card completed" style="animation: stage-complete-flash 0.6s both;">
+          <span class="stage-icon">💻</span>
+          <div class="stage-label">開發</div>
+          <span class="stage-status-icon">✅</span>
+        </div>
+
+        <div class="pipeline-connector">→</div>
+
+        <div class="parallel-group">
+          <div class="parallel-group-label" style="color:var(--accent-light);">並行</div>
+          <div class="parallel-stages">
+            <div class="stage-card active" style="width:80px;">
+              <span class="stage-icon">🔍</span>
+              <div class="stage-label">審查</div>
+              <span class="stage-status-icon" style="font-size:0.75rem;">⏳</span>
+            </div>
+            <div class="stage-card active" style="width:80px;">
+              <span class="stage-icon">🧪</span>
+              <div class="stage-label">測試</div>
+              <span class="stage-status-icon" style="font-size:0.75rem;">⏳</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="pipeline-connector">→</div>
+
+        <div class="stage-card pending" style="animation:none;">
+          <span class="stage-icon">🔁</span>
+          <div class="stage-label">回顧</div>
+          <span class="stage-status-icon">⬜</span>
+        </div>
+
+        <div class="pipeline-connector">→</div>
+
+        <div class="stage-card pending" style="animation:none;">
+          <span class="stage-icon">📝</span>
+          <div class="stage-label">文件</div>
+          <span class="stage-status-icon">⬜</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 完整 standard workflow 展示 -->
+    <div style="margin-top:var(--space-lg);">
+      <div style="font-size:0.8rem; color:var(--text-secondary); margin-bottom:var(--space-md);">Standard Workflow: PLAN → ARCH → TEST → DEV → [REVIEW+TEST] → RETRO → DOCS</div>
+      <div class="progress-track mb-sm" style="height:6px;">
+        <div class="progress-fill" style="width:62%;"></div>
+      </div>
+      <div class="progress-text mono">5 / 8 階段完成</div>
+      <div class="pipeline-wrapper mt-lg" style="padding:var(--space-md); background:rgba(0,0,0,0.2); border-radius:var(--radius); border:1px solid var(--glass-border);">
+        <div class="stage-card completed" style="animation:none; animation-delay:0s;">
+          <span class="stage-icon">📋</span>
+          <div class="stage-label">規劃</div>
+          <span class="stage-status-icon">✅</span>
+        </div>
+        <div class="pipeline-connector">→</div>
+        <div class="stage-card completed" style="animation:none;">
+          <span class="stage-icon">🏗️</span>
+          <div class="stage-label">架構</div>
+          <span class="stage-status-icon">✅</span>
+        </div>
+        <div class="pipeline-connector">→</div>
+        <div class="stage-card completed" style="animation:none;">
+          <span class="stage-icon">🧪</span>
+          <div class="stage-label">測試:規格</div>
+          <span class="stage-status-icon">✅</span>
+        </div>
+        <div class="pipeline-connector">→</div>
+        <div class="stage-card completed" style="animation:none;">
+          <span class="stage-icon">💻</span>
+          <div class="stage-label">開發</div>
+          <span class="stage-status-icon">✅</span>
+        </div>
+        <div class="pipeline-connector">→</div>
+        <div class="parallel-group">
+          <div class="parallel-group-label">並行</div>
+          <div class="parallel-stages">
+            <div class="stage-card active" style="width:82px;">
+              <span class="stage-icon">🔍</span>
+              <div class="stage-label">審查</div>
+              <span class="stage-status-icon" style="font-size:0.72rem;">⏳</span>
+            </div>
+            <div class="stage-card active" style="width:82px;">
+              <span class="stage-icon">🧪</span>
+              <div class="stage-label">測試:驗證</div>
+              <span class="stage-status-icon" style="font-size:0.72rem;">⏳</span>
+            </div>
+          </div>
+        </div>
+        <div class="pipeline-connector">→</div>
+        <div class="stage-card pending" style="animation:none;">
+          <span class="stage-icon">🔁</span>
+          <div class="stage-label">回顧</div>
+          <span class="stage-status-icon">⬜</span>
+        </div>
+        <div class="pipeline-connector">→</div>
+        <div class="stage-card pending" style="animation:none;">
+          <span class="stage-icon">📝</span>
+          <div class="stage-label">文件</div>
+          <span class="stage-status-icon">⬜</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════
+       6. Agent 狀態燈號
+       ═══════════════════════════════════════════ -->
+  <section class="mockup-section" id="agents">
+    <div class="section-title">06 — Agent 狀態燈號</div>
+    <h2 class="section-heading">Agent Status Indicators</h2>
+    <p class="section-desc">15 個 Agent 各自的語義色燈號，執行中狀態帶外圍光環脈衝動畫。狀態卡片左側 3px 色條標記所屬 Agent 顏色。</p>
+
+    <!-- 燈號矩陣 -->
+    <div style="margin-bottom:var(--space-lg);">
+      <div style="font-size:0.8rem; color:var(--text-secondary); margin-bottom:var(--space-md);">燈號狀態矩陣（所有 Agent × 所有狀態）</div>
+      <div style="display:grid; grid-template-columns: 160px repeat(4, 1fr); gap:var(--space-sm); font-size:0.78rem; align-items:center;">
+        <div style="color:var(--text-muted);">Agent</div>
+        <div style="color:var(--text-muted); text-align:center;">standby</div>
+        <div style="color:var(--text-muted); text-align:center;">active</div>
+        <div style="color:var(--text-muted); text-align:center;">completed</div>
+        <div style="color:var(--text-muted); text-align:center;">failed</div>
+
+        <!-- planner -->
+        <div style="color:var(--text-secondary);">planner</div>
+        <div style="text-align:center;"><span class="agent-dot size-md standby color-purple"></span></div>
+        <div style="text-align:center;"><span class="agent-dot size-md active color-purple"></span></div>
+        <div style="text-align:center;"><span class="agent-dot size-md completed color-purple"></span></div>
+        <div style="text-align:center;"><span class="agent-dot size-md failed color-purple"></span></div>
+
+        <!-- architect -->
+        <div style="color:var(--text-secondary);">architect</div>
+        <div style="text-align:center;"><span class="agent-dot size-md standby color-cyan"></span></div>
+        <div style="text-align:center;"><span class="agent-dot size-md active color-cyan"></span></div>
+        <div style="text-align:center;"><span class="agent-dot size-md completed color-cyan"></span></div>
+        <div style="text-align:center;"><span class="agent-dot size-md failed color-cyan"></span></div>
+
+        <!-- developer -->
+        <div style="color:var(--text-secondary);">developer</div>
+        <div style="text-align:center;"><span class="agent-dot size-md standby color-yellow"></span></div>
+        <div style="text-align:center;"><span class="agent-dot size-md active color-yellow"></span></div>
+        <div style="text-align:center;"><span class="agent-dot size-md completed color-yellow"></span></div>
+        <div style="text-align:center;"><span class="agent-dot size-md failed color-yellow"></span></div>
+
+        <!-- code-reviewer -->
+        <div style="color:var(--text-secondary);">code-reviewer</div>
+        <div style="text-align:center;"><span class="agent-dot size-md standby color-blue"></span></div>
+        <div style="text-align:center;"><span class="agent-dot size-md active color-blue"></span></div>
+        <div style="text-align:center;"><span class="agent-dot size-md completed color-blue"></span></div>
+        <div style="text-align:center;"><span class="agent-dot size-md failed color-blue"></span></div>
+
+        <!-- security-reviewer -->
+        <div style="color:var(--text-secondary);">security-reviewer</div>
+        <div style="text-align:center;"><span class="agent-dot size-md standby color-red"></span></div>
+        <div style="text-align:center;"><span class="agent-dot size-md active color-red"></span></div>
+        <div style="text-align:center;"><span class="agent-dot size-md completed color-red"></span></div>
+        <div style="text-align:center;"><span class="agent-dot size-md failed color-red"></span></div>
+
+        <!-- debugger -->
+        <div style="color:var(--text-secondary);">debugger</div>
+        <div style="text-align:center;"><span class="agent-dot size-md standby color-orange"></span></div>
+        <div style="text-align:center;"><span class="agent-dot size-md active color-orange"></span></div>
+        <div style="text-align:center;"><span class="agent-dot size-md completed color-orange"></span></div>
+        <div style="text-align:center;"><span class="agent-dot size-md failed color-orange"></span></div>
+
+        <!-- tester -->
+        <div style="color:var(--text-secondary);">tester</div>
+        <div style="text-align:center;"><span class="agent-dot size-md standby color-pink"></span></div>
+        <div style="text-align:center;"><span class="agent-dot size-md active color-pink"></span></div>
+        <div style="text-align:center;"><span class="agent-dot size-md completed color-pink"></span></div>
+        <div style="text-align:center;"><span class="agent-dot size-md failed color-pink"></span></div>
+
+        <!-- e2e-runner -->
+        <div style="color:var(--text-secondary);">e2e-runner</div>
+        <div style="text-align:center;"><span class="agent-dot size-md standby color-green"></span></div>
+        <div style="text-align:center;"><span class="agent-dot size-md active color-green"></span></div>
+        <div style="text-align:center;"><span class="agent-dot size-md completed color-green"></span></div>
+        <div style="text-align:center;"><span class="agent-dot size-md failed color-green"></span></div>
+      </div>
+    </div>
+
+    <!-- Agent 卡片 -->
+    <div style="font-size:0.8rem; color:var(--text-secondary); margin-bottom:var(--space-md);">Agent 狀態卡片</div>
+    <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap:var(--space-sm);">
+
+      <div class="agent-card" style="border-left-color:var(--color-yellow);">
+        <div class="agent-card-header">
+          <div class="agent-card-name">
+            <span class="agent-dot size-sm active color-yellow"></span>
+            developer
+          </div>
+          <span class="agent-model-badge">sonnet</span>
+        </div>
+        <div class="agent-card-stage">DEV 開發</div>
+        <div class="agent-card-duration">3m 42s</div>
+        <div class="agent-card-spinner" style="color:var(--color-yellow);"></div>
+      </div>
+
+      <div class="agent-card" style="border-left-color:var(--color-blue);">
+        <div class="agent-card-header">
+          <div class="agent-card-name">
+            <span class="agent-dot size-sm active color-blue"></span>
+            code-reviewer
+          </div>
+          <span class="agent-model-badge">opus</span>
+        </div>
+        <div class="agent-card-stage">REVIEW 審查</div>
+        <div class="agent-card-duration">1m 18s</div>
+        <div class="agent-card-spinner" style="color:var(--color-blue);"></div>
+      </div>
+
+      <div class="agent-card" style="border-left-color:var(--color-pink);">
+        <div class="agent-card-header">
+          <div class="agent-card-name">
+            <span class="agent-dot size-sm active color-pink"></span>
+            tester
+          </div>
+          <span class="agent-model-badge">sonnet</span>
+        </div>
+        <div class="agent-card-stage">TEST 測試:驗證</div>
+        <div class="agent-card-duration">2m 05s</div>
+        <div class="agent-card-spinner" style="color:var(--color-pink);"></div>
+      </div>
+
+      <div class="agent-card" style="border-left-color:var(--color-purple); opacity:0.65;">
+        <div class="agent-card-header">
+          <div class="agent-card-name">
+            <span class="agent-dot size-sm standby color-purple"></span>
+            planner
+          </div>
+          <span class="agent-model-badge">opus</span>
+        </div>
+        <div class="agent-card-stage">PLAN 規劃 — 完成</div>
+        <div class="agent-card-duration">✅ 5m 12s</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════
+       7. Timeline 事件流
+       ═══════════════════════════════════════════ -->
+  <section class="mockup-section" id="timeline">
+    <div class="section-title">07 — Timeline 事件流</div>
+    <h2 class="section-heading">Timeline Events</h2>
+    <p class="section-desc">JSONL append-only，SSE 即時推送。左側 3px 色條對應 9 種事件類別。新事件從頂部滑入，自動捲動到最新。</p>
+
+    <!-- 類別篩選 -->
+    <div class="filter-bar mb-md" style="border-radius:var(--radius) var(--radius) 0 0;">
+      <span class="filter-chip active">全部</span>
+      <span class="filter-chip">工作流</span>
+      <span class="filter-chip">階段</span>
+      <span class="filter-chip">代理</span>
+      <span class="filter-chip">循環</span>
+      <span class="filter-chip">並行</span>
+      <span class="filter-chip">錯誤</span>
+    </div>
+
+    <div class="timeline-container">
+      <div class="timeline-event cat-session">
+        <div class="event-time">14:30:00</div>
+        <div class="event-label">工作階段開始</div>
+        <div class="event-detail">session: a3f9d2b1</div>
+      </div>
+      <div class="timeline-event cat-workflow">
+        <div class="event-time">14:30:01</div>
+        <div class="event-label">工作流啟動</div>
+        <div class="event-detail">standard · 8 個階段</div>
+      </div>
+      <div class="timeline-event cat-stage">
+        <div class="event-time">14:30:02</div>
+        <div class="event-label">階段開始</div>
+        <div class="event-detail">PLAN · planner</div>
+      </div>
+      <div class="timeline-event cat-agent">
+        <div class="event-time">14:30:02</div>
+        <div class="event-label">委派代理</div>
+        <div class="event-detail">planner · PLAN 規劃</div>
+      </div>
+      <div class="timeline-event cat-agent">
+        <div class="event-time">14:35:14</div>
+        <div class="event-label">代理完成</div>
+        <div class="event-detail">planner · pass · 5m 12s</div>
+      </div>
+      <div class="timeline-event cat-stage">
+        <div class="event-time">14:35:15</div>
+        <div class="event-label">階段完成</div>
+        <div class="event-detail">PLAN · pass</div>
+      </div>
+      <div class="timeline-event cat-parallel">
+        <div class="event-time">14:58:22</div>
+        <div class="event-label">並行啟動</div>
+        <div class="event-detail">quality: REVIEW + TEST</div>
+      </div>
+      <div class="timeline-event cat-agent" style="animation: timeline-slide 0.3s ease-out;">
+        <div class="event-time">14:58:22</div>
+        <div class="event-label">委派代理</div>
+        <div class="event-detail">code-reviewer · REVIEW 審查</div>
+      </div>
+      <div class="timeline-event cat-agent" style="animation: timeline-slide 0.3s ease-out 0.05s both;">
+        <div class="event-time">14:58:23</div>
+        <div class="event-label">委派代理</div>
+        <div class="event-detail">tester · TEST 測試:驗證</div>
+      </div>
+      <div class="timeline-event cat-grader" style="animation: timeline-slide 0.3s ease-out 0.1s both;">
+        <div class="event-time">14:59:40</div>
+        <div class="event-label">Grader 評分</div>
+        <div class="event-detail">DEV / developer · overall: 4.2</div>
+      </div>
+      <div class="timeline-event cat-error" style="animation: timeline-slide 0.3s ease-out 0.15s both;">
+        <div class="event-time">15:01:03</div>
+        <div class="event-label">代理錯誤</div>
+        <div class="event-detail">code-reviewer · 重試 #2</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════
+       8. Tab Bar
+       ═══════════════════════════════════════════ -->
+  <section class="mockup-section" id="tabs">
+    <div class="section-title">08 — Tab 導覽</div>
+    <h2 class="section-heading">Tab Bar</h2>
+    <p class="section-desc">sticky 位置，背景 blur，底部 2px 邊框線 indicator。Active 使用 #7c3aed 品牌紫，hover 使用半透明紫色。</p>
+
+    <div style="border: 1px solid var(--glass-border); border-radius: var(--radius-lg); overflow: hidden;">
+      <div class="tab-bar">
+        <button class="tab-btn active">概覽</button>
+        <button class="tab-btn">時間軸</button>
+        <button class="tab-btn">歷史</button>
+      </div>
+      <div style="padding: var(--space-lg); background: rgba(0,0,0,0.3); font-size:0.85rem; color:var(--text-secondary);">
+        Tab 內容區域（active: 概覽）
+      </div>
+    </div>
+
+    <div style="margin-top:var(--space-md); padding:var(--space-md); background:var(--glass-surface); border:1px solid var(--glass-border); border-radius:var(--radius); font-size:0.82rem; color:var(--text-secondary);">
+      <strong style="color:var(--text-primary);">Tab 狀態規格：</strong><br>
+      inactive：color = #8b949e，border-bottom = transparent<br>
+      hover：color = #e6edf3，border-bottom = rgba(124,58,237,0.4)<br>
+      active：color = #e6edf3，border-bottom = #7c3aed（2px solid）
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════
+       9. History Tab
+       ═══════════════════════════════════════════ -->
+  <section class="mockup-section" id="history">
+    <div class="section-title">09 — History</div>
+    <h2 class="section-heading">Session History Cards</h2>
+    <p class="section-desc">過去 session 卡片列表，hover 輕微上浮，可展開查看 timeline。狀態 pill 顯示完成 / 失敗 / 進行中。</p>
+
+    <div class="history-card">
+      <div class="history-card-header">
+        <div style="display:flex; align-items:center; gap:var(--space-sm);">
+          <span class="workflow-type-label">standard</span>
+          <span style="color:var(--text-secondary); font-size:0.82rem;">標準功能</span>
+        </div>
+        <span class="status-pill pass">完成</span>
+      </div>
+      <div class="history-card-stats">
+        <span>8 / 8 階段</span>
+        <span>Pass@1: 87%</span>
+        <span>12m 43s</span>
+        <span class="session-id-mono">a3f9d2b1...</span>
+      </div>
+      <div style="margin-top:var(--space-sm);">
+        <div class="progress-track">
+          <div class="progress-fill" style="width:100%;"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="history-card">
+      <div class="history-card-header">
+        <div style="display:flex; align-items:center; gap:var(--space-sm);">
+          <span class="workflow-type-label">quick</span>
+          <span style="color:var(--text-secondary); font-size:0.82rem;">快速開發</span>
+        </div>
+        <span class="status-pill active">進行中</span>
+      </div>
+      <div class="history-card-stats">
+        <span>3 / 4 階段</span>
+        <span>Pass@1: —</span>
+        <span>5m 18s</span>
+        <span class="session-id-mono">c7e1a4f2...</span>
+      </div>
+      <div style="margin-top:var(--space-sm);">
+        <div class="progress-track">
+          <div class="progress-fill" style="width:75%;"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="history-card">
+      <div class="history-card-header">
+        <div style="display:flex; align-items:center; gap:var(--space-sm);">
+          <span class="workflow-type-label">debug</span>
+          <span style="color:var(--text-secondary); font-size:0.82rem;">除錯</span>
+        </div>
+        <span class="status-pill fail">失敗</span>
+      </div>
+      <div class="history-card-stats">
+        <span>1 / 3 階段</span>
+        <span>Pass@1: 33%</span>
+        <span>2m 05s</span>
+        <span class="session-id-mono">9b2d5e3a...</span>
+      </div>
+      <div style="margin-top:var(--space-sm);">
+        <div class="progress-track">
+          <div class="progress-fill" style="width:33%; background: linear-gradient(90deg, var(--status-fail), rgba(239,68,68,0.6));"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════
+       10. 動畫 Demo
+       ═══════════════════════════════════════════ -->
+  <section class="mockup-section" id="animations">
+    <div class="section-title">10 — 動畫 Demo</div>
+    <h2 class="section-heading">Animation Showcase</h2>
+    <p class="section-desc">所有動畫均遵守 prefers-reduced-motion。Confetti 在 workflow:complete 事件觸發一次，用 flag 防止重複。</p>
+
+    <div class="showcase-row">
+      <!-- Confetti 完成慶祝 -->
+      <div style="flex:1; min-width:200px;">
+        <div class="confetti-container">
+          <div style="position:relative; z-index:1;">工作流完成！</div>
+          <div class="confetti-piece" style="left:10%; top:20%; background:#a855f7; animation-delay:0s; animation-duration:1.5s;"></div>
+          <div class="confetti-piece" style="left:25%; top:10%; background:#22d3ee; animation-delay:0.1s; animation-duration:1.3s;"></div>
+          <div class="confetti-piece" style="left:40%; top:15%; background:#eab308; animation-delay:0.05s; animation-duration:1.6s; border-radius:50%;"></div>
+          <div class="confetti-piece" style="left:60%; top:5%; background:#ec4899; animation-delay:0.15s; animation-duration:1.4s;"></div>
+          <div class="confetti-piece" style="left:75%; top:20%; background:#22c55e; animation-delay:0.08s; animation-duration:1.7s;"></div>
+          <div class="confetti-piece" style="left:85%; top:10%; background:#f97316; animation-delay:0.2s; animation-duration:1.2s; border-radius:50%;"></div>
+          <div class="confetti-piece" style="left:50%; top:25%; background:#3b82f6; animation-delay:0.12s; animation-duration:1.5s;"></div>
+          <div class="confetti-piece" style="left:5%; top:5%; background:#c4b5fd; animation-delay:0.18s; animation-duration:1.8s;"></div>
+        </div>
+        <div class="showcase-label">confetti-burst — workflow:complete</div>
+      </div>
+
+      <!-- 連線指示燈 -->
+      <div style="flex:1; min-width:200px;">
+        <div class="glass" style="padding:var(--space-lg); display:flex; align-items:center; justify-content:center; gap:var(--space-md);">
+          <div class="connection-dot">已連線</div>
+          <div style="display:flex; align-items:center; gap:6px; font-size:0.78rem; color:var(--text-muted);">
+            <span style="width:8px; height:8px; border-radius:50%; background:var(--status-fail); display:inline-block;"></span>
+            重新連線中
+          </div>
+        </div>
+        <div class="showcase-label">dot-pulse — SSE 連線狀態</div>
+      </div>
+
+      <!-- Spinner -->
+      <div style="flex:1; min-width:200px;">
+        <div class="glass" style="padding:var(--space-lg); display:flex; align-items:center; justify-content:center; gap:var(--space-md);">
+          <div style="width:20px; height:20px; border-radius:50%; border:2px solid transparent; border-top-color: var(--color-cyan); border-right-color:var(--color-cyan); animation: spin 1s linear infinite;"></div>
+          <div style="width:20px; height:20px; border-radius:50%; border:2px solid transparent; border-top-color: var(--color-yellow); border-right-color:var(--color-yellow); animation: spin 1s linear infinite;"></div>
+          <div style="width:20px; height:20px; border-radius:50%; border:2px solid transparent; border-top-color: var(--color-pink); border-right-color:var(--color-pink); animation: spin 1s linear infinite;"></div>
+        </div>
+        <div class="showcase-label">spin — Agent 執行中 spinner</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════
+       11. Mini Dashboard 完整預覽
+       ═══════════════════════════════════════════ -->
+  <section class="mockup-section" id="dashboard">
+    <div class="section-title">11 — 完整 Layout 預覽</div>
+    <h2 class="section-heading">Dashboard Preview</h2>
+    <p class="section-desc">Header（Session info + 連線燈號）+ Tab Bar + 左側 Pipeline/Agent + 右側 Timeline。雙欄佈局，右側 Timeline 獨立捲動。</p>
+
+    <div class="mini-dashboard">
+
+      <!-- Dashboard Header -->
+      <div class="dashboard-header">
+        <div class="logo">
+          <div class="logo-icon">🎵</div>
+          Overtone
+        </div>
+        <span class="session-id-badge">a3f9d2b1...</span>
+        <div style="display:flex; align-items:center; gap:var(--space-xs);">
+          <span class="workflow-badge">standard — 標準功能</span>
+        </div>
+        <div class="header-spacer"></div>
+        <div class="connection-dot">已連線</div>
+      </div>
+
+      <!-- Tab Bar -->
+      <div class="tab-bar">
+        <button class="tab-btn active">概覽</button>
+        <button class="tab-btn">時間軸</button>
+        <button class="tab-btn">歷史</button>
+      </div>
+
+      <!-- Body: 雙欄 -->
+      <div class="mini-dashboard-body">
+
+        <!-- 左側：Pipeline + Agent -->
+        <div class="mini-left">
+
+          <!-- 進度 -->
+          <div style="margin-bottom:var(--space-lg);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:var(--space-sm);">
+              <div class="mini-section-title">工作流進度</div>
+              <span style="font-size:0.78rem; color:var(--text-secondary); font-family:var(--font-mono);">5 / 8</span>
+            </div>
+            <div class="progress-track">
+              <div class="progress-fill" style="width:62%;"></div>
+            </div>
+          </div>
+
+          <!-- Pipeline -->
+          <div class="mini-section-title">Pipeline</div>
+          <div class="pipeline-wrapper">
+            <div class="stage-card completed" style="animation:none; width:72px;">
+              <span class="stage-icon" style="font-size:1.1rem;">📋</span>
+              <div class="stage-label" style="font-size:0.62rem;">規劃</div>
+              <span class="stage-status-icon" style="font-size:0.7rem;">✅</span>
+            </div>
+            <div class="pipeline-connector" style="font-size:0.6rem;">→</div>
+            <div class="stage-card completed" style="animation:none; width:72px;">
+              <span class="stage-icon" style="font-size:1.1rem;">🏗️</span>
+              <div class="stage-label" style="font-size:0.62rem;">架構</div>
+              <span class="stage-status-icon" style="font-size:0.7rem;">✅</span>
+            </div>
+            <div class="pipeline-connector" style="font-size:0.6rem;">→</div>
+            <div class="stage-card completed" style="animation:none; width:72px;">
+              <span class="stage-icon" style="font-size:1.1rem;">💻</span>
+              <div class="stage-label" style="font-size:0.62rem;">開發</div>
+              <span class="stage-status-icon" style="font-size:0.7rem;">✅</span>
+            </div>
+            <div class="pipeline-connector" style="font-size:0.6rem;">→</div>
+            <div class="parallel-group">
+              <div class="parallel-group-label" style="font-size:0.52rem;">並行</div>
+              <div class="parallel-stages">
+                <div class="stage-card active" style="width:68px;">
+                  <span class="stage-icon" style="font-size:1rem;">🔍</span>
+                  <div class="stage-label" style="font-size:0.6rem;">審查</div>
+                  <span class="stage-status-icon" style="font-size:0.65rem;">⏳</span>
+                </div>
+                <div class="stage-card active" style="width:68px;">
+                  <span class="stage-icon" style="font-size:1rem;">🧪</span>
+                  <div class="stage-label" style="font-size:0.6rem;">測試</div>
+                  <span class="stage-status-icon" style="font-size:0.65rem;">⏳</span>
+                </div>
+              </div>
+            </div>
+            <div class="pipeline-connector" style="font-size:0.6rem;">→</div>
+            <div class="stage-card pending" style="animation:none; width:72px;">
+              <span class="stage-icon" style="font-size:1.1rem;">🔁</span>
+              <div class="stage-label" style="font-size:0.62rem;">回顧</div>
+              <span class="stage-status-icon" style="font-size:0.7rem;">⬜</span>
+            </div>
+          </div>
+
+          <!-- Active Agents -->
+          <div style="margin-top:var(--space-lg);">
+            <div class="mini-section-title">執行中的代理</div>
+            <div class="agent-grid">
+              <div class="agent-card" style="border-left-color:var(--color-blue); min-width:0;">
+                <div class="agent-card-header">
+                  <div class="agent-card-name" style="font-size:0.8rem;">
+                    <span class="agent-dot size-sm active color-blue"></span>
+                    code-reviewer
+                  </div>
+                  <span class="agent-model-badge">opus</span>
+                </div>
+                <div class="agent-card-stage" style="font-size:0.72rem;">REVIEW 審查</div>
+                <div class="agent-card-duration">1m 18s</div>
+                <div class="agent-card-spinner" style="color:var(--color-blue); width:12px; height:12px;"></div>
+              </div>
+
+              <div class="agent-card" style="border-left-color:var(--color-pink); min-width:0;">
+                <div class="agent-card-header">
+                  <div class="agent-card-name" style="font-size:0.8rem;">
+                    <span class="agent-dot size-sm active color-pink"></span>
+                    tester
+                  </div>
+                  <span class="agent-model-badge">sonnet</span>
+                </div>
+                <div class="agent-card-stage" style="font-size:0.72rem;">TEST 測試:驗證</div>
+                <div class="agent-card-duration">2m 05s</div>
+                <div class="agent-card-spinner" style="color:var(--color-pink); width:12px; height:12px;"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 統計 -->
+          <div style="margin-top:var(--space-lg); display:flex; gap:var(--space-sm);">
+            <div class="stat-card">
+              <div class="stat-value" style="font-size:1.2rem;">1</div>
+              <div class="stat-label">失敗重試</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value" style="font-size:1.2rem;">0</div>
+              <div class="stat-label">審查拒絕</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value" style="font-size:1.2rem;">15m</div>
+              <div class="stat-label">經過時間</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 右側：Timeline -->
+        <div class="mini-right">
+          <div class="timeline-header">即時時間軸</div>
+          <div class="filter-bar" style="border-radius:0; border-left:none; border-right:none; padding:var(--space-xs) var(--space-sm);">
+            <span class="filter-chip active" style="padding:2px 8px; font-size:0.72rem;">全部</span>
+            <span class="filter-chip" style="padding:2px 8px; font-size:0.72rem;">代理</span>
+            <span class="filter-chip" style="padding:2px 8px; font-size:0.72rem;">階段</span>
+          </div>
+          <div class="timeline-scroll">
+            <div class="timeline-container" style="border:none; border-radius:0;">
+              <div class="timeline-event cat-workflow" style="animation:none;">
+                <div class="event-time">14:30:01</div>
+                <div class="event-label">工作流啟動</div>
+                <div class="event-detail">standard</div>
+              </div>
+              <div class="timeline-event cat-stage" style="animation:none;">
+                <div class="event-time">14:30:02</div>
+                <div class="event-label">階段開始</div>
+                <div class="event-detail">PLAN · planner</div>
+              </div>
+              <div class="timeline-event cat-agent" style="animation:none;">
+                <div class="event-time">14:35:14</div>
+                <div class="event-label">代理完成</div>
+                <div class="event-detail">planner · pass</div>
+              </div>
+              <div class="timeline-event cat-stage" style="animation:none;">
+                <div class="event-time">14:35:15</div>
+                <div class="event-label">階段完成</div>
+                <div class="event-detail">PLAN · pass</div>
+              </div>
+              <div class="timeline-event cat-agent" style="animation:none;">
+                <div class="event-time">14:42:30</div>
+                <div class="event-label">代理完成</div>
+                <div class="event-detail">architect · pass</div>
+              </div>
+              <div class="timeline-event cat-agent" style="animation:none;">
+                <div class="event-time">14:55:10</div>
+                <div class="event-label">代理完成</div>
+                <div class="event-detail">developer · pass · 12m</div>
+              </div>
+              <div class="timeline-event cat-parallel">
+                <div class="event-time">14:58:22</div>
+                <div class="event-label">並行啟動</div>
+                <div class="event-detail">quality: REVIEW+TEST</div>
+              </div>
+              <div class="timeline-event cat-agent" style="animation: timeline-slide 0.3s ease-out;">
+                <div class="event-time">14:58:22</div>
+                <div class="event-label">委派代理</div>
+                <div class="event-detail">code-reviewer</div>
+              </div>
+              <div class="timeline-event cat-agent" style="animation: timeline-slide 0.3s ease-out 0.05s both;">
+                <div class="event-time">14:58:23</div>
+                <div class="event-label">委派代理</div>
+                <div class="event-detail">tester</div>
+              </div>
+              <div class="timeline-event cat-error" style="animation: timeline-slide 0.3s ease-out 0.12s both;">
+                <div class="event-time">15:01:03</div>
+                <div class="event-label">代理錯誤</div>
+                <div class="event-detail">code-reviewer · 重試 #2</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <div style="padding: var(--space-xl) var(--space-lg); text-align:center; border-top:1px solid rgba(255,255,255,0.04);">
+    <div style="font-size:0.72rem; color:var(--text-muted); font-family:var(--font-mono);">
+      Overtone Design Mockup v1.0 · Glassmorphism Theme · htmx + Alpine.js
+    </div>
+    <div style="font-size:0.72rem; color:var(--text-muted); margin-top:4px;">
+      設計規範: docs/design-system.md · 降級方案產出（ui-ux-pro-max 未安裝）
+    </div>
+  </div>
+
+</body>
+</html>

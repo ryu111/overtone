@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Overtone Dashboard</title>
+  <link rel="stylesheet" href="/static/styles/main.css">
+  <script src="/js/pipeline.js"></script>
+  <script src="/js/timeline.js"></script>
+  <script>
+    /* confetti.js 在 Alpine 載入後才執行，main.css 已有 confetti-fall keyframe */
+    window.__ot_confetti_css_injected = true;
+  </script>
+  <script src="/js/confetti.js"></script>
+  <script defer src="/static/vendor/alpine.min.js"></script>
+</head>
+<body x-data="dashboardApp()" x-init="init()">
+
+  <!-- ── Header ── -->
+  <header class="dashboard-header">
+    <div class="logo">
+      <span class="logo-icon">O</span>
+      Overtone
+    </div>
+    <div class="header-spacer"></div>
+    <template x-if="activeSessionId">
+      <span class="session-id-badge" x-text="activeSessionId ? activeSessionId.slice(0, 8) + '...' : ''"></span>
+    </template>
+    <template x-if="pipeline.workflowType">
+      <span class="workflow-badge" x-text="getWorkflowLabel(pipeline.workflowType)"></span>
+    </template>
+    <div class="connection-dot" :class="isConnected ? 'online' : ''"
+         x-text="isConnected ? '已連線' : '連線中...'"></div>
+  </header>
+
+  <!-- ── Dashboard Layout（sidebar + main panel） ── -->
+  <div class="dashboard-layout">
+
+    <!-- ── Sidebar — Session 列表 ── -->
+    <aside class="sidebar">
+      <div class="sidebar-header">Sessions</div>
+
+      <template x-if="sessions.length === 0">
+        <div class="empty-state" style="font-size:0.78rem; padding: 12px 16px;">
+          尚無 session 記錄
+        </div>
+      </template>
+
+      <template x-for="session in sessions" :key="session.sessionId">
+        <div class="session-item"
+             :class="{ active: activeSessionId === session.sessionId }"
+             @click="selectSession(session.sessionId)">
+          <div class="session-item-workflow"
+               x-text="session.workflowType ? getWorkflowLabel(session.workflowType) : '無工作流'">
+          </div>
+          <div class="session-item-id" x-text="session.sessionId.slice(0, 12) + '...'"></div>
+          <div class="session-item-time" x-text="formatTime(session.createdAt)"></div>
+          <div class="session-item-status">
+            <span class="status-pill"
+                  :class="session.status === 'completed' ? 'pass' : (session.status === 'active' ? 'active' : '')"
+                  x-text="session.status === 'completed' ? '完成' : (session.status === 'active' ? '進行中' : (session.status || '—'))">
+            </span>
+          </div>
+        </div>
+      </template>
+    </aside>
+
+    <!-- ── Main Panel ── -->
+    <main class="main-panel" style="overflow-y: auto;">
+
+      <!-- Tab Bar -->
+      <nav class="tab-bar">
+        <button class="tab-btn" :class="{ active: activeTab === 'pipeline' }" @click="activeTab = 'pipeline'">
+          Pipeline
+        </button>
+        <button class="tab-btn" :class="{ active: activeTab === 'timeline' }" @click="activeTab = 'timeline'">
+          Timeline
+        </button>
+        <button class="tab-btn" :class="{ active: activeTab === 'agents' }" @click="activeTab = 'agents'">
+          Agents
+        </button>
+        <button class="tab-btn" :class="{ active: activeTab === 'history' }" @click="activeTab = 'history'">
+          History
+        </button>
+      </nav>
+
+      <!-- ═══ Pipeline Tab ═══ -->
+      <div x-show="activeTab === 'pipeline'" class="tab-content" x-cloak>
+
+        <!-- 進度列 -->
+        <template x-if="pipeline.workflowType">
+          <div class="workflow-header" style="margin-bottom: var(--space-lg);">
+            <div style="display:flex; align-items:center; gap: var(--space-sm); margin-bottom: var(--space-sm);">
+              <h2 style="margin:0;" x-text="getWorkflowLabel(pipeline.workflowType)"></h2>
+              <span style="color:var(--text-secondary); font-size:0.82rem;"
+                    x-text="'(' + pipeline.workflowType + ')'"></span>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill" :style="'width:' + progressPercent + '%'"></div>
+            </div>
+            <span class="progress-text" x-text="completedStageCount + '/' + totalStageCount + ' 階段'"></span>
+          </div>
+        </template>
+
+        <!-- Pipeline Segments -->
+        <div class="pipeline-wrapper">
+          <template x-for="(segment, si) in pipelineSegments" :key="'seg-' + si">
+            <div style="display:flex; align-items:center;">
+
+              <!-- 連線箭頭（非第一個 segment 前加） -->
+              <template x-if="si > 0">
+                <div class="pipeline-connector">&#8594;</div>
+              </template>
+
+              <!-- 線性 Stage -->
+              <template x-if="segment.type === 'stage'">
+                <div class="stage-card"
+                     :class="getStageClass(segment.key)">
+                  <div class="stage-icon" x-text="getStageEmoji(segment.key)"></div>
+                  <div class="stage-label" x-text="getStageLabel(segment.key, segment.stage)"></div>
+                  <div class="stage-status-icon" x-text="getStageIcon(segment.stage ? segment.stage.status : 'pending')"></div>
+                </div>
+              </template>
+
+              <!-- 並行群組 -->
+              <template x-if="segment.type === 'parallel'">
+                <div class="parallel-group">
+                  <div class="parallel-group-label" x-text="segment.groupName"></div>
+                  <div style="display:flex; align-items:center; gap: var(--space-xs);">
+                    <template x-for="(ps, psi) in segment.stages" :key="'ps-' + psi">
+                      <div style="display:flex; align-items:center;">
+                        <template x-if="psi > 0">
+                          <div style="width:16px; text-align:center; color:var(--text-muted); font-size:0.7rem;">+</div>
+                        </template>
+                        <div class="stage-card"
+                             :class="getStageClass(ps.key)">
+                          <div class="stage-icon" x-text="getStageEmoji(ps.key)"></div>
+                          <div class="stage-label" x-text="getStageLabel(ps.key, ps.stage)"></div>
+                          <div class="stage-status-icon" x-text="getStageIcon(ps.stage ? ps.stage.status : 'pending')"></div>
+                        </div>
+                      </div>
+                    </template>
+                  </div>
+                </div>
+              </template>
+
+            </div>
+          </template>
+        </div>
+
+        <!-- 無工作流提示 -->
+        <template x-if="!pipeline.workflowType">
+          <div class="empty-state">
+            此 session 尚未啟動工作流。使用 /ot:auto 或指定 workflow 開始。
+          </div>
+        </template>
+
+        <!-- Stats -->
+        <template x-if="pipeline.workflowType">
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-value" x-text="pipeline.failCount || 0"></div>
+              <div class="stat-label">失敗重試</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value" x-text="pipeline.rejectCount || 0"></div>
+              <div class="stat-label">審查拒絕</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value" x-text="calcDuration(pipeline.createdAt)"></div>
+              <div class="stat-label">經過時間</div>
+            </div>
+          </div>
+        </template>
+
+      </div>
+
+      <!-- ═══ Timeline Tab ═══ -->
+      <div x-show="activeTab === 'timeline'" class="tab-content" x-cloak>
+
+        <!-- 分類篩選 -->
+        <div class="filter-bar">
+          <button class="filter-chip" :class="{ active: !timelineFilter }" @click="timelineFilter = ''">全部</button>
+          <template x-for="cat in timelineCategories" :key="cat.key">
+            <button class="filter-chip"
+                    :class="{ active: timelineFilter === cat.key }"
+                    @click="timelineFilter = cat.key"
+                    x-text="cat.label">
+            </button>
+          </template>
+        </div>
+
+        <!-- 事件列表 -->
+        <div class="timeline-container">
+          <div class="timeline-list" x-ref="timelineList">
+            <template x-for="(event, idx) in filteredTimelineEvents" :key="event.ts + '-' + event.type + '-' + idx">
+              <div class="timeline-event"
+                   :class="window.OT.timeline.getCategoryClass(event.type)">
+                <div class="event-time" x-text="window.OT.timeline.formatTimestamp(event.ts)"></div>
+                <div class="event-label" x-text="event.label || event.type"></div>
+                <div class="event-detail" x-text="formatEventDetail(event)"></div>
+              </div>
+            </template>
+            <div class="empty-state" x-show="filteredTimelineEvents.length === 0">
+              尚無事件紀錄
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ═══ Agents Tab ═══ -->
+      <div x-show="activeTab === 'agents'" class="tab-content" x-cloak>
+
+        <h3 style="margin-bottom: var(--space-md); color: var(--text-secondary);">Agent 狀態燈號</h3>
+
+        <div class="agent-grid">
+          <template x-for="[name, info] in agentEntries" :key="name">
+            <div class="agent-card"
+                 :style="'border-left-color:' + getAgentColor(name)">
+              <div class="agent-card-header">
+                <div class="agent-card-name">
+                  <div class="agent-dot size-md"
+                       :class="[info.status === 'active' ? 'active' : 'standby', 'color-' + (getAgentColorName(name) || 'purple')]">
+                  </div>
+                  <span x-text="name"></span>
+                </div>
+                <span class="agent-model-badge" x-text="info.model || ''"></span>
+              </div>
+              <div class="agent-card-stage" x-text="info.currentStage ? info.currentStage : (info.status === 'active' ? '執行中' : '待機')"></div>
+              <template x-if="info.status === 'active' && info.startedAt">
+                <div class="agent-card-duration" x-text="calcDuration(info.startedAt)"></div>
+              </template>
+            </div>
+          </template>
+        </div>
+
+        <template x-if="agentEntries.length === 0">
+          <div class="empty-state">尚無 agent 資料</div>
+        </template>
+
+      </div>
+
+      <!-- ═══ History Tab（Sessions 列表卡片） ═══ -->
+      <div x-show="activeTab === 'history'" class="tab-content" x-cloak>
+
+        <h3 style="margin-bottom: var(--space-md); color: var(--text-secondary);">Session 歷史記錄</h3>
+
+        <template x-if="sessions.length === 0">
+          <div class="empty-state">尚無 session 記錄</div>
+        </template>
+
+        <template x-for="session in sessions" :key="'h-' + session.sessionId">
+          <div class="history-card" @click="selectSession(session.sessionId); activeTab = 'pipeline'">
+            <div class="history-card-header">
+              <div class="workflow-type-label"
+                   x-text="session.workflowType ? getWorkflowLabel(session.workflowType) : '無工作流'">
+              </div>
+              <span class="status-pill"
+                    :class="session.status === 'completed' ? 'pass' : (session.status === 'active' ? 'active' : '')"
+                    x-text="session.status === 'completed' ? '完成' : (session.status === 'active' ? '進行中' : (session.status || '—'))">
+              </span>
+            </div>
+            <div class="history-card-stats">
+              <span class="session-id-mono" x-text="session.sessionId.slice(0, 16) + '...'"></span>
+              <span class="session-time" x-text="formatTime(session.createdAt)"></span>
+            </div>
+          </div>
+        </template>
+
+      </div>
+
+    </main>
+  </div>
+
+  <style>
+  [x-cloak] { display: none !important; }
+
+  /* main-panel 在 grid 中佔 col 2，row 2 起 */
+  .main-panel {
+    grid-column: 2;
+    grid-row: 2 / -1;
+    overflow-y: auto;
+    min-height: 0;
+  }
+
+  /* tab-bar 在 main-panel 內 sticky */
+  .main-panel .tab-bar {
+    position: sticky;
+    top: 0;
+    z-index: 90;
+    grid-column: unset;
+  }
+
+  /* tab-content 最大寬度 */
+  .tab-content {
+    padding: var(--space-lg);
+    max-width: 1400px;
+  }
+  </style>
+
+  <script>
+  /* ══════════════════════════════════════════════════════
+     dashboardApp — Overtone SPA 主狀態
+     ══════════════════════════════════════════════════════ */
+  function dashboardApp() {
+    return {
+      // Session 管理
+      sessions: [],
+      activeSessionId: null,
+
+      // Pipeline 資料
+      pipeline: {
+        stages: {},
+        workflowType: '',
+        parallelGroups: [],
+        failCount: 0,
+        rejectCount: 0,
+        createdAt: null,
+      },
+
+      // Timeline 資料
+      timeline: { events: [] },
+      timelineFilter: '',
+      timelineCategories: [
+        { key: 'workflow', label: '工作流' },
+        { key: 'stage',    label: '階段' },
+        { key: 'agent',    label: '代理' },
+        { key: 'loop',     label: '循環' },
+        { key: 'parallel', label: '並行' },
+        { key: 'handoff',  label: '交接' },
+        { key: 'error',    label: '錯誤' },
+        { key: 'session',  label: '工作階段' },
+        { key: 'grader',   label: 'Grader' },
+      ],
+
+      // Agents
+      agents: {},
+
+      // UI 狀態
+      activeTab: 'pipeline',
+      isConnected: false,
+      confettiPlayed: false,
+
+      // SSE 連線管理
+      _sessionEventSource: null,
+      _allEventSource: null,
+      _reconnectAttempts: 0,
+      _reconnectTimer: null,
+
+      // Registry 靜態資料
+      registry: { parallelGroupDefs: {}, workflows: {}, stages: {}, agents: {} },
+
+      // ── Computed ──
+
+      get pipelineSegments() {
+        if (!window.OT || !window.OT.pipeline) return [];
+        const wf = this.pipeline.workflowType;
+        const stages = this.pipeline.stages || {};
+        const defs = this.registry.parallelGroupDefs || {};
+        const wfGroups = {};
+        for (const [k, v] of Object.entries(this.registry.workflows || {})) {
+          wfGroups[k] = v.parallelGroups || [];
+        }
+        return window.OT.pipeline.buildPipelineSegments(stages, wf, defs, wfGroups);
+      },
+
+      get filteredTimelineEvents() {
+        if (!this.timelineFilter) return this.timeline.events;
+        return this.timeline.events.filter(e => {
+          const colon = (e.type || '').indexOf(':');
+          const prefix = colon !== -1 ? e.type.slice(0, colon) : e.type;
+          return prefix === this.timelineFilter;
+        });
+      },
+
+      get agentEntries() {
+        return Object.entries(this.agents || {});
+      },
+
+      get completedStageCount() {
+        return Object.values(this.pipeline.stages || {})
+          .filter(s => s.status === 'completed' || s.status === 'done').length;
+      },
+
+      get totalStageCount() {
+        return Object.keys(this.pipeline.stages || {}).length;
+      },
+
+      get progressPercent() {
+        if (this.totalStageCount === 0) return 0;
+        return Math.round(this.completedStageCount / this.totalStageCount * 100);
+      },
+
+      // ── 生命週期 ──
+
+      async init() {
+        await this.loadRegistry();
+        await this.loadSessions();
+        this.connectAllSSE();
+
+        // 自動選最新 active session
+        if (this.sessions.length > 0) {
+          const active = this.sessions.find(s => s.status === 'active');
+          const target = active || this.sessions[0];
+          if (target) {
+            await this.selectSession(target.sessionId);
+          }
+        }
+      },
+
+      // ── Registry 載入 ──
+
+      async loadRegistry() {
+        try {
+          const r = await fetch('/api/registry');
+          if (r.ok) {
+            this.registry = await r.json();
+          }
+        } catch {
+          // fallback：API 不可用時使用空 registry
+        }
+      },
+
+      // ── Sessions 載入 ──
+
+      async loadSessions() {
+        try {
+          const r = await fetch('/api/sessions');
+          if (r.ok) {
+            this.sessions = await r.json();
+          }
+        } catch {
+          // 靜默，由 SSE all 補送
+        }
+      },
+
+      // ── Session 切換 ──
+
+      async selectSession(id) {
+        if (id === this.activeSessionId) return;
+
+        // 斷開舊 session SSE
+        this.disconnectSessionSSE();
+
+        // 重設狀態
+        this.activeSessionId = id;
+        this.pipeline = { stages: {}, workflowType: '', parallelGroups: [], failCount: 0, rejectCount: 0, createdAt: null };
+        this.timeline = { events: [] };
+        this.agents = {};
+        this.confettiPlayed = false;
+        this.activeTab = 'pipeline';
+        this._reconnectAttempts = 0;
+
+        // 載入 REST 初始狀態
+        await Promise.all([
+          this.fetchSessionState(id),
+          this.fetchSessionTimeline(id),
+        ]);
+
+        // 建立新 SSE 連線
+        this.connectSessionSSE(id);
+      },
+
+      // ── 資料載入 ──
+
+      async fetchSessionState(sessionId) {
+        try {
+          const r = await fetch('/api/sessions/' + sessionId);
+          if (r.ok) {
+            const data = await r.json();
+            this.applyWorkflowState(data);
+          }
+        } catch {
+          // 靜默，SSE 補送
+        }
+      },
+
+      async fetchSessionTimeline(sessionId) {
+        try {
+          const r = await fetch('/api/sessions/' + sessionId + '/timeline');
+          if (r.ok) {
+            const events = await r.json();
+            this.timeline = { events: events || [] };
+          }
+        } catch {
+          // 靜默
+        }
+      },
+
+      // ── SSE — 全局（sidebar 更新） ──
+
+      connectAllSSE() {
+        if (this._allEventSource) {
+          this._allEventSource.close();
+        }
+
+        const es = new EventSource('/sse/all');
+
+        es.addEventListener('connected', () => {
+          // sidebar SSE 已連
+        });
+
+        es.addEventListener('workflow', () => {
+          // 收到 workflow 更新時重新載入 sessions 列表
+          this.loadSessions();
+        });
+
+        es.addEventListener('heartbeat', () => {
+          // 保持連線
+        });
+
+        es.onerror = () => {
+          // sidebar SSE 不影響連線指示燈，靜默重連
+          if (this._allEventSource) {
+            this._allEventSource.close();
+            this._allEventSource = null;
+          }
+          setTimeout(() => this.connectAllSSE(), 5000);
+        };
+
+        this._allEventSource = es;
+      },
+
+      // ── SSE — Session 專屬 ──
+
+      connectSessionSSE(sessionId) {
+        this.disconnectSessionSSE();
+
+        const es = new EventSource('/sse/' + sessionId);
+
+        es.addEventListener('connected', () => {
+          this.isConnected = true;
+          this._reconnectAttempts = 0;
+        });
+
+        es.addEventListener('workflow', (e) => {
+          try {
+            const data = JSON.parse(e.data);
+            this.applyWorkflowState(data);
+          } catch {
+            // SSE 資料格式異常，略過
+          }
+        });
+
+        es.addEventListener('timeline', (e) => {
+          try {
+            const event = JSON.parse(e.data);
+            this.handleSSETimelineEvent(event);
+          } catch {
+            // SSE 資料格式異常，略過
+          }
+        });
+
+        es.addEventListener('heartbeat', () => {
+          this.isConnected = true;
+        });
+
+        es.onerror = () => {
+          this.isConnected = false;
+          if (this._sessionEventSource) {
+            this._sessionEventSource.close();
+            this._sessionEventSource = null;
+          }
+          this.scheduleReconnect(sessionId);
+        };
+
+        this._sessionEventSource = es;
+      },
+
+      disconnectSessionSSE() {
+        if (this._reconnectTimer) {
+          clearTimeout(this._reconnectTimer);
+          this._reconnectTimer = null;
+        }
+        if (this._sessionEventSource) {
+          this._sessionEventSource.close();
+          this._sessionEventSource = null;
+        }
+        this.isConnected = false;
+      },
+
+      scheduleReconnect(sessionId) {
+        if (this._reconnectAttempts >= 5) return;
+        const delay = Math.min(1000 * Math.pow(2, this._reconnectAttempts), 16000);
+        this._reconnectAttempts++;
+        this._reconnectTimer = setTimeout(() => {
+          if (this.activeSessionId === sessionId) {
+            this.connectSessionSSE(sessionId);
+          }
+        }, delay);
+      },
+
+      // ── SSE 事件處理 ──
+
+      handleSSETimelineEvent(event) {
+        this.timeline.events.push(event);
+
+        // 觸發 timeline slide-in 動畫
+        if (this.activeTab === 'timeline') {
+          this.$nextTick(() => {
+            const el = this.$refs.timelineList;
+            if (el) window.OT.timeline.animateNewEvent(el, event);
+          });
+        }
+
+        // 檢查 workflow 完成事件
+        const type = event.type || '';
+        if (type === 'workflow:complete' || type.startsWith('workflow:complete')) {
+          this.handleWorkflowComplete();
+        }
+
+        // 更新 pipeline stage 狀態
+        if (type.startsWith('stage:')) {
+          this.handleSSEStageEvent(type, event);
+        }
+
+        // 更新 agent 狀態
+        if (type.startsWith('agent:')) {
+          this.handleSSEAgentEvent(type, event);
+        }
+      },
+
+      handleSSEStageEvent(type, event) {
+        const stageKey = event.stage;
+        if (!stageKey) return;
+        if (!this.pipeline.stages[stageKey]) {
+          this.pipeline.stages[stageKey] = { status: 'pending' };
+        }
+        if (type === 'stage:start') {
+          this.pipeline.stages[stageKey].status = 'active';
+          this.pipeline.stages[stageKey].startedAt = event.ts;
+        } else if (type === 'stage:complete') {
+          this.pipeline.stages[stageKey].status = 'completed';
+          this.pipeline.stages[stageKey].completedAt = event.ts;
+          this.pipeline.stages[stageKey].result = event.result;
+        } else if (type === 'stage:fail') {
+          this.pipeline.stages[stageKey].status = 'failed';
+        }
+      },
+
+      handleSSEAgentEvent(type, event) {
+        const agentName = event.agent;
+        if (!agentName) return;
+        if (!this.agents[agentName]) {
+          const regInfo = (this.registry.agents || {})[agentName] || {};
+          this.agents[agentName] = {
+            status: 'standby',
+            color: regInfo.color || '',
+            model: regInfo.model || '',
+            currentStage: null,
+          };
+        }
+        if (type === 'agent:delegate') {
+          this.agents[agentName].status = 'active';
+          this.agents[agentName].currentStage = event.stage || null;
+          this.agents[agentName].startedAt = event.ts;
+        } else if (type === 'agent:complete') {
+          this.agents[agentName].status = 'standby';
+          this.agents[agentName].currentStage = null;
+        }
+      },
+
+      handleWorkflowComplete() {
+        // 更新 sidebar sessions 狀態
+        this.loadSessions();
+
+        // 觸發 confetti（只播一次）
+        if (!this.confettiPlayed && window.OT && window.OT.confetti) {
+          const fired = window.OT.confetti.fire({ played: this.confettiPlayed, count: 40 });
+          if (fired) {
+            this.confettiPlayed = true;
+          }
+        }
+      },
+
+      // ── 套用 workflow state（REST + SSE workflow 事件共用） ──
+
+      applyWorkflowState(data) {
+        if (!data) return;
+
+        this.pipeline = {
+          stages: data.stages || {},
+          workflowType: data.workflowType || '',
+          parallelGroups: data.parallelGroups || [],
+          failCount: data.failCount || 0,
+          rejectCount: data.rejectCount || 0,
+          createdAt: data.createdAt || null,
+        };
+
+        // 從 activeAgents 建立 agents map
+        const activeAgents = data.activeAgents || {};
+        for (const [name, info] of Object.entries(activeAgents)) {
+          const regInfo = (this.registry.agents || {})[name] || {};
+          this.agents[name] = {
+            status: 'active',
+            color: regInfo.color || '',
+            model: regInfo.model || '',
+            currentStage: info.stage || null,
+            startedAt: info.startedAt || null,
+          };
+        }
+
+        // 確保 registry agents 也在 map 中（standby）
+        for (const [name, info] of Object.entries(this.registry.agents || {})) {
+          if (!this.agents[name]) {
+            this.agents[name] = {
+              status: 'standby',
+              color: info.color || '',
+              model: info.model || '',
+              currentStage: null,
+            };
+          }
+        }
+      },
+
+      // ── 輔助：Pipeline ──
+
+      getStageClass(stageKey) {
+        if (!window.OT || !window.OT.pipeline) return 'pending';
+        return window.OT.pipeline.getStageClass(stageKey, this.pipeline.stages);
+      },
+
+      getStageEmoji(stageKey) {
+        const base = stageKey.split(':')[0];
+        return (this.registry.stages || {})[base]?.emoji || '?';
+      },
+
+      getStageLabel(stageKey, stageData) {
+        const base = stageKey.split(':')[0];
+        const reg = (this.registry.stages || {})[base];
+        if (!reg) return stageKey;
+        if (base === 'TEST' && stageData) {
+          if (stageData.mode === 'spec') return '測試:規格';
+          if (stageData.mode === 'verify') return '測試:驗證';
+        }
+        return reg.label || stageKey;
+      },
+
+      getStageIcon(status) {
+        if (!window.OT || !window.OT.pipeline) return '?';
+        return window.OT.pipeline.getStageIcon(status);
+      },
+
+      getWorkflowLabel(workflowType) {
+        if (!workflowType) return '—';
+        return (this.registry.workflows || {})[workflowType]?.label || workflowType;
+      },
+
+      // ── 輔助：Agents ──
+
+      getAgentColor(name) {
+        const info = (this.registry.agents || {})[name];
+        if (!info || !info.color) return 'var(--text-muted)';
+        return 'var(--color-' + info.color + ')';
+      },
+
+      getAgentColorName(name) {
+        return (this.registry.agents || {})[name]?.color || 'purple';
+      },
+
+      // ── 輔助：時間 ──
+
+      formatTime(iso) {
+        if (!iso) return '';
+        try {
+          return new Date(iso).toLocaleString('zh-TW', {
+            month: 'numeric',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false,
+          });
+        } catch {
+          return iso;
+        }
+      },
+
+      calcDuration(iso) {
+        if (!iso) return '-';
+        const ms = Date.now() - new Date(iso).getTime();
+        const m = Math.floor(ms / 60000);
+        const s = Math.floor((ms % 60000) / 1000);
+        if (m > 60) {
+          const h = Math.floor(m / 60);
+          return h + 'h ' + (m % 60) + 'm';
+        }
+        return m > 0 ? m + 'm ' + s + 's' : s + 's';
+      },
+
+      // ── 輔助：Timeline ──
+
+      formatEventDetail(event) {
+        const parts = [];
+        if (event.agent) parts.push(event.agent);
+        if (event.stage) parts.push(event.stage);
+        if (event.workflowType) {
+          const label = this.getWorkflowLabel(event.workflowType);
+          parts.push(label !== event.workflowType ? label : event.workflowType);
+        }
+        if (event.iteration !== undefined) parts.push('第 ' + event.iteration + ' 次');
+        if (event.progress) parts.push(event.progress);
+        if (event.reason) parts.push(event.reason);
+        if (event.result) parts.push(event.result);
+        if (event.duration) parts.push(event.duration);
+        return parts.join(' · ');
+      },
+
+      // ── 生命週期清理 ──
+
+      destroy() {
+        this.disconnectSessionSSE();
+        if (this._allEventSource) {
+          this._allEventSource.close();
+          this._allEventSource = null;
+        }
+      },
+    };
+  }
+  </script>
+
+</body>
+</html>
