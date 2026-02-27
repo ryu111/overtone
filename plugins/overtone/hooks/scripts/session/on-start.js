@@ -38,7 +38,10 @@ if (sessionId) {
 const dashboardPid = require('../../../scripts/lib/dashboard/pid');
 const port = process.env.OVERTONE_PORT || '7777';
 
-if (sessionId && !dashboardPid.isRunning()) {
+// 記錄 Dashboard 是否為首次啟動，用於決定是否開啟瀏覽器
+const shouldSpawnDashboard = sessionId && !dashboardPid.isRunning();
+
+if (shouldSpawnDashboard) {
   try {
     const { spawn: spawnChild } = require('child_process');
     const serverPath = require('path').join(__dirname, '../../../scripts/server.js');
@@ -86,8 +89,9 @@ const banner = [
   '',
 ].filter(Boolean).join('\n');
 
-// 自動開啟瀏覽器（macOS）— spawn+detached+unref 確保不被 hook 進程退出中斷
-if (dashboardUrl) {
+// 自動開啟瀏覽器（macOS）— 只在 Dashboard 首次啟動時開啟，避免每個 session 都開新標籤
+// OVERTONE_NO_BROWSER=1 可跳過（測試環境使用）
+if (shouldSpawnDashboard && dashboardUrl && !process.env.OVERTONE_NO_BROWSER) {
   try {
     const { spawn: spawnOpen } = require('child_process');
     const openProc = spawnOpen('open', [dashboardUrl], { detached: true, stdio: 'ignore' });

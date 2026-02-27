@@ -39,6 +39,8 @@ function runHook(input, extraEnv = {}) {
       ...process.env,
       // 清除 CLAUDE_SESSION_ID 避免干擾，各測試自行控制 session_id
       CLAUDE_SESSION_ID: '',
+      // 跳過瀏覽器開啟，避免測試觸發 open 指令
+      OVERTONE_NO_BROWSER: '1',
       ...extraEnv,
     },
     stdout: 'pipe',
