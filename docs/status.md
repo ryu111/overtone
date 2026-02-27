@@ -1,6 +1,6 @@
 # Overtone 現況
 
-> 最後更新：2026-02-27 | Plugin 版本：0.16.3
+> 最後更新：2026-02-28 | Plugin 版本：0.17.0
 
 ## 版本狀態
 
@@ -13,18 +13,19 @@
 
 | 指標 | 數值 |
 |------|------|
-| Agent 數量 | 16（含 grader） |
-| Workflow 模板 | 15 |
+| Agent 數量 | 17（含 grader） |
+| Stage 數量 | 16 |
+| Workflow 模板 | 18 |
 | 測試通過 | 507 pass / 0 fail |
 | 測試檔案 | 29 個 |
 | Hook 數量 | 6 個 |
-| Skill 數量 | 29 個 |
+| Skill 數量 | 28 個 |
 
 ## 近期變更（最近 3 筆）
 
+- **[0.17.0] 2026-02-28**：Product Manager agent — 第 16 個 stage + 3 個產品 workflow。PM agent（opus, emerald）負責需求探索、方案比較、MVP 範圍定義、drift 偵測。新增 pm skill（含 5 份 references）、3 個 workflow（product, product-full, discovery）。pm/SKILL.md 為唯一入口，後續 pipeline 引用現有 standard/full skill（DRY）
 - **[0.16.3] 2026-02-27**：Dashboard UX 四項優化 — 連線即時性（心跳 15s、debounce 1s、三態燈號、斷線橫幅）、Session 列表 grid 佈局、Timeline 自動跟隨（scroll lock/unlock）、Pixel-perfect 細節（progress 6px、logo 🎵），測試通過 507 pass
 - **[0.16.2] 2026-02-27**：Dashboard pass@1/pass@3 統計卡片 + URL bug 修正 — pipeline stats 新增兩張 pass@k 卡片（呼叫現有 API），Dashboard URL 固定 localhost:7777/（移除 /s/:sessionId 路由），測試通過 507 pass
-- **[0.16.1] 2026-02-27**：QA agent 能力補全 + Dashboard QA 完成 — 測試計劃先行/fallback/邊界條件清單/回歸測試四大補全，真實瀏覽器 26 個 BDD Scenario 全通過，測試通過 507 pass
 
 ## 已知問題
 
@@ -36,8 +37,8 @@
 |------|------|------|
 | 主規格 | docs/spec/overtone.md | 設計索引 |
 | 架構 | docs/spec/overtone-架構.md | 三層架構、Hook |
-| 工作流 | docs/spec/overtone-工作流.md | 15 個 workflow 模板 |
-| Agents | docs/spec/overtone-agents.md | 15 個 agent |
+| 工作流 | docs/spec/overtone-工作流.md | 18 個 workflow 模板 |
+| Agents | docs/spec/overtone-agents.md | 16 個 agent |
 | 並行 | docs/spec/overtone-並行.md | Loop、Mul-Dev、D1-D4 |
 | 子系統 | docs/spec/overtone-子系統.md | Specs、Dashboard |
 | 驗證品質 | docs/spec/overtone-驗證品質.md | 三信號、pass@k |
