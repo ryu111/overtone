@@ -318,7 +318,7 @@ async function serveJsModule(path) {
     return new Response(content, {
       headers: {
         'Content-Type': 'application/javascript; charset=utf-8',
-        'Cache-Control': 'public, max-age=3600',
+        'Cache-Control': 'no-cache',
       },
     });
   } catch {
@@ -349,7 +349,7 @@ async function serveStatic(path) {
     const ext = extname(filePath);
     const mime = MIME_TYPES[ext] || 'application/octet-stream';
     return new Response(content, {
-      headers: { 'Content-Type': mime, 'Cache-Control': 'public, max-age=3600' },
+      headers: { 'Content-Type': mime, 'Cache-Control': 'no-cache' },
     });
   } catch {
     return new Response('404 Not Found', { status: 404 });

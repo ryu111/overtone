@@ -1415,30 +1415,65 @@ section {
   }
 }
 
-/* 768px–1199px：單欄，Pipeline 水平捲動 */
+/* 768px–1199px：單欄，Sidebar 水平捲動，Pipeline 水平捲動 */
 @media (max-width: 1199px) {
   .dashboard-layout {
     grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+  }
+
+  /* 強制明確設定 grid placement，避免 implicit column 產生 */
+  .dashboard-layout > .sidebar {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .dashboard-layout > .main-panel {
+    grid-column: 1;
+    grid-row: 2;
   }
 
   .sidebar {
-    grid-row: auto;
     border-right: none;
     border-bottom: 1px solid var(--glass-border);
     display: flex;
+    flex-direction: row;
     overflow-x: auto;
     overflow-y: hidden;
     padding: 0;
   }
 
+  /* 行動版不需要 "SESSIONS" 標題，節省垂直空間 */
+  .sidebar-header {
+    display: none;
+  }
+
+  /* 覆蓋桌面版 grid，改回 flex row（水平 sidebar）*/
   .session-item {
-    flex: 0 0 auto;
+    display: flex;
     flex-direction: row;
+    flex: 0 0 auto;
     align-items: center;
-    gap: var(--space-sm);
+    gap: var(--space-xs);
+    min-width: 110px;
+    max-width: 170px;
     border-left: none;
     border-bottom: 3px solid transparent;
-    padding: var(--space-sm) var(--space-md);
+    padding: var(--space-xs) var(--space-sm);
+  }
+
+  /* 水平列空間不足，隱藏次要資訊 */
+  .session-item-meta {
+    display: none;
+  }
+
+  .session-item-workflow {
+    font-size: 0.75rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex: 1;
+    min-width: 0;
   }
 
   .session-item.active {
@@ -1455,8 +1490,18 @@ section {
   }
 }
 
-/* 768px 以下：單欄，Stage 卡片縮小 */
+/* 768px 以下：手機，Stage 卡片縮小，Header 精簡 */
 @media (max-width: 768px) {
+  /* Header：隱藏 session id，減少擁擠 */
+  .session-id-badge {
+    display: none;
+  }
+
+  .dashboard-header {
+    gap: var(--space-sm);
+    padding: var(--space-sm) var(--space-md);
+  }
+
   .stage-card {
     width: 60px;
   }
@@ -1479,7 +1524,7 @@ section {
   }
 
   .stats-grid {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, 1fr);
   }
 
   .stats-row {
@@ -1492,6 +1537,35 @@ section {
 
   main {
     padding: var(--space-md);
+  }
+}
+
+/* 手機橫向（短螢幕）：縮小 header，保留主要內容高度 */
+@media (max-height: 500px) and (orientation: landscape) {
+  .dashboard-header {
+    padding: 6px var(--space-md);
+  }
+
+  .logo-icon {
+    width: 22px;
+    height: 22px;
+    font-size: 0.9rem;
+  }
+
+  .dashboard-layout .tab-bar {
+    top: 44px;
+  }
+
+  .sidebar {
+    padding: 0;
+  }
+
+  .session-item {
+    padding: 4px var(--space-sm);
+  }
+
+  .timeline-list {
+    max-height: 50vh;
   }
 }
 
