@@ -277,4 +277,4 @@ if (require.main === module) {
 }
 
 // 供測試使用
-module.exports = { detectWordingMismatch, WORDING_RULES };
+module.exports = { detectWordingMismatch, WORDING_RULES, extractCommandTag, observeBashError };
