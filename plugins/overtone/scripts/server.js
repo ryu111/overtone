@@ -206,6 +206,13 @@ async function handleAPI(path, params, req) {
     return json(sessions.listSessions(filter), 200, req);
   }
 
+  // DELETE /api/sessions/:id — 刪除 session 目錄
+  if (req.method === 'DELETE' && /^\/api\/sessions\/[a-zA-Z0-9_-]+$/.test(path)) {
+    const sessionId = path.replace('/api/sessions/', '');
+    sessions.deleteSession(sessionId);
+    return new Response(null, { status: 204 });
+  }
+
   // GET /api/sessions/:id/passatk
   const passatkMatch = path.match(/^\/api\/sessions\/([a-zA-Z0-9_-]+)\/passatk$/);
   if (passatkMatch) {

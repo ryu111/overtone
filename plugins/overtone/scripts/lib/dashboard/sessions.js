@@ -6,7 +6,8 @@
  * 讀取每個 session 的 workflow.json 產生摘要列表。
  */
 
-const { readdirSync } = require('fs');
+const { readdirSync, rmSync } = require('fs');
+const { join } = require('path');
 const { SESSIONS_DIR } = require('../paths');
 const state = require('../state');
 
@@ -69,4 +70,13 @@ function getSessionSummary(sessionId) {
   };
 }
 
-module.exports = { listSessions, getSessionSummary };
+/**
+ * 刪除 session 目錄
+ * @param {string} sessionId
+ */
+function deleteSession(sessionId) {
+  const sessionDir = join(SESSIONS_DIR, sessionId);
+  rmSync(sessionDir, { recursive: true, force: true });
+}
+
+module.exports = { listSessions, getSessionSummary, deleteSession };

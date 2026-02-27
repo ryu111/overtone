@@ -22,6 +22,11 @@
       <span class="logo-icon">🎵</span>
       Overtone
     </div>
+    <button class="sidebar-toggle-btn"
+            @click="sidebarOpen = !sidebarOpen"
+            :title="sidebarOpen ? '收合側欄' : '展開側欄'"
+            x-text="sidebarOpen ? '‹' : '›'">
+    </button>
     <div class="header-spacer"></div>
     <template x-if="activeSessionId">
       <span class="session-id-badge" x-text="activeSessionId ? activeSessionId.slice(0, 8) + '...' : ''"></span>
@@ -50,33 +55,80 @@
   <div class="dashboard-layout">
 
     <!-- ── Sidebar — Session 列表 ── -->
-    <aside class="sidebar">
-      <div class="sidebar-header">Sessions</div>
+    <aside class="sidebar" :class="{ closed: !sidebarOpen }">
 
-      <template x-if="sessions.length === 0">
-        <div class="empty-state" style="font-size:0.78rem; padding: 12px 16px;">
-          尚無 session 記錄
+      <!-- 進行中 -->
+      <template x-if="liveSessions.length > 0">
+        <div>
+          <div class="session-group-header">
+            <span>進行中</span>
+            <span class="session-group-count" x-text="liveSessions.length"></span>
+          </div>
+          <template x-for="session in liveSessions" :key="session.sessionId">
+            <div class="session-item" :class="{ active: activeSessionId === session.sessionId }"
+                 @click="selectSession(session.sessionId)">
+              <button class="session-delete-btn" @click.stop="deleteSession(session.sessionId)">×</button>
+              <div class="session-item-top">
+                <span class="session-live-dot"></span>
+                <span class="session-item-workflow" x-text="getWorkflowLabel(session.workflowType)"></span>
+              </div>
+              <div class="session-item-sub" x-text="elapsedTime(session.createdAt)"></div>
+              <template x-if="session.currentStage">
+                <div class="session-item-stage" x-text="session.currentStage"></div>
+              </template>
+              <template x-if="session.progress?.total > 0">
+                <div class="session-progress-bar">
+                  <div class="session-progress-fill"
+                       :style="`width:${Math.round(session.progress.completed/session.progress.total*100)}%`">
+                  </div>
+                </div>
+              </template>
+            </div>
+          </template>
         </div>
       </template>
 
-      <template x-for="session in sessions" :key="session.sessionId">
-        <div class="session-item"
-             :class="{ active: activeSessionId === session.sessionId }"
-             @click="selectSession(session.sessionId)">
-          <div class="session-item-workflow"
-               x-text="session.workflowType ? getWorkflowLabel(session.workflowType) : '無工作流'">
+      <!-- 已完成 -->
+      <template x-if="doneSessions.length > 0">
+        <div>
+          <div class="session-group-separator">
+            <span x-text="`已完成 (${doneSessions.length})`"></span>
           </div>
-          <div class="session-item-meta">
-            <span class="session-item-id" x-text="session.sessionId.slice(0, 12) + '...'"></span>
-            <span class="session-item-time" x-text="formatTime(session.createdAt)"></span>
-          </div>
-          <div class="session-item-status">
-            <span class="status-pill"
-                  :class="session.status === 'completed' ? 'pass' : (session.status === 'active' ? 'active' : '')"
-                  x-text="session.status === 'completed' ? '完成' : (session.status === 'active' ? '進行中' : (session.status || '—'))">
-            </span>
-          </div>
+          <template x-for="session in doneSessions" :key="session.sessionId">
+            <div class="session-item done" :class="{ active: activeSessionId === session.sessionId }"
+                 @click="selectSession(session.sessionId)">
+              <button class="session-delete-btn" @click.stop="deleteSession(session.sessionId)">×</button>
+              <div class="session-item-top">
+                <span class="session-item-workflow" x-text="'✅ ' + getWorkflowLabel(session.workflowType)"></span>
+              </div>
+              <div class="session-item-sub" x-text="elapsedTime(session.createdAt)"></div>
+            </div>
+          </template>
         </div>
+      </template>
+
+      <!-- 其他 (idle) -->
+      <template x-if="idleSessions.length > 0">
+        <div>
+          <div class="session-group-separator" x-show="liveSessions.length > 0 || doneSessions.length > 0">
+            <span x-text="`其他 (${idleSessions.length})`"></span>
+          </div>
+          <template x-for="session in idleSessions" :key="session.sessionId">
+            <div class="session-item done" :class="{ active: activeSessionId === session.sessionId }"
+                 @click="selectSession(session.sessionId)">
+              <button class="session-delete-btn" @click.stop="deleteSession(session.sessionId)">×</button>
+              <div class="session-item-top">
+                <span class="session-item-workflow" x-text="getWorkflowLabel(session.workflowType) || '無工作流'"></span>
+              </div>
+              <div class="session-item-sub" x-text="elapsedTime(session.createdAt)"></div>
+            </div>
+          </template>
+        </div>
+      </template>
+
+      <!-- 空狀態 -->
+      <template x-if="sessions.length === 0">
+        <div class="empty-state">尚無 session 記錄</div>
       </template>
     </aside>
 
@@ -120,7 +172,7 @@
         <!-- Pipeline Segments -->
         <div class="pipeline-wrapper">
           <template x-for="(segment, si) in pipelineSegments" :key="'seg-' + si">
-            <div style="display:flex; align-items:center;">
+            <div style="display:flex; align-items:center; flex: 1; min-width: 0;">
 
               <!-- 連線箭頭（非第一個 segment 前加） -->
               <template x-if="si > 0">
@@ -375,6 +427,7 @@
       isConnected: false,
       confettiPlayed: false,
       autoScrollTimeline: true,
+      sidebarOpen: window.innerWidth >= 1200,
 
       // SSE 連線管理
       _sessionEventSource: null,
@@ -441,6 +494,22 @@
         return Math.round(this.completedStageCount / this.totalStageCount * 100);
       },
 
+      get liveSessions() {
+        return this.sessions.filter(s => s.isActive);
+      },
+
+      get doneSessions() {
+        return this.sessions.filter(s =>
+          !s.isActive && s.progress?.total > 0 && s.progress.completed >= s.progress.total
+        );
+      },
+
+      get idleSessions() {
+        return this.sessions.filter(s =>
+          !s.isActive && !(s.progress?.total > 0 && s.progress.completed >= s.progress.total)
+        );
+      },
+
       // ── 生命週期 ──
 
       async init() {
@@ -450,7 +519,7 @@
 
         // 自動選最新 active session
         if (this.sessions.length > 0) {
-          const active = this.sessions.find(s => s.status === 'active');
+          const active = this.sessions.find(s => s.isActive);
           const target = active || this.sessions[0];
           if (target) {
             await this.selectSession(target.sessionId);
@@ -512,6 +581,21 @@
 
         // 建立新 SSE 連線
         this.connectSessionSSE(id);
+      },
+
+      // ── Session 刪除 ──
+
+      async deleteSession(id) {
+        await fetch(`/api/sessions/${id}`, { method: 'DELETE' });
+        this.sessions = this.sessions.filter(s => s.sessionId !== id);
+        if (this.activeSessionId === id) {
+          this.activeSessionId = null;
+          this.pipeline = { stages: {}, workflowType: '', parallelGroups: [], failCount: 0, rejectCount: 0, createdAt: null };
+          this.timeline = { events: [] };
+          this.agents = {};
+          this.passatk = { overall: null, stages: {} };
+          this.disconnectSessionSSE();
+        }
       },
 
       // ── 資料載入 ──
@@ -866,6 +950,16 @@
         } catch {
           return iso;
         }
+      },
+
+      elapsedTime(iso) {
+        if (!iso) return '';
+        const diff = Date.now() - new Date(iso).getTime();
+        const m = Math.floor(diff / 60000);
+        if (m < 60) return m + 'm 前';
+        const h = Math.floor(m / 60);
+        if (h < 24) return h + 'h 前';
+        return Math.floor(h / 24) + 'd 前';
       },
 
       calcDuration(iso) {
