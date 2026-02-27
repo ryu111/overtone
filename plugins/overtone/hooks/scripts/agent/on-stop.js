@@ -20,7 +20,7 @@ const paths = require('../../../scripts/lib/paths');
 // ── 從 stdin 讀取 hook input ──
 
 const input = JSON.parse(readFileSync('/dev/stdin', 'utf8'));
-const sessionId = process.env.CLAUDE_SESSION_ID || '';
+const sessionId = input.session_id || process.env.CLAUDE_SESSION_ID || '';
 const projectRoot = input.cwd || process.cwd();
 
 // 取得 agent 資訊

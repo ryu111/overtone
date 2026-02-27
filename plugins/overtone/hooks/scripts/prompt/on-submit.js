@@ -17,8 +17,9 @@ const { workflows } = require('../../../scripts/lib/registry');
 const input = JSON.parse(readFileSync('/dev/stdin', 'utf8'));
 const userPrompt = (input.user_prompt || '').trim();
 
-// 取得 session ID 和 projectRoot（由環境變數/input 提供）
-const sessionId = process.env.CLAUDE_SESSION_ID || '';
+// 取得 session ID 和 projectRoot
+// session ID 優先從 hook input JSON（stdin）讀取，環境變數作為 fallback
+const sessionId = input.session_id || process.env.CLAUDE_SESSION_ID || '';
 const projectRoot = input.cwd || process.cwd();
 
 // 將 sessionId 寫入共享文件，讓 Skill 中的 Bash 工具呼叫（如 init-workflow.js）能讀到

@@ -11,12 +11,15 @@
  *   ✅ 啟動 Dashboard + 開啟瀏覽器
  */
 
-const { mkdirSync } = require('fs');
+const { mkdirSync, readFileSync } = require('fs');
 const pkg = require('../../../.claude-plugin/plugin.json');
 const paths = require('../../../scripts/lib/paths');
 const timeline = require('../../../scripts/lib/timeline');
 
-const sessionId = process.env.CLAUDE_SESSION_ID || '';
+// session ID 優先從 hook stdin JSON 讀取，環境變數作為 fallback
+let input = {};
+try { input = JSON.parse(readFileSync('/dev/stdin', 'utf8')); } catch { /* 無 stdin 時靜默 */ }
+const sessionId = input.session_id || process.env.CLAUDE_SESSION_ID || '';
 
 // ── 初始化 session 目錄 ──
 

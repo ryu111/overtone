@@ -19,7 +19,7 @@ const { stages } = require('../../../scripts/lib/registry');
 // ── 從 stdin 讀取 hook input ──
 
 const input = JSON.parse(readFileSync('/dev/stdin', 'utf8'));
-const sessionId = process.env.CLAUDE_SESSION_ID || '';
+const sessionId = input.session_id || process.env.CLAUDE_SESSION_ID || '';
 
 // ── 取得 Task 工具參數 ──
 
