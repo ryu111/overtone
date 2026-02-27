@@ -24,9 +24,12 @@ const paths = require(join(SCRIPTS_LIB, 'paths'));
 const TIMESTAMP = Date.now();
 const SESSION_1 = `test-start-001-${TIMESTAMP}`;
 const SESSION_2 = `test-start-002-${TIMESTAMP}`;
+const SESSION_5 = `test-start-005-${TIMESTAMP}`;
 
 // 用於場景 4 的暫存 feature 目錄（建在隔離的 tmp projectRoot 下）
 const TMP_PROJECT_ROOT = join(homedir(), '.overtone', 'test-tmp', `session-start-${TIMESTAMP}`);
+// 用於場景 5 的 projectRoot（需要寫入 workflow.json 到真實 session 目錄）
+const TMP_PROJECT_ROOT_5 = join(homedir(), '.overtone', 'test-tmp', `session-start-5-${TIMESTAMP}`);
 const TMP_FEATURE_NAME = 'pending-tasks-test';
 const TMP_FEATURE_DIR = join(TMP_PROJECT_ROOT, 'specs', 'features', 'in-progress', TMP_FEATURE_NAME);
 
@@ -67,8 +70,13 @@ afterAll(() => {
     const dir = paths.sessionDir(sessionId);
     rmSync(dir, { recursive: true, force: true });
   }
-  // 清理場景 4 的暫存 feature
+  // 清理場景 4, 5 的暫存 feature
   rmSync(TMP_PROJECT_ROOT, { recursive: true, force: true });
+  rmSync(TMP_PROJECT_ROOT_5, { recursive: true, force: true });
+  // 清理場景 5 的 session
+  const stateLib = require(join(SCRIPTS_LIB, 'state'));
+  const dir5 = paths.sessionDir(SESSION_5);
+  rmSync(dir5, { recursive: true, force: true });
 });
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -221,5 +229,58 @@ describe('場景 4：有未完成 tasks — 輸出 systemMessage', () => {
     const output = JSON.parse(result.stdout);
     // 全部完成時不應注入 systemMessage
     expect(output.systemMessage).toBeUndefined();
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// 場景 5：有 active feature 且 workflow.json.featureName 為 null 時自動補寫
+// ────────────────────────────────────────────────────────────────────────────
+
+describe('場景 5：active feature 自動補寫 workflow.json.featureName', () => {
+  const FEATURE_NAME_5 = 'auto-feature-name-test';
+  const stateLib = require(join(SCRIPTS_LIB, 'state'));
+
+  test('setup: 初始化 workflow.json（featureName 為 null）並建立 in-progress feature', () => {
+    // 初始化 session 的 workflow.json（standard workflow 的 stage 列表）
+    stateLib.initState(SESSION_5, 'standard', ['PLAN', 'ARCH', 'TEST', 'DEV', 'REVIEW', 'TEST', 'RETRO', 'DOCS']);
+    const ws = stateLib.readState(SESSION_5);
+    expect(ws).toBeDefined();
+    expect(ws.featureName).toBeNull();
+
+    // 建立 active feature 目錄
+    const featureDir = join(TMP_PROJECT_ROOT_5, 'specs', 'features', 'in-progress', FEATURE_NAME_5);
+    mkdirSync(featureDir, { recursive: true });
+    writeFileSync(join(featureDir, 'tasks.md'), [
+      '---',
+      `feature: ${FEATURE_NAME_5}`,
+      'status: in-progress',
+      'workflow: standard',
+      '---',
+      '',
+      '## Tasks',
+      '',
+      '- [ ] PLAN',
+      '- [ ] DEV',
+    ].join('\n'));
+    expect(existsSync(join(featureDir, 'tasks.md'))).toBe(true);
+  });
+
+  test('hook 執行後 workflow.json.featureName 已自動設置', () => {
+    const result = runHook({ session_id: SESSION_5, cwd: TMP_PROJECT_ROOT_5 });
+    expect(result.exitCode).toBe(0);
+
+    const ws = stateLib.readState(SESSION_5);
+    expect(ws.featureName).toBe(FEATURE_NAME_5);
+  });
+
+  test('workflow.json.featureName 已有值時不覆蓋', () => {
+    // 設置一個不同的 featureName
+    stateLib.setFeatureName(SESSION_5, 'existing-feature');
+    const result = runHook({ session_id: SESSION_5, cwd: TMP_PROJECT_ROOT_5 });
+    expect(result.exitCode).toBe(0);
+
+    // 應保留原有值，不被 active feature 覆蓋
+    const ws = stateLib.readState(SESSION_5);
+    expect(ws.featureName).toBe('existing-feature');
   });
 });

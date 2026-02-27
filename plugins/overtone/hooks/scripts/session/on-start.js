@@ -17,6 +17,7 @@ const pkg = require('../../../.claude-plugin/plugin.json');
 const paths = require('../../../scripts/lib/paths');
 const timeline = require('../../../scripts/lib/timeline');
 const specs = require('../../../scripts/lib/specs');
+const state = require('../../../scripts/lib/state');
 
 // session ID 優先從 hook stdin JSON 讀取，環境變數作為 fallback
 let input = {};
@@ -110,6 +111,14 @@ const projectRoot = input.cwd || process.env.CLAUDE_PROJECT_ROOT || process.cwd(
 try {
   const activeFeature = specs.getActiveFeature(projectRoot);
   if (activeFeature) {
+    // 自動補寫 featureName：確保 workflow.json 與 active feature 同步
+    // 讓 on-stop.js 的自動歸檔閉環（featureName 存在才觸發 archiveFeature）
+    if (sessionId) {
+      const ws = state.readState(sessionId);
+      if (ws && !ws.featureName) {
+        state.setFeatureName(sessionId, activeFeature.name);
+      }
+    }
     const checkboxes = activeFeature.tasks;
     if (checkboxes && !checkboxes.allChecked && checkboxes.total > 0) {
       const unchecked = checkboxes.unchecked || [];
