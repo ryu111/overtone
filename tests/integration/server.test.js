@@ -258,12 +258,11 @@ describe('GET /js/:file（Scenario 3-3）', () => {
   });
 });
 
-// Scenario 3-4：/s/:sessionId 重定向到 /#sessionId（向後相容舊 banner URL）
-describe('GET /s/:sessionId（redirect 到 /#sessionId，Scenario 3-4）', () => {
-  test('GET /s/some-session-id — status 302 且 Location 為 /#some-session-id', async () => {
-    const r = await fetch(`http://localhost:${TEST_PORT}/s/some-session-id`, { redirect: 'manual' });
-    expect(r.status).toBe(302);
-    expect(r.headers.get('location')).toBe('/#some-session-id');
+// Scenario 3-4：/s/:sessionId 不存在，回傳 404
+describe('GET /s/:sessionId（不存在路由，Scenario 3-4）', () => {
+  test('GET /s/some-session-id — status 404', async () => {
+    const { status } = await get('/s/some-session-id');
+    expect(status).toBe(404);
   });
 });
 

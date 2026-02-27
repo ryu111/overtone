@@ -412,12 +412,8 @@
         await this.loadSessions();
         this.connectAllSSE();
 
-        // URL hash 優先（`/#sessionId` 格式）；fallback 到最新 active session
-        const hashId = window.location.hash.slice(1);
-        const fromHash = hashId && this.sessions.find(s => s.sessionId === hashId);
-        if (fromHash) {
-          await this.selectSession(fromHash.sessionId);
-        } else if (this.sessions.length > 0) {
+        // 自動選最新 active session
+        if (this.sessions.length > 0) {
           const active = this.sessions.find(s => s.status === 'active');
           const target = active || this.sessions[0];
           if (target) {
@@ -456,9 +452,6 @@
 
       async selectSession(id) {
         if (id === this.activeSessionId) return;
-
-        // 更新 URL hash，讓頁面重新整理或分享時可恢復同一 session
-        history.replaceState(null, '', '#' + id);
 
         // 斷開舊 session SSE
         this.disconnectSessionSSE();
