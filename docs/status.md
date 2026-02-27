@@ -22,6 +22,7 @@
 
 ## 近期變更（最近 5 筆）
 
+- **[0.15.3] 2026-02-27**：修正所有 hook session ID 讀取來源（優先 stdin input.session_id），修正 e2e-runner/qa agent 及 skill 文件 Playwright → agent-browser CLI，F1 History Tab + F4 CSS 動畫瀏覽器驗證通過，V1 功能通過率 11/12
 - **[0.15.2] 2026-02-27**：治本修復 specs 自動歸檔機制 — Session ID 橋接（UserPromptSubmit hook 寫 ~/.overtone/.current-session-id），tasks.md checkpoint 自動同步（改用 workflow stages 生成 checkbox，SubagentStop hook 自動勾選），新增 14 個整合測試，307 pass
 - **[0.15.1] 2026-02-27**：測試架構重組 — 測試遷移至根目錄 `tests/`（unit/integration/e2e），新增 Handoff `### Test Scope` 動態調度，13 個測試檔，293 pass
 - **[0.15.0] 2026-02-26**：mul-dev skill 新增（DEV 階段內部並行）、並行缺陷 D1–D4 修復、registry.js 新增 parallelGroupDefs、Agent 擴充至 15 個
@@ -31,8 +32,6 @@
 ## 已知問題
 
 - F2 Model Grader 需真實執行環境驗證（grader:score 事件）
-- F4 Dashboard 動畫需瀏覽器視覺確認
-- F1 History Tab 前端需瀏覽器確認
 
 ## 文件索引
 
