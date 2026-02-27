@@ -1,62 +1,10 @@
 'use strict';
 const { test, expect, describe } = require('bun:test');
+const { join } = require('path');
+const { SCRIPTS_LIB } = require('../helpers/paths');
 
-// 從 on-stop.js 提取 parseResult 為可測試的獨立函式
-// 由於 on-stop.js 是 hook 腳本（讀 stdin），無法直接 require
-// 這裡複製核心邏輯進行單元測試
-
-function parseResult(output, stageKey) {
-  // 優先解析結構化 verdict
-  const verdictMatch = output.match(/<!--\s*VERDICT:\s*(\{[^}]+\})\s*-->/);
-  if (verdictMatch) {
-    try {
-      const parsed = JSON.parse(verdictMatch[1]);
-      if (parsed.result) {
-        return { verdict: parsed.result.toLowerCase() };
-      }
-    } catch {}
-  }
-
-  const lower = output.toLowerCase();
-
-  if (stageKey === 'REVIEW' || stageKey === 'SECURITY' || stageKey === 'DB-REVIEW') {
-    if ((lower.includes('reject') || lower.includes('拒絕'))
-        && !lower.includes('no reject') && !lower.includes('not reject')) {
-      return { verdict: 'reject' };
-    }
-    return { verdict: 'pass' };
-  }
-
-  if (stageKey === 'TEST' || stageKey === 'QA' || stageKey === 'E2E' || stageKey === 'BUILD-FIX') {
-    // 排除 false positive（M-3 擴充）
-    if ((lower.includes('fail') || lower.includes('失敗'))
-        && !lower.includes('no fail') && !lower.includes('0 fail')
-        && !lower.includes('without fail') && !lower.includes('failure mode')) {
-      return { verdict: 'fail' };
-    }
-    // 'error' 單獨檢查，排除 'error handling'、'0 errors'、'error-free'、'without error'
-    if (lower.includes('error') && !lower.includes('0 error') && !lower.includes('no error')
-        && !lower.includes('without error')
-        && !lower.includes('error handling') && !lower.includes('error recovery')
-        && !lower.includes('error-free') && !lower.includes('error free')) {
-      return { verdict: 'fail' };
-    }
-    return { verdict: 'pass' };
-  }
-
-  // RETRO → PASS / ISSUES（有改善建議，不算 fail）
-  // 排除 false positive：「no issues」「0 issues」等 PASS 情境的自然語言
-  if (stageKey === 'RETRO') {
-    if ((lower.includes('issues') || lower.includes('改善建議') || lower.includes('建議優化'))
-        && !lower.includes('no issues') && !lower.includes('0 issues')
-        && !lower.includes('no significant issues') && !lower.includes('without issues')) {
-      return { verdict: 'issues' };
-    }
-    return { verdict: 'pass' };
-  }
-
-  return { verdict: 'pass' };
-}
+// 從獨立模組 require（Single Source of Truth）
+const parseResult = require(join(SCRIPTS_LIB, 'parse-result'));
 
 describe('parseResult — 結構化 verdict', () => {
   test('解析 <!-- VERDICT: {"result": "PASS"} -->', () => {

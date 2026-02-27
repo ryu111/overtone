@@ -2,42 +2,9 @@
 const { test, expect, describe } = require('bun:test');
 const { join } = require('path');
 const { SCRIPTS_LIB } = require('../helpers/paths');
-const { stages } = require(join(SCRIPTS_LIB, 'registry'));
 
-// 從 pre-task.js 提取 identifyAgent 邏輯
-function identifyAgent(desc, prmt) {
-  const combined = ` ${desc} ${prmt} `;
-  const agentNames = Object.values(stages).map((d) => d.agent);
-
-  for (const name of agentNames) {
-    const pattern = new RegExp(`\\b${name.replace(/-/g, '[-\\s]')}\\b`, 'i');
-    if (pattern.test(combined)) return name;
-  }
-
-  const aliases = {
-    'review(?:er)?': 'code-reviewer',
-    'test(?:er|ing)?': 'tester',
-    'debug(?:ger|ging)?': 'debugger',
-    'plan(?:ner|ning)?': 'planner',
-    'architect(?:ure)?': 'architect',
-    'design(?:er)?': 'designer',
-    'develop(?:er|ment)?': 'developer',
-    'security': 'security-reviewer',
-    'database|db.?review': 'database-reviewer',
-    'e2e': 'e2e-runner',
-    'build.?(?:fix|error|resolve)': 'build-error-resolver',
-    'refactor|clean.?(?:up|code)': 'refactor-cleaner',
-    'doc(?:s|umentation)?\\s*(?:updat|sync)': 'doc-updater',
-    '\\bqa\\b': 'qa',
-  };
-
-  for (const [pattern, agent] of Object.entries(aliases)) {
-    const regex = new RegExp(`\\b${pattern}\\b`, 'i');
-    if (regex.test(combined)) return agent;
-  }
-
-  return null;
-}
+// 從獨立模組 require（Single Source of Truth）
+const identifyAgent = require(join(SCRIPTS_LIB, 'identify-agent'));
 
 describe('identifyAgent — 精確名稱匹配', () => {
   test('完整 agent 名稱匹配', () => {
@@ -103,5 +70,34 @@ describe('identifyAgent — false positive 防護', () => {
 
   test('不相關描述回傳 null', () => {
     expect(identifyAgent('deploy to production', 'send notification')).toBeNull();
+  });
+});
+
+// ── BDD F1 回歸測試：.test.js 誤匹配防護 ──
+
+describe('identifyAgent — .test.js 誤匹配防護（BDD F1）', () => {
+  test('prompt 含測試檔案路徑時不誤判為 tester（alias 不匹配 prmt）', () => {
+    // BDD F1 Scenario 1：desc 為空，prmt 含 .test.js 路徑
+    expect(identifyAgent('', 'run tests/unit/foo.test.js')).toBeNull();
+  });
+
+  test('prompt 含 bun test 指令時不誤判為 tester', () => {
+    // BDD F1 Scenario 2：desc 為空，prmt 含 bun test 指令
+    expect(identifyAgent('', 'bun test src/')).toBeNull();
+  });
+
+  test('desc 含 tester 且 prompt 含測試路徑時仍正確匹配 tester', () => {
+    // BDD F1 Scenario 3：desc 有 tester，prmt 含 .test.js（不影響結果）
+    expect(identifyAgent('delegate tester', 'run tests/foo.test.js')).toBe('tester');
+  });
+
+  test('desc 含 testing 別名時匹配 tester', () => {
+    // BDD F1 Scenario 4：desc 含 testing alias，prmt 為空
+    expect(identifyAgent('run testing', '')).toBe('tester');
+  });
+
+  test('prompt 含完整 agent 名稱（精確匹配）時仍正確匹配', () => {
+    // BDD F1 Scenario 5：精確名稱匹配 combined（desc + prmt），不受 alias 限制影響
+    expect(identifyAgent('', 'delegate code-reviewer')).toBe('code-reviewer');
   });
 });

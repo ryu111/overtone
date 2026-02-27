@@ -15,6 +15,7 @@
 const { readFileSync } = require('fs');
 const state = require('../../../scripts/lib/state');
 const { stages } = require('../../../scripts/lib/registry');
+const identifyAgent = require('../../../scripts/lib/identify-agent');
 
 // ── 從 stdin 讀取 hook input ──
 
@@ -138,44 +139,3 @@ timeline.emit(sessionId, 'agent:delegate', {
 });
 
 process.stdout.write(JSON.stringify({ result: '' }));
-
-// ── 輔助函式 ──
-
-/**
- * 從 Task 描述/prompt 中識別 Overtone agent
- */
-function identifyAgent(desc, prmt) {
-  const combined = ` ${desc} ${prmt} `;
-  const agentNames = Object.values(stages).map((d) => d.agent);
-
-  // 精確匹配 agent 名稱（完整詞邊界）
-  for (const name of agentNames) {
-    const pattern = new RegExp(`\\b${name.replace(/-/g, '[-\\s]')}\\b`, 'i');
-    if (pattern.test(combined)) return name;
-  }
-
-  // 別名匹配（使用 word boundary 避免誤判）
-  const aliases = {
-    'review(?:er)?': 'code-reviewer',
-    'test(?:er|ing)?': 'tester',
-    'debug(?:ger|ging)?': 'debugger',
-    'plan(?:ner|ning)?': 'planner',
-    'architect(?:ure)?': 'architect',
-    'design(?:er)?': 'designer',
-    'develop(?:er|ment)?': 'developer',
-    'security': 'security-reviewer',
-    'database|db.?review': 'database-reviewer',
-    'e2e': 'e2e-runner',
-    'build.?(?:fix|error|resolve)': 'build-error-resolver',
-    'refactor|clean.?(?:up|code)': 'refactor-cleaner',
-    'doc(?:s|umentation)?\\s*(?:updat|sync)': 'doc-updater',
-    '\\bqa\\b': 'qa',
-  };
-
-  for (const [pattern, agent] of Object.entries(aliases)) {
-    const regex = new RegExp(`\\b${pattern}\\b`, 'i');
-    if (regex.test(combined)) return agent;
-  }
-
-  return null;
-}

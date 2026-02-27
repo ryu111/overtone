@@ -1,12 +1,12 @@
 # Overtone 現況
 
-> 最後更新：2026-02-28 | Plugin 版本：0.17.1
+> 最後更新：2026-02-28 | Plugin 版本：0.17.2
 
 ## 版本狀態
 
 | 版本 | 狀態 | 說明 |
 |------|------|------|
-| V1 | 進行中 | 507 pass，0 fail，核心功能完整 |
+| V1 | 進行中 | 588 pass，0 fail，核心功能完整 |
 | V2 | 規劃中 | 延後 |
 
 ## 核心指標
@@ -16,16 +16,16 @@
 | Agent 數量 | 17（含 grader） |
 | Stage 數量 | 16 |
 | Workflow 模板 | 18 |
-| 測試通過 | 507 pass / 0 fail |
-| 測試檔案 | 29 個 |
+| 測試通過 | 588 pass / 0 fail |
+| 測試檔案 | 34 個 |
 | Hook 數量 | 6 個 |
 | Skill 數量 | 30 個 |
 
 ## 近期變更（最近 3 筆）
 
+- **[0.17.2] 2026-02-28**：Pipeline 穩定性自動化測試 — 新增 5 個 e2e + integration test：single/quick/standard workflow + fail-retry-path + pre-task parallel。新增 2 個 lib 模組（identify-agent.js, parse-result.js）+ hook-runner helper。自動化驗證 agent 路由正確性、結果解析、並行安全性。測試 588 pass（+81）
 - **[0.17.0] 2026-02-28**：Product Manager agent — 第 16 個 stage + 3 個產品 workflow。PM agent（opus, emerald）負責需求探索、方案比較、MVP 範圍定義、drift 偵測。新增 pm skill（含 5 份 references）、3 個 workflow（product, product-full, discovery）。pm/SKILL.md 為唯一入口，後續 pipeline 引用現有 standard/full skill（DRY）
 - **[0.16.3] 2026-02-27**：Dashboard UX 四項優化 — 連線即時性（心跳 15s、debounce 1s、三態燈號、斷線橫幅）、Session 列表 grid 佈局、Timeline 自動跟隨（scroll lock/unlock）、Pixel-perfect 細節（progress 6px、logo 🎵），測試通過 507 pass
-- **[0.16.2] 2026-02-27**：Dashboard pass@1/pass@3 統計卡片 + URL bug 修正 — pipeline stats 新增兩張 pass@k 卡片（呼叫現有 API），Dashboard URL 固定 localhost:7777/（移除 /s/:sessionId 路由），測試通過 507 pass
 
 ## 已知問題
 

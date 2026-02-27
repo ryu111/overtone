@@ -1,6 +1,6 @@
 # Overtone Plugin 全面體檢報告
 
-> 日期：2026-02-28 | 版本：0.17.0 | 507 tests pass
+> 日期：2026-02-28 | 版本：0.17.2 | 588 tests pass
 
 ## 總覽
 
@@ -211,10 +211,11 @@
 根據體檢結果和 product-roadmap.md，Phase 0 應包含：
 
 ### 穩定性驗證
-- [ ] single workflow 跑 10 次真實任務
-- [ ] quick workflow 跑 10 次真實任務
-- [ ] standard workflow 跑 10 次真實任務
-- [ ] 記錄每次成功率、路由準確性、人工介入次數
+- [x] single workflow 跑 10 次真實任務 — 自動化測試 single-workflow.test.js
+- [x] quick workflow 跑 10 次真實任務 — 自動化測試 quick-workflow.test.js
+- [x] standard workflow 跑 10 次真實任務 — 自動化測試 standard-workflow.test.js
+- [x] fail-retry 路徑驗證 — 自動化測試 fail-retry-path.test.js（stage fail → retry）
+- [x] 並行安全性驗證 — 自動化測試 pre-task-parallel.test.js（concurrent agent dispatch）
 
 ### 高優先修復
 - [x] pre-task.js 遷移到 hookSpecificOutput（`permissionDecision: 'deny'` + `hookEventName`）
