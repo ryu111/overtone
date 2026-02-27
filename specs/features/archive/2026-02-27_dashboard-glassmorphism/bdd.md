@@ -216,8 +216,9 @@ AND `pipelineSegments` computed 值隨之更新
 ### Scenario 5-6: session SSE 斷線後重連指數退避
 GIVEN session SSE 連線已建立
 WHEN SSE `onerror` 事件觸發（網路斷線）
-THEN 系統安排重連（`setTimeout`，至少 3 秒後）
+THEN 系統安排指數退避重連（首次 1s，之後 2s→4s→8s→16s，最多 5 次）
 AND 重連目標為當前 `selectedSessionId` 對應的端點
+AND 重連成功後 `_reconnectAttempts` 重設為 0
 
 ---
 
