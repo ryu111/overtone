@@ -79,7 +79,7 @@ try {
 
 // ── Banner ──
 
-const dashboardUrl = sessionId ? `http://localhost:${port}/s/${sessionId}` : null;
+const dashboardUrl = sessionId ? `http://localhost:${port}/#${sessionId}` : null;
 const banner = [
   '',
   `  🎵 Overtone v${pkg.version}`,

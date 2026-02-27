@@ -131,6 +131,15 @@ const server = Bun.serve({
       return serveDashboard();
     }
 
+    // /s/:sessionId → redirect 到 /#sessionId（向後相容舊 banner URL）
+    const legacyMatch = path.match(/^\/s\/([a-zA-Z0-9_-]+)$/);
+    if (legacyMatch) {
+      return new Response(null, {
+        status: 302,
+        headers: { Location: '/#' + legacyMatch[1] },
+      });
+    }
+
     return new Response('404 Not Found', { status: 404 });
   },
 });
