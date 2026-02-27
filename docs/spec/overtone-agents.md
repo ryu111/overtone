@@ -1,45 +1,47 @@
 # Overtone Agent 系統
 
 > 本文件是 [Overtone 規格文件](overtone.md) 的子文件。
-> 主題：15 個 agent 職責、Handoff 協定、BDD 整合
+> 主題：17 個 agent 職責、Handoff 協定、BDD 整合
 > 版本：v0.6
 
 ---
 
-## Agent 系統（15 個）
+## Agent 系統（17 個）
 
 ### Agent 清單
 
 | # | Agent | Model | Color | 功能 | permissionMode |
 |:-:|-------|:-----:|:-----:|:----:|:--------------:|
-| 1 | planner | opus | purple | 規劃 | bypassPermissions |
-| 2 | architect | opus | cyan | 架構 | bypassPermissions |
-| 3 | designer | sonnet | cyan | UI/UX | bypassPermissions |
-| 4 | developer | sonnet | yellow | 開發 | bypassPermissions |
-| 5 | debugger | sonnet | orange | 診斷 | bypassPermissions |
-| 6 | code-reviewer | opus | blue | 審查 | bypassPermissions |
-| 7 | security-reviewer | opus | red | 安全 | bypassPermissions |
-| 8 | database-reviewer | sonnet | red | DB 審查 | bypassPermissions |
-| 9 | tester (BDD) | sonnet | pink | 測試 | bypassPermissions |
-| 10 | qa | sonnet | yellow | 行為驗證 | bypassPermissions |
-| 11 | e2e-runner | sonnet | green | E2E | bypassPermissions |
-| 12 | build-error-resolver | sonnet | orange | 修構建 | bypassPermissions |
-| 13 | refactor-cleaner | sonnet | blue | 死碼清理 | bypassPermissions |
-| 14 | retrospective | opus | purple | 迭代回顧 | bypassPermissions |
-| 15 | doc-updater | haiku | purple | 文件 | bypassPermissions |
+| 1 | product-manager | opus | emerald | 產品分析 | bypassPermissions |
+| 2 | planner | opus | purple | 規劃 | bypassPermissions |
+| 3 | architect | opus | cyan | 架構 | bypassPermissions |
+| 4 | designer | sonnet | cyan | UI/UX | bypassPermissions |
+| 5 | developer | sonnet | yellow | 開發 | bypassPermissions |
+| 6 | debugger | sonnet | orange | 診斷 | bypassPermissions |
+| 7 | code-reviewer | opus | blue | 審查 | bypassPermissions |
+| 8 | security-reviewer | opus | red | 安全 | bypassPermissions |
+| 9 | database-reviewer | sonnet | red | DB 審查 | bypassPermissions |
+| 10 | tester (BDD) | sonnet | pink | 測試 | bypassPermissions |
+| 11 | qa | sonnet | yellow | 行為驗證 | bypassPermissions |
+| 12 | e2e-runner | sonnet | green | E2E | bypassPermissions |
+| 13 | build-error-resolver | sonnet | orange | 修構建 | bypassPermissions |
+| 14 | refactor-cleaner | sonnet | blue | 死碼清理 | bypassPermissions |
+| 15 | retrospective | opus | purple | 迭代回顧 | bypassPermissions |
+| 16 | doc-updater | haiku | purple | 文件 | bypassPermissions |
 
 > 另有 **grader agent**（Haiku）作為可選的品質評分工具，非 workflow stage agent，由 Main Agent 在 SubagentStop 後可選委派。
 
 ### Model 分級
 
-- **Opus**（5 個決策型）：planner、architect、code-reviewer、security-reviewer、retrospective
-- **Sonnet**（9 個執行型）：其他所有
-- **Haiku**（1 個簡單）：doc-updater
+- **Opus**（6 個決策型）：product-manager、planner、architect、code-reviewer、security-reviewer、retrospective
+- **Sonnet**（9 個執行型）：designer、developer、debugger、database-reviewer、tester、qa、e2e-runner、build-error-resolver、refactor-cleaner
+- **Haiku**（2 個輕量型）：doc-updater、grader
 
-### 色彩分組（8 組）
+### 色彩分組（9 組）
 
 | 色彩 | 組別 | Agents |
 |:----:|------|--------|
+| emerald | 產品類 | product-manager |
 | purple | 規劃類 | planner、retrospective、doc-updater |
 | cyan | 設計類 | architect、designer |
 | yellow | 執行類 | developer、qa |
@@ -85,7 +87,7 @@
 
 ### 擴充機制
 
-V1 固定 15 個 agent。V2 再考慮使用者自定義擴充。
+V1 固定 17 個 agent（含 grader）。V2 再考慮使用者自定義擴充。
 
 ---
 

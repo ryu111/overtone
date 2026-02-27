@@ -4,7 +4,7 @@ description: 迭代回顧專家。所有 Quality Gate 通過後執行最終回�
 model: opus
 permissionMode: bypassPermissions
 color: purple
-maxTurns: 30
+maxTurns: 40
 tools:
   - Read
   - Grep

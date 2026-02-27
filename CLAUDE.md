@@ -15,7 +15,7 @@ Overtone 是 Claude Code plugin，提供 BDD 驅動的工作流自動化 + 即�
 2. **狀態最小化**：只記必要的 — 誰做了什麼、結果是什麼
 3. **BDD 驅動**：先定義行為（GIVEN/WHEN/THEN）再寫碼
 4. **Loop 預設**：任務完成自動繼續下一個
-5. **Agent 專職**：15 個 agent 各司其職，Handoff 檔案傳遞 context
+5. **Agent 專職**：17 個 agent 各司其職，Handoff 檔案傳遞 context
 
 ## 三層架構
 
@@ -25,10 +25,11 @@ Layer 1: Skill 引導（內圈）— Hook → /ot:auto → Workflow Skill → �
 Layer 2: Hook 守衛（底層）— 記錄、擋、提示、通知
 ```
 
-## Agent 配置（15 個）
+## Agent 配置（17 個，含 grader）
 
 | 色彩 | Agent | Model | 功能 |
 |:----:|-------|:-----:|:----:|
+| emerald | product-manager | opus | 產品分析、需求探索、drift 偵測 |
 | purple | planner | opus | 規劃 |
 | cyan | architect | opus | 架構 |
 | cyan | designer | sonnet | UI/UX |
@@ -42,28 +43,32 @@ Layer 2: Hook 守衛（底層）— 記錄、擋、提示、通知
 | green | e2e-runner | sonnet | E2E |
 | orange | build-error-resolver | sonnet | 修構建 |
 | blue | refactor-cleaner | sonnet | 死碼清理 |
-| purple | doc-updater | haiku | 文件 |
+| purple | doc-updater | haiku | 文件同步（同步者，非創作者） |
 | purple | retrospective | opus | 迭代回顧，信心 ≥70% 才報告問題 |
+| purple | grader | haiku | 可選品質評分（非 workflow stage） |
 
 所有 agent 使用 `bypassPermissions`。
 
-## 工作流模板（15 個）
+## 工作流模板（18 個）
 
 ```
 BDD 規則：含 PLAN/ARCH 的 workflow 在 DEV 前加 TEST:spec
 
-single:     DEV
-quick:      DEV → [REVIEW + TEST] → RETRO
-standard:   PLAN → ARCH → TEST:spec → DEV → [REVIEW + TEST:verify] → RETRO → DOCS
-full:       PLAN → ARCH → DESIGN → TEST:spec → DEV → [R+T:verify] → [QA+E2E] → RETRO → DOCS
-secure:     PLAN → ARCH → TEST:spec → DEV → [R+T:verify+SECURITY] → RETRO → DOCS
-tdd:        TEST:spec → DEV → TEST:verify
-debug:      DEBUG → DEV → TEST
-refactor:   ARCH → TEST:spec → DEV → REVIEW → TEST:verify
+single:       DEV
+quick:        DEV → [REVIEW + TEST] → RETRO
+standard:     PLAN → ARCH → TEST:spec → DEV → [REVIEW + TEST:verify] → RETRO → DOCS
+full:         PLAN → ARCH → DESIGN → TEST:spec → DEV → [R+T:verify] → [QA+E2E] → RETRO → DOCS
+secure:       PLAN → ARCH → TEST:spec → DEV → [R+T:verify+SECURITY] → RETRO → DOCS
+tdd:          TEST:spec → DEV → TEST:verify
+debug:        DEBUG → DEV → TEST
+refactor:     ARCH → TEST:spec → DEV → REVIEW → TEST:verify
 review-only / security-only / build-fix / e2e-only
-diagnose:   DEBUG
-clean:      REFACTOR
-db-review:  DB-REVIEW
+diagnose:     DEBUG
+clean:        REFACTOR
+db-review:    DB-REVIEW
+product:      PM → PLAN → ARCH → TEST:spec → DEV → [R+T] → RETRO → DOCS
+product-full: PM → PLAN → ARCH → DESIGN → TEST:spec → DEV → [R+T] → [QA+E2E] → RETRO → DOCS
+discovery:    PM
 ```
 
 ## 技術棧
@@ -89,8 +94,8 @@ docs/                            # 專案文件目錄（⚠️ 不在 plugin 下
 ├── spec/                        # 規格文件
 │   ├── overtone.md              # 主規格索引
 │   ├── overtone-架構.md         # 三層架構、Hook、State
-│   ├── overtone-工作流.md       # 15 個 workflow 模板
-│   ├── overtone-agents.md       # 15 個 agent
+│   ├── overtone-工作流.md       # 18 個 workflow 模板
+│   ├── overtone-agents.md       # 17 個 agent
 │   ├── overtone-並行.md         # 並行、Loop、Mul-Dev
 │   ├── overtone-子系統.md       # Specs、Dashboard、Timeline
 │   ├── overtone-驗證品質.md     # 三信號、pass@k、Grader
@@ -102,8 +107,8 @@ docs/                            # 專案文件目錄（⚠️ 不在 plugin 下
 
 plugins/overtone/                # Plugin 根目錄
 ├── .claude-plugin/              # Plugin manifest（plugin.json）
-├── agents/                      # 15 個 agent .md 檔
-├── skills/                      # 27 個 Skill 定義
+├── agents/                      # 17 個 agent .md 檔（含 grader）
+├── skills/                      # 30 個 Skill 定義
 ├── hooks/                       # hooks.json + scripts/
 ├── scripts/lib/                 # 共用程式庫
 │   ├── registry.js              # SoT：stages/agents/workflows/events

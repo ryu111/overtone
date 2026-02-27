@@ -37,7 +37,7 @@ description: Overtone 核心工作流選擇器。分析使用者需求自動選�
 
 選好後，讀取對應的 workflow skill 取得完整執行指引。💡 邊界情況範例：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/auto/examples/workflow-selection.md`
 
-## 16 個 Agent 清單
+## 16 個 Stage Agent 清單
 
 | Agent | Emoji | Stage | 做什麼 |
 |-------|:-----:|-------|--------|

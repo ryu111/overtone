@@ -217,15 +217,18 @@
 - [ ] 記錄每次成功率、路由準確性、人工介入次數
 
 ### 高優先修復
-- [ ] pre-task.js 遷移到 hookSpecificOutput
-- [ ] pm/SKILL.md 補 `disable-model-invocation: true`
-- [ ] pre-task.js + on-stop.js activeAgents race condition 修復
+- [x] pre-task.js 遷移到 hookSpecificOutput（`permissionDecision: 'deny'` + `hookEventName`）
+- [x] pm/SKILL.md 補 `disable-model-invocation: true`
+- [x] pre-task.js + on-stop.js activeAgents race condition 修復（合併為 `updateStateAtomic`）
 
 ### 中優先修復（Phase 0 期間順手做）
-- [ ] qa.md maxTurns 25→35
-- [ ] retrospective.md maxTurns 30→40
-- [ ] mul-dev/SKILL.md 補 `disable-model-invocation: true`
-- [ ] 規格文件數字同步
+- [x] qa.md maxTurns 25→35
+- [x] retrospective.md maxTurns 30→40
+- [x] mul-dev/SKILL.md 補 `disable-model-invocation: true`
+- [x] 規格文件數字同步（agents 15→17, workflows 15→18, skills 27→30）
+- [x] on-stop.js tasks.md 勾選失敗通知（existsSync 區分「不存在」vs「更新失敗」）
+- [x] doc-updater 角色明確化（同步者，非創作者）
+- [x] doc-sync vs DOCS stage 使用場景釐清
 
 ---
 

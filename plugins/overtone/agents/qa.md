@@ -4,7 +4,7 @@ description: 品質驗證專家。從使用者角度驗證功能行為是否符�
 model: sonnet
 permissionMode: bypassPermissions
 color: yellow
-maxTurns: 25
+maxTurns: 35
 tools:
   - Read
   - Grep

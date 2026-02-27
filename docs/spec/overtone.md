@@ -17,7 +17,7 @@
 | **Skill 做指引** | 告訴 Main Agent 下一步做什麼，讓它自己決定怎麼做 | wk 的成功模式 |
 | **Loop 預設** | 預設 loop 模式，任務完成自動繼續下一個 | wk ralph-loop |
 | **BDD 驅動** | 先定義行為（BDD spec）再寫碼 | 面向 9 決策 |
-| **Agent 專職** | 15 個專職 agent，各司其職 | ECC + Vibe 混合 |
+| **Agent 專職** | 17 個專職 agent，各司其職 | ECC + Vibe 混合 |
 
 ---
 
@@ -26,8 +26,8 @@
 | 文件 | 主題 | 說明 |
 |------|------|------|
 | [overtone-架構.md](overtone-架構.md) | 架構 | 三層模型（Loop/Skill/Hook）、Hook 系統、State 設計、Context 管理 |
-| [overtone-工作流.md](overtone-工作流.md) | 工作流 | 15 個 workflow 模板、/ot:auto 選擇邏輯、命令清單、錯誤處理 |
-| [overtone-agents.md](overtone-agents.md) | Agent 系統 | 15 個 agent 職責與 Model 分配、Handoff 協定、BDD 整合 |
+| [overtone-工作流.md](overtone-工作流.md) | 工作流 | 18 個 workflow 模板、/ot:auto 選擇邏輯、命令清單、錯誤處理 |
+| [overtone-agents.md](overtone-agents.md) | Agent 系統 | 17 個 agent 職責與 Model 分配、Handoff 協定、BDD 整合 |
 | [overtone-並行.md](overtone-並行.md) | 並行執行 | Loop 模式、靜態/動態並行、Mul-Dev 機制、D1-D4 缺陷修復 |
 | [overtone-子系統.md](overtone-子系統.md) | 子系統 | Specs 生命週期、Dashboard 監控、Remote 控制、Timeline 21 種事件 |
 | [overtone-驗證品質.md](overtone-驗證品質.md) | 驗證品質 | 三信號驗證、pass@k 指標、Model Grader、Instinct 系統 |

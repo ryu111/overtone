@@ -104,30 +104,38 @@ if (skippedStages.length > 0) {
   ].join('\n');
 
   process.stdout.write(JSON.stringify({
-    decision: 'block',
-    reason: message,
+    hookSpecificOutput: {
+      hookEventName: 'PreToolUse',
+      permissionDecision: 'deny',
+      permissionDecisionReason: message,
+    },
   }));
   process.exit(0);
 }
 
-// ── 通過 — 記錄 agent 委派 ──
+// ── 通過 — 記錄 agent 委派（原子操作：setActiveAgent + updateStage）──
 
-state.setActiveAgent(sessionId, targetAgent, targetStage);
+const actualKey = stageKeys.find((k) => {
+  const base = k.split(':')[0];
+  return base === targetStage && currentState.stages[k].status === 'pending';
+});
+
+state.updateStateAtomic(sessionId, (s) => {
+  s.activeAgents[targetAgent] = {
+    stage: targetStage,
+    startedAt: new Date().toISOString(),
+  };
+  if (actualKey && s.stages[actualKey]) {
+    s.stages[actualKey].status = 'active';
+  }
+  return s;
+});
 
 const timeline = require('../../../scripts/lib/timeline');
 timeline.emit(sessionId, 'agent:delegate', {
   agent: targetAgent,
   stage: targetStage,
 });
-
-// 更新 stage 狀態為 active
-const actualKey = stageKeys.find((k) => {
-  const base = k.split(':')[0];
-  return base === targetStage && currentState.stages[k].status === 'pending';
-});
-if (actualKey) {
-  state.updateStage(sessionId, actualKey, { status: 'active' });
-}
 
 process.stdout.write(JSON.stringify({ result: '' }));
 

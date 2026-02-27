@@ -115,31 +115,40 @@ timeline.emit(sessionId, 'stage:complete', {
 // ── 自動更新 tasks.md checkbox（若有 specs feature）──
 // 當 stage 完成（非 fail/reject）時，在 tasks.md 中勾選對應的 checkbox
 
+let tasksCheckboxWarning = null;
+
 if (result.verdict !== 'fail' && result.verdict !== 'reject' && updatedState.featureName) {
-  try {
-    const { readFileSync } = require('fs');
-    const { atomicWrite } = require('../../../scripts/lib/utils');
+  const { existsSync } = require('fs');
+  const { atomicWrite } = require('../../../scripts/lib/utils');
 
-    const tasksPath = paths.project.featureTasks(projectRoot, updatedState.featureName);
-    const content = readFileSync(tasksPath, 'utf8');
+  const tasksPath = paths.project.featureTasks(projectRoot, updatedState.featureName);
 
-    // 去掉 :2 等編號，取得 base stage 名稱
-    const baseStage = actualStageKey.split(':')[0];
-    // 精確匹配 stage 名稱的未勾選 checkbox（行首允許縮排）
-    const pattern = new RegExp(`^([ \\t]*- )\\[ \\]( ${baseStage})([ \\t]*)$`, 'm');
-    const updated = content.replace(pattern, '$1[x]$2$3');
+  if (existsSync(tasksPath)) {
+    try {
+      const content = readFileSync(tasksPath, 'utf8');
 
-    if (updated !== content) {
-      atomicWrite(tasksPath, updated);
+      // 去掉 :2 等編號，取得 base stage 名稱
+      const baseStage = actualStageKey.split(':')[0];
+      // 精確匹配 stage 名稱的未勾選 checkbox（行首允許縮排）
+      const pattern = new RegExp(`^([ \\t]*- )\\[ \\]( ${baseStage})([ \\t]*)$`, 'm');
+      const updated = content.replace(pattern, '$1[x]$2$3');
+
+      if (updated !== content) {
+        atomicWrite(tasksPath, updated);
+      }
+    } catch (err) {
+      tasksCheckboxWarning = err.message;
     }
-  } catch {
-    // tasks.md 不存在或更新失敗，靜默忽略
   }
 }
 
 // ── 產生提示訊息 ──
 
 const messages = [];
+
+if (tasksCheckboxWarning) {
+  messages.push(`⚠️ tasks.md 勾選更新失敗：${tasksCheckboxWarning}`);
+}
 
 if (result.verdict === 'fail') {
   if (updatedState.failCount >= retryDefaults.maxRetries) {

@@ -1,6 +1,7 @@
 ---
 name: mul-dev
 description: 多開發者並行機制。在 DEV 階段將獨立子任務分批並行，縮短執行時間。
+disable-model-invocation: true
 ---
 
 # Mul Dev — 多開發者並行

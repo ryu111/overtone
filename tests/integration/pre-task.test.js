@@ -130,13 +130,15 @@ describe('場景 2：前置 stage 未完成 → 阻擋並警告', () => {
       sessionId
     );
 
-    // 阻擋：decision = 'block'，reason 為非空字串
-    expect(result.decision).toBe('block');
-    expect(typeof result.reason).toBe('string');
-    expect(result.reason.length).toBeGreaterThan(0);
+    // 阻擋：hookSpecificOutput.permissionDecision = 'deny'
+    expect(result.hookSpecificOutput).toBeDefined();
+    expect(result.hookSpecificOutput.hookEventName).toBe('PreToolUse');
+    expect(result.hookSpecificOutput.permissionDecision).toBe('deny');
+    expect(typeof result.hookSpecificOutput.permissionDecisionReason).toBe('string');
+    expect(result.hookSpecificOutput.permissionDecisionReason.length).toBeGreaterThan(0);
 
     // 警告訊息應提及被跳過的 stage（DEV）
-    expect(result.reason).toContain('DEV');
+    expect(result.hookSpecificOutput.permissionDecisionReason).toContain('DEV');
   });
 });
 
