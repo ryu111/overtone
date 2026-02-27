@@ -29,7 +29,10 @@
 ## 已知問題
 
 - F2 Model Grader 需真實執行環境驗證（grader:score 事件）
-- passatk（Pass@k 統計）：設計規格已定義，留待後續實作（backlog）
+
+## Backlog
+
+- passatk（Pass@k 統計）：設計規格已定義，`specs/features/backlog/passatk/`
 
 ## 文件索引
 
