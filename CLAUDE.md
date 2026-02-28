@@ -108,7 +108,7 @@ docs/                            # 專案文件目錄（⚠️ 不在 plugin 下
 plugins/overtone/                # Plugin 根目錄
 ├── .claude-plugin/              # Plugin manifest（plugin.json）
 ├── agents/                      # 17 個 agent .md 檔（含 grader）
-├── skills/                      # 30 個 Skill 定義
+├── skills/                      # 31 個 Skill 定義
 ├── hooks/                       # hooks.json + scripts/
 ├── scripts/lib/                 # 共用程式庫
 │   ├── registry.js              # SoT：stages/agents/workflows/events
@@ -135,7 +135,7 @@ plugins/overtone/                # Plugin 根目錄
 └── observations.jsonl    # Instinct 觀察
 ```
 
-## Hook 架構（7 個，~1223 行）
+## Hook 架構（7 個，~1269 行）
 
 | 事件 | 職責 |
 |------|------|

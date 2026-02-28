@@ -34,15 +34,15 @@ Layer 2: Hook 守衛（底層）
 
 | 事件 | 職責 | 行數預估 |
 |------|------|:-------:|
-| **SessionStart** | 顯示 banner + 初始化狀態 + 啟動 Dashboard | ~60 |
-| **PreCompact** | context 壓縮前注入工作流狀態恢復訊息 | ~70 |
-| **UserPromptSubmit** | 注入 systemMessage 指向 /ot:auto | ~80 |
-| **PreToolUse (Task)** | 擋跳過必要階段 | ~150 |
-| **SubagentStop** | 記錄結果 + 提示下一步 + 寫 workflow.json + emit timeline | ~380 |
-| **PostToolUse** | Instinct 觀察收集 + .md 措詞偵測 | ~100 |
-| **Stop** | Loop 迴圈 + 完成度檢查 + Dashboard 通知 | ~160 |
+| **SessionStart** | 顯示 banner + 初始化狀態 + 啟動 Dashboard | ~130 |
+| **PreCompact** | context 壓縮前注入工作流狀態恢復訊息 | ~116 |
+| **UserPromptSubmit** | 注入 systemMessage 指向 /ot:auto | ~131 |
+| **PreToolUse (Task)** | 擋跳過必要階段 | ~144 |
+| **SubagentStop** | 記錄結果 + 提示下一步 + 寫 workflow.json + emit timeline | ~369 |
+| **PostToolUse** | Instinct 觀察收集 + .md 措詞偵測 | ~193 |
+| **Stop** | Loop 迴圈 + 完成度檢查 + Dashboard 通知 | ~186 |
 
-**總計：~1223 行**（v0.18.0 新增 PreCompact hook + buildPendingTasksMessage 共用函式）
+**總計：~1269 行**（v0.18.0 新增 PreCompact hook + buildPendingTasksMessage 共用函式）
 
 ### Hook 統一錯誤處理（v0.17.7）+ 狀態恢復（v0.18.0）
 

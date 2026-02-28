@@ -4,7 +4,7 @@
  * timeline.js — JSONL append-only 事件記錄
  *
  * 每行一個 JSON 物件，append-only。
- * 18 種事件類型定義在 registry.js。
+ * 22 種事件類型定義在 registry.js。
  */
 
 const { appendFileSync, readFileSync, mkdirSync } = require('fs');
@@ -88,6 +88,46 @@ function query(sessionId, filter = {}) {
   }
 
   return events;
+}
+
+/**
+ * 計算符合 filter 條件的事件數量
+ * @param {string} sessionId
+ * @param {object} [filter={}]
+ * @param {string} [filter.type] - 篩選事件類型
+ * @param {string} [filter.category] - 篩選分類
+ * @returns {number} 符合條件的事件筆數（非負整數）
+ */
+function count(sessionId, filter = {}) {
+  const filePath = paths.session.timeline(sessionId);
+  let content;
+  try {
+    content = readFileSync(filePath, 'utf8').trim();
+  } catch {
+    return 0;
+  }
+  if (!content) return 0;
+
+  const lines = content.split('\n').filter(Boolean);
+
+  // 無 filter → 只計行數，不解析 JSON
+  if (!filter.type && !filter.category) {
+    return lines.length;
+  }
+
+  // 有 filter → 解析但只計數，不建立陣列
+  let n = 0;
+  for (const line of lines) {
+    try {
+      const event = JSON.parse(line);
+      if (filter.type && event.type !== filter.type) continue;
+      if (filter.category && event.category !== filter.category) continue;
+      n++;
+    } catch {
+      // 略過無效行
+    }
+  }
+  return n;
 }
 
 /**
@@ -195,4 +235,4 @@ function passAtK(sessionId) {
   };
 }
 
-module.exports = { emit, query, latest, passAtK };
+module.exports = { emit, query, latest, count, passAtK };

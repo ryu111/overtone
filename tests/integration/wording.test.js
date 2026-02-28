@@ -3,11 +3,9 @@ const { test, expect, describe, beforeAll, afterAll } = require('bun:test');
 const { writeFileSync, unlinkSync } = require('fs');
 const { join } = require('path');
 const { tmpdir } = require('os');
-const { HOOKS_DIR } = require('../helpers/paths');
+const { SCRIPTS_LIB } = require('../helpers/paths');
 
-// NODE_ENV=test 讓 post-use.js 匯出可測試函式
-process.env.NODE_ENV = 'test';
-const { detectWordingMismatch, WORDING_RULES } = require(join(HOOKS_DIR, 'tool', 'post-use'));
+const { detectWordingMismatch, WORDING_RULES } = require(join(SCRIPTS_LIB, 'wording'));
 
 // ── 測試用暫存 .md 檔案輔助函式 ──
 

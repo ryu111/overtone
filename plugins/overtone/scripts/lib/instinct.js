@@ -147,6 +147,17 @@ class Instinct {
   }
 
   /**
+   * 根據 ID 取得單一 instinct 記錄
+   * @param {string} sessionId
+   * @param {string} id - instinct ID（如 inst_abc123_xyz）
+   * @returns {object|null} instinct 物件，找不到時回傳 null
+   */
+  getById(sessionId, id) {
+    const list = this._readAll(sessionId);
+    return list.find(i => i.id === id) ?? null;
+  }
+
+  /**
    * 明確矛盾一個 instinct（信心 -0.10）
    * @param {string} sessionId
    * @param {string} id - instinct ID
@@ -305,7 +316,7 @@ if (require.main === module) {
 
   if (!cmd || !sessionId) {
     console.error('用法：node instinct.js <command> <sessionId>');
-    console.error('  命令：summarize | decay | prune | query | applicable');
+    console.error('  命令：summarize | decay | prune | query | applicable | get');
     process.exit(1);
   }
 
@@ -330,6 +341,13 @@ if (require.main === module) {
       case 'applicable':
         console.log(JSON.stringify(instinct.getApplicable(sessionId), null, 2));
         break;
+      case 'get': {
+        const id = process.argv[4];
+        if (!id) { console.error('用法：node instinct.js get <sessionId> <id>'); process.exit(1); }
+        const result = instinct.getById(sessionId, id);
+        console.log(JSON.stringify(result, null, 2));
+        break;
+      }
       default:
         console.error(`未知的命令：${cmd}`);
         process.exit(1);
