@@ -48,6 +48,7 @@
 | # | 日期 | Workflow | 任務 | 結果 | 人工介入 | 備註 |
 |---|------|----------|------|:----:|:--------:|------|
 | 1 | 2026-02-28 | standard | dashboard-duplicate-spawn-fix | ✅ 完成 | 0 次 | PM discovery → standard 全流程。599 tests pass，+11 新測試 |
+| 2 | 2026-02-28 | standard | instinct-observation-quality | ✅ 完成 | 0 次 | 6 項品質改進（emit 飽和、code fence、agent_performance、workflow_routing、search-tools、confidence-scoring）。626 tests pass，+27 新測試 |
 
 ### 成功指標
 

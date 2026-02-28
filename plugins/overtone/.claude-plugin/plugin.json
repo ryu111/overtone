@@ -1,6 +1,6 @@
 {
   "name": "ot",
-  "version": "0.17.3",
+  "version": "0.17.4",
   "description": "Overtone — 有規範的 Vibe。簡化工作流 + 即時監控 + 遠端控制。",
   "skills": [
     "./skills/"
