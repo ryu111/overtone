@@ -411,7 +411,95 @@ claude --agents '{
 
 ---
 
-## 五、平台功能
+## 五、Model 能力
+
+### 可用模型
+
+| Model | ID | Context | Max Output | Thinking | 定位 |
+|-------|-----|:-------:|:----------:|:--------:|------|
+| **Opus 4.6** | `claude-opus-4-6` | 200K（1M beta） | 128K | Adaptive | 最強推理、策略決策 |
+| **Sonnet 4.6** | `claude-sonnet-4-6` | 200K（1M beta） | 64K | Adaptive | 平衡效能、日常開發 |
+| **Haiku 4.5** | `claude-haiku-4-5-20251001` | 200K | 64K | ❌ | 快速、低成本 |
+
+### Model 別名（Claude Code 使用）
+
+| 別名 | 對應 | 說明 |
+|------|------|------|
+| `opus` | claude-opus-4-6 | Agent frontmatter `model: opus` |
+| `sonnet` | claude-sonnet-4-6 | Agent frontmatter `model: sonnet` |
+| `haiku` | claude-haiku-4-5-20251001 | Agent frontmatter `model: haiku` |
+| `inherit` | 繼承父層 | Agent 預設值 |
+| `sonnet[1m]` | claude-sonnet-4-6（1M context） | Beta 1M context window |
+| `opusplan` | Opus + Sonnet 混合 | Opus 做規劃、Sonnet 做執行 |
+
+### Adaptive Thinking（Claude 4.6 新能力）
+
+Opus 4.6 和 Sonnet 4.6 支援自適應思考 — Claude 自動決定思考深度。
+
+| 模式 | 設定 | 說明 |
+|------|------|------|
+| **Adaptive**（預設） | `type: "adaptive"` | Claude 自動判斷思考深度 |
+| **Manual** | `type: "enabled", budget_tokens: N` | 手動指定 token 預算 |
+| **Disabled** | `type: "disabled"` | 關閉（不建議） |
+
+**Effort Level**（控制 Adaptive Thinking 深度）：
+
+| Level | 場景 | 行為 |
+|-------|------|------|
+| `low` | 簡單查詢、trivial 修改 | 最少思考 |
+| `medium` | 一般開發任務 | 適度思考 |
+| `high` | 複雜邏輯、架構決策 | 深度思考（預設） |
+| `max` | 困難問題、數學推理 | 最大思考預算 |
+
+### Fast Mode
+
+- 相同 Opus 4.6 模型，2.5x 更快輸出，6x 成本
+- 使用 `/fast` 切換開關
+- 不是切換到較弱模型，而是同模型的加速推理
+
+### opusplan 混合模式
+
+```
+Opus（規劃 + 決策）→ Sonnet（執行 + 實作）
+```
+
+- 策略層用 Opus 推理，實作層用 Sonnet 效率
+- 適合大型多步驟任務
+
+### Model 定價（per MTok）
+
+| Model | Input | Output | Cache Write | Cache Read |
+|-------|------:|-------:|------------:|-----------:|
+| Opus 4.6 | $15 | $75 | $18.75 | $1.50 |
+| Sonnet 4.6 | $3 | $15 | $3.75 | $0.30 |
+| Haiku 4.5 | $0.80 | $4 | $1 | $0.08 |
+
+### Model 相關環境變數
+
+| 變數 | 說明 |
+|------|------|
+| `CLAUDE_CODE_EFFORT_LEVEL` | Adaptive Thinking effort（low/medium/high/max） |
+| `CLAUDE_CODE_SUBAGENT_MODEL` | 覆蓋所有 subagent 的模型 |
+| `ANTHROPIC_DEFAULT_OPUS_MODEL` | 覆蓋 Opus 的具體 model ID |
+| `ANTHROPIC_DEFAULT_SONNET_MODEL` | 覆蓋 Sonnet 的具體 model ID |
+| `ANTHROPIC_DEFAULT_HAIKU_MODEL` | 覆蓋 Haiku 的具體 model ID |
+| `CLAUDE_CODE_DISABLE_ADAPTIVE_THINKING` | 關閉 Adaptive Thinking |
+| `MAX_THINKING_TOKENS` | 限制 thinking token 上限 |
+| `DISABLE_PROMPT_CACHING` | 禁用 prompt 快取 |
+
+### Overtone 的 Model 策略
+
+| 角色 | Model | 理由 |
+|------|:-----:|------|
+| product-manager, planner, architect | `opus` | 策略推理、架構決策 |
+| code-reviewer, security-reviewer, retrospective | `opus` | 高信心判斷 |
+| developer, designer, tester, qa, debugger | `sonnet` | 實作效率 |
+| database-reviewer, e2e-runner, build-error-resolver, refactor-cleaner | `sonnet` | 專項執行 |
+| doc-updater, grader | `haiku` | 低成本機械任務 |
+
+---
+
+## 六、平台功能
 
 ### CLAUDE.md 記憶階層
 
@@ -495,7 +583,7 @@ stdin 提供完整 session 狀態（model、cost、context window、vim mode 等
 
 ---
 
-## 六、Overtone Gap 分析
+## 七、Overtone Gap 分析
 
 ### ⚡ 高價值未用能力
 
@@ -511,6 +599,9 @@ stdin 提供完整 session 狀態（model、cost、context window、vim mode 等
 | 8 | **PreToolUse `updatedInput`** | 修改 Task prompt，自動注入 workflow context | 減少 Main Agent 手動注入 |
 | 9 | **`prompt`/`agent` hook 類型** | LLM 驗證 + agentic 檢查 | 更靈活的品質門檻 |
 | 10 | **Agent `disallowedTools`** | 黑名單比白名單更靈活 | 簡化 agent 工具設定 |
+| 11 | **`opusplan` 混合模式** | Opus 規劃 + Sonnet 執行，降低成本同時保持品質 | 降低 pipeline 成本 |
+| 12 | **`CLAUDE_CODE_EFFORT_LEVEL`** | 按任務複雜度動態調節 thinking 深度 | 優化速度/成本 |
+| 13 | **`sonnet[1m]` 1M context** | 超大 context window，適合大型 codebase 分析 | 深度分析場景 |
 
 ### ❌ 不適用 / 低價值
 
@@ -525,7 +616,7 @@ stdin 提供完整 session 狀態（model、cost、context window、vim mode 等
 
 ---
 
-## 七、建議行動優先順序
+## 八、建議行動優先順序
 
 ### Phase 2 可順手驗證（低成本）
 
@@ -534,9 +625,15 @@ stdin 提供完整 session 狀態（model、cost、context window、vim mode 等
 3. **SessionEnd hook** — 空 hook 測試穩定性
 4. **Skill 動態注入** — 在測試 skill 中試 `!`node script.js``
 
+### Phase 2 可順手驗證（Model 相關）
+
+5. **`CLAUDE_CODE_EFFORT_LEVEL`** — 為不同 agent 設定不同 effort（haiku agent 用 low，opus agent 用 high）
+6. **`opusplan` 模式** — 測試是否適合替代 standard workflow 的 PLAN(opus)+DEV(sonnet) 模式
+
 ### Phase 3 可評估（需設計）
 
-5. **Agent `memory`** — 評估是否取代/補充 Instinct
-6. **Agent `isolation: worktree`** — mul-dev 並行前提
-7. **`TaskCompleted` hook** — 品質門檻自動化
-8. **PreToolUse `updatedInput`** — 自動注入 workflow context
+7. **Agent `memory`** — 評估是否取代/補充 Instinct
+8. **Agent `isolation: worktree`** — mul-dev 並行前提
+9. **`TaskCompleted` hook** — 品質門檻自動化
+10. **PreToolUse `updatedInput`** — 自動注入 workflow context
+11. **`sonnet[1m]` 1M context** — 大型 codebase 全面分析場景
