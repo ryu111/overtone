@@ -1,12 +1,12 @@
 # Overtone 現況
 
-> 最後更新：2026-02-28 | Plugin 版本：0.19.0
+> 最後更新：2026-03-01 | Plugin 版本：0.19.1
 
 ## 版本狀態
 
 | 版本 | 狀態 | 說明 |
 |------|------|------|
-| V1 | 進行中 | 742 pass，0 fail，核心功能完整 |
+| V1 | 進行中 | 813 pass，0 fail，核心功能完整 |
 | V2 | 規劃中 | 延後 |
 
 ## 核心指標
@@ -16,17 +16,16 @@
 | Agent 數量 | 17（含 grader） |
 | Stage 數量 | 16 |
 | Workflow 模板 | 18 |
-| 測試通過 | 742 pass / 0 fail |
-| 測試檔案 | 42 個 |
+| 測試通過 | 813 pass / 0 fail |
+| 測試檔案 | 44 個 |
 | Hook 數量 | 7 個 |
-| Skill 數量 | 34 個 |
+| Skill 數量 | 35 個 |
 
 ## 近期變更（最近 3 筆）
 
+- **[0.19.1] 2026-03-01**：健康檢查系統建置 — 新增 health-check.js（5 項確定性偵測）+ /ot:audit skill（71 個新測試）
 - **[0.19.0] 2026-02-28**：系統全面清理 — 6 個幽靈事件修復 + Handoff 殘留清理 + DRY 重構（buildProgressBar/getSessionId 共用）+ Dead Code 移除
 - **[0.18.4] 2026-02-28**：identify-agent 誤判修復（三層：pre-task subagent_type 映射 + describe-only 搜尋 + system:warning 衝突偵測）
-- **[0.18.1] 2026-02-28**：Phase 1 onboarding 改善 — plugin.json description 改為產品定位語「裝上 Claude Code，就像有了一個開發團隊。」；SessionStart banner 新增 action hint，引導新使用者直接輸入需求。
-- **[0.18.0-fix3] 2026-02-28**：on-submit hook 注入 TaskList 提醒（三層防注意力衰減）
 
 ## 已知問題
 

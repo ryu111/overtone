@@ -107,7 +107,7 @@ docs/                            # 專案文件目錄（⚠️ 不在 plugin 下
 plugins/overtone/                # Plugin 根目錄
 ├── .claude-plugin/              # Plugin manifest（plugin.json）
 ├── agents/                      # 17 個 agent .md 檔（含 grader）
-├── skills/                      # 34 個 Skill 定義
+├── skills/                      # 35 個 Skill 定義
 ├── hooks/                       # hooks.json + scripts/
 ├── scripts/lib/                 # 共用程式庫
 │   ├── registry.js              # SoT：stages/agents/workflows/events
@@ -153,6 +153,9 @@ bun test
 
 # 啟動 Dashboard 監控面板（port 7777）
 bun scripts/server.js
+
+# 系統健康檢查（5 項偵測：phantom-events、dead-exports、doc-code-drift、unused-paths、duplicate-logic）
+bun scripts/health-check.js
 
 # 驗證所有 15 個 agent 設定是否完整
 bun scripts/validate-agents.js
