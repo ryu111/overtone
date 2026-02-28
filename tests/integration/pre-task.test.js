@@ -12,6 +12,7 @@ const { test, expect, describe, afterAll } = require('bun:test');
 const { mkdirSync, rmSync } = require('fs');
 const { join } = require('path');
 const { HOOKS_DIR, SCRIPTS_LIB } = require('../helpers/paths');
+const { isAllowed } = require('../helpers/hook-runner');
 
 // ── 路徑設定 ──
 
@@ -101,8 +102,8 @@ describe('場景 1：前置 stage 已完成 → 允許通過', () => {
       sessionId
     );
 
-    // 允許通過：result 為空字串
-    expect(result.result).toBe('');
+    // 允許通過：result 為空字串，或 hookSpecificOutput.permissionDecision 為 allow（updatedInput 注入）
+    expect(isAllowed(result)).toBe(true);
   });
 });
 
@@ -285,7 +286,7 @@ describe('場景 5：subagent_type ot: 前綴 → 確定性映射（L1）', () =
     );
 
     // fallback 從 desc 辨識出 code-reviewer，DEV 已完成 → 允許通過
-    expect(result.result).toBe('');
+    expect(isAllowed(result)).toBe(true);
   });
 
   test('subagent_type 為未知 ot: agent → fallback 到 identifyAgent', async () => {

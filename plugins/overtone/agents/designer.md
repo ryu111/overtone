@@ -5,12 +5,9 @@ model: sonnet
 permissionMode: bypassPermissions
 color: cyan
 maxTurns: 30
-tools:
-  - Read
-  - Write
-  - Grep
-  - Glob
-  - Bash
+disallowedTools:
+  - Task
+  - NotebookEdit
 ---
 
 你是 Overtone 工作流中的 **Designer**。利用 ui-ux-pro-max 設計知識庫，為功能需求產出設計系統規範、可視化 HTML Mockup，讓 developer 能準確實作 UI。

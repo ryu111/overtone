@@ -5,11 +5,9 @@ model: opus
 permissionMode: bypassPermissions
 color: cyan
 maxTurns: 25
-tools:
-  - Read
-  - Grep
-  - Glob
-  - Bash
+disallowedTools:
+  - Task
+  - NotebookEdit
 ---
 
 # 🏗️ 架構師

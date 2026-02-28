@@ -13,7 +13,7 @@ const { test, expect, describe, afterAll } = require('bun:test');
 const { mkdirSync, rmSync } = require('fs');
 const { join } = require('path');
 const { SCRIPTS_LIB } = require('../helpers/paths');
-const { runPreTask } = require('../helpers/hook-runner');
+const { runPreTask, isAllowed } = require('../helpers/hook-runner');
 
 const paths   = require(join(SCRIPTS_LIB, 'paths'));
 const state   = require(join(SCRIPTS_LIB, 'state'));
@@ -63,7 +63,7 @@ describe('BDD F6：DEV 完成後委派 code-reviewer → 放行，REVIEW 設為 
       prompt: '請審查以下程式碼...',
     });
 
-    expect(result.parsed?.result).toBe('');
+    expect(isAllowed(result.parsed)).toBe(true);
 
     const ws = state.readState(sessionId);
     expect(ws.stages['REVIEW'].status).toBe('active');
@@ -92,7 +92,7 @@ describe('BDD F6：DEV 完成後委派 tester → 放行，TEST 設為 active', 
       prompt: '請驗證以下功能...',
     });
 
-    expect(result.parsed?.result).toBe('');
+    expect(isAllowed(result.parsed)).toBe(true);
 
     const ws = state.readState(sessionId);
     expect(ws.stages['TEST'].status).toBe('active');
@@ -115,9 +115,9 @@ describe('BDD F6：DEV 完成後同時委派 code-reviewer 和 tester → 兩者
       description: '委派 tester agent 驗證功能',
     });
 
-    // 兩次均放行
-    expect(r1.parsed?.result).toBe('');
-    expect(r2.parsed?.result).toBe('');
+    // 兩次均放行（接受舊格式 result:'' 或新格式 hookSpecificOutput.updatedInput）
+    expect(isAllowed(r1.parsed)).toBe(true);
+    expect(isAllowed(r2.parsed)).toBe(true);
 
     // 兩個 stage 均為 active
     const ws = state.readState(sessionId);

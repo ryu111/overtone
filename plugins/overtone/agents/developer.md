@@ -5,6 +5,9 @@ model: sonnet
 permissionMode: bypassPermissions
 color: yellow
 maxTurns: 50
+skills:
+  - ref-bdd-guide
+  - ref-failure-handling
 ---
 
 # 💻 開發者

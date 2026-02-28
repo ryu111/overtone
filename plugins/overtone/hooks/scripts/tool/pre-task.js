@@ -15,7 +15,7 @@
 const state = require('../../../scripts/lib/state');
 const { stages } = require('../../../scripts/lib/registry');
 const identifyAgent = require('../../../scripts/lib/identify-agent');
-const { safeReadStdin, safeRun, getSessionId } = require('../../../scripts/lib/hook-utils');
+const { safeReadStdin, safeRun, getSessionId, buildWorkflowContext } = require('../../../scripts/lib/hook-utils');
 
 safeRun(() => {
   // ── 從 stdin 讀取 hook input ──
@@ -148,7 +148,7 @@ safeRun(() => {
     process.exit(0);
   }
 
-  // ── 通過 — 記錄 agent 委派（原子操作：setActiveAgent + updateStage）──
+  // ── 通過 — 記錄 agent 委派（原子操作：setActiveAgent + updateStage）+ 組裝 updatedInput ──
 
   const actualKey = stageKeys.find((k) => {
     const base = k.split(':')[0];
@@ -207,6 +207,25 @@ safeRun(() => {
     agent: targetAgent,
     stage: targetStage,
   });
+
+  // ── 組裝 updatedInput（注入 workflow context）──
+
+  const projectRoot = input.cwd || process.cwd();
+  const context = buildWorkflowContext(sessionId, projectRoot);
+
+  if (context) {
+    const originalPrompt = toolInput.prompt || '';
+    // 📋 MUST 保留所有原始 tool input 欄位（subagent_type 等），只更新 prompt
+    const updatedToolInput = { ...toolInput, prompt: context + '\n\n---\n\n' + originalPrompt };
+    process.stdout.write(JSON.stringify({
+      hookSpecificOutput: {
+        hookEventName: 'PreToolUse',
+        permissionDecision: 'allow',
+        updatedInput: updatedToolInput,
+      },
+    }));
+    process.exit(0);
+  }
 
   process.stdout.write(JSON.stringify({ result: '' }));
   process.exit(0);

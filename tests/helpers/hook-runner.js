@@ -186,10 +186,30 @@ function runInitWorkflow(workflowType, sessionId) {
   };
 }
 
+/**
+ * 判斷 pre-task.js 的輸出是否為「允許放行」
+ *
+ * 允許放行有兩種合法格式：
+ *   舊格式：{ result: '' }
+ *   新格式（updatedInput 注入）：{ hookSpecificOutput: { permissionDecision: 'allow', updatedInput: { prompt: '...' } } }
+ *
+ * @param {object} parsed - parseJsonOutput 的輸出（parsed 欄位）
+ * @returns {boolean}
+ */
+function isAllowed(parsed) {
+  if (!parsed) return false;
+  // 舊格式
+  if (parsed.result === '') return true;
+  // 新格式（updatedInput 注入）
+  if (parsed.hookSpecificOutput?.permissionDecision === 'allow') return true;
+  return false;
+}
+
 module.exports = {
   runPreTask,
   runSubagentStop,
   runSessionStop,
   runOnStart,
   runInitWorkflow,
+  isAllowed,
 };

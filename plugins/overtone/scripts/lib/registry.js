@@ -116,7 +116,7 @@ const retryDefaults = {
   maxRetries: 3,
 };
 
-// Timeline 事件類型（22 種，10 分類）
+// Timeline 事件類型（23 種，11 分類）
 // 已移除：handoff:create（Handoff 為虛擬，永遠不會 emit）
 const timelineEvents = {
   // workflow 類（3）
@@ -157,6 +157,9 @@ const timelineEvents = {
   'session:start':      { label: '工作階段開始', category: 'session' },
   'session:end':        { label: '工作階段結束', category: 'session' },
   'session:compact':    { label: 'Context 壓縮', category: 'session' },
+
+  // tool 類（1）
+  'tool:failure':       { label: '工具失敗',     category: 'tool' },
 
   // system 類（1）
   'system:warning':     { label: '系統警告',     category: 'system' },

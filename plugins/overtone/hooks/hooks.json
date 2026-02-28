@@ -6,6 +6,11 @@
       "command": "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/session/on-start.js"
     },
     {
+      "event": "SessionEnd",
+      "type": "command",
+      "command": "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/session/on-session-end.js"
+    },
+    {
       "event": "PreCompact",
       "type": "command",
       "command": "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/session/pre-compact.js"
@@ -30,6 +35,11 @@
       "event": "PostToolUse",
       "type": "command",
       "command": "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/tool/post-use.js"
+    },
+    {
+      "event": "PostToolUseFailure",
+      "type": "command",
+      "command": "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/tool/post-use-failure.js"
     },
     {
       "event": "Stop",

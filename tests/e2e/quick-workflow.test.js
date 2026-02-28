@@ -13,7 +13,7 @@ const { test, expect, describe, beforeAll, afterAll } = require('bun:test');
 const { existsSync, rmSync } = require('fs');
 const { join } = require('path');
 const { SCRIPTS_LIB } = require('../helpers/paths');
-const { runOnStart, runInitWorkflow, runPreTask, runSubagentStop } = require('../helpers/hook-runner');
+const { runOnStart, runInitWorkflow, runPreTask, runSubagentStop, isAllowed } = require('../helpers/hook-runner');
 
 const paths    = require(join(SCRIPTS_LIB, 'paths'));
 const stateLib = require(join(SCRIPTS_LIB, 'state'));
@@ -77,12 +77,12 @@ describe('BDD F4：DEV 完成後 REVIEW 和 TEST 同時放行（並行組）', (
     testResult   = runPreTask(SESSION_ID, { description: '委派 tester 驗證功能' });
   });
 
-  test('委派 code-reviewer 的 pre-task 回傳 result 為空字串（放行）', () => {
-    expect(reviewResult.parsed?.result).toBe('');
+  test('委派 code-reviewer 的 pre-task 回傳放行（result 為空字串或 updatedInput 注入）', () => {
+    expect(isAllowed(reviewResult.parsed)).toBe(true);
   });
 
-  test('委派 tester 的 pre-task 回傳 result 為空字串（放行）', () => {
-    expect(testResult.parsed?.result).toBe('');
+  test('委派 tester 的 pre-task 回傳放行（result 為空字串或 updatedInput 注入）', () => {
+    expect(isAllowed(testResult.parsed)).toBe(true);
   });
 
   test('REVIEW.status 為 active', () => {

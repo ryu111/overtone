@@ -2,12 +2,13 @@
 /**
  * hook-utils.js — Hook 共用工具
  *
- * 提供六個函式，統一所有 hook 的通用邏輯：
+ * 提供七個函式，統一所有 hook 的通用邏輯：
  *   safeReadStdin            — 同步讀取 stdin + JSON.parse，失敗回傳 {}
  *   safeRun                  — 頂層 try/catch 包裹，crash 時輸出 defaultOutput + exit 0
  *   hookError                — 統一 stderr 錯誤記錄（帶 [overtone/{hookName}] 前綴）
  *   buildPendingTasksMessage — 讀取活躍 feature 的未完成任務，供 SessionStart + PreCompact 共用
  *   buildProgressBar         — 產生 stage 進度條字串（emoji 圖示），供多個 hook 共用
+ *   buildWorkflowContext     — 產生 workflow context 字串，供 PreToolUse updatedInput 注入
  *   getSessionId             — 從 hook input 取得 session ID（帶 fallback）
  */
 
@@ -119,6 +120,89 @@ function buildProgressBar(stageEntries, registryStages) {
 }
 
 /**
+ * 建構 workflow context 字串，用於注入 agent Task prompt。
+ *
+ * 讀取 workflow state，組裝包含工作流狀態、進度條、當前階段、
+ * feature 資訊和前階段摘要的 context 字串。
+ *
+ * @param {string} sessionId
+ * @param {string} projectRoot
+ * @param {object} [options]
+ * @param {number} [options.maxLength=1500] - 最大字元數
+ * @returns {string|null} context 字串，無 workflow state 時回傳 null
+ */
+function buildWorkflowContext(sessionId, projectRoot, options = {}) {
+  const maxLength = options.maxLength || 1500;
+  try {
+    // 延遲 require 避免循環依賴，且僅在需要時載入
+    const state = require(path.join(__dirname, 'state'));
+    const { stages: registryStages } = require(path.join(__dirname, 'registry'));
+
+    const currentState = state.readState(sessionId);
+    if (!currentState) return null;
+
+    const { workflowType, currentStage, stages, featureName } = currentState;
+    if (!workflowType || !stages) return null;
+
+    // 進度條
+    const stageEntries = Object.entries(stages);
+    const progressBar = buildProgressBar(stageEntries, registryStages);
+    const completed = stageEntries.filter(([, s]) => s.status === 'completed').length;
+    const total = stageEntries.length;
+
+    // 當前階段標籤
+    let currentStageLabel = currentStage || '';
+    if (currentStage) {
+      const base = currentStage.split(':')[0];
+      const def = registryStages[base];
+      if (def) {
+        currentStageLabel = `${def.emoji} ${def.label}`;
+      }
+    }
+
+    const lines = [
+      '[Overtone Workflow Context]',
+      `工作流：${workflowType}`,
+      `進度：${progressBar} (${completed}/${total})`,
+      `目前階段：${currentStageLabel}`,
+    ];
+
+    // Feature + Specs 路徑（若有）
+    if (featureName) {
+      lines.push(`Feature：${featureName}`);
+      lines.push(`Specs：specs/features/in-progress/${featureName}/`);
+    }
+
+    // 前階段摘要（已完成的 stage）
+    const completedStages = stageEntries.filter(([, s]) => s.status === 'completed' && s.result);
+    if (completedStages.length > 0) {
+      lines.push('');
+      lines.push('前階段摘要：');
+      for (const [key, s] of completedStages) {
+        const base = key.split(':')[0];
+        const def = registryStages[base];
+        const label = def ? `${def.emoji} ${def.label}` : key;
+        // 摘要最多 80 字元，避免 context 過長
+        const resultSummary = (s.result || '').slice(0, 80);
+        lines.push(`- ${label}：${resultSummary}`);
+      }
+    }
+
+    let context = lines.join('\n');
+
+    // 截斷保護
+    if (context.length > maxLength) {
+      const suffix = '... (已截斷)';
+      context = context.slice(0, maxLength - suffix.length) + suffix;
+    }
+
+    return context;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * 從 hook input 取得 session ID。
  *
  * 優先從 input.session_id 讀取，其次 CLAUDE_SESSION_ID 環境變數，最後回傳空字串。
@@ -130,4 +214,4 @@ function getSessionId(input) {
   return (input.session_id || process.env.CLAUDE_SESSION_ID || '').trim();
 }
 
-module.exports = { safeReadStdin, safeRun, hookError, buildPendingTasksMessage, buildProgressBar, getSessionId };
+module.exports = { safeReadStdin, safeRun, hookError, buildPendingTasksMessage, buildProgressBar, buildWorkflowContext, getSessionId };

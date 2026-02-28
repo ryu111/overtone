@@ -5,6 +5,8 @@ model: haiku
 permissionMode: bypassPermissions
 color: purple
 maxTurns: 20
+skills:
+  - ref-wording-guide
 ---
 
 # 📝 文件更新者

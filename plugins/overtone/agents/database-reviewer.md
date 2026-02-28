@@ -5,11 +5,11 @@ model: sonnet
 permissionMode: bypassPermissions
 color: red
 maxTurns: 25
-tools:
-  - Read
-  - Grep
-  - Glob
-  - Bash
+disallowedTools:
+  - Write
+  - Edit
+  - Task
+  - NotebookEdit
 ---
 
 # 🗄️ 資料庫審查者
