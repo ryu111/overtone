@@ -2,7 +2,7 @@
 
 > 本文件是 [Overtone 規格文件](overtone.md) 的子文件。
 > 主題：三層架構、Hook 系統、Context 管理、State 設計
-> 版本：v0.6
+> 版本：v0.18.0
 
 ---
 
@@ -35,13 +35,28 @@ Layer 2: Hook 守衛（底層）
 | 事件 | 職責 | 行數預估 |
 |------|------|:-------:|
 | **SessionStart** | 顯示 banner + 初始化狀態 + 啟動 Dashboard | ~60 |
+| **PreCompact** | context 壓縮前注入工作流狀態恢復訊息 | ~70 |
 | **UserPromptSubmit** | 注入 systemMessage 指向 /ot:auto | ~80 |
 | **PreToolUse (Task)** | 擋跳過必要階段 | ~150 |
 | **SubagentStop** | 記錄結果 + 提示下一步 + 寫 workflow.json + emit timeline | ~380 |
-| **PostToolUse** | Instinct 觀察收集 | ~100 |
+| **PostToolUse** | Instinct 觀察收集 + .md 措詞偵測 | ~100 |
 | **Stop** | Loop 迴圈 + 完成度檢查 + Dashboard 通知 | ~160 |
 
-**總計：~1153 行**
+**總計：~1223 行**（v0.18.0 新增 PreCompact hook + buildPendingTasksMessage 共用函式）
+
+### Hook 統一錯誤處理（v0.17.7）+ 狀態恢復（v0.18.0）
+
+所有 hook 使用 `scripts/lib/hook-utils.js` 統一錯誤處理和狀態恢復：
+
+```javascript
+// hook-utils.js 提供四個函式
+safeReadStdin()              // 同步讀取 stdin + JSON.parse，失敗回傳 {}
+safeRun(fn, defaultOut)      // 頂層 try/catch，crash 時輸出 defaultOut + exit 0
+hookError(name, message)     // 統一 stderr 錯誤記錄（[overtone/{hookName}] 前綴）
+buildPendingTasksMessage()   // 讀取活躍 feature 的未完成任務（SessionStart + PreCompact 共用）
+```
+
+好處：hook crash 不影響 Claude 工具執行（exit 0），錯誤統一記到 stderr。
 
 ### Hook 職責邊界
 
@@ -53,7 +68,7 @@ Hook 只做：
   ✅ 提示（SubagentStop: 「下一步請委派 TESTER」）
   ✅ 迴圈（Stop: Loop 繼續/退出判定）
   ✅ 通知（Stop: 更新 Dashboard + Remote）
-  ✅ 觀察（PostToolUse: 收集 Instinct 觀察）
+  ✅ 觀察（PostToolUse: 收集 Instinct 觀察 + 措詞偵測）
 
 Hook 不做：
   ❌ 路由決策（Main Agent 自己看 Skill 指引）
@@ -86,7 +101,7 @@ Handoff 檔案存在 session 目錄，compact 後 Main Agent 可重新讀取。
 ├── sessions/
 │   └── {sessionId}/
 │       ├── workflow.json     # 工作流狀態
-│       ├── timeline.jsonl    # 事件記錄（21 種）
+│       ├── timeline.jsonl    # 事件記錄（22 種）
 │       ├── handoffs/         # Handoff 檔案
 │       ├── loop.json         # Loop 狀態
 │       └── observations.jsonl # Instinct 觀察

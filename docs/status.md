@@ -1,12 +1,12 @@
 # Overtone 現況
 
-> 最後更新：2026-02-28 | Plugin 版本：0.17.7
+> 最後更新：2026-02-28 | Plugin 版本：0.18.0
 
 ## 版本狀態
 
 | 版本 | 狀態 | 說明 |
 |------|------|------|
-| V1 | 進行中 | 667 pass，0 fail，核心功能完整 |
+| V1 | 進行中 | 704 pass，0 fail，核心功能完整 |
 | V2 | 規劃中 | 延後 |
 
 ## 核心指標
@@ -16,19 +16,16 @@
 | Agent 數量 | 17（含 grader） |
 | Stage 數量 | 16 |
 | Workflow 模板 | 18 |
-| 測試通過 | 667 pass / 0 fail |
-| 測試檔案 | 38 個 |
-| Hook 數量 | 6 個 |
+| 測試通過 | 704 pass / 0 fail |
+| 測試檔案 | 39 個 |
+| Hook 數量 | 7 個 |
 | Skill 數量 | 30 個 |
 
 ## 近期變更（最近 3 筆）
 
+- **[0.18.0] 2026-02-28**：PreCompact hook 新增 — 在 context 壓縮前注入工作流狀態恢復訊息，支援 SessionStart + PreCompact 雙端共用 `buildPendingTasksMessage()`。hook-utils.js 擴充至 4 個函式。提升 compact 後恢復的連貫性。測試 704 pass（+37）
 - **[0.17.7] 2026-02-28**：Hook 錯誤處理統一 — 新建 `hook-utils.js`（safeReadStdin + safeRun + hookError），重構 6 個 hook scripts 統一錯誤處理模式。post-use.js async→sync。測試 667 pass（+12）
 - **[0.17.6] 2026-02-28**：JSONL 效能優化 — instinct.js auto-compact（膨脹 >2x 自動壓縮）、timeline.js latest() 反向掃描、query() limit 快速路徑。pm/SKILL.md 精簡（125→112 行）。測試 655 pass（+26）
-- **[0.17.5] 2026-02-28**：Specs 自動歸檔修復 — `readTasksCheckboxes()` 排除 `## Dev Phases` 區塊的 checkbox，修復歸檔判斷永遠 false 的根因。支援 `## Stages` 舊格式。歷史 feature 歸檔清理。測試 629 pass（+3）
-- **[0.17.4] 2026-02-28**：Instinct 觀察品質提升 — 6 項改進：emit() 飽和閾值（confidence >= 1.0 不追加）、code fence 排除、agent_performance 記錄、workflow_routing 記錄、search-tools 反面糾正、confidence-scoring 文件。核心觀察系統強化，提升 instinct 可信度。測試 626 pass（+27）
-- **[0.17.3] 2026-02-28**：Dashboard 重複開啟修復 — 修復多 session 場景下 Dashboard 重複啟動問題。新增 `probePort()` + `isRunning()` port probe fallback；`on-start.js` 新增 `OVERTONE_NO_DASHBOARD` early return、移除自動開瀏覽器、移除 `OVERTONE_NO_BROWSER` 環境變數；`server.js` EADDRINUSE graceful exit。測試 599 pass（+11）
-- **[0.17.2] 2026-02-28**：Pipeline 穩定性自動化測試 — 新增 5 個 e2e + integration test：single/quick/standard workflow + fail-retry-path + pre-task parallel。新增 2 個 lib 模組（identify-agent.js, parse-result.js）+ hook-runner helper。自動化驗證 agent 路由正確性、結果解析、並行安全性。測試 588 pass（+81）
 
 ## 已知問題
 
@@ -41,7 +38,7 @@
 | 主規格 | docs/spec/overtone.md | 設計索引 |
 | 架構 | docs/spec/overtone-架構.md | 三層架構、Hook |
 | 工作流 | docs/spec/overtone-工作流.md | 18 個 workflow 模板 |
-| Agents | docs/spec/overtone-agents.md | 16 個 agent |
+| Agents | docs/spec/overtone-agents.md | 17 個 agent（含 grader） |
 | 並行 | docs/spec/overtone-並行.md | Loop、Mul-Dev、D1-D4 |
 | 子系統 | docs/spec/overtone-子系統.md | Specs、Dashboard |
 | 驗證品質 | docs/spec/overtone-驗證品質.md | 三信號、pass@k |

@@ -1,7 +1,7 @@
 # Overtone 規格文件
 
 > Overtone 是 Claude Code plugin，提供 BDD 驅動的工作流自動化 + 即時監控 + 遠端控制。
-> 版本：v0.6 | 最後更新：2026-02-27
+> 版本：v0.18.0 | 最後更新：2026-02-28
 
 ---
 
@@ -26,10 +26,10 @@
 | 文件 | 主題 | 說明 |
 |------|------|------|
 | [overtone-架構.md](overtone-架構.md) | 架構 | 三層模型（Loop/Skill/Hook）、Hook 系統、State 設計、Context 管理 |
-| [overtone-工作流.md](overtone-工作流.md) | 工作流 | 18 個 workflow 模板、/ot:auto 選擇邏輯、命令清單、錯誤處理 |
+| [overtone-工作流.md](overtone-工作流.md) | 工作流 | 18 個 workflow 模板（含 3 個產品模板）、/ot:auto 選擇邏輯、命令清單、錯誤處理 |
 | [overtone-agents.md](overtone-agents.md) | Agent 系統 | 17 個 agent 職責與 Model 分配、Handoff 協定、BDD 整合 |
 | [overtone-並行.md](overtone-並行.md) | 並行執行 | Loop 模式、靜態/動態並行、Mul-Dev 機制、D1-D4 缺陷修復 |
-| [overtone-子系統.md](overtone-子系統.md) | 子系統 | Specs 生命週期、Dashboard 監控、Remote 控制、Timeline 21 種事件 |
+| [overtone-子系統.md](overtone-子系統.md) | 子系統 | Specs 生命週期、Dashboard 監控、Remote 控制、Timeline 22 種事件 |
 | [overtone-驗證品質.md](overtone-驗證品質.md) | 驗證品質 | 三信號驗證、pass@k 指標、Model Grader、Instinct 系統 |
 | [workflow-diagram.md](workflow-diagram.md) | 架構圖 | Mermaid 視覺化：三層全覽、執行流程、失敗處理迴圈 |
 
@@ -39,11 +39,15 @@
 
 > 詳細決策記錄見 git history 與 `docs/reference/` 目錄。
 
-V0.6 版本共確認 55 個設計決策，重大決策包含：
+V0.18.0 版本共確認 55+ 個設計決策，重大決策包含：
 - Hook 做記錄和守衛，Skill 做指引，Main Agent 做決策
 - 並行群組靜態定義（registry.js），動態推導由 Main Agent 處理
 - Handoff 為虛擬交接，僅存在於 Main Agent context
 - Specs 系統（v0.13.0）取代 openspec，提供 disk-based Feature Record
+- PM Agent（v0.17.0）：product-manager agent + 3 個產品 workflow（product/product-full/discovery）
+- Hook 統一錯誤處理（v0.17.7）：hook-utils.js safeReadStdin/safeRun/hookError，crash 不影響工具執行
+- Context 壓縮前狀態恢復（v0.18.0）：PreCompact hook + buildPendingTasksMessage()，提升 compact 後連貫性
+- JSONL 效能優化（v0.17.6）：instinct auto-compact + timeline 反向掃描 + limit 快速路徑
 
 ---
 
