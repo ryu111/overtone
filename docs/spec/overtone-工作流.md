@@ -1,8 +1,8 @@
 # Overtone 工作流
 
 > 本文件是 [Overtone 規格文件](overtone.md) 的子文件。
-> 主題：15 個 workflow 模板、選擇器邏輯、命令清單、錯誤處理
-> 版本：v0.6
+> 主題：18 個 workflow 模板、選擇器邏輯、命令清單、錯誤處理
+> 版本：v0.17.7
 
 ---
 
@@ -25,14 +25,14 @@ Main Agent 讀取 `/ot:auto` Skill 內容後自行判斷最適合的工作流模
 
 ---
 
-## 工作流模板（15 個）
+## 工作流模板（18 個）
 
 ### 基本模板（5 個）
 
 | # | Key | 名稱 | Stages | 並行 |
 |:-:|-----|------|--------|:----:|
 | 1 | `single` | 單步修改 | DEV | - |
-| 2 | `quick` | 快速開發 | DEV → [R+T] | R+T |
+| 2 | `quick` | 快速開發 | DEV → [R+T] → RETRO | R+T |
 | 3 | `standard` | 標準功能 | PLAN → ARCH → T:spec → DEV → [R+T:verify] → RETRO → DOCS | R+T |
 | 4 | `full` | 完整功能 | PLAN → ARCH → DESIGN → T:spec → DEV → [R+T:verify] → [QA+E2E] → RETRO → DOCS | 兩組 |
 | 5 | `secure` | 高風險 | PLAN → ARCH → T:spec → DEV → [R+T:verify+S] → RETRO → DOCS | R+T+S |
@@ -51,7 +51,7 @@ Main Agent 讀取 `/ot:auto` Skill 內容後自行判斷最適合的工作流模
 | 11 | `build-fix` | 修構建 | BUILD-FIX | 最小修復構建錯誤 |
 | 12 | `e2e-only` | E2E 測試 | E2E | 只跑端對端測試 |
 
-### 新增模板（3 個）
+### 獨立 Agent 模板（3 個）
 
 | # | Key | 名稱 | Stages | 用途 |
 |:-:|-----|------|--------|------|
@@ -59,9 +59,17 @@ Main Agent 讀取 `/ot:auto` Skill 內容後自行判斷最適合的工作流模
 | 14 | `clean` | 死碼清理 | REFACTOR | 清理未使用程式碼 |
 | 15 | `db-review` | DB 審查 | DB-REVIEW | 資料庫專項審查 |
 
+### 產品模板（3 個，PM Agent 驅動）
+
+| # | Key | 名稱 | Stages | 用途 |
+|:-:|-----|------|--------|------|
+| 16 | `product` | 產品功能 | PM → PLAN → ARCH → T:spec → DEV → [R+T] → RETRO → DOCS | 含 PM 的標準流程 |
+| 17 | `product-full` | 產品完整 | PM → PLAN → ARCH → DESIGN → T:spec → DEV → [R+T] → [QA+E2E] → RETRO → DOCS | 含 PM 的完整流程 |
+| 18 | `discovery` | 產品探索 | PM | 純產品分析探索 |
+
 ### 自訂序列
 
-無使用者語法。當 15 個模板都不適合時，Main Agent 自行判斷 agent 組合並依序委派。
+無使用者語法。當 18 個模板都不適合時，Main Agent 自行判斷 agent 組合並依序委派。
 
 ---
 

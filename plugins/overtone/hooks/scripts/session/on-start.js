@@ -18,7 +18,7 @@ const paths = require('../../../scripts/lib/paths');
 const timeline = require('../../../scripts/lib/timeline');
 const specs = require('../../../scripts/lib/specs');
 const state = require('../../../scripts/lib/state');
-const { safeReadStdin, safeRun, hookError } = require('../../../scripts/lib/hook-utils');
+const { safeReadStdin, safeRun, hookError, buildPendingTasksMessage } = require('../../../scripts/lib/hook-utils');
 
 // session ID 優先從 hook stdin JSON 讀取，環境變數作為 fallback
 const input = safeReadStdin();
@@ -100,37 +100,25 @@ safeRun(() => {
   // context compact 後 in-memory TaskList 歸零，此處讀取 specs/features/in-progress 的 tasks.md
   // 注入 systemMessage，讓 Main Agent resume 後能重建 TaskList。
 
-  let pendingTasksMsg = null;
   const projectRoot = input.cwd || process.env.CLAUDE_PROJECT_ROOT || process.cwd();
+
+  // featureName 同步：確保 workflow.json 與 active feature 同步（on-stop.js 自動歸檔閉環）
   try {
     const activeFeature = specs.getActiveFeature(projectRoot);
-    if (activeFeature) {
-      // 自動補寫 featureName：確保 workflow.json 與 active feature 同步
-      // 讓 on-stop.js 的自動歸檔閉環（featureName 存在才觸發 archiveFeature）
-      if (sessionId) {
-        const ws = state.readState(sessionId);
-        if (ws && !ws.featureName) {
-          state.setFeatureName(sessionId, activeFeature.name);
-        }
-      }
-      const checkboxes = activeFeature.tasks;
-      if (checkboxes && !checkboxes.allChecked && checkboxes.total > 0) {
-        const unchecked = checkboxes.unchecked || [];
-        const lines = [
-          `📋 **未完成任務（上次 session 中斷）**`,
-          `Feature：${activeFeature.name}（${checkboxes.checked}/${checkboxes.total} 完成）`,
-          ...unchecked.slice(0, 5).map(t => `- [ ] ${t}`),
-        ];
-        if (unchecked.length > 5) {
-          lines.push(`... 還有 ${unchecked.length - 5} 個`);
-        }
-        lines.push(`→ 請使用 TaskCreate 重建以上任務的 TaskList，然後繼續執行。`);
-        pendingTasksMsg = lines.join('\n');
+    if (activeFeature && sessionId) {
+      const ws = state.readState(sessionId);
+      if (ws && !ws.featureName) {
+        state.setFeatureName(sessionId, activeFeature.name);
       }
     }
   } catch {
     // 忽略，不阻擋 session 啟動
   }
+
+  // 組裝未完成任務訊息（on-start 專用標頭，標示「上次 session 中斷」）
+  const pendingTasksMsg = buildPendingTasksMessage(projectRoot, {
+    header: '未完成任務（上次 session 中斷）',
+  });
 
   const output = { result: banner };
   if (pendingTasksMsg) {

@@ -1,5 +1,5 @@
 > 本文件是 [Overtone 規格文件](overtone.md) 的視覺化補充。
-> 最後對齊版本：v0.6（含 Mul-Dev、D1-D4 修復）
+> 最後對齊版本：v0.17.7（含 Mul-Dev、D1-D4 修復、PM Agent、Hook 錯誤處理統一）
 
 # Overtone 工作流架構圖
 
@@ -23,7 +23,7 @@ flowchart TB
         US["UserPromptSubmit\n注入 /ot:auto 指引"]
         MA["Main Agent\n讀取 /ot:auto"]
         WF["Workflow Skill\nquick / standard / full..."]
-        AG["依序委派\n15 個 Agents"]
+        AG["依序委派\n17 個 Agents"]
         US --> MA --> WF --> AG
     end
 
@@ -53,8 +53,11 @@ flowchart TB
 
     MAIN --> WFSEL{"workflow 類型"}
 
+    WFSEL -->|"product / product-full"| PM["🎯 PM — product-manager"]
+    WFSEL -->|"discovery"| PM
     WFSEL -->|"standard / full / secure"| PLAN["📋 PLAN — planner"]
-    WFSEL -->|"quick（DEV→REVIEW+TEST→RETRO）\n/ debug / tdd..."| DEV
+    WFSEL -->|"quick / debug / tdd..."| DEV
+    PM -->|"product / product-full"| PLAN
 
     PLAN --> ARCH["🏗️ ARCH — architect"]
     ARCH --> TSPEC["🧪 TEST:spec — tester\nGIVEN / WHEN / THEN"]
@@ -97,6 +100,8 @@ flowchart TB
 **Mul-Dev（多開發者並行）**：DEV 階段內部可拆分為多個 Phase。每個 Phase 對應一組獨立子任務，Main Agent 在同一訊息中並行發出多個 Task（parallel Phase），各 developer sub-agent 同時執行，互不阻塞，最後由 TaskList 同步機制確認全部完成後才進入下一階段。
 
 **quick workflow 完整流程**：`DEV → [REVIEW + TEST]（並行）→ RETRO`。雖然圖中 quick 分支直接進入 DEV，但後續仍會通過 Quality Gate 並執行 RETRO（Retrospective Agent）。
+
+**PM Agent 路由**：`discovery` workflow 只有 PM 階段即完成；`product` / `product-full` workflow 在 PM 完成後進入 PLAN → ARCH → ... 的完整流程。
 
 ---
 

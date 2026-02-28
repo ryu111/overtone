@@ -2,7 +2,7 @@
 
 > 本文件是 [Overtone 規格文件](overtone.md) 的子文件。
 > 主題：三信號驗證、pass@k 指標、Model Grader、Instinct 系統
-> 版本：v0.6
+> 版本：v0.17.7
 
 ---
 
@@ -63,11 +63,17 @@
 Hook 觀察（自動捕捉）
   PostToolUse / SubagentStop → observations.jsonl
       ↓
-4 種 Pattern 偵測
-  user_corrections    使用者修正
-  error_resolutions   錯誤解決
-  repeated_workflows  重複工作流
-  tool_preferences    工具偏好
+Pattern 偵測（V1 已實作：4 種，V2 預留：2 種）
+
+  V1 實作：
+  error_resolutions   Bash 非零 exit code（指令失敗）
+  tool_preferences    Bash 中使用 grep/find（建議改用 Grep/Glob）
+  wording_mismatch    .md 文件 emoji-關鍵詞強度不匹配
+  agent_performance   Agent 執行結果（SubagentStop 記錄）
+
+  V2 預留：
+  user_corrections    使用者糾正後的行為改變
+  repeated_workflows  重複工作流序列
       ↓
 Instinct 建立（原子知識）
   一個觸發條件 + 一個行動 + 信心分數
@@ -76,6 +82,9 @@ Instinct 建立（原子知識）
   0.3（初始）→ +0.05/確認 → -0.10/矛盾 → -0.02/週衰減
   ≥ 0.7 → 自動應用
   < 0.2 → 自動刪除
+      ↓
+Auto-compact
+  observations.jsonl 膨脹超過 2x 基線 → 自動壓縮（保留有效觀察）
       ↓
 進化路徑
   ≥ 5 instincts 同 tag → Skill

@@ -2,7 +2,7 @@
 
 > 本文件是 [Overtone 規格文件](overtone.md) 的子文件。
 > 主題：17 個 agent 職責、Handoff 協定、BDD 整合
-> 版本：v0.6
+> 版本：v0.17.7
 
 ---
 
@@ -28,8 +28,9 @@
 | 14 | refactor-cleaner | sonnet | blue | 死碼清理 | bypassPermissions |
 | 15 | retrospective | opus | purple | 迭代回顧 | bypassPermissions |
 | 16 | doc-updater | haiku | purple | 文件 | bypassPermissions |
+| 17 | grader | haiku | purple | 品質評分（可選，非 workflow stage） | bypassPermissions |
 
-> 另有 **grader agent**（Haiku）作為可選的品質評分工具，非 workflow stage agent，由 Main Agent 在 SubagentStop 後可選委派。
+> **grader** 非 workflow 必要階段，由 Main Agent 在 SubagentStop 後視需要委派。
 
 ### Model 分級
 
@@ -42,7 +43,7 @@
 | 色彩 | 組別 | Agents |
 |:----:|------|--------|
 | emerald | 產品類 | product-manager |
-| purple | 規劃類 | planner、retrospective、doc-updater |
+| purple | 規劃類 | planner、retrospective、doc-updater、grader |
 | cyan | 設計類 | architect、designer |
 | yellow | 執行類 | developer、qa |
 | blue | 分析類 | code-reviewer、refactor-cleaner |

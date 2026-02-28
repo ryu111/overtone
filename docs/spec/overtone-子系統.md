@@ -2,7 +2,7 @@
 
 > 本文件是 [Overtone 規格文件](overtone.md) 的子文件。
 > 主題：Specs 系統、Dashboard 監控、Remote 控制、Timeline 事件記錄
-> 版本：v0.6
+> 版本：v0.17.7
 
 ---
 
@@ -46,8 +46,8 @@
 - **提升穩定度**：SSE 自動重連、連線狀態追蹤、錯誤恢復
 - **技術栈**：Bun + htmx + Alpine.js（29KB、無構建步驟）
 - **自動啟動**：SessionStart hook 自動 spawn + 自動開瀏覽器
+- **重複開啟保護**（v0.17.3）：probePort() 確認 port 7777 是否已有服務，避免重複啟動；OVERTONE_NO_DASHBOARD 環境變數可停用自動啟動；EADDRINUSE 時 graceful exit
 - **三 Tab**：Overview（workflow 狀態 + agent 活動）、Timeline（事件流）、History（歷史統計 + pass@k）
-- **動畫版**：V1 最後優先加入
 
 ### Remote 抽象化架構
 
@@ -64,20 +64,20 @@ Remote Core（核心引擎）
        └─ WebhookAdapter      單向 fallback
 ```
 
-### Timeline（21 種事件）
+### Timeline（22 種事件，10 分類）
 
 | 分類 | 事件 | 說明 |
 |------|------|------|
-| **workflow** | start, complete, abort | 工作流生命週期 |
-| **stage** | start, complete, retry | 階段生命週期 |
-| **agent** | delegate, complete, error | Agent 執行紀錄 |
-| **loop** | start, advance, complete | Loop 迭代 |
-| **handoff** | create | Handoff 檔案建立 |
-| **parallel** | start, converge | 並行群組 |
-| **error** | fatal | 不可恢復錯誤 |
-| **grader** | score | Grader 品質評分結果 |
-| **specs** | init, archive | Specs 功能初始化與歸檔 |
-| **session** | start, end | Session 生命週期 |
+| **workflow** | start, complete, abort | 工作流生命週期（3） |
+| **stage** | start, complete, retry | 階段生命週期（3） |
+| **agent** | delegate, complete, error | Agent 執行紀錄（3） |
+| **loop** | start, advance, complete | Loop 迭代（3） |
+| **handoff** | create | Handoff 檔案建立（1） |
+| **parallel** | start, converge | 並行群組（2） |
+| **error** | fatal | 不可恢復錯誤（1） |
+| **grader** | score | Grader 品質評分結果（1） |
+| **specs** | init, archive | Specs 功能初始化與歸檔（2） |
+| **session** | start, end, compact | Session 生命週期（3） |
 
 儲存：`~/.overtone/sessions/{id}/timeline.jsonl`（append-only）。
 顯示：中文、簡潔。

@@ -64,30 +64,26 @@ Workflow 開始時 📋 MUST 使用 TaskCreate 為每個 stage 建立任務，�
 
 - **建立時機**：workflow skill 讀取完成後，委派第一個 agent 之前
 - **命名規則**：subject 用 `[STAGE] 描述`（如 `[PLAN] 規劃`），activeForm 用進行中語態（如 `規劃中`）
-- **狀態同步**：委派 agent 前 → `in_progress`；agent 完成後 → `completed`
-- 並行 stage 同時設為 `in_progress`
+- **狀態同步**：委派前 → `in_progress`；完成後 → `completed`；並行 stage 同時設為 `in_progress`
 
 ## 委派方式
 
 使用 **Task** 工具委派 agent。Task prompt 中 📋 MUST 包含：(1) agent 名稱 (2) 任務描述 (3) 前一階段的 Handoff (4) BDD spec 路徑（若有）。
-💡 Handoff 格式與填寫範例：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/auto/references/handoff-protocol.md`
+💡 Handoff 格式：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/auto/references/handoff-protocol.md`
 
 ## 並行規則
 
 同一並行群組 📋 MUST 在同一訊息中多個 Task 同時委派：quality（REVIEW + TEST）、verify（QA + E2E）、secure-quality（REVIEW + TEST + SECURITY）。
-💡 完整規則與語法範例：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/auto/references/parallel-groups.md`
+💡 完整規則：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/auto/references/parallel-groups.md`
 
 ### Test Scope 動態調度
 
-DEV 完成後，讀取 developer Handoff 的 `### Test Scope` 區塊，動態決定委派哪些測試 agent：
-- `unit`/`integration` ✅ → 委派 tester（TEST:verify）；`e2e` ✅ → 委派 e2e-runner（E2E）；`qa` ✅ → 委派 qa（QA）
-- 標記為 `⚠️` → main agent 自行判斷是否委派；全部 `--` → 跳過所有測試 agent；`### Test Scope` 完全缺失 → 預設委派 tester
-- 💡 完整調度規則：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/auto/references/test-scope-dispatch.md`
+DEV 完成後，讀取 developer Handoff 的 `### Test Scope` 區塊決定委派哪些測試 agent：
+- `unit`/`integration` ✅ → tester；`e2e` ✅ → e2e-runner；`qa` ✅ → qa
+- `⚠️` → 自行判斷；全部 `--` → 跳過；缺失 → 預設委派 tester
+- 💡 完整規則：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/auto/references/test-scope-dispatch.md`
 
-**Mul Dev**（DEV 內部並行）：
-- **有 Dev Phases**（tasks.md 中存在 `## Dev Phases` 區塊）：按 Phase 調度（parallel Phase 同一訊息多個 Task，sequential Phase 單一 Task）
-- **無 Dev Phases**（無 tasks.md 或 tasks.md 中沒有 `## Dev Phases`）：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/mul-dev/SKILL.md` → 自行分析任務，判斷是否有可並行子任務 → 有則同一訊息多個 Task，無則單一 developer
-- 分析後只有一個 Phase 或無獨立子任務 → 退化為單一 developer，不強制分解
+**Mul Dev**（DEV 內部並行）：tasks.md 有 `## Dev Phases` → 按 Phase 調度；否則讀取 `${CLAUDE_PLUGIN_ROOT}/skills/mul-dev/SKILL.md` 自行判斷並行。只有一個子任務 → 退化為單一 developer。
 
 ## BDD 規則
 

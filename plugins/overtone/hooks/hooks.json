@@ -6,6 +6,11 @@
       "command": "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/session/on-start.js"
     },
     {
+      "event": "PreCompact",
+      "type": "command",
+      "command": "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/session/pre-compact.js"
+    },
+    {
       "event": "UserPromptSubmit",
       "type": "command",
       "command": "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/prompt/on-submit.js"

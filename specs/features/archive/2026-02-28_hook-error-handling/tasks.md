@@ -1,9 +1,9 @@
 ---
 feature: hook-error-handling
-status: in-progress
+status: archived
 workflow: standard
+archivedAt: 2026-02-28T06:34:55.892Z
 ---
-
 ## Tasks
 
 - [ ] PLAN
