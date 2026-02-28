@@ -1,10 +1,10 @@
 ---
 feature: platform-alignment-phase1
-status: in-progress
+status: archived
 workflow: standard
 created: 2026-03-01T00:00:00Z
----
-## Tasks
+archivedAt: 2026-02-28T22:08:04.851Z
+---## Tasks
 
 - [x] PLAN
 - [x] ARCH

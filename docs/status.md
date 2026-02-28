@@ -16,8 +16,8 @@
 | Agent 數量 | 17（含 grader） |
 | Stage 數量 | 16 |
 | Workflow 模板 | 18 |
-| 測試通過 | 1073 pass / 0 fail |
-| 測試檔案 | 54 個 |
+| 測試通過 | 1082 pass / 0 fail |
+| 測試檔案 | 55 個 |
 | Hook 數量 | 9 個 |
 | Skill 數量 | 38 個 |
 
@@ -25,7 +25,7 @@
 
 - **[0.21.0] 2026-03-01**：Config API 統一設定管理 — config-api.js L1 驗證層 + L2 CRUD API + registry-data.json JSON 化 stages/agentModels + 新增 knownTools/hookEvents 常數（82 個新測試）
 - **[0.20.0] 2026-03-01**：平台對齁優化 Phase 1 — disallowedTools 遷移（10 個 agent）+ Reference Skills 注入（3 個新 skill）+ Workflow Context 注入（updatedInput）+ SessionEnd 和 PostToolUseFailure hook（+2 個 hook）
-- **[0.19.1] 2026-03-01**：健康檢查系統建置 — 新增 health-check.js（5 項確定性偵測）+ /ot:audit skill（71 個新測試）
+- **[0.21.1] 2026-03-01**：Platform-Drift 偵測完成 — health-check.js 新增第 6 項 platform-drift 檢測 + 12 個新測試 → 1082 pass
 
 ## 已知問題
 

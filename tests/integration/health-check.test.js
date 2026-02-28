@@ -93,12 +93,12 @@ describe('Feature 6：輸出格式驗證', () => {
     expect(output.summary).not.toBeNull();
   });
 
-  test('Scenario checks — checks 陣列長度為 5', () => {
+  test('Scenario checks — checks 陣列長度為 6', () => {
     const output = getParsed();
-    expect(output.checks.length).toBe(5);
+    expect(output.checks.length).toBe(6);
   });
 
-  test('Scenario checks — 包含所有 5 個偵測項目', () => {
+  test('Scenario checks — 包含所有 6 個偵測項目', () => {
     const output = getParsed();
     const names = output.checks.map((c) => c.name);
     expect(names).toContain('phantom-events');
@@ -106,6 +106,7 @@ describe('Feature 6：輸出格式驗證', () => {
     expect(names).toContain('doc-code-drift');
     expect(names).toContain('unused-paths');
     expect(names).toContain('duplicate-logic');
+    expect(names).toContain('platform-drift');
   });
 
   test('Scenario checks — 每個 check 包含 name、passed、findingsCount', () => {
@@ -119,7 +120,7 @@ describe('Feature 6：輸出格式驗證', () => {
 
   test('Scenario findings — 每筆 finding 包含必要欄位', () => {
     const output = getParsed();
-    const validChecks = new Set(['phantom-events', 'dead-exports', 'doc-code-drift', 'unused-paths', 'duplicate-logic']);
+    const validChecks = new Set(['phantom-events', 'dead-exports', 'doc-code-drift', 'unused-paths', 'duplicate-logic', 'platform-drift']);
     const validSeverities = new Set(['error', 'warning', 'info']);
     for (const f of output.findings) {
       expect(typeof f.check).toBe('string');
@@ -228,10 +229,10 @@ describe('真實 codebase 執行驗證', () => {
     expect(() => JSON.parse(result.stdout)).not.toThrow();
   });
 
-  test('所有 5 個 check 都成功執行（findingsCount 為數字）', () => {
+  test('所有 6 個 check 都成功執行（findingsCount 為數字）', () => {
     const result = runHealthCheck();
     const output = JSON.parse(result.stdout);
-    expect(output.checks.length).toBe(5);
+    expect(output.checks.length).toBe(6);
     for (const c of output.checks) {
       expect(Number.isInteger(c.findingsCount)).toBe(true);
       expect(c.findingsCount).toBeGreaterThanOrEqual(0);

@@ -3,12 +3,13 @@
 /**
  * health-check.js — Overtone 系統健康自動化偵測
  *
- * 執行 5 項確定性偵測：
+ * 執行 6 項確定性偵測：
  *   1. phantom-events   — registry 事件 vs 實際 emit 呼叫差異
  *   2. dead-exports     — scripts/lib 模組 export 但從未被 require 使用
  *   3. doc-code-drift   — docs 文件中的數量與程式碼實際值不符
  *   4. unused-paths     — paths.js export 但從未被使用
  *   5. duplicate-logic  — hooks/scripts 中已知的重複邏輯 pattern
+ *   6. platform-drift   — config-api 驗證 + 棄用 tools 白名單偵測
  *
  * 輸出：JSON stdout（HealthCheckOutput schema）
  * Exit code：有 findings → 1；無 findings → 0
@@ -572,6 +573,124 @@ function checkDuplicateLogic() {
   return findings;
 }
 
+// ── 6. Platform Drift 偵測 ──
+
+/**
+ * 整合 config-api.validateAll() 的驗證結果，並偵測棄用 tools 白名單。
+ * - config-api errors → severity: 'error'
+ * - config-api warnings → severity: 'warning'
+ * - agent .md 使用 tools: 而非 disallowedTools: → severity: 'warning'（grader 例外）
+ *
+ * @param {string} [pluginRootOverride] - 覆蓋 PLUGIN_ROOT，供測試使用
+ * @returns {Finding[]}
+ */
+function checkPlatformDrift(pluginRootOverride) {
+  const configApi = require('./lib/config-api');
+  const matter = require('gray-matter');
+
+  // 允許測試傳入自訂 pluginRoot，正式執行使用全域 PLUGIN_ROOT
+  const root = pluginRootOverride || PLUGIN_ROOT;
+
+  /**
+   * 將絕對路徑轉為相對於 root 的路徑（供 finding.file 使用）
+   * @param {string} absPath
+   * @returns {string}
+   */
+  const rel = (absPath) => path.relative(root, absPath);
+
+  const findings = [];
+
+  // ── 1. 執行 config-api 全面驗證 ──
+  let validateResult;
+  try {
+    validateResult = configApi.validateAll(root);
+  } catch (err) {
+    findings.push({
+      check: 'platform-drift',
+      severity: 'error',
+      file: 'hooks/hooks.json',
+      message: `config-api.validateAll() 執行失敗：${err.message || String(err)}`,
+    });
+    return findings;
+  }
+
+  // 將 agents 的 errors/warnings 轉為 findings
+  for (const [agentName, result] of Object.entries(validateResult.agents)) {
+    const file = rel(path.join(root, 'agents', `${agentName}.md`));
+    for (const msg of result.errors) {
+      findings.push({ check: 'platform-drift', severity: 'error', file, message: msg });
+    }
+    for (const msg of result.warnings) {
+      findings.push({ check: 'platform-drift', severity: 'warning', file, message: msg });
+    }
+  }
+
+  // 將 hooks 的 errors/warnings 轉為 findings
+  for (const [event, result] of Object.entries(validateResult.hooks)) {
+    const file = rel(path.join(root, 'hooks', 'hooks.json'));
+    for (const msg of result.errors) {
+      findings.push({ check: 'platform-drift', severity: 'error', file, message: `[${event}] ${msg}` });
+    }
+    for (const msg of result.warnings) {
+      findings.push({ check: 'platform-drift', severity: 'warning', file, message: `[${event}] ${msg}` });
+    }
+  }
+
+  // 將 skills 的 errors/warnings 轉為 findings
+  for (const [skillName, result] of Object.entries(validateResult.skills)) {
+    const file = rel(path.join(root, 'skills', skillName, 'SKILL.md'));
+    for (const msg of result.errors) {
+      findings.push({ check: 'platform-drift', severity: 'error', file, message: msg });
+    }
+    for (const msg of result.warnings) {
+      findings.push({ check: 'platform-drift', severity: 'warning', file, message: msg });
+    }
+  }
+
+  // 將 cross 的 errors/warnings 轉為 findings
+  const crossFile = rel(path.join(root, 'scripts', 'lib', 'registry-data.json'));
+  for (const msg of validateResult.cross.errors) {
+    findings.push({ check: 'platform-drift', severity: 'error', file: crossFile, message: msg });
+  }
+  for (const msg of validateResult.cross.warnings) {
+    findings.push({ check: 'platform-drift', severity: 'warning', file: crossFile, message: msg });
+  }
+
+  // ── 2. 偵測棄用 tools 白名單（grader 例外）──
+  const agentsDir = path.join(root, 'agents');
+  let agentFiles = [];
+  try {
+    agentFiles = readdirSync(agentsDir).filter((f) => f.endsWith('.md'));
+  } catch { /* 若讀不到目錄就跳過 */ }
+
+  for (const fileName of agentFiles) {
+    // grader 有特殊限制，刻意只開放少數工具，允許使用 tools:
+    if (fileName === 'grader.md') continue;
+
+    const agentPath = path.join(agentsDir, fileName);
+    const rawContent = safeRead(agentPath);
+    if (!rawContent) continue;
+
+    let frontmatter;
+    try {
+      frontmatter = matter(rawContent).data;
+    } catch { continue; }
+
+    // 使用了 tools: 欄位（白名單）而非 disallowedTools:（黑名單）
+    if (frontmatter.tools && Array.isArray(frontmatter.tools) && frontmatter.tools.length > 0) {
+      findings.push({
+        check: 'platform-drift',
+        severity: 'warning',
+        file: rel(agentPath),
+        message: `agent "${fileName.replace(/\.md$/, '')}" 使用棄用的 tools 白名單，建議遷移到 disallowedTools 黑名單`,
+        detail: `tools: [${frontmatter.tools.join(', ')}]`,
+      });
+    }
+  }
+
+  return findings;
+}
+
 // ── 主程式 ──
 
 /**
@@ -594,6 +713,7 @@ function runAllChecks() {
     { name: 'doc-code-drift',   fn: checkDocCodeDrift },
     { name: 'unused-paths',     fn: checkUnusedPaths },
     { name: 'duplicate-logic',  fn: checkDuplicateLogic },
+    { name: 'platform-drift',   fn: checkPlatformDrift },
   ];
 
   const allFindings = [];
@@ -674,6 +794,7 @@ module.exports = {
   checkDocCodeDrift,
   checkUnusedPaths,
   checkDuplicateLogic,
+  checkPlatformDrift,
   runAllChecks,
   // 工具函式
   collectJsFiles,

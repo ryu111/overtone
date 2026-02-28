@@ -5,7 +5,7 @@ description: 系統健康檢查。執行偵測腳本分析系統衛生狀態，�
 
 # /ot:audit — 系統健康檢查
 
-執行 5 項確定性偵測（phantom-events、dead-exports、doc-code-drift、unused-paths、duplicate-logic），分析 Overtone 系統衛生狀態。
+執行 6 項確定性偵測（phantom-events、dead-exports、doc-code-drift、unused-paths、duplicate-logic、platform-drift），分析 Overtone 系統衛生狀態。
 
 ## 執行步驟
 
@@ -38,12 +38,13 @@ bun ${CLAUDE_PLUGIN_ROOT}/scripts/health-check.js
 ```
 系統衛生狀態良好，無發現任何問題。
 
-所有 5 項偵測均通過：
+所有 6 項偵測均通過：
 - phantom-events: ✅ 通過
 - dead-exports: ✅ 通過
 - doc-code-drift: ✅ 通過
 - unused-paths: ✅ 通過
 - duplicate-logic: ✅ 通過
+- platform-drift: ✅ 通過
 ```
 
 #### 情況 B：有 findings（需要注意）

@@ -160,7 +160,7 @@ bun test
 # 啟動 Dashboard 監控面板（port 7777）
 bun scripts/server.js
 
-# 系統健康檢查（5 項偵測：phantom-events、dead-exports、doc-code-drift、unused-paths、duplicate-logic）
+# 系統健康檢查（6 項偵測：phantom-events、dead-exports、doc-code-drift、unused-paths、duplicate-logic、platform-drift）
 bun scripts/health-check.js
 
 # 驗證所有 15 個 agent 設定是否完整
