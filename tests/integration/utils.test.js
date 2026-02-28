@@ -2,7 +2,7 @@
 const { test, expect, describe } = require('bun:test');
 const { join } = require('path');
 const { SCRIPTS_LIB } = require('../helpers/paths');
-const { atomicWrite, escapeHtml } = require(join(SCRIPTS_LIB, 'utils'));
+const { atomicWrite } = require(join(SCRIPTS_LIB, 'utils'));
 const { mkdirSync, rmSync, readFileSync, readdirSync } = require('fs');
 const { tmpdir } = require('os');
 
@@ -45,31 +45,5 @@ describe('atomicWrite', () => {
 
     expect(JSON.parse(readFileSync(deepPath, 'utf8'))).toEqual({ nested: true });
     rmSync(TEST_DIR, { recursive: true, force: true });
-  });
-});
-
-describe('escapeHtml', () => {
-  test('轉義 HTML 特殊字元', () => {
-    expect(escapeHtml('<script>alert("xss")</script>')).toBe(
-      '&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;'
-    );
-  });
-
-  test('轉義 & 符號', () => {
-    expect(escapeHtml('a & b')).toBe('a &amp; b');
-  });
-
-  test('轉義單引號', () => {
-    expect(escapeHtml("it's")).toBe("it&#39;s");
-  });
-
-  test('非字串回傳空字串', () => {
-    expect(escapeHtml(null)).toBe('');
-    expect(escapeHtml(undefined)).toBe('');
-    expect(escapeHtml(123)).toBe('');
-  });
-
-  test('正常字串不變', () => {
-    expect(escapeHtml('Hello World')).toBe('Hello World');
   });
 });

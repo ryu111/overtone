@@ -4,7 +4,6 @@
  *
  * 提供跨模組使用的基礎工具：
  *   ✅ atomicWrite — 原子寫入（tmp+rename，避免 race condition）
- *   ✅ escapeHtml — HTML entity 編碼（防 XSS）
  *   ✅ clamp     — 數值夾限（確保 value 在 [min, max] 區間內）
  */
 
@@ -31,25 +30,6 @@ function atomicWrite(filePath, data) {
 }
 
 /**
- * HTML entity 編碼（防止 XSS）
- *
- * 將 HTML 特殊字元轉換為安全的 entity，
- * 用於動態值插入 HTML 模板前。
- *
- * @param {string} str - 原始字串
- * @returns {string} 編碼後的安全字串
- */
-function escapeHtml(str) {
-  if (typeof str !== 'string') return '';
-  return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
-
-/**
  * 數值夾限（確保 value 在 [min, max] 區間內）
  *
  * @param {number} value - 輸入值
@@ -61,4 +41,4 @@ function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
 }
 
-module.exports = { atomicWrite, escapeHtml, clamp };
+module.exports = { atomicWrite, clamp };

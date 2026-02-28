@@ -6,7 +6,6 @@
  * 定義 EventBus ↔ Adapter 的通訊介面。
  *
  * V1 實作：push / query / control
- * V2 預留：sync / interact
  */
 
 class Adapter {
@@ -48,14 +47,6 @@ class Adapter {
   onPush(sessionId, eventType, data) {
     // 子類實作
   }
-
-  // ── V2 預留 ──
-
-  /** 同步（V2） */
-  onSync(sessionId, data) {}
-
-  /** 互動（V2） */
-  onInteract(sessionId, input) {}
 }
 
 module.exports = Adapter;

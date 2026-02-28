@@ -64,7 +64,7 @@ Remote Core（核心引擎）
        └─ WebhookAdapter      單向 fallback
 ```
 
-### Timeline（22 種事件，10 分類）
+### Timeline（22 種事件，11 分類）
 
 | 分類 | 事件 | 說明 |
 |------|------|------|
@@ -72,12 +72,12 @@ Remote Core（核心引擎）
 | **stage** | start, complete, retry | 階段生命週期（3） |
 | **agent** | delegate, complete, error | Agent 執行紀錄（3） |
 | **loop** | start, advance, complete | Loop 迭代（3） |
-| **handoff** | create | Handoff 檔案建立（1） |
 | **parallel** | start, converge | 並行群組（2） |
 | **error** | fatal | 不可恢復錯誤（1） |
 | **grader** | score | Grader 品質評分結果（1） |
 | **specs** | init, archive | Specs 功能初始化與歸檔（2） |
 | **session** | start, end, compact | Session 生命週期（3） |
+| **system** | warning | 系統警告（1） |
 
 儲存：`~/.overtone/sessions/{id}/timeline.jsonl`（append-only）。
 顯示：中文、簡潔。

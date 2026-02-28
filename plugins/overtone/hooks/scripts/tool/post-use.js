@@ -18,7 +18,7 @@
  */
 
 const instinct = require('../../../scripts/lib/instinct');
-const { safeReadStdin, safeRun } = require('../../../scripts/lib/hook-utils');
+const { safeReadStdin, safeRun, getSessionId } = require('../../../scripts/lib/hook-utils');
 const { WORDING_RULES, detectWordingMismatch } = require('../../../scripts/lib/wording');
 
 // ── 主流程（同步）──
@@ -26,7 +26,7 @@ const { WORDING_RULES, detectWordingMismatch } = require('../../../scripts/lib/w
 if (require.main === module) safeRun(() => {
   const input = safeReadStdin();
 
-  const sessionId = input.session_id || process.env.CLAUDE_SESSION_ID;
+  const sessionId = getSessionId(input);
   if (!sessionId) {
     process.stdout.write(JSON.stringify({ result: '' }));
     process.exit(0);

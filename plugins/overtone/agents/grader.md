@@ -20,11 +20,11 @@ Prompt 中會提供：
 - `STAGE`：剛完成的階段（如 `DEV`、`REVIEW`）
 - `AGENT`：執行的 agent 名稱（如 `developer`）
 - `SESSION_ID`：session ID
-- `HANDOFF_PATH`：Handoff 檔案路徑（若存在）
+- 上一個 agent 的輸出摘要（直接包含於 Task prompt 中）
 
 ## 評分步驟
 
-1. 用 Read 工具讀取 `HANDOFF_PATH`（若路徑存在）
+1. 閱讀 Task prompt 中提供的上一個 agent 輸出摘要
 2. 評估三個維度（**整數 1-5**）：
    - `clarity`：輸出清晰度（1=模糊混亂 5=條理清晰）
    - `completeness`：完整度（1=嚴重缺漏 5=完整回答需求）

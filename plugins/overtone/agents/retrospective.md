@@ -29,7 +29,7 @@ tools:
 
 ## DO（📋 MUST）
 
-- 📋 閱讀所有相關 Handoff（`~/.overtone/sessions/{sessionId}/handoffs/`）
+- 📋 閱讀所有相關 Handoff（由 Main Agent 在 Task prompt 中提供）
 - 📋 回顧 BDD spec（`specs/features/in-progress/{featureName}/bdd.md`）與實作的對齊度（若有）
 - 📋 評估跨模組的一致性和潛在遺漏
 - 📋 信心 ≥70% 才在輸出中加入 `## 改善建議` 章節並寫入 `ISSUES` 標記
@@ -44,7 +44,7 @@ tools:
 
 ## 輸入
 
-- 所有前面階段的 Handoff（`~/.overtone/sessions/{sessionId}/handoffs/`）
+- 所有前面階段的 Handoff（由 Main Agent 在 Task prompt 中提供）
 - BDD spec（`specs/features/in-progress/{featureName}/bdd.md`，若有）
 - 測試結果和 review 結果（來自 tester / code-reviewer 的 Handoff）
 

@@ -102,7 +102,6 @@ Handoff 檔案存在 session 目錄，compact 後 Main Agent 可重新讀取。
 │   └── {sessionId}/
 │       ├── workflow.json     # 工作流狀態
 │       ├── timeline.jsonl    # 事件記錄（22 種）
-│       ├── handoffs/         # Handoff 檔案
 │       ├── loop.json         # Loop 狀態
 │       └── observations.jsonl # Instinct 觀察
 └── config.json               # 全域設定

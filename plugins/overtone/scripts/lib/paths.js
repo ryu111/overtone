@@ -50,8 +50,6 @@ const session = {
   timeline:     (id) => sessionFile(id, 'timeline.jsonl'),
   loop:         (id) => sessionFile(id, 'loop.json'),
   observations: (id) => sessionFile(id, 'observations.jsonl'),
-  handoffsDir:  (id) => join(sessionDir(id), 'handoffs'),
-  handoff:      (id, from, to) => join(sessionDir(id), 'handoffs', `${from}-to-${to}.md`),
 };
 
 // ── 全域設定 ──

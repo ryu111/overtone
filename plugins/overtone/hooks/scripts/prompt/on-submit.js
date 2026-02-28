@@ -12,7 +12,7 @@
 const state = require('../../../scripts/lib/state');
 const instinct = require('../../../scripts/lib/instinct');
 const { workflows } = require('../../../scripts/lib/registry');
-const { safeReadStdin, safeRun } = require('../../../scripts/lib/hook-utils');
+const { safeReadStdin, safeRun, getSessionId } = require('../../../scripts/lib/hook-utils');
 
 safeRun(() => {
   // 從 stdin 讀取 hook input
@@ -22,7 +22,7 @@ safeRun(() => {
 
   // 取得 session ID 和 projectRoot
   // session ID 優先從 hook input JSON（stdin）讀取，環境變數作為 fallback
-  const sessionId = input.session_id || process.env.CLAUDE_SESSION_ID || '';
+  const sessionId = getSessionId(input);
   const projectRoot = input.cwd || process.cwd();
 
   // 將 sessionId 寫入共享文件，讓 Skill 中的 Bash 工具呼叫（如 init-workflow.js）能讀到

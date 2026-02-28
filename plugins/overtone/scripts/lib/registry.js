@@ -105,14 +105,6 @@ const parallelGroups = (() => {
   return result;
 })();
 
-// 預設序列（/ot:auto 參考）
-const orchestratePresets = {
-  'feature':  ['PLAN', 'DEV', 'REVIEW', 'TEST', 'SECURITY'],
-  'bugfix':   ['DEBUG', 'DEV', 'TEST'],
-  'refactor': ['ARCH', 'DEV', 'REVIEW', 'TEST'],
-  'security': ['SECURITY', 'REVIEW', 'ARCH'],
-};
-
 // Loop 設定
 const loopDefaults = {
   maxIterations: 100,
@@ -124,7 +116,8 @@ const retryDefaults = {
   maxRetries: 3,
 };
 
-// Timeline 事件類型（23 種，11 分類）
+// Timeline 事件類型（22 種，10 分類）
+// 已移除：handoff:create（Handoff 為虛擬，永遠不會 emit）
 const timelineEvents = {
   // workflow 類（3）
   'workflow:start':     { label: '工作流啟動', category: 'workflow' },
@@ -145,9 +138,6 @@ const timelineEvents = {
   'loop:start':         { label: '循環啟動',   category: 'loop' },
   'loop:advance':       { label: '下一個任務', category: 'loop' },
   'loop:complete':      { label: '循環完成',   category: 'loop' },
-
-  // handoff 類（1）
-  'handoff:create':     { label: '交接建立',   category: 'handoff' },
 
   // parallel 類（2）
   'parallel:start':     { label: '並行啟動',   category: 'parallel' },
@@ -220,7 +210,6 @@ module.exports = {
   workflows,
   parallelGroups,
   parallelGroupDefs,
-  orchestratePresets,
   loopDefaults,
   retryDefaults,
   timelineEvents,

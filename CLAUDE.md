@@ -116,7 +116,7 @@ plugins/overtone/                # Plugin 根目錄
 │   ├── timeline.js              # 事件記錄
 │   ├── loop.js                  # Loop 狀態
 │   ├── instinct.js              # Instinct 觀察與信心
-│   ├── utils.js                 # 共用工具（atomicWrite、escapeHtml）
+│   ├── utils.js                 # 共用工具（atomicWrite、clamp）
 │   ├── dashboard/               # Dashboard 程序管理
 │   └── remote/                  # EventBus + Adapter（Dashboard、Telegram）
 ├── web/                         # Dashboard 前端（htmx + Alpine.js）
@@ -128,8 +128,7 @@ plugins/overtone/                # Plugin 根目錄
 ```
 ~/.overtone/sessions/{sessionId}/
 ├── workflow.json         # 工作流狀態
-├── timeline.jsonl        # 事件記錄（23 種）
-├── handoffs/             # Handoff 檔案
+├── timeline.jsonl        # 事件記錄（22 種）
 ├── loop.json             # Loop 狀態
 └── observations.jsonl    # Instinct 觀察
 ```

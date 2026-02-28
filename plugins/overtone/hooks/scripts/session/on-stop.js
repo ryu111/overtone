@@ -16,13 +16,13 @@ const state = require('../../../scripts/lib/state');
 const timeline = require('../../../scripts/lib/timeline');
 const loop = require('../../../scripts/lib/loop');
 const { stages, loopDefaults } = require('../../../scripts/lib/registry');
-const { safeReadStdin, safeRun, hookError } = require('../../../scripts/lib/hook-utils');
+const { safeReadStdin, safeRun, hookError, buildProgressBar, getSessionId } = require('../../../scripts/lib/hook-utils');
 
 safeRun(() => {
   // ── 從 stdin 讀取 hook input ──
 
   const input = safeReadStdin();
-  const sessionId = input.session_id || process.env.CLAUDE_SESSION_ID || '';
+  const sessionId = getSessionId(input);
   const projectRoot = input.cwd || '';
 
   // 無 session → 不擋
@@ -43,6 +43,13 @@ safeRun(() => {
   // ── 讀取 loop 狀態 ──
 
   const loopState = loop.readLoop(sessionId);
+
+  // loop:start — 首次進入（iteration === 0）
+  if (loopState.iteration === 0) {
+    timeline.emit(sessionId, 'loop:start', {
+      workflowType: currentState.workflowType,
+    });
+  }
 
   // ── 檢查退出條件 ──
 
@@ -82,28 +89,44 @@ safeRun(() => {
 
   // 4. 全部完成 → 允許退出
   if (allCompleted) {
-    loop.exitLoop(sessionId, loopState, '工作流完成');
+    // 判斷是否為異常完成：有任何 stage result 為 fail
+    const hasFailedStage = stageStatuses.some(([, s]) => s.result === 'fail');
 
-    // Specs 自動歸檔：workflow 完成且有對應 feature 時
-    if (currentState.featureName) {
-      try {
-        const specs = require('../../../scripts/lib/specs');
-        const archivePath = specs.archiveFeature(projectRoot, currentState.featureName);
-        timeline.emit(sessionId, 'specs:archive', {
-          featureName: currentState.featureName,
-          archivePath,
-        });
-      } catch (archErr) {
-        // 歸檔失敗不阻擋正常退出（可能已手動移動或不存在）
-        hookError('on-stop', `警告：歸檔失敗 — ${archErr.message}`);
+    if (hasFailedStage) {
+      // 異常中斷（有 fail stage）→ emit workflow:abort
+      loop.exitLoop(sessionId, loopState, '工作流異常中斷（含失敗階段）');
+      timeline.emit(sessionId, 'workflow:abort', {
+        workflowType: currentState.workflowType,
+        failCount: currentState.failCount,
+        rejectCount: currentState.rejectCount,
+        duration: calcDuration(currentState.createdAt),
+      });
+    } else {
+      // 正常完成 → emit workflow:complete
+      loop.exitLoop(sessionId, loopState, '工作流完成');
+
+      // Specs 自動歸檔：workflow 完成且有對應 feature 時
+      if (currentState.featureName) {
+        try {
+          const specs = require('../../../scripts/lib/specs');
+          const archivePath = specs.archiveFeature(projectRoot, currentState.featureName);
+          timeline.emit(sessionId, 'specs:archive', {
+            featureName: currentState.featureName,
+            archivePath,
+          });
+        } catch (archErr) {
+          // 歸檔失敗不阻擋正常退出（可能已手動移動或不存在）
+          hookError('on-stop', `警告：歸檔失敗 — ${archErr.message}`);
+        }
       }
+
+      timeline.emit(sessionId, 'workflow:complete', {
+        workflowType: currentState.workflowType,
+        duration: calcDuration(currentState.createdAt),
+      });
     }
 
     const summary = buildCompletionSummary(currentState);
-    timeline.emit(sessionId, 'workflow:complete', {
-      workflowType: currentState.workflowType,
-      duration: calcDuration(currentState.createdAt),
-    });
 
     process.stdout.write(JSON.stringify({
       result: summary,
@@ -127,11 +150,7 @@ safeRun(() => {
   const base = nextStage ? nextStage.split(':')[0] : null;
   const def = base ? stages[base] : null;
 
-  const progressBar = stageStatuses.map(([k, s]) => {
-    const b = k.split(':')[0];
-    const icon = s.status === 'completed' ? '✅' : s.status === 'active' ? '⏳' : '⬜';
-    return `${icon}${stages[b]?.emoji || ''}`;
-  }).join('');
+  const progressBar = buildProgressBar(stageStatuses, stages);
 
   const tasksLine = tasksStatus
     ? `📋 Tasks：${tasksStatus.checked}/${tasksStatus.total} 完成`

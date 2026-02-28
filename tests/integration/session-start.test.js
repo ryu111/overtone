@@ -94,11 +94,8 @@ describe('場景 1：有效 session_id — exit 0 並建立 session 目錄', () 
     expect(existsSync(sessionDir)).toBe(true);
   });
 
-  test('handoffs 子目錄已建立', () => {
-    const handoffsDir = paths.session.handoffsDir(SESSION_1);
-    expect(existsSync(handoffsDir)).toBe(true);
-  });
 });
+// 注意：handoffs 目錄不再由 SessionStart 建立（Handoff 為虛擬，不寫磁碟）
 
 // ────────────────────────────────────────────────────────────────────────────
 // 場景 2：hook 在建立目錄後向 timeline 寫入 session:start 事件

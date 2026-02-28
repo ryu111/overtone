@@ -112,15 +112,9 @@ V1 固定 17 個 agent（含 grader）。V2 再考慮使用者自定義擴充。
 [未解決項]
 ```
 
-### 存放路徑
+### 傳遞方式
 
-```
-~/.overtone/sessions/{sessionId}/handoffs/
-├── DEV-to-REVIEW.md
-├── DEV-to-TEST.md
-├── DEBUGGER-to-DEV.md
-└── ...
-```
+Handoff 是虛擬的——只存在 Main Agent 的 context window 中，不寫入磁碟。每個 agent 完成時在回覆最後輸出 Handoff 區塊，Main Agent 將其傳入下一個 agent 的 Task prompt。
 
 ### Developer Handoff 動態 Test Scope（v0.15.1+）
 

@@ -17,7 +17,7 @@ const { readFileSync, appendFileSync, existsSync, mkdirSync } = require('fs');
 const { dirname } = require('path');
 const paths = require('./paths');
 const { instinctDefaults } = require('./registry');
-const { atomicWrite } = require('./utils');
+const { atomicWrite, clamp } = require('./utils');
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -69,7 +69,7 @@ class Instinct {
 
   /** 將分數夾在 [0, 1] 範圍內，並四捨五入到小數點後 4 位 */
   _clamp(value) {
-    return Math.round(Math.min(1.0, Math.max(0.0, value)) * 10000) / 10000;
+    return Math.round(clamp(value, 0, 1) * 10000) / 10000;
   }
 
   /** 產生唯一 ID */

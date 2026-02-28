@@ -18,13 +18,13 @@ const instinct = require('../../../scripts/lib/instinct');
 const { stages, workflows, parallelGroups, retryDefaults } = require('../../../scripts/lib/registry');
 const paths = require('../../../scripts/lib/paths');
 const parseResult = require('../../../scripts/lib/parse-result');
-const { safeReadStdin, safeRun } = require('../../../scripts/lib/hook-utils');
+const { safeReadStdin, safeRun, getSessionId } = require('../../../scripts/lib/hook-utils');
 
 safeRun(() => {
   // ── 從 stdin 讀取 hook input ──
 
   const input = safeReadStdin();
-  const sessionId = input.session_id || process.env.CLAUDE_SESSION_ID || '';
+  const sessionId = getSessionId(input);
   const projectRoot = input.cwd || process.cwd();
 
   // 取得 agent 資訊
@@ -104,6 +104,15 @@ safeRun(() => {
   });
 
   // ── emit timeline 事件 ──
+
+  // agent:error — 補充事件（result 為 fail 時先 emit，再 emit agent:complete）
+  if (result.verdict === 'fail') {
+    timeline.emit(sessionId, 'agent:error', {
+      agent: agentName,
+      stage: actualStageKey,
+      reason: result.reason || 'agent 回報 fail',
+    });
+  }
 
   timeline.emit(sessionId, 'agent:complete', {
     agent: agentName,
@@ -254,8 +263,7 @@ safeRun(() => {
 
   // 提示 Main Agent 可選呼叫 grader
   if (result.verdict !== 'fail') {
-    const handoffPath = paths.session.handoff(sessionId, actualStageKey, agentName);
-    messages.push(`\n💡 可選：委派 grader agent 評估此階段輸出品質（subagent_type: ot:grader，傳入 STAGE=${actualStageKey} AGENT=${agentName} SESSION_ID=${sessionId} HANDOFF_PATH=${handoffPath}）`);
+    messages.push(`\n💡 可選：委派 grader agent 評估此階段輸出品質（subagent_type: ot:grader，傳入 STAGE=${actualStageKey} AGENT=${agentName} SESSION_ID=${sessionId}）`);
   }
 
   process.stdout.write(JSON.stringify({

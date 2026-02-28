@@ -19,7 +19,7 @@ Dashboard 在 SessionStart 時自動啟動並開啟瀏覽器。
 bun run ${CLAUDE_PLUGIN_ROOT}/scripts/server.js
 ```
 
-然後開啟：`http://localhost:7777/s/${CLAUDE_SESSION_ID}`
+然後開啟：`http://localhost:7777/`
 
 ## 環境變數
 

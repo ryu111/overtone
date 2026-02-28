@@ -15,13 +15,13 @@
 const state = require('../../../scripts/lib/state');
 const { stages } = require('../../../scripts/lib/registry');
 const identifyAgent = require('../../../scripts/lib/identify-agent');
-const { safeReadStdin, safeRun } = require('../../../scripts/lib/hook-utils');
+const { safeReadStdin, safeRun, getSessionId } = require('../../../scripts/lib/hook-utils');
 
 safeRun(() => {
   // ── 從 stdin 讀取 hook input ──
 
   const input = safeReadStdin();
-  const sessionId = input.session_id || process.env.CLAUDE_SESSION_ID || '';
+  const sessionId = getSessionId(input);
 
   // ── 取得 Task 工具參數 ──
 
@@ -167,6 +167,42 @@ safeRun(() => {
   });
 
   const timeline = require('../../../scripts/lib/timeline');
+  const { parallelGroups } = require('../../../scripts/lib/registry');
+
+  // stage:start — 只在 stage 從 pending 變為 active 時才 emit
+  if (actualKey && currentState.stages[actualKey].status === 'pending') {
+    timeline.emit(sessionId, 'stage:start', {
+      stage: actualKey,
+      agent: targetAgent,
+    });
+  }
+
+  // parallel:start — 當此 stage 是某並行群組中第一個被委派的成員時 emit
+  if (actualKey) {
+    const base = actualKey.split(':')[0];
+    for (const [groupName, members] of Object.entries(parallelGroups)) {
+      if (!members.includes(base)) continue;
+
+      // 檢查同群組的其他 stage 是否都還是 pending（即此為第一個被委派的）
+      const stageKeys = Object.keys(currentState.stages);
+      const groupStageKeys = stageKeys.filter((k) => {
+        const b = k.split(':')[0];
+        return members.includes(b) && k !== actualKey;
+      });
+      const allOthersPending = groupStageKeys.length > 0
+        && groupStageKeys.every((k) => currentState.stages[k].status === 'pending');
+
+      if (allOthersPending) {
+        timeline.emit(sessionId, 'parallel:start', {
+          group: groupName,
+          members,
+          firstAgent: targetAgent,
+        });
+      }
+      break;
+    }
+  }
+
   timeline.emit(sessionId, 'agent:delegate', {
     agent: targetAgent,
     stage: targetStage,

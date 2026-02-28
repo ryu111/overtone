@@ -102,17 +102,6 @@
 | code-reviewer(REJECT) → developer | REJECT 原因 + 問題清單 |
 | 所有 agent → doc-updater | 所有前面階段的 Handoff |
 
-## Handoff 儲存
+## Handoff 傳遞
 
-Handoff 檔案儲存在 session 目錄中：
-
-```
-~/.overtone/sessions/{sessionId}/handoffs/
-├── PLAN-planner.md
-├── ARCH-architect.md
-├── DESIGN-designer.md
-├── TEST-spec-tester.md
-├── DEV-developer.md
-├── REVIEW-code-reviewer.md
-└── ...
-```
+Handoff 是虛擬的——只存在 Main Agent 的 context window 中，不寫入磁碟。每個 agent 完成時在回覆最後輸出 Handoff 區塊，Main Agent 將其傳入下一個 agent 的 Task prompt。

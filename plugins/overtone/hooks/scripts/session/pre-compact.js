@@ -15,13 +15,13 @@
 const state = require('../../../scripts/lib/state');
 const timeline = require('../../../scripts/lib/timeline');
 const { stages } = require('../../../scripts/lib/registry');
-const { safeReadStdin, safeRun, buildPendingTasksMessage } = require('../../../scripts/lib/hook-utils');
+const { safeReadStdin, safeRun, buildPendingTasksMessage, buildProgressBar, getSessionId } = require('../../../scripts/lib/hook-utils');
 
 const MAX_MESSAGE_LENGTH = 2000;
 
 safeRun(() => {
   const input = safeReadStdin();
-  const sessionId = input.session_id || process.env.CLAUDE_SESSION_ID || '';
+  const sessionId = getSessionId(input);
   const projectRoot = input.cwd || process.env.CLAUDE_PROJECT_ROOT || process.cwd();
 
   // 無 session → 空操作，不阻擋 compaction
@@ -56,11 +56,7 @@ safeRun(() => {
   const stageEntries = Object.entries(currentState.stages || {});
   const completed = stageEntries.filter(([, s]) => s.status === 'completed').length;
   const total = stageEntries.length;
-  const progressBar = stageEntries.map(([k, s]) => {
-    const base = k.split(':')[0];
-    const icon = s.status === 'completed' ? '✅' : s.status === 'active' ? '⏳' : '⬜';
-    return `${icon}${stages[base]?.emoji || ''}`;
-  }).join('');
+  const progressBar = buildProgressBar(stageEntries, stages);
   lines.push(`進度：${progressBar} (${completed}/${total})`);
 
   // 目前階段

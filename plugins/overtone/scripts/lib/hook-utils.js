@@ -2,11 +2,13 @@
 /**
  * hook-utils.js — Hook 共用工具
  *
- * 提供四個函式，統一所有 hook 的錯誤處理方式：
+ * 提供六個函式，統一所有 hook 的通用邏輯：
  *   safeReadStdin            — 同步讀取 stdin + JSON.parse，失敗回傳 {}
  *   safeRun                  — 頂層 try/catch 包裹，crash 時輸出 defaultOutput + exit 0
  *   hookError                — 統一 stderr 錯誤記錄（帶 [overtone/{hookName}] 前綴）
  *   buildPendingTasksMessage — 讀取活躍 feature 的未完成任務，供 SessionStart + PreCompact 共用
+ *   buildProgressBar         — 產生 stage 進度條字串（emoji 圖示），供多個 hook 共用
+ *   getSessionId             — 從 hook input 取得 session ID（帶 fallback）
  */
 
 const { readFileSync } = require('fs');
@@ -98,4 +100,34 @@ function buildPendingTasksMessage(projectRoot, options = {}) {
   }
 }
 
-module.exports = { safeReadStdin, safeRun, hookError, buildPendingTasksMessage };
+/**
+ * 產生 stage 進度條字串（emoji 圖示）。
+ *
+ * 格式：每個 stage 顯示「狀態圖示 + stage emoji」，以空字串連接。
+ *   completed → ✅  active → ⏳  pending → ⬜
+ *
+ * @param {Array<[string, object]>} stageEntries - Object.entries(currentState.stages)
+ * @param {object} registryStages - registry.js 的 stages 定義
+ * @returns {string} 進度條字串，如 "✅📋✅🏗️⏳💻⬜🔍"
+ */
+function buildProgressBar(stageEntries, registryStages) {
+  return stageEntries.map(([k, s]) => {
+    const base = k.split(':')[0];
+    const icon = s.status === 'completed' ? '✅' : s.status === 'active' ? '⏳' : '⬜';
+    return `${icon}${registryStages[base]?.emoji || ''}`;
+  }).join('');
+}
+
+/**
+ * 從 hook input 取得 session ID。
+ *
+ * 優先從 input.session_id 讀取，其次 CLAUDE_SESSION_ID 環境變數，最後回傳空字串。
+ *
+ * @param {object} input - safeReadStdin() 的回傳值
+ * @returns {string}
+ */
+function getSessionId(input) {
+  return (input.session_id || process.env.CLAUDE_SESSION_ID || '').trim();
+}
+
+module.exports = { safeReadStdin, safeRun, hookError, buildPendingTasksMessage, buildProgressBar, getSessionId };

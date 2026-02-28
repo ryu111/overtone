@@ -18,18 +18,17 @@ const paths = require('../../../scripts/lib/paths');
 const timeline = require('../../../scripts/lib/timeline');
 const specs = require('../../../scripts/lib/specs');
 const state = require('../../../scripts/lib/state');
-const { safeReadStdin, safeRun, hookError, buildPendingTasksMessage } = require('../../../scripts/lib/hook-utils');
+const { safeReadStdin, safeRun, hookError, buildPendingTasksMessage, getSessionId } = require('../../../scripts/lib/hook-utils');
 
 // session ID 優先從 hook stdin JSON 讀取，環境變數作為 fallback
 const input = safeReadStdin();
-const sessionId = input.session_id || process.env.CLAUDE_SESSION_ID || '';
+const sessionId = getSessionId(input);
 
 safeRun(() => {
   // ── 初始化 session 目錄 ──
 
   if (sessionId) {
     mkdirSync(paths.sessionDir(sessionId), { recursive: true });
-    mkdirSync(paths.session.handoffsDir(sessionId), { recursive: true });
 
     // 記錄 session 啟動
     timeline.emit(sessionId, 'session:start', {

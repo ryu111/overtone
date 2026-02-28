@@ -797,8 +797,10 @@
           this.pipeline.stages[stageKey].status = 'completed';
           this.pipeline.stages[stageKey].completedAt = event.ts;
           this.pipeline.stages[stageKey].result = event.result;
-        } else if (type === 'stage:fail') {
-          this.pipeline.stages[stageKey].status = 'failed';
+          // stage:complete + result: 'fail' 表示失敗
+          if (event.result === 'fail') {
+            this.pipeline.stages[stageKey].status = 'failed';
+          }
         }
       },
 
