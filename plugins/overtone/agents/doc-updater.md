@@ -42,7 +42,7 @@ skills:
 | 文件 | 更新時機 | doc-updater 職責 |
 |------|---------|-----------------|
 | `docs/product-brief.md` | PM 決策後 | 不修改內容方向，只做格式和數字同步 |
-| `docs/product-roadmap.md` | Phase 進出時 | 更新狀態勾選（⚪→🔵→✅），不改任務定義 |
+| `docs/product-roadmap.md` | 每次 DOCS 階段 | 更新進度狀態、日期、header（見下方規範），不改任務定義 |
 
 ### 技術文件（doc-updater 完全負責同步）
 
@@ -56,6 +56,18 @@ skills:
 | ECC 分析、措詞指南等參考文件 | `docs/reference/` |
 | README | 專案根目錄 `README.md` |
 | CHANGELOG | 專案根目錄 `CHANGELOG.md` |
+
+## product-roadmap.md 更新規範
+
+每次 DOCS 階段，檢查 `docs/product-roadmap.md` 是否需要更新：
+
+- **最後更新日期**：若本次有任何 roadmap 相關變更，更新為當前日期
+- **Phase header**：「當前 Phase」對齊最新未完成的 Phase（Phase 0+1 完成 → Phase 2）
+- **Phase 總覽表格**：已完成的 Phase 標記 ✅ 完成
+- **技術 Roadmap 四階段**：已完成的 S1-S4 標記 ✅ 完成（含版本號或關鍵產出），進行中標記 🔵
+- **優先順序表格**：核心強化/Dashboard/Remote 狀態對齊實際進度
+
+若無相關變更，保持原值不動。
 
 ## status.md 更新規範
 
