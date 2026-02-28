@@ -14,6 +14,7 @@
 const { readFileSync } = require('fs');
 const { readState, updateStateAtomic } = require('../../../scripts/lib/state');
 const timeline = require('../../../scripts/lib/timeline');
+const instinct = require('../../../scripts/lib/instinct');
 const { stages, workflows, parallelGroups, retryDefaults } = require('../../../scripts/lib/registry');
 const paths = require('../../../scripts/lib/paths');
 const parseResult = require('../../../scripts/lib/parse-result');
@@ -112,6 +113,17 @@ timeline.emit(sessionId, 'stage:complete', {
   stage: actualStageKey,
   result: result.verdict,
 });
+
+// ── agent_performance 觀察記錄 ──
+try {
+  const perfTrigger = `${agentName} ${result.verdict} at ${actualStageKey}`;
+  const perfAction = result.verdict === 'pass'
+    ? `${agentName} 成功完成 ${actualStageKey}`
+    : `${agentName} 在 ${actualStageKey} 結果為 ${result.verdict}`;
+  instinct.emit(sessionId, 'agent_performance', perfTrigger, perfAction, `agent-${agentName}`);
+} catch {
+  // Instinct 觀察失敗不影響主流程
+}
 
 // ── 自動更新 tasks.md checkbox（若有 specs feature）──
 // 當 stage 完成（非 fail/reject）時，在 tasks.md 中勾選對應的 checkbox

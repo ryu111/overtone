@@ -42,4 +42,4 @@ disable-model-invocation: false
 
 - ⛔ 不自動修改 `skills/` 或 `agents/` 目錄（需人工確認）
 - 進化決策由 Main Agent 判斷，不強制執行
-- V1 只收集 `error_resolutions` 和 `tool_preferences` 兩種 pattern
+- V1 收集 4 種 pattern：`error_resolutions`、`tool_preferences`、`agent_performance`、`workflow_routing`

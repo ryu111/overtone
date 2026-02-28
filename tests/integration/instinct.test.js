@@ -157,3 +157,108 @@ describe('utils', () => {
     expect(instinct.query(TEST_SESSION)).toEqual([]);
   });
 });
+
+// ── Feature 1：emit() 飽和閾值 ──
+
+describe('emit — 飽和閾值（confidence >= 1.0）', () => {
+  test('信心未達 1.0 時正常追加觀察（0.95 → 1.0）', () => {
+    // 手動建立信心 0.95 的記錄
+    const item = instinct.emit(TEST_SESSION, 'tool_preferences', 'trigger', 'action', 'saturation-test-1');
+    // 連續 confirm 13 次：0.3 + 13*0.05 = 0.95
+    for (let i = 0; i < 13; i++) {
+      instinct.confirm(TEST_SESSION, item.id);
+    }
+    const before = instinct.query(TEST_SESSION, { tag: 'saturation-test-1' });
+    expect(before[0].confidence).toBe(0.95);
+
+    const obsPath = paths.session.observations(TEST_SESSION);
+    const linesBefore = readFileSync(obsPath, 'utf8').trim().split('\n').length;
+
+    // 再 emit 一次（0.95 + 0.05 = 1.0），應該正常追加
+    const result = instinct.emit(TEST_SESSION, 'tool_preferences', 'trigger2', 'action2', 'saturation-test-1');
+    expect(result.confidence).toBe(1.0);
+    expect(result.count).toBe(2);
+
+    // 應該有新增一行
+    const linesAfter = readFileSync(obsPath, 'utf8').trim().split('\n').length;
+    expect(linesAfter).toBe(linesBefore + 1);
+  });
+
+  test('信心已達 1.0 時直接回傳，不再追加', () => {
+    // 建立信心已達 1.0 的記錄
+    const item = instinct.emit(TEST_SESSION, 'error_resolutions', 'trigger', 'action', 'npm-bun-saturated');
+    // 連續 confirm 14 次：0.3 + 14*0.05 = 1.0
+    for (let i = 0; i < 14; i++) {
+      instinct.confirm(TEST_SESSION, item.id);
+    }
+    const before = instinct.query(TEST_SESSION, { tag: 'npm-bun-saturated' });
+    expect(before[0].confidence).toBe(1.0);
+
+    const obsPath = paths.session.observations(TEST_SESSION);
+    const linesBefore = readFileSync(obsPath, 'utf8').trim().split('\n').length;
+
+    // 再 emit 相同 tag + type（信心已達 1.0）
+    const result = instinct.emit(TEST_SESSION, 'error_resolutions', 'new-trigger', 'new-action', 'npm-bun-saturated');
+
+    // 應回傳現有物件，confidence 保持 1.0
+    expect(result.confidence).toBe(1.0);
+
+    // 行數不應增加
+    const linesAfter = readFileSync(obsPath, 'utf8').trim().split('\n').length;
+    expect(linesAfter).toBe(linesBefore);
+  });
+
+  test('飽和狀態下 count 不遞增', () => {
+    const item = instinct.emit(TEST_SESSION, 'agent_performance', 't', 'a', 'saturated-count-test');
+    // 調到 1.0
+    for (let i = 0; i < 14; i++) {
+      instinct.confirm(TEST_SESSION, item.id);
+    }
+    const before = instinct.query(TEST_SESSION, { tag: 'saturated-count-test' });
+    const countBefore = before[0].count;
+
+    // emit 相同 tag + type
+    const result = instinct.emit(TEST_SESSION, 'agent_performance', 't2', 'a2', 'saturated-count-test');
+    expect(result.count).toBe(countBefore); // count 不遞增
+  });
+
+  test('飽和狀態下 lastSeen 不更新（保留衰減能力）', () => {
+    const item = instinct.emit(TEST_SESSION, 'workflow_routing', 't', 'a', 'saturated-time-test');
+    for (let i = 0; i < 14; i++) {
+      instinct.confirm(TEST_SESSION, item.id);
+    }
+    const before = instinct.query(TEST_SESSION, { tag: 'saturated-time-test' });
+    const lastSeenBefore = before[0].lastSeen;
+
+    // emit 相同 tag + type
+    const result = instinct.emit(TEST_SESSION, 'workflow_routing', 't2', 'a2', 'saturated-time-test');
+    expect(result.lastSeen).toBe(lastSeenBefore); // lastSeen 不更新
+  });
+
+  test('飽和後再次 emit 不影響其他不同 tag 的記錄', () => {
+    // 建立兩個 tag：npm-bun（會飽和）和 bun-test（不飽和）
+    const itemA = instinct.emit(TEST_SESSION, 'error_resolutions', 'tA', 'aA', 'multi-tag-saturated');
+    instinct.emit(TEST_SESSION, 'error_resolutions', 'tB', 'aB', 'multi-tag-normal');
+
+    // 把 multi-tag-saturated 調到 1.0
+    for (let i = 0; i < 14; i++) {
+      instinct.confirm(TEST_SESSION, itemA.id);
+    }
+
+    const obsPath = paths.session.observations(TEST_SESSION);
+    const linesBefore = readFileSync(obsPath, 'utf8').trim().split('\n').length;
+
+    // emit 已飽和的 tag（不應追加）
+    instinct.emit(TEST_SESSION, 'error_resolutions', 't3', 'a3', 'multi-tag-saturated');
+    // emit 未飽和的 tag（應正常追加）
+    instinct.emit(TEST_SESSION, 'error_resolutions', 't4', 'a4', 'multi-tag-normal');
+
+    const linesAfter = readFileSync(obsPath, 'utf8').trim().split('\n').length;
+    // 只有 multi-tag-normal 追加了一行
+    expect(linesAfter).toBe(linesBefore + 1);
+
+    // multi-tag-normal 的信心應升至 0.35
+    const normalResult = instinct.query(TEST_SESSION, { tag: 'multi-tag-normal' });
+    expect(normalResult[0].confidence).toBe(0.35);
+  });
+});

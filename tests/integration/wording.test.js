@@ -263,6 +263,92 @@ describe('detectWordingMismatch — 輸出格式', () => {
   });
 });
 
+// ── Feature 4：Code Fence 排除 ──
+
+describe('detectWordingMismatch — Code Fence 排除', () => {
+  test('code fence 外的違規行正常觸發警告', () => {
+    withTmp('💡 MUST validate inputs\n', path => {
+      const warnings = detectWordingMismatch(path);
+      expect(warnings.length).toBeGreaterThan(0);
+    });
+  });
+
+  test('code fence 內的違規行不觸發警告', () => {
+    const content = [
+      '正常說明行',
+      '```javascript',
+      '💡 MUST validate inputs',
+      '```',
+    ].join('\n') + '\n';
+    withTmp(content, path => {
+      expect(detectWordingMismatch(path)).toEqual([]);
+    });
+  });
+
+  test('code fence 開啟行本身（``` 那一行）不觸發警告', () => {
+    withTmp('```javascript\n', path => {
+      expect(detectWordingMismatch(path)).toEqual([]);
+    });
+  });
+
+  test('code fence 關閉後恢復正常偵測', () => {
+    const content = [
+      '```javascript',
+      '💡 MUST validate（code fence 內，應忽略）',
+      '```',
+      '💡 MUST always run tests（code fence 外，應偵測）',
+    ].join('\n') + '\n';
+    withTmp(content, path => {
+      const warnings = detectWordingMismatch(path);
+      expect(warnings.length).toBe(1);
+      expect(warnings[0]).toContain('MUST always run tests');
+    });
+  });
+
+  test('多個 code fence 區塊交替排列，只有 fence 外的違規行產生警告', () => {
+    const content = [
+      '```javascript',
+      '💡 MUST not（fence 1 內，忽略）',
+      '```',
+      '💡 MUST fence-outside-1（fence 外，偵測）',
+      '```python',
+      '📋 consider（fence 2 內，忽略）',
+      '```',
+      '📋 consider fence-outside-2（fence 外，偵測）',
+    ].join('\n') + '\n';
+    withTmp(content, path => {
+      const warnings = detectWordingMismatch(path);
+      expect(warnings.length).toBe(2);
+    });
+  });
+
+  test('縮排的 code fence 也被正確識別', () => {
+    const content = [
+      '  ```javascript',
+      '💡 MUST validate（縮排 fence 內，應忽略）',
+      '  ```',
+    ].join('\n') + '\n';
+    withTmp(content, path => {
+      expect(detectWordingMismatch(path)).toEqual([]);
+    });
+  });
+
+  test('code fence 關閉後警告的行號正確計算', () => {
+    const content = [
+      '```javascript',           // 第 1 行（fence 開啟）
+      '💡 MUST inside（忽略）',  // 第 2 行（fence 內）
+      '```',                     // 第 3 行（fence 關閉）
+      '正常行',                  // 第 4 行
+      '💡 MUST outside',        // 第 5 行（應偵測）
+    ].join('\n') + '\n';
+    withTmp(content, path => {
+      const warnings = detectWordingMismatch(path);
+      expect(warnings.length).toBe(1);
+      expect(warnings[0]).toContain('第 5 行');
+    });
+  });
+});
+
 // ── WORDING_RULES 常數驗證 ──
 
 describe('WORDING_RULES 常數', () => {

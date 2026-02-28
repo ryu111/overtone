@@ -11,6 +11,7 @@
 
 const { readFileSync } = require('fs');
 const state = require('../../../scripts/lib/state');
+const instinct = require('../../../scripts/lib/instinct');
 const { workflows } = require('../../../scripts/lib/registry');
 
 // 從 stdin 讀取 hook input
@@ -65,6 +66,24 @@ try {
   }
 } catch {
   // 靜默忽略
+}
+
+// ── workflow_routing 觀察記錄 ──
+// 當已有進行中的 workflow 時，記錄使用者 prompt 和 workflow 類型的對應關係
+if (currentState && currentState.workflowType && sessionId) {
+  try {
+    const routingTrigger = userPrompt.slice(0, 80) || '(empty prompt)';
+    const routingAction = `工作流選擇：${currentState.workflowType}`;
+    instinct.emit(
+      sessionId,
+      'workflow_routing',
+      routingTrigger,
+      routingAction,
+      `wf-${currentState.workflowType}`
+    );
+  } catch {
+    // 觀察失敗不影響主流程
+  }
 }
 
 let systemMessage;

@@ -87,6 +87,12 @@ class Instinct {
     const existing = list.find(i => i.tag === tag && i.type === type);
 
     if (existing) {
+      // 飽和閾值：信心已達 1.0 → 直接回傳，不追加 JSONL 行（避免無限膨脹）
+      // 不更新 lastSeen，保留衰減機制正常運作能力
+      if (existing.confidence >= 1.0) {
+        return existing;
+      }
+
       // 同 tag + type 已存在 → 確認（信心 +0.05）— append-only 更新避免 race
       existing.confidence = this._clamp(existing.confidence + instinctDefaults.confirmBoost);
       existing.count = (existing.count || 1) + 1;

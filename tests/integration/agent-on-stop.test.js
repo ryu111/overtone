@@ -779,3 +779,122 @@ describe('場景 13：D3 — 雙重失敗協調提示', () => {
     expect(result.result.toUpperCase()).toContain('DEBUGGER');
   });
 });
+
+// ────────────────────────────────────────────────────────────────────────────
+// 場景 14：agent_performance Instinct 觀察驗證
+// ────────────────────────────────────────────────────────────────────────────
+
+describe('場景 14：agent_performance Instinct 觀察', () => {
+  const instinct = require(join(SCRIPTS_LIB, 'instinct'));
+
+  test('developer PASS → observations.jsonl 新增 agent_performance 記錄', async () => {
+    const sessionId = newSessionId();
+    createdSessions.push(sessionId);
+
+    mkdirSync(paths.sessionDir(sessionId), { recursive: true });
+    setupWorkflowWithActiveStage(sessionId, 'single', 'DEV');
+
+    await runHook(
+      { agent_type: 'ot:developer', last_assistant_message: 'VERDICT: pass 開發完成' },
+      sessionId
+    );
+
+    // 查詢 agent_performance 觀察
+    const observations = instinct.query(sessionId, { type: 'agent_performance' });
+    expect(observations.length).toBeGreaterThan(0);
+
+    const devObs = observations.find(o => o.tag === 'agent-developer');
+    expect(devObs).toBeDefined();
+    expect(devObs.type).toBe('agent_performance');
+    expect(devObs.trigger).toContain('developer');
+    expect(devObs.trigger).toContain('pass');
+    expect(devObs.trigger).toContain('DEV');
+  });
+
+  test('tester FAIL → 觀察 tag 為 agent-tester，trigger 含 fail', async () => {
+    const sessionId = newSessionId();
+    createdSessions.push(sessionId);
+
+    mkdirSync(paths.sessionDir(sessionId), { recursive: true });
+    state.initState(sessionId, 'quick', ['DEV', 'REVIEW', 'TEST']);
+    state.updateStateAtomic(sessionId, (s) => {
+      s.stages['DEV'].status = 'completed';
+      s.stages['DEV'].result = 'pass';
+      s.stages['REVIEW'].status = 'completed';
+      s.stages['REVIEW'].result = 'pass';
+      s.stages['TEST'].status = 'active';
+      s.currentStage = 'TEST';
+      return s;
+    });
+
+    await runHook(
+      { agent_type: 'ot:tester', last_assistant_message: '測試失敗 3 tests fail' },
+      sessionId
+    );
+
+    const observations = instinct.query(sessionId, { type: 'agent_performance' });
+    const testerObs = observations.find(o => o.tag === 'agent-tester');
+    expect(testerObs).toBeDefined();
+    expect(testerObs.trigger).toContain('tester');
+    expect(testerObs.trigger).toContain('fail');
+  });
+
+  test('code-reviewer REJECT → 觀察 tag 為 agent-code-reviewer，trigger 含 reject', async () => {
+    const sessionId = newSessionId();
+    createdSessions.push(sessionId);
+
+    mkdirSync(paths.sessionDir(sessionId), { recursive: true });
+    state.initState(sessionId, 'quick', ['DEV', 'REVIEW', 'TEST']);
+    state.updateStateAtomic(sessionId, (s) => {
+      s.stages['DEV'].status = 'completed';
+      s.stages['DEV'].result = 'pass';
+      s.stages['REVIEW'].status = 'active';
+      s.currentStage = 'REVIEW';
+      return s;
+    });
+
+    await runHook(
+      { agent_type: 'ot:code-reviewer', last_assistant_message: '拒絕，程式碼有安全問題 reject' },
+      sessionId
+    );
+
+    const observations = instinct.query(sessionId, { type: 'agent_performance' });
+    const reviewerObs = observations.find(o => o.tag === 'agent-code-reviewer');
+    expect(reviewerObs).toBeDefined();
+    expect(reviewerObs.trigger).toContain('code-reviewer');
+    expect(reviewerObs.trigger).toContain('reject');
+  });
+
+  test('同一 agent 多次完成後信心累積（confirm 機制）', async () => {
+    const sessionId = newSessionId();
+    createdSessions.push(sessionId);
+
+    mkdirSync(paths.sessionDir(sessionId), { recursive: true });
+
+    // 第一次完成
+    setupWorkflowWithActiveStage(sessionId, 'single', 'DEV');
+    await runHook(
+      { agent_type: 'ot:developer', last_assistant_message: 'VERDICT: pass 第一次完成' },
+      sessionId
+    );
+
+    const first = instinct.query(sessionId, { type: 'agent_performance', tag: 'agent-developer' });
+    expect(first.length).toBeGreaterThan(0);
+    expect(first[0].count).toBe(1);
+    expect(first[0].confidence).toBe(0.3);
+
+    // 第二次完成（需要重設 stage 為 active）
+    state.updateStateAtomic(sessionId, (s) => {
+      s.stages['DEV'].status = 'active';
+      return s;
+    });
+    await runHook(
+      { agent_type: 'ot:developer', last_assistant_message: 'VERDICT: pass 第二次完成' },
+      sessionId
+    );
+
+    const second = instinct.query(sessionId, { type: 'agent_performance', tag: 'agent-developer' });
+    expect(second[0].count).toBe(2);
+    expect(second[0].confidence).toBe(0.35); // 0.3 + 0.05
+  });
+});

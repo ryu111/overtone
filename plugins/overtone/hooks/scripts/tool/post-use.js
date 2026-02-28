@@ -7,7 +7,7 @@
  *
  * V1 偵測範圍：
  *   error_resolutions  — Bash 非零 exit code（指令失敗）
- *   tool_preferences   — Grep/Glob 工具使用偏好
+ *   tool_preferences   — Bash 中使用 grep/find/rg（反面糾正）
  *   wording_mismatch   — .md 文件 emoji-關鍵詞強度不匹配
  *
  * V2 預留：
@@ -49,13 +49,27 @@ async function main() {
         process.exit(0);
       }
     }
-
-    // V1 Pattern 2：tool_preferences — 搜尋工具選擇偏好
-    if (toolName === 'Grep' || toolName === 'Glob') {
-      observeSearchToolPreference(sessionId, toolName);
-    }
   } catch {
     // 觀察失敗靜默處理，不影響工具執行
+  }
+
+  // V1 Pattern 2：tool_preferences — 搜尋工具反面糾正（Bash 中使用 grep/find/rg）
+  // 獨立於 observeBashError，exit_code=0 的 Bash grep 也記錄（不良工具選擇不以成敗區分）
+  if (toolName === 'Bash') {
+    const command = (toolInput.command || '').trim();
+    if (command && /\b(grep|find|rg)\b/.test(command)) {
+      try {
+        instinct.emit(
+          sessionId,
+          'tool_preferences',
+          `Bash 中使用 grep/find：${command.slice(0, 80)}`,
+          '建議改用 Grep/Glob 工具（而非 Bash grep/find）',
+          'search-tools'
+        );
+      } catch {
+        // 觀察失敗靜默處理
+      }
+    }
   }
 
   // V1 Pattern 3：wording_mismatch — .md 文件 emoji-關鍵詞不匹配偵測
@@ -142,22 +156,6 @@ function observeBashError(sessionId, toolInput, toolResponse) {
   return null;
 }
 
-/**
- * 觀察搜尋工具偏好（tool_preferences）
- * 當使用 Grep/Glob 工具時記錄偏好（相對於 Bash grep/find）
- * @param {string} sessionId
- * @param {string} toolName - 'Grep' | 'Glob'
- */
-function observeSearchToolPreference(sessionId, toolName) {
-  instinct.emit(
-    sessionId,
-    'tool_preferences',
-    '搜尋/查找操作',
-    `偏好使用 ${toolName} 工具（而非 Bash grep/find）`,
-    'search-tools'
-  );
-}
-
 // ── Pattern 3：措詞不匹配偵測 ──
 
 /**
@@ -202,9 +200,21 @@ function detectWordingMismatch(filePath) {
 
   const warnings = [];
   const lines = content.split('\n').slice(0, 1000); // 上限 1000 行
+  let inCodeFence = false; // 追蹤是否在 code fence 內
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
+
+    // code fence 狀態追蹤：行首三個以上反引號切換 inCodeFence
+    // trimStart() 處理縮排場景（如 list item 內的 code fence）
+    if (/^```/.test(line.trimStart())) {
+      inCodeFence = !inCodeFence;
+      continue; // code fence 標記行本身跳過偵測
+    }
+
+    // code fence 內的行跳過偵測
+    if (inCodeFence) continue;
+
     // 排除 Markdown 表格行（以 | 開頭），避免說明用的對照表產生誤報
     if (line.trimStart().startsWith('|')) continue;
 

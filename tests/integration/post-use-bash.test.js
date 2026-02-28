@@ -18,10 +18,18 @@ const SESSION_1 = `test_post_bash_s1_${Date.now()}`;
 const SESSION_2 = `test_post_bash_s2_${Date.now()}`;
 const SESSION_3 = `test_post_bash_s3_${Date.now()}`;
 const SESSION_4 = `test_post_bash_s4_${Date.now()}`;
+const SESSION_5 = `test_post_bash_s5_${Date.now()}`;
+const SESSION_6 = `test_post_bash_s6_${Date.now()}`;
+const SESSION_7 = `test_post_bash_s7_${Date.now()}`;
+const SESSION_8 = `test_post_bash_s8_${Date.now()}`;
+
+const ALL_SESSIONS = [SESSION_1, SESSION_2, SESSION_3, SESSION_4, SESSION_5, SESSION_6, SESSION_7, SESSION_8];
+
+const instinct = require(join(SCRIPTS_LIB, 'instinct'));
 
 beforeAll(() => {
-  // 建立 4 個獨立 session，確保 instinct.emit 有有效的 session 存在
-  for (const sessionId of [SESSION_1, SESSION_2, SESSION_3, SESSION_4]) {
+  // 建立所有 session，確保 instinct.emit 有有效的 session 存在
+  for (const sessionId of ALL_SESSIONS) {
     mkdirSync(paths.sessionDir(sessionId), { recursive: true });
     state.initState(sessionId, 'quick', ['DEV', 'REVIEW', 'TEST']);
   }
@@ -29,7 +37,7 @@ beforeAll(() => {
 
 afterAll(() => {
   // 清理所有測試 session 目錄
-  for (const sessionId of [SESSION_1, SESSION_2, SESSION_3, SESSION_4]) {
+  for (const sessionId of ALL_SESSIONS) {
     rmSync(paths.sessionDir(sessionId), { recursive: true, force: true });
   }
 });
@@ -164,6 +172,92 @@ describe('場景 4：非 Bash 工具不觸發 observeBashError', () => {
     // result 為 null（無 guard 輸出）或字串（不含守衛訊息）
     if (result !== null) {
       expect(result).not.toContain('[Overtone 錯誤守衛]');
+    }
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// 場景 5：search-tools 反面觀察 — Bash grep/find/rg 偵測
+// ────────────────────────────────────────────────────────────────────────────
+
+describe('場景 5：search-tools 反面觀察', () => {
+  test('Bash grep 觸發 tool_preferences 觀察（exit_code=0）', async () => {
+    const { exitCode } = await runHook({
+      session_id: SESSION_5,
+      tool_name: 'Bash',
+      tool_input: { command: 'grep -r "pattern" ./src' },
+      tool_response: { exit_code: 0, stdout: '', stderr: '' },
+    });
+
+    expect(exitCode).toBe(0);
+
+    // 驗證 instinct 觀察記錄
+    const observations = instinct.query(SESSION_5, { type: 'tool_preferences', tag: 'search-tools' });
+    expect(observations.length).toBeGreaterThan(0);
+    expect(observations[0].action).toContain('建議改用 Grep/Glob 工具');
+    expect(observations[0].trigger).toContain('grep');
+  });
+
+  test('Bash 管道 grep（cat file | grep）也觸發觀察', async () => {
+    await runHook({
+      session_id: SESSION_6,
+      tool_name: 'Bash',
+      tool_input: { command: 'cat package.json | grep "version"' },
+      tool_response: { exit_code: 0, stdout: '"version": "1.0.0"', stderr: '' },
+    });
+
+    const observations = instinct.query(SESSION_6, { type: 'tool_preferences', tag: 'search-tools' });
+    expect(observations.length).toBeGreaterThan(0);
+  });
+
+  test('Bash rg 也觸發 search-tools 觀察', async () => {
+    await runHook({
+      session_id: SESSION_7,
+      tool_name: 'Bash',
+      tool_input: { command: 'rg "TODO" ./plugins' },
+      tool_response: { exit_code: 0, stdout: '', stderr: '' },
+    });
+
+    const observations = instinct.query(SESSION_7, { type: 'tool_preferences', tag: 'search-tools' });
+    expect(observations.length).toBeGreaterThan(0);
+  });
+
+  test('Bash grep exit_code=1（無匹配行）也觸發觀察（不以成敗區分）', async () => {
+    await runHook({
+      session_id: SESSION_8,
+      tool_name: 'Bash',
+      tool_input: { command: 'grep "pattern" ./no-match-file' },
+      tool_response: { exit_code: 1, stdout: '', stderr: '' },
+    });
+
+    const observations = instinct.query(SESSION_8, { type: 'tool_preferences', tag: 'search-tools' });
+    expect(observations.length).toBeGreaterThan(0);
+  });
+
+  test('Grep 工具使用時不記錄 search-tools 觀察', async () => {
+    // SESSION_4 使用 Grep 工具（場景 4 已執行）
+    const observations = instinct.query(SESSION_4, { type: 'tool_preferences', tag: 'search-tools' });
+    expect(observations.length).toBe(0);
+  });
+
+  test('Bash 指令含 fingerprint 不觸發（word boundary 匹配）', async () => {
+    // 建立獨立 session 避免與其他測試干擾
+    const fpSession = `test_post_bash_fp_${Date.now()}`;
+    mkdirSync(paths.sessionDir(fpSession), { recursive: true });
+    state.initState(fpSession, 'quick', ['DEV', 'REVIEW', 'TEST']);
+
+    try {
+      await runHook({
+        session_id: fpSession,
+        tool_name: 'Bash',
+        tool_input: { command: 'node -e "console.log(fingerprint)"' },
+        tool_response: { exit_code: 0, stdout: '', stderr: '' },
+      });
+
+      const observations = instinct.query(fpSession, { type: 'tool_preferences', tag: 'search-tools' });
+      expect(observations.length).toBe(0);
+    } finally {
+      rmSync(paths.sessionDir(fpSession), { recursive: true, force: true });
     }
   });
 });

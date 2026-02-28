@@ -103,7 +103,10 @@ tag: "bun-over-npm"
 | 類型 | 說明 | 範例 |
 |------|------|------|
 | `error_resolutions` | 錯誤和其解決方式 | "MODULE_NOT_FOUND → 需要 bun install" |
-| `tool_preferences` | 工具偏好 | "此專案偏好 bun 而非 npm" |
+| `tool_preferences` | 工具偏好（反面偵測） | "Bash grep/find → 建議改用 Grep/Glob" |
+| `agent_performance` | Agent 執行表現 | "developer pass at DEV" |
+| `workflow_routing` | 工作流選擇偏好 | "wf-standard — 標準功能" |
+| `wording_mismatch` | 措詞不匹配偵測 | "💡 MUST → emoji-關鍵詞不匹配" |
 
 ## 設定參考（registry.js）
 
