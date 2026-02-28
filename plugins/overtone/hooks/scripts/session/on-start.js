@@ -81,6 +81,20 @@ safeRun(() => {
     grayMatterStatus = '  ⚠️  gray-matter 未安裝 — cd plugins/overtone && bun add gray-matter';
   }
 
+  let ghStatus;
+  try {
+    require('child_process').execSync('which gh', { stdio: 'ignore' });
+    // gh CLI 已安裝，進一步確認認證狀態
+    try {
+      require('child_process').execSync('gh auth status', { stdio: 'ignore' });
+      ghStatus = '  🐙 gh CLI: 已安裝且已認證';
+    } catch {
+      ghStatus = '  ⚠️  gh CLI: 已安裝但未認證 — gh auth login';
+    }
+  } catch {
+    ghStatus = null; // 未安裝不顯示（非必要工具）
+  }
+
   // ── Banner ──
 
   const dashboardUrl = `http://localhost:${port}/`;
@@ -95,6 +109,7 @@ safeRun(() => {
     sessionId ? `  📂 Session: ${sessionId.slice(0, 8)}...` : null,
     dashboardUrl ? `  🖥️ Dashboard: ${dashboardUrl}` : null,
     agentBrowserStatus,
+    ghStatus,
     grayMatterStatus,
     '',
   ].filter(line => line != null).join('\n');

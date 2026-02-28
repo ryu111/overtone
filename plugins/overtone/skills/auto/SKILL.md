@@ -35,6 +35,10 @@ description: Overtone 核心工作流選擇器。分析使用者需求自動選�
 | 純產品探索、需求釐清 | `/ot:pm` (discovery) | PM |
 | 以上都不適合 | 自訂序列 | 自行編排 agent 組合 |
 
+> **GitHub 整合入口**（非 workflow，為獨立 skill）：
+> - `/ot:issue <number>` — 讀取 GitHub Issue，自動選 workflow 並建立 feature branch
+> - `/ot:pr` — 從 workflow 結果自動組裝並建立 GitHub PR
+
 選好後，讀取對應的 workflow skill 取得完整執行指引。💡 邊界情況範例：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/auto/examples/workflow-selection.md`
 
 ## 16 個 Stage Agent 清單

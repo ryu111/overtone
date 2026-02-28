@@ -108,7 +108,7 @@ docs/                            # 專案文件目錄（⚠️ 不在 plugin 下
 plugins/overtone/                # Plugin 根目錄
 ├── .claude-plugin/              # Plugin manifest（plugin.json）
 ├── agents/                      # 17 個 agent .md 檔（含 grader）
-├── skills/                      # 32 個 Skill 定義
+├── skills/                      # 34 個 Skill 定義
 ├── hooks/                       # hooks.json + scripts/
 ├── scripts/lib/                 # 共用程式庫
 │   ├── registry.js              # SoT：stages/agents/workflows/events
