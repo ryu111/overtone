@@ -96,19 +96,6 @@ PM 產出任務清單 → 使用者確認 → PM 建議 workflow 類型 → 讀�
 - **拆分**：無關的修復 → 分別跑不同 workflow
 - PM 建議分組方式，使用者最終決定
 
-### 導流範例
-
-使用者：「開始修 Phase 0 的問題」
-
-PM 回應：
-> 我建議把 7 個修復分為兩批：
-> - **Batch 1**（quick workflow）：4 個 frontmatter/maxTurns 快速修改
-> - **Batch 2**（standard workflow）：hookSpecificOutput 遷移 + race condition + tasks.md 通知
->
-> 要先從哪一批開始？確認後我會啟動對應 workflow。
-
-使用者確認後 → 讀取 `${CLAUDE_PLUGIN_ROOT}/skills/auto/SKILL.md` → 選定 workflow → 委派 developer 執行
-
 ## 參考文件
 
 詳細框架與模板（按需讀取）：

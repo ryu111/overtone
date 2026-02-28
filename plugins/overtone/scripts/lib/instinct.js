@@ -29,10 +29,12 @@ class Instinct {
     const filePath = paths.session.observations(sessionId);
     if (!existsSync(filePath)) return [];
 
-    const items = readFileSync(filePath, 'utf8')
+    const lines = readFileSync(filePath, 'utf8')
       .trim()
       .split('\n')
-      .filter(Boolean)
+      .filter(Boolean);
+
+    const items = lines
       .map(line => { try { return JSON.parse(line); } catch { return null; } })
       .filter(Boolean);
 
@@ -41,7 +43,14 @@ class Instinct {
     for (const item of items) {
       byId.set(item.id, item);
     }
-    return Array.from(byId.values());
+    const merged = Array.from(byId.values());
+
+    // 自動壓縮：原始行數超過唯一條目的 2 倍時，重寫檔案，避免無限膨脹
+    if (merged.length > 0 && lines.length > merged.length * 2) {
+      this._writeAll(sessionId, merged);
+    }
+
+    return merged;
   }
 
   /** 全量寫回（僅用於 prune/decay 等需要刪減的操作） */

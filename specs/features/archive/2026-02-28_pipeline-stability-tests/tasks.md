@@ -1,9 +1,9 @@
 ---
 workflow: standard
-status: in-progress
+status: archived
 created: 2026-02-28
+archivedAt: 2026-02-28T02:15:28.305Z
 ---
-
 # Tasks: pipeline-stability-tests
 
 ## Stages

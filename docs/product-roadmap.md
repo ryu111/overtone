@@ -29,8 +29,8 @@
 
 | # | 任務 | 說明 | 狀態 |
 |---|------|------|:----:|
-| 0-1 | single workflow 跑 10 次 | 真實開發任務，記錄成功率和人工介入次數 | ⚪ 0/10 |
-| 0-2 | quick workflow 跑 10 次 | 真實開發任務，記錄成功率和人工介入次數 | 🔵 1/10 |
+| 0-1 | single workflow 跑 10 次 | 真實開發任務，記錄成功率和人工介入次數 | 🔵 1/10 |
+| 0-2 | quick workflow 跑 10 次 | 真實開發任務，記錄成功率和人工介入次數 | 🔵 2/10 |
 | 0-3 | standard workflow 跑 10 次 | 真實開發任務，記錄成功率和人工介入次數 | 🔵 2/10 |
 | 0-4 | 修復路由/Loop/Hook 問題 | 根據 0-1~0-3 發現的問題逐一修復 | ⚪ |
 | 0-5 | auto/SKILL.md 認知負荷控制 | 確保 ≤ 120 行，必要時分層載入 | ⚪ |
@@ -50,6 +50,8 @@
 | 1 | 2026-02-28 | standard | dashboard-duplicate-spawn-fix | ✅ 完成 | 0 次 | PM discovery → standard 全流程。599 tests pass，+11 新測試 |
 | 2 | 2026-02-28 | standard | instinct-observation-quality | ✅ 完成 | 0 次 | 6 項品質改進（emit 飽和、code fence、agent_performance、workflow_routing、search-tools、confidence-scoring）。626 tests pass，+27 新測試 |
 | 3 | 2026-02-28 | quick | specs-auto-archive-fix | ✅ 完成 | 0 次 | readTasksCheckboxes() Dev Phases 排除修復 + 歷史 feature 歸檔清理。629 tests pass，+3 新測試 |
+| 4 | 2026-02-28 | single | cleanup-残留 | ✅ 完成 | 0 次 | spec 歸檔 + pm/SKILL.md 精簡（125→112 行）。629 tests pass |
+| 5 | 2026-02-28 | quick | jsonl-perf-optimization | ✅ 完成 | 0 次 | instinct auto-compact + timeline latest() 反向掃描 + query() 快速路徑。655 tests pass，+26 新測試 |
 
 ### 成功指標
 

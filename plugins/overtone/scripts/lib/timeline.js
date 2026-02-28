@@ -58,11 +58,19 @@ function emit(sessionId, eventType, data = {}) {
  */
 function query(sessionId, filter = {}) {
   const filePath = paths.session.timeline(sessionId);
-  let lines;
+  let content;
   try {
-    lines = readFileSync(filePath, 'utf8').trim().split('\n').filter(Boolean);
+    content = readFileSync(filePath, 'utf8').trim();
   } catch {
     return [];
+  }
+  if (!content) return [];
+
+  let lines = content.split('\n').filter(Boolean);
+
+  // 快速路徑：只有 limit，無 type/category 過濾 → 直接取最後 N 行，避免解析所有行
+  if (filter.limit && !filter.type && !filter.category) {
+    lines = lines.slice(-filter.limit);
   }
 
   let events = lines.map((line) => {
@@ -84,13 +92,32 @@ function query(sessionId, filter = {}) {
 
 /**
  * 取得最近一筆特定類型的事件
+ * 使用反向掃描，找到第一筆匹配就返回，避免全量解析。
  * @param {string} sessionId
  * @param {string} eventType
  * @returns {object|null}
  */
 function latest(sessionId, eventType) {
-  const results = query(sessionId, { type: eventType, limit: 1 });
-  return results[0] || null;
+  const filePath = paths.session.timeline(sessionId);
+  let content;
+  try {
+    content = readFileSync(filePath, 'utf8');
+  } catch {
+    return null;
+  }
+
+  const lines = content.trim().split('\n');
+  // 從後往前掃描，找到第一筆匹配的事件即返回
+  for (let i = lines.length - 1; i >= 0; i--) {
+    if (!lines[i]) continue;
+    try {
+      const event = JSON.parse(lines[i]);
+      if (event.type === eventType) return event;
+    } catch {
+      continue;
+    }
+  }
+  return null;
 }
 
 /**
