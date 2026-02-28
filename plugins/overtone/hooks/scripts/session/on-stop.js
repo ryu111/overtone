@@ -83,8 +83,9 @@ safeRun(() => {
   const completedStages = stageStatuses.filter(([, s]) => s.status === 'completed').length;
   const allStagesCompleted = completedStages === totalStages;
 
-  // tasks.md 完成度（大功能才有此檔案，不存在時回傳 null → fallback 到純 stage 判斷）
-  const tasksStatus = projectRoot ? loop.readTasksStatus(projectRoot) : null;
+  // tasks.md 完成度（用 featureName 直接定位，避免多 feature 並行時取錯）
+  const featureName = currentState.featureName || null;
+  const tasksStatus = projectRoot ? loop.readTasksStatus(projectRoot, featureName) : null;
   const allCompleted = allStagesCompleted && (tasksStatus === null || tasksStatus.allChecked);
 
   // 4. 全部完成 → 允許退出
@@ -106,18 +107,21 @@ safeRun(() => {
       loop.exitLoop(sessionId, loopState, '工作流完成');
 
       // Specs 自動歸檔：workflow 完成且有對應 feature 時
-      if (currentState.featureName) {
+      if (featureName) {
         try {
           const specs = require('../../../scripts/lib/specs');
-          const archivePath = specs.archiveFeature(projectRoot, currentState.featureName);
+          const archivePath = specs.archiveFeature(projectRoot, featureName);
           timeline.emit(sessionId, 'specs:archive', {
-            featureName: currentState.featureName,
+            featureName,
             archivePath,
           });
         } catch (archErr) {
           // 歸檔失敗不阻擋正常退出（可能已手動移動或不存在）
           hookError('on-stop', `警告：歸檔失敗 — ${archErr.message}`);
         }
+      } else {
+        // 診斷：workflow 完成但無 featureName → 無法自動歸檔
+        hookError('on-stop', '診斷：workflow 完成但 featureName 為空，跳過 specs 自動歸檔');
       }
 
       timeline.emit(sessionId, 'workflow:complete', {

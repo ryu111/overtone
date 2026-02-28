@@ -78,25 +78,32 @@ function exitLoop(sessionId, loopData, reason) {
 // ── tasks.md Checkbox 解析 ──
 
 /**
- * 讀取當前活躍 feature 的 tasks.md checkbox 完成度。
+ * 讀取指定（或活躍）feature 的 tasks.md checkbox 完成度。
  *
- * 動態查詢 specs/features/in-progress/ 下的活躍 feature，
- * 讀取其 tasks.md checkbox 狀態。
+ * 優先使用 featureName 直接定位 tasks.md，避免多 feature 並行時
+ * getActiveFeature() 取到錯誤 feature 的問題。
+ * featureName 未提供時 fallback 到 getActiveFeature()（向後相容）。
  *
  * @param {string} projectRoot - 專案根目錄（來自 Stop hook 的 input.cwd）
+ * @param {string} [featureName] - workflow state 中的 featureName（優先使用）
  * @returns {{ total: number, checked: number, allChecked: boolean } | null}
  *   null = 無活躍 feature、tasks.md 不存在、或無任何 checkbox
  *          → 呼叫方應 fallback 到純 workflow stage 完成度判斷
  */
-function readTasksStatus(projectRoot) {
+function readTasksStatus(projectRoot, featureName) {
   if (!projectRoot) return null;
 
   try {
     const specsLib = require('./specs');
-    const active = specsLib.getActiveFeature(projectRoot);
-    if (!active) return null;
 
-    const tasksPath = paths.project.featureTasks(projectRoot, active.name);
+    // 優先用 caller 提供的 featureName 直接定位
+    const targetName = featureName || (() => {
+      const active = specsLib.getActiveFeature(projectRoot);
+      return active ? active.name : null;
+    })();
+    if (!targetName) return null;
+
+    const tasksPath = paths.project.featureTasks(projectRoot, targetName);
     const result = specsLib.readTasksCheckboxes(tasksPath);
 
     // 無任何 checkbox → 視同不適用

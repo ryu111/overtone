@@ -229,18 +229,19 @@ safeRun(() => {
     messages.push(`✅ ${stages[stageKey].emoji} ${stages[stageKey].label}完成`);
     messages.push(`📊 請更新 TaskList：TaskUpdate status completed（${stages[stageKey].label}）`);
 
-    // Specs 路徑提示
-    try {
-      const specsLib = require('../../../scripts/lib/specs');
-      const active = specsLib.getActiveFeature(projectRoot);
-      if (active) {
-        const checked = active.tasks ? active.tasks.checked : 0;
-        const total = active.tasks ? active.tasks.total : 0;
+    // Specs 路徑提示（用 featureName 直接定位，避免多 feature 並行時取錯）
+    if (updatedState.featureName) {
+      try {
+        const specsLib = require('../../../scripts/lib/specs');
+        const tasksPath = paths.project.featureTasks(projectRoot, updatedState.featureName);
+        const tasks = specsLib.readTasksCheckboxes(tasksPath);
+        const checked = tasks ? tasks.checked : 0;
+        const total = tasks ? tasks.total : 0;
         const taskInfo = total > 0 ? ` (${checked}/${total} tasks)` : '';
-        messages.push(`📂 Specs：specs/features/in-progress/${active.name}/${taskInfo}`);
+        messages.push(`📂 Specs：specs/features/in-progress/${updatedState.featureName}/${taskInfo}`);
+      } catch {
+        // specs 提示失敗不影響主流程
       }
-    } catch {
-      // specs 提示失敗不影響主流程
     }
 
     // 並行群組收斂偵測

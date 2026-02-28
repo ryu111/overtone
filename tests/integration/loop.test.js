@@ -148,4 +148,47 @@ describe('readTasksStatus', () => {
 
     expect(loop.readTasksStatus(SESSION_DIR)).toBeNull();
   });
+
+  test('featureName 參數直接定位正確的 feature', () => {
+    // 建立兩個 in-progress feature（模擬多 session 並行）
+    const featureA = join(SESSION_DIR, 'specs', 'features', 'in-progress', 'aaa-first');
+    const featureB = join(SESSION_DIR, 'specs', 'features', 'in-progress', 'zzz-second');
+    mkdirSync(featureA, { recursive: true });
+    mkdirSync(featureB, { recursive: true });
+
+    // aaa-first：0/2 未完成
+    writeFileSync(join(featureA, 'tasks.md'), [
+      '---', 'feature: aaa-first', 'status: in-progress', 'workflow: standard', 'created: 2026-02-26T00:00:00Z', '---',
+      '', '## Tasks', '', '- [ ] task1', '- [ ] task2',
+    ].join('\n'));
+
+    // zzz-second：2/2 全完成
+    writeFileSync(join(featureB, 'tasks.md'), [
+      '---', 'feature: zzz-second', 'status: in-progress', 'workflow: quick', 'created: 2026-02-26T00:00:00Z', '---',
+      '', '## Tasks', '', '- [x] task1', '- [x] task2',
+    ].join('\n'));
+
+    // 不帶 featureName → 取字母序第一個（aaa-first）→ allChecked: false
+    const withoutName = loop.readTasksStatus(SESSION_DIR);
+    expect(withoutName).not.toBeNull();
+    expect(withoutName.allChecked).toBe(false);
+
+    // 帶 featureName='zzz-second' → 直接定位 → allChecked: true
+    const withName = loop.readTasksStatus(SESSION_DIR, 'zzz-second');
+    expect(withName).not.toBeNull();
+    expect(withName.allChecked).toBe(true);
+  });
+
+  test('featureName 指向不存在的 feature 回傳 null', () => {
+    expect(loop.readTasksStatus(SESSION_DIR, 'nonexistent-feature')).toBeNull();
+  });
+
+  test('featureName 指向無 tasks.md 的 feature 回傳 null', () => {
+    const featureDir = join(SESSION_DIR, 'specs', 'features', 'in-progress', 'no-tasks');
+    mkdirSync(featureDir, { recursive: true });
+    // 只有 proposal.md，沒有 tasks.md
+    writeFileSync(join(featureDir, 'proposal.md'), '# Proposal\nSome content');
+
+    expect(loop.readTasksStatus(SESSION_DIR, 'no-tasks')).toBeNull();
+  });
 });
