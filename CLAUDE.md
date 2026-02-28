@@ -55,7 +55,7 @@ Layer 2: Hook 守衛（底層）— 記錄、擋、提示、通知
 BDD 規則：含 PLAN/ARCH 的 workflow 在 DEV 前加 TEST:spec
 
 single:       DEV
-quick:        DEV → [REVIEW + TEST] → RETRO
+quick:        DEV → [REVIEW + TEST] → RETRO → DOCS
 standard:     PLAN → ARCH → TEST:spec → DEV → [REVIEW + TEST:verify] → RETRO → DOCS
 full:         PLAN → ARCH → DESIGN → TEST:spec → DEV → [R+T:verify] → [QA+E2E] → RETRO → DOCS
 secure:       PLAN → ARCH → TEST:spec → DEV → [R+T:verify+SECURITY] → RETRO → DOCS

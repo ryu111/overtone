@@ -99,7 +99,7 @@ flowchart TB
 
 **Mul-Dev（多開發者並行）**：DEV 階段內部可拆分為多個 Phase。每個 Phase 對應一組獨立子任務，Main Agent 在同一訊息中並行發出多個 Task（parallel Phase），各 developer sub-agent 同時執行，互不阻塞，最後由 TaskList 同步機制確認全部完成後才進入下一階段。
 
-**quick workflow 完整流程**：`DEV → [REVIEW + TEST]（並行）→ RETRO`。雖然圖中 quick 分支直接進入 DEV，但後續仍會通過 Quality Gate 並執行 RETRO（Retrospective Agent）。
+**quick workflow 完整流程**：`DEV → [REVIEW + TEST]（並行）→ RETRO → DOCS`。雖然圖中 quick 分支直接進入 DEV，但後續仍會通過 Quality Gate、執行 RETRO（Retrospective Agent）並由 doc-updater 同步文件。
 
 **PM Agent 路由**：`discovery` workflow 只有 PM 階段即完成；`product` / `product-full` workflow 在 PM 完成後進入 PLAN → ARCH → ... 的完整流程。
 

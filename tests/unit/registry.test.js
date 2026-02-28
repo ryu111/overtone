@@ -39,12 +39,12 @@ describe('registry.js 資料完整性', () => {
   });
 
   describe('quick workflow 包含正確的 stages 陣列', () => {
-    test('quick workflow stages 長度為 4', () => {
-      expect(workflows['quick'].stages.length).toBe(4);
+    test('quick workflow stages 長度為 5', () => {
+      expect(workflows['quick'].stages.length).toBe(5);
     });
 
-    test('quick workflow stages 依序包含 DEV、REVIEW、TEST、RETRO', () => {
-      expect(workflows['quick'].stages).toEqual(['DEV', 'REVIEW', 'TEST', 'RETRO']);
+    test('quick workflow stages 依序包含 DEV、REVIEW、TEST、RETRO、DOCS', () => {
+      expect(workflows['quick'].stages).toEqual(['DEV', 'REVIEW', 'TEST', 'RETRO', 'DOCS']);
     });
   });
 

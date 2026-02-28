@@ -873,7 +873,7 @@ describe('buildTasksMd — tasks.md checkbox 內容驗證', () => {
   });
 
   test('quick workflow（specsConfig 有 tasks）的 checkbox 應為 workflow stages', () => {
-    // quick workflow stages: ['DEV', 'REVIEW', 'TEST', 'RETRO']
+    // quick workflow stages: ['DEV', 'REVIEW', 'TEST', 'RETRO', 'DOCS']
     const result = specs.initFeatureDir(tmpDir, 'quick-feature', 'quick');
     const tasksPath = path.join(result, 'tasks.md');
     const content = readFileSync(tasksPath, 'utf8');

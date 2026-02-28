@@ -15,7 +15,7 @@ description: Overtone 核心工作流選擇器。分析使用者需求自動選�
 | 特徵 | Workflow | Stages |
 |------|----------|--------|
 | 一行修改、改設定、改文字 | `/ot:dev` (single) | DEV |
-| 小 bug 修復、簡單功能 | `/ot:quick` (quick) | DEV → [REVIEW + TEST] → RETRO |
+| 小 bug 修復、簡單功能 | `/ot:quick` (quick) | DEV → [REVIEW + TEST] → RETRO → DOCS |
 | 新功能、中型任務 | `/ot:standard` (standard) | PLAN → ARCH → T:spec → DEV → [R + T:verify] → RETRO → DOCS |
 | 大型功能、跨模組 | `/ot:full` (full) | PLAN → ARCH → DESIGN → T:spec → DEV → [R + T:verify] → [QA + E2E] → RETRO → DOCS |
 | 涉及認證/支付/安全 | `/ot:secure` (secure) | PLAN → ARCH → T:spec → DEV → [R + T:verify + SECURITY] → RETRO → DOCS |

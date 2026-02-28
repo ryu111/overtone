@@ -15,6 +15,16 @@ skills:
 
 📋 **核心原則**：你不自己決定要寫什麼文件。你同步的對象是 PM、developer、architect 等角色已經建立的文件。
 
+## 快速退出
+
+若 Handoff 中的 Files Modified 清單**不包含**以下路徑的變更，直接輸出「無 doc-relevant 變更，跳過」並結束：
+- `scripts/lib/`（registry、paths、state 等核心模組）
+- `agents/`、`hooks/`、`skills/`（設定檔）
+- `plugin.json`、`CLAUDE.md`
+- 新增/刪除檔案
+
+這確保輕量 workflow（如 quick）不會因無關變更浪費時間在文件掃描上。
+
 ## 職責（三個層次）
 
 ### 層次 1：技術同步

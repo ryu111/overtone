@@ -38,7 +38,7 @@ const hookEvents = [
 const workflows = {
   // 基本模板（5 個）
   'single':        { label: '單步修改',   stages: ['DEV'],                                                                     parallelGroups: [] },
-  'quick':         { label: '快速開發',   stages: ['DEV', 'REVIEW', 'TEST', 'RETRO'],                                          parallelGroups: ['quality'] },
+  'quick':         { label: '快速開發',   stages: ['DEV', 'REVIEW', 'TEST', 'RETRO', 'DOCS'],                                   parallelGroups: ['quality'] },
   'standard':      { label: '標準功能',   stages: ['PLAN', 'ARCH', 'TEST', 'DEV', 'REVIEW', 'TEST', 'RETRO', 'DOCS'],          parallelGroups: ['quality'] },
   'full':          { label: '完整功能',   stages: ['PLAN', 'ARCH', 'DESIGN', 'TEST', 'DEV', 'REVIEW', 'TEST', 'QA', 'E2E', 'RETRO', 'DOCS'], parallelGroups: ['quality', 'verify'] },
   'secure':        { label: '高風險',     stages: ['PLAN', 'ARCH', 'TEST', 'DEV', 'REVIEW', 'TEST', 'SECURITY', 'RETRO', 'DOCS'], parallelGroups: ['secure-quality'] },

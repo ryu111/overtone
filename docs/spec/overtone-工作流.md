@@ -32,7 +32,7 @@ Main Agent 讀取 `/ot:auto` Skill 內容後自行判斷最適合的工作流模
 | # | Key | 名稱 | Stages | 並行 |
 |:-:|-----|------|--------|:----:|
 | 1 | `single` | 單步修改 | DEV | - |
-| 2 | `quick` | 快速開發 | DEV → [R+T] → RETRO | R+T |
+| 2 | `quick` | 快速開發 | DEV → [R+T] → RETRO → DOCS | R+T |
 | 3 | `standard` | 標準功能 | PLAN → ARCH → T:spec → DEV → [R+T:verify] → RETRO → DOCS | R+T |
 | 4 | `full` | 完整功能 | PLAN → ARCH → DESIGN → T:spec → DEV → [R+T:verify] → [QA+E2E] → RETRO → DOCS | 兩組 |
 | 5 | `secure` | 高風險 | PLAN → ARCH → T:spec → DEV → [R+T:verify+S] → RETRO → DOCS | R+T+S |
