@@ -13,6 +13,18 @@ disable-model-invocation: true
 node ${CLAUDE_PLUGIN_ROOT}/scripts/init-workflow.js debug ${CLAUDE_SESSION_ID}
 ```
 
+## 進度追蹤
+
+初始化後、委派第一個 agent 前，📋 MUST 使用 TaskCreate 建立 pipeline 進度：
+
+| Stage | subject | activeForm |
+|-------|---------|------------|
+| DEBUG | [DEBUG] 診斷 | 診斷中 |
+| DEV | [DEV] 修復 | 修復中 |
+| TEST | [TEST] 驗證 | 驗證中 |
+
+委派 agent 前 → TaskUpdate status: `in_progress`；agent 完成後 → TaskUpdate status: `completed`。
+
 ## Stages
 
 ### 1. DEBUG — 🔧 診斷

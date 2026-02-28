@@ -218,6 +218,7 @@ safeRun(() => {
   } else {
     // PASS — 檢查並行收斂 + 提示下一步
     messages.push(`✅ ${stages[stageKey].emoji} ${stages[stageKey].label}完成`);
+    messages.push(`📊 請更新 TaskList：TaskUpdate status completed（${stages[stageKey].label}）`);
 
     // Specs 路徑提示
     try {

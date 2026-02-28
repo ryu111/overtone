@@ -1,6 +1,6 @@
 ---
 name: refactor
-description: 重構工作流。ARCH → TEST:spec → DEV → REVIEW → TEST:verify。先設計再重構，確保品質不下降。
+description: 重構工作流。ARCH → TEST:spec → DEV → [REVIEW + TEST:verify]。先設計再重構，確保品質不下降。
 disable-model-invocation: true
 ---
 
@@ -12,6 +12,20 @@ disable-model-invocation: true
 ```bash
 node ${CLAUDE_PLUGIN_ROOT}/scripts/init-workflow.js refactor ${CLAUDE_SESSION_ID}
 ```
+
+## 進度追蹤
+
+初始化後、委派第一個 agent 前，📋 MUST 使用 TaskCreate 建立 pipeline 進度：
+
+| Stage | subject | activeForm |
+|-------|---------|------------|
+| ARCH | [ARCH] 架構設計 | 設計架構中 |
+| TEST:spec | [TEST] BDD 規格 | 撰寫規格中 |
+| DEV | [DEV] 重構實作 | 重構中 |
+| REVIEW | [REVIEW] 審查 | 審查中 |
+| TEST:verify | [TEST] 測試驗證 | 驗證中 |
+
+委派 agent 前 → TaskUpdate status: `in_progress`；agent 完成後 → TaskUpdate status: `completed`。
 
 ## Stages
 
@@ -39,21 +53,23 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/init-workflow.js refactor ${CLAUDE_SESSION_ID
 - **產出**：Handoff（重構後的程式碼變更）
 - ⛔ 不可改變外部行為（public API 保持不變）
 
-### 4. REVIEW — 🔍 審查
+### 4-5. [REVIEW + TEST:verify] — 並行
 
-委派 `code-reviewer` agent。
+📋 MUST 在同一訊息中同時委派：
 
-- **輸入**：developer 的 Handoff
-- **產出**：PASS / REJECT
-- 💡 審查重點：重構是否符合目標架構、是否改變了行為
+- `code-reviewer` agent（REVIEW）
+  - **輸入**：developer 的 Handoff
+  - **產出**：PASS / REJECT
+  - 💡 審查重點：重構是否符合目標架構、是否改變了行為
 
-### 5. TEST:verify — 🧪 測試驗證
+- `tester` agent，mode: verify（TEST:verify）
+  - **輸入**：developer 的 Handoff + BDD spec
+  - **產出**：PASS / FAIL
+  - 📋 MUST 驗證重構未改變行為
 
-委派 `tester` agent（mode: verify）。
+## 並行規則
 
-- **輸入**：developer 的 Handoff + BDD spec
-- **產出**：PASS / FAIL
-- 📋 MUST 驗證重構未改變行為
+REVIEW + TEST:verify 屬於 `quality` 並行群組，📋 MUST 同時委派。
 
 ## BDD 規則
 

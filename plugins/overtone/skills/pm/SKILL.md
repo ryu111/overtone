@@ -62,7 +62,7 @@ PM stage 完成後，依據 workflow 類型讀取對應 skill 繼續執行：
 
 | Workflow | 後續 pipeline | 讀取 |
 |----------|-------------|------|
-| `discovery` | 無（純探索完成） | — |
+| `discovery` | PM 建議 workflow → 直接讀取對應 workflow skill 開始執行 | 按建議選擇：`${CLAUDE_PLUGIN_ROOT}/skills/{workflow}/SKILL.md` |
 | `product` | PLAN → ARCH → TEST:spec → DEV → [R+T] → RETRO → DOCS | `${CLAUDE_PLUGIN_ROOT}/skills/standard/SKILL.md`（從 PLAN 開始） |
 | `product-full` | PLAN → ARCH → DESIGN → TEST:spec → DEV → [R+T] → [QA+E2E] → RETRO → DOCS | `${CLAUDE_PLUGIN_ROOT}/skills/full/SKILL.md`（從 PLAN 開始） |
 
@@ -70,14 +70,14 @@ PM 的 Product Brief 作為 planner 的輸入（取代使用者原始需求）�
 
 ## 實作導流（📋 MUST）
 
-PM 分析完成後，若使用者要求開始實作：
+PM 分析完成後，📋 MUST 直接啟動對應 workflow，不需額外確認。
 
 📋 **PM 不可讓 Main Agent 直接寫碼。所有程式碼變更必須透過 workflow 執行。**
 
 ### 導流流程
 
 ```
-PM 產出任務清單 → 使用者確認 → PM 建議 workflow 類型 → 讀取 /ot:auto → 委派 developer → 修復完成 → PM 確認結果（閉環）
+PM 產出分析結果 → 建議 workflow 類型 → 直接讀取對應 workflow skill → 開始執行
 ```
 
 ### Workflow 建議矩陣
@@ -94,7 +94,6 @@ PM 產出任務清單 → 使用者確認 → PM 建議 workflow 類型 → 讀�
 多個修復任務可合併或拆分：
 - **合併**：關聯性高的修復（同一模組的多個修正）→ 一次 quick/standard
 - **拆分**：無關的修復 → 分別跑不同 workflow
-- PM 建議分組方式，使用者最終決定
 
 ## 參考文件
 
@@ -109,4 +108,4 @@ PM 產出任務清單 → 使用者確認 → PM 建議 workflow 類型 → 讀�
 
 - ✅ PM stage 完成
 - ✅ Product Brief 已產出
-- ✅ 若非 discovery，已讀取後續 skill 繼續執行
+- ✅ 已依據 workflow 類型讀取對應 skill 繼續執行（含 discovery 導流）
