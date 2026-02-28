@@ -110,13 +110,17 @@ plugins/overtone/                # Plugin 根目錄
 ├── skills/                      # 35 個 Skill 定義
 ├── hooks/                       # hooks.json + scripts/
 ├── scripts/lib/                 # 共用程式庫
-│   ├── registry.js              # SoT：stages/agents/workflows/events
+│   ├── registry.js              # SoT：stages/agents/workflows/events + knownTools/hookEvents
+│   ├── registry-data.json       # JSON 化 stages 和 agentModels 常數
+│   ├── config-api.js            # 統一設定管理 API（L1 驗證 + L2 CRUD）
 │   ├── paths.js                 # 路徑解析
 │   ├── state.js                 # workflow.json 讀寫（CAS 原子更新）
 │   ├── timeline.js              # 事件記錄
 │   ├── loop.js                  # Loop 狀態
 │   ├── instinct.js              # Instinct 觀察與信心
 │   ├── utils.js                 # 共用工具（atomicWrite、clamp）
+│   ├── hook-utils.js            # Hook 統一工具函式
+│   ├── specs.js                 # Specs 系統 API
 │   ├── dashboard/               # Dashboard 程序管理
 │   └── remote/                  # EventBus + Adapter（Dashboard、Telegram）
 ├── web/                         # Dashboard 前端（htmx + Alpine.js）
@@ -133,7 +137,7 @@ plugins/overtone/                # Plugin 根目錄
 └── observations.jsonl    # Instinct 觀察
 ```
 
-## Hook 架構（9 個，~1602 行）
+## Hook 架構（9 個，~1602 行 + config-api.js ~380 行）
 
 | 事件 | 職責 |
 |------|------|

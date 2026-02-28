@@ -1,7 +1,7 @@
 # Overtone 規格文件
 
 > Overtone 是 Claude Code plugin，提供 BDD 驅動的工作流自動化 + 即時監控 + 遠端控制。
-> 版本：v0.20.0 | 最後更新：2026-03-01
+> 版本：v0.21.0 | 最後更新：2026-03-01
 
 ---
 
@@ -39,7 +39,7 @@
 
 > 詳細決策記錄見 git history 與 `docs/reference/` 目錄。
 
-V0.20.0 版本共確認 55+ 個設計決策，重大決策包含：
+V0.21.0 版本共確認 55+ 個設計決策，重大決策包含：
 - Hook 做記錄和守衛，Skill 做指引，Main Agent 做決策
 - 並行群組靜態定義（registry.js），動態推導由 Main Agent 處理
 - Handoff 為虛擬交接，僅存在於 Main Agent context
@@ -49,6 +49,7 @@ V0.20.0 版本共確認 55+ 個設計決策，重大決策包含：
 - Context 壓縮前狀態恢復（v0.18.0）：PreCompact hook + buildPendingTasksMessage()，提升 compact 後連貫性
 - JSONL 效能優化（v0.17.6）：instinct auto-compact + timeline 反向掃描 + limit 快速路徑
 - 平台對齁優化（v0.20.0）：disallowedTools 遷移、Reference Skills 注入、Workflow Context 注入、SessionEnd 和 PostToolUseFailure hook
+- Config API（v0.21.0）：統一 agent/hook/skill 設定管理，L1 驗證層 + L2 CRUD API + registry-data.json JSON 化 + knownTools/hookEvents 常數
 
 ---
 

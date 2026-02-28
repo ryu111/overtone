@@ -2,6 +2,35 @@
 
 所有重要變更記錄於此文件。
 
+## [0.21.0] - 2026-03-01（Config API 統一設定管理）
+
+### 功能新增
+- **config-api.js**：統一 agent/hook/skill 三大元件的設定管理
+  - L1 驗證層：validateAgent、validateHook、validateSkill、validateAll
+  - L2 結構化 API：createAgent、updateAgent、createHook、updateHook、createSkill、updateSkill
+  - 支援 frontmatter 解析 + 命令占位符 `${CLAUDE_PLUGIN_ROOT}` 替換
+- **registry-data.json**：將 stages 和 agentModels 常數從 registry.js 抽離，改為 JSON 化存儲
+- **registry.js 新增常數**：
+  - `knownTools`（13 個工具）：Claude 已知的工具集合
+  - `hookEvents`（9 個事件）：Overtone hook 事件列表
+- **validate-agents.js 遷移**：改為 thin wrapper 呼叫 config-api，功能不變
+
+### 架構改進
+- `registry.js`：新增 `knownTools` 和 `hookEvents` 兩個全域常數匯出
+- `scripts/lib/` 新增 `config-api.js` 和 `registry-data.json` 兩個新模組
+
+### 測試
+- 新增 82 個 config-api 系列單元與整合測試（71 unit + 11 integration）
+- 測試總數：991 → 1073 pass
+- 測試檔案數：52 → 54 個
+
+### 文檔
+- 更新 CLAUDE.md：目錄結構新增 config-api.js 和 registry-data.json
+- 更新 docs/status.md：版本、測試指標
+- 更新 README.md：版本號
+
+---
+
 ## [0.20.0] - 2026-03-01（平台對齐優化 Phase 1）
 
 ### 功能新增
