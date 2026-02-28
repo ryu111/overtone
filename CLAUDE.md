@@ -133,16 +133,18 @@ plugins/overtone/                # Plugin 根目錄
 └── observations.jsonl    # Instinct 觀察
 ```
 
-## Hook 架構（7 個，~1269 行）
+## Hook 架構（9 個，~1602 行）
 
 | 事件 | 職責 |
 |------|------|
 | SessionStart | Banner + 初始化 + Dashboard spawn |
+| SessionEnd | Session 結束收尾 + 狀態清理 |
 | PreCompact | context 壓縮前注入工作流狀態恢復訊息 |
 | UserPromptSubmit | systemMessage → /ot:auto |
-| PreToolUse(Task) | subagent_type 確定性映射 + 擋跳過必要階段 + 衝突警告 |
+| PreToolUse(Task) | subagent_type 確定性映射 + 擋跳過必要階段 + 衝突警告 + updatedInput 注入 workflow context |
 | SubagentStop | 記錄結果 + 提示下一步 + 寫 state + emit timeline |
 | PostToolUse | Instinct 觀察收集 + .md 措詞偵測（emoji-關鍵詞不匹配警告） |
+| PostToolUseFailure | Tool 執行失敗事件處理 |
 | Stop | Loop 迴圈 + 完成度 + Dashboard 通知 |
 
 ## 常用指令

@@ -2,6 +2,33 @@
 
 所有重要變更記錄於此文件。
 
+## [0.20.0] - 2026-03-01（平台對齐優化 Phase 1）
+
+### 功能新增
+- **disallowedTools 遷移**：10 個 agent（architect、planner、code-reviewer、security-reviewer、debugger、database-reviewer、retrospective、product-manager、qa、designer）從 tools 白名單遷移到 disallowedTools 黑名單，提升靈活性與正確性
+- **Reference Skills 系統**：3 個新增參考 skill（ref-bdd-guide、ref-failure-handling、ref-wording-guide），5 個 agent 添加 skills 前載
+- **Workflow Context 注入**：pre-task.js 新增 buildWorkflowContext，為 agent prompt 注入當前工作流狀態（currentStage、activeAgents、failCount、rejectCount）
+- **2 個新 Hook**：
+  - SessionEnd（on-session-end.js）— Session 結束收尾 + 狀態清理
+  - PostToolUseFailure（post-use-failure.js）— Tool 執行失敗事件處理
+- **Hook-utils 擴充**：新增 buildProgressBar、buildWorkflowContext、getSessionId 三個共用函式
+
+### 架構改進
+- `registry.js`：新增 `tool:failure` event，timeline events 計數從 22 → 23
+- `hooks.json`：Hook 清單從 7 個 → 9 個
+- `plugin.json`：版本升級 0.19.1 → 0.20.0
+
+### 測試
+- 新增 8 個 platform-alignment 系列整合測試（測試總數：44 → 52 個、991 pass）
+
+### 文檔
+- 更新 CLAUDE.md：Hook 架構（7 → 9 個，~1269 行 → ~1602 行）
+- 更新 docs/status.md：版本、測試指標、hook 數量、近期變更
+- 更新 docs/spec/overtone-架構.md：Hook 清單、hook-utils 函式數量、timeline events 計數
+- 新增 Skill：ref-bdd-guide、ref-failure-handling、ref-wording-guide
+
+---
+
 ## [0.15.0] - 2026-02-26（並行機制優化 + mul-dev 新增）
 
 ### 功能新增
