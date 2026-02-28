@@ -140,7 +140,11 @@ function buildFrontmatter(fields) {
 // ── Checkbox 解析 ──
 
 /**
- * 讀取 tasks.md 中 ## Tasks 區塊後的 checkbox 完成度
+ * 讀取 tasks.md 中 ## Tasks 或 ## Stages 區塊的 stage-level checkbox 完成度
+ *
+ * 只統計 stage-level 標頭區塊（## Tasks 或 ## Stages）到下一個 ## 標頭之間的 checkbox，
+ * 排除 ## Dev Phases 等細粒度任務 checkbox，避免它們阻擋歸檔判斷。
+ *
  * @param {string} tasksPath
  * @returns {{ total: number, checked: number, allChecked: boolean, unchecked: string[] } | null}
  *   unchecked: 未完成任務的文字陣列（供 SessionStart hook 重建 TaskList 使用）
@@ -153,21 +157,35 @@ function readTasksCheckboxes(tasksPath) {
     return null;
   }
 
-  // 只計算 ## Tasks 之後的 checkbox
-  const tasksIdx = content.indexOf('## Tasks');
-  const relevantContent = tasksIdx >= 0 ? content.slice(tasksIdx) : content;
+  // 同時支援 ## Tasks（新格式）和 ## Stages（舊格式）標頭
+  let sectionIdx = content.indexOf('## Tasks');
+  if (sectionIdx < 0) sectionIdx = content.indexOf('## Stages');
+
+  let sectionContent;
+  if (sectionIdx >= 0) {
+    // 只取標頭到下一個 ## 標頭之間的內容（排除 ## Dev Phases 等子區塊）
+    const afterHeader = content.slice(sectionIdx);
+    // 找下一個 ## 標頭（不包含自身的那個 ##）
+    const nextSectionMatch = afterHeader.slice(2).search(/^## /m);
+    sectionContent = nextSectionMatch >= 0
+      ? afterHeader.slice(0, nextSectionMatch + 2)
+      : afterHeader;
+  } else {
+    // 找不到任何標頭 → 整個文件（向後兼容）
+    sectionContent = content;
+  }
 
   CHECKBOX_UNCHECKED_REGEX.lastIndex = 0;
   CHECKBOX_CHECKED_REGEX.lastIndex = 0;
   CHECKBOX_UNCHECKED_TEXT_REGEX.lastIndex = 0;
 
-  const uncheckedCount = (relevantContent.match(CHECKBOX_UNCHECKED_REGEX) || []).length;
-  const checked = (relevantContent.match(CHECKBOX_CHECKED_REGEX) || []).length;
+  const uncheckedCount = (sectionContent.match(CHECKBOX_UNCHECKED_REGEX) || []).length;
+  const checked = (sectionContent.match(CHECKBOX_CHECKED_REGEX) || []).length;
   const total = uncheckedCount + checked;
 
   // 擷取未勾選任務的文字陣列
   const unchecked = [];
-  for (const [, text] of relevantContent.matchAll(CHECKBOX_UNCHECKED_TEXT_REGEX)) {
+  for (const [, text] of sectionContent.matchAll(CHECKBOX_UNCHECKED_TEXT_REGEX)) {
     unchecked.push(text.trim());
   }
 

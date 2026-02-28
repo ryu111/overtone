@@ -13,7 +13,6 @@ created: 2026-02-28
 - [ ] TEST
 - [ ] DEV
 - [ ] REVIEW
-- [ ] TEST
 - [ ] RETRO
 - [ ] DOCS
 

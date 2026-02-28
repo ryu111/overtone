@@ -1,10 +1,10 @@
 ---
 feature: instinct-observation-quality
 workflow: standard
-status: in-progress
+status: archived
 created: 2026-02-28
+archivedAt: 2026-02-28T01:57:25.243Z
 ---
-
 # Tasks: instinct-observation-quality
 
 ## Stages

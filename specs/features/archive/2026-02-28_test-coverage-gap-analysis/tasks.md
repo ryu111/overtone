@@ -1,9 +1,9 @@
 ---
 workflow: standard
-status: completed
+status: archived
 created: 2026-02-27
+archivedAt: 2026-02-28T02:05:01.424Z
 ---
-
 # Tasks: test-coverage-gap-analysis
 
 ## 子任務

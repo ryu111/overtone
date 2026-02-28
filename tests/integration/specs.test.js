@@ -213,6 +213,75 @@ describe('readTasksCheckboxes', () => {
     const result = specs.readTasksCheckboxes('/non/existent/tasks.md');
     expect(result).toBeNull();
   });
+
+  test('舊格式 ## Stages 標頭也能正確統計 stage checkbox', () => {
+    const tasksPath = path.join(tmpDir, 'tasks.md');
+    writeFileSync(tasksPath, [
+      '---',
+      'feature: old-feature',
+      'status: in-progress',
+      '---',
+      '',
+      '## Stages',
+      '',
+      '- [x] PLAN',
+      '- [x] ARCH',
+      '- [ ] DEV',
+    ].join('\n'));
+
+    const result = specs.readTasksCheckboxes(tasksPath);
+    expect(result.total).toBe(3);
+    expect(result.checked).toBe(2);
+    expect(result.allChecked).toBe(false);
+  });
+
+  test('舊格式：## Stages 全部勾選時 allChecked 為 true，即使 ## Dev Phases 有未勾選項', () => {
+    // 此測試驗證：Dev Phases 的 checkbox 不影響 stage-level 的完成判斷
+    const tasksPath = path.join(tmpDir, 'tasks.md');
+    writeFileSync(tasksPath, [
+      '---',
+      'feature: old-feature',
+      'status: in-progress',
+      '---',
+      '',
+      '## Stages',
+      '',
+      '- [x] PLAN',
+      '- [x] DEV',
+      '- [x] REVIEW',
+      '',
+      '## Dev Phases',
+      '',
+      '### Phase 1',
+      '- [ ] 未完成的細項任務 A',
+      '- [ ] 未完成的細項任務 B',
+    ].join('\n'));
+
+    const result = specs.readTasksCheckboxes(tasksPath);
+    // 只統計 ## Stages 區塊的 checkbox
+    expect(result.total).toBe(3);
+    expect(result.checked).toBe(3);
+    expect(result.allChecked).toBe(true);
+  });
+
+  test('新格式：## Tasks 後接 ## Dev Phases 時只統計 Tasks 區塊', () => {
+    const tasksPath = path.join(tmpDir, 'tasks.md');
+    writeFileSync(tasksPath, [
+      '## Tasks',
+      '',
+      '- [x] PLAN',
+      '- [x] DEV',
+      '',
+      '## Dev Phases',
+      '',
+      '- [ ] 未完成細項',
+    ].join('\n'));
+
+    const result = specs.readTasksCheckboxes(tasksPath);
+    expect(result.total).toBe(2);
+    expect(result.checked).toBe(2);
+    expect(result.allChecked).toBe(true);
+  });
 });
 
 // ── updateTasksFrontmatter ──
