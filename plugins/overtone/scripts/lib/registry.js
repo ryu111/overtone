@@ -6,50 +6,30 @@
  * 所有模組統一從此處 import。
  */
 
-// Stage 定義（16 個 stage，每個對應一個 agent）
-const stages = {
-  PM:         { label: '產品',     emoji: '🎯', agent: 'product-manager',     color: 'emerald' },
-  PLAN:       { label: '規劃',     emoji: '📋', agent: 'planner',             color: 'purple' },
-  ARCH:       { label: '架構',     emoji: '🏗️', agent: 'architect',           color: 'cyan'   },
-  DESIGN:     { label: '設計',     emoji: '🎨', agent: 'designer',            color: 'cyan'   },
-  DEV:        { label: '開發',     emoji: '💻', agent: 'developer',           color: 'yellow' },
-  DEBUG:      { label: '除錯',     emoji: '🔧', agent: 'debugger',            color: 'orange' },
-  REVIEW:     { label: '審查',     emoji: '🔍', agent: 'code-reviewer',       color: 'blue'   },
-  TEST:       { label: '測試',     emoji: '🧪', agent: 'tester',              color: 'pink'   },
-  SECURITY:   { label: '安全',     emoji: '🛡️', agent: 'security-reviewer',   color: 'red'    },
-  'DB-REVIEW':{ label: 'DB審查',   emoji: '🗄️', agent: 'database-reviewer',   color: 'red'    },
-  QA:         { label: '驗證',     emoji: '🏁', agent: 'qa',                  color: 'yellow' },
-  E2E:        { label: 'E2E',     emoji: '🌐', agent: 'e2e-runner',          color: 'green'  },
-  'BUILD-FIX':{ label: '修構建',   emoji: '🔨', agent: 'build-error-resolver', color: 'orange' },
-  REFACTOR:   { label: '清理',     emoji: '🧹', agent: 'refactor-cleaner',    color: 'blue'   },
-  RETRO:      { label: '回顧',     emoji: '🔁', agent: 'retrospective',       color: 'purple' },
-  DOCS:       { label: '文件',     emoji: '📝', agent: 'doc-updater',         color: 'purple' },
-};
+// Stage 定義（16 個 stage）和 Agent Model 分配從 registry-data.json 讀取
+// config-api 需要程式化更新時直接讀寫 registry-data.json
+const _registryData = require('./registry-data.json');
+const stages = _registryData.stages;
+const agentModels = _registryData.agentModels;
 
-// Agent Model 分配（可透過環境變數覆蓋）
-const agentModels = {
-  // Opus（6 個決策型）
-  'product-manager':   'opus',
-  'planner':           'opus',
-  'architect':         'opus',
-  'code-reviewer':     'opus',
-  'security-reviewer': 'opus',
-  'retrospective':     'opus',
+// Claude Code 已知工具名稱（用於 disallowedTools/tools 欄位的值域驗證）
+const knownTools = [
+  'Read', 'Write', 'Edit', 'MultiEdit',
+  'Bash', 'Glob', 'Grep',
+  'Task', 'TodoRead', 'TodoWrite',
+  'NotebookEdit', 'WebFetch',
+  'Agent',
+];
 
-  // Sonnet（9 個執行型）
-  'designer':            'sonnet',
-  'developer':           'sonnet',
-  'debugger':            'sonnet',
-  'database-reviewer':   'sonnet',
-  'tester':              'sonnet',
-  'qa':                  'sonnet',
-  'e2e-runner':          'sonnet',
-  'build-error-resolver':'sonnet',
-  'refactor-cleaner':    'sonnet',
-
-  // Haiku（1 個簡單任務）
-  'doc-updater':         'haiku',
-};
+// Hook 合法 event 名稱（用於 hooks.json 的 event 欄位驗證）
+const hookEvents = [
+  'SessionStart', 'SessionEnd',
+  'PreCompact',
+  'UserPromptSubmit',
+  'PreToolUse', 'PostToolUse', 'PostToolUseFailure',
+  'SubagentStop',
+  'Stop',
+];
 
 // 工作流模板（18 個）
 // BDD 規則：含 PLAN/ARCH 的 workflow 在 DEV 前加入 TEST:spec
@@ -219,4 +199,6 @@ module.exports = {
   remoteCommands,
   instinctDefaults,
   specsConfig,
+  knownTools,
+  hookEvents,
 };

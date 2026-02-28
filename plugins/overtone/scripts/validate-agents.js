@@ -1,199 +1,78 @@
 #!/usr/bin/env node
 'use strict';
 /**
- * validate-agents.js — 驗證 15 個 agent .md 檔案的正確性
+ * validate-agents.js — 驗證所有 agent .md 檔案的正確性
+ *
+ * 透過 config-api.validateAll() 執行完整驗證，保留原有的 CLI 輸出格式。
  *
  * 檢查項目：
- *   1. agents/ 目錄下有 15 個 .md 檔案
- *   2. 每個檔案有合法的 YAML frontmatter
- *   3. frontmatter.name 與 registry.js stages 中的 agent name 一一對應
- *   4. frontmatter.model 與 registry.js agentModels 一致
- *   5. frontmatter.permissionMode === 'bypassPermissions'
- *   6. 唯讀型 agent 的 tools 不含 Write/Edit
- *   7. 每個檔案包含 DO 和 DON'T 區塊
- *   8. 每個檔案包含 HANDOFF 區塊
+ *   1. agents/ 目錄下所有 .md 檔案格式正確
+ *   2. frontmatter 必填欄位完整（name、description、model、permissionMode、color、maxTurns）
+ *   3. model 與 registry agentModels 一致
+ *   4. permissionMode === 'bypassPermissions'
+ *   5. disallowedTools/tools 工具名稱值域（未知工具 → warning）
+ *   6. skills 引用存在性
+ *   7. registry-data.json stages 中定義的 agent 都有對應 .md 檔案（交叉驗證）
  */
 
-const { readdirSync, readFileSync } = require('fs');
 const { join } = require('path');
-const { stages, agentModels } = require('./lib/registry');
+const { validateAll } = require('./lib/config-api');
 
-const AGENTS_DIR = join(__dirname, '..', 'agents');
+const PLUGIN_ROOT = join(__dirname, '..');
 
-// 唯讀型 agent（不應有 Write/Edit 工具）
-const READ_ONLY_AGENTS = ['planner', 'architect', 'designer', 'code-reviewer', 'debugger', 'retrospective'];
+let totalErrors = 0;
+let totalWarnings = 0;
 
-let errors = 0;
-let warnings = 0;
-
-function error(msg) {
-  console.error(`  ❌ ${msg}`);
-  errors++;
+function printResult(name, result, type) {
+  console.log(`\n📄 ${name}`);
+  if (result.valid && result.errors.length === 0 && result.warnings.length === 0) {
+    console.log('  ✅ 驗證通過');
+  } else {
+    for (const err of result.errors) {
+      console.error(`  ❌ ${err}`);
+      totalErrors++;
+    }
+    for (const warn of result.warnings) {
+      console.warn(`  ⚠️  ${warn}`);
+      totalWarnings++;
+    }
+    if (result.errors.length === 0 && result.warnings.length > 0) {
+      console.log('  ✅ 驗證通過（含警告）');
+    }
+  }
 }
-
-function warn(msg) {
-  console.warn(`  ⚠️  ${msg}`);
-  warnings++;
-}
-
-function ok(msg) {
-  console.log(`  ✅ ${msg}`);
-}
-
-// ── 1. 檢查檔案數量 ──
 
 console.log('\n🔍 驗證 Agent 檔案...\n');
 
-const files = readdirSync(AGENTS_DIR).filter((f) => f.endsWith('.md'));
-const expectedAgents = Object.values(stages).map((s) => s.agent);
+const allResult = validateAll(PLUGIN_ROOT);
 
-console.log(`📂 找到 ${files.length} 個 .md 檔案（預期 ${expectedAgents.length} 個）`);
+// 輸出各 agent 結果
+const agentNames = Object.keys(allResult.agents);
+console.log(`📂 找到 ${agentNames.length} 個 agent 檔案`);
 
-if (files.length !== expectedAgents.length) {
-  error(`檔案數量不符：找到 ${files.length}，預期 ${expectedAgents.length}`);
+for (const [name, result] of Object.entries(allResult.agents)) {
+  printResult(name, result, 'agent');
 }
 
-// ── 2-8. 逐檔驗證 ──
-
-const foundAgents = new Set();
-
-for (const file of files) {
-  console.log(`\n📄 ${file}`);
-
-  const content = readFileSync(join(AGENTS_DIR, file), 'utf8');
-
-  // 解析 frontmatter
-  const fmMatch = content.match(/^---\n([\s\S]*?)\n---/);
-  if (!fmMatch) {
-    error('缺少 YAML frontmatter');
-    continue;
-  }
-
-  const frontmatter = {};
-  let lastArrayKey = null;
-  for (const line of fmMatch[1].split('\n')) {
-    // 偵測陣列開始（key 後面無 value）
-    const arrayStartMatch = line.match(/^(\w[\w-]*):\s*$/);
-    if (arrayStartMatch) {
-      lastArrayKey = arrayStartMatch[1];
-      frontmatter[lastArrayKey] = [];
-      continue;
-    }
-
-    // 處理多行陣列項目
-    const arrayItemMatch = line.match(/^\s+-\s+(.+)$/);
-    if (arrayItemMatch && lastArrayKey) {
-      frontmatter[lastArrayKey].push(arrayItemMatch[1].trim());
-      continue;
-    }
-
-    // 簡單的 key: value 解析
-    const kvMatch = line.match(/^(\w[\w-]*):\s*(.+)$/);
-    if (kvMatch) {
-      frontmatter[kvMatch[1]] = kvMatch[2].trim();
-      lastArrayKey = null;
-    }
-  }
-
-  // 2. name 存在
-  const name = frontmatter.name;
-  if (!name) {
-    error('frontmatter 缺少 name 欄位');
-    continue;
-  }
-
-  foundAgents.add(name);
-
-  // 3. name 與 registry 一致
-  if (!expectedAgents.includes(name)) {
-    error(`name "${name}" 不在 registry.js 的 agent 清單中`);
-  } else {
-    ok(`name: ${name}`);
-  }
-
-  // 4. model 與 agentModels 一致
-  const expectedModel = agentModels[name];
-  if (frontmatter.model !== expectedModel) {
-    error(`model 不符：${frontmatter.model}（預期 ${expectedModel}）`);
-  } else {
-    ok(`model: ${frontmatter.model}`);
-  }
-
-  // 5. permissionMode
-  if (frontmatter.permissionMode !== 'bypassPermissions') {
-    error(`permissionMode 應為 bypassPermissions，實際為 ${frontmatter.permissionMode}`);
-  } else {
-    ok('permissionMode: bypassPermissions');
-  }
-
-  // 6. 唯讀型 agent 的 tools 檢查
-  if (READ_ONLY_AGENTS.includes(name)) {
-    const tools = frontmatter.tools;
-    if (tools) {
-      const toolList = Array.isArray(tools) ? tools : tools.split(',').map((t) => t.trim());
-      const hasWrite = toolList.some((t) =>
-        t.toLowerCase().includes('write') || t.toLowerCase().includes('edit')
-      );
-      if (hasWrite) {
-        error(`唯讀型 agent "${name}" 不應有 Write/Edit 工具`);
-      } else {
-        ok('唯讀工具限制正確');
-      }
-    } else {
-      warn(`唯讀型 agent "${name}" 未明確指定 tools（繼承全部工具）`);
-    }
-  }
-
-  // 7. DO / DON'T 區塊
-  if (content.includes('## DO')) {
-    ok('包含 DO 區塊');
-  } else {
-    error('缺少 DO 區塊');
-  }
-
-  if (content.includes("## DON'T") || content.includes('## DONT')) {
-    ok("包含 DON'T 區塊");
-  } else {
-    error("缺少 DON'T 區塊");
-  }
-
-  // 8. HANDOFF 區塊
-  if (content.includes('HANDOFF')) {
-    ok('包含 HANDOFF 區塊');
-  } else {
-    error('缺少 HANDOFF 區塊');
-  }
-}
-
-// ── 交叉驗證：所有 registry agent 都有對應檔案 ──
-
+// 輸出交叉驗證結果
 console.log('\n🔗 交叉驗證...');
-
-for (const agent of expectedAgents) {
-  if (!foundAgents.has(agent)) {
-    error(`registry 中的 agent "${agent}" 沒有對應的 .md 檔案`);
-  }
-}
-
-for (const agent of foundAgents) {
-  if (!expectedAgents.includes(agent)) {
-    error(`agents/ 中的 "${agent}" 不在 registry 中`);
-  }
-}
-
-if (foundAgents.size === expectedAgents.length) {
-  ok(`所有 ${expectedAgents.length} 個 agent 都有對應檔案`);
-}
-
-// ── 結果 ──
-
-console.log('\n' + '─'.repeat(40));
-if (errors === 0) {
-  console.log(`\n🎉 驗證通過！${files.length} 個 agent 檔案全部正確。`);
-  if (warnings > 0) {
-    console.log(`⚠️  ${warnings} 個警告。`);
+if (allResult.cross.errors.length > 0) {
+  for (const err of allResult.cross.errors) {
+    console.error(`  ❌ ${err}`);
+    totalErrors++;
   }
 } else {
-  console.log(`\n💥 驗證失敗：${errors} 個錯誤，${warnings} 個警告。`);
+  console.log('  ✅ 交叉驗證通過');
+}
+
+// 結果摘要
+console.log('\n' + '─'.repeat(40));
+if (totalErrors === 0) {
+  console.log(`\n🎉 驗證通過！${agentNames.length} 個 agent 檔案全部正確。`);
+  if (totalWarnings > 0) {
+    console.log(`⚠️  ${totalWarnings} 個警告。`);
+  }
+} else {
+  console.log(`\n💥 驗證失敗：${totalErrors} 個錯誤，${totalWarnings} 個警告。`);
   process.exit(1);
 }
