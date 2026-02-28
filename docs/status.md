@@ -1,6 +1,6 @@
 # Overtone 現況
 
-> 最後更新：2026-02-28 | Plugin 版本：0.18.0
+> 最後更新：2026-02-28 | Plugin 版本：0.18.1
 
 ## 版本狀態
 
@@ -23,9 +23,9 @@
 
 ## 近期變更（最近 3 筆）
 
-- **[0.18.0] 2026-02-28**：PreCompact hook 新增 — 在 context 壓縮前注入工作流狀態恢復訊息，支援 SessionStart + PreCompact 雙端共用 `buildPendingTasksMessage()`。hook-utils.js 擴充至 4 個函式。提升 compact 後恢復的連貫性。測試 704 pass（+37）
-- **[0.17.7] 2026-02-28**：Hook 錯誤處理統一 — 新建 `hook-utils.js`（safeReadStdin + safeRun + hookError），重構 6 個 hook scripts 統一錯誤處理模式。post-use.js async→sync。測試 667 pass（+12）
-- **[0.17.6] 2026-02-28**：JSONL 效能優化 — instinct.js auto-compact（膨脹 >2x 自動壓縮）、timeline.js latest() 反向掃描、query() limit 快速路徑。pm/SKILL.md 精簡（125→112 行）。測試 655 pass（+26）
+- **[0.18.1] 2026-02-28**：Phase 1 onboarding 改善 — plugin.json description 改為產品定位語「裝上 Claude Code，就像有了一個開發團隊。」；SessionStart banner 新增 action hint，引導新使用者直接輸入需求。
+- **[0.18.0-fix3] 2026-02-28**：on-submit hook 注入 TaskList 提醒（三層防注意力衰減）
+- **[0.18.0-fix2] 2026-02-28**：TaskList 進度追蹤指引強化 + PM 導流優化
 
 ## 已知問題
 

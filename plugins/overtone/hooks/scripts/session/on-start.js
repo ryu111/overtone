@@ -88,13 +88,16 @@ safeRun(() => {
     '',
     `  🎵 Overtone v${pkg.version}`,
     '  ─────────────────────',
-    '  有規範的 Vibe',
-    sessionId ? `  📂 Session: ${sessionId.slice(0, 8)}...` : '',
-    dashboardUrl ? `  🖥️ Dashboard: ${dashboardUrl}` : '',
+    '  裝上 Claude Code，就像有了一個開發團隊。',
+    '',
+    '  💡 直接輸入你的需求 — 系統自動選擇工作流，委派專職 agent 完成。',
+    '',
+    sessionId ? `  📂 Session: ${sessionId.slice(0, 8)}...` : null,
+    dashboardUrl ? `  🖥️ Dashboard: ${dashboardUrl}` : null,
     agentBrowserStatus,
     grayMatterStatus,
     '',
-  ].filter(Boolean).join('\n');
+  ].filter(line => line != null).join('\n');
 
   // ── 未完成任務注入（disk-based TaskList 恢復）──
   // context compact 後 in-memory TaskList 歸零，此處讀取 specs/features/in-progress 的 tasks.md

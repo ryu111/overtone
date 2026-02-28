@@ -168,10 +168,10 @@ function buildCompletionSummary(ws) {
     '',
     ...stageResults,
     '',
-    ws.failCount > 0 ? `⚠️ 失敗重試：${ws.failCount} 次` : '',
-    ws.rejectCount > 0 ? `⚠️ 審查拒絕：${ws.rejectCount} 次` : '',
+    ws.failCount > 0 ? `⚠️ 失敗重試：${ws.failCount} 次` : null,
+    ws.rejectCount > 0 ? `⚠️ 審查拒絕：${ws.rejectCount} 次` : null,
     `⏱️ 耗時：${calcDuration(ws.createdAt)}`,
-  ].filter(Boolean).join('\n');
+  ].filter(line => line != null).join('\n');
 }
 
 /**

@@ -99,8 +99,8 @@
 | # | 任務 | 說明 | 狀態 |
 |---|------|------|:----:|
 | 1-1 | README 重寫 | 「3 分鐘上手」三步驟：安裝 → 第一次使用 → 看到結果。只展示 single/quick/standard | ✅（Phase 0 #14） |
-| 1-2 | SessionStart banner 優化 | 清晰告知新使用者可以做什麼 | ⚪ |
-| 1-3 | plugin.json description 更新 | 改為「裝上 Claude Code，就像有了一個開發團隊」 | ⚪ |
+| 1-2 | SessionStart banner 優化 | 清晰告知新使用者可以做什麼 | ✅ |
+| 1-3 | plugin.json description 更新 | 改為「裝上 Claude Code，就像有了一個開發團隊」 | ✅ |
 | 1-4 | 非 Overtone 專案實戰 | 在外部專案上用 standard workflow 完成一個真實功能 | ⚪ |
 | 1-5 | 規格文件同步 | 修正 agent 數量（15→17）、workflow 數量（15→18）、test 數量等不一致 | ✅（Phase 0 #13-#15） |
 
