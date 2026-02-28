@@ -97,6 +97,7 @@ safeRun(() => {
       `請直接執行此 workflow，不需要執行 /ot:auto 判斷。`,
       `讀取對應的 workflow skill：/ot:${validWorkflowOverride} 取得完整執行指引。`,
       `⛔ MUST 依照 workflow skill 指引委派 agent，不要自己寫碼。`,
+      `📊 初始化後、委派第一個 agent 前，MUST 使用 TaskCreate 建立 pipeline 進度追蹤。`,
     ].join('\n');
   } else if (currentState && currentState.currentStage) {
     const { currentStage, stages, workflowType, failCount, rejectCount } = currentState;
@@ -122,6 +123,7 @@ safeRun(() => {
       '[Overtone] 請先閱讀 /ot:auto 工作流選擇器來決定最適合的工作流。',
       '根據使用者需求自動選擇：single/quick/standard/full/secure/tdd/debug/refactor 等 12 種模板。',
       '⛔ 選好工作流後，MUST 依照 workflow skill 指引委派 agent，不要自己寫碼。',
+      '📊 初始化後、委派第一個 agent 前，MUST 使用 TaskCreate 建立 pipeline 進度追蹤。',
       activeFeatureContext || '',
     ].filter(Boolean).join('\n');
   }
