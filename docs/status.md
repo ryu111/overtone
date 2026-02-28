@@ -42,4 +42,4 @@
 | 並行 | docs/spec/overtone-並行.md | Loop、Mul-Dev、D1-D4 |
 | 子系統 | docs/spec/overtone-子系統.md | Specs、Dashboard |
 | 驗證品質 | docs/spec/overtone-驗證品質.md | 三信號、pass@k |
-| V1 Roadmap | docs/roadmap/v1.md | V1 驗證進度 |
+| 產品 Roadmap | docs/product-roadmap.md | Phase 計劃與進度追蹤 |

@@ -100,9 +100,8 @@ docs/                            # 專案文件目錄（⚠️ 不在 plugin 下
 │   ├── overtone-子系統.md       # Specs、Dashboard、Timeline
 │   ├── overtone-驗證品質.md     # 三信號、pass@k、Grader
 │   └── workflow-diagram.md      # 架構圖（Mermaid）
-├── roadmap/
-│   └── v1.md                    # V1 進度與驗證報告
-├── reference/                   # ECC 分析、措詞指南等參考文件
+├── reference/                   # 平台參考、ECC 分析、措詞指南等
+├── archive/                     # 歷史文件歸檔（不再維護）
 └── status.md                    # 現況快讀
 
 plugins/overtone/                # Plugin 根目錄

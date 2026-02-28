@@ -41,7 +41,6 @@ maxTurns: 20
 |------|---------|-----------------|
 | `docs/product-brief.md` | PM 決策後 | 不修改內容方向，只做格式和數字同步 |
 | `docs/product-roadmap.md` | Phase 進出時 | 更新狀態勾選（⚪→🔵→✅），不改任務定義 |
-| `docs/audit-report.md` | 修復完成時 | 勾選已修復項目 |
 
 ### 技術文件（doc-updater 完全負責同步）
 
@@ -50,7 +49,7 @@ maxTurns: 20
 | 規格文件（主索引） | `docs/spec/overtone.md` |
 | 規格文件（子文件） | `docs/spec/overtone-{主題}.md` |
 | 架構圖 | `docs/spec/workflow-diagram.md` |
-| 進度文件 | `docs/roadmap/v{N}.md` |
+| 歸檔文件 | `docs/archive/` |
 | 現況快讀 | `docs/status.md` |
 | ECC 分析、措詞指南等參考文件 | `docs/reference/` |
 | README | 專案根目錄 `README.md` |
