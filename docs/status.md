@@ -1,12 +1,12 @@
 # Overtone 現況
 
-> 最後更新：2026-02-28 | Plugin 版本：0.17.6
+> 最後更新：2026-02-28 | Plugin 版本：0.17.7
 
 ## 版本狀態
 
 | 版本 | 狀態 | 說明 |
 |------|------|------|
-| V1 | 進行中 | 655 pass，0 fail，核心功能完整 |
+| V1 | 進行中 | 667 pass，0 fail，核心功能完整 |
 | V2 | 規劃中 | 延後 |
 
 ## 核心指標
@@ -16,13 +16,14 @@
 | Agent 數量 | 17（含 grader） |
 | Stage 數量 | 16 |
 | Workflow 模板 | 18 |
-| 測試通過 | 655 pass / 0 fail |
-| 測試檔案 | 37 個 |
+| 測試通過 | 667 pass / 0 fail |
+| 測試檔案 | 38 個 |
 | Hook 數量 | 6 個 |
 | Skill 數量 | 30 個 |
 
 ## 近期變更（最近 3 筆）
 
+- **[0.17.7] 2026-02-28**：Hook 錯誤處理統一 — 新建 `hook-utils.js`（safeReadStdin + safeRun + hookError），重構 6 個 hook scripts 統一錯誤處理模式。post-use.js async→sync。測試 667 pass（+12）
 - **[0.17.6] 2026-02-28**：JSONL 效能優化 — instinct.js auto-compact（膨脹 >2x 自動壓縮）、timeline.js latest() 反向掃描、query() limit 快速路徑。pm/SKILL.md 精簡（125→112 行）。測試 655 pass（+26）
 - **[0.17.5] 2026-02-28**：Specs 自動歸檔修復 — `readTasksCheckboxes()` 排除 `## Dev Phases` 區塊的 checkbox，修復歸檔判斷永遠 false 的根因。支援 `## Stages` 舊格式。歷史 feature 歸檔清理。測試 629 pass（+3）
 - **[0.17.4] 2026-02-28**：Instinct 觀察品質提升 — 6 項改進：emit() 飽和閾值（confidence >= 1.0 不追加）、code fence 排除、agent_performance 記錄、workflow_routing 記錄、search-tools 反面糾正、confidence-scoring 文件。核心觀察系統強化，提升 instinct 可信度。測試 626 pass（+27）

@@ -19,21 +19,18 @@
 
 const instinct = require('../../../scripts/lib/instinct');
 const fs = require('fs');
+const { safeReadStdin, safeRun } = require('../../../scripts/lib/hook-utils');
 
-// ── 主流程 ──
+// ── 主流程（同步）──
 
-async function main() {
-  let input;
-  try {
-    const raw = await readStdin();
-    if (!raw.trim()) process.exit(0);
-    input = JSON.parse(raw);
-  } catch {
-    process.exit(0); // JSON 解析失敗，靜默退出
-  }
+if (require.main === module) safeRun(() => {
+  const input = safeReadStdin();
 
   const sessionId = input.session_id || process.env.CLAUDE_SESSION_ID;
-  if (!sessionId) process.exit(0);
+  if (!sessionId) {
+    process.stdout.write(JSON.stringify({ result: '' }));
+    process.exit(0);
+  }
 
   const toolName = input.tool_name || '';
   const toolInput = input.tool_input || {};
@@ -98,8 +95,9 @@ async function main() {
     }
   }
 
+  process.stdout.write(JSON.stringify({ result: '' }));
   process.exit(0);
-}
+}, { result: '' });
 
 // ── Pattern 偵測 ──
 
@@ -266,24 +264,6 @@ function extractCommandTag(command) {
   };
 
   return KNOWN_TOOLS[firstToken] || firstToken.replace(/[^a-z0-9-]/g, '').slice(0, 20) || 'shell';
-}
-
-/**
- * 讀取 stdin（支援管道輸入）
- * @returns {Promise<string>}
- */
-function readStdin() {
-  return new Promise((resolve, reject) => {
-    let data = '';
-    process.stdin.setEncoding('utf8');
-    process.stdin.on('data', chunk => { data += chunk; });
-    process.stdin.on('end', () => resolve(data));
-    process.stdin.on('error', reject);
-  });
-}
-
-if (require.main === module) {
-  main().catch(() => process.exit(0));
 }
 
 // 供測試使用
