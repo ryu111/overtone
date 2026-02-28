@@ -124,7 +124,7 @@ const retryDefaults = {
   maxRetries: 3,
 };
 
-// Timeline 事件類型（22 種，10 分類）
+// Timeline 事件類型（23 種，11 分類）
 const timelineEvents = {
   // workflow 類（3）
   'workflow:start':     { label: '工作流啟動', category: 'workflow' },
@@ -167,6 +167,9 @@ const timelineEvents = {
   'session:start':      { label: '工作階段開始', category: 'session' },
   'session:end':        { label: '工作階段結束', category: 'session' },
   'session:compact':    { label: 'Context 壓縮', category: 'session' },
+
+  // system 類（1）
+  'system:warning':     { label: '系統警告',     category: 'system' },
 };
 
 // Remote 控制命令

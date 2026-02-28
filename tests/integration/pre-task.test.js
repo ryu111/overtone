@@ -87,13 +87,15 @@ describe('場景 1：前置 stage 已完成 → 允許通過', () => {
       return s;
     });
 
-    // 以指向 code-reviewer（REVIEW stage）的 prompt 啟動 hook
+    // 以 subagent_type ot:code-reviewer 指向 REVIEW stage
     const result = await runHook(
       {
         session_id: sessionId,
         tool_name: 'Task',
         tool_input: {
-          prompt: '委派 code-reviewer agent: 審查程式碼品質',
+          subagent_type: 'ot:code-reviewer',
+          description: '委派審查',
+          prompt: '請審查程式碼品質',
         },
       },
       sessionId
@@ -118,13 +120,15 @@ describe('場景 2：前置 stage 未完成 → 阻擋並警告', () => {
     const stageList = workflows['quick'].stages;
     state.initState(sessionId, 'quick', stageList);
 
-    // 以指向 code-reviewer 的 prompt 啟動 hook
+    // 以 subagent_type ot:code-reviewer 指向 REVIEW stage（DEV 尚未完成）
     const result = await runHook(
       {
         session_id: sessionId,
         tool_name: 'Task',
         tool_input: {
-          prompt: '委派 code-reviewer agent: 審查程式碼',
+          subagent_type: 'ot:code-reviewer',
+          description: '委派審查',
+          prompt: '請審查程式碼',
         },
       },
       sessionId
@@ -190,6 +194,123 @@ describe('場景 4：無 session_id → 靜默放行', () => {
     );
 
     // 無 session → 靜默放行
+    expect(result.result).toBe('');
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// 場景 5：subagent_type 直接映射（L1 修復驗證）
+// ────────────────────────────────────────────────────────────────────────────
+
+describe('場景 5：subagent_type ot: 前綴 → 確定性映射（L1）', () => {
+  test('subagent_type ot:developer → 正確辨識為 developer，不受 prompt 影響', async () => {
+    const sessionId = newSessionId();
+    createdSessions.push(sessionId);
+
+    // 初始化 single workflow（只有 DEV stage）
+    mkdirSync(paths.sessionDir(sessionId), { recursive: true });
+    state.initState(sessionId, 'single', workflows['single'].stages);
+
+    // subagent_type 明確指定，prompt 無相關關鍵字
+    const result = await runHook(
+      {
+        session_id: sessionId,
+        tool_name: 'Task',
+        tool_input: {
+          subagent_type: 'ot:developer',
+          description: '開發任務',
+          prompt: '請實作新功能',
+        },
+      },
+      sessionId
+    );
+
+    // DEV 是第一個 stage → 不阻擋
+    expect(result.result).toBe('');
+  });
+
+  test('subagent_type ot:planner + prompt 含另一 agent 全名 → 正確辨識為 planner（不被 prompt 誤導）', async () => {
+    const sessionId = newSessionId();
+    createdSessions.push(sessionId);
+
+    // 初始化 standard workflow（PLAN → ARCH → ...）
+    mkdirSync(paths.sessionDir(sessionId), { recursive: true });
+    state.initState(sessionId, 'standard', workflows['standard'].stages);
+
+    // subagent_type 為 planner，但 prompt 中提及另一個 agent（誤判場景）
+    const result = await runHook(
+      {
+        session_id: sessionId,
+        tool_name: 'Task',
+        tool_input: {
+          subagent_type: 'ot:planner',
+          description: '規劃任務',
+          prompt: '規劃功能，注意不要讓 code-reviewer 提前介入',
+        },
+      },
+      sessionId
+    );
+
+    // PLAN 是第一個 stage → 不阻擋
+    expect(result.result).toBe('');
+  });
+
+  test('subagent_type 非 ot: 前綴 → fallback 到 identifyAgent', async () => {
+    const sessionId = newSessionId();
+    createdSessions.push(sessionId);
+
+    // 初始化 quick workflow
+    mkdirSync(paths.sessionDir(sessionId), { recursive: true });
+    state.initState(sessionId, 'quick', workflows['quick'].stages);
+
+    // 將 DEV 設為 completed，使 REVIEW 可通過
+    state.updateStateAtomic(sessionId, (s) => {
+      s.stages['DEV'].status = 'completed';
+      s.stages['DEV'].result = 'pass';
+      return s;
+    });
+
+    // subagent_type 不含 ot: 前綴 → 走 identifyAgent fallback
+    const result = await runHook(
+      {
+        session_id: sessionId,
+        tool_name: 'Task',
+        tool_input: {
+          subagent_type: 'custom:something',
+          description: 'code-reviewer 審查',
+          prompt: '請審查程式碼',
+        },
+      },
+      sessionId
+    );
+
+    // fallback 從 desc 辨識出 code-reviewer，DEV 已完成 → 允許通過
+    expect(result.result).toBe('');
+  });
+
+  test('subagent_type 為未知 ot: agent → fallback 到 identifyAgent', async () => {
+    const sessionId = newSessionId();
+    createdSessions.push(sessionId);
+
+    // 初始化任意 workflow
+    mkdirSync(paths.sessionDir(sessionId), { recursive: true });
+    state.initState(sessionId, 'quick', workflows['quick'].stages);
+
+    // subagent_type 有 ot: 前綴但 agent 名稱未知 → fallback 到 identifyAgent
+    const result = await runHook(
+      {
+        session_id: sessionId,
+        tool_name: 'Task',
+        tool_input: {
+          subagent_type: 'ot:nonexistent-agent',
+          description: '執行某任務',
+          prompt: '任意內容',
+        },
+      },
+      sessionId
+    );
+
+    // 未知 ot: agent → fallback → identifyAgent 也無法辨識 → 不阻擋
     expect(result.result).toBe('');
   });
 });

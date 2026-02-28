@@ -26,8 +26,6 @@ safeRun(() => {
   // ── 取得 Task 工具參數 ──
 
   const toolInput = input.tool_input || {};
-  const description = (toolInput.description || '').toLowerCase();
-  const prompt = (toolInput.prompt || '').toLowerCase();
 
   // 無 session → 不擋
   if (!sessionId) {
@@ -41,10 +39,45 @@ safeRun(() => {
     process.exit(0);
   }
 
-  // ── 辨識目標 agent ──
+  // ── 辨識目標 agent（L1：優先使用 subagent_type 確定性映射）──
 
-  // 從 description 或 prompt 中識別 agent 名稱
-  const targetAgent = identifyAgent(description, prompt);
+  // L1：subagent_type 直接映射（確定性，零誤判）
+  // 格式：ot:<agentName>（如 ot:developer、ot:planner）
+  const subagentType = (toolInput.subagent_type || '').trim();
+  let targetAgent = null;
+
+  if (subagentType.startsWith('ot:')) {
+    const candidate = subagentType.slice(3);
+    const isKnown = Object.values(stages).some((d) => d.agent === candidate);
+    if (isKnown) {
+      targetAgent = candidate;
+    }
+  }
+
+  // L3：衝突偵測（subagent_type vs identifyAgent）
+  // 若兩者不一致，emit timeline warning 供事後分析
+  if (targetAgent && subagentType.startsWith('ot:')) {
+    const description = (toolInput.description || '').toLowerCase();
+    const prompt = (toolInput.prompt || '').toLowerCase();
+    const regexResult = identifyAgent(description, prompt);
+    if (regexResult && regexResult !== targetAgent) {
+      const timeline = require('../../../scripts/lib/timeline');
+      timeline.emit(sessionId, 'system:warning', {
+        type: 'identify-agent-conflict',
+        subagentType: targetAgent,
+        regexResult: regexResult,
+        description: toolInput.description,
+      });
+    }
+  }
+
+  // L1 fallback：從 desc/prompt 識別（非 ot: 前綴場景）
+  if (!targetAgent) {
+    const description = (toolInput.description || '').toLowerCase();
+    const prompt = (toolInput.prompt || '').toLowerCase();
+    targetAgent = identifyAgent(description, prompt);
+  }
+
   if (!targetAgent) {
     // 無法辨識 → 不擋（可能是非 Overtone agent）
     process.stdout.write(JSON.stringify({ result: '' }));
