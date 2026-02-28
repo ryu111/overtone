@@ -129,7 +129,7 @@ plugins/overtone/                # Plugin 根目錄
 ```
 ~/.overtone/sessions/{sessionId}/
 ├── workflow.json         # 工作流狀態
-├── timeline.jsonl        # 事件記錄（22 種）
+├── timeline.jsonl        # 事件記錄（23 種）
 ├── handoffs/             # Handoff 檔案
 ├── loop.json             # Loop 狀態
 └── observations.jsonl    # Instinct 觀察
@@ -142,7 +142,7 @@ plugins/overtone/                # Plugin 根目錄
 | SessionStart | Banner + 初始化 + Dashboard spawn |
 | PreCompact | context 壓縮前注入工作流狀態恢復訊息 |
 | UserPromptSubmit | systemMessage → /ot:auto |
-| PreToolUse(Task) | 擋跳過必要階段 |
+| PreToolUse(Task) | subagent_type 確定性映射 + 擋跳過必要階段 + 衝突警告 |
 | SubagentStop | 記錄結果 + 提示下一步 + 寫 state + emit timeline |
 | PostToolUse | Instinct 觀察收集 + .md 措詞偵測（emoji-關鍵詞不匹配警告） |
 | Stop | Loop 迴圈 + 完成度 + Dashboard 通知 |
