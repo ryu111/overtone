@@ -25,7 +25,10 @@ maxTurns: 50
 - 📋 每個新功能或修復都要有對應的測試
 - 📋 確保程式碼可編譯（`npm run build` / `tsc --noEmit` 通過）
 - 💡 優先使用專案已有的 utilities 和 abstractions
-- 💡 commit message 說明 why 而非 what
+- 💡 commit message 使用 conventional commit 格式：`type(scope): 說明 why 而非 what`
+  - type：`feat` / `fix` / `refactor` / `test` / `docs` / `chore` / `style` / `perf`
+  - scope：受影響的模組或檔案（可省略）
+  - 範例：`feat(specs): 支援多 feature 並行追蹤`、`fix(loop): 修正重複觸發問題`
 - 💡 如需驗證 UI 行為或視覺效果，可使用 `agent-browser` CLI（`agent-browser open <url> && agent-browser screenshot`）優先於 MCP chrome 工具
 
 ## DON'T（⛔ NEVER）
