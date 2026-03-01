@@ -11,7 +11,7 @@
  *   ✅ 啟動 Dashboard（OVERTONE_NO_DASHBOARD=1 可跳過）
  */
 
-const { mkdirSync, appendFileSync } = require('fs');
+const { mkdirSync, appendFileSync, writeFileSync, readFileSync, chmodSync } = require('fs');
 const path = require('path');
 const pkg = require('../../../.claude-plugin/plugin.json');
 const paths = require('../../../scripts/lib/paths');
@@ -42,6 +42,37 @@ safeRun(() => {
     }
   } catch {
     // 靜默跳過，不阻擋 session 啟動
+  }
+
+  // ── Status Line 自動設定 ──
+  // 寫入 wrapper script（~/.claude/statusline.sh）並確保 settings.json 有 statusLine 設定
+  try {
+    const claudeDir = path.join(require('os').homedir(), '.claude');
+    const wrapperPath = path.join(claudeDir, 'statusline.sh');
+    const pluginRoot = path.resolve(__dirname, '../../..');
+    const statuslineScript = path.join(pluginRoot, 'scripts', 'statusline.js');
+
+    // wrapper: 委派給 plugin 的 statusline.js
+    writeFileSync(wrapperPath, `#!/bin/bash\nexec node "${statuslineScript}"\n`);
+    chmodSync(wrapperPath, 0o755);
+
+    // settings.json: 只在沒有 statusLine 時新增，不覆蓋既有設定
+    const settingsPath = path.join(claudeDir, 'settings.json');
+    try {
+      const settings = JSON.parse(readFileSync(settingsPath, 'utf8'));
+      if (!settings.statusLine) {
+        settings.statusLine = {
+          type: 'command',
+          command: '~/.claude/statusline.sh',
+          padding: 0,
+        };
+        writeFileSync(settingsPath, JSON.stringify(settings, null, 2) + '\n');
+      }
+    } catch {
+      // settings.json 讀取失敗 → 跳過
+    }
+  } catch {
+    // Status Line 設定失敗不阻擋 session 啟動
   }
 
   // ── 初始化 session 目錄 ──
