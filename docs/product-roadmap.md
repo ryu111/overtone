@@ -29,14 +29,19 @@
 | 2 | Dashboard | UI 強化、使用體驗 | ⚪ Pending |
 | 3 | Remote | EventBus + Adapter 擴展 | ⚪ Pending |
 
-### 核心強化 — 四階段
+### 核心強化
 
 | 階段 | 名稱 | 說明 | 狀態 |
 |:----:|------|------|:----:|
 | S1 | 盤點遷移 + 效率優化 | 5 項平台能力採用 + Config API 統一設定管理（v0.20.0 + v0.21.0） | ✅ 完成 |
 | S2 | 自動偵測機制 | health-check 新增 platform-drift 偵測項（第 6 項） | ✅ 完成 |
 | S3 | 平台差異追蹤 | platform.md 標注 adopted/evaluated/n-a 狀態，增量式追蹤 | ✅ 完成 |
-| S4 | 全面能力評估 | 逐一評估 Gap Analysis 13 項，決定採用/不採用 | ⚪ |
+| S4 | 全面能力評估 | 9 項 ⚡ 能力 RICE 評估：4 採用 / 4 延後 / 1 不採用 | ✅ 完成 |
+| S5 | Effort Level 分層 | 按 agent model 設定 thinking 深度（haiku:low / sonnet:medium / opus:high） | ⚪ |
+| S6 | Skill 動態注入 | `!`command`` 取代部分 on-submit hook 注入 workflow state | ⚪ |
+| S7 | TaskCompleted Hook | Task 完成前品質門檻硬阻擋（test pass + lint clean） | ⚪ |
+| S8 | Opusplan 混合模式 | planner 試點 Opus 規劃 + Sonnet 執行，降成本 | ⚪ |
+| S9 | 延後項目 | Agent memory、worktree isolation、prompt/agent hook、1M context | ⏳ 待觸發 |
 
 ### S1 詳細項目
 

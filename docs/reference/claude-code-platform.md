@@ -594,24 +594,29 @@ stdin 提供完整 session 狀態（model、cost、context window、vim mode 等
 | 3 | **PreToolUse `updatedInput`** | 修改 Task prompt，自動注入 workflow context | v0.20.0 |
 | 4 | **Agent `disallowedTools`** | 黑名單比白名單更靈活，取代舊 `tools` 白名單 | v0.20.0 |
 
-### ⚡ 高價值未用能力
+### 🔵 S4 評估：建議採用（S5 實作）
 
-| # | 能力 | 說明 | 預估影響 |
-|---|------|------|---------|
-| 1 | **Agent `memory`** | 跨 session 知識累積。developer 記住 coding style，reviewer 記住 anti-patterns | 可部分取代 Instinct |
-| 2 | **Agent `isolation: worktree`** | mul-dev 並行的技術前提，消除 git 衝突 | Phase 3 並行 dev |
-| 3 | **Skill `context: fork`** | 大型 skill 在隔離 context 執行 | 降低主 context 污染 |
-| 4 | **Skill 動態注入 `!`command``** | auto/SKILL.md 動態注入 workflow state | 減少 on-submit hook 負擔 |
-| 5 | **`TaskCompleted` hook** | Task 完成前做品質門檻檢查 | 強化品質守衛 |
-| 6 | **`prompt`/`agent` hook 類型** | LLM 驗證 + agentic 檢查 | 更靈活的品質門檻 |
-| 7 | **`opusplan` 混合模式** | Opus 規劃 + Sonnet 執行，降低成本同時保持品質 | 降低 pipeline 成本 |
-| 8 | **`CLAUDE_CODE_EFFORT_LEVEL`** | 按任務複雜度動態調節 thinking 深度 | 優化速度/成本 |
-| 9 | **`sonnet[1m]` 1M context** | 超大 context window，適合大型 codebase 分析 | 深度分析場景 |
+| # | 能力 | RICE | 實作方向 |
+|---|------|:----:|---------|
+| 1 | **`CLAUDE_CODE_EFFORT_LEVEL`** | 10.0 | 按 agent model 分層：haiku→low、sonnet→medium、opus→high |
+| 2 | **Skill 動態注入 `!`command``** | 9.6 | auto/SKILL.md 動態注入 workflow state，簡化 on-submit hook |
+| 3 | **`TaskCompleted` hook** | 8.0 | Task 完成前硬阻擋品質門檻（test pass、lint clean） |
+| 4 | **`opusplan` 混合模式** | 7.2 | planner 試點：Opus 規劃 + Sonnet 執行，降成本 |
 
-### ❌ 不適用 / 低價值
+### ⏳ S4 評估：延後
+
+| # | 能力 | 觸發條件 |
+|---|------|---------|
+| 1 | **Agent `memory`** | Instinct 資料量證明不足時啟用 |
+| 2 | **Agent `isolation: worktree`** | mul-dev 使用頻率證明需要時 |
+| 3 | **`prompt`/`agent` hook 類型** | 現有 command hook 無法滿足品質門檻需求時 |
+| 4 | **`sonnet[1m]` 1M context** | 出現大型 codebase 全面分析場景時 |
+
+### ❌ 不適用 / 不採用
 
 | 能力 | 理由 |
 |------|------|
+| Skill `context: fork` | 與 Overtone skill 作為持續指引的架構衝突（S4 評估） |
 | `PermissionRequest` hook | bypassPermissions 下不觸發 |
 | `outputStyles` | Dashboard 已有自訂介面 |
 | `lspServers` | Overtone 是 JS 單語言 |
@@ -623,22 +628,31 @@ stdin 提供完整 session 狀態（model、cost、context window、vim mode 等
 
 ## 八、建議行動優先順序
 
-### ✅ Phase 2 已完成（v0.20.0）
+### ✅ S1 已完成（v0.20.0 + v0.21.0）
 
-1. ~~**Agent `skills` 預載**~~ — 已採用，reference skills 預載入相關 agent
-2. ~~**Agent `disallowedTools`**~~ — 已採用，10 個 agent 完成白名單→黑名單遷移
-3. ~~**SessionEnd hook**~~ — 已採用，on-session-end.js 上線
-4. ~~**PreToolUse `updatedInput`**~~ — 已採用，PreToolUse hook 自動注入 workflow context
+1. ~~**Agent `skills` 預載**~~ — reference skills 預載入相關 agent
+2. ~~**Agent `disallowedTools`**~~ — 10 個 agent 完成白名單→黑名單遷移
+3. ~~**SessionEnd hook**~~ — on-session-end.js 上線
+4. ~~**PreToolUse `updatedInput`**~~ — PreToolUse hook 自動注入 workflow context
 
-### Phase 2 待驗證（低成本）
+### ✅ S4 已完成（能力評估）
 
-1. **Skill 動態注入** — 在測試 skill 中試 `!`node script.js``
-2. **`CLAUDE_CODE_EFFORT_LEVEL`** — 為不同 agent 設定不同 effort（haiku agent 用 low，opus agent 用 high）
-3. **`opusplan` 模式** — 測試是否適合替代 standard workflow 的 PLAN(opus)+DEV(sonnet) 模式
+全部 9 項 ⚡ 能力評估完畢：4 項採用 → S5 實作、4 項延後、1 項不採用（詳見 Gap 分析）
 
-### Phase 3 可評估（需設計）
+### 🔵 待實作
 
-4. **Agent `memory`** — 評估是否取代/補充 Instinct
-5. **Agent `isolation: worktree`** — mul-dev 並行前提
-6. **`TaskCompleted` hook** — 品質門檻自動化
-7. **`sonnet[1m]` 1M context** — 大型 codebase 全面分析場景
+| 階段 | 能力 | 說明 |
+|:----:|------|------|
+| S5 | **`CLAUDE_CODE_EFFORT_LEVEL`** | 按 agent model 分層設定 thinking 深度 |
+| S6 | **Skill 動態注入** | auto/SKILL.md 用 `!`command`` 動態注入 workflow state |
+| S7 | **`TaskCompleted` hook** | Task 完成前品質門檻硬阻擋 |
+| S8 | **`opusplan` 混合模式** | planner 試點 Opus 規劃 + Sonnet 執行 |
+
+### ⏳ 延後（S9 待觸發）
+
+| 能力 | 觸發條件 |
+|------|---------|
+| **Agent `memory`** | Instinct 資料量不足時啟用 |
+| **Agent `isolation: worktree`** | mul-dev 使用頻率證明需要 |
+| **`prompt`/`agent` hook 類型** | command hook 無法滿足時 |
+| **`sonnet[1m]` 1M context** | 大型 codebase 分析場景出現 |
