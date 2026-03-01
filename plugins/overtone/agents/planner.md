@@ -1,7 +1,7 @@
 ---
 name: planner
 description: 需求規劃專家。分析使用者需求、產出結構化計劃、定義任務範圍和優先順序。在 PLAN 階段委派。
-model: opus
+model: opusplan
 permissionMode: bypassPermissions
 color: purple
 maxTurns: 25

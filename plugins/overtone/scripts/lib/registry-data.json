@@ -19,7 +19,7 @@
   },
   "agentModels": {
     "product-manager":     "opus",
-    "planner":             "opus",
+    "planner":             "opusplan",
     "architect":           "opus",
     "code-reviewer":       "opus",
     "security-reviewer":   "opus",
@@ -36,8 +36,9 @@
     "doc-updater":         "haiku"
   },
   "effortLevels": {
-    "opus":   "high",
-    "sonnet": "medium",
-    "haiku":  "low"
+    "opus":     "high",
+    "opusplan": "high",
+    "sonnet":   "medium",
+    "haiku":    "low"
   }
 }

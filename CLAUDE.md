@@ -30,7 +30,7 @@ Layer 2: Hook 守衛（底層）— 記錄、擋、提示、通知
 | 色彩 | Agent | Model | 功能 |
 |:----:|-------|:-----:|:----:|
 | emerald | product-manager | opus | 產品分析、需求探索、drift 偵測 |
-| purple | planner | opus | 規劃 |
+| purple | planner | opusplan | 規劃 |
 | cyan | architect | opus | 架構 |
 | cyan | designer | sonnet | UI/UX |
 | yellow | developer | sonnet | 開發 |

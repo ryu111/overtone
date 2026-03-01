@@ -40,7 +40,7 @@
 | S5 | Effort Level 分層 | 按 agent model 設定 thinking 深度（haiku:low / sonnet:medium / opus:high） | ✅ 完成 |
 | S6 | Skill 動態注入 | `!`command`` 取代部分 on-submit hook 注入 workflow state | ✅ 完成 |
 | S7 | TaskCompleted Hook | Task 完成前品質門檻硬阻擋（test pass + lint clean） | ✅ 完成 |
-| S8 | Opusplan 混合模式 | planner 試點 Opus 規劃 + Sonnet 執行，降成本 | ⚪ |
+| S8 | Opusplan 混合模式 | planner 試點 Opus 規劃 + Sonnet 執行，降成本 | ✅ 完成 |
 | S9 | 延後項目 | Agent memory、worktree isolation、prompt/agent hook、1M context | ⏳ 待觸發 |
 
 ### S1 詳細項目

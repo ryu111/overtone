@@ -23,9 +23,9 @@
 
 ## 近期變更（最近 3 筆）
 
+- **[0.22.0] 2026-03-01**：S8 Opusplan 混合模式 — planner model 從 opus 改為 opusplan（Opus 規劃 + Sonnet 執行），降低成本 → 1118 pass
 - **[0.22.0] 2026-03-01**：TaskCompleted Hook（第 10 個）— on-task-completed.js 新增 + 品質門檻硬阻擋（test pass + lint clean）+ 9 個新測試 → 1117 pass
 - **[0.21.1] 2026-03-01**：Skill 動態注入完成 — get-workflow-context.js 新增 + auto/SKILL.md `!`command`` 動態區塊 + on-submit.js 簡化 + 9 個新測試 → 1104 pass
-- **[0.21.1] 2026-03-01**：Effort Level 分層 — effortLevels 映射 + SessionStart hook CLAUDE_ENV_FILE 自動設定 + 11 個新測試 → 1095 pass
 
 ## 已知問題
 

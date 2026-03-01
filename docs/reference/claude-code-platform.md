@@ -491,7 +491,8 @@ Opus（規劃 + 決策）→ Sonnet（執行 + 實作）
 
 | 角色 | Model | 理由 |
 |------|:-----:|------|
-| product-manager, planner, architect | `opus` | 策略推理、架構決策 |
+| product-manager, architect | `opus` | 策略推理、架構決策 |
+| planner | `opusplan` | Opus 規劃 + Sonnet 執行（混合模式） |
 | code-reviewer, security-reviewer, retrospective | `opus` | 高信心判斷 |
 | developer, designer, tester, qa, debugger | `sonnet` | 實作效率 |
 | database-reviewer, e2e-runner, build-error-resolver, refactor-cleaner | `sonnet` | 專項執行 |

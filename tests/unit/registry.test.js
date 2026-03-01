@@ -103,6 +103,10 @@ describe('registry.js 資料完整性', () => {
       expect(effortLevels['opus']).toBe('high');
     });
 
+    test('opusplan 對應 high', () => {
+      expect(effortLevels['opusplan']).toBe('high');
+    });
+
     test('sonnet 對應 medium', () => {
       expect(effortLevels['sonnet']).toBe('medium');
     });

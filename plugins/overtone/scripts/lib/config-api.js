@@ -16,7 +16,7 @@ const { knownTools, hookEvents } = require('./registry');
 
 // ── 內部常數 ──
 
-const VALID_MODELS = ['opus', 'sonnet', 'haiku'];
+const VALID_MODELS = ['opus', 'opusplan', 'sonnet', 'haiku'];
 
 // ── 內部輔助函式 ──
 

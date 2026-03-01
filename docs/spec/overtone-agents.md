@@ -13,7 +13,7 @@
 | # | Agent | Model | Color | 功能 | permissionMode |
 |:-:|-------|:-----:|:-----:|:----:|:--------------:|
 | 1 | product-manager | opus | emerald | 產品分析 | bypassPermissions |
-| 2 | planner | opus | purple | 規劃 | bypassPermissions |
+| 2 | planner | opusplan | purple | 規劃 | bypassPermissions |
 | 3 | architect | opus | cyan | 架構 | bypassPermissions |
 | 4 | designer | sonnet | cyan | UI/UX | bypassPermissions |
 | 5 | developer | sonnet | yellow | 開發 | bypassPermissions |
@@ -34,7 +34,8 @@
 
 ### Model 分級
 
-- **Opus**（6 個決策型）：product-manager、planner、architect、code-reviewer、security-reviewer、retrospective
+- **Opus**（5 個決策型）：product-manager、architect、code-reviewer、security-reviewer、retrospective
+- **Opusplan**（1 個混合型）：planner
 - **Sonnet**（9 個執行型）：designer、developer、debugger、database-reviewer、tester、qa、e2e-runner、build-error-resolver、refactor-cleaner
 - **Haiku**（2 個輕量型）：doc-updater、grader
 
