@@ -10,7 +10,7 @@
 
 ## 一、Hook Events（17 個）
 
-Overtone 使用 9/17 個。
+Overtone 使用 10/17 個。
 
 ### 事件總表
 
@@ -27,7 +27,7 @@ Overtone 使用 9/17 個。
 | 9 | `SubagentStop` | subagent 完成 | ✅ | agent type | ✅ on-stop.js |
 | 10 | `Stop` | Claude 完成回應 | ✅ | ❌ | ✅ on-stop.js |
 | 11 | `TeammateIdle` | team member 將閒置 | ✅ | ❌ | ⬜ |
-| 12 | `TaskCompleted` | Task 被標記完成 | ✅ | ❌ | ⬜ |
+| 12 | `TaskCompleted` | Task 被標記完成 | ✅ | ❌ | ✅ on-task-completed.js |
 | 13 | `ConfigChange` | 配置文件變更 | ✅ | config source | ⬜ |
 | 14 | `WorktreeCreate` | worktree 建立 | ✅ | ❌ | ⬜ |
 | 15 | `WorktreeRemove` | worktree 移除 | ❌ | ❌ | ⬜ |
@@ -456,6 +456,7 @@ Opus 4.6 和 Sonnet 4.6 支援自適應思考 — Claude 自動決定思考深�
 - 相同 Opus 4.6 模型，2.5x 更快輸出，6x 成本
 - 使用 `/fast` 切換開關
 - 不是切換到較弱模型，而是同模型的加速推理
+- **Overtone 影響**：session 級別設定，套用到 Main Agent + 所有 subagent。Overtone 無法程式化控制，使用者自行評估成本/速度取捨
 
 ### opusplan 混合模式
 
@@ -639,6 +640,10 @@ stdin 提供完整 session 狀態（model、cost、context window、vim mode 等
 | Agent Teams | 實驗性，與現有 Task 委派衝突 |
 | `ConfigChange` hook | 配置不常變動 |
 | `http` hook type | 無遠端端點需求 |
+| `Fast Mode` | session 級別設定（`/fast`），Overtone 無法程式化控制，使用者自行決定（RICE 1.5） |
+| `SubagentStart` hook | PreToolUse(Task) + updatedInput 已在更好位置覆蓋（RICE 0.5） |
+| `Notification` hook | bypassPermissions 下 permission_prompt 不觸發，其餘已被 Loop + Dashboard 覆蓋（RICE 0.25） |
+| Rules path conditions | Plugin 無法控制 `.claude/rules/` 目錄（RICE 1.6） |
 
 ---
 
@@ -653,7 +658,7 @@ stdin 提供完整 session 狀態（model、cost、context window、vim mode 等
 
 ### ✅ S4 已完成（能力評估）
 
-全部 9 項 ⚡ 能力評估完畢：4 項採用 → S5 實作、4 項延後、1 項不採用（詳見 Gap 分析）
+全部 9 項 ⚡ 能力評估完畢：4 項採用 → S5 實作、4 項延後、1 項不採用。後續補充評估 8 項遺漏能力：1 項採用（Status Line → S13）、3 項延後、4 項不採用（詳見 Gap 分析）
 
 ### ✅ S5 已完成（v0.21.1）
 
@@ -675,6 +680,31 @@ stdin 提供完整 session 狀態（model、cost、context window、vim mode 等
 
 **Agent `memory`** — 5 個 opus 判斷型 agent 啟用 `memory: local`（code-reviewer、retrospective、architect、security-reviewer、product-manager）
 
+### ⚪ S11 待實作
+
+| # | 能力 | 說明 |
+|---|------|------|
+| 1 | **CLAUDE.md 精簡** | SoT 引用取代重複內容（Agent 表、Workflow 表、目錄結構），釋放 ~60 行成長空間 |
+| 2 | **Skill `argument-hint`** | 常用 skill 加參數提示（auto、pm、issue），提升 `/ot:` 選單 UX |
+
+### ⚪ S12 待實作
+
+| # | 能力 | 說明 |
+|---|------|------|
+| 1 | **聲音通知** | SubagentStop hook 加 `osascript` macOS 原生通知 — PASS/REJECT/完成各配不同音效 |
+
+### ⚪ S13 待實作
+
+| # | 能力 | 說明 |
+|---|------|------|
+| 1 | **Status Line** | CLI 底部即時顯示 workflow 進度，讀取 workflow.json + stdin session 資訊 |
+
+### ⚪ S14 待實作
+
+| # | 能力 | 說明 |
+|---|------|------|
+| 1 | **Strategic Compact** | 階段完成 + commit 後 systemMessage 建議壓縮 context |
+
 ### ⏳ S9 保留
 
 | 能力 | 觸發條件 |
@@ -682,3 +712,5 @@ stdin 提供完整 session 狀態（model、cost、context window、vim mode 等
 | **Agent `isolation: worktree`** | mul-dev 使用頻率證明需要 |
 | **`prompt`/`agent` hook 類型** | command hook 無法滿足時 |
 | **`sonnet[1m]` 1M context** | 大型 codebase 分析場景出現 |
+| **CLAUDE.md `@import`** | CLAUDE.md 精簡後仍超過 200 行時 |
+| **`AUTOCOMPACT_PCT_OVERRIDE`** | Status Line 上線後觀察到 compact 時機問題時 |
