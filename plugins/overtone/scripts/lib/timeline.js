@@ -14,6 +14,7 @@ const { timelineEvents } = require('./registry');
 const { atomicWrite } = require('./utils');
 
 const MAX_EVENTS = 2000;
+let _emitCounter = 0;
 
 /**
  * 寫入一筆 timeline 事件
@@ -39,8 +40,7 @@ function emit(sessionId, eventType, data = {}) {
   appendFileSync(filePath, JSON.stringify(event) + '\n', 'utf8');
 
   // 定期截斷：每 100 次寫入檢查一次
-  if (!emit._counter) emit._counter = 0;
-  if (++emit._counter % 100 === 0) {
+  if (++_emitCounter % 100 === 0) {
     trimIfNeeded(sessionId);
   }
 

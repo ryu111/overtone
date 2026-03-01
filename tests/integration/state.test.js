@@ -135,6 +135,29 @@ describe('setFeatureName', () => {
   test('不存在的 session 靜默忽略（不拋出）', () => {
     expect(() => state.setFeatureName('nonexistent_session', 'my-feature')).not.toThrow();
   });
+
+  test('setFeatureName 後 workflowType、stages、currentStage、failCount 不受影響', () => {
+    // Scenario 2：其他 state 欄位不受 setFeatureName 影響
+    state.initState(TEST_SESSION, 'quick', ['DEV', 'REVIEW', 'TEST']);
+    const before = state.readState(TEST_SESSION);
+
+    state.setFeatureName(TEST_SESSION, 'new-feature-name');
+
+    const after = state.readState(TEST_SESSION);
+    expect(after.featureName).toBe('new-feature-name');
+    // 其他欄位值不變
+    expect(after.workflowType).toBe(before.workflowType);
+    expect(after.currentStage).toBe(before.currentStage);
+    expect(after.failCount).toBe(before.failCount);
+    expect(after.stages).toEqual(before.stages);
+  });
+
+  test('setFeatureName 不建立新檔案（session 不存在時）', () => {
+    const nonexistentId = `nonexistent_sfn_${Date.now()}`;
+    state.setFeatureName(nonexistentId, 'any-name');
+    // session 目錄不應被建立
+    expect(state.readState(nonexistentId)).toBeNull();
+  });
 });
 
 describe('updateStateAtomic', () => {

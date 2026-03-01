@@ -147,7 +147,8 @@ function removeActiveAgent(sessionId, agentName) {
 function setFeatureName(sessionId, name) {
   const current = readState(sessionId);
   if (!current) return;
-  atomicWrite(paths.session.workflow(sessionId), JSON.stringify({ ...current, featureName: name }, null, 2));
+  current.featureName = name;
+  writeState(sessionId, current);
 }
 
 /**

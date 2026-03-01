@@ -7,6 +7,25 @@
  *   2. 依 stageKey 分類進行字串匹配
  */
 
+// 排除條件常量（避免 false positive）
+const REJECT_EXCLUDES = ['no reject', 'not reject'];
+const FAIL_EXCLUDES = ['no fail', '0 fail', 'without fail', 'failure mode'];
+const ERROR_EXCLUDES = ['0 error', 'no error', 'without error', 'error handling', 'error recovery', 'error-free', 'error free'];
+const ISSUES_EXCLUDES = ['no issues', '0 issues', 'no significant issues', 'without issues'];
+
+/**
+ * 輔助函式：檢查 text 是否包含 keywords 中的任一關鍵字，且不符合 excludes 中的任一排除條件
+ * @param {string} text - 已 toLowerCase 的文字
+ * @param {string[]} keywords - 觸發關鍵字
+ * @param {string[]} excludes - 排除條件
+ * @returns {boolean}
+ */
+function matchesWithExclusions(text, keywords, excludes) {
+  const hasKeyword = keywords.some((kw) => text.includes(kw));
+  if (!hasKeyword) return false;
+  return !excludes.some((ex) => text.includes(ex));
+}
+
 /**
  * 解析 agent 輸出，判斷結果
  * @param {string} output - agent 的完整輸出文字
@@ -31,9 +50,7 @@ function parseResult(output, stageKey) {
 
   // REVIEWER → PASS / REJECT
   if (stageKey === 'REVIEW' || stageKey === 'SECURITY' || stageKey === 'DB-REVIEW') {
-    // 排除 false positive：「no rejections」「not rejected」
-    if ((lower.includes('reject') || lower.includes('拒絕'))
-        && !lower.includes('no reject') && !lower.includes('not reject')) {
+    if (matchesWithExclusions(lower, ['reject', '拒絕'], REJECT_EXCLUDES)) {
       return { verdict: 'reject' };
     }
     return { verdict: 'pass' };
@@ -41,17 +58,11 @@ function parseResult(output, stageKey) {
 
   // TESTER / QA / E2E / BUILD-FIX → PASS / FAIL
   if (stageKey === 'TEST' || stageKey === 'QA' || stageKey === 'E2E' || stageKey === 'BUILD-FIX') {
-    // 排除 false positive（M-3 擴充）
-    if ((lower.includes('fail') || lower.includes('失敗'))
-        && !lower.includes('no fail') && !lower.includes('0 fail')
-        && !lower.includes('without fail') && !lower.includes('failure mode')) {
+    if (matchesWithExclusions(lower, ['fail', '失敗'], FAIL_EXCLUDES)) {
       return { verdict: 'fail' };
     }
     // 'error' 單獨檢查，排除 'error handling'、'0 errors'、'error-free'、'without error'
-    if (lower.includes('error') && !lower.includes('0 error') && !lower.includes('no error')
-        && !lower.includes('without error')
-        && !lower.includes('error handling') && !lower.includes('error recovery')
-        && !lower.includes('error-free') && !lower.includes('error free')) {
+    if (matchesWithExclusions(lower, ['error'], ERROR_EXCLUDES)) {
       return { verdict: 'fail' };
     }
     return { verdict: 'pass' };
@@ -65,9 +76,7 @@ function parseResult(output, stageKey) {
   // RETRO → PASS / ISSUES（有改善建議，不算 fail）
   // 排除 false positive：「no issues」「0 issues」等 PASS 情境的自然語言
   if (stageKey === 'RETRO') {
-    if ((lower.includes('issues') || lower.includes('改善建議') || lower.includes('建議優化'))
-        && !lower.includes('no issues') && !lower.includes('0 issues')
-        && !lower.includes('no significant issues') && !lower.includes('without issues')) {
+    if (matchesWithExclusions(lower, ['issues', '改善建議', '建議優化'], ISSUES_EXCLUDES)) {
       return { verdict: 'issues' };
     }
     return { verdict: 'pass' };

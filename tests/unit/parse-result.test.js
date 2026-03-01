@@ -150,4 +150,8 @@ describe('parseResult — 其他 stages', () => {
   test('ARCH → 預設 pass（即使含 fail 也是 pass）', () => {
     expect(parseResult('Architecture handles failure scenarios', 'ARCH')).toEqual({ verdict: 'pass' });
   });
+
+  test('PM → 預設 pass（advisory 角色，即使含 fail 也是 pass）', () => {
+    expect(parseResult('Product discovery complete. Some features may fail market fit.', 'PM')).toEqual({ verdict: 'pass' });
+  });
 });
