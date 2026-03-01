@@ -2,7 +2,7 @@
 
 > 本文件是 [Overtone 規格文件](overtone.md) 的子文件。
 > 主題：三層架構、Hook 系統、Context 管理、State 設計
-> 版本：v0.20.0
+> 版本：v0.27.2
 
 ---
 
@@ -15,10 +15,11 @@ Layer 0: Loop（外圈）
   └─ Stop hook 截獲退出 → 檢查 checkbox → 有未完成任務自動繼續
   └─ 退出條件：checkbox 全完成 / /ot:stop / max iterations
 
-Layer 1: Skill 引導（內圈）
+Layer 1: Skill + Command 引導（內圈）
   └─ Hook systemMessage（⛔ MUST）→ 觸發 /ot:auto
-  └─ /ot:auto（選擇器）→ Main Agent 判斷需求 → 選擇 Workflow Skill
-  └─ Workflow Skill（具體指引）→ 委派規則 + agent 順序 + 禁止自己寫碼
+  └─ /ot:auto（workflow 選擇器 skill）→ Main Agent 判斷需求 → 選擇 workflow
+  └─ Workflow command / auto references（具體指引）→ 委派規則 + agent 順序
+  └─ Knowledge domain skill（知識注入）→ agent 啟動時載入領域知識
 
 Layer 2: Hook 守衛（底層）
   └─ SubagentStop: 記錄 agent 結果 + 提示下一步 + 寫 workflow.json
@@ -151,3 +152,73 @@ Handoff 檔案存在 session 目錄，compact 後 Main Agent 可重新讀取。
   "rejectCount": 0
 }
 ```
+
+---
+
+## 組件分類指南（v0.27.2）
+
+> 新建 agent、skill、command、hook 時的分類判斷標準。
+> 詳細正規化計畫：`docs/product-brief-normalization.md`
+
+### 四類組件定義
+
+| 組件 | 本質 | 問 | 答案範例 |
+|------|------|---|---------|
+| **Agent** | 角色（WHO） | 「這是一個什麼角色？」 | developer、tester、architect |
+| **Skill** | 知識（WHAT） | 「這提供什麼領域知識？」 | testing、security、commit convention |
+| **Command** | 動作（DO） | 「使用者要執行什麼操作？」 | 跑 quick workflow、做 review、停止 loop |
+| **Hook** | 守衛（HOW） | 「系統事件發生時要做什麼？」 | 記錄結果、阻擋違規、注入 context |
+
+### 分類決策樹
+
+```
+我要新增一個功能，它是...
+
+├─ 定義一個「AI 角色」的身份和行為？
+│   └─ → Agent（.md 放 agents/）
+│
+├─ 提供可被多個 agent 共用的「知識」或「方法論」？
+│   └─ → Skill（SKILL.md + references/ 放 skills/）
+│   └─ 用 agent frontmatter `skills` 欄位連結
+│
+├─ 使用者或 Main Agent 觸發的「一次性操作」？
+│   └─ → Command（.md 放 commands/）
+│   └─ 不含知識，只含操作流程
+│
+└─ 系統事件的「自動反應」？
+    └─ → Hook（script 放 hooks/scripts/）
+    └─ 宣告在 hooks.json
+```
+
+### Skill 建構規則
+
+1. **Skill = 知識領域**：每個 skill 代表一個知識領域（testing、security、commit 等），不是角色呼叫
+2. **references/ 子目錄**：知識內容放在 `references/` 下，SKILL.md 是索引和摘要
+3. **消費者聲明**：SKILL.md 開頭說明哪些 agent 使用此 skill、各自使用哪個 reference
+4. **Agent 連結**：通過 agent frontmatter 的 `skills` 欄位注入（啟動時自動載入全部內容）
+5. **💡 按需載入**：大型 reference 使用 `💡 Reference: path` 語法，Main Agent 按需讀取
+6. **user-invocable: false**：純知識 skill 設 `user-invocable: false`（只供 agent 消費）
+7. **同類知識歸一**：相同領域的知識放同一個 skill（如 BDD + testing conventions + test strategy 全歸 testing）
+
+### Agent 建構規則
+
+1. **Agent = 角色**：每個 agent 代表一個專職角色（developer、tester 等）
+2. **知識外掛**：通過 `skills` frontmatter 引用 knowledge domain skill
+3. **行為內嵌**：agent prompt 只寫角色行為規則，不寫可共用的領域知識
+4. **model 分層**：opus（決策型）、sonnet（執行型）、haiku（輕量型）
+5. **bypassPermissions**：所有 agent 啟用
+
+### Command 建構規則
+
+1. **Command = 操作**：使用者觸發的操作流程（跑 workflow、做 review、停 loop 等）
+2. **無知識**：command 不含領域知識，只含操作邏輯（初始化 workflow、委派 agent、呼叫腳本）
+3. **disable-model-invocation: true**：command 禁止 AI 自行呼叫，只允許使用者或 Skill 引導觸發
+4. **Workflow command**：讀取 auto/references/ 中的 workflow 模板
+5. **Stage command**：初始化 workflow state + 委派對應 agent
+
+### Hook 建構規則
+
+1. **Hook = 事件反應**：系統事件（SessionStart、SubagentStop 等）觸發的自動行為
+2. **職責邊界**：只做記錄、阻擋、提示、通知，不做路由決策
+3. **安全退出**：使用 `safeRun()` 確保 crash 不影響 Claude Code 運作
+4. **hookError()**：統一錯誤記錄格式
