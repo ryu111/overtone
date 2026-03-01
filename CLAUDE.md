@@ -59,10 +59,10 @@ plugins/overtone/   # Plugin 根目錄
 └── web/            # Dashboard 前端
 
 # Session 狀態：~/.overtone/sessions/{sessionId}/
-#   workflow.json / timeline.jsonl / loop.json / observations.jsonl
+#   workflow.json / timeline.jsonl / loop.json / observations.jsonl / compact-count.json / error.flag
 ```
 
-## Hook 架構（11 個，~1640 行 + config-api.js ~850 行）
+## Hook 架構（11 個，~1735 行 + config-api.js ~850 行）
 
 | 事件 | 職責 |
 |------|------|
@@ -76,6 +76,12 @@ plugins/overtone/   # Plugin 根目錄
 | TaskCompleted | Task 完成前品質門檻硬阻擋（test pass + lint clean） |
 | PostToolUseFailure | Tool 執行失敗事件處理 |
 | Stop | Loop 迴圈 + 完成度 + Dashboard 通知 |
+| Notification | 音效通知（AskUserQuestion、權限要求 → Glass 提示音） |
+
+## Status Line（settings.json 配置，非 Hook）
+
+`plugins/overtone/scripts/statusline.js` — CLI 底部雙行即時顯示，讀取 stdin JSON + workflow.json + OAuth usage cache。
+設定：`~/.claude/settings.json` 的 `statusLine.command` 指向此腳本。
 
 ## 常用指令
 

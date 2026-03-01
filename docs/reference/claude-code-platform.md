@@ -693,11 +693,11 @@ stdin 提供完整 session 狀態（model、cost、context window、vim mode 等
 |---|------|------|
 | 1 | **聲音通知** | SubagentStop hook 加 `osascript` macOS 原生通知 — PASS/REJECT/完成各配不同音效 |
 
-### ⚪ S13 待實作
+### ✅ S13 已完成（v0.25.0）
 
 | # | 能力 | 說明 |
 |---|------|------|
-| 1 | **Status Line** | CLI 底部即時顯示 workflow 進度，讀取 workflow.json + stdin session 資訊 |
+| 1 | **Status Line** | CLI 底部雙行即時顯示 — statusline.js 讀取 stdin + workflow.json + OAuth usage cache + compact-count.json |
 
 ### ⚪ S14 待實作
 
