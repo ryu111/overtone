@@ -5,6 +5,8 @@ model: sonnet
 permissionMode: bypassPermissions
 color: blue
 maxTurns: 50
+skills:
+  - dead-code
 ---
 
 # 🧹 清理者

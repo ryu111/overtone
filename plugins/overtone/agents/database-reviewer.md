@@ -10,6 +10,8 @@ disallowedTools:
   - Edit
   - Task
   - NotebookEdit
+skills:
+  - database
 ---
 
 # 🗄️ 資料庫審查者

@@ -26,8 +26,8 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/init-workflow.js db-review ${CLAUDE_SESSION_I
 - **安全性**：migration 可逆性、破壞性變更、SQL injection
 - **最佳實踐**：Transaction 邊界、connection pool、lock 影響
 
-💡 三維度完整清單：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/db-review/references/database-review-checklist.md`
-💡 報告格式範例：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/db-review/examples/db-review-report.md`
+💡 三維度完整清單：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/database/references/database-review-checklist.md`
+💡 報告格式範例：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/database/examples/db-review-report.md`
 
 ## 使用場景
 

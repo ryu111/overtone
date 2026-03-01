@@ -11,6 +11,8 @@ disallowedTools:
   - Edit
   - Task
   - NotebookEdit
+skills:
+  - security-kb
 ---
 
 # 🛡️ 安全審查者

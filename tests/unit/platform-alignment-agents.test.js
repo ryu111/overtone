@@ -370,7 +370,7 @@ describe('Feature 1b: Agent skills 預載（agent frontmatter）', () => {
 
   // Scenario 1b-10: 未指定預載的 agent 不含 skills 欄位
   describe('Scenario 1b-10: 未被指定預載的 agent 不含 skills 欄位', () => {
-    const noSkillsAgents = ['architect', 'planner', 'security-reviewer', 'debugger'];
+    const noSkillsAgents = ['architect', 'planner', 'debugger'];
 
     for (const agentName of noSkillsAgents) {
       test(`${agentName} frontmatter 不含 skills 欄位`, () => {
@@ -378,6 +378,45 @@ describe('Feature 1b: Agent skills 預載（agent frontmatter）', () => {
         expect(fm.skills).toBeUndefined();
       });
     }
+  });
+
+  // Scenario 1b-11: security-reviewer 預載 security-kb
+  describe('Scenario 1b-11: security-reviewer 的 skills 欄位', () => {
+    test('security-reviewer frontmatter 含 skills 欄位', () => {
+      const fm = agentFrontmatters['security-reviewer'];
+      expect(fm.skills).toBeDefined();
+    });
+
+    test('security-reviewer skills 包含 security-kb', () => {
+      const fm = agentFrontmatters['security-reviewer'];
+      expect(fm.skills).toContain('security-kb');
+    });
+  });
+
+  // Scenario 1b-12: database-reviewer 預載 database
+  describe('Scenario 1b-12: database-reviewer 的 skills 欄位', () => {
+    test('database-reviewer frontmatter 含 skills 欄位', () => {
+      const fm = agentFrontmatters['database-reviewer'];
+      expect(fm.skills).toBeDefined();
+    });
+
+    test('database-reviewer skills 包含 database', () => {
+      const fm = agentFrontmatters['database-reviewer'];
+      expect(fm.skills).toContain('database');
+    });
+  });
+
+  // Scenario 1b-13: refactor-cleaner 預載 dead-code
+  describe('Scenario 1b-13: refactor-cleaner 的 skills 欄位', () => {
+    test('refactor-cleaner frontmatter 含 skills 欄位', () => {
+      const fm = agentFrontmatters['refactor-cleaner'];
+      expect(fm.skills).toBeDefined();
+    });
+
+    test('refactor-cleaner skills 包含 dead-code', () => {
+      const fm = agentFrontmatters['refactor-cleaner'];
+      expect(fm.skills).toContain('dead-code');
+    });
   });
 });
 
