@@ -352,6 +352,45 @@ describe('agent 顯示與中文模式', () => {
     expect(plain).toContain('♻️');
   });
 
+  // ── 無 workflow 但有 active-agent.json 時顯示 agent ──
+
+  it('無 workflow 但有 active-agent.json 時顯示 agent', () => {
+    // 不寫 workflow.json，只寫 active-agent.json
+    mkdirSync(sessionDir, { recursive: true });
+    writeFileSync(path.join(sessionDir, 'active-agent.json'), JSON.stringify({
+      agent: 'Explore',
+      subagentType: 'Explore',
+      startedAt: new Date().toISOString(),
+    }));
+
+    const result = runWithSession({ context_window: { used_percentage: 20 } });
+    const plain = stripAnsi(result.stdout || '');
+    const lines = plain.split('\n').filter(l => l.trim());
+    // 雙行（agent + metrics）
+    expect(lines.length).toBe(2);
+    expect(lines[0]).toContain('Explore');
+
+    // 清除 active-agent.json
+    try { require('fs').rmSync(path.join(sessionDir, 'active-agent.json')); } catch { /* 靜默 */ }
+  });
+
+  it('無 workflow 有 Overtone agent 時顯示 emoji', () => {
+    mkdirSync(sessionDir, { recursive: true });
+    writeFileSync(path.join(sessionDir, 'active-agent.json'), JSON.stringify({
+      agent: 'developer',
+      subagentType: 'ot:developer',
+      startedAt: new Date().toISOString(),
+    }));
+
+    const result = runWithSession({ context_window: { used_percentage: 20 } });
+    const plain = stripAnsi(result.stdout || '');
+    expect(plain).toContain('developer');
+    expect(plain).toContain('💻');
+
+    // 清除
+    try { require('fs').rmSync(path.join(sessionDir, 'active-agent.json')); } catch { /* 靜默 */ }
+  });
+
   // ── 色碼區分：分隔符使用 dim ──
 
   it('分隔符使用 dim ANSI（\\x1b[2m）', () => {

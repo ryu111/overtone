@@ -11,7 +11,7 @@
  *   ✅ 提示 Main Agent 下一步
  */
 
-const { readFileSync } = require('fs');
+const { readFileSync, statSync } = require('fs');
 const { readState, updateStateAtomic } = require('../../../scripts/lib/state');
 const timeline = require('../../../scripts/lib/timeline');
 const instinct = require('../../../scripts/lib/instinct');
@@ -20,6 +20,8 @@ const paths = require('../../../scripts/lib/paths');
 const parseResult = require('../../../scripts/lib/parse-result');
 const { safeReadStdin, safeRun, getSessionId } = require('../../../scripts/lib/hook-utils');
 
+// ── 主流程（只在直接執行時觸發，require 時不執行）──
+if (require.main === module) {
 safeRun(() => {
   // ── 從 stdin 讀取 hook input ──
 
@@ -38,6 +40,12 @@ safeRun(() => {
     process.stdout.write(JSON.stringify({ result: '' }));
     process.exit(0);
   }
+
+  // ── 清除 active agent 追蹤（workflow 無關，所有 agent 都清除）──
+  try {
+    const { unlinkSync } = require('fs');
+    unlinkSync(paths.session.activeAgent(sessionId));
+  } catch { /* 靜默 — 檔案不存在或清除失敗不影響主流程 */ }
 
   // ── 辨識 agent 對應的 stage ──
 
@@ -255,6 +263,19 @@ safeRun(() => {
     const nextHint = getNextStageHint(updatedState);
     if (nextHint) {
       messages.push(`⏭️ 下一步：${nextHint}`);
+
+      // Compact 建議（只在非最後 stage 時觸發）
+      const transcriptPath = input.transcript_path || null;
+      const suggestion = shouldSuggestCompact({ transcriptPath, sessionId });
+      if (suggestion.suggest) {
+        messages.push(`\n💾 transcript 已達 ${suggestion.transcriptSize}，建議在繼續下一個 stage 前執行 /compact 壓縮 context。`);
+        timeline.emit(sessionId, 'session:compact-suggestion', {
+          transcriptSize: suggestion.transcriptSize,
+          reason: suggestion.reason,
+          stage: actualStageKey,
+          agent: agentName,
+        });
+      }
     } else {
       // 所有階段完成 — 不在此 emit workflow:complete，由 Stop hook 統一處理
       messages.push('🎉 所有階段已完成！');
@@ -272,6 +293,7 @@ safeRun(() => {
   }));
   process.exit(0);
 }, { result: '' });
+} // end require.main === module
 
 // ── 輔助函式 ──
 
@@ -319,6 +341,77 @@ function checkParallelConvergence(currentState) {
     if (allCompleted) return { group };
   }
   return null;
+}
+
+/**
+ * 格式化位元組數為人類可讀格式
+ * >= 1MB → '6.5MB'
+ * >= 1KB → '800KB'
+ * < 1KB  → '500B'
+ * @param {number} bytes
+ * @returns {string}
+ */
+function formatSize(bytes) {
+  if (bytes >= 1_000_000) return `${(bytes / 1_000_000).toFixed(1)}MB`;
+  if (bytes >= 1_000)     return `${Math.round(bytes / 1_000)}KB`;
+  return `${bytes}B`;
+}
+
+/**
+ * 判斷是否應該建議 compact
+ *
+ * @param {object} opts
+ * @param {string|null} opts.transcriptPath  - transcript 檔案路徑
+ * @param {string}      opts.sessionId       - 當前 session ID
+ * @param {number}      [opts.thresholdBytes]  - 閾值（bytes），預設 5MB
+ * @param {number}      [opts.minStagesSinceCompact] - compact 後最少要有幾個 stage:complete，預設 2
+ * @returns {{ suggest: boolean, reason?: string, transcriptSize?: string }}
+ */
+function shouldSuggestCompact({ transcriptPath, sessionId, thresholdBytes, minStagesSinceCompact }) {
+  try {
+    // 1. 取得閾值（支援環境變數覆蓋）
+    const thresholdMb = Number(process.env.OVERTONE_COMPACT_THRESHOLD_MB) || 5;
+    const threshold = thresholdBytes !== undefined ? thresholdBytes : thresholdMb * 1_000_000;
+    const minStages = minStagesSinceCompact !== undefined ? minStagesSinceCompact : 2;
+
+    // 2. 讀取 transcript 大小
+    if (!transcriptPath) return { suggest: false };
+    let size;
+    try {
+      size = statSync(transcriptPath).size;
+    } catch {
+      return { suggest: false };
+    }
+
+    // 3. 大小未超過閾值 → 不建議
+    if (size <= threshold) return { suggest: false };
+
+    // 4. 查詢最後一次 session:compact 事件
+    const lastCompact = timeline.latest(sessionId, 'session:compact');
+
+    if (lastCompact) {
+      // 5. 計算 compact 事件之後的 stage:complete 數量
+      const stageCompletes = timeline.query(sessionId, { type: 'stage:complete' });
+      const stagesAfterCompact = stageCompletes.filter(
+        (e) => e.ts >= lastCompact.ts
+      );
+      // 6. 若 compact 後 stage:complete 數量 < minStages → 跳過（剛 compact 過）
+      if (stagesAfterCompact.length < minStages) {
+        return { suggest: false };
+      }
+    }
+    // 7. 若從未 compact → 允許首次觸發（跳過上述 compact 後計數判斷）
+
+    // 8. 全部通過 → 建議 compact
+    return {
+      suggest: true,
+      reason: `transcript 大小 ${formatSize(size)} 超過閾值 ${formatSize(threshold)}`,
+      transcriptSize: formatSize(size),
+    };
+  } catch {
+    // 所有錯誤靜默降級
+    return { suggest: false };
+  }
 }
 
 /**
@@ -377,3 +470,6 @@ function getNextStageHint(currentState) {
 
   return `委派 ${def.emoji} ${def.agent}（${def.label}）`;
 }
+
+// ── 測試用 export（require 時可直接測試輔助函式）──
+module.exports = { shouldSuggestCompact, formatSize };

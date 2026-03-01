@@ -37,10 +37,10 @@ describe('Feature 1h: registry.js tool:failure 事件', () => {
     });
   });
 
-  // Scenario 1h-2: 新增 tool:failure 後 timelineEvents 共有 23 個事件
-  describe('Scenario 1h-2: timelineEvents 總數為 23', () => {
-    test('Object.keys(timelineEvents).length === 23', () => {
-      expect(Object.keys(timelineEvents).length).toBe(23);
+  // Scenario 1h-2: timelineEvents 總數檢查（S14 加入 session:compact-suggestion → 24）
+  describe('Scenario 1h-2: timelineEvents 總數為 24', () => {
+    test('Object.keys(timelineEvents).length === 24', () => {
+      expect(Object.keys(timelineEvents).length).toBe(24);
     });
   });
 

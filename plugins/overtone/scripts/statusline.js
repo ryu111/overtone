@@ -119,6 +119,20 @@ function readCompactCount(sessionId) {
 }
 
 /**
+ * 讀取 active-agent.json（workflow 無關的 agent 追蹤）
+ * @param {string} sessionId
+ * @returns {{ agent: string, subagentType: string, startedAt: string } | null}
+ */
+function readActiveAgent(sessionId) {
+  try {
+    const p = join(SESSIONS_DIR, sessionId, 'active-agent.json');
+    return JSON.parse(readFileSync(p, 'utf8'));
+  } catch {
+    return null;
+  }
+}
+
+/**
  * 取得 transcript 檔案大小
  * @param {string|undefined} transcriptPath - stdin 提供的 transcript_path
  * @returns {number|null}
@@ -147,22 +161,36 @@ function loadRegistryStages() {
 // ── Agent 顯示邏輯 ──
 
 /**
- * 從 workflow.json 解析 agent 顯示字串
+ * 從 active-agent.json + workflow.json 解析 agent 顯示字串
  *
- * 雙層偵測（只顯示 active subagent）：
- *   1. stages[key].status === 'active' — 精確匹配
- *   2. activeAgents 非空 — PreToolUse 寫入的副信號
+ * 主信號：active-agent.json（PreToolUse 寫入，SubagentStop 清除）
+ * 副信號：workflow.json 的 stages.status==='active' 和 activeAgents
  *
- * 無 active subagent 時回傳 null（隱藏 Line 1）。
+ * 無 active agent 時回傳 null（隱藏 Line 1）。
  *
- * @param {object} workflow
+ * @param {object|null} activeAgent  - active-agent.json 內容
+ * @param {object|null} workflow     - workflow.json 內容
  * @param {object} registryStages
  * @returns {string|null}
  */
-function buildAgentDisplay(workflow, registryStages) {
+function buildAgentDisplay(activeAgent, workflow, registryStages) {
+  // ── 主信號：active-agent.json（最即時，workflow 無關）──
+  if (activeAgent && activeAgent.agent) {
+    const name = activeAgent.agent;
+    // 嘗試從 registry 取得 emoji
+    const stageDef = Object.values(registryStages).find(d => d.agent === name);
+    if (stageDef) {
+      return `${stageDef.emoji || ''} ${name}`;
+    }
+    // 非 Overtone agent（Explore、Plan 等）→ 直接顯示名稱
+    return `🤖 ${name}`;
+  }
+
+  // ── 副信號：workflow.json（多 agent 並行時 active-agent.json 只記錄最後一個）──
+  if (!workflow) return null;
+
   const stages = workflow.stages || {};
 
-  // ── 層 1: stages 中有 active 的（精確匹配）──
   const activeEntries = Object.entries(stages).filter(([, s]) => s.status === 'active');
 
   if (activeEntries.length === 1) {
@@ -188,7 +216,7 @@ function buildAgentDisplay(workflow, registryStages) {
     return parts.join(' + ');
   }
 
-  // ── 層 2: activeAgents 非空 ──
+  // activeAgents fallback
   const activeAgentEntries = Object.entries(workflow.activeAgents || {});
   if (activeAgentEntries.length > 0) {
     const parts = activeAgentEntries.map(([, info]) => {
@@ -239,9 +267,10 @@ function main() {
   const ctxStr  = `${ANSI.cyan}ctx${ANSI.reset} ${colorPct(ctxUsed, 65, 80)}`;
   const sizeStr = formatSize(transcriptSize);
 
-  // ── 判斷是否有 active subagent ──
+  // ── 判斷是否有 active agent ──
 
-  const agentDisplay = workflow ? buildAgentDisplay(workflow, registryStages) : null;
+  const activeAgent = sessionId ? readActiveAgent(sessionId) : null;
+  const agentDisplay = buildAgentDisplay(activeAgent, workflow, registryStages);
 
   if (agentDisplay) {
     // 有 active subagent → 雙行

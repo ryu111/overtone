@@ -39,14 +39,14 @@ Layer 2: Hook 守衛（底層）
 | **PreCompact** | context 壓縮前注入工作流狀態恢復訊息 + compact 計數追蹤 | ~132 |
 | **UserPromptSubmit** | 注入 systemMessage 指向 /ot:auto | ~131 |
 | **PreToolUse (Task)** | 擋跳過必要階段 + updatedInput workflow context 注入 | ~180 |
-| **SubagentStop** | 記錄結果 + 提示下一步 + 寫 workflow.json + emit timeline | ~369 |
+| **SubagentStop** | 記錄結果 + 提示下一步 + 寫 workflow.json + emit timeline + 檢查 transcript 大小建議壓縮 | ~395 |
 | **PostToolUse** | Instinct 觀察收集 + .md 措詞偵測 | ~193 |
 | **PostToolUseFailure** | Tool 執行失敗事件處理 | ~108 |
 | **Stop** | Loop 迴圈 + 完成度檢查 + Dashboard 通知 | ~186 |
 | **TaskCompleted** | Task 完成前品質門檻硬阻擋（test pass + lint clean） | ~88 |
 | **Notification** | 音效通知（AskUserQuestion、權限要求 → Glass 提示音） | ~30 |
 
-**總計：~1735 行**（v0.25.0 PreCompact 新增 compact count 追蹤）
+**總計：~1761 行**（v0.26.0 SubagentStop 新增 Strategic Compact）
 
 ### Hook 統一錯誤處理（v0.17.7）+ 狀態恢復（v0.18.0）+ Workflow Context 注入（v0.20.0）
 
@@ -108,7 +108,7 @@ Handoff 檔案存在 session 目錄，compact 後 Main Agent 可重新讀取。
 ├── sessions/
 │   └── {sessionId}/
 │       ├── workflow.json     # 工作流狀態
-│       ├── timeline.jsonl    # 事件記錄（23 種）
+│       ├── timeline.jsonl    # 事件記錄（24 種）
 │       ├── loop.json         # Loop 狀態
 │       ├── observations.jsonl # Instinct 觀察
 │       └── compact-count.json # Compact 計數（auto/manual）

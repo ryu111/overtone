@@ -51,6 +51,7 @@ const session = {
   loop:         (id) => sessionFile(id, 'loop.json'),
   observations: (id) => sessionFile(id, 'observations.jsonl'),
   compactCount: (id) => sessionFile(id, 'compact-count.json'),
+  activeAgent:  (id) => sessionFile(id, 'active-agent.json'),
 };
 
 // ── 全域設定 ──

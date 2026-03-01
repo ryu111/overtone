@@ -141,10 +141,11 @@ const timelineEvents = {
   // error 類（1）
   'error:fatal':        { label: '嚴重錯誤',   category: 'error' },
 
-  // session 類（3）
-  'session:start':      { label: '工作階段開始', category: 'session' },
-  'session:end':        { label: '工作階段結束', category: 'session' },
-  'session:compact':    { label: 'Context 壓縮', category: 'session' },
+  // session 類（4）
+  'session:start':              { label: '工作階段開始', category: 'session' },
+  'session:end':                { label: '工作階段結束', category: 'session' },
+  'session:compact':            { label: 'Context 壓縮', category: 'session' },
+  'session:compact-suggestion': { label: '建議壓縮',     category: 'session' },
 
   // tool 類（1）
   'tool:failure':       { label: '工具失敗',     category: 'tool' },

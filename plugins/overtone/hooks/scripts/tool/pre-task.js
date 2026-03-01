@@ -16,6 +16,8 @@ const state = require('../../../scripts/lib/state');
 const { stages } = require('../../../scripts/lib/registry');
 const identifyAgent = require('../../../scripts/lib/identify-agent');
 const { safeReadStdin, safeRun, getSessionId, buildWorkflowContext } = require('../../../scripts/lib/hook-utils');
+const { atomicWrite } = require('../../../scripts/lib/utils');
+const paths = require('../../../scripts/lib/paths');
 
 safeRun(() => {
   // ── 從 stdin 讀取 hook input ──
@@ -26,6 +28,22 @@ safeRun(() => {
   // ── 取得 Task 工具參數 ──
 
   const toolInput = input.tool_input || {};
+
+  // ── 追蹤 active agent（workflow 無關，所有 agent 都追蹤）──
+
+  if (sessionId) {
+    const subagentType = (toolInput.subagent_type || '').trim();
+    if (subagentType) {
+      try {
+        const agentLabel = subagentType.startsWith('ot:') ? subagentType.slice(3) : subagentType;
+        atomicWrite(paths.session.activeAgent(sessionId), {
+          agent: agentLabel,
+          subagentType,
+          startedAt: new Date().toISOString(),
+        });
+      } catch { /* 靜默 — 追蹤失敗不影響主流程 */ }
+    }
+  }
 
   // 無 session → 不擋
   if (!sessionId) {

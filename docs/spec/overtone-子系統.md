@@ -2,7 +2,7 @@
 
 > 本文件是 [Overtone 規格文件](overtone.md) 的子文件。
 > 主題：Specs 系統、Dashboard 監控、Remote 控制、Timeline 事件記錄、Config API
-> 版本：v0.21.0
+> 版本：v0.26.0
 
 ---
 
@@ -64,7 +64,7 @@ Remote Core（核心引擎）
        └─ WebhookAdapter      單向 fallback
 ```
 
-### Timeline（22 種事件，11 分類）
+### Timeline（24 種事件，12 分類）
 
 | 分類 | 事件 | 說明 |
 |------|------|------|
@@ -76,7 +76,7 @@ Remote Core（核心引擎）
 | **error** | fatal | 不可恢復錯誤（1） |
 | **grader** | score | Grader 品質評分結果（1） |
 | **specs** | init, archive | Specs 功能初始化與歸檔（2） |
-| **session** | start, end, compact | Session 生命週期（3） |
+| **session** | start, end, compact, compact-suggestion | Session 生命週期（4） |
 | **system** | warning | 系統警告（1） |
 
 儲存：`~/.overtone/sessions/{id}/timeline.jsonl`（append-only）。

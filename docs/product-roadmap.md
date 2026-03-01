@@ -46,7 +46,7 @@
 | S11 | CLAUDE.md 精簡 + argument-hint | SoT 引用取代重複內容（198→121 行，省 77 行）+ 3 skill argument-hint | ✅ 完成 |
 | S12 | 音效通知 | macOS afplay 系統音效 — sound.js + Notification hook + error.flag 恢復偵測（v0.24.0） | ✅ 完成 |
 | S13 | Status Line | CLI 底部雙行即時顯示 — workflow/agent + ctx%/5h/7d 用量 + compact 計數 + ANSI 變色警告（v0.25.0） | ✅ 完成 |
-| S14 | Strategic Compact | 階段完成 + commit 後 systemMessage 建議壓縮，釋放 context 給下個階段 | ⚪ 待實作 |
+| S14 | Strategic Compact | SubagentStop hook 於 stage pass 時檢查 transcript 大小，超過閾值自動建議壓縮 + emit timeline 事件（v0.26.0） | ✅ 完成 |
 
 ### S1 詳細項目
 
