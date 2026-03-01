@@ -108,7 +108,7 @@ REVIEW + TEST:verify + SECURITY 屬於 `secure-quality` 並行群組，📋 MUST
 
 TEST FAIL → debugger → developer → tester 迴圈（上限 3 次）。REVIEW REJECT → developer → code-reviewer 再審（上限 3 次）。SECURITY REJECT（Critical/High）→ 📋 MUST 修復後重審，不可忽略。
 
-💡 完整流程與 retry 邏輯：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/auto/references/failure-handling.md`
+💡 完整流程與 retry 邏輯：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/workflow-core/references/failure-handling.md`
 
 ## 完成條件
 

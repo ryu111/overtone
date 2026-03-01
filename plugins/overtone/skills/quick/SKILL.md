@@ -63,7 +63,7 @@ REVIEW 和 TEST 屬於 `quality` 並行群組，📋 MUST 同時委派。
 
 TEST FAIL → debugger → developer → tester 迴圈（上限 3 次）。REVIEW REJECT → developer 帶原因修復 → code-reviewer 再審（上限 3 次）。
 
-💡 完整流程與 retry 邏輯：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/auto/references/failure-handling.md`
+💡 完整流程與 retry 邏輯：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/workflow-core/references/failure-handling.md`
 
 ## 完成條件
 
