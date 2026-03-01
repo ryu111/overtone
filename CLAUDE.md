@@ -80,8 +80,8 @@ plugins/overtone/   # Plugin 根目錄
 
 ## Status Line（settings.json 配置，非 Hook）
 
-`plugins/overtone/scripts/statusline.js` — CLI 底部雙行即時顯示，讀取 stdin JSON + workflow.json + OAuth usage cache。
-設定：`~/.claude/settings.json` 的 `statusLine.command` 指向此腳本。
+`plugins/overtone/scripts/statusline.js` — CLI 底部即時顯示。有 active subagent 時雙行（agent + 中文模式 / ctx% + 檔案大小 + compact 計數），idle 時單行（ctx% + 檔案大小）。
+設定：SessionStart hook 自動寫入 `~/.claude/statusline.sh` wrapper + `settings.json`。
 
 ## 常用指令
 

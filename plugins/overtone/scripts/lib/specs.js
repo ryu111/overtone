@@ -365,7 +365,7 @@ function getActiveFeature(projectRoot) {
   const dirs = listDirs(inProgressDir(projectRoot));
   if (dirs.length === 0) return null;
 
-  if (dirs.length > 1) {
+  if (dirs.length > 1 && !process.env.OVERTONE_QUIET) {
     process.stderr.write(
       `[overtone/specs] 警告：發現多個 in-progress feature（${dirs.join(', ')}）。使用第一個：${dirs[0]}\n`
     );

@@ -3,10 +3,12 @@
  * statusline.test.js — statusline.js 單元測試
  *
  * 測試範圍：
- *   - formatTokens：數字格式化（k/M）
  *   - colorPct：百分比著色
- *   - buildAgentDisplay：agent 顯示字串（單一、並行、無 active）
- *   - main output：無 workflow 時單行、有 workflow 時雙行
+ *   - formatSize：檔案大小格式化
+ *   - buildAgentDisplay：agent 顯示字串（active/idle/並行）
+ *   - 無 workflow 時單行、有 active agent 時雙行
+ *   - 中文模式標籤
+ *   - transcript_path 檔案大小
  */
 
 const { describe, it, expect } = require('bun:test');
@@ -18,11 +20,6 @@ const STATUSLINE_PATH = join(SCRIPTS_DIR, 'statusline.js');
 
 // ── 輔助函式 ──
 
-/**
- * 執行 statusline.js，傳入 stdin JSON
- * @param {object|string} input
- * @returns {{ stdout: string, stderr: string, exitCode: number }}
- */
 function runStatusline(input = {}) {
   const stdinData = typeof input === 'string' ? input : JSON.stringify(input);
   const result = spawnSync('node', [STATUSLINE_PATH], {
@@ -37,61 +34,24 @@ function runStatusline(input = {}) {
   };
 }
 
-// ── 剝離 ANSI 色碼的輔助函式 ──
 function stripAnsi(str) {
   // eslint-disable-next-line no-control-regex
   return str.replace(/\x1b\[[0-9;]*m/g, '');
 }
 
-// ── Feature 1: 數字格式化 ──
-
-describe('formatTokens（透過 stdout 驗證）', () => {
-  it('小於 1000 個 token 直接顯示數字', () => {
-    const { stdout } = runStatusline({
-      session_id: '',
-      cost: { total_input_tokens: 500, total_output_tokens: 200 },
-    });
-    const plain = stripAnsi(stdout);
-    expect(plain).toContain('700');
-  });
-
-  it('1000-999999 顯示 k 格式', () => {
-    const { stdout } = runStatusline({
-      session_id: '',
-      cost: { total_input_tokens: 200000, total_output_tokens: 45000 },
-    });
-    const plain = stripAnsi(stdout);
-    expect(plain).toContain('245k');
-  });
-
-  it('1000000 以上顯示 M 格式', () => {
-    const { stdout } = runStatusline({
-      session_id: '',
-      cost: { total_input_tokens: 1000000, total_output_tokens: 200000 },
-    });
-    const plain = stripAnsi(stdout);
-    expect(plain).toContain('1.2M');
-  });
-
-  it('無 cost 欄位時顯示 --', () => {
-    const { stdout } = runStatusline({ session_id: '' });
-    const plain = stripAnsi(stdout);
-    expect(plain).toContain('--');
-  });
-});
-
-// ── Feature 2: 百分比著色 ──
+// ── Feature 1: 百分比著色 ──
 
 describe('colorPct 著色規則', () => {
-  it('ctx < 65% 使用暗綠色（dim green）', () => {
+  it('ctx < 65% 使用預設色（無特殊 ANSI）', () => {
     const { stdout } = runStatusline({
       session_id: '',
       context_window: { used_percentage: 50 },
     });
-    // 暗綠 = \x1b[2m\x1b[32m
-    expect(stdout).toContain('\x1b[2m\x1b[32m');
     const plain = stripAnsi(stdout);
     expect(plain).toContain('ctx 50%');
+    // 正常值不應包含黃色或紅色
+    expect(stdout).not.toContain('\x1b[33m50%');
+    expect(stdout).not.toContain('\x1b[91m50%');
   });
 
   it('ctx >= 65% 且 < 80% 使用黃色', () => {
@@ -124,7 +84,7 @@ describe('colorPct 著色規則', () => {
   });
 });
 
-// ── Feature 3: 無 workflow 時單行輸出 ──
+// ── Feature 2: 無 workflow 時單行輸出 ──
 
 describe('無 workflow 時輸出格式', () => {
   it('輸出一行（不含 workflow type 行）', () => {
@@ -136,15 +96,23 @@ describe('無 workflow 時輸出格式', () => {
     expect(lines.length).toBe(1);
   });
 
-  it('包含 ctx / 5h / 7d 欄位', () => {
+  it('包含 ctx 欄位', () => {
     const { stdout } = runStatusline({
       session_id: '',
       context_window: { used_percentage: 12 },
     });
     const plain = stripAnsi(stdout);
     expect(plain).toContain('ctx');
-    expect(plain).toContain('5h');
-    expect(plain).toContain('7d');
+  });
+
+  it('不包含 5h / 7d 欄位（已移除）', () => {
+    const { stdout } = runStatusline({
+      session_id: '',
+      context_window: { used_percentage: 12 },
+    });
+    const plain = stripAnsi(stdout);
+    expect(plain).not.toContain('5h');
+    expect(plain).not.toContain('7d');
   });
 
   it('不包含 ♻️ compact 計數（無 workflow）', () => {
@@ -152,9 +120,53 @@ describe('無 workflow 時輸出格式', () => {
       session_id: '',
       context_window: { used_percentage: 20 },
     });
-    // 無 workflow 時不應顯示 compact 計數
     const plain = stripAnsi(stdout);
     expect(plain).not.toContain('♻️');
+  });
+});
+
+// ── Feature 3: transcript 檔案大小 ──
+
+describe('transcript 檔案大小', () => {
+  const os = require('os');
+  const path = require('path');
+  const { writeFileSync, rmSync, mkdirSync } = require('fs');
+
+  it('transcript_path 存在時顯示檔案大小', () => {
+    const tmpFile = path.join(os.tmpdir(), `statusline-transcript-${Date.now()}.jsonl`);
+    // 寫入約 1.5MB 的假資料
+    writeFileSync(tmpFile, 'x'.repeat(1_500_000));
+
+    try {
+      const { stdout } = runStatusline({
+        session_id: '',
+        context_window: { used_percentage: 20 },
+        transcript_path: tmpFile,
+      });
+      const plain = stripAnsi(stdout);
+      expect(plain).toContain('1.5MB');
+    } finally {
+      try { rmSync(tmpFile); } catch { /* 靜默 */ }
+    }
+  });
+
+  it('transcript_path 不存在時顯示 --', () => {
+    const { stdout } = runStatusline({
+      session_id: '',
+      context_window: { used_percentage: 20 },
+      transcript_path: '/tmp/non-existent-file-xyz.jsonl',
+    });
+    const plain = stripAnsi(stdout);
+    expect(plain).toContain('--');
+  });
+
+  it('無 transcript_path 時顯示 --', () => {
+    const { stdout } = runStatusline({
+      session_id: '',
+      context_window: { used_percentage: 20 },
+    });
+    const plain = stripAnsi(stdout);
+    expect(plain).toContain('--');
   });
 });
 
@@ -162,9 +174,8 @@ describe('無 workflow 時輸出格式', () => {
 
 describe('錯誤處理', () => {
   it('stdin 為空時安靜退出（exit 0）', () => {
-    const { exitCode, stderr } = runStatusline('');
+    const { exitCode } = runStatusline('');
     expect(exitCode).toBe(0);
-    // 不應輸出錯誤訊息到 stdout（stderr 可能有些 node 警告但不影響 status line）
   });
 
   it('stdin 為畸形 JSON 時安靜退出', () => {
@@ -185,16 +196,13 @@ describe('錯誤處理', () => {
   });
 });
 
-// ── Feature 5: buildAgentDisplay 邏輯（透過 stdout 驗證）──
+// ── Feature 5: agent 顯示字串與中文模式 ──
 
-describe('agent 顯示字串', () => {
+describe('agent 顯示與中文模式', () => {
   const os = require('os');
   const path = require('path');
   const { mkdirSync, writeFileSync, rmSync } = require('fs');
 
-  // 建立臨時 session 目錄，寫入 workflow.json
-  // statusline.js 使用 join(homedir(), '.overtone', 'sessions', sessionId)
-  // 所以 HOME 需設為 tmpHome，讓 homedir()/.overtone 指向正確位置
   const tmpHome = path.join(os.tmpdir(), `home-statusline-test-${Date.now()}`);
   const sessionId = `statusline-unit-${Date.now()}`;
   const sessionDir = path.join(tmpHome, '.overtone', 'sessions', sessionId);
@@ -209,14 +217,13 @@ describe('agent 顯示字串', () => {
       input: JSON.stringify({ ...stdinData, session_id: sessionId }),
       encoding: 'utf8',
       timeout: 10000,
-      env: {
-        ...process.env,
-        HOME: tmpHome,  // homedir() 讀取 HOME，讓測試隔離於 ~/.overtone
-      },
+      env: { ...process.env, HOME: tmpHome },
     });
   }
 
-  it('無 active stage 時顯示 🤖 main', () => {
+  // ── 無 active agent 時隱藏 Line 1 ──
+
+  it('無 active stage 但 workflow 未完成時只顯示單行 metrics', () => {
     writeWorkflow({
       workflowType: 'quick',
       stages: {
@@ -227,10 +234,30 @@ describe('agent 顯示字串', () => {
 
     const result = runWithSession({ context_window: { used_percentage: 20 } });
     const plain = stripAnsi(result.stdout || '');
-    expect(plain).toContain('main');
+    const lines = plain.split('\n').filter(l => l.trim());
+    // 單行（只有 metrics + compact count）
+    expect(lines.length).toBe(1);
+    expect(lines[0]).toContain('ctx');
+    expect(lines[0]).toContain('♻️');
   });
 
-  it('單一 active stage 顯示 emoji + STAGE : agent', () => {
+  it('全部 completed 時只輸出一行', () => {
+    writeWorkflow({
+      workflowType: 'quick',
+      stages: {
+        DEV: { status: 'completed' },
+        REVIEW: { status: 'completed' },
+      },
+    });
+
+    const result = runWithSession({ context_window: { used_percentage: 20 } });
+    const lines = (result.stdout || '').split('\n').filter(l => l.trim());
+    expect(lines.length).toBe(1);
+  });
+
+  // ── 有 active agent 時雙行 ──
+
+  it('單一 active stage 顯示 emoji + agent（agent 在前）', () => {
     writeWorkflow({
       workflowType: 'quick',
       stages: {
@@ -241,9 +268,37 @@ describe('agent 顯示字串', () => {
 
     const result = runWithSession({ context_window: { used_percentage: 20 } });
     const plain = stripAnsi(result.stdout || '');
-    expect(plain).toContain('DEV');
-    expect(plain).toContain('developer');
-    expect(plain).toContain('💻');
+    const lines = plain.split('\n').filter(l => l.trim());
+
+    // 雙行輸出
+    expect(lines.length).toBe(2);
+    // Line 1: agent 名稱
+    expect(lines[0]).toContain('developer');
+    expect(lines[0]).toContain('💻');
+    // Line 1 不包含 STAGE 大寫（舊格式）
+    expect(lines[0]).not.toContain('DEV');
+  });
+
+  it('Line 1 包含中文模式標籤', () => {
+    writeWorkflow({
+      workflowType: 'quick',
+      stages: { DEV: { status: 'active' } },
+    });
+
+    const result = runWithSession({ context_window: { used_percentage: 20 } });
+    const plain = stripAnsi(result.stdout || '');
+    expect(plain).toContain('快速');
+  });
+
+  it('standard 模式顯示「標準」', () => {
+    writeWorkflow({
+      workflowType: 'standard',
+      stages: { PLAN: { status: 'active' } },
+    });
+
+    const result = runWithSession({ context_window: { used_percentage: 20 } });
+    const plain = stripAnsi(result.stdout || '');
+    expect(plain).toContain('標準');
   });
 
   it('多個不同 active stage 顯示 + 分隔', () => {
@@ -274,20 +329,7 @@ describe('agent 顯示字串', () => {
     expect(plain).toContain('× 2');
   });
 
-  it('有 workflow 時輸出兩行', () => {
-    writeWorkflow({
-      workflowType: 'quick',
-      stages: {
-        DEV: { status: 'active' },
-      },
-    });
-
-    const result = runWithSession({ context_window: { used_percentage: 20 } });
-    const lines = (result.stdout || '').split('\n').filter(l => l.trim());
-    expect(lines.length).toBe(2);
-  });
-
-  it('有 workflow 時 Line 2 包含 ♻️ compact 計數', () => {
+  it('有 active agent 時 Line 2 包含 ♻️ compact 計數', () => {
     writeWorkflow({
       workflowType: 'quick',
       stages: { DEV: { status: 'active' } },
@@ -297,6 +339,40 @@ describe('agent 顯示字串', () => {
     const plain = stripAnsi(result.stdout || '');
     expect(plain).toContain('♻️');
     expect(plain).toContain('0a 0m');
+  });
+
+  it('有 workflow 無 active agent 時仍顯示 ♻️ compact 計數', () => {
+    writeWorkflow({
+      workflowType: 'quick',
+      stages: { DEV: { status: 'completed' } },
+    });
+
+    const result = runWithSession({ context_window: { used_percentage: 20 } });
+    const plain = stripAnsi(result.stdout || '');
+    expect(plain).toContain('♻️');
+  });
+
+  // ── 色碼區分：分隔符使用 dim ──
+
+  it('分隔符使用 dim ANSI（\\x1b[2m）', () => {
+    writeWorkflow({
+      workflowType: 'quick',
+      stages: { DEV: { status: 'active' } },
+    });
+
+    const result = runWithSession({ context_window: { used_percentage: 20 } });
+    // dim 用於分隔符
+    expect(result.stdout).toContain('\x1b[2m');
+  });
+
+  it('標籤使用 cyan ANSI（\\x1b[36m）', () => {
+    writeWorkflow({
+      workflowType: 'quick',
+      stages: { DEV: { status: 'active' } },
+    });
+
+    const result = runWithSession({ context_window: { used_percentage: 20 } });
+    expect(result.stdout).toContain('\x1b[36m');
   });
 
   // 清理

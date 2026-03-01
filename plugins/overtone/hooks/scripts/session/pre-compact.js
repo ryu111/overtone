@@ -24,7 +24,18 @@ const MAX_MESSAGE_LENGTH = 2000;
 
 safeRun(() => {
   const input = safeReadStdin();
-  const sessionId = getSessionId(input);
+  let sessionId = getSessionId(input);
+
+  // Fallback: 若 stdin 有效但缺 session_id，從 .current-session-id 讀取
+  // 空/畸形 JSON（input 無任何欄位）不觸發 fallback
+  if (!sessionId && Object.keys(input).length > 0) {
+    try {
+      sessionId = readFileSync(paths.CURRENT_SESSION_FILE, 'utf8').trim() || null;
+    } catch {
+      // 靜默
+    }
+  }
+
   const projectRoot = input.cwd || process.env.CLAUDE_PROJECT_ROOT || process.cwd();
 
   // 無 session → 空操作，不阻擋 compaction
@@ -56,8 +67,9 @@ safeRun(() => {
   } catch {
     // 檔案不存在時從 { auto: 0, manual: 0 } 開始
   }
-  // input.type === 'auto' 代表自動壓縮，其他（含未定義）視為 manual
-  if (input.type === 'auto') {
+  // Claude Code PreCompact stdin 用 trigger 欄位（'auto' | 'manual'）
+  const trigger = input.trigger || input.type || '';
+  if (trigger === 'auto') {
     compactCount.auto = (compactCount.auto || 0) + 1;
   } else {
     compactCount.manual = (compactCount.manual || 0) + 1;
