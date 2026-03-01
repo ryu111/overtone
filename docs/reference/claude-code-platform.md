@@ -600,13 +600,18 @@ stdin 提供完整 session 狀態（model、cost、context window、vim mode 等
 |---|------|:----:|---------|
 | 1 | **`CLAUDE_CODE_EFFORT_LEVEL`** | 10.0 | v0.21.1 — effortLevels 映射 + SessionStart hook CLAUDE_ENV_FILE 自動設定 |
 
-### 🔵 S4 評估：建議採用（S6-S8 待實作）
+### ✅ S6 已完成（v0.21.1）
+
+| # | 能力 | RICE | 實作版本 |
+|---|------|:----:|---------|
+| 1 | **Skill 動態注入 `!`command``** | 9.6 | v0.21.1 — get-workflow-context.js 新增 + auto/SKILL.md `!`command`` 動態區塊 |
+
+### 🔵 S4 評估：建議採用（S7-S8 待實作）
 
 | # | 能力 | RICE | 實作方向 |
 |---|------|:----:|---------|
-| 1 | **Skill 動態注入 `!`command``** | 9.6 | auto/SKILL.md 動態注入 workflow state，簡化 on-submit hook |
-| 2 | **`TaskCompleted` hook** | 8.0 | Task 完成前硬阻擋品質門檻（test pass、lint clean） |
-| 3 | **`opusplan` 混合模式** | 7.2 | planner 試點：Opus 規劃 + Sonnet 執行，降成本 |
+| 1 | **`TaskCompleted` hook** | 8.0 | Task 完成前硬阻擋品質門檻（test pass、lint clean） |
+| 2 | **`opusplan` 混合模式** | 7.2 | planner 試點：Opus 規劃 + Sonnet 執行，降成本 |
 
 ### ⏳ S4 評估：延後
 
@@ -648,11 +653,14 @@ stdin 提供完整 session 狀態（model、cost、context window、vim mode 等
 
 **`CLAUDE_CODE_EFFORT_LEVEL`** — 按 agent model 分層設定 thinking 深度
 
+### ✅ S6 已完成（v0.21.1）
+
+**Skill 動態注入 `!`command``** — get-workflow-context.js + auto/SKILL.md 動態區塊
+
 ### 🔵 待實作
 
 | 階段 | 能力 | 說明 |
 |:----:|------|------|
-| S6 | **Skill 動態注入** | auto/SKILL.md 用 `!`command`` 動態注入 workflow state |
 | S7 | **`TaskCompleted` hook** | Task 完成前品質門檻硬阻擋 |
 | S8 | **`opusplan` 混合模式** | planner 試點 Opus 規劃 + Sonnet 執行 |
 

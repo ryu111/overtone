@@ -10,6 +10,10 @@ description: Overtone 核心工作流選擇器。分析使用者需求自動選�
 📋 **MUST 不要自己寫碼** — 委派 developer agent 處理所有程式碼變更。
 覆寫語法：使用者 prompt 中包含 `[workflow:xxx]` 時，直接使用指定的 workflow。
 
+## 當前工作流狀態
+
+!`node ${CLAUDE_PLUGIN_ROOT}/scripts/get-workflow-context.js`
+
 ## 工作流選擇指南
 
 | 特徵 | Workflow | Stages |

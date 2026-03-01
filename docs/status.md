@@ -1,12 +1,12 @@
 # Overtone 現況
 
-> 最後更新：2026-03-01 | Plugin 版本：0.21.0
+> 最後更新：2026-03-01 | Plugin 版本：0.21.1
 
 ## 版本狀態
 
 | 版本 | 狀態 | 說明 |
 |------|------|------|
-| V1 | 進行中 | 1095 pass，0 fail，核心功能完整 + Config API 完成 + Platform Drift 偵測完成 + Effort Level 分層完成 |
+| V1 | 進行中 | 1104 pass，0 fail，核心功能完整 + Config API 完成 + Platform Drift 偵測完成 + Effort Level 分層完成 + Skill 動態注入完成 |
 | V2 | 規劃中 | 延後 |
 
 ## 核心指標
@@ -16,16 +16,16 @@
 | Agent 數量 | 17（含 grader） |
 | Stage 數量 | 16 |
 | Workflow 模板 | 18 |
-| 測試通過 | 1095 pass / 0 fail |
-| 測試檔案 | 55 個 |
+| 測試通過 | 1104 pass / 0 fail |
+| 測試檔案 | 56 個 |
 | Hook 數量 | 9 個 |
 | Skill 數量 | 38 個 |
 
 ## 近期變更（最近 3 筆）
 
+- **[0.21.1] 2026-03-01**：Skill 動態注入完成 — get-workflow-context.js 新增 + auto/SKILL.md `!`command`` 動態區塊 + on-submit.js 簡化 + 9 個新測試 → 1104 pass
 - **[0.21.1] 2026-03-01**：Effort Level 分層 — effortLevels 映射 + SessionStart hook CLAUDE_ENV_FILE 自動設定 + 11 個新測試 → 1095 pass
 - **[0.21.1] 2026-03-01**：Platform-Drift 偵測完成 — health-check.js 新增第 6 項 platform-drift 檢測 + 12 個新測試 → 1082 pass
-- **[0.21.0] 2026-03-01**：Config API 統一設定管理 — config-api.js L1 驗證層 + L2 CRUD API + registry-data.json JSON 化 stages/agentModels + 新增 knownTools/hookEvents 常數（82 個新測試）
 
 ## 已知問題
 

@@ -231,16 +231,17 @@ describe('有進行中 workflow — 注入狀態摘要', () => {
     expect(result.additionalContext).toContain('/ot:auto');
   });
 
-  test('場景 8b：狀態摘要包含進度（stage status icons）', async () => {
+  test('場景 8b：狀態摘要為簡短格式（指引用戶查看 /ot:auto）', async () => {
     const result = await runHook(
       { user_prompt: '什麼狀況？' },
       { CLAUDE_SESSION_ID: TEST_SESSION }
     );
     expect(result.additionalContext).toBeDefined();
-    // 應包含進度顯示（⬜ 代表 pending stage，第一個 DEV 應為 active ⏳）
+    // 簡化後格式：一行摘要 + /ot:auto 指引
+    // 詳細進度由 auto/SKILL.md 的 !`command` 動態注入，hook 不再組裝
     const context = result.additionalContext;
-    // 進度格式：icon → icon → icon（用 → 連接）
-    expect(context).toMatch(/→/);
+    expect(context).toContain('/ot:auto');
+    expect(context).toContain('工作流進行中');
   });
 
   test('場景 8c：failCount = 0 時不顯示失敗次數', async () => {
@@ -252,7 +253,7 @@ describe('有進行中 workflow — 注入狀態摘要', () => {
     expect(result.additionalContext).not.toContain('失敗次數');
   });
 
-  test('場景 8d：failCount > 0 時顯示失敗次數', async () => {
+  test('場景 8d：failCount > 0 時仍輸出簡短格式（失敗次數由 get-workflow-context.js 顯示）', async () => {
     // 更新 state 設置 failCount = 2
     state.updateStateAtomic(TEST_SESSION, (s) => {
       s.failCount = 2;
@@ -263,7 +264,11 @@ describe('有進行中 workflow — 注入狀態摘要', () => {
       { user_prompt: '繼續' },
       { CLAUDE_SESSION_ID: TEST_SESSION }
     );
-    expect(result.additionalContext).toContain('失敗次數：2/3');
+    // on-submit.js 簡化後不再顯示失敗次數；失敗次數由 auto/SKILL.md 的
+    // !`node get-workflow-context.js` 動態注入到 skill 內容
+    expect(result.additionalContext).not.toContain('失敗次數');
+    expect(result.additionalContext).toContain('工作流進行中');
+    expect(result.additionalContext).toContain('/ot:auto');
 
     // 還原 failCount = 0
     state.updateStateAtomic(TEST_SESSION, (s) => {

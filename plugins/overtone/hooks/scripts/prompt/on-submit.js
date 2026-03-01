@@ -100,22 +100,12 @@ safeRun(() => {
       `📊 初始化後、委派第一個 agent 前，MUST 使用 TaskCreate 建立 pipeline 進度追蹤。`,
     ].join('\n');
   } else if (currentState && currentState.currentStage) {
-    const { currentStage, stages, workflowType, failCount, rejectCount } = currentState;
-    const stageStatus = Object.entries(stages)
-      .map(([k, v]) => {
-        const icon = v.status === 'completed' ? '✅' : v.status === 'active' ? '⏳' : '⬜';
-        return `${icon} ${k}`;
-      })
-      .join(' → ');
+    const { currentStage, workflowType } = currentState;
 
     systemMessage = [
-      `[Overtone] 工作流進行中：${workflowType}`,
-      `進度：${stageStatus}`,
-      `目前階段：${currentStage}`,
-      failCount > 0 ? `失敗次數：${failCount}/3` : '',
-      rejectCount > 0 ? `拒絕次數：${rejectCount}/3` : '',
+      `[Overtone] 工作流進行中：${workflowType}（${currentStage}）`,
       activeFeatureContext || '',
-      '請依照目前階段繼續執行。如需查看工作流指引，請使用 /ot:auto。',
+      '查看 /ot:auto 取得完整狀態和執行指引。',
     ].filter(Boolean).join('\n');
   } else {
     // 無進行中 workflow → 注入 /ot:auto 指引

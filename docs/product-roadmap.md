@@ -38,7 +38,7 @@
 | S3 | 平台差異追蹤 | platform.md 標注 adopted/evaluated/n-a 狀態，增量式追蹤 | ✅ 完成 |
 | S4 | 全面能力評估 | 9 項 ⚡ 能力 RICE 評估：4 採用 / 4 延後 / 1 不採用 | ✅ 完成 |
 | S5 | Effort Level 分層 | 按 agent model 設定 thinking 深度（haiku:low / sonnet:medium / opus:high） | ✅ 完成 |
-| S6 | Skill 動態注入 | `!`command`` 取代部分 on-submit hook 注入 workflow state | ⚪ |
+| S6 | Skill 動態注入 | `!`command`` 取代部分 on-submit hook 注入 workflow state | ✅ 完成 |
 | S7 | TaskCompleted Hook | Task 完成前品質門檻硬阻擋（test pass + lint clean） | ⚪ |
 | S8 | Opusplan 混合模式 | planner 試點 Opus 規劃 + Sonnet 執行，降成本 | ⚪ |
 | S9 | 延後項目 | Agent memory、worktree isolation、prompt/agent hook、1M context | ⏳ 待觸發 |
