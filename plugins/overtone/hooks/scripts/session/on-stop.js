@@ -17,7 +17,7 @@ const timeline = require('../../../scripts/lib/timeline');
 const loop = require('../../../scripts/lib/loop');
 const { stages, loopDefaults } = require('../../../scripts/lib/registry');
 const { safeReadStdin, safeRun, hookError, buildProgressBar, getSessionId } = require('../../../scripts/lib/hook-utils');
-const { playSound, SOUNDS, clearErrorFlag } = require('../../../scripts/lib/sound');
+const { playSound, SOUNDS } = require('../../../scripts/lib/sound');
 
 safeRun(() => {
   // ── 從 stdin 讀取 hook input ──
@@ -58,7 +58,7 @@ safeRun(() => {
   if (loopState.stopped) {
     loop.exitLoop(sessionId, loopState, '手動退出（/ot:stop）');
     playSound(SOUNDS.GLASS);
-    clearErrorFlag(sessionId);
+
     process.stdout.write(JSON.stringify({ result: '🛑 Loop 已手動停止。' }));
     process.exit(0);
   }
@@ -67,7 +67,7 @@ safeRun(() => {
   if (loopState.iteration >= loopDefaults.maxIterations) {
     loop.exitLoop(sessionId, loopState, `達到最大迭代（${loopDefaults.maxIterations}）`);
     playSound(SOUNDS.GLASS);
-    clearErrorFlag(sessionId);
+
     const msg = `⏸️ 已達最大迭代次數（${loopState.iteration}/${loopDefaults.maxIterations}）。使用 /ot:stop 退出或繼續。`;
     process.stdout.write(JSON.stringify({ result: msg }));
     process.exit(0);
@@ -77,7 +77,7 @@ safeRun(() => {
   if (loopState.consecutiveErrors >= loopDefaults.maxConsecutiveErrors) {
     loop.exitLoop(sessionId, loopState, `連續 ${loopState.consecutiveErrors} 次錯誤`);
     playSound(SOUNDS.GLASS);
-    clearErrorFlag(sessionId);
+
     const msg = `⛔ 連續 ${loopState.consecutiveErrors} 次錯誤，暫停 Loop。請檢查問題後再繼續。`;
     process.stdout.write(JSON.stringify({ result: msg }));
     process.exit(0);
@@ -110,7 +110,6 @@ safeRun(() => {
         duration: calcDuration(currentState.createdAt),
       });
       playSound(SOUNDS.BASSO);
-      clearErrorFlag(sessionId);
     } else {
       // 正常完成 → emit workflow:complete
       loop.exitLoop(sessionId, loopState, '工作流完成');
@@ -138,7 +137,6 @@ safeRun(() => {
         duration: calcDuration(currentState.createdAt),
       });
       playSound(SOUNDS.HERO);
-      clearErrorFlag(sessionId);
     }
 
     const summary = buildCompletionSummary(currentState);

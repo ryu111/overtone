@@ -3,17 +3,17 @@
 /**
  * Notification hook — 音效通知
  *
- * 觸發：Claude Code 發出通知時（AskUserQuestion、權限要求等）
+ * 觸發：Claude Code 發出通知時（AskUserQuestion 等）
  * 職責：
  *   ✅ elicitation_dialog → 播放 Glass（AskUserQuestion）
- *   ✅ permission_prompt → 播放 Glass（權限要求）
+ *   ⬜ permission_prompt → 不播音（用戶在螢幕前不需提醒）
  */
 
 const { safeReadStdin, safeRun } = require('../../../scripts/lib/hook-utils');
 const { playSound, SOUNDS } = require('../../../scripts/lib/sound');
 
-// 需要播放音效的通知類型
-const SOUND_TYPES = ['elicitation_dialog', 'permission_prompt'];
+// 需要播放音效的通知類型（permission_prompt 不播音 — 用戶在螢幕前不需要提醒）
+const SOUND_TYPES = ['elicitation_dialog'];
 
 safeRun(() => {
   const input = safeReadStdin();

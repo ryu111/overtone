@@ -59,7 +59,7 @@ plugins/overtone/   # Plugin 根目錄
 └── web/            # Dashboard 前端
 
 # Session 狀態：~/.overtone/sessions/{sessionId}/
-#   workflow.json / timeline.jsonl / loop.json / observations.jsonl / compact-count.json / error.flag
+#   workflow.json / timeline.jsonl / loop.json / observations.jsonl / compact-count.json
 ```
 
 ## Hook 架構（11 個，~1735 行 + config-api.js ~850 行）
@@ -76,7 +76,7 @@ plugins/overtone/   # Plugin 根目錄
 | TaskCompleted | Task 完成前品質門檻硬阻擋（test pass + lint clean） |
 | PostToolUseFailure | Tool 執行失敗事件處理 |
 | Stop | Loop 迴圈 + 完成度 + Dashboard 通知 |
-| Notification | 音效通知（AskUserQuestion、權限要求 → Glass 提示音） |
+| Notification | 音效通知（AskUserQuestion → Glass 提示音） |
 
 ## Status Line（settings.json 配置，非 Hook）
 

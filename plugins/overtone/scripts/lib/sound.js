@@ -8,9 +8,8 @@
 
 const { spawn } = require('child_process');
 const { join } = require('path');
-const { existsSync, writeFileSync, unlinkSync, readFileSync } = require('fs');
+const { existsSync } = require('fs');
 const { hookError } = require('./hook-utils');
-const paths = require('./paths');
 
 // macOS 系統音效路徑
 const SOUNDS_DIR = '/System/Library/Sounds';
@@ -18,9 +17,8 @@ const SOUNDS_DIR = '/System/Library/Sounds';
 // 音效常數
 const SOUNDS = {
   HERO:  'Hero.aiff',   // Pipeline 完成（特殊完成音）
-  GLASS: 'Glass.aiff',  // 一般提示（等待輸入、AskUserQuestion、權限）
-  BASSO: 'Basso.aiff',  // 錯誤（工具失敗、pipeline 異常）
-  TINK:  'Tink.aiff',   // 錯誤恢復（抵消音）
+  GLASS: 'Glass.aiff',  // 一般提示（AskUserQuestion、Loop 停止）
+  BASSO: 'Basso.aiff',  // 錯誤（workflow 異常中斷）
 };
 
 /**
@@ -44,50 +42,4 @@ function playSound(soundFile) {
   }
 }
 
-// ── Error Flag 機制 ──
-
-/**
- * 寫入 error flag（記錄最近一次錯誤的時間戳）
- * @param {string} sessionId
- */
-function writeErrorFlag(sessionId) {
-  try {
-    const flagPath = join(paths.sessionDir(sessionId), 'error.flag');
-    writeFileSync(flagPath, String(Date.now()));
-  } catch {
-    // 靜默失敗
-  }
-}
-
-/**
- * 讀取並清除 error flag
- * @param {string} sessionId
- * @returns {{ exists: boolean, recentMs: number }} 是否存在 + 距今毫秒數
- */
-function readAndClearErrorFlag(sessionId) {
-  try {
-    const flagPath = join(paths.sessionDir(sessionId), 'error.flag');
-    if (!existsSync(flagPath)) return { exists: false, recentMs: Infinity };
-
-    const ts = parseInt(readFileSync(flagPath, 'utf8'), 10);
-    unlinkSync(flagPath);
-    return { exists: true, recentMs: Date.now() - ts };
-  } catch {
-    return { exists: false, recentMs: Infinity };
-  }
-}
-
-/**
- * 清除 error flag（不播放音效）
- * @param {string} sessionId
- */
-function clearErrorFlag(sessionId) {
-  try {
-    const flagPath = join(paths.sessionDir(sessionId), 'error.flag');
-    if (existsSync(flagPath)) unlinkSync(flagPath);
-  } catch {
-    // 靜默
-  }
-}
-
-module.exports = { playSound, SOUNDS, writeErrorFlag, readAndClearErrorFlag, clearErrorFlag };
+module.exports = { playSound, SOUNDS };

@@ -6,7 +6,7 @@
 
 | 版本 | 狀態 | 說明 |
 |------|------|------|
-| V1 | 進行中 | 1204 pass，0 fail，核心功能完整 + Config API 完成 + Platform Drift 偵測完成 + Effort Level 分層完成 + Skill 動態注入完成 + TaskCompleted Hook 完成 + Opusplan 混合模式完成 + Agent Memory 完成 + 文件整理自動化完成 + CLAUDE.md 精簡完成 + 音效通知完成 + Status Line 完成 |
+| V1 | 進行中 | 1197 pass，0 fail，核心功能完整 + Config API 完成 + Platform Drift 偵測完成 + Effort Level 分層完成 + Skill 動態注入完成 + TaskCompleted Hook 完成 + Opusplan 混合模式完成 + Agent Memory 完成 + 文件整理自動化完成 + CLAUDE.md 精簡完成 + 音效通知完成 + Status Line 完成 |
 | V2 | 規劃中 | 延後 |
 
 ## 核心指標
@@ -16,13 +16,14 @@
 | Agent 數量 | 17（含 grader） |
 | Stage 數量 | 16 |
 | Workflow 模板 | 18 |
-| 測試通過 | 1204 pass / 0 fail |
+| 測試通過 | 1197 pass / 0 fail |
 | 測試檔案 | 61 個 |
 | Hook 數量 | 11 個 |
 | Skill 數量 | 38 個 |
 
 ## 近期變更（最近 3 筆）
 
+- **[0.25.1] 2026-03-01**：音效精簡 — 移除 PostToolUseFailure 音效 + error.flag 機制 + Tink 恢復音 + permission_prompt Glass。保留 AskUserQuestion Glass / workflow 完成 Hero / 異常中斷 Basso → 1197 pass
 - **[0.25.0] 2026-03-01**：S13 Status Line — statusline.js 雙行即時顯示（workflow/agent + ctx%/5h%/7d% 變色警告 + session 總量 + auto/manual compact 計數）+ PreCompact hook compact 追蹤 + 30 個新測試 → 1204 pass
 - **[0.24.0] 2026-03-01**：S12 音效通知 — sound.js 共用模組 + Notification hook（第 11 個）+ Stop/PostToolUseFailure/SubagentStop 音效整合 + error.flag 錯誤恢復偵測 + 26 個新測試 → 1174 pass
 - **[0.23.0] 2026-03-01**：S11 CLAUDE.md 精簡 — SoT 引用取代重複清單（198→121 行）+ 3 個 skill argument-hint + Hook 表格/Skill 數量 drift 修正 → 1147 pass

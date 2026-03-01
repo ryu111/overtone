@@ -111,8 +111,7 @@ Handoff 檔案存在 session 目錄，compact 後 Main Agent 可重新讀取。
 │       ├── timeline.jsonl    # 事件記錄（23 種）
 │       ├── loop.json         # Loop 狀態
 │       ├── observations.jsonl # Instinct 觀察
-│       ├── compact-count.json # Compact 計數（auto/manual）
-│       └── error.flag         # 錯誤恢復偵測（S12）
+│       └── compact-count.json # Compact 計數（auto/manual）
 └── config.json               # 全域設定
 
 {project_root}/

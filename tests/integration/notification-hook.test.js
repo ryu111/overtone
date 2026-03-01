@@ -94,10 +94,10 @@ describe('Notification hook（on-notification.js）', () => {
     });
   });
 
-  // ── permission_prompt ──
+  // ── permission_prompt（不播放音效，但不 crash）──
 
-  describe('permission_prompt 事件', () => {
-    test('回傳 { result: "" }（不阻擋通知）', () => {
+  describe('permission_prompt 事件（不在 SOUND_TYPES 中）', () => {
+    test('回傳 { result: "" }（不阻擋通知、不播放音效）', () => {
       const { parsed } = runHook({
         type: 'permission_prompt',
         session_id: 'test-session-003',
@@ -131,7 +131,7 @@ describe('Notification hook（on-notification.js）', () => {
       expect(parsed.result).toBe('');
     });
 
-    test('permission_prompt 透過 notification_type 欄位也正確處理', () => {
+    test('permission_prompt 透過 notification_type 欄位也不 crash（不播放音效）', () => {
       const { parsed, exitCode } = runHook({
         notification_type: 'permission_prompt',
         session_id: 'test-session-006',
