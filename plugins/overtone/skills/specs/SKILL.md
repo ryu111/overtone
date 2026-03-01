@@ -65,7 +65,13 @@ specs/
 
 ## tasks.md 格式
 
-格式見 `skills/specs/examples/tasks-sample.md`
+💡 格式範本：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/specs/examples/tasks-sample.md`
+
+## 其他文件格式
+
+- 💡 proposal.md 範本：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/specs/examples/proposal-sample.md`
+- 💡 design.md 範本：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/specs/examples/design-sample.md`
+- 💡 Feature 生命週期完整說明：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/specs/references/feature-lifecycle.md`
 
 ## Workflow 與 Specs 的對應
 

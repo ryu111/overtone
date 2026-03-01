@@ -174,3 +174,87 @@ describe('Feature 1b: ref skill SKILL.md frontmatter', () => {
     }
   });
 });
+
+// ────────────────────────────────────────────────────────────────────────────
+// Feature: Skill 引用完整性驗證
+// ────────────────────────────────────────────────────────────────────────────
+
+describe('Feature: Skill 引用完整性驗證', () => {
+
+  // 共用輔助：收集所有 SKILL.md 中的靜態 💡 引用路徑（相對於 skills/）
+  function collectSkillRefs() {
+    const refPattern = /\$\{CLAUDE_PLUGIN_ROOT\}\/skills\/([^\`\s]+)/g;
+    const refs = new Set();
+
+    const skillDirs = fs.readdirSync(SKILLS_DIR);
+    for (const skillDir of skillDirs) {
+      const skillPath = join(SKILLS_DIR, skillDir, 'SKILL.md');
+      if (!fs.existsSync(skillPath)) continue;
+      const content = fs.readFileSync(skillPath, 'utf8');
+      let m;
+      while ((m = refPattern.exec(content)) !== null) {
+        const refPath = m[1];
+        // 排除動態路徑（含 < > 或 { }）
+        if (!refPath.includes('<') && !refPath.includes('{')) {
+          refs.add(refPath);
+        }
+      }
+    }
+
+    return refs;
+  }
+
+  // 共用輔助：列出所有 references/ 和 examples/ 下的 .md 檔案（相對於 skills/）
+  function collectReferenceFiles() {
+    const files = [];
+    const skillDirs = fs.readdirSync(SKILLS_DIR);
+
+    for (const skillDir of skillDirs) {
+      for (const subDir of ['references', 'examples']) {
+        const dirPath = join(SKILLS_DIR, skillDir, subDir);
+        if (!fs.existsSync(dirPath)) continue;
+        for (const file of fs.readdirSync(dirPath)) {
+          if (file.endsWith('.md')) {
+            files.push(`${skillDir}/${subDir}/${file}`);
+          }
+        }
+      }
+    }
+
+    return files;
+  }
+
+  // Scenario: 所有 💡 引用的目標檔案存在
+  test('所有 💡 引用的目標檔案存在', () => {
+    const refs = collectSkillRefs();
+    const missing = [];
+
+    for (const ref of refs) {
+      const fullPath = join(SKILLS_DIR, ref);
+      if (!fs.existsSync(fullPath)) {
+        missing.push(ref);
+      }
+    }
+
+    if (missing.length > 0) {
+      throw new Error(
+        `以下 💡 引用的目標檔案不存在（共 ${missing.length} 個）：\n` +
+        missing.map(p => `  - skills/${p}`).join('\n')
+      );
+    }
+  });
+
+  // Scenario: 所有 reference/example 檔案至少被一個 SKILL.md 引用
+  test('所有 reference/example 檔案至少被一個 SKILL.md 引用', () => {
+    const refs = collectSkillRefs();
+    const allFiles = collectReferenceFiles();
+    const orphans = allFiles.filter(f => !refs.has(f));
+
+    if (orphans.length > 0) {
+      throw new Error(
+        `以下 reference/example 檔案未被任何 SKILL.md 引用（孤立檔案，共 ${orphans.length} 個）：\n` +
+        orphans.map(p => `  - skills/${p}`).join('\n')
+      );
+    }
+  });
+});
