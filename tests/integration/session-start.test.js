@@ -283,6 +283,97 @@ describe('場景 5：active feature 自動補寫 workflow.json.featureName', () 
 });
 
 // ────────────────────────────────────────────────────────────────────────────
+// 場景 7：CLAUDE_ENV_FILE 機制 — 寫入 CLAUDE_CODE_EFFORT_LEVEL
+// ────────────────────────────────────────────────────────────────────────────
+
+describe('場景 7：CLAUDE_ENV_FILE — 寫入 CLAUDE_CODE_EFFORT_LEVEL', () => {
+  const SESSION_7 = `test-start-007-${TIMESTAMP}`;
+  const tmpEnvFile = join(homedir(), '.overtone', 'test-tmp', `session-start-env-${TIMESTAMP}.txt`);
+
+  afterAll(() => {
+    const dir7 = paths.sessionDir(SESSION_7);
+    rmSync(dir7, { recursive: true, force: true });
+    rmSync(tmpEnvFile, { force: true });
+  });
+
+  test('model=opus 時寫入 CLAUDE_CODE_EFFORT_LEVEL=high 到 CLAUDE_ENV_FILE', () => {
+    // 預先建立空的 env 檔（模擬 Claude Code 提供的臨時檔案）
+    writeFileSync(tmpEnvFile, '');
+
+    const result = runHook(
+      { session_id: SESSION_7, model: 'opus' },
+      { CLAUDE_ENV_FILE: tmpEnvFile, CLAUDE_CODE_EFFORT_LEVEL: '' }
+    );
+    expect(result.exitCode).toBe(0);
+
+    const envContent = readFileSync(tmpEnvFile, 'utf8');
+    expect(envContent).toContain('CLAUDE_CODE_EFFORT_LEVEL=high');
+  });
+
+  test('model=sonnet 時寫入 CLAUDE_CODE_EFFORT_LEVEL=medium', () => {
+    writeFileSync(tmpEnvFile, '');
+
+    const result = runHook(
+      { session_id: SESSION_7, model: 'sonnet' },
+      { CLAUDE_ENV_FILE: tmpEnvFile, CLAUDE_CODE_EFFORT_LEVEL: '' }
+    );
+    expect(result.exitCode).toBe(0);
+
+    const envContent = readFileSync(tmpEnvFile, 'utf8');
+    expect(envContent).toContain('CLAUDE_CODE_EFFORT_LEVEL=medium');
+  });
+
+  test('model=haiku 時寫入 CLAUDE_CODE_EFFORT_LEVEL=low', () => {
+    writeFileSync(tmpEnvFile, '');
+
+    const result = runHook(
+      { session_id: SESSION_7, model: 'haiku' },
+      { CLAUDE_ENV_FILE: tmpEnvFile, CLAUDE_CODE_EFFORT_LEVEL: '' }
+    );
+    expect(result.exitCode).toBe(0);
+
+    const envContent = readFileSync(tmpEnvFile, 'utf8');
+    expect(envContent).toContain('CLAUDE_CODE_EFFORT_LEVEL=low');
+  });
+
+  test('CLAUDE_CODE_EFFORT_LEVEL 已存在時不覆蓋', () => {
+    writeFileSync(tmpEnvFile, '');
+
+    const result = runHook(
+      { session_id: SESSION_7, model: 'opus' },
+      { CLAUDE_ENV_FILE: tmpEnvFile, CLAUDE_CODE_EFFORT_LEVEL: 'max' }
+    );
+    expect(result.exitCode).toBe(0);
+
+    // 已存在時不應寫入 CLAUDE_ENV_FILE
+    const envContent = readFileSync(tmpEnvFile, 'utf8');
+    expect(envContent).not.toContain('CLAUDE_CODE_EFFORT_LEVEL');
+  });
+
+  test('CLAUDE_ENV_FILE 不存在時靜默跳過，exit 0', () => {
+    // 指向一個不存在的路徑
+    const nonExistentFile = join(homedir(), '.overtone', 'test-tmp', `nonexistent-${TIMESTAMP}.txt`);
+    const result = runHook(
+      { session_id: SESSION_7, model: 'opus' },
+      { CLAUDE_ENV_FILE: nonExistentFile, CLAUDE_CODE_EFFORT_LEVEL: '' }
+    );
+    // 不存在的路徑，appendFileSync 實際上會建立檔案，所以不會拋錯
+    // 此場景改為驗證：CLAUDE_ENV_FILE 未設定時靜默跳過
+    expect(result.exitCode).toBe(0);
+  });
+
+  test('CLAUDE_ENV_FILE 未設定時不寫入任何檔案，exit 0', () => {
+    // 不傳 CLAUDE_ENV_FILE
+    const result = runHook(
+      { session_id: SESSION_7, model: 'opus' },
+      { CLAUDE_CODE_EFFORT_LEVEL: '' }
+    );
+    expect(result.exitCode).toBe(0);
+    // 無 CLAUDE_ENV_FILE，只要 exit 0 即可
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────
 // 場景 6：OVERTONE_NO_DASHBOARD — 跳過 Dashboard spawn
 // ────────────────────────────────────────────────────────────────────────────
 

@@ -4,6 +4,7 @@ const {
   stages,
   workflows,
   timelineEvents,
+  effortLevels,
 } = require('../../plugins/overtone/scripts/lib/registry');
 
 describe('registry.js 資料完整性', () => {
@@ -57,6 +58,33 @@ describe('registry.js 資料完整性', () => {
       for (const key of Object.keys(timelineEvents)) {
         expect(typeof key).toBe('string');
         expect(key.length).toBeGreaterThan(0);
+      }
+    });
+  });
+
+  describe('effortLevels — model 對應 effort level 映射', () => {
+    test('effortLevels 存在且非空', () => {
+      expect(effortLevels).toBeDefined();
+      expect(typeof effortLevels).toBe('object');
+      expect(Object.keys(effortLevels).length).toBeGreaterThan(0);
+    });
+
+    test('opus 對應 high', () => {
+      expect(effortLevels['opus']).toBe('high');
+    });
+
+    test('sonnet 對應 medium', () => {
+      expect(effortLevels['sonnet']).toBe('medium');
+    });
+
+    test('haiku 對應 low', () => {
+      expect(effortLevels['haiku']).toBe('low');
+    });
+
+    test('所有 effort level 值都是合法的平台值', () => {
+      const validLevels = new Set(['low', 'medium', 'high', 'max']);
+      for (const [model, level] of Object.entries(effortLevels)) {
+        expect(validLevels.has(level)).toBe(true);
       }
     });
   });

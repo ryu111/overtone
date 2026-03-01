@@ -12,6 +12,9 @@ const _registryData = require('./registry-data.json');
 const stages = _registryData.stages;
 const agentModels = _registryData.agentModels;
 
+// model → CLAUDE_CODE_EFFORT_LEVEL 映射（opus→high, sonnet→medium, haiku→low）
+const effortLevels = _registryData.effortLevels;
+
 // Claude Code 已知工具名稱（用於 disallowedTools/tools 欄位的值域驗證）
 const knownTools = [
   'Read', 'Write', 'Edit', 'MultiEdit',
@@ -190,6 +193,7 @@ const instinctDefaults = {
 module.exports = {
   stages,
   agentModels,
+  effortLevels,
   workflows,
   parallelGroups,
   parallelGroupDefs,

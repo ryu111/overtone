@@ -34,5 +34,10 @@
     "build-error-resolver":"sonnet",
     "refactor-cleaner":    "sonnet",
     "doc-updater":         "haiku"
+  },
+  "effortLevels": {
+    "opus":   "high",
+    "sonnet": "medium",
+    "haiku":  "low"
   }
 }

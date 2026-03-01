@@ -594,14 +594,19 @@ stdin 提供完整 session 狀態（model、cost、context window、vim mode 等
 | 3 | **PreToolUse `updatedInput`** | 修改 Task prompt，自動注入 workflow context | v0.20.0 |
 | 4 | **Agent `disallowedTools`** | 黑名單比白名單更靈活，取代舊 `tools` 白名單 | v0.20.0 |
 
-### 🔵 S4 評估：建議採用（S5 實作）
+### ✅ S5 已完成（v0.21.1）
+
+| # | 能力 | RICE | 實作版本 |
+|---|------|:----:|---------|
+| 1 | **`CLAUDE_CODE_EFFORT_LEVEL`** | 10.0 | v0.21.1 — effortLevels 映射 + SessionStart hook CLAUDE_ENV_FILE 自動設定 |
+
+### 🔵 S4 評估：建議採用（S6-S8 待實作）
 
 | # | 能力 | RICE | 實作方向 |
 |---|------|:----:|---------|
-| 1 | **`CLAUDE_CODE_EFFORT_LEVEL`** | 10.0 | 按 agent model 分層：haiku→low、sonnet→medium、opus→high |
-| 2 | **Skill 動態注入 `!`command``** | 9.6 | auto/SKILL.md 動態注入 workflow state，簡化 on-submit hook |
-| 3 | **`TaskCompleted` hook** | 8.0 | Task 完成前硬阻擋品質門檻（test pass、lint clean） |
-| 4 | **`opusplan` 混合模式** | 7.2 | planner 試點：Opus 規劃 + Sonnet 執行，降成本 |
+| 1 | **Skill 動態注入 `!`command``** | 9.6 | auto/SKILL.md 動態注入 workflow state，簡化 on-submit hook |
+| 2 | **`TaskCompleted` hook** | 8.0 | Task 完成前硬阻擋品質門檻（test pass、lint clean） |
+| 3 | **`opusplan` 混合模式** | 7.2 | planner 試點：Opus 規劃 + Sonnet 執行，降成本 |
 
 ### ⏳ S4 評估：延後
 
@@ -639,11 +644,14 @@ stdin 提供完整 session 狀態（model、cost、context window、vim mode 等
 
 全部 9 項 ⚡ 能力評估完畢：4 項採用 → S5 實作、4 項延後、1 項不採用（詳見 Gap 分析）
 
+### ✅ S5 已完成（v0.21.1）
+
+**`CLAUDE_CODE_EFFORT_LEVEL`** — 按 agent model 分層設定 thinking 深度
+
 ### 🔵 待實作
 
 | 階段 | 能力 | 說明 |
 |:----:|------|------|
-| S5 | **`CLAUDE_CODE_EFFORT_LEVEL`** | 按 agent model 分層設定 thinking 深度 |
 | S6 | **Skill 動態注入** | auto/SKILL.md 用 `!`command`` 動態注入 workflow state |
 | S7 | **`TaskCompleted` hook** | Task 完成前品質門檻硬阻擋 |
 | S8 | **`opusplan` 混合模式** | planner 試點 Opus 規劃 + Sonnet 執行 |

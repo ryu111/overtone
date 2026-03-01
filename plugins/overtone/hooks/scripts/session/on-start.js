@@ -11,7 +11,7 @@
  *   ✅ 啟動 Dashboard（OVERTONE_NO_DASHBOARD=1 可跳過）
  */
 
-const { mkdirSync } = require('fs');
+const { mkdirSync, appendFileSync } = require('fs');
 const path = require('path');
 const pkg = require('../../../.claude-plugin/plugin.json');
 const paths = require('../../../scripts/lib/paths');
@@ -19,12 +19,31 @@ const timeline = require('../../../scripts/lib/timeline');
 const specs = require('../../../scripts/lib/specs');
 const state = require('../../../scripts/lib/state');
 const { safeReadStdin, safeRun, hookError, buildPendingTasksMessage, getSessionId } = require('../../../scripts/lib/hook-utils');
+const { effortLevels } = require('../../../scripts/lib/registry');
 
 // session ID 優先從 hook stdin JSON 讀取，環境變數作為 fallback
 const input = safeReadStdin();
 const sessionId = getSessionId(input);
 
 safeRun(() => {
+  // ── 設定 CLAUDE_CODE_EFFORT_LEVEL（透過 CLAUDE_ENV_FILE 機制）──
+  // 從 stdin model 欄位取得 main agent model，查表決定適當的 effort level。
+  // 若使用者已手動設定 CLAUDE_CODE_EFFORT_LEVEL，則不覆蓋。
+  // 若 CLAUDE_ENV_FILE 不存在（環境不支援），靜默跳過。
+
+  try {
+    const envFile = process.env.CLAUDE_ENV_FILE;
+    if (envFile && !process.env.CLAUDE_CODE_EFFORT_LEVEL) {
+      const model = input.model;
+      const effortLevel = model ? effortLevels[model] : undefined;
+      if (effortLevel) {
+        appendFileSync(envFile, `CLAUDE_CODE_EFFORT_LEVEL=${effortLevel}\n`);
+      }
+    }
+  } catch {
+    // 靜默跳過，不阻擋 session 啟動
+  }
+
   // ── 初始化 session 目錄 ──
 
   if (sessionId) {
