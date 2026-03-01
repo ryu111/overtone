@@ -93,7 +93,7 @@ DEV 完成後，讀取 developer Handoff 的 `### Test Scope` 區塊決定委派
 - `⚠️` → 自行判斷；全部 `--` → 跳過；缺失 → 預設委派 tester
 - 💡 完整規則：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/testing/references/test-scope-dispatch.md`
 
-**Mul Dev**（DEV 內部並行）：tasks.md 有 `## Dev Phases` → 按 Phase 調度；否則讀取 `${CLAUDE_PLUGIN_ROOT}/skills/mul-dev/SKILL.md` 自行判斷並行。只有一個子任務 → 退化為單一 developer。
+**Mul Dev**（DEV 內部並行）：tasks.md 有 `## Dev Phases` → 按 Phase 調度；否則讀取 `${CLAUDE_PLUGIN_ROOT}/commands/mul-dev.md` 自行判斷並行。只有一個子任務 → 退化為單一 developer。
 
 ## BDD 規則
 

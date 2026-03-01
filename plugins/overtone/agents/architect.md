@@ -50,7 +50,7 @@ disallowedTools:
 - 📋 定義資料模型和 schema
 - 📋 規劃檔案結構（新增/修改哪些檔案）
 - 📋 若 workflow 需要 specs（standard/full/secure/refactor/tdd），MUST 在完成後將技術設計寫入 `specs/features/in-progress/{featureName}/design.md`（格式見 `skills/specs/examples/design-sample.md`）
-- 📋 若 workflow 需要 specs，MUST 在 design.md 完成後分析子任務依賴關係，將 Dev Phases 追加寫入 `specs/features/in-progress/{featureName}/tasks.md` 的 `## Dev Phases` 區塊（格式見 `skills/mul-dev/SKILL.md`）；若所有子任務都有依賴（無法並行），可省略 Dev Phases 區塊
+- 📋 若 workflow 需要 specs，MUST 在 design.md 完成後分析子任務依賴關係，將 Dev Phases 追加寫入 `specs/features/in-progress/{featureName}/tasks.md` 的 `## Dev Phases` 區塊（格式見 `commands/mul-dev.md`）；若所有子任務都有依賴（無法並行），可省略 Dev Phases 區塊
 - 💡 確保向後相容
 - 💡 選擇最簡單能滿足需求的方案
 

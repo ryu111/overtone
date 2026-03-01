@@ -181,17 +181,35 @@ describe('Feature 1b: ref skill SKILL.md frontmatter', () => {
 
 describe('Feature: Skill 引用完整性驗證', () => {
 
-  // 共用輔助：收集所有 SKILL.md 和 command .md 中的靜態 💡 引用路徑（相對於 skills/）
-  function collectSkillRefs() {
-    const refPattern = /\$\{CLAUDE_PLUGIN_ROOT\}\/skills\/([^\`\s]+)/g;
-    const refs = new Set();
+  // 共用輔助：讀取所有 SKILL.md 和 command .md 的內容
+  function collectAllMdContents() {
+    const contents = [];
 
     // 掃描 skills/ 下的 SKILL.md
     const skillDirs = fs.readdirSync(SKILLS_DIR);
     for (const skillDir of skillDirs) {
       const skillPath = join(SKILLS_DIR, skillDir, 'SKILL.md');
       if (!fs.existsSync(skillPath)) continue;
-      const content = fs.readFileSync(skillPath, 'utf8');
+      contents.push({ source: `skills/${skillDir}/SKILL.md`, content: fs.readFileSync(skillPath, 'utf8') });
+    }
+
+    // 掃描 commands/ 下的 .md
+    if (fs.existsSync(COMMANDS_DIR)) {
+      const cmdFiles = fs.readdirSync(COMMANDS_DIR).filter(f => f.endsWith('.md'));
+      for (const cmdFile of cmdFiles) {
+        contents.push({ source: `commands/${cmdFile}`, content: fs.readFileSync(join(COMMANDS_DIR, cmdFile), 'utf8') });
+      }
+    }
+
+    return contents;
+  }
+
+  // 共用輔助：收集 skills/ 引用（相對於 skills/）
+  function collectSkillRefs() {
+    const refPattern = /\$\{CLAUDE_PLUGIN_ROOT\}\/skills\/([^\`\s]+)/g;
+    const refs = new Set();
+
+    for (const { content } of collectAllMdContents()) {
       let m;
       while ((m = refPattern.exec(content)) !== null) {
         const refPath = m[1];
@@ -201,17 +219,20 @@ describe('Feature: Skill 引用完整性驗證', () => {
       }
     }
 
-    // 掃描 commands/ 下的 .md（stage shortcuts、workflow pipelines 等）
-    if (fs.existsSync(COMMANDS_DIR)) {
-      const cmdFiles = fs.readdirSync(COMMANDS_DIR).filter(f => f.endsWith('.md'));
-      for (const cmdFile of cmdFiles) {
-        const content = fs.readFileSync(join(COMMANDS_DIR, cmdFile), 'utf8');
-        let m;
-        while ((m = refPattern.exec(content)) !== null) {
-          const refPath = m[1];
-          if (!refPath.includes('<') && !refPath.includes('{')) {
-            refs.add(refPath);
-          }
+    return refs;
+  }
+
+  // 共用輔助：收集 commands/ 引用（相對於 commands/）
+  function collectCommandRefs() {
+    const refPattern = /\$\{CLAUDE_PLUGIN_ROOT\}\/commands\/([^\`\s]+)/g;
+    const refs = new Set();
+
+    for (const { content } of collectAllMdContents()) {
+      let m;
+      while ((m = refPattern.exec(content)) !== null) {
+        const refPath = m[1];
+        if (!refPath.includes('<') && !refPath.includes('{')) {
+          refs.add(refPath);
         }
       }
     }
@@ -239,22 +260,30 @@ describe('Feature: Skill 引用完整性驗證', () => {
     return files;
   }
 
-  // Scenario: 所有 💡 引用的目標檔案存在
+  // Scenario: 所有 💡 引用的目標檔案存在（skills/ 和 commands/）
   test('所有 💡 引用的目標檔案存在', () => {
-    const refs = collectSkillRefs();
     const missing = [];
 
-    for (const ref of refs) {
+    // 驗證 skills/ 引用
+    for (const ref of collectSkillRefs()) {
       const fullPath = join(SKILLS_DIR, ref);
       if (!fs.existsSync(fullPath)) {
-        missing.push(ref);
+        missing.push(`skills/${ref}`);
+      }
+    }
+
+    // 驗證 commands/ 引用
+    for (const ref of collectCommandRefs()) {
+      const fullPath = join(COMMANDS_DIR, ref);
+      if (!fs.existsSync(fullPath)) {
+        missing.push(`commands/${ref}`);
       }
     }
 
     if (missing.length > 0) {
       throw new Error(
         `以下 💡 引用的目標檔案不存在（共 ${missing.length} 個）：\n` +
-        missing.map(p => `  - skills/${p}`).join('\n')
+        missing.map(p => `  - ${p}`).join('\n')
       );
     }
   });

@@ -63,9 +63,9 @@ PM stage 完成後，依據 workflow 類型讀取對應 skill 繼續執行：
 
 | Workflow | 後續 pipeline | 讀取 |
 |----------|-------------|------|
-| `discovery` | PM 建議 workflow → 直接讀取對應 workflow skill 開始執行 | 按建議選擇：`${CLAUDE_PLUGIN_ROOT}/skills/{workflow}/SKILL.md` |
-| `product` | PLAN → ARCH → TEST:spec → DEV → [R+T] → RETRO → DOCS | `${CLAUDE_PLUGIN_ROOT}/skills/standard/SKILL.md`（從 PLAN 開始） |
-| `product-full` | PLAN → ARCH → DESIGN → TEST:spec → DEV → [R+T] → [QA+E2E] → RETRO → DOCS | `${CLAUDE_PLUGIN_ROOT}/skills/full/SKILL.md`（從 PLAN 開始） |
+| `discovery` | PM 建議 workflow → 直接讀取對應 workflow command 開始執行 | 按建議選擇：`${CLAUDE_PLUGIN_ROOT}/commands/{workflow}.md` |
+| `product` | PLAN → ARCH → TEST:spec → DEV → [R+T] → RETRO → DOCS | `${CLAUDE_PLUGIN_ROOT}/commands/standard.md`（從 PLAN 開始） |
+| `product-full` | PLAN → ARCH → DESIGN → TEST:spec → DEV → [R+T] → [QA+E2E] → RETRO → DOCS | `${CLAUDE_PLUGIN_ROOT}/commands/full.md`（從 PLAN 開始） |
 
 PM 的 Product Brief 作為 planner 的輸入（取代使用者原始需求）。
 
