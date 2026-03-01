@@ -257,7 +257,7 @@ stdin: { reason: "clear|logout|prompt_input_exit|bypass_permissions_disabled|oth
 | `maxTurns` | number | | 無限 | 最大回合數 | ✅ |
 | `skills` | array | | 無 | 預載入的 skill 名稱 | ✅ |
 | `mcpServers` | array/obj | | 繼承 | 專屬 MCP 伺服器 | ⬜ |
-| `memory` | string | | 無 | 跨 session 記憶（`user`/`project`/`local`） | ⚡ |
+| `memory` | string | | 無 | 跨 session 記憶（`user`/`project`/`local`） | ✅ local（S10） |
 | `background` | boolean | | false | 預設背景執行 | ⬜ |
 | `isolation` | string | | 無 | 隔離模式（`worktree`） | ⚡ |
 | `hooks` | object | | 無 | agent 專屬 hooks | ⬜ |
@@ -614,11 +614,11 @@ stdin 提供完整 session 狀態（model、cost、context window、vim mode 等
 | 1 | **`TaskCompleted` hook** | v0.22.0 — on-task-completed.js 品質門檻硬阻擋 |
 | 2 | **`opusplan` 混合模式** | v0.22.0 — planner 試點 Opus 規劃 + Sonnet 執行 |
 
-### 🔵 S10 待實作
+### ✅ S10 完成（v0.23.0）
 
 | # | 能力 | 說明 |
 |---|------|------|
-| 1 | **Agent `memory`** | 跨 session 記憶，code-reviewer + retrospective 試點，`memory: local` |
+| 1 | **Agent `memory`** | v0.23.0 — 5 個 opus 判斷型 agent 啟用 `memory: local`（code-reviewer、retrospective、architect、security-reviewer、product-manager） |
 
 ### ⏳ S9 保留
 
@@ -671,11 +671,9 @@ stdin 提供完整 session 狀態（model、cost、context window、vim mode 等
 
 **`opusplan` 混合模式** — planner 試點 Opus 規劃 + Sonnet 執行
 
-### 🔵 S10 待實作
+### ✅ S10 已完成（v0.23.0）
 
-| 階段 | 能力 | 說明 |
-|:----:|------|------|
-| S10 | **Agent `memory`** | 跨 session 記憶，code-reviewer + retrospective 試點 |
+**Agent `memory`** — 5 個 opus 判斷型 agent 啟用 `memory: local`（code-reviewer、retrospective、architect、security-reviewer、product-manager）
 
 ### ⏳ S9 保留
 

@@ -5,6 +5,8 @@ const {
   workflows,
   timelineEvents,
   effortLevels,
+  agentMemory,
+  agentModels,
   hookEvents,
 } = require('../../plugins/overtone/scripts/lib/registry');
 
@@ -89,6 +91,29 @@ describe('registry.js 資料完整性', () => {
 
     test('hookEvents 共有 10 個事件', () => {
       expect(hookEvents.length).toBe(10);
+    });
+  });
+
+  describe('agentMemory', () => {
+    test('包含 code-reviewer 和 retrospective', () => {
+      expect(agentMemory['code-reviewer']).toBe('local');
+      expect(agentMemory['retrospective']).toBe('local');
+      expect(agentMemory['architect']).toBe('local');
+      expect(agentMemory['security-reviewer']).toBe('local');
+      expect(agentMemory['product-manager']).toBe('local');
+    });
+
+    test('只包含 agentModels 中存在的 agent', () => {
+      for (const name of Object.keys(agentMemory)) {
+        expect(agentModels[name]).toBeDefined();
+      }
+    });
+
+    test('值必須是合法 memory scope', () => {
+      const validScopes = ['user', 'project', 'local'];
+      for (const scope of Object.values(agentMemory)) {
+        expect(validScopes).toContain(scope);
+      }
     });
   });
 

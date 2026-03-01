@@ -1,6 +1,6 @@
 {
   "name": "ot",
-  "version": "0.22.0",
+  "version": "0.23.0",
   "description": "Overtone — 裝上 Claude Code，就像有了一個開發團隊。",
   "skills": [
     "./skills/"

@@ -370,3 +370,31 @@ describe('Feature 1b: Agent skills 預載（agent frontmatter）', () => {
     }
   });
 });
+
+// ────────────────────────────────────────────────────────────────────────────
+// Feature S10: Agent Memory
+// ────────────────────────────────────────────────────────────────────────────
+
+describe('Feature S10: Agent Memory', () => {
+
+  // S10-1: 啟用 memory 的 agent
+  describe('S10-1: memory: local agent', () => {
+    for (const agentName of ['code-reviewer', 'retrospective', 'architect', 'security-reviewer', 'product-manager']) {
+      test(`${agentName} frontmatter 包含 memory: local`, () => {
+        const fm = agentFrontmatters[agentName];
+        expect(fm.memory).toBe('local');
+      });
+    }
+  });
+
+  // S10-2: 未啟用 memory 的 agent
+  describe('S10-2: 其他 agent 不含 memory 欄位', () => {
+    const noMemoryAgents = agentFiles.filter(a => !['code-reviewer', 'retrospective', 'architect', 'security-reviewer', 'product-manager'].includes(a));
+    for (const agentName of noMemoryAgents) {
+      test(`${agentName} frontmatter 不含 memory 欄位`, () => {
+        const fm = agentFrontmatters[agentName];
+        expect(fm.memory).toBeUndefined();
+      });
+    }
+  });
+});

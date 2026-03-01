@@ -15,6 +15,9 @@ const agentModels = _registryData.agentModels;
 // model → CLAUDE_CODE_EFFORT_LEVEL 映射（opus→high, sonnet→medium, haiku→low）
 const effortLevels = _registryData.effortLevels;
 
+// agent → memory scope 映射（只含啟用記憶的 agent）
+const agentMemory = _registryData.agentMemory;
+
 // Claude Code 已知工具名稱（用於 disallowedTools/tools 欄位的值域驗證）
 const knownTools = [
   'Read', 'Write', 'Edit', 'MultiEdit',
@@ -195,6 +198,7 @@ module.exports = {
   stages,
   agentModels,
   effortLevels,
+  agentMemory,
   workflows,
   parallelGroups,
   parallelGroupDefs,

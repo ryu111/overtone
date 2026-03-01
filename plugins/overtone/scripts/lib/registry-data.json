@@ -40,5 +40,12 @@
     "opusplan": "high",
     "sonnet":   "medium",
     "haiku":    "low"
+  },
+  "agentMemory": {
+    "code-reviewer": "local",
+    "retrospective": "local",
+    "architect": "local",
+    "security-reviewer": "local",
+    "product-manager": "local"
   }
 }
