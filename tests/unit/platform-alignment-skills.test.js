@@ -100,49 +100,49 @@ describe('Feature 1b: ref skill SKILL.md frontmatter', () => {
     });
   });
 
-  // Scenario 1b-2: ref-pr-review-checklist 具備正確設定
-  describe('Scenario 1b-2: ref-pr-review-checklist SKILL.md frontmatter', () => {
-    const skillPath = join(SKILLS_DIR, 'ref-pr-review-checklist', 'SKILL.md');
+  // Scenario 1b-2: code-review knowledge domain 具備正確設定
+  describe('Scenario 1b-2: code-review SKILL.md frontmatter', () => {
+    const skillPath = join(SKILLS_DIR, 'code-review', 'SKILL.md');
 
-    test('ref-pr-review-checklist SKILL.md 檔案存在', () => {
+    test('code-review SKILL.md 檔案存在', () => {
       expect(fs.existsSync(skillPath)).toBe(true);
     });
 
-    test('ref-pr-review-checklist frontmatter 包含 name: ref-pr-review-checklist', () => {
+    test('code-review frontmatter 包含 name: code-review', () => {
       const fm = parseFrontmatter(skillPath);
-      expect(fm.name).toBe('ref-pr-review-checklist');
+      expect(fm.name).toBe('code-review');
     });
 
-    test('ref-pr-review-checklist frontmatter 包含 disable-model-invocation: true', () => {
+    test('code-review frontmatter 包含 disable-model-invocation: true', () => {
       const fm = parseFrontmatter(skillPath);
       expect(fm['disable-model-invocation']).toBe(true);
     });
 
-    test('ref-pr-review-checklist frontmatter 包含 user-invocable: false', () => {
+    test('code-review frontmatter 包含 user-invocable: false', () => {
       const fm = parseFrontmatter(skillPath);
       expect(fm['user-invocable']).toBe(false);
     });
   });
 
-  // Scenario 1b-3: ref-commit-convention 具備正確設定
-  describe('Scenario 1b-3: ref-commit-convention SKILL.md frontmatter', () => {
-    const skillPath = join(SKILLS_DIR, 'ref-commit-convention', 'SKILL.md');
+  // Scenario 1b-3: commit-convention knowledge domain 具備正確設定
+  describe('Scenario 1b-3: commit-convention SKILL.md frontmatter', () => {
+    const skillPath = join(SKILLS_DIR, 'commit-convention', 'SKILL.md');
 
-    test('ref-commit-convention SKILL.md 檔案存在', () => {
+    test('commit-convention SKILL.md 檔案存在', () => {
       expect(fs.existsSync(skillPath)).toBe(true);
     });
 
-    test('ref-commit-convention frontmatter 包含 name: ref-commit-convention', () => {
+    test('commit-convention frontmatter 包含 name: commit-convention', () => {
       const fm = parseFrontmatter(skillPath);
-      expect(fm.name).toBe('ref-commit-convention');
+      expect(fm.name).toBe('commit-convention');
     });
 
-    test('ref-commit-convention frontmatter 包含 disable-model-invocation: true', () => {
+    test('commit-convention frontmatter 包含 disable-model-invocation: true', () => {
       const fm = parseFrontmatter(skillPath);
       expect(fm['disable-model-invocation']).toBe(true);
     });
 
-    test('ref-commit-convention frontmatter 包含 user-invocable: false', () => {
+    test('commit-convention frontmatter 包含 user-invocable: false', () => {
       const fm = parseFrontmatter(skillPath);
       expect(fm['user-invocable']).toBe(false);
     });
@@ -150,7 +150,7 @@ describe('Feature 1b: ref skill SKILL.md frontmatter', () => {
 
   // Scenario 1b-4: 已刪除的 ref-* skill 不存在
   describe('Scenario 1b-4: 已刪除的 ref-* skill 目錄不存在', () => {
-    const deletedSkills = ['ref-bdd-guide', 'ref-failure-handling', 'ref-wording-guide', 'ref-agent-prompt-patterns', 'ref-test-strategy'];
+    const deletedSkills = ['ref-bdd-guide', 'ref-failure-handling', 'ref-wording-guide', 'ref-agent-prompt-patterns', 'ref-test-strategy', 'ref-commit-convention', 'ref-pr-review-checklist'];
 
     for (const skillName of deletedSkills) {
       test(`${skillName} 目錄已被刪除`, () => {
@@ -160,13 +160,12 @@ describe('Feature 1b: ref skill SKILL.md frontmatter', () => {
     }
   });
 
-  // Scenario 1b-9: ref skill 內容不超過 3000 字元（約 750 token）
-  // 新 ref-* skill 來自 CBP，內容較舊版本豐富，上限調整為 3000 字元
-  describe('Scenario 1b-9: ref skill 內容精簡在 3000 字元以內', () => {
-    const refSkills = ['ref-pr-review-checklist', 'ref-commit-convention'];
+  // Scenario 1b-9: knowledge domain index SKILL.md 精簡（索引式，非內容式）
+  describe('Scenario 1b-9: knowledge domain index SKILL.md 精簡', () => {
+    const knowledgeDomains = ['code-review', 'commit-convention', 'testing', 'workflow-core', 'security-kb', 'database', 'dead-code'];
 
-    for (const skillName of refSkills) {
-      test(`${skillName} 的有效內容不超過 3000 字元`, () => {
+    for (const skillName of knowledgeDomains) {
+      test(`${skillName} index SKILL.md 不超過 3000 字元`, () => {
         const skillPath = join(SKILLS_DIR, skillName, 'SKILL.md');
         const charCount = estimateTokens(skillPath);
         expect(charCount).toBeLessThanOrEqual(3000);

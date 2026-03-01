@@ -6,7 +6,7 @@ permissionMode: bypassPermissions
 color: yellow
 maxTurns: 50
 skills:
-  - ref-commit-convention
+  - commit-convention
 ---
 
 # 💻 開發者

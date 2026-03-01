@@ -12,7 +12,7 @@ disallowedTools:
   - Task
   - NotebookEdit
 skills:
-  - ref-pr-review-checklist
+  - code-review
 ---
 
 # 🔍 審查者

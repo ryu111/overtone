@@ -1,10 +1,3 @@
----
-name: ref-commit-convention
-description: Conventional commit 快速參考：type 分類、atomic commit 原則、拆分標準、message 格式（源自 Anthropic 官方 claude-code-best-practices）。
-disable-model-invocation: true
-user-invocable: false
----
-
 # Conventional Commit 快速參考
 
 > 來源：Anthropic 官方 `awattar/claude-code-best-practices`
@@ -44,7 +37,7 @@ fix: apply post-review fixes to `<summary>`
 
 ## Atomic Commit 原則
 
-📋 每個 commit 應該是**一個邏輯單元**：
+每個 commit 應該是**一個邏輯單元**：
 
 - 可獨立 revert 而不破壞其他功能
 - 只包含一個 concern（功能/修復/重構）

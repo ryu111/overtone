@@ -1,10 +1,3 @@
----
-name: ref-pr-review-checklist
-description: PR Review 多維度檢查清單：code quality / security / performance / observability 四維度結構化審查（源自 Anthropic 官方 claude-code-best-practices）。
-disable-model-invocation: true
-user-invocable: false
----
-
 # PR Review 多維度檢查清單
 
 > 來源：Anthropic 官方 `awattar/claude-code-best-practices`
@@ -61,7 +54,7 @@ Analyze → Review → Feedback → Iterate
 
 | 等級 | 定義 | 處理 |
 |------|------|------|
-| **Critical** | 阻擋合併：安全漏洞、資料損失風險、邏輯錯誤 | 📋 MUST 修復 |
-| **Major** | 建議修復：效能問題、設計缺陷、缺少測試 | 💡 Should 修復 |
-| **Minor** | 可選改善：命名、格式、文件補充 | 🔧 Consider |
+| **Critical** | 阻擋合併：安全漏洞、資料損失風險、邏輯錯誤 | MUST 修復 |
+| **Major** | 建議修復：效能問題、設計缺陷、缺少測試 | Should 修復 |
+| **Minor** | 可選改善：命名、格式、文件補充 | Consider |
 | **Nitpick** | 個人偏好 | 不阻擋合併 |
