@@ -607,21 +607,26 @@ stdin 提供完整 session 狀態（model、cost、context window、vim mode 等
 |---|------|:----:|---------|
 | 1 | **Skill 動態注入 `!`command``** | 9.6 | v0.21.1 — get-workflow-context.js 新增 + auto/SKILL.md `!`command`` 動態區塊 |
 
-### 🔵 S4 評估：建議採用（S7-S8 待實作）
+### ✅ S7-S8 已完成
 
-| # | 能力 | RICE | 實作方向 |
-|---|------|:----:|---------|
-| 1 | **`TaskCompleted` hook** | 8.0 | Task 完成前硬阻擋品質門檻（test pass、lint clean） |
-| 2 | **`opusplan` 混合模式** | 7.2 | planner 試點：Opus 規劃 + Sonnet 執行，降成本 |
+| # | 能力 | 實作版本 |
+|---|------|---------|
+| 1 | **`TaskCompleted` hook** | v0.22.0 — on-task-completed.js 品質門檻硬阻擋 |
+| 2 | **`opusplan` 混合模式** | v0.22.0 — planner 試點 Opus 規劃 + Sonnet 執行 |
 
-### ⏳ S4 評估：延後
+### 🔵 S10 待實作
+
+| # | 能力 | 說明 |
+|---|------|------|
+| 1 | **Agent `memory`** | 跨 session 記憶，code-reviewer + retrospective 試點，`memory: local` |
+
+### ⏳ S9 保留
 
 | # | 能力 | 觸發條件 |
 |---|------|---------|
-| 1 | **Agent `memory`** | Instinct 資料量證明不足時啟用 |
-| 2 | **Agent `isolation: worktree`** | mul-dev 使用頻率證明需要時 |
-| 3 | **`prompt`/`agent` hook 類型** | 現有 command hook 無法滿足品質門檻需求時 |
-| 4 | **`sonnet[1m]` 1M context** | 出現大型 codebase 全面分析場景時 |
+| 1 | **Agent `isolation: worktree`** | mul-dev 使用頻率證明需要時 |
+| 2 | **`prompt`/`agent` hook 類型** | 現有 command hook 無法滿足品質門檻需求時 |
+| 3 | **`sonnet[1m]` 1M context** | 出現大型 codebase 全面分析場景時 |
 
 ### ❌ 不適用 / 不採用
 
@@ -658,18 +663,24 @@ stdin 提供完整 session 狀態（model、cost、context window、vim mode 等
 
 **Skill 動態注入 `!`command``** — get-workflow-context.js + auto/SKILL.md 動態區塊
 
-### 🔵 待實作
+### ✅ S7 已完成（v0.22.0）
+
+**`TaskCompleted` hook** — on-task-completed.js Task 完成前品質門檻硬阻擋
+
+### ✅ S8 已完成（v0.22.0）
+
+**`opusplan` 混合模式** — planner 試點 Opus 規劃 + Sonnet 執行
+
+### 🔵 S10 待實作
 
 | 階段 | 能力 | 說明 |
 |:----:|------|------|
-| S7 | **`TaskCompleted` hook** | Task 完成前品質門檻硬阻擋 |
-| S8 | **`opusplan` 混合模式** | planner 試點 Opus 規劃 + Sonnet 執行 |
+| S10 | **Agent `memory`** | 跨 session 記憶，code-reviewer + retrospective 試點 |
 
-### ⏳ 延後（S9 待觸發）
+### ⏳ S9 保留
 
 | 能力 | 觸發條件 |
 |------|---------|
-| **Agent `memory`** | Instinct 資料量不足時啟用 |
 | **Agent `isolation: worktree`** | mul-dev 使用頻率證明需要 |
 | **`prompt`/`agent` hook 類型** | command hook 無法滿足時 |
 | **`sonnet[1m]` 1M context** | 大型 codebase 分析場景出現 |

@@ -41,7 +41,8 @@
 | S6 | Skill 動態注入 | `!`command`` 取代部分 on-submit hook 注入 workflow state | ✅ 完成 |
 | S7 | TaskCompleted Hook | Task 完成前品質門檻硬阻擋（test pass + lint clean） | ✅ 完成 |
 | S8 | Opusplan 混合模式 | planner 試點 Opus 規劃 + Sonnet 執行，降成本 | ✅ 完成 |
-| S9 | 延後項目 | Agent memory、worktree isolation、prompt/agent hook、1M context | ⏳ 待觸發 |
+| S9 | 保留項目 | Worktree isolation、prompt/agent hook、sonnet[1m] 1M context | ⏳ 保留 |
+| S10 | Agent Memory | Agent 跨 session 記憶（code-reviewer、retrospective 試點） | ⚪ 待實作 |
 
 ### S1 詳細項目
 
