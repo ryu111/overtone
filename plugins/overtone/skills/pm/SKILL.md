@@ -96,6 +96,15 @@ PM 產出分析結果 → 建議 workflow 類型 → 直接讀取對應 workflow
 - **合併**：關聯性高的修復（同一模組的多個修正）→ 一次 quick/standard
 - **拆分**：無關的修復 → 分別跑不同 workflow
 
+### 多次迭代執行（📋 MUST）
+
+PM 產出多次迭代計畫（如「3 次迭代分層精鍊」）且使用者批准後：
+
+- 📋 MUST **連續執行所有迭代**，不在迭代之間使用 AskUserQuestion 詢問
+- 每次迭代完成後直接 commit → init 下一個 workflow → 繼續執行
+- ⛔ 只有在迭代 **失敗**（REVIEW REJECT 或 TEST FAIL 且 retry 用盡）時才暫停詢問
+- 使用者已批准計畫 = 授權連續執行，無需重複確認
+
 ## 參考文件
 
 詳細框架與模板（按需讀取）：
