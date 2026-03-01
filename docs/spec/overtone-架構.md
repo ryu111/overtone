@@ -44,8 +44,9 @@ Layer 2: Hook 守衛（底層）
 | **PostToolUseFailure** | Tool 執行失敗事件處理 | ~108 |
 | **Stop** | Loop 迴圈 + 完成度檢查 + Dashboard 通知 | ~186 |
 | **TaskCompleted** | Task 完成前品質門檻硬阻擋（test pass + lint clean） | ~88 |
+| **Notification** | 音效通知（AskUserQuestion、權限要求 → Glass 提示音） | ~30 |
 
-**總計：~1790 行**（v0.22.0 新增 TaskCompleted hook）
+**總計：~1670 行**（v0.24.0 新增 Notification hook）
 
 ### Hook 統一錯誤處理（v0.17.7）+ 狀態恢復（v0.18.0）+ Workflow Context 注入（v0.20.0）
 

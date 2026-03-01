@@ -136,6 +136,19 @@ safeRun(() => {
     // Instinct 觀察失敗不影響主流程
   }
 
+  // ── 錯誤恢復偵測 ──
+  if (result.verdict === 'pass') {
+    try {
+      const { readAndClearErrorFlag, playSound, SOUNDS } = require('../../../scripts/lib/sound');
+      const errorFlag = readAndClearErrorFlag(sessionId);
+      if (errorFlag.exists && errorFlag.recentMs < 60000) {
+        playSound(SOUNDS.TINK);
+      }
+    } catch {
+      // 音效失敗不影響主流程
+    }
+  }
+
   // ── 自動更新 tasks.md checkbox（若有 specs feature）──
   // 當 stage 完成（非 fail/reject）時，在 tasks.md 中勾選對應的 checkbox
 

@@ -18,6 +18,7 @@
 const timeline = require('../../../scripts/lib/timeline');
 const instinct = require('../../../scripts/lib/instinct');
 const { safeReadStdin, safeRun, getSessionId, hookError } = require('../../../scripts/lib/hook-utils');
+const { playSound, SOUNDS, writeErrorFlag } = require('../../../scripts/lib/sound');
 
 // 重大失敗工具清單（需要注入 systemMessage）
 const CRITICAL_TOOLS = ['Task', 'Write', 'Edit'];
@@ -74,7 +75,12 @@ if (require.main === module) safeRun(() => {
     hookError('post-use-failure', `Instinct emit 失敗：${err.message || String(err)}`);
   }
 
-  // ── 3. 重大失敗 → 注入 systemMessage ──
+  // ── 3. 音效通知 + 記錄 error flag ──
+
+  playSound(SOUNDS.BASSO);
+  writeErrorFlag(sessionId);
+
+  // ── 4. 重大失敗 → 注入 systemMessage ──
 
   if (CRITICAL_TOOLS.includes(toolName)) {
     let message;

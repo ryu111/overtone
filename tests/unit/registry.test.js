@@ -89,8 +89,12 @@ describe('registry.js 資料完整性', () => {
       }
     });
 
-    test('hookEvents 共有 10 個事件', () => {
-      expect(hookEvents.length).toBe(10);
+    test('hookEvents 包含 S12 新增的 Notification 事件', () => {
+      expect(hookEvents).toContain('Notification');
+    });
+
+    test('hookEvents 共有 11 個事件', () => {
+      expect(hookEvents.length).toBe(11);
     });
   });
 

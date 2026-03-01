@@ -10,7 +10,7 @@
 
 ## 一、Hook Events（17 個）
 
-Overtone 使用 10/17 個。
+Overtone 使用 11/17 個。
 
 ### 事件總表
 
@@ -22,7 +22,7 @@ Overtone 使用 10/17 個。
 | 4 | `PermissionRequest` | 權限對話框顯示 | ✅ | tool name | ⬜ |
 | 5 | `PostToolUse` | tool 成功完成後 | ❌ | tool name | ✅ post-use.js |
 | 6 | `PostToolUseFailure` | tool 失敗後 | ❌ | tool name | ✅ post-use-failure.js |
-| 7 | `Notification` | 通知發送 | ❌ | notification type | ⬜ |
+| 7 | `Notification` | 通知發送 | ❌ | notification type | ✅ on-notification.js |
 | 8 | `SubagentStart` | subagent 生成 | ❌ | agent type | ⬜ |
 | 9 | `SubagentStop` | subagent 完成 | ✅ | agent type | ✅ on-stop.js |
 | 10 | `Stop` | Claude 完成回應 | ✅ | ❌ | ✅ on-stop.js |
@@ -642,7 +642,7 @@ stdin 提供完整 session 狀態（model、cost、context window、vim mode 等
 | `http` hook type | 無遠端端點需求 |
 | `Fast Mode` | session 級別設定（`/fast`），Overtone 無法程式化控制，使用者自行決定（RICE 1.5） |
 | `SubagentStart` hook | PreToolUse(Task) + updatedInput 已在更好位置覆蓋（RICE 0.5） |
-| `Notification` hook | bypassPermissions 下 permission_prompt 不觸發，其餘已被 Loop + Dashboard 覆蓋（RICE 0.25） |
+| `Notification` hook | ✅ S12 採用 — 音效通知（elicitation_dialog + permission_prompt → Glass 提示音） |
 | Rules path conditions | Plugin 無法控制 `.claude/rules/` 目錄（RICE 1.6） |
 
 ---

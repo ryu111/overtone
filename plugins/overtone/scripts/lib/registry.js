@@ -36,6 +36,7 @@ const hookEvents = [
   'SubagentStop',
   'Stop',
   'TaskCompleted',  // S7 新增：品質門檻硬阻擋
+  'Notification',   // S12 新增：音效通知（AskUserQuestion、權限要求）
 ];
 
 // 工作流模板（18 個）

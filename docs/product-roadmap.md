@@ -44,7 +44,7 @@
 | S9 | 保留項目 | Worktree isolation、prompt/agent hook、sonnet[1m] 1M context | ⏳ 保留 |
 | S10 | Agent Memory | 5 個 opus 判斷型 agent 啟用 `memory: local`（v0.23.0） | ✅ 完成 |
 | S11 | CLAUDE.md 精簡 + argument-hint | SoT 引用取代重複內容（198→121 行，省 77 行）+ 3 skill argument-hint | ✅ 完成 |
-| S12 | 聲音通知 | macOS 原生通知（osascript）— agent 完成/失敗/pipeline 結束播放音效 | ⚪ 待實作 |
+| S12 | 音效通知 | macOS afplay 系統音效 — sound.js + Notification hook + error.flag 恢復偵測（v0.24.0） | ✅ 完成 |
 | S13 | Status Line | CLI 底部即時顯示 workflow 進度（stage、agent、cost、context%） | ⚪ 待實作 |
 | S14 | Strategic Compact | 階段完成 + commit 後 systemMessage 建議壓縮，釋放 context 給下個階段 | ⚪ 待實作 |
 

@@ -62,7 +62,7 @@ plugins/overtone/   # Plugin 根目錄
 #   workflow.json / timeline.jsonl / loop.json / observations.jsonl
 ```
 
-## Hook 架構（10 個，~1610 行 + config-api.js ~850 行）
+## Hook 架構（11 個，~1640 行 + config-api.js ~850 行）
 
 | 事件 | 職責 |
 |------|------|
