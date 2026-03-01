@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## 專案定位
 
 Overtone 是 Claude Code plugin，提供 BDD 驅動的工作流自動化 + 即時監控 + 遠端控制。
-核心哲學：**Hook 做記錄和守衛，Skill 做指引，Main Agent 做決策**。
+核心哲學：**Hook 做記錄和守衛，Skill 做知識注入，Command 做操作指引，Main Agent 做決策**。
 
 ## 設計原則
 
@@ -52,9 +52,10 @@ Layer 2: Hook 守衛（底層）— 記錄、擋、提示、通知
 tests/              # 測試（unit / integration / e2e / helpers）⚠️ 不在 plugin 下
 docs/               # 文件（spec / reference / archive / status.md）⚠️ 不在 plugin 下
 plugins/overtone/   # Plugin 根目錄
-├── agents/         # 17 個 agent .md
-├── skills/         # 38 個 Skill 定義
-├── hooks/          # hooks.json + scripts/
+├── agents/         # 17 個 agent .md（WHO — 角色）
+├── skills/         # 15 個 Skill（WHAT — 知識域 + orchestrator + utilities-with-refs）
+├── commands/       # 27 個 Command（DO — stage shortcuts + workflow pipelines + utilities）
+├── hooks/          # hooks.json + scripts/（HOW — 守衛）
 ├── scripts/lib/    # 共用庫（registry, state, timeline, specs, config-api 等）
 └── web/            # Dashboard 前端
 

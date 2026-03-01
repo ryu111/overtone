@@ -1,12 +1,12 @@
 # Overtone 現況
 
-> 最後更新：2026-03-02 | Plugin 版本：0.27.3
+> 最後更新：2026-03-02 | Plugin 版本：0.27.8
 
 ## 版本狀態
 
 | 版本 | 狀態 | 說明 |
 |------|------|------|
-| V1 | 進行中 | 1336 pass，0 fail，核心功能完整 + Config API 完成 + Platform Drift 偵測完成 + Effort Level 分層完成 + Skill 動態注入完成 + TaskCompleted Hook 完成 + Opusplan 混合模式完成 + Agent Memory 完成 + 文件整理自動化完成 + CLAUDE.md 精簡完成 + 音效通知完成 + Status Line 完成 + Strategic Compact 完成 + 核心精鍊完成 + ref-* 整理完成 + testing knowledge domain 建立完成 |
+| V1 | 進行中 | 1351 pass，0 fail，核心功能完整 + S15b Skill/Command 正規化完成（15 skills + 27 commands） |
 | V2 | 規劃中 | 延後 |
 
 ## 核心指標
@@ -16,16 +16,17 @@
 | Agent 數量 | 17（含 grader） |
 | Stage 數量 | 16 |
 | Workflow 模板 | 18 |
-| 測試通過 | 1336 pass / 0 fail |
+| 測試通過 | 1351 pass / 0 fail |
 | 測試檔案 | 68 個 |
 | Hook 數量 | 11 個 |
-| Skill 數量 | 38 個（含 2 ref-*） |
+| Skill 數量 | 15（7 knowledge domain + orchestrator + pm + specs + 5 utility-with-refs） |
+| Command 數量 | 27（14 stage shortcut + 7 workflow pipeline + 6 utility） |
 
 ## 近期變更（最近 3 筆）
 
-- **[0.27.3] 2026-03-02**：S15b 迭代 1 PoC — 建立 testing knowledge domain skill（合併 BDD/testing 知識），刪除 ref-test-strategy，ref-* 從 3→2，38 個 skills 重組啟動 → 1336 pass
-- **[0.27.2] 2026-03-01**：ref-* skill 整理 — 刪除 4 個副本 ref-*（bdd-guide、failure-handling、wording-guide、agent-prompt-patterns），保留 3 個新 ref-* 並加消費者（test-strategy→tester、pr-review-checklist→code-reviewer、commit-convention→developer），更新 5 個 agent frontmatter → 1336 pass
-- **[0.27.1] 2026-03-01**：CBP 交叉比對 — 新增 3 個 reference skill（ref-commit-convention、ref-pr-review-checklist、ref-test-strategy）+ .github/ Issue/PR 模板 + roadmap 更新（S15-S17 計畫）→ 1331 pass
+- **[0.27.8] 2026-03-02**：S15b 迭代 7-8 — 建立 commands/ 目錄，27 個操作型 skills 移到 commands/（14 stage shortcuts + 7 workflow pipelines + 6 utilities），實現 Skill（知識）vs Command（操作）物理分離 → 1351 pass
+- **[0.27.6] 2026-03-02**：S15b 迭代 4 — commit-convention + code-review knowledge domain skills，ref-* 前綴全部清零（7→0）→ 1351 pass
+- **[0.27.5] 2026-03-02**：S15b 迭代 3 — security-kb + database + dead-code knowledge domain skills → 1344 pass
 
 ## 已知問題
 

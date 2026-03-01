@@ -155,7 +155,7 @@ Handoff 檔案存在 session 目錄，compact 後 Main Agent 可重新讀取。
 
 ---
 
-## 組件分類指南（v0.27.2）
+## 組件分類指南（v0.27.8）
 
 > 新建 agent、skill、command、hook 時的分類判斷標準。
 > 詳細正規化計畫：`docs/product-brief-normalization.md`
@@ -213,7 +213,7 @@ Handoff 檔案存在 session 目錄，compact 後 Main Agent 可重新讀取。
 1. **Command = 操作**：使用者觸發的操作流程（跑 workflow、做 review、停 loop 等）
 2. **無知識**：command 不含領域知識，只含操作邏輯（初始化 workflow、委派 agent、呼叫腳本）
 3. **disable-model-invocation: true**：command 禁止 AI 自行呼叫，只允許使用者或 Skill 引導觸發
-4. **Workflow command**：讀取 auto/references/ 中的 workflow 模板
+4. **Workflow command**：定義 stage 序列 + 💡 引用 workflow-core 知識
 5. **Stage command**：初始化 workflow state + 委派對應 agent
 
 ### Hook 建構規則

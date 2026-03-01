@@ -48,7 +48,7 @@
 | S13 | Status Line | CLI 底部雙行即時顯示 — workflow/agent + ctx%/5h/7d 用量 + compact 計數 + ANSI 變色警告（v0.25.0） | ✅ 完成 |
 | S14 | Strategic Compact | SubagentStop hook 於 stage pass 時檢查 transcript 大小，超過閾值自動建議壓縮 + emit timeline 事件（v0.26.0） | ✅ 完成 |
 | S15 | CBP 最佳實踐對齊 | `/ot:commit` utility skill + code-reviewer 四維度審查（Anthropic 官方 CBP 交叉比對啟發） | ⚪ 計畫中 |
-| S15b | Skill/Agent/Command 正規化 | 38 skills → ~16 skills + ~27 commands。Agent=角色、Skill=知識、Command=動作。9 次迭代慢步重構 | ⚪ 計畫中 |
+| S15b | Skill/Agent/Command 正規化 | 38 skills → 15 skills + 27 commands。Agent=角色、Skill=知識、Command=動作。7 次迭代完成（v0.27.3-0.27.8） | ✅ 完成 |
 | S16 | Agent Prompt 強化 | 16 個 agent 加上 `description` frontmatter + `<example>` 路由範例（CBP 啟發的備援路由信號） | ⚪ 計畫中 |
 | S17 | 測試覆蓋率分析 | tester agent 覆蓋率分析能力（待 Bun 覆蓋率工具鏈成熟度驗證） | ⏳ 保留 |
 | S18 | CI 環境感知 | Hook `isCI()` 守衛 + PR Auto-Review yaml + PR Security Scan yaml（GitHub Actions 整合，與 Phase 2 平行推進） | ⚪ 計畫中 |
@@ -109,15 +109,14 @@
 
 | # | 名稱 | 範圍 | Workflow | 狀態 |
 |---|------|------|:--------:|:----:|
-| 1 | PoC: testing | 合併 BDD/testing 知識 → testing skill | quick | ✅ v0.27.3 |
-| 2 | workflow-core | 提取 auto/refs 非選擇器知識 | quick |
-| 3 | security + database + dead-code | 3 個 knowledge domain | quick |
-| 4 | code-review + commit | 吸收 2 個 ref-* | quick |
-| 5 | browser-automation + design-system | 新提取 agent 內嵌知識 | standard |
-| 6 | pm-frameworks | PM 知識拆分 | quick |
-| 7 | Stage Shortcuts → commands/ | 14 個 stage skill 轉 command | standard |
-| 8 | Workflow + Utility → commands/ | 8 workflow + 6 utility 轉 command | standard |
-| 9 | 收尾 | Registry + Tests + Docs 清理 | quick |
+| 1 | PoC: testing | 合併 BDD/testing 知識 → testing skill | standard | ✅ v0.27.3 |
+| 2 | workflow-core | 提取 auto/refs 非選擇器知識 | quick | ✅ v0.27.4 |
+| 3 | security-kb + database + dead-code | 3 個 knowledge domain | quick | ✅ v0.27.5 |
+| 4 | code-review + commit-convention | 吸收 2 個 ref-*，ref-* 全部清零 | quick | ✅ v0.27.6 |
+| 5-6 | ~~browser-automation + design-system + pm-frameworks~~ | SKIP：單一消費者知識，ROI 低 | — | ⏭️ 跳過 |
+| 7 | Stage Shortcuts → commands/ | 14 個 stage skill 轉 command，建立 commands/ | quick | ✅ v0.27.7 |
+| 8 | Workflow + Utility → commands/ | 7 workflow + 6 utility 轉 command | quick | ✅ v0.27.8 |
+| 9 | 收尾 | 文件同步 + 狀態更新 | quick | ✅ v0.27.8 |
 
 **影響範圍**：Hook 0 影響、Registry 0 影響、Dashboard 0 影響。僅 skill 目錄重組 + agent skills 欄位更新。
 
@@ -280,9 +279,9 @@
 | auto/SKILL.md 行數 | 105 行 | ≤ 120 行 |
 | Workflow 模板數 | 18 個 | ≤ 20 個 |
 | Agent 數量 | 17 個 | 凍結，不新增 |
-| Skill 數量 | 38 個（含 3 ref-*） | S15b 後目標 ~16 個（knowledge domain + utility） |
-| Command 數量 | 0 個 | S15b 後目標 ~27 個（workflow + stage + utility） |
-| Reference Skill 數量 | 3 個 | S15b 後合併入 knowledge domain skill |
+| Skill 數量 | 15 個 | 7 knowledge domain + orchestrator + pm + specs + 5 utility-with-refs |
+| Command 數量 | 27 個 | 14 stage shortcut + 7 workflow pipeline + 6 utility |
+| Reference Skill 數量 | 0 個 | S15b 已全部合併入 knowledge domain skill |
 
 ---
 
