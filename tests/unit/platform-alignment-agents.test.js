@@ -281,80 +281,85 @@ describe('Feature 1a: disallowedTools 遷移', () => {
 
 describe('Feature 1b: Agent skills 預載（agent frontmatter）', () => {
 
-  // Scenario 1b-5: tester 預載 ref-bdd-guide 和 ref-failure-handling
+  // Scenario 1b-5: tester 預載 ref-test-strategy
   describe('Scenario 1b-5: tester 的 skills 欄位', () => {
     test('tester frontmatter 含 skills 欄位', () => {
       const fm = agentFrontmatters['tester'];
       expect(fm.skills).toBeDefined();
     });
 
-    test('tester skills 包含 ref-bdd-guide', () => {
+    test('tester skills 包含 ref-test-strategy', () => {
       const fm = agentFrontmatters['tester'];
-      expect(fm.skills).toContain('ref-bdd-guide');
+      expect(fm.skills).toContain('ref-test-strategy');
     });
 
-    test('tester skills 包含 ref-failure-handling', () => {
+    test('tester skills 不包含已刪除的 ref-bdd-guide', () => {
       const fm = agentFrontmatters['tester'];
-      expect(fm.skills).toContain('ref-failure-handling');
+      expect(fm.skills).not.toContain('ref-bdd-guide');
+    });
+
+    test('tester skills 不包含已刪除的 ref-failure-handling', () => {
+      const fm = agentFrontmatters['tester'];
+      expect(fm.skills).not.toContain('ref-failure-handling');
     });
   });
 
-  // Scenario 1b-6: developer 預載 ref-bdd-guide 和 ref-failure-handling
+  // Scenario 1b-6: developer 預載 ref-commit-convention
   describe('Scenario 1b-6: developer 的 skills 欄位', () => {
     test('developer frontmatter 含 skills 欄位', () => {
       const fm = agentFrontmatters['developer'];
       expect(fm.skills).toBeDefined();
     });
 
-    test('developer skills 包含 ref-bdd-guide', () => {
+    test('developer skills 包含 ref-commit-convention', () => {
       const fm = agentFrontmatters['developer'];
-      expect(fm.skills).toContain('ref-bdd-guide');
+      expect(fm.skills).toContain('ref-commit-convention');
     });
 
-    test('developer skills 包含 ref-failure-handling', () => {
+    test('developer skills 不包含已刪除的 ref-bdd-guide', () => {
       const fm = agentFrontmatters['developer'];
-      expect(fm.skills).toContain('ref-failure-handling');
+      expect(fm.skills).not.toContain('ref-bdd-guide');
+    });
+
+    test('developer skills 不包含已刪除的 ref-failure-handling', () => {
+      const fm = agentFrontmatters['developer'];
+      expect(fm.skills).not.toContain('ref-failure-handling');
     });
   });
 
-  // Scenario 1b-7: code-reviewer 預載 ref-failure-handling 和 ref-wording-guide
+  // Scenario 1b-7: code-reviewer 預載 ref-pr-review-checklist
   describe('Scenario 1b-7: code-reviewer 的 skills 欄位', () => {
     test('code-reviewer frontmatter 含 skills 欄位', () => {
       const fm = agentFrontmatters['code-reviewer'];
       expect(fm.skills).toBeDefined();
     });
 
-    test('code-reviewer skills 包含 ref-failure-handling', () => {
+    test('code-reviewer skills 包含 ref-pr-review-checklist', () => {
       const fm = agentFrontmatters['code-reviewer'];
-      expect(fm.skills).toContain('ref-failure-handling');
+      expect(fm.skills).toContain('ref-pr-review-checklist');
     });
 
-    test('code-reviewer skills 包含 ref-wording-guide', () => {
+    test('code-reviewer skills 不包含已刪除的 ref-failure-handling', () => {
       const fm = agentFrontmatters['code-reviewer'];
-      expect(fm.skills).toContain('ref-wording-guide');
+      expect(fm.skills).not.toContain('ref-failure-handling');
+    });
+
+    test('code-reviewer skills 不包含已刪除的 ref-wording-guide', () => {
+      const fm = agentFrontmatters['code-reviewer'];
+      expect(fm.skills).not.toContain('ref-wording-guide');
     });
   });
 
-  // Scenario 1b-8: qa 預載 ref-bdd-guide，doc-updater 預載 ref-wording-guide
-  describe('Scenario 1b-8: qa 和 doc-updater 的 skills 欄位', () => {
-    test('qa frontmatter 含 skills 欄位', () => {
+  // Scenario 1b-8: qa 和 doc-updater 無 skills 欄位
+  describe('Scenario 1b-8: qa 和 doc-updater 不含 skills 欄位', () => {
+    test('qa frontmatter 不含 skills 欄位', () => {
       const fm = agentFrontmatters['qa'];
-      expect(fm.skills).toBeDefined();
+      expect(fm.skills).toBeUndefined();
     });
 
-    test('qa skills 包含 ref-bdd-guide', () => {
-      const fm = agentFrontmatters['qa'];
-      expect(fm.skills).toContain('ref-bdd-guide');
-    });
-
-    test('doc-updater frontmatter 含 skills 欄位', () => {
+    test('doc-updater frontmatter 不含 skills 欄位', () => {
       const fm = agentFrontmatters['doc-updater'];
-      expect(fm.skills).toBeDefined();
-    });
-
-    test('doc-updater skills 包含 ref-wording-guide', () => {
-      const fm = agentFrontmatters['doc-updater'];
-      expect(fm.skills).toContain('ref-wording-guide');
+      expect(fm.skills).toBeUndefined();
     });
   });
 

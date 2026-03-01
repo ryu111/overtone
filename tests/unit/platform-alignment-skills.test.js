@@ -76,87 +76,100 @@ function estimateTokens(filePath) {
 
 describe('Feature 1b: ref skill SKILL.md frontmatter', () => {
 
-  // Scenario 1b-1: ref-bdd-guide 具備正確設定
-  describe('Scenario 1b-1: ref-bdd-guide SKILL.md frontmatter', () => {
-    const skillPath = join(SKILLS_DIR, 'ref-bdd-guide', 'SKILL.md');
+  // Scenario 1b-1: ref-test-strategy 具備正確設定
+  describe('Scenario 1b-1: ref-test-strategy SKILL.md frontmatter', () => {
+    const skillPath = join(SKILLS_DIR, 'ref-test-strategy', 'SKILL.md');
 
-    test('ref-bdd-guide SKILL.md 檔案存在', () => {
+    test('ref-test-strategy SKILL.md 檔案存在', () => {
       expect(fs.existsSync(skillPath)).toBe(true);
     });
 
-    test('ref-bdd-guide frontmatter 包含 name: ref-bdd-guide', () => {
+    test('ref-test-strategy frontmatter 包含 name: ref-test-strategy', () => {
       const fm = parseFrontmatter(skillPath);
-      expect(fm.name).toBe('ref-bdd-guide');
+      expect(fm.name).toBe('ref-test-strategy');
     });
 
-    test('ref-bdd-guide frontmatter 包含 disable-model-invocation: true', () => {
+    test('ref-test-strategy frontmatter 包含 disable-model-invocation: true', () => {
       const fm = parseFrontmatter(skillPath);
       expect(fm['disable-model-invocation']).toBe(true);
     });
 
-    test('ref-bdd-guide frontmatter 包含 user-invocable: false', () => {
+    test('ref-test-strategy frontmatter 包含 user-invocable: false', () => {
       const fm = parseFrontmatter(skillPath);
       expect(fm['user-invocable']).toBe(false);
     });
   });
 
-  // Scenario 1b-3: ref-failure-handling 具備正確設定
-  describe('Scenario 1b-3: ref-failure-handling SKILL.md frontmatter', () => {
-    const skillPath = join(SKILLS_DIR, 'ref-failure-handling', 'SKILL.md');
+  // Scenario 1b-2: ref-pr-review-checklist 具備正確設定
+  describe('Scenario 1b-2: ref-pr-review-checklist SKILL.md frontmatter', () => {
+    const skillPath = join(SKILLS_DIR, 'ref-pr-review-checklist', 'SKILL.md');
 
-    test('ref-failure-handling SKILL.md 檔案存在', () => {
+    test('ref-pr-review-checklist SKILL.md 檔案存在', () => {
       expect(fs.existsSync(skillPath)).toBe(true);
     });
 
-    test('ref-failure-handling frontmatter 包含 name: ref-failure-handling', () => {
+    test('ref-pr-review-checklist frontmatter 包含 name: ref-pr-review-checklist', () => {
       const fm = parseFrontmatter(skillPath);
-      expect(fm.name).toBe('ref-failure-handling');
+      expect(fm.name).toBe('ref-pr-review-checklist');
     });
 
-    test('ref-failure-handling frontmatter 包含 disable-model-invocation: true', () => {
+    test('ref-pr-review-checklist frontmatter 包含 disable-model-invocation: true', () => {
       const fm = parseFrontmatter(skillPath);
       expect(fm['disable-model-invocation']).toBe(true);
     });
 
-    test('ref-failure-handling frontmatter 包含 user-invocable: false', () => {
+    test('ref-pr-review-checklist frontmatter 包含 user-invocable: false', () => {
       const fm = parseFrontmatter(skillPath);
       expect(fm['user-invocable']).toBe(false);
     });
   });
 
-  // Scenario 1b-4: ref-wording-guide 具備正確設定
-  describe('Scenario 1b-4: ref-wording-guide SKILL.md frontmatter', () => {
-    const skillPath = join(SKILLS_DIR, 'ref-wording-guide', 'SKILL.md');
+  // Scenario 1b-3: ref-commit-convention 具備正確設定
+  describe('Scenario 1b-3: ref-commit-convention SKILL.md frontmatter', () => {
+    const skillPath = join(SKILLS_DIR, 'ref-commit-convention', 'SKILL.md');
 
-    test('ref-wording-guide SKILL.md 檔案存在', () => {
+    test('ref-commit-convention SKILL.md 檔案存在', () => {
       expect(fs.existsSync(skillPath)).toBe(true);
     });
 
-    test('ref-wording-guide frontmatter 包含 name: ref-wording-guide', () => {
+    test('ref-commit-convention frontmatter 包含 name: ref-commit-convention', () => {
       const fm = parseFrontmatter(skillPath);
-      expect(fm.name).toBe('ref-wording-guide');
+      expect(fm.name).toBe('ref-commit-convention');
     });
 
-    test('ref-wording-guide frontmatter 包含 disable-model-invocation: true', () => {
+    test('ref-commit-convention frontmatter 包含 disable-model-invocation: true', () => {
       const fm = parseFrontmatter(skillPath);
       expect(fm['disable-model-invocation']).toBe(true);
     });
 
-    test('ref-wording-guide frontmatter 包含 user-invocable: false', () => {
+    test('ref-commit-convention frontmatter 包含 user-invocable: false', () => {
       const fm = parseFrontmatter(skillPath);
       expect(fm['user-invocable']).toBe(false);
     });
   });
 
-  // Scenario 1b-9: ref skill 內容不超過 1200 字元（約 300 token）
-  describe('Scenario 1b-9: ref skill 內容精簡在 1200 字元以內', () => {
-    const refSkills = ['ref-bdd-guide', 'ref-failure-handling', 'ref-wording-guide'];
+  // Scenario 1b-4: 已刪除的 ref-* skill 不存在
+  describe('Scenario 1b-4: 已刪除的 ref-* skill 目錄不存在', () => {
+    const deletedSkills = ['ref-bdd-guide', 'ref-failure-handling', 'ref-wording-guide', 'ref-agent-prompt-patterns'];
+
+    for (const skillName of deletedSkills) {
+      test(`${skillName} 目錄已被刪除`, () => {
+        const skillPath = join(SKILLS_DIR, skillName, 'SKILL.md');
+        expect(fs.existsSync(skillPath)).toBe(false);
+      });
+    }
+  });
+
+  // Scenario 1b-9: ref skill 內容不超過 3000 字元（約 750 token）
+  // 新 ref-* skill 來自 CBP，內容較舊版本豐富，上限調整為 3000 字元
+  describe('Scenario 1b-9: ref skill 內容精簡在 3000 字元以內', () => {
+    const refSkills = ['ref-test-strategy', 'ref-pr-review-checklist', 'ref-commit-convention'];
 
     for (const skillName of refSkills) {
-      test(`${skillName} 的有效內容不超過 1200 字元`, () => {
+      test(`${skillName} 的有效內容不超過 3000 字元`, () => {
         const skillPath = join(SKILLS_DIR, skillName, 'SKILL.md');
         const charCount = estimateTokens(skillPath);
-        expect(charCount).toBeLessThanOrEqual(1200);
+        expect(charCount).toBeLessThanOrEqual(3000);
       });
     }
   });

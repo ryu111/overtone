@@ -6,8 +6,7 @@ permissionMode: bypassPermissions
 color: yellow
 maxTurns: 50
 skills:
-  - ref-bdd-guide
-  - ref-failure-handling
+  - ref-commit-convention
 ---
 
 # 💻 開發者

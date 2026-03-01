@@ -9,8 +9,6 @@ disallowedTools:
   - Edit
   - Task
   - NotebookEdit
-skills:
-  - ref-bdd-guide
 ---
 
 # 🏁 品質驗證者

@@ -65,7 +65,7 @@
 - [x] `ref-commit-convention` reference skill 建立（v0.27.1）
 - [x] `ref-pr-review-checklist` reference skill 建立（v0.27.1）
 - [x] `ref-test-strategy` reference skill 建立（v0.27.1）
-- [x] `ref-agent-prompt-patterns` reference skill 建立（v0.27.1）
+- [ ] ~~`ref-agent-prompt-patterns` reference skill~~ — 已刪除（v0.27.2），延後至 S16 決定
 - [x] `.github/ISSUE_TEMPLATE/` + `pull_request_template.md` 建立
 
 **排除項目**（RICE 過低或風險過高）：
@@ -79,7 +79,7 @@
 | # | 項目 | 類型 | 說明 |
 |---|------|:----:|------|
 | 16a | Agent description frontmatter | prompt 增強 | 為 16 個 agent 加上 `description` + 1-2 個 `<example>` 路由範例，作為確定性映射的備援信號 |
-| 16b | ref-agent-prompt-patterns 引用 | 關聯 | Agent prompt 寫作時參照 `ref-agent-prompt-patterns`（六要素：Identity/Expertise/Methodology/Standards/Context/Examples） |
+| 16b | Agent prompt 六要素模板 | 關聯 | Agent prompt 寫作時參照六要素（Identity/Expertise/Methodology/Standards/Context/Examples）。ref-agent-prompt-patterns 已刪除（v0.27.2），S16 實作時重新決定知識載體 |
 
 ### S18 詳細項目（CI 環境感知）
 
@@ -231,8 +231,8 @@
 | auto/SKILL.md 行數 | 105 行 | ≤ 120 行 |
 | Workflow 模板數 | 18 個 | ≤ 20 個 |
 | Agent 數量 | 17 個 | 凍結，不新增 |
-| Skill 數量 | 42 個（含 7 ref-*） | 無明確上限 |
-| Reference Skill 數量 | 7 個 | 無明確上限 |
+| Skill 數量 | 38 個（含 3 ref-*） | 無明確上限 |
+| Reference Skill 數量 | 3 個 | 無明確上限 |
 
 ---
 

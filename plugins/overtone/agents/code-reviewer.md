@@ -12,8 +12,7 @@ disallowedTools:
   - Task
   - NotebookEdit
 skills:
-  - ref-failure-handling
-  - ref-wording-guide
+  - ref-pr-review-checklist
 ---
 
 # 🔍 審查者
