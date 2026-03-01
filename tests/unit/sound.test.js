@@ -10,16 +10,16 @@ const { describe, it, expect } = require('bun:test');
 // ── 測試 SOUNDS 常數 ──
 
 describe('SOUNDS 常數', () => {
-  it('包含 3 個音效常數（HERO, GLASS, BASSO）', () => {
+  it('包含 2 個音效常數（HERO, GLASS）', () => {
     const { SOUNDS } = require('../../plugins/overtone/scripts/lib/sound');
     expect(SOUNDS.HERO).toBe('Hero.aiff');
     expect(SOUNDS.GLASS).toBe('Glass.aiff');
-    expect(SOUNDS.BASSO).toBe('Basso.aiff');
   });
 
-  it('不包含已移除的 TINK', () => {
+  it('不包含已移除的 TINK 和 BASSO', () => {
     const { SOUNDS } = require('../../plugins/overtone/scripts/lib/sound');
     expect(SOUNDS.TINK).toBeUndefined();
+    expect(SOUNDS.BASSO).toBeUndefined();
   });
 
   it('導出 playSound 函式和 SOUNDS 常數', () => {

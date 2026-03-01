@@ -16,9 +16,8 @@ const SOUNDS_DIR = '/System/Library/Sounds';
 
 // 音效常數
 const SOUNDS = {
-  HERO:  'Hero.aiff',   // Pipeline 完成（特殊完成音）
-  GLASS: 'Glass.aiff',  // 一般提示（AskUserQuestion、Loop 停止）
-  BASSO: 'Basso.aiff',  // 錯誤（workflow 異常中斷）
+  HERO:  'Hero.aiff',   // Workflow 正常完成（唯一的 Stop hook 音效）
+  GLASS: 'Glass.aiff',  // AskUserQuestion 提示（Notification hook）
 };
 
 /**
