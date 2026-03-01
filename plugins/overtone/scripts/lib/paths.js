@@ -50,6 +50,7 @@ const session = {
   timeline:     (id) => sessionFile(id, 'timeline.jsonl'),
   loop:         (id) => sessionFile(id, 'loop.json'),
   observations: (id) => sessionFile(id, 'observations.jsonl'),
+  compactCount: (id) => sessionFile(id, 'compact-count.json'),
 };
 
 // ── 全域設定 ──

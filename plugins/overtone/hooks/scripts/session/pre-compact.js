@@ -12,10 +12,13 @@
  *   ✅ 任何失敗 fallback { result: '' }（不阻擋 compaction）
  */
 
+const { readFileSync } = require('fs');
 const state = require('../../../scripts/lib/state');
 const timeline = require('../../../scripts/lib/timeline');
 const { stages } = require('../../../scripts/lib/registry');
+const { atomicWrite } = require('../../../scripts/lib/utils');
 const { safeReadStdin, safeRun, buildPendingTasksMessage, buildProgressBar, getSessionId } = require('../../../scripts/lib/hook-utils');
+const paths = require('../../../scripts/lib/paths');
 
 const MAX_MESSAGE_LENGTH = 2000;
 
@@ -43,6 +46,23 @@ safeRun(() => {
     workflowType: currentState.workflowType,
     currentStage: currentState.currentStage,
   });
+
+  // 追蹤 compact 計數（auto vs manual）
+  const compactCountPath = paths.session.compactCount(sessionId);
+  let compactCount = { auto: 0, manual: 0 };
+  try {
+    const raw = readFileSync(compactCountPath, 'utf8');
+    compactCount = JSON.parse(raw);
+  } catch {
+    // 檔案不存在時從 { auto: 0, manual: 0 } 開始
+  }
+  // input.type === 'auto' 代表自動壓縮，其他（含未定義）視為 manual
+  if (input.type === 'auto') {
+    compactCount.auto = (compactCount.auto || 0) + 1;
+  } else {
+    compactCount.manual = (compactCount.manual || 0) + 1;
+  }
+  atomicWrite(compactCountPath, compactCount);
 
   // ── 組裝 workflow 狀態摘要 ──
 
