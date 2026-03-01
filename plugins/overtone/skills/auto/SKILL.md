@@ -1,6 +1,7 @@
 ---
 name: auto
 description: Overtone 核心工作流選擇器。分析使用者需求自動選擇最適合的 workflow 模板，引導 Main Agent 依序委派 agent 執行。每次新需求時自動觸發。
+argument-hint: "[需求描述，例如：新增使用者認證功能]"
 ---
 
 # Overtone 工作流選擇器

@@ -1,6 +1,7 @@
 ---
 name: pm
 description: 產品探索與需求釐清。引導 Main Agent 以 PM 角色探索需求、定義範圍、比較方案。三種模式：discovery（純探索）、product（PM + standard pipeline）、product-full（PM + full pipeline）。
+argument-hint: "[產品需求，例如：評估 A/B 方案的成本效益]"
 disable-model-invocation: true
 ---
 

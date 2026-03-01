@@ -1,6 +1,7 @@
 ---
 name: issue
 description: 從 GitHub Issue 啟動 Overtone workflow。讀取 Issue 內容，根據 labels 自動選擇 workflow 類型，建立 feature branch 並啟動執行。
+argument-hint: "[GitHub Issue URL 或 #number]"
 disable-model-invocation: false
 ---
 

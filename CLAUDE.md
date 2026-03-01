@@ -25,51 +25,16 @@ Layer 1: Skill 引導（內圈）— Hook → /ot:auto → Workflow Skill → �
 Layer 2: Hook 守衛（底層）— 記錄、擋、提示、通知
 ```
 
-## Agent 配置（17 個，含 grader）
+## Agent 配置
 
-| 色彩 | Agent | Model | 功能 |
-|:----:|-------|:-----:|:----:|
-| emerald | product-manager | opus | 產品分析、需求探索、drift 偵測 |
-| purple | planner | opusplan | 規劃 |
-| cyan | architect | opus | 架構 |
-| cyan | designer | sonnet | UI/UX |
-| yellow | developer | sonnet | 開發 |
-| orange | debugger | sonnet | 診斷（不寫碼） |
-| blue | code-reviewer | opus | 審查（>80% 信心） |
-| red | security-reviewer | opus | 安全 |
-| red | database-reviewer | sonnet | DB 審查 |
-| pink | tester (BDD) | sonnet | BDD spec + 測試 |
-| yellow | qa | sonnet | 行為驗證 |
-| green | e2e-runner | sonnet | E2E |
-| orange | build-error-resolver | sonnet | 修構建 |
-| blue | refactor-cleaner | sonnet | 死碼清理 |
-| purple | doc-updater | haiku | 文件同步（同步者，非創作者） |
-| purple | retrospective | opus | 迭代回顧，信心 ≥70% 才報告問題 |
-| purple | grader | haiku | 可選品質評分（非 workflow stage） |
+17 個 agent（含 grader），全部使用 `bypassPermissions`。Model 分配：opus（決策型）、sonnet（執行型）、haiku（輕量型）。
+> 完整清單與色彩標記：`docs/spec/overtone-agents.md`
 
-所有 agent 使用 `bypassPermissions`。
+## 工作流模板
 
-## 工作流模板（18 個）
-
-```
-BDD 規則：含 PLAN/ARCH 的 workflow 在 DEV 前加 TEST:spec
-
-single:       DEV
-quick:        DEV → [REVIEW + TEST] → RETRO → DOCS
-standard:     PLAN → ARCH → TEST:spec → DEV → [REVIEW + TEST:verify] → RETRO → DOCS
-full:         PLAN → ARCH → DESIGN → TEST:spec → DEV → [R+T:verify] → [QA+E2E] → RETRO → DOCS
-secure:       PLAN → ARCH → TEST:spec → DEV → [R+T:verify+SECURITY] → RETRO → DOCS
-tdd:          TEST:spec → DEV → TEST:verify
-debug:        DEBUG → DEV → TEST
-refactor:     ARCH → TEST:spec → DEV → REVIEW → TEST:verify
-review-only / security-only / build-fix / e2e-only
-diagnose:     DEBUG
-clean:        REFACTOR
-db-review:    DB-REVIEW
-product:      PM → PLAN → ARCH → TEST:spec → DEV → [R+T] → RETRO → DOCS
-product-full: PM → PLAN → ARCH → DESIGN → TEST:spec → DEV → [R+T] → [QA+E2E] → RETRO → DOCS
-discovery:    PM
-```
+18 個模板。BDD 規則：含 PLAN/ARCH 的 workflow 在 DEV 前加 TEST:spec。
+常用：`single`（DEV）、`quick`（DEV → [REVIEW+TEST] → RETRO → DOCS）、`standard`（PLAN → ARCH → TEST:spec → DEV → [R+T] → RETRO → DOCS）。
+> 完整清單：`docs/spec/overtone-工作流.md`
 
 ## 技術棧
 
@@ -84,60 +49,20 @@ discovery:    PM
 ## 目錄結構
 
 ```
-tests/                           # 專案測試目錄（⚠️ 不在 plugin 下）
-├── unit/                        # 單元測試（純函數，無 I/O）
-├── integration/                 # 整合測試（真實 I/O）
-├── e2e/                         # E2E 測試（agent-browser）
-└── helpers/                     # 共用路徑 helper
+tests/              # 測試（unit / integration / e2e / helpers）⚠️ 不在 plugin 下
+docs/               # 文件（spec / reference / archive / status.md）⚠️ 不在 plugin 下
+plugins/overtone/   # Plugin 根目錄
+├── agents/         # 17 個 agent .md
+├── skills/         # 38 個 Skill 定義
+├── hooks/          # hooks.json + scripts/
+├── scripts/lib/    # 共用庫（registry, state, timeline, specs, config-api 等）
+└── web/            # Dashboard 前端
 
-docs/                            # 專案文件目錄（⚠️ 不在 plugin 下）
-├── spec/                        # 規格文件
-│   ├── overtone.md              # 主規格索引
-│   ├── overtone-架構.md         # 三層架構、Hook、State
-│   ├── overtone-工作流.md       # 18 個 workflow 模板
-│   ├── overtone-agents.md       # 17 個 agent
-│   ├── overtone-並行.md         # 並行、Loop、Mul-Dev
-│   ├── overtone-子系統.md       # Specs、Dashboard、Timeline
-│   ├── overtone-驗證品質.md     # 三信號、pass@k、Grader
-│   └── workflow-diagram.md      # 架構圖（Mermaid）
-├── reference/                   # 平台參考、ECC 分析、措詞指南等
-├── archive/                     # 歷史文件歸檔（不再維護）
-└── status.md                    # 現況快讀
-
-plugins/overtone/                # Plugin 根目錄
-├── .claude-plugin/              # Plugin manifest（plugin.json）
-├── agents/                      # 17 個 agent .md 檔（含 grader）
-├── skills/                      # 35 個 Skill 定義
-├── hooks/                       # hooks.json + scripts/
-├── scripts/lib/                 # 共用程式庫
-│   ├── registry.js              # SoT：stages/agents/workflows/events + knownTools/hookEvents
-│   ├── registry-data.json       # JSON 化 stages 和 agentModels 常數
-│   ├── config-api.js            # 統一設定管理 API（L1 驗證 + L2 CRUD）
-│   ├── paths.js                 # 路徑解析
-│   ├── state.js                 # workflow.json 讀寫（CAS 原子更新）
-│   ├── timeline.js              # 事件記錄
-│   ├── loop.js                  # Loop 狀態
-│   ├── instinct.js              # Instinct 觀察與信心
-│   ├── utils.js                 # 共用工具（atomicWrite、clamp）
-│   ├── hook-utils.js            # Hook 統一工具函式
-│   ├── specs.js                 # Specs 系統 API
-│   ├── dashboard/               # Dashboard 程序管理
-│   └── remote/                  # EventBus + Adapter（Dashboard、Telegram）
-├── web/                         # Dashboard 前端（htmx + Alpine.js）
-└── package.json                 # Bun 專案設定
+# Session 狀態：~/.overtone/sessions/{sessionId}/
+#   workflow.json / timeline.jsonl / loop.json / observations.jsonl
 ```
 
-## State 路徑
-
-```
-~/.overtone/sessions/{sessionId}/
-├── workflow.json         # 工作流狀態
-├── timeline.jsonl        # 事件記錄（22 種）
-├── loop.json             # Loop 狀態
-└── observations.jsonl    # Instinct 觀察
-```
-
-## Hook 架構（10 個，~1790 行 + config-api.js ~380 行）
+## Hook 架構（10 個，~1610 行 + config-api.js ~850 行）
 
 | 事件 | 職責 |
 |------|------|
@@ -148,6 +73,7 @@ plugins/overtone/                # Plugin 根目錄
 | PreToolUse(Task) | subagent_type 確定性映射 + 擋跳過必要階段 + 衝突警告 + updatedInput 注入 workflow context |
 | SubagentStop | 記錄結果 + 提示下一步 + 寫 state + emit timeline |
 | PostToolUse | Instinct 觀察收集 + .md 措詞偵測（emoji-關鍵詞不匹配警告） |
+| TaskCompleted | Task 完成前品質門檻硬阻擋（test pass + lint clean） |
 | PostToolUseFailure | Tool 執行失敗事件處理 |
 | Stop | Loop 迴圈 + 完成度 + Dashboard 通知 |
 
@@ -160,10 +86,10 @@ bun test
 # 啟動 Dashboard 監控面板（port 7777）
 bun scripts/server.js
 
-# 系統健康檢查（7 項偵測：phantom-events、dead-exports、doc-code-drift、unused-paths、duplicate-logic、platform-drift、doc-staleness）
+# 系統健康檢查（7 項偵測）
 bun scripts/health-check.js
 
-# 驗證所有 15 個 agent 設定是否完整
+# 驗證所有 agent 設定是否完整
 bun scripts/validate-agents.js
 
 # 手動停止 Loop（需提供 sessionId）
@@ -171,8 +97,6 @@ bun scripts/stop-loop.js {sessionId}
 
 # 初始化 workflow state（測試用）
 bun scripts/init-workflow.js {workflowType} [{sessionId}]
-# workflowType 可選：single / quick / standard / full / secure / tdd / debug / refactor / review-only / security-only / build-fix / e2e-only / diagnose / clean / db-review
-# sessionId 可選，空時從 ~/.overtone/.current-session-id fallback 讀取（UserPromptSubmit hook 自動寫入）
 ```
 
 ## 開發規範
