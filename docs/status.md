@@ -6,7 +6,7 @@
 
 | 版本 | 狀態 | 說明 |
 |------|------|------|
-| V1 | 進行中 | 1117 pass，0 fail，核心功能完整 + Config API 完成 + Platform Drift 偵測完成 + Effort Level 分層完成 + Skill 動態注入完成 + TaskCompleted Hook 完成 |
+| V1 | 進行中 | 1118 pass，0 fail，核心功能完整 + Config API 完成 + Platform Drift 偵測完成 + Effort Level 分層完成 + Skill 動態注入完成 + TaskCompleted Hook 完成 + Opusplan 混合模式完成 |
 | V2 | 規劃中 | 延後 |
 
 ## 核心指標
@@ -16,7 +16,7 @@
 | Agent 數量 | 17（含 grader） |
 | Stage 數量 | 16 |
 | Workflow 模板 | 18 |
-| 測試通過 | 1117 pass / 0 fail |
+| 測試通過 | 1118 pass / 0 fail |
 | 測試檔案 | 57 個 |
 | Hook 數量 | 10 個 |
 | Skill 數量 | 38 個 |
