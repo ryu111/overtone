@@ -47,6 +47,61 @@
 | S12 | 音效通知 | macOS afplay 系統音效 — sound.js + Notification hook + error.flag 恢復偵測（v0.24.0） | ✅ 完成 |
 | S13 | Status Line | CLI 底部雙行即時顯示 — workflow/agent + ctx%/5h/7d 用量 + compact 計數 + ANSI 變色警告（v0.25.0） | ✅ 完成 |
 | S14 | Strategic Compact | SubagentStop hook 於 stage pass 時檢查 transcript 大小，超過閾值自動建議壓縮 + emit timeline 事件（v0.26.0） | ✅ 完成 |
+| S15 | CBP 最佳實踐對齊 | `/ot:commit` utility skill + code-reviewer 四維度審查（Anthropic 官方 CBP 交叉比對啟發） | ⚪ 計畫中 |
+| S16 | Agent Prompt 強化 | 16 個 agent 加上 `description` frontmatter + `<example>` 路由範例（CBP 啟發的備援路由信號） | ⚪ 計畫中 |
+| S17 | 測試覆蓋率分析 | tester agent 覆蓋率分析能力（待 Bun 覆蓋率工具鏈成熟度驗證） | ⏳ 保留 |
+| S18 | CI 環境感知 | Hook `isCI()` 守衛 + PR Auto-Review yaml + PR Security Scan yaml（GitHub Actions 整合，與 Phase 2 平行推進） | ⚪ 計畫中 |
+
+### S15 詳細項目（CBP 最佳實踐對齊）
+
+> 來源：Anthropic 官方 `awattar/claude-code-best-practices` 交叉比對分析
+
+| # | 項目 | 類型 | 說明 | RICE |
+|---|------|:----:|------|:----:|
+| 15a | `/ot:commit` utility skill | 新 skill | diff 分析 + 拆分判斷 + conventional commit 自動化。引用 `ref-commit-convention`。workflow 外的快速 commit 工具 | 18.0 |
+| 15b | code-reviewer 四維度審查 | prompt 增強 | Code Quality / Security / Performance / Observability 結構化審查。frontmatter 引用 `ref-pr-review-checklist`。Handoff 按維度分類 | 14.0 |
+
+**已完成前置**：
+- [x] `ref-commit-convention` reference skill 建立（v0.27.1）
+- [x] `ref-pr-review-checklist` reference skill 建立（v0.27.1）
+- [x] `ref-test-strategy` reference skill 建立（v0.27.1）
+- [x] `ref-agent-prompt-patterns` reference skill 建立（v0.27.1）
+- [x] `.github/ISSUE_TEMPLATE/` + `pull_request_template.md` 建立
+
+**排除項目**（RICE 過低或風險過高）：
+- ~~CI/CD Hook 整合（RICE 0.33）~~ → 升級為 S18（Claude Code GitHub Actions 成熟度提升，重新評估 RICE 為 2.4）
+- Scratchpad 模式（RICE 0.5，與 timeline.jsonl + Instinct 功能重疊）
+
+### S16 詳細項目（Agent Prompt 強化）
+
+> 來源：CBP 的 agent description `<example>` 路由技巧
+
+| # | 項目 | 類型 | 說明 |
+|---|------|:----:|------|
+| 16a | Agent description frontmatter | prompt 增強 | 為 16 個 agent 加上 `description` + 1-2 個 `<example>` 路由範例，作為確定性映射的備援信號 |
+| 16b | ref-agent-prompt-patterns 引用 | 關聯 | Agent prompt 寫作時參照 `ref-agent-prompt-patterns`（六要素：Identity/Expertise/Methodology/Standards/Context/Examples） |
+
+### S18 詳細項目（CI 環境感知）
+
+> 來源：Claude Code GitHub Actions 能力分析 + Overtone agent prompt 資產復用
+> 架構：方案 A（Full Plugin 載入），CI 中安裝完整 Overtone plugin，hooks 偵測 `$CLAUDE_CODE_REMOTE` 自動切換行為
+> 定位：與 Phase 2 外部驗證平行推進，「裝上就有自動 PR review + 安全掃描」作為推廣賣點
+
+| # | 項目 | 類型 | 說明 | 優先級 |
+|---|------|:----:|------|:------:|
+| 18a | `isCI()` 基礎設施 | hook 改造 | hook-utils.js 新增 `isCI()` 函式，on-start/on-stop/notification 加入 CI guard（跳過 Dashboard、StatusLine、音效、Loop） | Must |
+| 18b | PR Auto-Review workflow | 新 yaml | `.github/workflows/pr-review.yml` — PR opened/sync 觸發，用 code-reviewer prompt + ref-pr-review-checklist 審查，inline comment 輸出 | Must |
+| 18c | PR Security Scan workflow | 新 yaml | `.github/workflows/security-scan.yml` — PR opened/sync 觸發，用 security-reviewer prompt + OWASP 掃描，按嚴重度分類 | Must |
+| 18d | CI Failure Analysis workflow | 新 yaml | CI 失敗 → 分析 log → 修復建議 comment | Should（Phase 3） |
+| 18e | Doc Sync Check workflow | 新 yaml | 程式碼路徑變更 → 文件同步提醒 | Should（Phase 3） |
+| 18f | @claude Interactive workflow | 新 yaml | PR/Issue 中 `@claude` → 互動回應 | Could（Phase 3） |
+| 18g | Issue Auto-Triage workflow | 新 yaml | Issue 建立 → 自動分類 + 標籤 | Could（Phase 3） |
+
+**影響範圍**：
+- Overtone 18 個 workflow 模板 → **零影響**（CI 用 GitHub Actions yml，不佔 Overtone 配額）
+- Hook 行為 → **微量改動**（4 個 hook 加 `isCI()` guard，核心邏輯不變）
+- Agent prompt → **零改動**（CI 復用相同的 agent .md）
+- 估計工作量：Must 項目 2-3 天
 
 ### S1 詳細項目
 
@@ -176,6 +231,8 @@
 | auto/SKILL.md 行數 | 105 行 | ≤ 120 行 |
 | Workflow 模板數 | 18 個 | ≤ 20 個 |
 | Agent 數量 | 17 個 | 凍結，不新增 |
+| Skill 數量 | 42 個（含 7 ref-*） | 無明確上限 |
+| Reference Skill 數量 | 7 個 | 無明確上限 |
 
 ---
 

@@ -1,6 +1,6 @@
 # Overtone 現況
 
-> 最後更新：2026-03-01 | Plugin 版本：0.27.0
+> 最後更新：2026-03-01 | Plugin 版本：0.27.1
 
 ## 版本狀態
 
@@ -19,10 +19,11 @@
 | 測試通過 | 1331 pass / 0 fail |
 | 測試檔案 | 68 個 |
 | Hook 數量 | 11 個 |
-| Skill 數量 | 38 個 |
+| Skill 數量 | 42 個（含 7 ref-*） |
 
 ## 近期變更（最近 3 筆）
 
+- **[0.27.1] 2026-03-01**：CBP 交叉比對 — 新增 4 個 reference skill（ref-commit-convention、ref-pr-review-checklist、ref-test-strategy、ref-agent-prompt-patterns）+ .github/ Issue/PR 模板 + roadmap 更新（S15-S17 計畫）→ 1331 pass
 - **[0.27.0] 2026-03-01**：核心精鍊 3 次迭代 — 迭代 1 表層清理（grader.js 刪除 + state/parse-result/timeline 風格統一），迭代 2 模組化提取（on-stop.js 476→357 行，formatSize/findActualStageKey/checkParallelConvergence/getNextStageHint 提取到 lib），迭代 3 測試覆蓋補強（JSONL 損壞行容錯 + passAtK 獨立測試 + PM 多迭代連續執行規則） → 1331 pass
 - **[0.26.0] 2026-03-01**：S14 Strategic Compact — SubagentStop hook 新增 formatSize + shouldSuggestCompact 函式，stage pass 時檢查 transcript 檔案大小超過閾值（預設 5MB）自動建議壓縮，emit session:compact-suggestion timeline 事件，提升 context 可用性 → 1225 pass
 - **[0.25.2] 2026-03-01**：Status Line 大幅重寫 — agent-first 格式 + 中文模式標籤 + 移除 OAuth（API 不可用）+ transcript 檔案大小 + 亮色 ANSI + idle 時隱藏 Line 1 + PreCompact session_id fallback → 1205 pass
