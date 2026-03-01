@@ -1,7 +1,6 @@
 ---
 name: secure
 description: 高風險功能開發工作流。PLAN → ARCH → TEST:spec → DEV → [REVIEW + TEST:verify + SECURITY] → DOCS。適用於認證、支付、安全敏感功能。
-disable-model-invocation: true
 ---
 
 # 高風險功能開發（Secure）

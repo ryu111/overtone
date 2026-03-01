@@ -176,6 +176,108 @@ describe('Feature 1b: ref skill SKILL.md frontmatter', () => {
 });
 
 // ────────────────────────────────────────────────────────────────────────────
+// Feature: Workflow command 可呼叫性驗證
+// ────────────────────────────────────────────────────────────────────────────
+
+describe('Feature: Workflow command 可呼叫性', () => {
+
+  // auto 路由到的 16 個 workflow commands — model 必須能呼叫
+  const workflowCommands = [
+    'dev', 'quick', 'standard', 'full', 'secure', 'tdd', 'debug', 'refactor',
+    'review', 'security', 'build-fix', 'e2e', 'test', 'diagnose', 'db-review', 'clean',
+  ];
+
+  // 非 workflow commands — 應保持 disable-model-invocation: true
+  const nonWorkflowCommands = [
+    'architect', 'audit', 'design', 'plan', 'qa', 'mul-dev',
+    'dashboard', 'doc-sync', 'remote', 'status', 'stop',
+  ];
+
+  for (const cmd of workflowCommands) {
+    test(`workflow command ${cmd} 不可有 disable-model-invocation: true`, () => {
+      const cmdPath = join(COMMANDS_DIR, `${cmd}.md`);
+      expect(fs.existsSync(cmdPath)).toBe(true);
+      const fm = parseFrontmatter(cmdPath);
+      expect(fm['disable-model-invocation']).not.toBe(true);
+    });
+  }
+
+  for (const cmd of nonWorkflowCommands) {
+    test(`non-workflow command ${cmd} 應有 disable-model-invocation: true`, () => {
+      const cmdPath = join(COMMANDS_DIR, `${cmd}.md`);
+      expect(fs.existsSync(cmdPath)).toBe(true);
+      const fm = parseFrontmatter(cmdPath);
+      expect(fm['disable-model-invocation']).toBe(true);
+    });
+  }
+
+  // pm skill 也需要 model 可呼叫（auto 路由到 PM workflows）
+  test('pm skill 不可有 disable-model-invocation: true', () => {
+    const pmPath = join(SKILLS_DIR, 'pm', 'SKILL.md');
+    const fm = parseFrontmatter(pmPath);
+    expect(fm['disable-model-invocation']).not.toBe(true);
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// Feature: 術語一致性驗證
+// ────────────────────────────────────────────────────────────────────────────
+
+describe('Feature: 術語一致性', () => {
+
+  test('plugin 目錄下不應有「workflow skill」術語（應為 workflow command）', () => {
+    const violations = [];
+
+    // 掃描 skills/
+    const skillDirs = fs.readdirSync(SKILLS_DIR);
+    for (const dir of skillDirs) {
+      const filePath = join(SKILLS_DIR, dir, 'SKILL.md');
+      if (!fs.existsSync(filePath)) continue;
+      const content = fs.readFileSync(filePath, 'utf8');
+      if (content.includes('workflow skill')) {
+        violations.push(`skills/${dir}/SKILL.md`);
+      }
+    }
+
+    // 掃描 commands/
+    if (fs.existsSync(COMMANDS_DIR)) {
+      const cmdFiles = fs.readdirSync(COMMANDS_DIR).filter(f => f.endsWith('.md'));
+      for (const file of cmdFiles) {
+        const content = fs.readFileSync(join(COMMANDS_DIR, file), 'utf8');
+        if (content.includes('workflow skill')) {
+          violations.push(`commands/${file}`);
+        }
+      }
+    }
+
+    // 掃描 hooks/scripts/
+    const hooksDir = join(PLUGIN_ROOT, 'hooks', 'scripts');
+    if (fs.existsSync(hooksDir)) {
+      const walkDir = (dir) => {
+        for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+          if (entry.isDirectory()) {
+            walkDir(join(dir, entry.name));
+          } else if (entry.name.endsWith('.js')) {
+            const content = fs.readFileSync(join(dir, entry.name), 'utf8');
+            if (content.includes('workflow skill')) {
+              violations.push(join(dir, entry.name).replace(PLUGIN_ROOT + '/', ''));
+            }
+          }
+        }
+      };
+      walkDir(hooksDir);
+    }
+
+    if (violations.length > 0) {
+      throw new Error(
+        `以下檔案仍使用「workflow skill」術語（應為 workflow command），共 ${violations.length} 個：\n` +
+        violations.map(p => `  - ${p}`).join('\n')
+      );
+    }
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────
 // Feature: Skill 引用完整性驗證
 // ────────────────────────────────────────────────────────────────────────────
 

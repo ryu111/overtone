@@ -140,7 +140,7 @@ function removeActiveAgent(sessionId, agentName) {
 
 /**
  * 設定對應的 Specs feature 名稱
- * 由 /ot:auto skill 或 workflow skill 在大功能初始化 Specs 時呼叫
+ * 由 /ot:auto skill 或 workflow command 在大功能初始化 Specs 時呼叫
  * @param {string} sessionId
  * @param {string} name - feature 名稱（kebab-case）
  */

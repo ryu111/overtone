@@ -44,7 +44,7 @@ argument-hint: "[需求描述，例如：新增使用者認證功能]"
 > - `/ot:issue <number>` — 讀取 GitHub Issue，自動選 workflow 並建立 feature branch
 > - `/ot:pr` — 從 workflow 結果自動組裝並建立 GitHub PR
 
-選好後，讀取對應的 workflow skill 取得完整執行指引。💡 邊界情況範例：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/auto/examples/workflow-selection.md`
+選好後，使用 `/ot:<command>` 讀取對應的 workflow command 取得完整執行指引（括號中為 init-workflow.js 使用的 workflow type）。💡 邊界情況範例：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/auto/examples/workflow-selection.md`
 
 ## 16 個 Stage Agent 清單
 
@@ -71,7 +71,7 @@ argument-hint: "[需求描述，例如：新增使用者認證功能]"
 
 Workflow 開始時 📋 MUST 使用 TaskCreate 為每個 stage 建立任務，讓使用者能看到進度。
 
-- **建立時機**：workflow skill 讀取完成後，委派第一個 agent 之前
+- **建立時機**：workflow command 讀取完成後，委派第一個 agent 之前
 - **命名規則**：subject 用 `[STAGE] 描述`（如 `[PLAN] 規劃`），activeForm 用進行中語態（如 `規劃中`）
 - **狀態同步**：委派前 → `in_progress`；完成後 → `completed`；並行 stage 同時設為 `in_progress`
 

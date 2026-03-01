@@ -1,7 +1,6 @@
 ---
 name: diagnose
 description: 獨立診斷。委派 debugger agent 分析錯誤根因，只診斷不修碼，產出含假設驗證的 Handoff。
-disable-model-invocation: true
 ---
 
 # 診斷（Diagnose）

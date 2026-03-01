@@ -1,7 +1,6 @@
 ---
 name: security
 description: 純安全掃描工作流。只委派 security-reviewer agent 執行 OWASP Top 10 安全掃描。
-disable-model-invocation: true
 ---
 
 # 純安全掃描（Security Only）

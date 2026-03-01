@@ -1,7 +1,6 @@
 ---
 name: standard
 description: 標準功能開發工作流。PLAN → ARCH → TEST:spec → DEV → [REVIEW + TEST:verify] → DOCS。適用於中型新功能。
-disable-model-invocation: true
 ---
 
 # 標準功能開發（Standard）

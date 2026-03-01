@@ -1,7 +1,6 @@
 ---
 name: quick
 description: 快速開發工作流。DEV 後並行執行 REVIEW 和 TEST，適用於小 bug 修復和簡單功能。
-disable-model-invocation: true
 ---
 
 # 快速開發（Quick）

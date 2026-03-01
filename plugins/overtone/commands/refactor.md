@@ -1,7 +1,6 @@
 ---
 name: refactor
 description: 重構工作流。ARCH → TEST:spec → DEV → [REVIEW + TEST:verify]。先設計再重構，確保品質不下降。
-disable-model-invocation: true
 ---
 
 # 重構（Refactor）

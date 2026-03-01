@@ -2,6 +2,7 @@
 name: design
 description: UI/UX 設計。詢問風格偏好後委派 designer agent，利用 ui-ux-pro-max 知識庫生成設計系統與 HTML Mockup 預覽。
 argument-hint: "[設計需求，例如：Dashboard 新增即時通知面板]"
+disable-model-invocation: true
 allowed-tools: Read, Grep, Glob, AskUserQuestion, Task
 ---
 

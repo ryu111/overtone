@@ -1,7 +1,6 @@
 ---
 name: db-review
 description: 資料庫審查。委派 database-reviewer agent 審查 SQL 效能、索引策略、migration 安全性、N+1 查詢。
-disable-model-invocation: true
 ---
 
 # 資料庫審查（DB Review）

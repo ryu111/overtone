@@ -1,7 +1,6 @@
 ---
 name: clean
 description: 死碼清理。委派 refactor-cleaner agent 使用 knip/depcheck 偵測並清理未使用的 exports、依賴和檔案。
-disable-model-invocation: true
 ---
 
 # 死碼清理（Clean）

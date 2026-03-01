@@ -1,7 +1,6 @@
 ---
 name: review
 description: 純程式碼審查工作流。只委派 code-reviewer agent 審查目前的程式碼變更。
-disable-model-invocation: true
 ---
 
 # 純審查（Review Only）

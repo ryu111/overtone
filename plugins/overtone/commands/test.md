@@ -1,7 +1,6 @@
 ---
 name: test
 description: 獨立測試。委派 tester agent 執行 BDD spec 撰寫或測試驗證，支援 spec/verify 兩種模式。
-disable-model-invocation: true
 ---
 
 # 測試（Test）

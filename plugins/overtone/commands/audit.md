@@ -1,6 +1,7 @@
 ---
 name: audit
 description: 系統健康檢查。執行偵測腳本分析系統衛生狀態，回報問題並給出修復建議。
+disable-model-invocation: true
 ---
 
 # /ot:audit — 系統健康檢查

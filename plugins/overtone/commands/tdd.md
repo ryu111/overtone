@@ -1,7 +1,6 @@
 ---
 name: tdd
 description: 測試驅動開發工作流。TEST:spec → DEV → TEST:verify。先寫行為規格，再實作，最後驗證。
-disable-model-invocation: true
 ---
 
 # 測試驅動開發（TDD）

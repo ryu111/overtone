@@ -1,7 +1,6 @@
 ---
 name: debug
 description: 除錯工作流。DEBUG → DEV → TEST。先診斷根因，再修復，最後驗證。
-disable-model-invocation: true
 ---
 
 # 除錯（Debug）

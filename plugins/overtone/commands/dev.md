@@ -1,7 +1,6 @@
 ---
 name: dev
 description: 單步開發工作流。只委派 developer agent 完成程式碼修改，適用於一行修改、改設定、小改動。
-disable-model-invocation: true
 ---
 
 # 單步開發（Single）

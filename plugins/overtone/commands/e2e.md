@@ -1,7 +1,6 @@
 ---
 name: e2e
 description: 純 E2E 測試工作流。只委派 e2e-runner agent 執行端對端自動化測試。
-disable-model-invocation: true
 ---
 
 # 純 E2E 測試（E2E Only）

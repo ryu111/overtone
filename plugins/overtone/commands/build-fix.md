@@ -1,7 +1,6 @@
 ---
 name: build-fix
 description: 修構建錯誤工作流。只委派 build-error-resolver agent 用最小修改修復編譯和構建錯誤。
-disable-model-invocation: true
 ---
 
 # 修構建錯誤（Build Fix）

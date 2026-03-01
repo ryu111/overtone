@@ -1,12 +1,12 @@
 # Overtone 現況
 
-> 最後更新：2026-03-02 | Plugin 版本：0.27.8
+> 最後更新：2026-03-02 | Plugin 版本：0.28.0
 
 ## 版本狀態
 
 | 版本 | 狀態 | 說明 |
 |------|------|------|
-| V1 | 進行中 | 1351 pass，0 fail，核心功能完整 + S15b Skill/Command 正規化完成（15 skills + 27 commands） |
+| V1 | 進行中 | 1380 pass，0 fail，核心功能完整 + 指令鏈修復完成（workflow command 可呼叫性 + 術語一致性） |
 | V2 | 規劃中 | 延後 |
 
 ## 核心指標
@@ -16,7 +16,7 @@
 | Agent 數量 | 17（含 grader） |
 | Stage 數量 | 16 |
 | Workflow 模板 | 18 |
-| 測試通過 | 1351 pass / 0 fail |
+| 測試通過 | 1380 pass / 0 fail |
 | 測試檔案 | 68 個 |
 | Hook 數量 | 11 個 |
 | Skill 數量 | 15（7 knowledge domain + orchestrator + pm + specs + 5 utility-with-refs） |
@@ -24,9 +24,9 @@
 
 ## 近期變更（最近 3 筆）
 
+- **[0.28.0] 2026-03-02**：指令鏈修復 — 16 個 workflow commands 移除 disable-model-invocation 讓 auto 能路由 + pm 可呼叫性修復 + issue/SKILL.md 斷鏈路徑 + 「workflow skill」→「workflow command」全面術語同步 + 29 個 guard tests → 1380 pass
 - **[0.27.8] 2026-03-02**：S15b 迭代 7-8 — 建立 commands/ 目錄，27 個操作型 skills 移到 commands/（14 stage shortcuts + 7 workflow pipelines + 6 utilities），實現 Skill（知識）vs Command（操作）物理分離 → 1351 pass
 - **[0.27.6] 2026-03-02**：S15b 迭代 4 — commit-convention + code-review knowledge domain skills，ref-* 前綴全部清零（7→0）→ 1351 pass
-- **[0.27.5] 2026-03-02**：S15b 迭代 3 — security-kb + database + dead-code knowledge domain skills → 1344 pass
 
 ## 已知問題
 

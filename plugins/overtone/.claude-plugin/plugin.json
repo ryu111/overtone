@@ -1,13 +1,7 @@
 {
   "name": "ot",
-  "version": "0.27.8",
+  "version": "0.28.0",
   "description": "Overtone — 裝上 Claude Code，就像有了一個開發團隊。",
-  "commands": [
-    "./commands/"
-  ],
-  "skills": [
-    "./skills/"
-  ],
   "agents": [
     "./agents/product-manager.md",
     "./agents/planner.md",

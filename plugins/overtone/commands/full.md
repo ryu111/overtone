@@ -1,7 +1,6 @@
 ---
 name: full
 description: 完整功能開發工作流。PLAN → ARCH → DESIGN → TEST:spec → DEV → [REVIEW + TEST:verify] → [QA + E2E] → DOCS。適用於大型跨模組功能。
-disable-model-invocation: true
 ---
 
 # 完整功能開發（Full）

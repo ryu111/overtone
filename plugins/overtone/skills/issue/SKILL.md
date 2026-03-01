@@ -123,11 +123,7 @@ try {
 "
 ```
 
-然後讀取對應 workflow skill 開始執行：
-
-```
-${CLAUDE_PLUGIN_ROOT}/skills/<workflowType>/SKILL.md
-```
+然後讀取對應 workflow command 開始執行：`/ot:<workflowType>`
 
 將 Issue title 和 body 作為使用者需求輸入，傳遞給第一個 stage agent。
 
@@ -140,4 +136,4 @@ ${CLAUDE_PLUGIN_ROOT}/skills/<workflowType>/SKILL.md
 - ✅ workflow 已初始化
 - ✅ Issue context 已注入 proposal.md（非 single workflow）
 - ✅ issueNumber 已記錄到 workflow.json
-- ✅ 對應 workflow skill 已讀取並開始執行
+- ✅ 對應 workflow command 已讀取並開始執行
