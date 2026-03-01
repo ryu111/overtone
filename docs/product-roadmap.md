@@ -35,7 +35,7 @@
 |:----:|------|------|:----:|
 | S1 | 盤點遷移 + 效率優化 | 5 項平台能力採用 + Config API 統一設定管理（v0.20.0 + v0.21.0） | ✅ 完成 |
 | S2 | 自動偵測機制 | health-check 新增 platform-drift 偵測項（第 6 項） | ✅ 完成 |
-| S3 | 平台差異追蹤 | platform.md 標注 adopted/evaluated/n-a 狀態，增量式追蹤 | ⚪ |
+| S3 | 平台差異追蹤 | platform.md 標注 adopted/evaluated/n-a 狀態，增量式追蹤 | ✅ 完成 |
 | S4 | 全面能力評估 | 逐一評估 Gap Analysis 13 項，決定採用/不採用 | ⚪ |
 
 ### S1 詳細項目

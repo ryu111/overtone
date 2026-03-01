@@ -1,6 +1,6 @@
 # Claude Code 平台能力完整參考
 
-> 最後更新：2026-02-28 | 基於 Claude Code 官方文件
+> 最後更新：2026-03-01 | 基於 Claude Code 官方文件
 
 本文件統整 Claude Code 平台提供的**所有** plugin 開發能力，並標注 Overtone 的使用狀態。
 
@@ -10,7 +10,7 @@
 
 ## 一、Hook Events（17 個）
 
-Overtone 使用 7/17 個。
+Overtone 使用 9/17 個。
 
 ### 事件總表
 
@@ -21,7 +21,7 @@ Overtone 使用 7/17 個。
 | 3 | `PreToolUse` | tool 執行前 | ✅ | tool name | ✅ pre-task.js (Task) |
 | 4 | `PermissionRequest` | 權限對話框顯示 | ✅ | tool name | ⬜ |
 | 5 | `PostToolUse` | tool 成功完成後 | ❌ | tool name | ✅ post-use.js |
-| 6 | `PostToolUseFailure` | tool 失敗後 | ❌ | tool name | ⬜ |
+| 6 | `PostToolUseFailure` | tool 失敗後 | ❌ | tool name | ✅ post-use-failure.js |
 | 7 | `Notification` | 通知發送 | ❌ | notification type | ⬜ |
 | 8 | `SubagentStart` | subagent 生成 | ❌ | agent type | ⬜ |
 | 9 | `SubagentStop` | subagent 完成 | ✅ | agent type | ✅ on-stop.js |
@@ -32,13 +32,13 @@ Overtone 使用 7/17 個。
 | 14 | `WorktreeCreate` | worktree 建立 | ✅ | ❌ | ⬜ |
 | 15 | `WorktreeRemove` | worktree 移除 | ❌ | ❌ | ⬜ |
 | 16 | `PreCompact` | context 壓縮前 | ❌ | manual/auto | ✅ pre-compact.js |
-| 17 | `SessionEnd` | session 終止 | ❌ | reason | ⚡ |
+| 17 | `SessionEnd` | session 終止 | ❌ | reason | ✅ on-session-end.js |
 
 ### Hook Handler 類型（4 種）
 
 | 類型 | 說明 | Overtone |
 |------|------|:--------:|
-| `command` | 執行 shell 命令 | ✅ 全部 7 個 |
+| `command` | 執行 shell 命令 | ✅ 全部 9 個 |
 | `http` | POST 到遠端端點 | ⬜ |
 | `prompt` | LLM 單輪評估（`ok: true/false`） | ⬜ |
 | `agent` | 完整 agentic 驗證（有工具存取） | ⬜ |
@@ -250,12 +250,12 @@ stdin: { reason: "clear|logout|prompt_input_exit|bypass_permissions_disabled|oth
 | `name` | string | ✅ | — | 唯一識別符（kebab-case） | ✅ |
 | `description` | string | ✅ | — | 觸發條件描述 | ✅ |
 | `model` | string | | inherit | `opus`/`sonnet`/`haiku`/`inherit` | ✅ |
-| `tools` | array | | 繼承全部 | 工具白名單 | ✅ 部分 |
-| `disallowedTools` | array | | 無 | 工具黑名單 | ⬜ |
+| `tools` | array | | 繼承全部 | 工具白名單 | ⚠️ 已棄用（S1 遷移到 disallowedTools） |
+| `disallowedTools` | array | | 無 | 工具黑名單 | ✅ |
 | `permissionMode` | string | | default | 權限模式 | ✅ bypassPermissions |
 | `color` | string | | 無 | UI 顏色 | ✅ |
 | `maxTurns` | number | | 無限 | 最大回合數 | ✅ |
-| `skills` | array | | 無 | 預載入的 skill 名稱 | ⚡ |
+| `skills` | array | | 無 | 預載入的 skill 名稱 | ✅ |
 | `mcpServers` | array/obj | | 繼承 | 專屬 MCP 伺服器 | ⬜ |
 | `memory` | string | | 無 | 跨 session 記憶（`user`/`project`/`local`） | ⚡ |
 | `background` | boolean | | false | 預設背景執行 | ⬜ |
@@ -585,23 +585,28 @@ stdin 提供完整 session 狀態（model、cost、context window、vim mode 等
 
 ## 七、Overtone Gap 分析
 
+### ✅ 已採用
+
+| # | 能力 | 說明 | 採用版本 |
+|---|------|------|---------|
+| 1 | **Agent `skills` 預載** | 把 handoff-protocol、bdd-spec-guide 等 reference 直接預載入 agent | v0.20.0 |
+| 2 | **`SessionEnd` hook** | session 結束清理、Dashboard 通知、記憶持久化 | v0.20.0 |
+| 3 | **PreToolUse `updatedInput`** | 修改 Task prompt，自動注入 workflow context | v0.20.0 |
+| 4 | **Agent `disallowedTools`** | 黑名單比白名單更靈活，取代舊 `tools` 白名單 | v0.20.0 |
+
 ### ⚡ 高價值未用能力
 
 | # | 能力 | 說明 | 預估影響 |
 |---|------|------|---------|
 | 1 | **Agent `memory`** | 跨 session 知識累積。developer 記住 coding style，reviewer 記住 anti-patterns | 可部分取代 Instinct |
-| 2 | **Agent `skills` 預載** | 把 handoff-protocol、bdd-spec-guide 等 reference 直接預載入 agent | 減少 agent 自行讀取的 turns |
-| 3 | **Agent `isolation: worktree`** | mul-dev 並行的技術前提，消除 git 衝突 | Phase 3 並行 dev |
-| 4 | **Skill `context: fork`** | 大型 skill 在隔離 context 執行 | 降低主 context 污染 |
-| 5 | **Skill 動態注入 `!`command``** | auto/SKILL.md 動態注入 workflow state | 減少 on-submit hook 負擔 |
-| 6 | **`SessionEnd` hook** | session 結束清理、Dashboard 通知、記憶持久化 | 補完三點記憶架構 |
-| 7 | **`TaskCompleted` hook** | Task 完成前做品質門檻檢查 | 強化品質守衛 |
-| 8 | **PreToolUse `updatedInput`** | 修改 Task prompt，自動注入 workflow context | 減少 Main Agent 手動注入 |
-| 9 | **`prompt`/`agent` hook 類型** | LLM 驗證 + agentic 檢查 | 更靈活的品質門檻 |
-| 10 | **Agent `disallowedTools`** | 黑名單比白名單更靈活 | 簡化 agent 工具設定 |
-| 11 | **`opusplan` 混合模式** | Opus 規劃 + Sonnet 執行，降低成本同時保持品質 | 降低 pipeline 成本 |
-| 12 | **`CLAUDE_CODE_EFFORT_LEVEL`** | 按任務複雜度動態調節 thinking 深度 | 優化速度/成本 |
-| 13 | **`sonnet[1m]` 1M context** | 超大 context window，適合大型 codebase 分析 | 深度分析場景 |
+| 2 | **Agent `isolation: worktree`** | mul-dev 並行的技術前提，消除 git 衝突 | Phase 3 並行 dev |
+| 3 | **Skill `context: fork`** | 大型 skill 在隔離 context 執行 | 降低主 context 污染 |
+| 4 | **Skill 動態注入 `!`command``** | auto/SKILL.md 動態注入 workflow state | 減少 on-submit hook 負擔 |
+| 5 | **`TaskCompleted` hook** | Task 完成前做品質門檻檢查 | 強化品質守衛 |
+| 6 | **`prompt`/`agent` hook 類型** | LLM 驗證 + agentic 檢查 | 更靈活的品質門檻 |
+| 7 | **`opusplan` 混合模式** | Opus 規劃 + Sonnet 執行，降低成本同時保持品質 | 降低 pipeline 成本 |
+| 8 | **`CLAUDE_CODE_EFFORT_LEVEL`** | 按任務複雜度動態調節 thinking 深度 | 優化速度/成本 |
+| 9 | **`sonnet[1m]` 1M context** | 超大 context window，適合大型 codebase 分析 | 深度分析場景 |
 
 ### ❌ 不適用 / 低價值
 
@@ -618,22 +623,22 @@ stdin 提供完整 session 狀態（model、cost、context window、vim mode 等
 
 ## 八、建議行動優先順序
 
-### Phase 2 可順手驗證（低成本）
+### ✅ Phase 2 已完成（v0.20.0）
 
-1. **Agent `skills` 預載** — 在 developer.md 加 `skills: [handoff-protocol]` 驗證效果
-2. **Agent `disallowedTools`** — 替代現有 `tools` 白名單，更簡潔
-3. **SessionEnd hook** — 空 hook 測試穩定性
-4. **Skill 動態注入** — 在測試 skill 中試 `!`node script.js``
+1. ~~**Agent `skills` 預載**~~ — 已採用，reference skills 預載入相關 agent
+2. ~~**Agent `disallowedTools`**~~ — 已採用，10 個 agent 完成白名單→黑名單遷移
+3. ~~**SessionEnd hook**~~ — 已採用，on-session-end.js 上線
+4. ~~**PreToolUse `updatedInput`**~~ — 已採用，PreToolUse hook 自動注入 workflow context
 
-### Phase 2 可順手驗證（Model 相關）
+### Phase 2 待驗證（低成本）
 
-5. **`CLAUDE_CODE_EFFORT_LEVEL`** — 為不同 agent 設定不同 effort（haiku agent 用 low，opus agent 用 high）
-6. **`opusplan` 模式** — 測試是否適合替代 standard workflow 的 PLAN(opus)+DEV(sonnet) 模式
+1. **Skill 動態注入** — 在測試 skill 中試 `!`node script.js``
+2. **`CLAUDE_CODE_EFFORT_LEVEL`** — 為不同 agent 設定不同 effort（haiku agent 用 low，opus agent 用 high）
+3. **`opusplan` 模式** — 測試是否適合替代 standard workflow 的 PLAN(opus)+DEV(sonnet) 模式
 
 ### Phase 3 可評估（需設計）
 
-7. **Agent `memory`** — 評估是否取代/補充 Instinct
-8. **Agent `isolation: worktree`** — mul-dev 並行前提
-9. **`TaskCompleted` hook** — 品質門檻自動化
-10. **PreToolUse `updatedInput`** — 自動注入 workflow context
-11. **`sonnet[1m]` 1M context** — 大型 codebase 全面分析場景
+4. **Agent `memory`** — 評估是否取代/補充 Instinct
+5. **Agent `isolation: worktree`** — mul-dev 並行前提
+6. **`TaskCompleted` hook** — 品質門檻自動化
+7. **`sonnet[1m]` 1M context** — 大型 codebase 全面分析場景
