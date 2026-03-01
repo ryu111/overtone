@@ -121,7 +121,7 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/init-workflow.js full ${CLAUDE_SESSION_ID}
 
 📋 MUST 在 DEV 前執行 TEST:spec。含 DESIGN 階段的 BDD spec 應涵蓋 UI 行為。
 
-💡 BDD 語法與最佳實踐：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/auto/references/bdd-spec-guide.md`
+💡 BDD 語法與最佳實踐：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/testing/references/bdd-spec-guide.md`
 
 ## 失敗處理
 

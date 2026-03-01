@@ -24,8 +24,8 @@ disable-model-invocation: true
 - **產出**：`specs/features/in-progress/{featureName}/bdd.md` 中的 GIVEN/WHEN/THEN 行為規格
 - 📋 每個 Feature 至少 3 個 Scenario（happy path + edge case + error）
 
-💡 BDD 完整方法論：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/test/references/bdd-methodology.md`
-💡 BDD spec 範例：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/test/examples/bdd-spec-samples.md`
+💡 BDD 完整方法論：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/testing/references/bdd-methodology.md`
+💡 BDD spec 範例：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/testing/examples/bdd-spec-samples.md`
 
 **Verify 模式**：
 - **輸入**：BDD spec（`specs/features/in-progress/{featureName}/bdd.md`）+ 程式碼變更

@@ -281,16 +281,16 @@ describe('Feature 1a: disallowedTools 遷移', () => {
 
 describe('Feature 1b: Agent skills 預載（agent frontmatter）', () => {
 
-  // Scenario 1b-5: tester 預載 ref-test-strategy
+  // Scenario 1b-5: tester 預載 testing skill
   describe('Scenario 1b-5: tester 的 skills 欄位', () => {
     test('tester frontmatter 含 skills 欄位', () => {
       const fm = agentFrontmatters['tester'];
       expect(fm.skills).toBeDefined();
     });
 
-    test('tester skills 包含 ref-test-strategy', () => {
+    test('tester skills 包含 testing', () => {
       const fm = agentFrontmatters['tester'];
-      expect(fm.skills).toContain('ref-test-strategy');
+      expect(fm.skills).toContain('testing');
     });
 
     test('tester skills 不包含已刪除的 ref-bdd-guide', () => {
@@ -350,11 +350,16 @@ describe('Feature 1b: Agent skills 預載（agent frontmatter）', () => {
     });
   });
 
-  // Scenario 1b-8: qa 和 doc-updater 無 skills 欄位
-  describe('Scenario 1b-8: qa 和 doc-updater 不含 skills 欄位', () => {
-    test('qa frontmatter 不含 skills 欄位', () => {
+  // Scenario 1b-8: qa 預載 testing skill；doc-updater 無 skills 欄位
+  describe('Scenario 1b-8: qa 含 testing skill；doc-updater 不含 skills 欄位', () => {
+    test('qa frontmatter 含 skills 欄位', () => {
       const fm = agentFrontmatters['qa'];
-      expect(fm.skills).toBeUndefined();
+      expect(fm.skills).toBeDefined();
+    });
+
+    test('qa skills 包含 testing', () => {
+      const fm = agentFrontmatters['qa'];
+      expect(fm.skills).toContain('testing');
     });
 
     test('doc-updater frontmatter 不含 skills 欄位', () => {

@@ -76,25 +76,25 @@ function estimateTokens(filePath) {
 
 describe('Feature 1b: ref skill SKILL.md frontmatter', () => {
 
-  // Scenario 1b-1: ref-test-strategy 具備正確設定
-  describe('Scenario 1b-1: ref-test-strategy SKILL.md frontmatter', () => {
-    const skillPath = join(SKILLS_DIR, 'ref-test-strategy', 'SKILL.md');
+  // Scenario 1b-1: testing skill 具備正確設定
+  describe('Scenario 1b-1: testing SKILL.md frontmatter', () => {
+    const skillPath = join(SKILLS_DIR, 'testing', 'SKILL.md');
 
-    test('ref-test-strategy SKILL.md 檔案存在', () => {
+    test('testing SKILL.md 檔案存在', () => {
       expect(fs.existsSync(skillPath)).toBe(true);
     });
 
-    test('ref-test-strategy frontmatter 包含 name: ref-test-strategy', () => {
+    test('testing frontmatter 包含 name: testing', () => {
       const fm = parseFrontmatter(skillPath);
-      expect(fm.name).toBe('ref-test-strategy');
+      expect(fm.name).toBe('testing');
     });
 
-    test('ref-test-strategy frontmatter 包含 disable-model-invocation: true', () => {
+    test('testing frontmatter 包含 disable-model-invocation: true', () => {
       const fm = parseFrontmatter(skillPath);
       expect(fm['disable-model-invocation']).toBe(true);
     });
 
-    test('ref-test-strategy frontmatter 包含 user-invocable: false', () => {
+    test('testing frontmatter 包含 user-invocable: false', () => {
       const fm = parseFrontmatter(skillPath);
       expect(fm['user-invocable']).toBe(false);
     });
@@ -150,7 +150,7 @@ describe('Feature 1b: ref skill SKILL.md frontmatter', () => {
 
   // Scenario 1b-4: 已刪除的 ref-* skill 不存在
   describe('Scenario 1b-4: 已刪除的 ref-* skill 目錄不存在', () => {
-    const deletedSkills = ['ref-bdd-guide', 'ref-failure-handling', 'ref-wording-guide', 'ref-agent-prompt-patterns'];
+    const deletedSkills = ['ref-bdd-guide', 'ref-failure-handling', 'ref-wording-guide', 'ref-agent-prompt-patterns', 'ref-test-strategy'];
 
     for (const skillName of deletedSkills) {
       test(`${skillName} 目錄已被刪除`, () => {
@@ -163,7 +163,7 @@ describe('Feature 1b: ref skill SKILL.md frontmatter', () => {
   // Scenario 1b-9: ref skill 內容不超過 3000 字元（約 750 token）
   // 新 ref-* skill 來自 CBP，內容較舊版本豐富，上限調整為 3000 字元
   describe('Scenario 1b-9: ref skill 內容精簡在 3000 字元以內', () => {
-    const refSkills = ['ref-test-strategy', 'ref-pr-review-checklist', 'ref-commit-convention'];
+    const refSkills = ['ref-pr-review-checklist', 'ref-commit-convention'];
 
     for (const skillName of refSkills) {
       test(`${skillName} 的有效內容不超過 3000 字元`, () => {

@@ -9,6 +9,8 @@ disallowedTools:
   - Edit
   - Task
   - NotebookEdit
+skills:
+  - testing
 ---
 
 # 🏁 品質驗證者

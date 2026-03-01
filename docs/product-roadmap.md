@@ -1,6 +1,6 @@
 # Overtone Product Roadmap
 
-> 最後更新：2026-03-01 | 當前 Phase：2（外部驗證）
+> 最後更新：2026-03-02 | 當前 Phase：2（外部驗證）
 
 ## 產品定位
 
@@ -107,9 +107,9 @@
 
 **9 次迭代計畫**：
 
-| # | 名稱 | 範圍 | Workflow |
-|---|------|------|:--------:|
-| 1 | PoC: testing | 合併 BDD/testing 知識 → testing skill | quick |
+| # | 名稱 | 範圍 | Workflow | 狀態 |
+|---|------|------|:--------:|:----:|
+| 1 | PoC: testing | 合併 BDD/testing 知識 → testing skill | quick | ✅ v0.27.3 |
 | 2 | workflow-core | 提取 auto/refs 非選擇器知識 | quick |
 | 3 | security + database + dead-code | 3 個 knowledge domain | quick |
 | 4 | code-review + commit | 吸收 2 個 ref-* | quick |

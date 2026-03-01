@@ -75,7 +75,7 @@ REVIEW + TEST:verify 屬於 `quality` 並行群組，📋 MUST 同時委派。
 
 📋 MUST 在 DEV 前執行 TEST:spec。重構的 BDD spec 聚焦在「行為不變」的驗證。
 
-💡 BDD 語法與最佳實踐：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/auto/references/bdd-spec-guide.md`
+💡 BDD 語法與最佳實踐：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/testing/references/bdd-spec-guide.md`
 
 ## 失敗處理
 

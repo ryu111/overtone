@@ -1,10 +1,3 @@
----
-name: ref-test-strategy
-description: 測試策略五階段快速參考：Assess → Run → Improve → Validate → Report，含覆蓋率分析和 flaky test 偵測（源自 Anthropic 官方 claude-code-best-practices）。
-disable-model-invocation: true
-user-invocable: false
----
-
 # 測試策略五階段快速參考
 
 > 來源：Anthropic 官方 `awattar/claude-code-best-practices`

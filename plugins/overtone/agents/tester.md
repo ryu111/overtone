@@ -6,7 +6,7 @@ permissionMode: bypassPermissions
 color: pink
 maxTurns: 50
 skills:
-  - ref-test-strategy
+  - testing
 ---
 
 # 🧪 測試者

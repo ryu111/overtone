@@ -2,6 +2,76 @@
 
 所有重要變更記錄於此文件。
 
+## [0.27.3] - 2026-03-02（S15b 迭代 1 PoC — testing knowledge domain）
+
+### 功能新增
+- **testing knowledge domain skill**：合併 4 處 BDD/testing 知識（auto/bdd-spec-guide、test/references、ref-test-strategy）至單一 testing skill
+  - 消費者：tester、qa agents
+  - 內容：BDD 規格寫作、測試策略、失敗排查
+
+### 架構改進
+- **ref-* skill 整理**：刪除 ref-test-strategy，ref-* 從 3 個 → 2 個（ref-commit-convention、ref-pr-review-checklist 保留）
+- **S15b 迭代 1 完成**：正規化計畫 9 次迭代中的第 1 次，38 個 skills → ~16 knowledge domain + ~27 commands 的長期目標啟動
+
+### 測試
+- 測試通過：1336 pass / 0 fail
+- 無新增測試（重構範疇）
+
+### 文檔
+- 更新 docs/status.md：版本狀態、核心指標（ref-* 從 3→2）、近期變更
+- 更新 docs/product-roadmap.md：S15b 迭代 1 標記 ✅ v0.27.3、最後更新日期
+
+---
+
+## [0.27.2] - 2026-03-01（ref-* skill 整理 + Agent Frontmatter 同步）
+
+### 功能改進
+- **ref-* skill 整理**：刪除 4 個副本 ref-*（ref-bdd-guide、ref-failure-handling、ref-wording-guide、ref-agent-prompt-patterns），保留 3 個新型 ref-* 並設定消費者
+  - ref-test-strategy → tester
+  - ref-pr-review-checklist → code-reviewer
+  - ref-commit-convention → developer
+- **Agent frontmatter 同步**：tester、code-reviewer、developer 等 5 個 agent 更新 `skills` 欄位指向新 ref-*
+
+### 測試
+- 測試通過：1336 pass / 0 fail
+
+---
+
+## [0.27.1] - 2026-03-01（CBP 交叉比對 — ref-* 建立 + 模板同步）
+
+### 功能新增
+- **Reference Skills（3 個新增）**：
+  - ref-commit-convention：引用 CLAUDE.md + CBP commit style
+  - ref-pr-review-checklist：Anthropic 官方審查清單
+  - ref-test-strategy：BDD + 測試策略最佳實踐
+- **.github/ 模板新增**：ISSUE_TEMPLATE、PULL_REQUEST_TEMPLATE
+- **product-roadmap.md 更新**：S15-S17 計畫骨架
+
+### 測試
+- 測試通過：1331 pass（+基準）
+
+---
+
+## [0.27.0] - 2026-03-01（核心精鍊 3 次迭代）
+
+### 迭代 1：表層清理
+- 刪除 grader.js（已遷移為 agent）
+- state/parse-result/timeline 風格統一
+
+### 迭代 2：模組化提取
+- on-stop.js 476 行 → 357 行
+- 提取到 lib/ 的 4 個輔助函式：formatSize、findActualStageKey、checkParallelConvergence、getNextStageHint
+
+### 迭代 3：測試覆蓋補強
+- JSONL 損壞行容錯
+- passAtK 獨立測試
+- PM 多迭代連續執行規則驗證
+
+### 測試
+- 測試通過：1331 pass
+
+---
+
 ## [0.21.0] - 2026-03-01（Config API 統一設定管理）
 
 ### 功能新增

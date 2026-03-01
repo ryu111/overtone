@@ -102,7 +102,7 @@ REVIEW + TEST:verify + SECURITY 屬於 `secure-quality` 並行群組，📋 MUST
 
 📋 MUST 在 DEV 前執行 TEST:spec。安全功能的 BDD spec 應涵蓋正常認證流程、無效 token 處理、注入攻擊防護、權限越界嘗試。
 
-💡 安全 BDD spec 要求與範例：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/auto/references/bdd-spec-guide.md`
+💡 安全 BDD spec 要求與範例：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/testing/references/bdd-spec-guide.md`
 
 ## 失敗處理
 

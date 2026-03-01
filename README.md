@@ -90,12 +90,12 @@ lint 0 error + test 0 fail + review PASS → 才算完成
 
 | 項目 | 內容 |
 |------|------|
-| Plugin 版本 | 0.21.0 |
+| Plugin 版本 | 0.27.3 |
 | Agent 數量 | 17（含 grader） |
 | Workflow 模板 | 18 |
-| Hook 數量 | 9 |
+| Hook 數量 | 11 |
 | Skill 數量 | 38 |
-| 測試覆蓋 | 1073 pass（54 個測試檔） |
+| 測試覆蓋 | 1336 pass（68 個測試檔） |
 | Runtime | Bun |
 | 前端 | htmx + Alpine.js（SSE 即時推送） |
 | 遠端控制 | EventBus + Adapter（Dashboard + Telegram） |
