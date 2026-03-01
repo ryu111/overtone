@@ -14,6 +14,7 @@ const fs = require('fs');
 const { PLUGIN_ROOT } = require('../helpers/paths');
 
 const SKILLS_DIR = join(PLUGIN_ROOT, 'skills');
+const COMMANDS_DIR = join(PLUGIN_ROOT, 'commands');
 
 // ── 輔助函式：解析 frontmatter ──
 
@@ -180,11 +181,12 @@ describe('Feature 1b: ref skill SKILL.md frontmatter', () => {
 
 describe('Feature: Skill 引用完整性驗證', () => {
 
-  // 共用輔助：收集所有 SKILL.md 中的靜態 💡 引用路徑（相對於 skills/）
+  // 共用輔助：收集所有 SKILL.md 和 command .md 中的靜態 💡 引用路徑（相對於 skills/）
   function collectSkillRefs() {
     const refPattern = /\$\{CLAUDE_PLUGIN_ROOT\}\/skills\/([^\`\s]+)/g;
     const refs = new Set();
 
+    // 掃描 skills/ 下的 SKILL.md
     const skillDirs = fs.readdirSync(SKILLS_DIR);
     for (const skillDir of skillDirs) {
       const skillPath = join(SKILLS_DIR, skillDir, 'SKILL.md');
@@ -193,9 +195,23 @@ describe('Feature: Skill 引用完整性驗證', () => {
       let m;
       while ((m = refPattern.exec(content)) !== null) {
         const refPath = m[1];
-        // 排除動態路徑（含 < > 或 { }）
         if (!refPath.includes('<') && !refPath.includes('{')) {
           refs.add(refPath);
+        }
+      }
+    }
+
+    // 掃描 commands/ 下的 .md（stage shortcuts、workflow pipelines 等）
+    if (fs.existsSync(COMMANDS_DIR)) {
+      const cmdFiles = fs.readdirSync(COMMANDS_DIR).filter(f => f.endsWith('.md'));
+      for (const cmdFile of cmdFiles) {
+        const content = fs.readFileSync(join(COMMANDS_DIR, cmdFile), 'utf8');
+        let m;
+        while ((m = refPattern.exec(content)) !== null) {
+          const refPath = m[1];
+          if (!refPath.includes('<') && !refPath.includes('{')) {
+            refs.add(refPath);
+          }
         }
       }
     }
@@ -243,8 +259,8 @@ describe('Feature: Skill 引用完整性驗證', () => {
     }
   });
 
-  // Scenario: 所有 reference/example 檔案至少被一個 SKILL.md 引用
-  test('所有 reference/example 檔案至少被一個 SKILL.md 引用', () => {
+  // Scenario: 所有 reference/example 檔案至少被一個 SKILL.md 或 command .md 引用
+  test('所有 reference/example 檔案至少被一個 SKILL.md 或 command 引用', () => {
     const refs = collectSkillRefs();
     const allFiles = collectReferenceFiles();
     const orphans = allFiles.filter(f => !refs.has(f));
