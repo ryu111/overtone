@@ -137,7 +137,7 @@ plugins/overtone/                # Plugin 根目錄
 └── observations.jsonl    # Instinct 觀察
 ```
 
-## Hook 架構（9 個，~1602 行 + config-api.js ~380 行）
+## Hook 架構（10 個，~1790 行 + config-api.js ~380 行）
 
 | 事件 | 職責 |
 |------|------|

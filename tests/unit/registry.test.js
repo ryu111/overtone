@@ -5,6 +5,7 @@ const {
   workflows,
   timelineEvents,
   effortLevels,
+  hookEvents,
 } = require('../../plugins/overtone/scripts/lib/registry');
 
 describe('registry.js 資料完整性', () => {
@@ -59,6 +60,35 @@ describe('registry.js 資料完整性', () => {
         expect(typeof key).toBe('string');
         expect(key.length).toBeGreaterThan(0);
       }
+    });
+  });
+
+  describe('hookEvents — 合法 hook event 名稱清單', () => {
+    test('hookEvents 存在且為陣列', () => {
+      expect(Array.isArray(hookEvents)).toBe(true);
+      expect(hookEvents.length).toBeGreaterThan(0);
+    });
+
+    test('hookEvents 包含 TaskCompleted', () => {
+      expect(hookEvents).toContain('TaskCompleted');
+    });
+
+    test('hookEvents 包含既有的 9 個事件', () => {
+      const expected = [
+        'SessionStart', 'SessionEnd',
+        'PreCompact',
+        'UserPromptSubmit',
+        'PreToolUse', 'PostToolUse', 'PostToolUseFailure',
+        'SubagentStop',
+        'Stop',
+      ];
+      for (const event of expected) {
+        expect(hookEvents).toContain(event);
+      }
+    });
+
+    test('hookEvents 共有 10 個事件', () => {
+      expect(hookEvents.length).toBe(10);
     });
   });
 

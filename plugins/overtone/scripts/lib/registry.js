@@ -32,6 +32,7 @@ const hookEvents = [
   'PreToolUse', 'PostToolUse', 'PostToolUseFailure',
   'SubagentStop',
   'Stop',
+  'TaskCompleted',  // S7 新增：品質門檻硬阻擋
 ];
 
 // 工作流模板（18 個）

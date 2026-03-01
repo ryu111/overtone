@@ -45,6 +45,12 @@
       "event": "Stop",
       "type": "command",
       "command": "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/session/on-stop.js"
+    },
+    {
+      "event": "TaskCompleted",
+      "type": "command",
+      "command": "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/task/on-task-completed.js",
+      "timeout": 60
     }
   ]
 }
