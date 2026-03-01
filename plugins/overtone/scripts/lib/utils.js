@@ -41,4 +41,22 @@ function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
 }
 
-module.exports = { atomicWrite, clamp };
+/**
+ * 格式化位元組數為人類可讀格式
+ *
+ * >= 1MB → '6.5MB'
+ * >= 1KB → '800KB'
+ * < 1KB  → '500B'
+ * null/undefined → '--'
+ *
+ * @param {number|null|undefined} bytes
+ * @returns {string}
+ */
+function formatSize(bytes) {
+  if (bytes === null || bytes === undefined) return '--';
+  if (bytes >= 1_000_000) return `${(bytes / 1_000_000).toFixed(1)}MB`;
+  if (bytes >= 1_000)     return `${Math.round(bytes / 1_000)}KB`;
+  return `${bytes}B`;
+}
+
+module.exports = { atomicWrite, clamp, formatSize };

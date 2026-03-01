@@ -12,13 +12,14 @@
  */
 
 const { readFileSync, statSync } = require('fs');
-const { readState, updateStateAtomic } = require('../../../scripts/lib/state');
+const { readState, updateStateAtomic, findActualStageKey, checkParallelConvergence, getNextStageHint } = require('../../../scripts/lib/state');
 const timeline = require('../../../scripts/lib/timeline');
 const instinct = require('../../../scripts/lib/instinct');
 const { stages, workflows, parallelGroups, retryDefaults } = require('../../../scripts/lib/registry');
 const paths = require('../../../scripts/lib/paths');
 const parseResult = require('../../../scripts/lib/parse-result');
 const { safeReadStdin, safeRun, getSessionId } = require('../../../scripts/lib/hook-utils');
+const { formatSize } = require('../../../scripts/lib/utils');
 
 // ── 主流程（只在直接執行時觸發，require 時不執行）──
 if (require.main === module) {
@@ -253,14 +254,14 @@ safeRun(() => {
     }
 
     // 並行群組收斂偵測
-    const convergence = checkParallelConvergence(updatedState);
+    const convergence = checkParallelConvergence(updatedState, parallelGroups);
     if (convergence) {
       messages.push(`🔄 並行群組 ${convergence.group} 全部完成`);
       timeline.emit(sessionId, 'parallel:converge', { group: convergence.group });
     }
 
     // 提示下一步
-    const nextHint = getNextStageHint(updatedState);
+    const nextHint = getNextStageHint(updatedState, { stages, parallelGroups });
     if (nextHint) {
       messages.push(`⏭️ 下一步：${nextHint}`);
 
@@ -294,68 +295,6 @@ safeRun(() => {
   process.exit(0);
 }, { result: '' });
 } // end require.main === module
-
-// ── 輔助函式 ──
-
-/**
- * 找到 state 中實際的 stage key（處理重複如 TEST → TEST:2）
- */
-function findActualStageKey(currentState, baseStage) {
-  const stageKeys = Object.keys(currentState.stages);
-
-  // 找正在 active 的
-  const active = stageKeys.find(
-    (k) => k === baseStage && currentState.stages[k].status === 'active'
-  );
-  if (active) return active;
-
-  // 找帶編號且 active 的
-  const activeNumbered = stageKeys.find(
-    (k) => k.startsWith(baseStage + ':') && currentState.stages[k].status === 'active'
-  );
-  if (activeNumbered) return activeNumbered;
-
-  // 找任何 pending 的（可能還沒標記 active）
-  const pending = stageKeys.find(
-    (k) => (k === baseStage || k.startsWith(baseStage + ':')) && currentState.stages[k].status === 'pending'
-  );
-  return pending || null;
-}
-
-/**
- * 檢查並行群組是否收斂
- */
-function checkParallelConvergence(currentState) {
-  for (const [group, members] of Object.entries(parallelGroups)) {
-    const stageKeys = Object.keys(currentState.stages);
-    const relevantKeys = stageKeys.filter((k) => {
-      const base = k.split(':')[0];
-      return members.includes(base);
-    });
-
-    if (relevantKeys.length < 2) continue;
-
-    const allCompleted = relevantKeys.every(
-      (k) => currentState.stages[k].status === 'completed'
-    );
-    if (allCompleted) return { group };
-  }
-  return null;
-}
-
-/**
- * 格式化位元組數為人類可讀格式
- * >= 1MB → '6.5MB'
- * >= 1KB → '800KB'
- * < 1KB  → '500B'
- * @param {number} bytes
- * @returns {string}
- */
-function formatSize(bytes) {
-  if (bytes >= 1_000_000) return `${(bytes / 1_000_000).toFixed(1)}MB`;
-  if (bytes >= 1_000)     return `${Math.round(bytes / 1_000)}KB`;
-  return `${bytes}B`;
-}
 
 /**
  * 判斷是否應該建議 compact
@@ -412,63 +351,6 @@ function shouldSuggestCompact({ transcriptPath, sessionId, thresholdBytes, minSt
     // 所有錯誤靜默降級
     return { suggest: false };
   }
-}
-
-/**
- * 根據當前狀態提示下一步
- *
- * 只有 currentStage 所在的並行群組才會觸發並行提示。
- * 例如 standard 的 [REVIEW + TEST:2] 只在 DEV 完成後才建議並行。
- */
-function getNextStageHint(currentState) {
-  const nextStage = currentState.currentStage;
-  if (!nextStage) return null;
-
-  // D2：若仍有 active agent，不推進到下一步，提示等待
-  const activeAgentKeys = Object.keys(currentState.activeAgents || {});
-  if (activeAgentKeys.length > 0) {
-    return `等待並行 agent 完成：${activeAgentKeys.join(', ')}`;
-  }
-
-  const allCompleted = Object.values(currentState.stages).every(
-    (s) => s.status === 'completed'
-  );
-  if (allCompleted) return null;
-
-  const base = nextStage.split(':')[0];
-  const def = stages[base];
-  if (!def) return `執行 ${nextStage}`;
-
-  // 只檢查 currentStage 所在的並行群組
-  const stageKeys = Object.keys(currentState.stages);
-  const nextIdx = stageKeys.indexOf(nextStage);
-
-  for (const [, members] of Object.entries(parallelGroups)) {
-    if (!members.includes(base)) continue;
-
-    // 從 currentStage 開始，找連續的 pending 且屬於同群組的 stages
-    const parallelCandidates = [];
-    for (let i = nextIdx; i < stageKeys.length; i++) {
-      const k = stageKeys[i];
-      const b = k.split(':')[0];
-      if (currentState.stages[k].status !== 'pending') break;
-      if (members.includes(b)) {
-        parallelCandidates.push(k);
-      } else {
-        break;
-      }
-    }
-
-    if (parallelCandidates.length > 1) {
-      const labels = parallelCandidates.map((k) => {
-        const b = k.split(':')[0];
-        return stages[b]?.emoji + ' ' + (stages[b]?.label || k);
-      });
-      return `並行委派 ${labels.join(' + ')}`;
-    }
-  }
-
-  return `委派 ${def.emoji} ${def.agent}（${def.label}）`;
 }
 
 // ── 測試用 export（require 時可直接測試輔助函式）──

@@ -19,6 +19,7 @@
 const { readFileSync, statSync } = require('fs');
 const { join } = require('path');
 const { homedir } = require('os');
+const { formatSize } = require('./lib/utils');
 
 // ── 路徑常數 ──
 
@@ -60,18 +61,6 @@ const WORKFLOW_LABELS = {
 };
 
 // ── 格式化工具 ──
-
-/**
- * 格式化檔案大小為 12.3MB / 456KB 格式
- * @param {number|null} bytes
- * @returns {string}
- */
-function formatSize(bytes) {
-  if (bytes === null || bytes === undefined) return '--';
-  if (bytes >= 1_000_000) return `${(bytes / 1_000_000).toFixed(1)}MB`;
-  if (bytes >= 1_000)     return `${Math.round(bytes / 1_000)}KB`;
-  return `${bytes}B`;
-}
 
 /**
  * 格式化百分比，超過閾值加色
