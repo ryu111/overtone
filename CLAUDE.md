@@ -160,7 +160,7 @@ bun test
 # 啟動 Dashboard 監控面板（port 7777）
 bun scripts/server.js
 
-# 系統健康檢查（6 項偵測：phantom-events、dead-exports、doc-code-drift、unused-paths、duplicate-logic、platform-drift）
+# 系統健康檢查（7 項偵測：phantom-events、dead-exports、doc-code-drift、unused-paths、duplicate-logic、platform-drift、doc-staleness）
 bun scripts/health-check.js
 
 # 驗證所有 15 個 agent 設定是否完整
@@ -195,4 +195,3 @@ bun scripts/init-workflow.js {workflowType} [{sessionId}]
 | `docs/status.md` | 現況快讀（版本狀態、核心指標、近期變更） |
 | `scripts/lib/registry.js` | SoT — 所有映射定義 |
 | `docs/reference/wording-guide.md` | 措詞正確性指南（決策樹 + 反模式 + 場景範例） |
-| `docs/reference/ecc-*.md` | ECC 架構分析（4 份參考） |

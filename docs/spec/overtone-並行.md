@@ -63,7 +63,11 @@ Stop hook 截獲 Claude 退出：
 | **D3 雙重失敗** | FAIL + REJECT 同時發生時缺乏明確優先順序 | TEST FAIL > REVIEW REJECT 優先，統一協調提示 |
 | **D4 並行硬編碼** | `parallelGroups` 無法自訂，所有 workflow 共用固定群組 | 移入 workflow 定義，各 workflow 透過 `parallelGroups` 欄位引用群組名 |
 
-詳見 `docs/reference/parallel-defects.md`。
+> **修復狀態**：4 項缺陷已全部處理（2026-02-26 分析，歸檔至 `docs/archive/parallel-defects.md`）
+> - D1 TOCTOU：現有 retry + atomicWrite 緩解，殘餘風險可接受
+> - D2 hint 過時：`getNextStageHint()` 已加 `activeAgents` 檢查
+> - D3 雙重失敗：TEST FAIL > REVIEW REJECT 優先順序已建立
+> - D4 並行硬編碼：已改為 per-workflow `parallelGroups` 欄位引用 `parallelGroupDefs`
 
 ### 靜態並行（registry 定義 + 動態推導）
 

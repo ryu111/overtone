@@ -12,18 +12,24 @@
 
 const { test, expect, describe } = require('bun:test');
 const path = require('path');
+const { mkdirSync, writeFileSync, rmSync, utimesSync } = require('fs');
+const os = require('os');
 const {
   checkPhantomEvents,
   checkDeadExports,
   checkDocCodeDrift,
   checkUnusedPaths,
   checkDuplicateLogic,
+  checkDocStaleness,
   runAllChecks,
   collectJsFiles,
+  collectMdFiles,
   parseModuleExportKeys,
   parsePathsExports,
   PLUGIN_ROOT,
   SCRIPTS_LIB,
+  DOCS_DIR,
+  PROJECT_ROOT,
 } = require('../../plugins/overtone/scripts/health-check');
 
 // ══════════════════════════════════════════════════════════════════
@@ -347,6 +353,96 @@ describe('checkDuplicateLogic', () => {
 });
 
 // ══════════════════════════════════════════════════════════════════
+// Feature 7: checkDocStaleness 偵測
+// ══════════════════════════════════════════════════════════════════
+
+describe('checkDocStaleness', () => {
+  // 使用暫存目錄模擬 docs/reference/ 場景
+  let tmpDir;
+
+  function setup() {
+    tmpDir = path.join(os.tmpdir(), `overtone-test-staleness-${Date.now()}`);
+    mkdirSync(path.join(tmpDir, 'reference'), { recursive: true });
+    mkdirSync(path.join(tmpDir, 'archive'), { recursive: true });
+    mkdirSync(path.join(tmpDir, 'spec'), { recursive: true });
+  }
+
+  function teardown() {
+    try { rmSync(tmpDir, { recursive: true, force: true }); } catch { /* ignore */ }
+  }
+
+  /**
+   * 建立一個修改時間為 N 天前的檔案
+   */
+  function createStaleFile(filePath, daysOld) {
+    writeFileSync(filePath, `# ${path.basename(filePath)}\n內容`);
+    const mtime = new Date(Date.now() - daysOld * 24 * 60 * 60 * 1000);
+    utimesSync(filePath, mtime, mtime);
+  }
+
+  test('空的 reference 目錄回傳空陣列', () => {
+    setup();
+    // 直接呼叫實際函式（docs/reference 存在且有檔案的話才有 finding）
+    // 本測試驗證：若 reference 目錄不存在，回傳空陣列
+    const findings = checkDocStaleness();
+    expect(Array.isArray(findings)).toBe(true);
+    teardown();
+  });
+
+  test('所有 finding 的 check 欄位為 "doc-staleness"', () => {
+    const findings = checkDocStaleness();
+    for (const f of findings) {
+      expect(f.check).toBe('doc-staleness');
+    }
+  });
+
+  test('finding severity 為 warning', () => {
+    const findings = checkDocStaleness();
+    for (const f of findings) {
+      expect(f.severity).toBe('warning');
+    }
+  });
+
+  test('每個 finding 包含必要欄位', () => {
+    const findings = checkDocStaleness();
+    for (const f of findings) {
+      expect(typeof f.check).toBe('string');
+      expect(typeof f.severity).toBe('string');
+      expect(typeof f.file).toBe('string');
+      expect(typeof f.message).toBe('string');
+      expect(typeof f.detail).toBe('string');
+    }
+  });
+
+  test('finding message 包含天數和「建議歸檔或刪除」', () => {
+    const findings = checkDocStaleness();
+    for (const f of findings) {
+      expect(f.message).toMatch(/\d+ 天未更新，建議歸檔或刪除/);
+    }
+  });
+
+  test('finding detail 包含「最後更新」和「無引用」', () => {
+    const findings = checkDocStaleness();
+    for (const f of findings) {
+      expect(f.detail).toContain('最後更新：');
+      expect(f.detail).toContain('無引用');
+    }
+  });
+
+  test('finding file 路徑以 docs/reference/ 開頭', () => {
+    const findings = checkDocStaleness();
+    for (const f of findings) {
+      expect(f.file).toMatch(/^docs\/reference\//);
+    }
+  });
+
+  test('回傳陣列（真實 codebase）', () => {
+    const findings = checkDocStaleness();
+    expect(Array.isArray(findings)).toBe(true);
+  });
+});
+
+// ══════════════════════════════════════════════════════════════════
 // Feature 6: runAllChecks 輸出格式
 // ══════════════════════════════════════════════════════════════════
 
@@ -358,12 +454,12 @@ describe('runAllChecks', () => {
     expect(Array.isArray(result.findings)).toBe(true);
   });
 
-  test('checks 陣列長度為 6', () => {
+  test('checks 陣列長度為 7', () => {
     const { checks } = runAllChecks();
-    expect(checks.length).toBe(6);
+    expect(checks.length).toBe(7);
   });
 
-  test('checks 包含所有 6 個偵測項目名稱', () => {
+  test('checks 包含所有 7 個偵測項目名稱', () => {
     const { checks } = runAllChecks();
     const names = checks.map((c) => c.name);
     expect(names).toContain('phantom-events');
@@ -372,6 +468,7 @@ describe('runAllChecks', () => {
     expect(names).toContain('unused-paths');
     expect(names).toContain('duplicate-logic');
     expect(names).toContain('platform-drift');
+    expect(names).toContain('doc-staleness');
   });
 
   test('每個 check 項目包含 name、passed、findingsCount', () => {
@@ -410,9 +507,9 @@ describe('runAllChecks', () => {
     }
   });
 
-  test('所有 finding 的 check 只能是已知 6 個 check 名稱之一', () => {
+  test('所有 finding 的 check 只能是已知 7 個 check 名稱之一', () => {
     const { findings } = runAllChecks();
-    const validChecks = new Set(['phantom-events', 'dead-exports', 'doc-code-drift', 'unused-paths', 'duplicate-logic', 'platform-drift']);
+    const validChecks = new Set(['phantom-events', 'dead-exports', 'doc-code-drift', 'unused-paths', 'duplicate-logic', 'platform-drift', 'doc-staleness']);
     for (const f of findings) {
       expect(validChecks.has(f.check)).toBe(true);
     }

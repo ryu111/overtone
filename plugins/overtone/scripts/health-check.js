@@ -3,13 +3,14 @@
 /**
  * health-check.js — Overtone 系統健康自動化偵測
  *
- * 執行 6 項確定性偵測：
+ * 執行 7 項確定性偵測：
  *   1. phantom-events   — registry 事件 vs 實際 emit 呼叫差異
  *   2. dead-exports     — scripts/lib 模組 export 但從未被 require 使用
  *   3. doc-code-drift   — docs 文件中的數量與程式碼實際值不符
  *   4. unused-paths     — paths.js export 但從未被使用
  *   5. duplicate-logic  — hooks/scripts 中已知的重複邏輯 pattern
  *   6. platform-drift   — config-api 驗證 + 棄用 tools 白名單偵測
+ *   7. doc-staleness    — docs/reference 無引用且超過 90 天未更新的過時文件
  *
  * 輸出：JSON stdout（HealthCheckOutput schema）
  * Exit code：有 findings → 1；無 findings → 0
@@ -691,6 +692,94 @@ function checkPlatformDrift(pluginRootOverride) {
   return findings;
 }
 
+// ── 7. Doc Staleness 偵測 ──
+
+/**
+ * 掃描 docs/reference/ 下的 .md 檔案，偵測無引用且超過 90 天未更新的過時文件。
+ * @returns {Finding[]}
+ */
+function checkDocStaleness() {
+  const refDir = path.join(DOCS_DIR, 'reference');
+  let refFiles;
+  try {
+    refFiles = readdirSync(refDir)
+      .filter(f => f.endsWith('.md'))
+      .map(f => path.join(refDir, f));
+  } catch {
+    return [];
+  }
+
+  if (refFiles.length === 0) return [];
+
+  const findings = [];
+  const now = Date.now();
+  const STALE_DAYS = 90;
+  const STALE_MS = STALE_DAYS * 24 * 60 * 60 * 1000;
+
+  // 收集所有可能引用 reference 的檔案
+  // 掃描：plugin js + docs md + 專案根 md + CLAUDE.md
+  const searchFiles = [];
+
+  // plugin 下所有 .js
+  searchFiles.push(...collectJsFiles(PLUGIN_ROOT).filter(f =>
+    !f.includes('/node_modules/') && !f.includes('health-check.js')
+  ));
+
+  // docs/ 下所有 .md（排除 archive/ 和 reference/ 自身）
+  const docsFiles = collectMdFiles(DOCS_DIR).filter(f =>
+    !f.includes('/archive/') && !f.startsWith(refDir + path.sep)
+  );
+  searchFiles.push(...docsFiles);
+
+  // 專案根 CLAUDE.md
+  const claudeMd = path.join(PROJECT_ROOT, 'CLAUDE.md');
+  if (safeRead(claudeMd)) searchFiles.push(claudeMd);
+
+  // tests/ 下所有 .js
+  const testsDir = path.join(PROJECT_ROOT, 'tests');
+  searchFiles.push(...collectJsFiles(testsDir));
+
+  for (const refFile of refFiles) {
+    const fileName = path.basename(refFile);
+    const fileNameNoExt = path.basename(refFile, '.md');
+
+    // 檢查修改時間
+    let mtime;
+    try {
+      mtime = statSync(refFile).mtimeMs;
+    } catch {
+      continue;
+    }
+
+    const daysSinceUpdate = Math.floor((now - mtime) / (24 * 60 * 60 * 1000));
+    const isStale = (now - mtime) > STALE_MS;
+
+    // 搜尋引用
+    let referenced = false;
+    for (const searchFile of searchFiles) {
+      if (searchFile === refFile) continue;
+      const content = safeRead(searchFile);
+      // 搜尋檔名（含或不含副檔名）
+      if (content.includes(fileName) || content.includes(fileNameNoExt)) {
+        referenced = true;
+        break;
+      }
+    }
+
+    if (!referenced && isStale) {
+      findings.push({
+        check: 'doc-staleness',
+        severity: 'warning',
+        file: path.relative(PROJECT_ROOT, refFile),
+        message: `docs/reference/${fileName} 無專案引用且 ${daysSinceUpdate} 天未更新，建議歸檔或刪除`,
+        detail: `最後更新：${new Date(mtime).toISOString().split('T')[0]}，無引用`,
+      });
+    }
+  }
+
+  return findings;
+}
+
 // ── 主程式 ──
 
 /**
@@ -714,6 +803,7 @@ function runAllChecks() {
     { name: 'unused-paths',     fn: checkUnusedPaths },
     { name: 'duplicate-logic',  fn: checkDuplicateLogic },
     { name: 'platform-drift',   fn: checkPlatformDrift },
+    { name: 'doc-staleness',    fn: checkDocStaleness },
   ];
 
   const allFindings = [];
@@ -795,13 +885,17 @@ module.exports = {
   checkUnusedPaths,
   checkDuplicateLogic,
   checkPlatformDrift,
+  checkDocStaleness,
   runAllChecks,
   // 工具函式
   collectJsFiles,
+  collectMdFiles,
   parseModuleExportKeys,
   parsePathsExports,
   toRelative,
   PLUGIN_ROOT,
   SCRIPTS_LIB,
   HOOKS_SCRIPTS,
+  DOCS_DIR,
+  PROJECT_ROOT,
 };
