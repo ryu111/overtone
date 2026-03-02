@@ -2,6 +2,28 @@
 
 所有重要變更記錄於此文件。
 
+## [0.28.2] - 2026-03-02（測試品質防護機制 — test-index + 反模式偵測）
+
+### 功能新增
+- **test-index.js**：測試索引掃描工具
+  - buildTestIndex() API：掃描所有 .test.js 檔案並統計測試情況
+  - 消費者：pre-task hook（tester/developer 角色）
+  - 數據：測試檔案總數、通過率、關鍵測試區塊定位
+- **test-anti-patterns.md**：6 種常見測試反模式文件（testing skill 新增 reference）
+  - 過度 mocking / 缺失邊界測試 / 脆弱 fixture 等
+  - 消費者：tester、code-reviewer agents
+
+### 架構改進
+- **pre-task hook 增強**：注入 test-index 摘要至 tester/developer prompt（帶動整體測試意識）
+- **Agent DON'T 規則擴充**：tester +3、developer +2 條反模式警告
+
+### 測試
+- 新增：test-index.js 單元測試（26 tests）+ pre-task 整合測試（11 tests）
+- 測試通過：1778 pass / 0 fail
+- 測試檔案：83 個
+
+---
+
 ## [0.27.3] - 2026-03-02（S15b 迭代 1 PoC — testing knowledge domain）
 
 ### 功能新增

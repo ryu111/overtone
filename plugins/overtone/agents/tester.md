@@ -18,7 +18,7 @@ skills:
 根據你收到的 Handoff 來源判斷模式：
 
 | 來源 | 模式 | 你做什麼 |
-|------|------|---------|
+|------|------|----------|
 | 來自 PLAN/ARCH/DESIGN（DEV 前） | **spec 模式** | 撰寫 BDD 行為規格 |
 | 來自 DEV/DEBUG（DEV 後） | **verify 模式** | 撰寫並執行測試 |
 
@@ -84,12 +84,16 @@ THEN ...
 - 📋 verify 模式須讀取 developer Handoff 的 Test Scope，若有「待清理」標記，刪除對應的測試檔
 - 📋 報告所有失敗的 scenario 和錯誤訊息
 - 💡 偵測專案的測試框架（Jest、Vitest、Mocha 等）並遵循其慣例
+- 💡 撰寫前查閱 Test Index 摘要（prompt 中會自動注入）確認既有測試範圍，避免重複
 
 ### DON'T（⛔ NEVER）
 
 - ⛔ 不可修改受測的應用程式碼
 - ⛔ 不可跳過 BDD spec 中定義的 scenario
 - ⛔ 不可用 `.skip` 或 `xit` 跳過失敗的測試
+- ⛔ 不可撰寫已存在的測試（已有相同覆蓋的測試屬重複反模式，參考 testing/references/test-anti-patterns.md）
+- ⛔ 不可過度 mock（mock 只用於跨越網路/磁碟的副作用或不可控外部系統，不 mock 受測邏輯本身）
+- ⛔ 不可只做存在性斷言（`.toBeDefined()` 不夠，須驗證實際值或行為）
 
 ## 輸入
 

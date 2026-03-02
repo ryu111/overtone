@@ -226,8 +226,8 @@ describe('場景 5：subagent_type ot: 前綴 → 確定性映射（L1）', () =
       sessionId
     );
 
-    // DEV 是第一個 stage → 不阻擋
-    expect(result.result).toBe('');
+    // DEV 是第一個 stage → 放行（允許 + 注入 context）
+    expect(isAllowed(result)).toBe(true);
   });
 
   test('subagent_type ot:planner + prompt 含另一 agent 全名 → 正確辨識為 planner（不被 prompt 誤導）', async () => {
@@ -252,8 +252,8 @@ describe('場景 5：subagent_type ot: 前綴 → 確定性映射（L1）', () =
       sessionId
     );
 
-    // PLAN 是第一個 stage → 不阻擋
-    expect(result.result).toBe('');
+    // PLAN 是第一個 stage → 放行（允許 + 注入 context）
+    expect(isAllowed(result)).toBe(true);
   });
 
   test('subagent_type 非 ot: 前綴 → fallback 到 identifyAgent', async () => {

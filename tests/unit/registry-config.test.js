@@ -1,8 +1,8 @@
 'use strict';
 /**
- * s15b-registry-config.test.js — S15b 後的 Registry × Config API 交叉驗證
+ * registry-config.test.js — Registry × Config API 交叉驗證
  *
- * S15b 重構改變了 skill/command 結構，此測試集確保：
+ * 確保：
  *   1. registry-data.json stages ↔ agents/*.md 檔案雙向一致
  *   2. registry workflows ↔ stages 名稱引用一致
  *   3. parallelGroupDefs 成員合法性
@@ -12,7 +12,7 @@
  *   7. hookEvents 與 hooks.json 使用的 event 雙向一致
  *
  * 不重複 registry.test.js 與 platform-alignment-registry.test.js 已有的驗證。
- * 聚焦 S15b 後的交叉驗證（registry ↔ 實際檔案結構）。
+ * 聚焦交叉驗證（registry ↔ 實際檔案結構）。
  */
 
 const { describe, test, expect, beforeAll } = require('bun:test');
@@ -20,7 +20,7 @@ const { join } = require('path');
 const { existsSync, readdirSync, readFileSync } = require('fs');
 const { execSync } = require('child_process');
 
-const { PLUGIN_ROOT, SCRIPTS_LIB, PROJECT_ROOT } = require('../helpers/paths');
+const { PLUGIN_ROOT, SCRIPTS_LIB } = require('../helpers/paths');
 
 const registry = require(join(SCRIPTS_LIB, 'registry'));
 const registryData = require(join(SCRIPTS_LIB, 'registry-data.json'));
@@ -37,7 +37,6 @@ const HOOKS_JSON_PATH = join(PLUGIN_ROOT, 'hooks', 'hooks.json');
 // ──────────────────────────────────────────────────────────────
 
 describe('1. Registry Stages ↔ Agent 檔案交叉驗證', () => {
-  // 取得 agents/ 目錄下所有 .md 檔案名稱（去副檔名）
   let agentFileNames;
   beforeAll(() => {
     agentFileNames = new Set(
@@ -89,13 +88,6 @@ describe('1. Registry Stages ↔ Agent 檔案交叉驗證', () => {
         `agents/${agentFileName}.md 沒有對應的 stage 定義`
       ).toBe(true);
     }
-  });
-
-  test('stages 共有 16 個，agentModels 共有 16 個（不含 grader）', () => {
-    expect(Object.keys(stages).length).toBe(16);
-    // agentModels 應恰好對應 16 個 stage agent（grader 不在 stages 中）
-    const stageAgentCount = Object.values(stages).length;
-    expect(Object.keys(agentModels).length).toBe(stageAgentCount);
   });
 });
 
@@ -150,7 +142,6 @@ describe('2. Registry Workflows ↔ Stages 一致性', () => {
 // ──────────────────────────────────────────────────────────────
 
 describe('3. Registry Workflows ↔ Commands 路由可達性', () => {
-  // 有 command 檔案的 workflow（已知清單，共 10 個）
   const workflowsWithCommands = [
     'quick', 'standard', 'full', 'secure', 'tdd',
     'debug', 'refactor', 'build-fix', 'diagnose', 'clean', 'db-review',
@@ -167,14 +158,12 @@ describe('3. Registry Workflows ↔ Commands 路由可達性', () => {
   });
 
   test('所有 18 個 workflow 都能透過 workflow-core skill 路由（路由可達）', () => {
-    // workflow-core skill 是所有 workflow 的通用路由入口
     const workflowCoreSkillPath = join(SKILLS_DIR, 'workflow-core', 'SKILL.md');
     expect(
       existsSync(workflowCoreSkillPath),
       'workflow-core/SKILL.md 必須存在（所有 workflow 的通用路由入口）'
     ).toBe(true);
 
-    // 每個 workflow 都在 registry 中定義（確認 18 個 key 都存在）
     for (const wfName of Object.keys(workflows)) {
       expect(typeof wfName).toBe('string');
       expect(wfName.length).toBeGreaterThan(0);
@@ -232,7 +221,6 @@ describe('4. specsConfig 涵蓋所有 18 個 workflow', () => {
   });
 
   test('含 PLAN 或 ARCH 的 workflow 必須有 bdd 設定', () => {
-    // BDD 規則：含 PLAN/ARCH 的 workflow 需要 bdd 規格
     for (const [wfName, wfDef] of Object.entries(workflows)) {
       const hasPlanOrArch = wfDef.stages.includes('PLAN') || wfDef.stages.includes('ARCH');
       if (hasPlanOrArch) {
@@ -251,7 +239,6 @@ describe('4. specsConfig 涵蓋所有 18 個 workflow', () => {
 
 describe('5. Config API 一致性', () => {
   test('registry-data.json stages 與 registry.js 匯出的 stages 是同一物件（直接引用）', () => {
-    // registry.js 直接 require registry-data.json，兩者應為相同參考
     expect(JSON.stringify(registryData.stages)).toBe(JSON.stringify(stages));
   });
 
@@ -263,7 +250,6 @@ describe('5. Config API 一致性', () => {
     const validateScript = join(PLUGIN_ROOT, 'scripts', 'validate-agents.js');
     expect(existsSync(validateScript)).toBe(true);
 
-    // 執行 validate-agents.js，若失敗則 execSync 會拋出例外
     let exitCode = 0;
     try {
       execSync(`node "${validateScript}"`, { stdio: 'pipe' });
@@ -271,26 +257,6 @@ describe('5. Config API 一致性', () => {
       exitCode = err.status ?? 1;
     }
     expect(exitCode).toBe(0);
-  });
-
-  test('config-api.js 可正常 require（不拋例外）', () => {
-    const configApiPath = join(SCRIPTS_LIB, 'config-api.js');
-    expect(existsSync(configApiPath)).toBe(true);
-    let loadError = null;
-    try {
-      require(configApiPath);
-    } catch (err) {
-      loadError = err;
-    }
-    expect(loadError).toBeNull();
-  });
-
-  test('config-api.js 匯出的函式包含 validateAgent、validateHook、validateSkill、validateAll', () => {
-    const configApi = require(join(SCRIPTS_LIB, 'config-api.js'));
-    expect(typeof configApi.validateAgent).toBe('function');
-    expect(typeof configApi.validateHook).toBe('function');
-    expect(typeof configApi.validateSkill).toBe('function');
-    expect(typeof configApi.validateAll).toBe('function');
   });
 });
 

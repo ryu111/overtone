@@ -1,8 +1,8 @@
 'use strict';
 /**
- * s15b-docs-sync.test.js
+ * docs-sync.test.js
  *
- * S15b 迭代 3：文件同步 + 邊界掃描
+ * 文件同步 + 邊界掃描
  *
  * 驗證以下項目：
  * 1. docs/status.md 核心指標數字與實際結構一致

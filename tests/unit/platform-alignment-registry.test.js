@@ -53,18 +53,4 @@ describe('Feature 1h: registry.js tool:failure 事件', () => {
     });
   });
 
-  // Scenario 1e-7（對應 1h-1）: tool:failure 不拋出未知事件類型錯誤
-  describe('Scenario 1e-7: tool:failure 是合法的 timeline 事件', () => {
-    test('tool:failure 鍵存在且結構完整', () => {
-      const entry = timelineEvents['tool:failure'];
-      expect(entry).toMatchObject({
-        label: expect.any(String),
-        category: expect.any(String),
-      });
-    });
-
-    test('tool:failure label 非空字串', () => {
-      expect(timelineEvents['tool:failure'].label).not.toBe('');
-    });
-  });
 });

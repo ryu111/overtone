@@ -63,7 +63,7 @@ plugins/overtone/   # Plugin 根目錄
 #   workflow.json / timeline.jsonl / loop.json / observations.jsonl / compact-count.json
 ```
 
-## Hook 架構（11 個，~1735 行 + config-api.js ~850 行）
+## Hook 架構（11 個，~1887 行 + config-api.js ~850 行）
 
 ⚠️ **hooks.json 必須使用官方三層嵌套格式**：`{ hooks: { EventName: [{ matcher?, hooks: [{ type, command }] }] } }`
 扁平陣列格式（`hooks: [{ event, type, command }]`）會導致部分 hook 無法被 Claude Code 觸發。Guard test 自動驗證。
@@ -100,7 +100,7 @@ bun scripts/server.js
 # 系統健康檢查（7 項偵測）
 bun scripts/health-check.js
 
-# 驗證所有元件設定（17 agents + 11 hooks + 15 skills）
+# 驗證所有元件設定（17 agents + 11 hooks + 15 skills + 27 commands）
 bun scripts/validate-agents.js
 
 # 元件管理（建立/更新 agent、hook、skill）

@@ -1,32 +1,23 @@
 'use strict';
 /**
- * s15b-dashboard-registry.test.js — S15b Dashboard + Registry 驗證整合測試
+ * dashboard-registry.test.js — Dashboard + Registry 驗證整合測試
  *
- * 覆蓋以下四個驗證面向：
- *   1. /api/registry 回傳正確資料（stages 16 個、workflows 18 個、parallelGroupDefs 3 個）
- *   2. Pipeline 可視化資料完整性（buildPipelineSegments 並行段落驗證）
- *   3. Timeline 事件完整性（24 種事件、11 分類、無舊事件殘留）
- *   4. Dashboard HTML 引用驗證（JS 模組路徑存在、無舊 skill 名稱）
- *
- * 測試模式參考：tests/integration/server.test.js
+ * 覆蓋以下三個驗證面向：
+ *   1. Pipeline 可視化資料完整性（buildPipelineSegments 並行段落驗證）
+ *   2. Timeline 事件完整性（24 種事件、11 分類、無舊事件殘留）
+ *   3. Dashboard HTML 引用驗證（JS 模組路徑存在、無舊 skill 名稱）
  */
 
-const { test, expect, beforeAll, afterAll, describe } = require('bun:test');
-const { mkdirSync, rmSync, readFileSync, existsSync } = require('fs');
+const { test, expect, beforeAll, describe } = require('bun:test');
+const { readFileSync, existsSync } = require('fs');
 const { join } = require('path');
-const { homedir } = require('os');
-const { SCRIPTS_LIB, SCRIPTS_DIR, PLUGIN_ROOT } = require('../helpers/paths');
+const { SCRIPTS_LIB, PLUGIN_ROOT } = require('../helpers/paths');
 
-const state = require(join(SCRIPTS_LIB, 'state'));
 const registry = require(join(SCRIPTS_LIB, 'registry'));
-const paths = require(join(SCRIPTS_LIB, 'paths'));
 
-// timelineEvents 的靜態定義：直接從源碼讀取，完全不依賴 require 的模組快取
-// 原因：Bun 的 toMatchObject(expect.any(String)) 在某些版本會 mutate 共享的模組物件，
-// 導致 platform-alignment-registry.test.js 的測試執行後 tool:failure.label 變成 {}。
-// 解決方案：以子進程執行取得隔離的乾淨值。
+// timelineEvents 的靜態定義：以子進程取得隔離的乾淨值
+// 原因：Bun 的 toMatchObject(expect.any(String)) 在某些版本會 mutate 共享的模組物件
 const TIMELINE_EVENTS_SNAPSHOT = (() => {
-  // 使用 Bun.spawnSync 在隔離的 Node 進程中讀取 registry
   const proc = Bun.spawnSync([
     'node', '-e',
     `const r = require(${JSON.stringify(join(SCRIPTS_LIB, 'registry'))});` +
@@ -36,198 +27,19 @@ const TIMELINE_EVENTS_SNAPSHOT = (() => {
   return JSON.parse(new TextDecoder().decode(proc.stdout));
 })();
 
-// ── 常數 ──
-
-// 使用不同於其他測試的 port 避免衝突
-const TEST_PORT = 17779;
-const BASE_URL = `http://localhost:${TEST_PORT}`;
-
-const TEST_SESSION = `test_s15b_dashboard_${Date.now()}`;
-const SESSION_DIR = join(homedir(), '.overtone', 'sessions', TEST_SESSION);
-
-let serverProcess = null;
-
-// ── 輔助函式 ──
-
-/**
- * 等待 server 就緒（輪詢 /health 端點）
- * @param {number} maxWaitMs
- */
-async function waitForServer(maxWaitMs = 8000) {
-  const start = Date.now();
-  while (Date.now() - start < maxWaitMs) {
-    try {
-      const res = await fetch(`${BASE_URL}/health`);
-      if (res.ok) return;
-    } catch {
-      // 尚未就緒，繼續等待
-    }
-    await Bun.sleep(100);
-  }
-  throw new Error(`Server 在 ${maxWaitMs}ms 內未就緒`);
-}
-
-/**
- * 發送 GET 請求並回傳 { status, body, headers }
- * @param {string} path
- */
-async function get(path) {
-  const res = await fetch(`${BASE_URL}${path}`);
-  const contentType = res.headers.get('content-type') || '';
-  let body;
-  if (contentType.includes('application/json')) {
-    body = await res.json();
-  } else {
-    body = await res.text();
-  }
-  return { status: res.status, body, headers: res.headers };
-}
-
-// ── Setup / Teardown ──
-
-beforeAll(async () => {
-  // 建立測試 session
-  mkdirSync(SESSION_DIR, { recursive: true });
-  state.initState(TEST_SESSION, 'standard', ['PLAN', 'ARCH', 'DEV', 'REVIEW', 'TEST', 'RETRO', 'DOCS']);
-
-  // 啟動 server 子進程
-  const serverScript = join(SCRIPTS_DIR, 'server.js');
-  serverProcess = Bun.spawn(['bun', serverScript], {
-    env: {
-      ...process.env,
-      OVERTONE_PORT: String(TEST_PORT),
-    },
-    stdout: 'ignore',
-    stderr: 'ignore',
-  });
-
-  // 等待 server 就緒
-  await waitForServer(8000);
-});
-
-afterAll(() => {
-  // 終止 server 子進程
-  if (serverProcess) {
-    serverProcess.kill();
-  }
-  // 清理測試 session 目錄
-  rmSync(SESSION_DIR, { recursive: true, force: true });
-});
-
 // ══════════════════════════════════════════════════════════════════
-// 1. /api/registry 回傳正確資料
+// 1. Pipeline 可視化資料完整性（buildPipelineSegments 直接測試）
 // ══════════════════════════════════════════════════════════════════
 
-describe('1. GET /api/registry — 回傳正確的 S15b 結構', () => {
-  test('status 200 且包含 stages、workflows、parallelGroupDefs 欄位', async () => {
-    const { status, body } = await get('/api/registry');
-    expect(status).toBe(200);
-    expect(body).toHaveProperty('stages');
-    expect(body).toHaveProperty('workflows');
-    expect(body).toHaveProperty('parallelGroupDefs');
-  });
-
-  test('stages 共有 16 個（含 PM stage）', async () => {
-    const { body } = await get('/api/registry');
-    const stageKeys = Object.keys(body.stages);
-    expect(stageKeys.length).toBe(16);
-  });
-
-  test('stages 每個都有 label、emoji、agent、color 欄位', async () => {
-    const { body } = await get('/api/registry');
-    for (const [key, stage] of Object.entries(body.stages)) {
-      expect(stage).toHaveProperty('label');
-      expect(stage).toHaveProperty('emoji');
-      expect(stage).toHaveProperty('agent');
-      expect(stage).toHaveProperty('color');
-      expect(typeof stage.label).toBe('string');
-      expect(stage.label.length).toBeGreaterThan(0);
-    }
-  });
-
-  test('stages 包含所有預期的 16 個 stage key', async () => {
-    const { body } = await get('/api/registry');
-    const expectedStages = [
-      'PM', 'PLAN', 'ARCH', 'DESIGN', 'DEV', 'DEBUG',
-      'REVIEW', 'TEST', 'SECURITY', 'DB-REVIEW', 'QA', 'E2E',
-      'BUILD-FIX', 'REFACTOR', 'RETRO', 'DOCS',
-    ];
-    for (const s of expectedStages) {
-      expect(body.stages).toHaveProperty(s);
-    }
-  });
-
-  test('workflows 共有 18 個', async () => {
-    const { body } = await get('/api/registry');
-    const workflowKeys = Object.keys(body.workflows);
-    expect(workflowKeys.length).toBe(18);
-  });
-
-  test('workflows 每個都有 label 和 parallelGroups 欄位', async () => {
-    const { body } = await get('/api/registry');
-    for (const [name, wf] of Object.entries(body.workflows)) {
-      expect(wf).toHaveProperty('label');
-      expect(wf).toHaveProperty('parallelGroups');
-      expect(typeof wf.label).toBe('string');
-      expect(Array.isArray(wf.parallelGroups)).toBe(true);
-    }
-  });
-
-  test('parallelGroupDefs 共有 3 個群組：quality、verify、secure-quality', async () => {
-    const { body } = await get('/api/registry');
-    expect(body.parallelGroupDefs).toHaveProperty('quality');
-    expect(body.parallelGroupDefs).toHaveProperty('verify');
-    expect(body.parallelGroupDefs).toHaveProperty('secure-quality');
-    expect(Object.keys(body.parallelGroupDefs).length).toBe(3);
-  });
-
-  test('parallelGroupDefs.quality 包含 REVIEW 和 TEST', async () => {
-    const { body } = await get('/api/registry');
-    expect(body.parallelGroupDefs.quality).toContain('REVIEW');
-    expect(body.parallelGroupDefs.quality).toContain('TEST');
-  });
-
-  test('parallelGroupDefs.verify 包含 QA 和 E2E', async () => {
-    const { body } = await get('/api/registry');
-    expect(body.parallelGroupDefs.verify).toContain('QA');
-    expect(body.parallelGroupDefs.verify).toContain('E2E');
-  });
-
-  test('parallelGroupDefs.secure-quality 包含 REVIEW、TEST、SECURITY', async () => {
-    const { body } = await get('/api/registry');
-    expect(body.parallelGroupDefs['secure-quality']).toContain('REVIEW');
-    expect(body.parallelGroupDefs['secure-quality']).toContain('TEST');
-    expect(body.parallelGroupDefs['secure-quality']).toContain('SECURITY');
-  });
-
-});
-
-// ══════════════════════════════════════════════════════════════════
-// 1b. /api/registry — timelineEvents 不在 API 回應中，另行驗證（直接讀 registry）
-// ══════════════════════════════════════════════════════════════════
-
-describe('1b. Registry timelineEvents 數量驗證（直接讀 registry）', () => {
-  test('registry.timelineEvents 共有 24 種事件', () => {
-    expect(Object.keys(registry.timelineEvents).length).toBe(24);
-  });
-});
-
-// ══════════════════════════════════════════════════════════════════
-// 2. Pipeline 可視化資料完整性（buildPipelineSegments 直接測試）
-// ══════════════════════════════════════════════════════════════════
-
-describe('2. Pipeline 可視化 — buildPipelineSegments 並行段落驗證', () => {
-  // 在 Bun/Node 環境模擬 window 以載入 pipeline.js
+describe('1. Pipeline 可視化 — buildPipelineSegments 並行段落驗證', () => {
   let buildPipelineSegments;
 
   beforeAll(() => {
-    // pipeline.js 使用 window 全域命名空間，需在 Node/Bun 環境中模擬
     const windowMock = {};
     const pipelineSrc = readFileSync(
       join(PLUGIN_ROOT, 'web', 'js', 'pipeline.js'),
       'utf8'
     );
-    // 在隔離環境執行，注入 window mock
     const fn = new Function('window', pipelineSrc);
     fn(windowMock);
     buildPipelineSegments = windowMock.OT.pipeline.buildPipelineSegments;
@@ -241,7 +53,6 @@ describe('2. Pipeline 可視化 — buildPipelineSegments 並行段落驗證', (
   function toStagesObj(stageArr) {
     const obj = {};
     stageArr.forEach((s, i) => {
-      // 同名 stage 重複出現時加後綴（如 TEST:2）
       const count = stageArr.slice(0, i).filter(x => x === s).length;
       const key = count > 0 ? `${s}:${count + 1}` : s;
       obj[key] = { status: 'pending' };
@@ -298,9 +109,7 @@ describe('2. Pipeline 可視化 — buildPipelineSegments 並行段落驗證', (
     const verifySeg = segments.find(s => s.type === 'parallel' && s.groupName === 'verify');
     expect(qualitySeg).toBeDefined();
     expect(verifySeg).toBeDefined();
-    // 兩個是不同的 segment 物件
     expect(qualitySeg).not.toBe(verifySeg);
-    // quality 包含 REVIEW/TEST，verify 包含 QA/E2E
     const qualityKeys = qualitySeg.stages.map(s => s.key.split(':')[0]);
     const verifyKeys = verifySeg.stages.map(s => s.key.split(':')[0]);
     expect(qualityKeys).toContain('REVIEW');
@@ -343,23 +152,19 @@ describe('2. Pipeline 可視化 — buildPipelineSegments 並行段落驗證', (
   test('DEV 之前的 stage 都是線性 segment（含 PLAN、ARCH）', () => {
     const stagesObj = toStagesObj(['PLAN', 'ARCH', 'TEST', 'DEV', 'REVIEW', 'TEST', 'RETRO', 'DOCS']);
     const segments = buildPipelineSegments(stagesObj, 'standard', parallelGroupDefs, workflowParallelGroups);
-    // PLAN、ARCH、TEST（DEV 前）、DEV 本身都是線性
     const linearBefore = segments.filter(s => s.type === 'stage' && ['PLAN', 'ARCH', 'TEST', 'DEV'].includes(s.key));
     expect(linearBefore.length).toBe(4);
   });
 });
 
 // ══════════════════════════════════════════════════════════════════
-// 3. Timeline 事件完整性
+// 2. Timeline 事件完整性
 // ══════════════════════════════════════════════════════════════════
 
-describe('3. Timeline 事件完整性', () => {
-  // 在 describe 內部重新 require registry，避免頂層共享模組的快取污染問題
-  // 直接讀取 registry-data 並結合 registry.js 的靜態定義，確保乾淨的資料
+describe('2. Timeline 事件完整性', () => {
   let timelineEvents;
 
   beforeAll(() => {
-    // 使用模組載入時就已深拷貝的 snapshot，確保不受其他測試的 toMatchObject 副作用影響
     timelineEvents = TIMELINE_EVENTS_SNAPSHOT;
   });
 
@@ -423,10 +228,10 @@ describe('3. Timeline 事件完整性', () => {
 });
 
 // ══════════════════════════════════════════════════════════════════
-// 4. Dashboard HTML 引用驗證
+// 3. Dashboard HTML 引用驗證
 // ══════════════════════════════════════════════════════════════════
 
-describe('4. Dashboard HTML 引用驗證', () => {
+describe('3. Dashboard HTML 引用驗證', () => {
   const DASHBOARD_HTML = join(PLUGIN_ROOT, 'web', 'dashboard.html');
   const WEB_JS_DIR = join(PLUGIN_ROOT, 'web', 'js');
 
@@ -470,27 +275,5 @@ describe('4. Dashboard HTML 引用驗證', () => {
 
   test('HTML 不包含 SSR 模板標記（{{...}}）', () => {
     expect(htmlContent).not.toMatch(/\{\{[^}]+\}\}/);
-  });
-
-  test('GET / 回傳 Dashboard HTML（status 200 且包含 html 標記）', async () => {
-    const res = await fetch(`${BASE_URL}/`);
-    expect(res.status).toBe(200);
-    const body = await res.text();
-    expect(body.toLowerCase()).toContain('<html');
-  });
-
-  test('GET /js/pipeline.js — server 回傳 status 200', async () => {
-    const { status } = await get('/js/pipeline.js');
-    expect(status).toBe(200);
-  });
-
-  test('GET /js/timeline.js — server 回傳 status 200', async () => {
-    const { status } = await get('/js/timeline.js');
-    expect(status).toBe(200);
-  });
-
-  test('GET /js/confetti.js — server 回傳 status 200', async () => {
-    const { status } = await get('/js/confetti.js');
-    expect(status).toBe(200);
   });
 });

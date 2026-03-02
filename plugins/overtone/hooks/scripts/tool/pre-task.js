@@ -12,12 +12,14 @@
  * 決策 1.4：只擋「跳過必要階段」
  */
 
+const path = require('path');
 const state = require('../../../scripts/lib/state');
 const { stages } = require('../../../scripts/lib/registry');
 const identifyAgent = require('../../../scripts/lib/identify-agent');
 const { safeReadStdin, safeRun, getSessionId, buildWorkflowContext } = require('../../../scripts/lib/hook-utils');
 const { atomicWrite } = require('../../../scripts/lib/utils');
 const paths = require('../../../scripts/lib/paths');
+const { buildTestIndex } = require('../../../scripts/test-index');
 
 safeRun(() => {
   // ── 從 stdin 讀取 hook input ──
@@ -120,13 +122,8 @@ safeRun(() => {
     return base === targetStage;
   });
 
-  if (targetIdx <= 0) {
-    // 第一個 stage 或找不到 → 不擋
-    process.stdout.write(JSON.stringify({ result: '' }));
-    process.exit(0);
-  }
-
   // 檢查目標 stage 之前是否有未完成的必要階段
+  // targetIdx <= 0 時（第一個 stage 或找不到），for loop 自然不執行
   const skippedStages = [];
   for (let i = 0; i < targetIdx; i++) {
     const key = stageKeys[i];
@@ -226,15 +223,40 @@ safeRun(() => {
     stage: targetStage,
   });
 
-  // ── 組裝 updatedInput（注入 workflow context）──
+  // ── 組裝 updatedInput（注入 workflow context + test-index 摘要）──
 
   const projectRoot = input.cwd || process.cwd();
   const context = buildWorkflowContext(sessionId, projectRoot);
 
-  if (context) {
+  // test-index 摘要：只對 tester 和 developer 注入
+  const TEST_INDEX_AGENTS = ['tester', 'developer'];
+  let testIndexSummary = '';
+  if (targetAgent && TEST_INDEX_AGENTS.includes(targetAgent)) {
+    const testsDir = path.join(projectRoot, 'tests');
+    testIndexSummary = buildTestIndex(testsDir);
+  }
+
+  const hasContext = !!context;
+  const hasTestIndex = !!testIndexSummary;
+
+  if (hasContext || hasTestIndex) {
     const originalPrompt = toolInput.prompt || '';
+    let newPrompt = originalPrompt;
+
+    // 組裝順序：workflowContext → testIndex → originalPrompt
+    const parts = [];
+    if (hasContext) {
+      parts.push(context);
+    }
+    if (hasTestIndex) {
+      parts.push(testIndexSummary);
+    }
+    parts.push(originalPrompt);
+
+    newPrompt = parts.join('\n\n---\n\n');
+
     // 📋 MUST 保留所有原始 tool input 欄位（subagent_type 等），只更新 prompt
-    const updatedToolInput = { ...toolInput, prompt: context + '\n\n---\n\n' + originalPrompt };
+    const updatedToolInput = { ...toolInput, prompt: newPrompt };
     process.stdout.write(JSON.stringify({
       hookSpecificOutput: {
         hookEventName: 'PreToolUse',

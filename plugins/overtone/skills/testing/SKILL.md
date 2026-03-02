@@ -26,6 +26,7 @@ user-invocable: false
 | 4 | references/testing-conventions.md | 測試目錄結構、paths.js 用法、spec/verify 操作流程 | verify 模式執行時 |
 | 5 | references/test-strategy.md | 五階段測試流程（Assess→Run→Improve→Validate→Report） | verify 模式規劃策略時 |
 | 6 | examples/bdd-spec-samples.md | BDD spec 範例 | spec 模式參考範例時 |
+| 7 | references/test-anti-patterns.md | 6 種測試反模式 + 壞例/好例/判斷準則 | verify 模式撰寫測試時 / code review 時 |
 
 ## 按需讀取
 
@@ -40,3 +41,5 @@ user-invocable: false
 💡 五階段測試策略：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/testing/references/test-strategy.md`
 
 💡 BDD spec 完整範例：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/testing/examples/bdd-spec-samples.md`
+
+💡 測試反模式（避免低品質/重複測試）：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/testing/references/test-anti-patterns.md`

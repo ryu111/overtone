@@ -1,12 +1,12 @@
 # Overtone 現況
 
-> 最後更新：2026-03-02 | Plugin 版本：0.28.1
+> 最後更新：2026-03-02 | Plugin 版本：0.28.2
 
 ## 版本狀態
 
 | 版本 | 狀態 | 說明 |
 |------|------|------|
-| V1 | 進行中 | 1793 pass，0 fail，核心功能完整 + S15b 全面驗證完成（7 次迭代 + 缺失補齊：DRY 重構 + Specs 生命週期 + Hook 慢路徑） |
+| V1 | 進行中 | 1778 pass，0 fail，核心功能完整 + S15b 全面驗證完成（7 次迭代 + 缺失補齊：DRY 重構 + Specs 生命週期 + Hook 慢路徑）+ 測試品質防護機制（test-index 掃描 + 反模式偵測） |
 | V2 | 規劃中 | 延後 |
 
 ## 核心指標
@@ -16,18 +16,17 @@
 | Agent 數量 | 17（含 grader） |
 | Stage 數量 | 16 |
 | Workflow 模板 | 18 |
-| 測試通過 | 1793 pass / 0 fail |
-| 測試檔案 | 81 個 |
+| 測試通過 | 1778 pass / 0 fail |
+| 測試檔案 | 83 個 |
 | Hook 數量 | 11 個 |
 | Skill 數量 | 15（7 knowledge domain + orchestrator + pm + specs + 5 utility-with-refs） |
 | Command 數量 | 27（14 stage shortcut + 7 workflow pipeline + 6 utility） |
 
 ## 近期變更（最近 3 筆）
 
-- **[0.28.1] 2026-03-02**：S15b 全面驗證（7 次迭代 + 缺失補齊，+413 tests）— 迭代 1-7: Hook 鏈路 + 知識域 + E2E workflow + 文件同步 + Registry/Config + Dashboard/SSE + 效能基線 + 跨 Session 狀態（+374）+ 缺失補齊: parseFrontmatter DRY + 註解修正 + Hook 慢路徑 + Specs 生命週期（+39）→ 1793 pass / 81 files
+- **[0.28.2] 2026-03-02**：測試品質防護機制 — test-index.js 掃描工具 + test-anti-patterns.md 文件 + pre-task 注入 + tester/developer agent DON'T 規則（+37 tests）→ 1778 pass / 83 files
+- **[0.28.1] 2026-03-02**：S15b 全面驗證（7 次迭代 + 缺失補齊，+413 tests）— 迭代 1-7: Hook 鏈路 + 知識域 + E2E workflow + 文件同步 + Registry/Config + Dashboard/SSE + 效能基線 + 跨 Session 狀態（+374）+ 缺失補齊: parseFrontmatter DRY + 註解修正 + Hook 慢路徑 + Specs 生命週期（+39）→ 1793 pass
 - **[0.28.0] 2026-03-02**：指令鏈修復 — 16 個 workflow commands 移除 disable-model-invocation 讓 auto 能路由 + pm 可呼叫性修復 + issue/SKILL.md 斷鏈路徑 + 「workflow skill」→「workflow command」全面術語同步 + 29 個 guard tests → 1380 pass
-- **[0.27.8] 2026-03-02**：S15b 迭代 7-8 — 建立 commands/ 目錄，27 個操作型 skills 移到 commands/（14 stage shortcuts + 7 workflow pipelines + 6 utilities），實現 Skill（知識）vs Command（操作）物理分離 → 1351 pass
-- **[0.27.6] 2026-03-02**：S15b 迭代 4 — commit-convention + code-review knowledge domain skills，ref-* 前綴全部清零（7→0）→ 1351 pass
 
 ## 已知問題
 

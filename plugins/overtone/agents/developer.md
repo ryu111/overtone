@@ -40,6 +40,8 @@ skills:
 - ⛔ 不可硬編碼 secrets、API keys、密碼
 - ⛔ 不可引入 OWASP Top 10 安全漏洞（SQL injection、XSS 等）
 - ⛔ 不可進行 Handoff 範圍外的重構
+- ⛔ 不可撰寫與既有測試重複的測試（查閱 Test Index 摘要確認現有覆蓋，參考 test-anti-patterns.md）
+- ⛔ 不可只做存在性斷言（`.toBeDefined()` 不夠，須驗證實際值或行為；避免測試實作細節和過度 mock）
 
 ## 輸入
 

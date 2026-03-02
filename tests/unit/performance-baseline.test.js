@@ -1,8 +1,8 @@
 'use strict';
 /**
- * s15b-performance-baseline.test.js — S15b 重構後效能基線驗證
+ * performance-baseline.test.js — 效能基線驗證
  *
- * 確保 S15b（commands/ 正規化）後系統效能未退化。
+ * 確保系統效能未退化。
  * 所有閾值均為寬鬆基線，避免 CI 環境波動導致誤判。
  *
  * 四個面向：

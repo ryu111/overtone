@@ -67,35 +67,28 @@ describe('BDD F2：初始化 single workflow 建立正確的 state 結構', () =
 });
 
 // ────────────────────────────────────────────────────────────────────────────
-// BDD F2 Scenario 2：pre-task hook 放行 DEV（第一個 stage 直接放行，不更新 state）
+// BDD F2 Scenario 2：pre-task hook 放行 DEV（第一個 stage）
 //
-// 設計說明：pre-task.js 對 workflow 中第一個 stage 採用「放行但不更新」策略（L71-75）。
-// 第一個 stage 不需要守衛（無前置 stage），直接輸出 result=''，不寫 activeAgents 或 state。
-// 手動設定 DEV 為 active 並記錄 timeline，模擬 /ot:auto skill 的行為。
+// 設計說明：pre-task.js 對 workflow 中第一個 stage 同樣走完整路徑（更新 state + 注入 context）。
+// 第一個 stage 不需要守衛（無前置 stage 可跳過），但仍然更新 activeAgents、stage status、
+// 以及注入 workflowContext + test-index 摘要。
 // ────────────────────────────────────────────────────────────────────────────
 
-describe('BDD F2：pre-task hook 放行 DEV，手動設為 active 並記錄 timeline', () => {
+describe('BDD F2：pre-task hook 放行 DEV 並更新 state + 記錄 timeline', () => {
   let result;
 
   beforeAll(() => {
     // DEV 為 pending（init 後的預設狀態）
-    // pre-task 對第一個 stage 放行（不更新 state），這是預期設計
+    // pre-task 對第一個 stage 放行，同時更新 state 和注入 context
     result = runPreTask(SESSION_ID, {
       description: '委派 developer agent 實作功能',
       prompt: '你是 developer，請按規格實作...',
     });
-
-    // 手動模擬 /ot:auto skill 設定第一個 stage 為 active（實際環境由 skill 處理）
-    state.updateStateAtomic(SESSION_ID, (s) => {
-      s.stages['DEV'].status = 'active';
-      s.activeAgents['developer'] = { stage: 'DEV', startedAt: new Date().toISOString() };
-      return s;
-    });
-    timeline.emit(SESSION_ID, 'agent:delegate', { agent: 'developer', stage: 'DEV' });
   });
 
-  test('hook 回傳 result 為空字串（放行）', () => {
-    expect(result.parsed?.result).toBe('');
+  test('hook 放行（允許委派）', () => {
+    const { isAllowed } = require('../helpers/hook-runner');
+    expect(isAllowed(result.parsed)).toBe(true);
   });
 
   test('workflow.json 中 DEV.status 變為 active（由 skill 設定）', () => {
