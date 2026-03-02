@@ -1,12 +1,12 @@
 # Overtone 現況
 
-> 最後更新：2026-03-02 | Plugin 版本：0.28.12
+> 最後更新：2026-03-02 | Plugin 版本：0.28.13
 
 ## 版本狀態
 
 | 版本 | 狀態 | 說明 |
 |------|------|------|
-| V1 | 進行中 | 2067 pass，0 fail，核心功能完整 + 守衛強化迭代 6/10 完成（Docs 同步 + Session 清理 + Test 品質掃描 + Dead Code 偵測 + Guard 閘門 + Hook 自動報告）|
+| V1 | 進行中 | 2124 pass，0 fail，核心功能完整 + 守衛強化迭代 7/10 完成（Docs 同步 + Session 清理 + Test/Dead Code 掃描 + Guard 閘門 + Hook 報告 + Component 修復）|
 | V2 | 規劃中 | 延後 |
 
 ## 核心指標
@@ -16,8 +16,8 @@
 | Agent 數量 | 17（含 grader） |
 | Stage 數量 | 16 |
 | Workflow 模板 | 18 |
-| 測試通過 | 2067 pass / 0 fail |
-| 測試檔案 | 91 個 |
+| 測試通過 | 2124 pass / 0 fail |
+| 測試檔案 | 92 個 |
 | Hook 數量 | 11 個 |
 | Skill 數量 | 16（8 knowledge domain + orchestrator + pm + specs + 5 utility-with-refs） |
 | Knowledge Domain 數 | 8（testing、workflow-core、security-kb、database、dead-code、commit-convention、code-review、wording） |
@@ -25,9 +25,9 @@
 
 ## 近期變更（最近 3 筆）
 
+- **[0.28.13] 2026-03-02**：Component 自動修復 — component-repair.js（4 項偵測規則 + plugin.json agents 自動同步 + frontmatter/registry/hooks 一致性檢查）（+57 tests）→ 2124 pass / 92 files
 - **[0.28.12] 2026-03-02**：Dead Code Guard + 自動報告 — RETRO 完成時自動觸發 dead-code-scanner + instinct dead_code 觀察記錄（+4 tests）→ 2067 pass / 91 files
-- **[0.28.11] 2026-03-02**：Test 品質 Guard Test — test-quality-guard + dead-code-guard 閘門整合（error 硬阻擋 + warning 軟報告）+ 空測試修復 + detectEmptyTests throw/assert 識別（+6 tests）→ 2063 pass / 91 files
-- **[0.28.10] 2026-03-02**：Dead Code 偵測器 — dead-code-scanner.js（未使用 exports + 孤立 lib 模組偵測）（+40 tests）→ 2057 pass / 89 files
+- **[0.28.11] 2026-03-02**：Test 品質 Guard Test — Guard 閘門整合 + 空測試修復 + detectEmptyTests throw/assert 識別（+6 tests）→ 2063 pass / 91 files
 
 ## 已知問題
 
