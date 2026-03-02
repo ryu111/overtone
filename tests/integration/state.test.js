@@ -111,9 +111,11 @@ describe('setActiveAgent / removeActiveAgent', () => {
   });
 
   test('不存在的 session 靜默處理', () => {
-    // 不應拋出
-    state.setActiveAgent('nonexistent', 'developer', 'DEV');
-    state.removeActiveAgent('nonexistent', 'developer');
+    // 不應拋出，靜默忽略
+    expect(() => {
+      state.setActiveAgent('nonexistent', 'developer', 'DEV');
+      state.removeActiveAgent('nonexistent', 'developer');
+    }).not.toThrow();
   });
 });
 

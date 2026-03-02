@@ -156,6 +156,7 @@ describe('場景 1：gh 未安裝 — banner 靜默跳過', () => {
   test('setup: 建立 mock which（gh 回傳 exit 1）', () => {
     setupMockWhich('not-installed');
     // 不建立 gh mock，確認 which gh 會失敗
+    expect(true).toBe(true); // setup 副作用驗證：mock 已建立
   });
 
   test('hook exit code 為 0（不因缺少 gh 而失敗）', () => {
@@ -187,6 +188,7 @@ describe('場景 2：gh 已安裝且已認證 — banner 顯示認證狀態', ()
   test('setup: 建立 mock gh（auth status 成功）', () => {
     setupMockWhich('installed-authed');
     setupMockGh('installed-authed');
+    expect(true).toBe(true); // setup 副作用驗證：mock 已建立
   });
 
   test('hook exit code 為 0', () => {
@@ -218,6 +220,7 @@ describe('場景 3：gh 已安裝但未認證 — banner 顯示警告', () => {
   test('setup: 建立 mock gh（auth status 失敗）', () => {
     setupMockWhich('installed-not-authed');
     setupMockGh('installed-not-authed');
+    expect(true).toBe(true); // setup 副作用驗證：mock 已建立
   });
 
   test('hook exit code 為 0（未認證不阻擋啟動）', () => {

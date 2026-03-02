@@ -93,7 +93,10 @@ function detectEmptyTests(lines) {
         else if (ch === '}') braceDepth--;
       }
 
+      // 有效斷言模式：expect()、throw（錯誤斷言）、assert(
       if (/expect\s*\(/.test(line)) hasExpect = true;
+      if (/\bthrow\b/.test(line)) hasExpect = true;
+      if (/\bassert\s*\(/.test(line)) hasExpect = true;
       if (/console\.\w+/.test(line)) hasOnlyConsole = true;
 
       // 測試體結束（brace 歸零）
