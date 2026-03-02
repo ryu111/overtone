@@ -299,8 +299,8 @@ describe('Feature 1b: Agent skills 預載（agent frontmatter）', () => {
     });
   });
 
-  // Scenario 1b-8: qa 預載 testing skill；doc-updater 無 skills 欄位
-  describe('Scenario 1b-8: qa 含 testing skill；doc-updater 不含 skills 欄位', () => {
+  // Scenario 1b-8: qa 含 testing skill；doc-updater 含 wording skill
+  describe('Scenario 1b-8: qa 含 testing skill；doc-updater 含 wording skill', () => {
     test('qa frontmatter 含 skills 欄位', () => {
       const fm = agentFrontmatters['qa'];
       expect(fm.skills).toBeDefined();
@@ -311,20 +311,44 @@ describe('Feature 1b: Agent skills 預載（agent frontmatter）', () => {
       expect(fm.skills).toContain('testing');
     });
 
-    test('doc-updater frontmatter 不含 skills 欄位', () => {
+    test('doc-updater frontmatter 含 skills 欄位', () => {
       const fm = agentFrontmatters['doc-updater'];
-      expect(fm.skills).toBeUndefined();
+      expect(fm.skills).toBeDefined();
+    });
+
+    test('doc-updater skills 包含 wording', () => {
+      const fm = agentFrontmatters['doc-updater'];
+      const skills = Array.isArray(fm.skills) ? fm.skills : [fm.skills];
+      expect(skills).toContain('wording');
     });
   });
 
-  // Scenario 1b-10: 未指定預載的 agent 不含 skills 欄位
+  // Scenario 1b-10: 未指定預載的 agent 不含 skills 欄位（debugger 為代表）
   describe('Scenario 1b-10: 未被指定預載的 agent 不含 skills 欄位', () => {
-    const noSkillsAgents = ['architect', 'planner', 'debugger'];
+    // architect、planner 已加入 wording skill，不再符合「無 skills」
+    // 僅驗證未加入任何 skill 的 agent
+    const noSkillsAgents = ['debugger'];
 
     for (const agentName of noSkillsAgents) {
       test(`${agentName} frontmatter 不含 skills 欄位`, () => {
         const fm = agentFrontmatters[agentName];
         expect(fm.skills).toBeUndefined();
+      });
+    }
+  });
+
+  // Scenario 1b-12: architect 和 planner 含 wording skill（新增）
+  describe('Scenario 1b-12: architect 和 planner 含 wording skill', () => {
+    for (const agentName of ['architect', 'planner']) {
+      test(`${agentName} frontmatter 含 skills 欄位`, () => {
+        const fm = agentFrontmatters[agentName];
+        expect(fm.skills).toBeDefined();
+      });
+
+      test(`${agentName} skills 包含 wording`, () => {
+        const fm = agentFrontmatters[agentName];
+        const skills = Array.isArray(fm.skills) ? fm.skills : [fm.skills];
+        expect(skills).toContain('wording');
       });
     }
   });

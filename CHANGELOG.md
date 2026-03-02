@@ -2,6 +2,43 @@
 
 所有重要變更記錄於此文件。
 
+## [0.28.5] - 2026-03-02（Wording knowledge domain 轉 skill）
+
+### 功能新增
+- **wording knowledge domain skill**：第 8 個 knowledge domain，獨立為 skill
+  - 內容：措詞正確性檢查、emoji-關鍵詞配對、語言風格指南
+  - 消費者：8 個 agent（planner、architect、developer、code-reviewer、security-reviewer、database-reviewer、retrospective、doc-updater）
+  - 參考文件：docs/reference/wording-guide.md
+
+### 架構改進
+- **S15b 迭代 2 完成**：knowledge domain 7 → 8，skill 15 → 16（最後一個獨立 knowledge domain）
+- **config-api.js memory 欄位修復**：agent 設定 memory 欄位遺失 bug 修復
+
+### 測試
+- 新增：docs-sync.test.js（文件同步驗證）、knowledge-domain-chain.test.js（8 個 domain 鏈路）、reference-integrity.test.js（參考檔案路徑檢查）
+- 測試通過：1844 pass / 0 fail（+18）
+- 測試檔案：85 個
+
+### 文檔
+- 更新 docs/status.md：版本狀態、核心指標（knowledge domain 7→8、Skill 數 15→16）、近期變更
+- 更新 docs/spec/overtone.md：版本 v0.28.5、決策記錄補齊
+
+---
+
+## [0.28.4] - 2026-03-02（Reference 完整性驗證）
+
+### 功能新增
+- **reference-integrity.test.js**：參考檔案完整性驗證
+  - 掃描 skills/ 和 commands/ 中的所有 reference/ 子目錄
+  - 驗證中文名稱與檔案是否對應
+
+### 測試
+- 新增：reference-integrity.test.js（42 tests）
+- 測試通過：1826 pass / 0 fail
+- 測試檔案：84 個
+
+---
+
 ## [0.28.2] - 2026-03-02（測試品質防護機制 — test-index + 反模式偵測）
 
 ### 功能新增

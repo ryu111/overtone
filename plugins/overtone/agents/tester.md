@@ -7,6 +7,7 @@ color: pink
 maxTurns: 50
 skills:
   - testing
+  - wording
 ---
 
 # 🧪 測試者

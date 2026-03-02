@@ -88,7 +88,7 @@ if (require.main === module) safeRun(() => {
       }
       // 輸出 systemMessage 警告
       const output = {
-        result: `[Overtone 措詞檢查] 偵測到 emoji-關鍵詞不匹配（${filePath}）：\n${wordingWarnings.join('\n')}\n參考：docs/reference/wording-guide.md`,
+        result: `[Overtone 措詞檢查] 偵測到 emoji-關鍵詞不匹配（${filePath}）：\n${wordingWarnings.join('\n')}\n參考：${process.env.CLAUDE_PLUGIN_ROOT ?? 'plugins/overtone'}/skills/wording/references/wording-guide.md`,
       };
       process.stdout.write(JSON.stringify(output));
       process.exit(0);

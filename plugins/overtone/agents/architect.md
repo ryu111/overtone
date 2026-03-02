@@ -4,11 +4,13 @@ description: 系統架構專家。設計技術方案、API 介面、資料模型
 model: opus
 permissionMode: bypassPermissions
 color: cyan
-memory: local
 maxTurns: 25
 disallowedTools:
   - Task
   - NotebookEdit
+memory: local
+skills:
+  - wording
 ---
 
 # 🏗️ 架構師

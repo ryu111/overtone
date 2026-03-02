@@ -3,7 +3,7 @@
  * wording.js — 措詞正確性偵測模組
  *
  * 提供 emoji-關鍵詞強度不匹配的偵測功能。
- * 對應 docs/reference/wording-guide.md 的三層規則：
+ * 對應 plugins/overtone/skills/wording/references/wording-guide.md 的三層規則：
  *   💡（軟引導）、📋（強規則）、⛔（硬阻擋）
  *
  * 此模組由 post-use.js Hook 使用，也可獨立測試。

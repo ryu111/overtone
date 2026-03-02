@@ -174,6 +174,10 @@ function buildAgentFrontmatter(fm) {
     }
   }
 
+  if (fm.memory) {
+    lines.push(`memory: ${fm.memory}`);
+  }
+
   if (fm.skills && fm.skills.length > 0) {
     lines.push('skills:');
     for (const skill of fm.skills) {
@@ -608,7 +612,7 @@ function updateAgent(name, updates, pluginRoot) {
 
   // 合併 updates 到 frontmatter（只更新提供的欄位）
   const mergedFrontmatter = { ...existingFrontmatter };
-  const frontmatterUpdateKeys = ['description', 'model', 'color', 'maxTurns', 'disallowedTools', 'tools', 'skills'];
+  const frontmatterUpdateKeys = ['description', 'model', 'color', 'maxTurns', 'memory', 'disallowedTools', 'tools', 'skills'];
   for (const key of frontmatterUpdateKeys) {
     if (updates[key] !== undefined) {
       mergedFrontmatter[key] = updates[key];

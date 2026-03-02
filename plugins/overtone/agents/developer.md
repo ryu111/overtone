@@ -7,6 +7,7 @@ color: yellow
 maxTurns: 50
 skills:
   - commit-convention
+  - wording
 ---
 
 # 💻 開發者

@@ -6,7 +6,7 @@
  *   A. Frontmatter 合規（disable-model-invocation + user-invocable + name）
  *   B. Agent → Skill 連結（consumer agent 的 skills frontmatter 指向存在的 domain）
  *   C. Skill → Reference 完整性（references/ 和 examples/ 下的檔案都存在）
- *   D. 閉環驗證（6 個有 consumer 的 domain 各至少 1 agent 引用 + 所有 reference 內容非空）
+ *   D. 閉環驗證（7 個有 consumer 的 domain 各至少 1 agent 引用 + 所有 reference 內容非空）
  */
 
 const { describe, test, expect, beforeAll } = require('bun:test');
@@ -18,7 +18,7 @@ const { parseFrontmatter } = require('../helpers/frontmatter');
 const SKILLS_DIR = join(PLUGIN_ROOT, 'skills');
 const AGENTS_DIR = join(PLUGIN_ROOT, 'agents');
 
-// 7 個 knowledge domain 定義
+// 8 個 knowledge domain 定義
 const KNOWLEDGE_DOMAINS = [
   'testing',
   'workflow-core',
@@ -27,19 +27,29 @@ const KNOWLEDGE_DOMAINS = [
   'dead-code',
   'commit-convention',
   'code-review',
+  'wording',
 ];
 
-// Agent → Domain 映射（6 個有 consumer 的 domain）
+// Agent → Domain 映射（7 個有 consumer 的 domain）
 // workflow-core 無直接 agent consumer
-const AGENT_DOMAIN_MAP = new Map([
+// 使用陣列支援同一 agent 對應多個 domain（Map 不支援重複 key）
+const AGENT_DOMAIN_PAIRS = [
   ['tester',            'testing'],
   ['qa',                'testing'],
   ['developer',         'commit-convention'],
+  ['developer',         'wording'],
+  ['tester',            'wording'],
+  ['doc-updater',       'wording'],
+  ['planner',           'wording'],
+  ['architect',         'wording'],
+  ['retrospective',     'wording'],
+  ['product-manager',   'wording'],
+  ['code-reviewer',     'wording'],
   ['code-reviewer',     'code-review'],
   ['database-reviewer', 'database'],
   ['refactor-cleaner',  'dead-code'],
   ['security-reviewer', 'security-kb'],
-]);
+];
 
 // 收集 domain 的所有 reference/example 檔案（相對路徑）
 function collectDomainFiles(domainName) {
@@ -59,7 +69,8 @@ function collectDomainFiles(domainName) {
 // ── 預先載入所有 agent frontmatter ──
 
 const agentFrontmatters = {};
-const agentFiles = [...AGENT_DOMAIN_MAP.keys()];
+// 從 pairs 陣列取唯一 agent 名稱（Map.keys() 因重複 key 只保留最後一個）
+const agentFiles = [...new Set(AGENT_DOMAIN_PAIRS.map(([a]) => a))];
 
 beforeAll(() => {
   for (const name of agentFiles) {
@@ -106,7 +117,7 @@ describe('Feature A：Knowledge Domain SKILL.md Frontmatter 合規', () => {
 // ────────────────────────────────────────────────────────────────────────────
 
 describe('Feature B：Agent → Skill 連結完整性', () => {
-  for (const [agentName, domainName] of AGENT_DOMAIN_MAP) {
+  for (const [agentName, domainName] of AGENT_DOMAIN_PAIRS) {
     describe(`B-${agentName}：${agentName} → ${domainName}`, () => {
       test(`${agentName} frontmatter 含 skills 欄位`, () => {
         const fm = agentFrontmatters[agentName];
@@ -164,14 +175,14 @@ describe('Feature C：Skill → Reference 完整性', () => {
 // ────────────────────────────────────────────────────────────────────────────
 
 describe('Feature D：閉環驗證', () => {
-  // D-1：6 個有 consumer 的 domain 各至少 1 agent 引用
-  describe('D-1：6 個有 consumer 的 domain 至少 1 個 agent 引用', () => {
-    // 計算每個 domain 被多少 agent 引用
-    const domainsWithConsumer = new Set(AGENT_DOMAIN_MAP.values());
+  // D-1：7 個有 consumer 的 domain 各至少 1 agent 引用
+  describe('D-1：7 個有 consumer 的 domain 至少 1 個 agent 引用', () => {
+    // 計算每個 domain 被多少 agent 引用（使用 pairs 陣列支援多對多）
+    const domainsWithConsumer = new Set(AGENT_DOMAIN_PAIRS.map(([, d]) => d));
 
     for (const domain of domainsWithConsumer) {
       test(`${domain} 至少被 1 個 agent 引用`, () => {
-        const consumers = [...AGENT_DOMAIN_MAP.entries()]
+        const consumers = AGENT_DOMAIN_PAIRS
           .filter(([, d]) => d === domain)
           .map(([a]) => a);
         expect(consumers.length).toBeGreaterThan(0);
@@ -195,7 +206,8 @@ describe('Feature D：閉環驗證', () => {
 
   // D-3：確認 agent frontmatter 正確載入（所有 consumer agent 都存在）
   describe('D-3：所有 consumer agent 的 agent .md 檔案存在', () => {
-    for (const agentName of AGENT_DOMAIN_MAP.keys()) {
+    const uniqueAgents = [...new Set(AGENT_DOMAIN_PAIRS.map(([a]) => a))];
+    for (const agentName of uniqueAgents) {
       test(`${agentName}.md 存在`, () => {
         const agentPath = join(AGENTS_DIR, `${agentName}.md`);
         expect(fs.existsSync(agentPath)).toBe(true);

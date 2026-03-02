@@ -8,6 +8,8 @@ maxTurns: 25
 disallowedTools:
   - Task
   - NotebookEdit
+skills:
+  - wording
 ---
 
 # 📋 規劃者

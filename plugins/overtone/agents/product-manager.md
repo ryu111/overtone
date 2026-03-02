@@ -4,11 +4,13 @@ description: 產品經理專家。需求探索、方案比較、MVP 範圍定義
 model: opus
 permissionMode: bypassPermissions
 color: emerald
-memory: local
 maxTurns: 30
 disallowedTools:
   - Task
   - NotebookEdit
+memory: local
+skills:
+  - wording
 ---
 
 # 🎯 產品經理

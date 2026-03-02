@@ -159,9 +159,9 @@ describe('1. docs/status.md 核心指標數字', () => {
     expect(actual.hookCount).toBe(11);
   });
 
-  test('Skill 數量：status.md 與含 SKILL.md 的 skills/ 子目錄一致（應為 15）', () => {
+  test('Skill 數量：status.md 與含 SKILL.md 的 skills/ 子目錄一致（應為 16）', () => {
     expect(metrics['Skill 數量']).toBe(actual.skillCount);
-    expect(actual.skillCount).toBe(15);
+    expect(actual.skillCount).toBe(16);
   });
 
   test('Command 數量：status.md 與 commands/ 目錄 .md 檔案一致（應為 27）', () => {
@@ -232,7 +232,7 @@ describe('3. 關鍵文件路徑存在性', () => {
       { label: 'docs/status.md', path: join(PROJECT_ROOT, 'docs/status.md') },
       // scripts/lib/registry.js 在 CLAUDE.md 中以短路徑描述，實際在 plugins/overtone/scripts/lib/
       { label: 'plugins/overtone/scripts/lib/registry.js（CLAUDE.md 中作為 SoT 標注）', path: REGISTRY_JS },
-      { label: 'docs/reference/wording-guide.md', path: join(PROJECT_ROOT, 'docs/reference/wording-guide.md') },
+      { label: 'plugins/overtone/skills/wording/references/wording-guide.md', path: join(PLUGIN_ROOT, 'skills/wording/references/wording-guide.md') },
     ];
 
     for (const { label, path } of claudeKeyDocs) {
