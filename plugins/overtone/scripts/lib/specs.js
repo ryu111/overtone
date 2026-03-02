@@ -140,9 +140,11 @@ function buildFrontmatter(fields) {
 // ── Checkbox 解析 ──
 
 /**
- * 讀取 tasks.md 中 ## Tasks 或 ## Stages 區塊的 stage-level checkbox 完成度
+ * 讀取 tasks.md 中 ## Stages 或 ## Tasks 區塊的 stage-level checkbox 完成度
  *
- * 只統計 stage-level 標頭區塊（## Tasks 或 ## Stages）到下一個 ## 標頭之間的 checkbox，
+ * 優先讀取 ## Stages 區塊（新格式 auto-managed），
+ * 找不到時 fallback 到 ## Tasks 區塊（向後相容舊格式）。
+ * 只統計該區塊到下一個 ## 標頭之間的 checkbox，
  * 排除 ## Dev Phases 等細粒度任務 checkbox，避免它們阻擋歸檔判斷。
  *
  * @param {string} tasksPath
@@ -157,9 +159,9 @@ function readTasksCheckboxes(tasksPath) {
     return null;
   }
 
-  // 同時支援 ## Tasks（新格式）和 ## Stages（舊格式）標頭
-  let sectionIdx = content.indexOf('## Tasks');
-  if (sectionIdx < 0) sectionIdx = content.indexOf('## Stages');
+  // 優先讀 ## Stages（auto-managed，新格式），fallback 到 ## Tasks（向後相容）
+  let sectionIdx = content.indexOf('## Stages');
+  if (sectionIdx < 0) sectionIdx = content.indexOf('## Tasks');
 
   let sectionContent;
   if (sectionIdx >= 0) {
@@ -221,7 +223,10 @@ function buildTasksMd(featureName, workflowType, status) {
     checkboxes = uniqueStages.map((stage) => `- [ ] ${stage}`).join('\n');
   }
 
-  return [
+  // 雙區段結構：
+  //   ## Stages — auto-managed，SubagentStop hook 自動勾選
+  //   ## Tasks  — 供 agent 自由記錄任務筆記
+  const lines = [
     '---',
     `feature: ${featureName}`,
     `status: ${status}`,
@@ -229,10 +234,16 @@ function buildTasksMd(featureName, workflowType, status) {
     `created: ${created}`,
     '---',
     '',
-    '## Tasks',
-    '',
-    checkboxes,
-  ].join('\n');
+  ];
+
+  if (checkboxes) {
+    lines.push('## Stages', '', checkboxes, '', '## Tasks', '');
+  } else {
+    // specsConfig 為空的 workflow（如 single）不需要 ## Stages
+    lines.push('## Tasks', '');
+  }
+
+  return lines.join('\n');
 }
 
 /**

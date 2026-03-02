@@ -39,10 +39,10 @@ async function runHook(input) {
 }
 
 /**
- * 從 hook 輸出取得 additionalContext
+ * 從 hook 輸出取得 systemMessage
  */
 function getContext(result) {
-  return result?.hookSpecificOutput?.additionalContext ?? '';
+  return result?.systemMessage ?? '';
 }
 
 // ── Session 管理 ──

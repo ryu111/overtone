@@ -1,9 +1,9 @@
 ---
 feature: test-quality-guard
 workflow: standard
-status: in-progress
+status: archived
+archivedAt: 2026-03-02T12:32:55.733Z
 ---
-
 # test-quality-guard
 
 ## Tasks

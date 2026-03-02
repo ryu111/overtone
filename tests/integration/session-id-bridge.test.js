@@ -230,10 +230,9 @@ describe('on-submit.js — sessionId 橋接邏輯', () => {
     const writtenId = readFileSync(CURRENT_SESSION_FILE, 'utf8').trim();
     expect(writtenId).toBe(bridgeSessionId);
 
-    // stdout 應為有效的 JSON（hookSpecificOutput 格式）
+    // stdout 應為有效的 JSON（systemMessage 格式）
     const output = JSON.parse(proc.stdout.toString());
-    expect(output).toHaveProperty('hookSpecificOutput');
-    expect(output.hookSpecificOutput).toHaveProperty('additionalContext');
+    expect(output).toHaveProperty('systemMessage');
   });
 
   test('on-submit.js 未傳入 CLAUDE_SESSION_ID 時不應寫入 .current-session-id（靜默跳過）', () => {

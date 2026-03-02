@@ -8,7 +8,7 @@
  * L2 結構化 API：createAgent, updateAgent, createHook, updateHook, createSkill, updateSkill
  */
 
-const { existsSync, readFileSync, mkdirSync } = require('fs');
+const { existsSync, readFileSync, mkdirSync, chmodSync } = require('fs');
 const { join } = require('path');
 const matter = require('gray-matter');
 const { atomicWrite } = require('./utils');
@@ -667,6 +667,9 @@ function createHook(opts, pluginRoot) {
     errors.push(`command 指向的腳本不存在：${opts.command}`);
     return { success: false, errors };
   }
+
+  // 確保腳本有執行權限
+  try { chmodSync(resolvedCmd, 0o755); } catch { /* 靜默忽略 */ }
 
   // 讀取現有 hooks.json
   const hooksPath = join(pluginRoot, 'hooks', 'hooks.json');

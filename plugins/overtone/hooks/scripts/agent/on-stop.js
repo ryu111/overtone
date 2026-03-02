@@ -148,6 +148,19 @@ safeRun(() => {
   // ── 自動更新 tasks.md checkbox（若有 specs feature）──
   // 當 stage 完成（非 fail/reject）時，在 tasks.md 中勾選對應的 checkbox
 
+  // featureName auto-sync：若 workflow.json 沒有 featureName，嘗試從 specs 目錄自動偵測
+  if (!updatedState.featureName && projectRoot) {
+    try {
+      const specsAutoSync = require('../../../scripts/lib/specs');
+      const activeFeature = specsAutoSync.getActiveFeature(projectRoot);
+      if (activeFeature) {
+        const { setFeatureName } = require('../../../scripts/lib/state');
+        setFeatureName(sessionId, activeFeature.name);
+        updatedState.featureName = activeFeature.name;
+      }
+    } catch { /* 靜默忽略 — auto-sync 失敗不影響主流程 */ }
+  }
+
   let tasksCheckboxWarning = null;
 
   if (result.verdict !== 'fail' && result.verdict !== 'reject' && updatedState.featureName) {

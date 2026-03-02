@@ -1,8 +1,8 @@
 # Overtone 並行執行
 
 > 本文件是 [Overtone 規格文件](overtone.md) 的子文件。
-> 主題：Loop 模式、並行設計、Mul-Dev、D1-D4 缺陷修復
-> 版本：v0.17.7
+> 主題：Loop 模式、並行設計、Mul-Dev、D1-D4 缺陷修復、Specs 雙區段架構
+> 版本：v0.28.3
 
 ---
 
@@ -116,26 +116,45 @@ DEV 階段可進一步分解為多個並行子任務（Phase），通過 **mul-d
 
 | 模式 | 觸發條件 | 分析者 | Phase 存放位置 |
 |------|--------|--------|:----:|
-| **Mode A** | 有 specs（standard/full/secure/refactor） | architect | `tasks.md` → `## Dev Phases` 區塊 |
+| **Mode A** | 有 specs（standard/full/secure/refactor） | architect | `tasks.md` → `## Stages` 區塊（auto-managed）|
 | **Mode B** | 無 specs（quick/debug/single） | Main Agent | context window 自行判斷 |
 
-**Phase 標記格式**：
+**tasks.md 雙區段格式**（v0.28.3+）：
 
 ```markdown
-## Dev Phases
+---
+feature: feature-name
+status: in-progress
+workflow: standard
+created: 2026-03-02
+---
+
+## Stages
+
+- [ ] PLAN
+- [ ] ARCH
+- [ ] DEV
+- [ ] TEST
+- [ ] REVIEW
+
+## Tasks
 
 ### Phase 1: 基礎建設 (sequential)
-- [ ] 建立資料模型 | files: src/models/user.ts
-- [ ] 設定路由骨架 | files: src/routes/index.ts
+- 建立資料模型 | files: src/models/user.ts
+- 設定路由骨架 | files: src/routes/index.ts
 
 ### Phase 2: 核心功能 (parallel)
-- [ ] 實作 CRUD API | files: src/handlers/user.ts
-- [ ] 實作認證中間件 | files: src/middleware/auth.ts
-- [ ] 撰寫單元測試 | files: tests/user.test.ts
+- 實作 CRUD API | files: src/handlers/user.ts
+- 實作認證中間件 | files: src/middleware/auth.ts
+- 撰寫單元測試 | files: tests/user.test.ts
 
 ### Phase 3: 整合 (sequential, depends: 2)
-- [ ] 整合 CRUD 與認證 | files: src/routes/user.ts
+- 整合 CRUD 與認證 | files: src/routes/user.ts
 ```
+
+**區段說明**：
+- `## Stages`：auto-managed，SubagentStop hook 自動勾選對應的 stage
+- `## Tasks`：供 agent 自由記錄任務筆記、Phase 拆解、備註等（不受 auto-managed 影響）
 
 - `(sequential)`：Phase 內子任務依序執行（單一 developer）
 - `(parallel)`：Phase 內子任務同一訊息並行（多個 developer Task）

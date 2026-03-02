@@ -282,6 +282,52 @@ describe('readTasksCheckboxes', () => {
     expect(result.checked).toBe(2);
     expect(result.allChecked).toBe(true);
   });
+
+  test('雙區段格式：## Stages 優先於 ## Tasks，忽略 ## Tasks 下的自由任務', () => {
+    // 新格式：## Stages auto-managed + ## Tasks 供 agent 自由填寫
+    // readTasksCheckboxes 應優先讀 ## Stages，不計 ## Tasks 下的自由任務
+    const tasksPath = path.join(tmpDir, 'tasks.md');
+    writeFileSync(tasksPath, [
+      '## Stages',
+      '',
+      '- [x] DEV',
+      '- [ ] REVIEW',
+      '',
+      '## Tasks',
+      '',
+      '- [ ] 建立 test-anti-patterns.md',
+      '- [ ] 更新 README',
+    ].join('\n'));
+
+    const result = specs.readTasksCheckboxes(tasksPath);
+    // 只統計 ## Stages 的 2 個 checkbox，不含 ## Tasks 的 2 個自由任務
+    expect(result.total).toBe(2);
+    expect(result.checked).toBe(1);
+    expect(result.allChecked).toBe(false);
+    expect(result.unchecked).toEqual(['REVIEW']);
+  });
+
+  test('雙區段格式：## Stages 全勾選，## Tasks 有未完成項目時仍回傳 allChecked = true', () => {
+    const tasksPath = path.join(tmpDir, 'tasks.md');
+    writeFileSync(tasksPath, [
+      '## Stages',
+      '',
+      '- [x] DEV',
+      '- [x] REVIEW',
+      '- [x] TEST',
+      '',
+      '## Tasks',
+      '',
+      '- [ ] 待辦任務（不影響歸檔判斷）',
+    ].join('\n'));
+
+    const result = specs.readTasksCheckboxes(tasksPath);
+    // ## Stages 全勾選，allChecked 應為 true
+    expect(result.total).toBe(3);
+    expect(result.checked).toBe(3);
+    expect(result.allChecked).toBe(true);
+    expect(result.unchecked).toHaveLength(0);
+  });
 });
 
 // ── updateTasksFrontmatter ──
@@ -389,10 +435,12 @@ describe('initFeatureDir', () => {
     expect(fm.created).toBeDefined();
   });
 
-  test('tasks.md 包含正確 Markdown 結構', () => {
+  test('tasks.md 包含正確 Markdown 結構（雙區段）', () => {
     const result = specs.initFeatureDir(tmpDir, 'new-feature', 'quick');
     const content = readFileSync(path.join(result, 'tasks.md'), 'utf8');
     expect(content).toContain('---');
+    // 有 specsConfig 的 workflow 應有雙區段
+    expect(content).toContain('## Stages');
     expect(content).toContain('## Tasks');
     expect(content).toContain('workflow: quick');
   });
@@ -908,6 +956,46 @@ describe('buildTasksMd — tasks.md checkbox 內容驗證', () => {
     expect(stats.total).toBe(7);
     expect(stats.checked).toBe(0);
     expect(stats.allChecked).toBe(false);
+  });
+
+  test('standard workflow tasks.md 包含 ## Stages 和 ## Tasks 雙區段', () => {
+    const result = specs.initFeatureDir(tmpDir, 'dual-section-feature', 'standard');
+    const tasksPath = path.join(result, 'tasks.md');
+    const content = readFileSync(tasksPath, 'utf8');
+
+    // 雙區段都存在
+    expect(content).toContain('## Stages');
+    expect(content).toContain('## Tasks');
+
+    // stage checkboxes 在 ## Stages 區塊
+    const stagesIdx = content.indexOf('## Stages');
+    const tasksIdx = content.indexOf('## Tasks');
+    expect(stagesIdx).toBeLessThan(tasksIdx);
+
+    // ## Stages 和 ## Tasks 之間有 stage checkboxes
+    const stagesSection = content.slice(stagesIdx, tasksIdx);
+    expect(stagesSection).toContain('- [ ] DEV');
+    expect(stagesSection).toContain('- [ ] PLAN');
+  });
+
+  test('quick workflow tasks.md 的 ## Stages 區塊含正確 stages，## Tasks 為空', () => {
+    const result = specs.initFeatureDir(tmpDir, 'quick-dual-feature', 'quick');
+    const tasksPath = path.join(result, 'tasks.md');
+    const content = readFileSync(tasksPath, 'utf8');
+
+    expect(content).toContain('## Stages');
+    expect(content).toContain('## Tasks');
+
+    const stagesIdx = content.indexOf('## Stages');
+    const tasksIdx = content.indexOf('## Tasks');
+    const stagesSection = content.slice(stagesIdx, tasksIdx);
+
+    // quick stages：DEV, REVIEW, TEST, RETRO, DOCS
+    expect(stagesSection).toContain('- [ ] DEV');
+    expect(stagesSection).toContain('- [ ] REVIEW');
+    expect(stagesSection).toContain('- [ ] TEST');
+    expect(stagesSection).toContain('- [ ] RETRO');
+    expect(stagesSection).toContain('- [ ] DOCS');
   });
 });
 

@@ -76,7 +76,7 @@ plugins/overtone/   # Plugin 根目錄
 | UserPromptSubmit | systemMessage → /ot:auto |
 | PreToolUse(Task) | subagent_type 確定性映射 + 擋跳過必要階段 + 衝突警告 + updatedInput 注入 workflow context |
 | PreToolUse(Write/Edit) | 元件檔案保護 — 阻擋直接編輯 agents/*.md、hooks.json、skills/*/SKILL.md、registry-data.json、plugin.json，強制使用 manage-component.js |
-| SubagentStop | 記錄結果 + 提示下一步 + 寫 state + emit timeline |
+| SubagentStop | 記錄結果 + 提示下一步 + 寫 state + emit timeline + featureName auto-sync + tasks.md 勾選（## Stages auto-managed） |
 | PostToolUse | Instinct 觀察收集 + .md 措詞偵測（emoji-關鍵詞不匹配警告） |
 | TaskCompleted | Task 完成前品質門檻硬阻擋（test pass + lint clean） |
 | PostToolUseFailure | Tool 執行失敗事件處理 |

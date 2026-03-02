@@ -30,12 +30,12 @@ async function runHook(input, env = {}) {
 }
 
 /**
- * 從 hook 輸出取得 additionalContext（hookSpecificOutput 格式）
+ * 從 hook 輸出取得 systemMessage
  * @param {object} result - runHook 回傳值
  * @returns {string}
  */
 function getContext(result) {
-  return result?.hookSpecificOutput?.additionalContext ?? '';
+  return result?.systemMessage ?? '';
 }
 
 // ── 場景 8 所需的 session 管理 ──
@@ -64,7 +64,7 @@ afterAll(() => {
 describe('/ot: 命令跳過', () => {
   test('場景 1：prompt = /ot:auto → 回傳空 additionalContext', async () => {
     const result = await runHook({ user_prompt: '/ot:auto' });
-    // hook 輸出 hookSpecificOutput 格式，additionalContext 為空
+    // hook 輸出 systemMessage 格式，/ot: 命令時 systemMessage 為 undefined → ''
     expect(getContext(result)).toBe('');
   });
 

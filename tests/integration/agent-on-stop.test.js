@@ -9,7 +9,7 @@
  */
 
 const { test, expect, describe, beforeAll, afterAll, afterEach } = require('bun:test');
-const { mkdirSync, rmSync } = require('fs');
+const { mkdirSync, mkdtempSync, rmSync, writeFileSync, readFileSync, existsSync } = require('fs');
 const { join } = require('path');
 const { HOOKS_DIR, SCRIPTS_LIB } = require('../helpers/paths');
 
@@ -482,6 +482,109 @@ describe('場景 9：timeline 事件驗證', () => {
 // 場景 10：REJECT 達到上限
 // ────────────────────────────────────────────────────────────────────────────
 
+// ────────────────────────────────────────────────────────────────────────────
+// 場景 15：featureName auto-sync — workflow.json 無 featureName 時自動偵測
+// ────────────────────────────────────────────────────────────────────────────
+
+describe('場景 15：featureName auto-sync', () => {
+  const os = require('os');
+  const path = require('path');
+  const specs = require(join(SCRIPTS_LIB, 'specs'));
+
+  test('workflow.json 無 featureName + specs 有 active feature → auto-sync 並勾選 checkbox', async () => {
+    const sessionId = newSessionId();
+    createdSessions.push(sessionId);
+
+    // 建立臨時 project root，有 in-progress feature
+    const tmpProject = mkdtempSync(join(os.tmpdir(), 'overtone-autosync-'));
+    const featurePath = specs.initFeatureDir(tmpProject, 'my-feature', 'quick');
+    const tasksPath = join(featurePath, 'tasks.md');
+
+    // 確認 tasks.md 有 DEV checkbox（在 ## Stages 區塊）
+    const initialContent = readFileSync(tasksPath, 'utf8');
+    expect(initialContent).toContain('- [ ] DEV');
+
+    // 建立 workflow state（不帶 featureName）
+    mkdirSync(paths.sessionDir(sessionId), { recursive: true });
+    state.initState(sessionId, 'quick', ['DEV', 'REVIEW', 'TEST']);
+    state.updateStateAtomic(sessionId, (s) => {
+      s.stages['DEV'].status = 'active';
+      // 明確不設定 featureName
+      s.featureName = null;
+      return s;
+    });
+
+    // 執行 hook（帶 cwd 指向臨時 project）
+    const proc = Bun.spawn(['node', HOOK_PATH], {
+      stdin: Buffer.from(JSON.stringify({
+        agent_type: 'ot:developer',
+        last_assistant_message: 'VERDICT: pass 開發完成',
+        cwd: tmpProject,
+      })),
+      env: { ...process.env, CLAUDE_SESSION_ID: sessionId },
+      stdout: 'pipe',
+      stderr: 'pipe',
+    });
+
+    const output = await new Response(proc.stdout).text();
+    await proc.exited;
+    const result = JSON.parse(output);
+
+    // hook 應正常輸出（pass）
+    expect(result.result).toContain('✅');
+
+    // tasks.md 中 DEV checkbox 應被自動勾選
+    const updatedContent = readFileSync(tasksPath, 'utf8');
+    expect(updatedContent).toContain('- [x] DEV');
+
+    // state 中 featureName 應被同步
+    const updatedState = state.readState(sessionId);
+    expect(updatedState.featureName).toBe('my-feature');
+
+    // 清理臨時目錄
+    rmSync(tmpProject, { recursive: true, force: true });
+  });
+
+  test('workflow.json 無 featureName + specs 無 active feature → 靜默忽略，不拋例外', async () => {
+    const sessionId = newSessionId();
+    createdSessions.push(sessionId);
+
+    // 使用不含 specs 目錄的 project root
+    const tmpProject = mkdtempSync(join(os.tmpdir(), 'overtone-nofeature-'));
+
+    mkdirSync(paths.sessionDir(sessionId), { recursive: true });
+    state.initState(sessionId, 'quick', ['DEV', 'REVIEW', 'TEST']);
+    state.updateStateAtomic(sessionId, (s) => {
+      s.stages['DEV'].status = 'active';
+      s.featureName = null;
+      return s;
+    });
+
+    const proc = Bun.spawn(['node', HOOK_PATH], {
+      stdin: Buffer.from(JSON.stringify({
+        agent_type: 'ot:developer',
+        last_assistant_message: 'VERDICT: pass 開發完成',
+        cwd: tmpProject,
+      })),
+      env: { ...process.env, CLAUDE_SESSION_ID: sessionId },
+      stdout: 'pipe',
+      stderr: 'pipe',
+    });
+
+    const output = await new Response(proc.stdout).text();
+    await proc.exited;
+    const result = JSON.parse(output);
+
+    // hook 仍應正常輸出，不因找不到 feature 而失敗
+    expect(result.result).toContain('✅');
+
+    // state featureName 維持 null
+    const updatedState = state.readState(sessionId);
+    expect(updatedState.featureName).toBeNull();
+
+    rmSync(tmpProject, { recursive: true, force: true });
+  });
+});
 
 // ────────────────────────────────────────────────────────────────────────────
 // 場景 11：RETRO PASS / ISSUES
