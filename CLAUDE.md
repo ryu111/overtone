@@ -100,7 +100,7 @@ bun scripts/server.js
 # 系統健康檢查（7 項偵測）
 bun scripts/health-check.js
 
-# 驗證所有元件設定（17 agents + 11 hooks + 15 skills + 27 commands）
+# 驗證所有元件設定（17 agents + 11 hooks + 16 skills + 27 commands）
 bun scripts/validate-agents.js
 
 # 元件管理（建立/更新 agent、hook、skill）

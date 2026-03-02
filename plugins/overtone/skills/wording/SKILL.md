@@ -20,6 +20,7 @@ user-invocable: false
 | architect | 撰寫設計文件時，正確區分強制要求和最佳實踐 |
 | retrospective | 撰寫回顧報告和建議時，確保措詞強度與實際約束力一致 |
 | product-manager | 撰寫產品文件和需求規格時，正確使用強度層級 |
+| code-reviewer | 審查 .md 文件時，識別並回報 emoji-關鍵詞強度不匹配 |
 
 ## 資源索引
 

@@ -2,6 +2,20 @@
 
 所有重要變更記錄於此文件。
 
+## [0.28.6] - 2026-03-02（閉迴圈工作流驗證）
+
+### 功能新增
+- **workflow-closed-loop.test.js**：閉迴圈工作流驗證
+  - 驗證 GIVEN/WHEN/THEN 閉迴圈邏輯（51 tests）
+  - 覆蓋 stop hook + loop 繼續 + 隱藏 task 處理
+
+### 測試
+- 新增：workflow-closed-loop.test.js（51 tests）
+- 測試通過：1917 pass / 0 fail（+73）
+- 測試檔案：85 個
+
+---
+
 ## [0.28.5] - 2026-03-02（Wording knowledge domain 轉 skill）
 
 ### 功能新增
