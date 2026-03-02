@@ -31,8 +31,14 @@ created: 2026-03-02
 - [ ] 刪除 `ref-test-strategy/` 目錄
 - [ ] 刪除 `test/references/` 和 `test/examples/` 目錄
 - [ ] 更新 platform-alignment-skills.test.js 測試
+- [ ] 建立 knowledge-domain-chain.test.js（7 個 domain 三層鏈路驗證）
+- [ ] 建立 tdd-workflow.test.js（3 stage sequential）
+- [ ] 建立 debug-workflow.test.js（3 stage sequential）
+- [ ] 建立 refactor-workflow.test.js（5 stage + quality 並行組）
+- [ ] 建立 full-workflow.test.js（11 stage + 兩層並行組）
+- [ ] 建立 secure-workflow.test.js（9 stage + 三成員並行組）
 
-## Dev Phases
+## Dev Phases (iteration 1)
 
 ### Phase 1: 建立目錄 + 搬移檔案 (sequential)
 - [ ] 建立 `skills/testing/` 結構並搬移所有 reference/example 檔案 + 寫入 SKILL.md | files: plugins/overtone/skills/testing/SKILL.md, plugins/overtone/skills/testing/references/bdd-spec-guide.md, plugins/overtone/skills/testing/references/test-scope-dispatch.md, plugins/overtone/skills/testing/references/bdd-methodology.md, plugins/overtone/skills/testing/references/testing-conventions.md, plugins/overtone/skills/testing/references/test-strategy.md, plugins/overtone/skills/testing/examples/bdd-spec-samples.md
@@ -43,3 +49,13 @@ created: 2026-03-02
 
 ### Phase 3: 更新測試 (sequential, depends: 2)
 - [ ] 更新 platform-alignment-skills.test.js：新增 testing skill 驗證 + 更新 ref-test-strategy 斷言 | files: tests/unit/platform-alignment-skills.test.js
+
+## Dev Phases (iteration 2)
+
+### Phase 1: 建立所有測試檔案 (parallel)
+- [ ] 建立 knowledge-domain-chain.test.js：7 個 domain 的 agent-skill-reference 三層鏈路驗證 | files: tests/unit/knowledge-domain-chain.test.js
+- [ ] 建立 tdd-workflow.test.js：3 stage sequential 狀態機 | files: tests/e2e/tdd-workflow.test.js
+- [ ] 建立 debug-workflow.test.js：3 stage sequential 狀態機 | files: tests/e2e/debug-workflow.test.js
+- [ ] 建立 refactor-workflow.test.js：5 stage + quality 並行組 | files: tests/e2e/refactor-workflow.test.js
+- [ ] 建立 full-workflow.test.js：11 stage + 兩層並行組 | files: tests/e2e/full-workflow.test.js
+- [ ] 建立 secure-workflow.test.js：9 stage + 三成員並行組 | files: tests/e2e/secure-workflow.test.js
