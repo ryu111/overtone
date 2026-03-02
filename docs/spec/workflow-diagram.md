@@ -22,7 +22,7 @@ flowchart TB
         direction LR
         US["UserPromptSubmit\n注入 /ot:auto 指引"]
         MA["Main Agent\n讀取 /ot:auto"]
-        WF["Workflow Skill\nquick / standard / full..."]
+        WF["Workflow Command\nquick / standard / full..."]
         AG["依序委派\n17 個 Agents"]
         US --> MA --> WF --> AG
     end

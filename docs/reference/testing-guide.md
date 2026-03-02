@@ -111,7 +111,7 @@ const { SCRIPTS_LIB, HOOKS_DIR } = require('../helpers/paths.js');
 const registry = require(path.join(SCRIPTS_LIB, 'registry.js'));
 ```
 
-詳見 `plugins/overtone/skills/test/references/testing-conventions.md`。
+詳見 `plugins/overtone/skills/testing/references/testing-conventions.md`。
 
 ---
 
@@ -122,5 +122,5 @@ const registry = require(path.join(SCRIPTS_LIB, 'registry.js'));
 | `specs/features/in-progress/test-architecture/bdd.md` | 行為規格（Source of Truth） |
 | `tests/helpers/paths.js` | 路徑 Helper |
 | `bunfig.toml` | bun test 根目錄設定 |
-| `plugins/overtone/skills/test/references/testing-conventions.md` | tester agent 操作規範 |
+| `plugins/overtone/skills/testing/references/testing-conventions.md` | tester agent 操作規範 |
 | `plugins/overtone/skills/auto/references/test-scope-dispatch.md` | Main Agent 調度規則 |
