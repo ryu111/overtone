@@ -113,7 +113,8 @@ lint 0 error + test 0 fail + review PASS → 才算完成
 | [docs/spec/overtone-工作流.md](docs/spec/overtone-工作流.md) | 18 個 workflow 模板詳解 |
 | [docs/spec/overtone-agents.md](docs/spec/overtone-agents.md) | 17 個 agent 職責與設定 |
 | [docs/status.md](docs/status.md) | 現況快讀（版本、指標、近期變更） |
-| [docs/product-roadmap.md](docs/product-roadmap.md) | 產品路線圖 |
+| [docs/vision.md](docs/vision.md) | 產品願景（四層同心圓架構） |
+| [docs/roadmap.md](docs/roadmap.md) | 路線圖 |
 | [CLAUDE.md](CLAUDE.md) | 開發規範與設計原則 |
 
 ---

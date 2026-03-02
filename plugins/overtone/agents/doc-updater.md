@@ -50,9 +50,9 @@ skills:
 ### PM 產出文件（內容由 PM 負責，doc-updater 只做狀態同步）
 
 | 文件 | 更新時機 | doc-updater 職責 |
-|------|---------|-----------------|
-| `docs/product-brief.md` | PM 決策後 | 不修改內容方向，只做格式和數字同步 |
-| `docs/product-roadmap.md` | 每次 DOCS 階段 | 更新進度狀態、日期、header（見下方規範），不改任務定義 |
+|------|---------|------------------|
+| `docs/vision.md` | PM Discovery 後 | 不修改願景方向，只做格式同步 |
+| `docs/roadmap.md` | 每次 DOCS 階段 | 更新進度狀態、日期、header（見下方規範），不改任務定義 |
 
 ### 技術文件（doc-updater 完全負責同步）
 
@@ -67,15 +67,14 @@ skills:
 | README | 專案根目錄 `README.md` |
 | CHANGELOG | 專案根目錄 `CHANGELOG.md` |
 
-## product-roadmap.md 更新規範
+## roadmap.md 更新規範
 
-每次 DOCS 階段，檢查 `docs/product-roadmap.md` 是否需要更新：
+每次 DOCS 階段，檢查 `docs/roadmap.md` 是否需要更新：
 
 - **最後更新日期**：若本次有任何 roadmap 相關變更，更新為當前日期
-- **Phase header**：「當前 Phase」對齊最新未完成的 Phase（Phase 0+1 完成 → Phase 2）
+- **Phase header**：「當前 Phase」對齊最新未完成的 Phase
 - **Phase 總覽表格**：已完成的 Phase 標記 ✅ 完成
-- **技術 Roadmap 四階段**：已完成的 S1-S4 標記 ✅ 完成（含版本號或關鍵產出），進行中標記 🔵
-- **優先順序表格**：核心強化/Dashboard/Remote 狀態對齊實際進度
+- **技術路線 S 系列**：已完成的標記 ✅（含版本號），進行中標記 🔵
 
 若無相關變更，保持原值不動。
 

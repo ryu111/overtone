@@ -140,6 +140,16 @@ safeRun(() => {
     process.exit(0);
   }
 
+  // ── PM 互動模式 ──
+  // PM stage 是互動式的（Main Agent 與使用者 AskUserQuestion 對話）
+  // 不應被 loop 強制推進，否則會阻斷 PM 討論
+  // 完成時由 SubagentStop（委派模式）或 Main Agent 標記（直接模式）
+  const nextStage = currentState.currentStage;
+  if (nextStage === 'PM') {
+    process.stdout.write(JSON.stringify({ result: '' }));
+    process.exit(0);
+  }
+
   // ── 未完成 → Loop 繼續 ──
 
   // 遞增 iteration
@@ -151,8 +161,7 @@ safeRun(() => {
     progress: `${completedStages}/${totalStages}`,
   });
 
-  // 產生繼續 prompt
-  const nextStage = currentState.currentStage;
+  // 產生繼續 prompt（nextStage 已在上方 PM 互動模式檢查時定義）
   const base = nextStage ? nextStage.split(':')[0] : null;
   const def = base ? stages[base] : null;
 

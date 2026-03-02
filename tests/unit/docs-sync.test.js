@@ -245,6 +245,8 @@ describe('3. 關鍵文件路徑存在性', () => {
   describe('3b. docs/status.md 文件索引中引用的路徑', () => {
     // status.md「文件索引」表格中引用的路徑（相對於專案根目錄）
     const statusDocPaths = [
+      'docs/vision.md',
+      'docs/roadmap.md',
       'docs/spec/overtone.md',
       'docs/spec/overtone-架構.md',
       'docs/spec/overtone-工作流.md',
@@ -252,7 +254,6 @@ describe('3. 關鍵文件路徑存在性', () => {
       'docs/spec/overtone-並行.md',
       'docs/spec/overtone-子系統.md',
       'docs/spec/overtone-驗證品質.md',
-      'docs/product-roadmap.md',
     ];
 
     for (const relPath of statusDocPaths) {
