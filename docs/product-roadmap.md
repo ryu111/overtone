@@ -76,8 +76,8 @@
 ### S15b 詳細項目（Skill/Agent/Command 正規化）
 
 > 來源：PM Discovery — Agent-Skill 架構分析 + Claude Code 官方文件 + 產業最佳實踐驗證
-> Product Brief：`docs/product-brief-normalization.md`
-> 功能快照基線：`docs/skill-snapshot-v0.27.md`
+> Product Brief：`docs/archive/2026-03-02_skill-normalization-s15b/product-brief-normalization.md`
+> 功能快照基線：`docs/archive/2026-03-02_v0.27-snapshot/skill-snapshot-v0.27.md`
 
 **問題**：38 個 skill 混合了三種不同概念（知識、角色呼叫、workflow 命令），違反 Claude Code 官方 skill = knowledge/capability 定義。
 
