@@ -65,6 +65,9 @@ plugins/overtone/   # Plugin 根目錄
 
 ## Hook 架構（11 個，~1735 行 + config-api.js ~850 行）
 
+⚠️ **hooks.json 必須使用官方三層嵌套格式**：`{ hooks: { EventName: [{ matcher?, hooks: [{ type, command }] }] } }`
+扁平陣列格式（`hooks: [{ event, type, command }]`）會導致部分 hook 無法被 Claude Code 觸發。Guard test 自動驗證。
+
 | 事件 | 職責 |
 |------|------|
 | SessionStart | Banner + 初始化 + Dashboard spawn |
@@ -72,6 +75,7 @@ plugins/overtone/   # Plugin 根目錄
 | PreCompact | context 壓縮前注入工作流狀態恢復訊息 |
 | UserPromptSubmit | systemMessage → /ot:auto |
 | PreToolUse(Task) | subagent_type 確定性映射 + 擋跳過必要階段 + 衝突警告 + updatedInput 注入 workflow context |
+| PreToolUse(Write/Edit) | 元件檔案保護 — 阻擋直接編輯 agents/*.md、hooks.json、skills/*/SKILL.md、registry-data.json、plugin.json，強制使用 manage-component.js |
 | SubagentStop | 記錄結果 + 提示下一步 + 寫 state + emit timeline |
 | PostToolUse | Instinct 觀察收集 + .md 措詞偵測（emoji-關鍵詞不匹配警告） |
 | TaskCompleted | Task 完成前品質門檻硬阻擋（test pass + lint clean） |
@@ -96,8 +100,13 @@ bun scripts/server.js
 # 系統健康檢查（7 項偵測）
 bun scripts/health-check.js
 
-# 驗證所有 agent 設定是否完整
+# 驗證所有元件設定（17 agents + 11 hooks + 15 skills）
 bun scripts/validate-agents.js
+
+# 元件管理（建立/更新 agent、hook、skill）
+bun scripts/manage-component.js create agent '{"name":"...","model":"sonnet",...}'
+bun scripts/manage-component.js update agent developer '{"model":"opus"}'
+bun scripts/manage-component.js --help  # 查看完整用法
 
 # 手動停止 Loop（需提供 sessionId）
 bun scripts/stop-loop.js {sessionId}

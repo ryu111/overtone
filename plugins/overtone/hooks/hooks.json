@@ -1,61 +1,134 @@
 {
-  "hooks": [
-    {
-      "event": "SessionStart",
-      "type": "command",
-      "command": "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/session/on-start.js"
-    },
-    {
-      "event": "SessionEnd",
-      "type": "command",
-      "command": "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/session/on-session-end.js"
-    },
-    {
-      "event": "PreCompact",
-      "type": "command",
-      "command": "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/session/pre-compact.js"
-    },
-    {
-      "event": "UserPromptSubmit",
-      "type": "command",
-      "command": "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/prompt/on-submit.js"
-    },
-    {
-      "event": "PreToolUse",
-      "type": "command",
-      "command": "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/tool/pre-task.js",
-      "matcher": "Task"
-    },
-    {
-      "event": "SubagentStop",
-      "type": "command",
-      "command": "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/agent/on-stop.js"
-    },
-    {
-      "event": "PostToolUse",
-      "type": "command",
-      "command": "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/tool/post-use.js"
-    },
-    {
-      "event": "PostToolUseFailure",
-      "type": "command",
-      "command": "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/tool/post-use-failure.js"
-    },
-    {
-      "event": "Stop",
-      "type": "command",
-      "command": "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/session/on-stop.js"
-    },
-    {
-      "event": "TaskCompleted",
-      "type": "command",
-      "command": "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/task/on-task-completed.js",
-      "timeout": 60
-    },
-    {
-      "event": "Notification",
-      "type": "command",
-      "command": "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/notification/on-notification.js"
-    }
-  ]
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/session/on-start.js"
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/session/on-session-end.js"
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/session/pre-compact.js"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/prompt/on-submit.js"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Task",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/tool/pre-task.js"
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/tool/pre-edit-guard.js"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/tool/pre-edit-guard.js"
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/agent/on-stop.js"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/tool/post-use.js"
+          }
+        ]
+      }
+    ],
+    "PostToolUseFailure": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/tool/post-use-failure.js"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/session/on-stop.js"
+          }
+        ]
+      }
+    ],
+    "TaskCompleted": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/task/on-task-completed.js",
+            "timeout": 60
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/notification/on-notification.js"
+          }
+        ]
+      }
+    ]
+  }
 }

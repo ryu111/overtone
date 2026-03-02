@@ -238,7 +238,7 @@ describe('pre-compact.js compact count 追蹤', () => {
     expect(data.manual).toBe(0);
   });
 
-  it('第一次 compact（manual/未定義類型）建立 compact-count.json { auto: 0, manual: 1 }', () => {
+  it('第一次 compact（未定義類型）預設歸類為 auto', () => {
     initSession(SESSION_MANUAL);
 
     runPreCompact({ session_id: SESSION_MANUAL });
@@ -247,8 +247,8 @@ describe('pre-compact.js compact count 追蹤', () => {
     expect(existsSync(countPath)).toBe(true);
 
     const data = JSON.parse(readFileSync(countPath, 'utf8'));
-    expect(data.auto).toBe(0);
-    expect(data.manual).toBe(1);
+    expect(data.auto).toBe(1);
+    expect(data.manual).toBe(0);
   });
 
   it('累積計數：多次 compact 後正確遞增', () => {
@@ -256,7 +256,7 @@ describe('pre-compact.js compact count 追蹤', () => {
 
     runPreCompact({ session_id: SESSION_ACCUM, trigger: 'auto' });
     runPreCompact({ session_id: SESSION_ACCUM, trigger: 'auto' });
-    runPreCompact({ session_id: SESSION_ACCUM });
+    runPreCompact({ session_id: SESSION_ACCUM, trigger: 'manual' });
 
     const countPath = paths.session.compactCount(SESSION_ACCUM);
     const data = JSON.parse(readFileSync(countPath, 'utf8'));

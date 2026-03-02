@@ -49,8 +49,8 @@ function makeTmpPluginRoot() {
     agents: ['./agents/developer.md'],
   }, null, 2));
 
-  // 建立預設 hooks.json（空陣列）
-  writeFileSync(join(dir, 'hooks', 'hooks.json'), JSON.stringify({ hooks: [] }, null, 2));
+  // 建立預設 hooks.json（空物件）
+  writeFileSync(join(dir, 'hooks', 'hooks.json'), JSON.stringify({ hooks: {} }, null, 2));
 
   return dir;
 }
@@ -280,12 +280,9 @@ describe('validateHook', () => {
 
   it('驗證格式正確的 hook（有 matcher）回傳 valid:true', () => {
     writeFileSync(join(pluginRoot, 'hooks', 'hooks.json'), JSON.stringify({
-      hooks: [{
-        event: 'PreToolUse',
-        type: 'command',
-        command: scriptPath,
-        matcher: 'Task',
-      }],
+      hooks: {
+        PreToolUse: [{ matcher: 'Task', hooks: [{ type: 'command', command: scriptPath }] }],
+      },
     }));
     const result = validateHook('PreToolUse', pluginRoot);
     expect(result.valid).toBe(true);
@@ -294,11 +291,9 @@ describe('validateHook', () => {
 
   it('驗證格式正確的 hook（無 matcher）回傳 valid:true', () => {
     writeFileSync(join(pluginRoot, 'hooks', 'hooks.json'), JSON.stringify({
-      hooks: [{
-        event: 'SessionStart',
-        type: 'command',
-        command: scriptPath,
-      }],
+      hooks: {
+        SessionStart: [{ hooks: [{ type: 'command', command: scriptPath }] }],
+      },
     }));
     const result = validateHook('SessionStart', pluginRoot);
     expect(result.valid).toBe(true);
@@ -321,11 +316,9 @@ describe('validateHook', () => {
 
   it('command 腳本不存在時 errors 含 "command" 和 "不存在"', () => {
     writeFileSync(join(pluginRoot, 'hooks', 'hooks.json'), JSON.stringify({
-      hooks: [{
-        event: 'Stop',
-        type: 'command',
-        command: '/no/such/script.js',
-      }],
+      hooks: {
+        Stop: [{ hooks: [{ type: 'command', command: '/no/such/script.js' }] }],
+      },
     }));
     const result = validateHook('Stop', pluginRoot);
     expect(result.valid).toBe(false);
@@ -334,11 +327,9 @@ describe('validateHook', () => {
 
   it('type 不是 command 時 errors 含 "type" 和 "command"', () => {
     writeFileSync(join(pluginRoot, 'hooks', 'hooks.json'), JSON.stringify({
-      hooks: [{
-        event: 'UserPromptSubmit',
-        type: 'script',
-        command: scriptPath,
-      }],
+      hooks: {
+        UserPromptSubmit: [{ hooks: [{ type: 'script', command: scriptPath }] }],
+      },
     }));
     const result = validateHook('UserPromptSubmit', pluginRoot);
     expect(result.valid).toBe(false);
@@ -348,11 +339,9 @@ describe('validateHook', () => {
   it('command 使用 ${CLAUDE_PLUGIN_ROOT} 占位符時正確解析', () => {
     const relScript = 'hooks/scripts/test.js';
     writeFileSync(join(pluginRoot, 'hooks', 'hooks.json'), JSON.stringify({
-      hooks: [{
-        event: 'SessionStart',
-        type: 'command',
-        command: `\${CLAUDE_PLUGIN_ROOT}/${relScript}`,
-      }],
+      hooks: {
+        SessionStart: [{ hooks: [{ type: 'command', command: `\${CLAUDE_PLUGIN_ROOT}/${relScript}` }] }],
+      },
     }));
     // 腳本必須在解析後路徑存在
     const result = validateHook('SessionStart', pluginRoot);
@@ -657,15 +646,16 @@ describe('createHook', () => {
     expect(result.success).toBe(true);
     expect(result.errors).toEqual([]);
     const data = JSON.parse(readFileSync(join(pluginRoot, 'hooks', 'hooks.json'), 'utf8'));
-    expect(data.hooks.some((h) => h.event === 'SessionEnd' && h.type === 'command')).toBe(true);
+    expect(data.hooks.SessionEnd).toBeDefined();
+    expect(data.hooks.SessionEnd[0].hooks[0].type).toBe('command');
   });
 
   it('成功建立新 hook（含 matcher）', () => {
     const result = createHook({ event: 'PostToolUse', command: scriptPath, matcher: 'Write' }, pluginRoot);
     expect(result.success).toBe(true);
     const data = JSON.parse(readFileSync(join(pluginRoot, 'hooks', 'hooks.json'), 'utf8'));
-    const entry = data.hooks.find((h) => h.event === 'PostToolUse');
-    expect(entry.matcher).toBe('Write');
+    expect(data.hooks.PostToolUse).toBeDefined();
+    expect(data.hooks.PostToolUse[0].matcher).toBe('Write');
   });
 
   it('event 不合法時回傳 success:false 且 hooks.json 不被修改', () => {
@@ -682,16 +672,17 @@ describe('createHook', () => {
     expect(result.errors.some((e) => e.includes('command') && e.includes('不存在'))).toBe(true);
   });
 
-  it('同一 event 已存在條目仍可追加（追加行為）', () => {
+  it('同一 event 已存在條目仍可追加 matcher group（追加行為）', () => {
     // 先加一個 PostToolUse
     writeFileSync(join(pluginRoot, 'hooks', 'hooks.json'), JSON.stringify({
-      hooks: [{ event: 'PostToolUse', type: 'command', command: scriptPath, matcher: 'Read' }],
+      hooks: {
+        PostToolUse: [{ matcher: 'Read', hooks: [{ type: 'command', command: scriptPath }] }],
+      },
     }));
     const result = createHook({ event: 'PostToolUse', command: scriptPath, matcher: 'Bash' }, pluginRoot);
     expect(result.success).toBe(true);
     const data = JSON.parse(readFileSync(join(pluginRoot, 'hooks', 'hooks.json'), 'utf8'));
-    const postToolUseEntries = data.hooks.filter((h) => h.event === 'PostToolUse');
-    expect(postToolUseEntries).toHaveLength(2);
+    expect(data.hooks.PostToolUse).toHaveLength(2);
   });
 });
 
@@ -711,10 +702,10 @@ describe('updateHook', () => {
     writeFileSync(newScriptPath, '#!/usr/bin/env node\n');
 
     writeFileSync(join(pluginRoot, 'hooks', 'hooks.json'), JSON.stringify({
-      hooks: [
-        { event: 'SessionStart', type: 'command', command: scriptPath },
-        { event: 'PreToolUse', type: 'command', command: scriptPath, matcher: 'Task' },
-      ],
+      hooks: {
+        SessionStart: [{ hooks: [{ type: 'command', command: scriptPath }] }],
+        PreToolUse: [{ matcher: 'Task', hooks: [{ type: 'command', command: scriptPath }] }],
+      },
     }));
   });
 
@@ -722,14 +713,14 @@ describe('updateHook', () => {
     const result = updateHook('SessionStart', { command: newScriptPath }, pluginRoot);
     expect(result.success).toBe(true);
     const data = JSON.parse(readFileSync(join(pluginRoot, 'hooks', 'hooks.json'), 'utf8'));
-    expect(data.hooks.find((h) => h.event === 'SessionStart').command).toBe(newScriptPath);
+    expect(data.hooks.SessionStart[0].hooks[0].command).toBe(newScriptPath);
   });
 
   it('成功移除 hook 的 matcher（傳入 null）', () => {
     const result = updateHook('PreToolUse', { matcher: null }, pluginRoot);
     expect(result.success).toBe(true);
     const data = JSON.parse(readFileSync(join(pluginRoot, 'hooks', 'hooks.json'), 'utf8'));
-    expect(data.hooks.find((h) => h.event === 'PreToolUse').matcher).toBeUndefined();
+    expect(data.hooks.PreToolUse[0].matcher).toBeUndefined();
   });
 
   it('更新不存在的 hook event 回傳 success:false 且 errors 含 "不存在"', () => {

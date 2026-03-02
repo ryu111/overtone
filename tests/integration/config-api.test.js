@@ -43,7 +43,7 @@ function makeTmpPluginRoot() {
     agents: [],
   }, null, 2));
 
-  writeFileSync(join(dir, 'hooks', 'hooks.json'), JSON.stringify({ hooks: [] }, null, 2));
+  writeFileSync(join(dir, 'hooks', 'hooks.json'), JSON.stringify({ hooks: {} }, null, 2));
 
   return dir;
 }
@@ -214,17 +214,17 @@ describe('createHook + updateHook 整合', () => {
     expect(updateResult.success).toBe(true);
 
     const data = JSON.parse(readFileSync(join(pluginRoot, 'hooks', 'hooks.json'), 'utf8'));
-    expect(data.hooks.find((h) => h.event === 'SessionEnd').command).toBe(scriptB);
+    expect(data.hooks.SessionEnd[0].hooks[0].command).toBe(scriptB);
   });
 
-  it('createHook 兩個不同 event 後 hooks.json 有兩個條目', () => {
+  it('createHook 兩個不同 event 後 hooks.json 有兩個事件', () => {
     createHook({ event: 'SessionEnd', command: scriptA }, pluginRoot);
     createHook({ event: 'PreCompact', command: scriptB }, pluginRoot);
 
     const data = JSON.parse(readFileSync(join(pluginRoot, 'hooks', 'hooks.json'), 'utf8'));
-    expect(data.hooks).toHaveLength(2);
-    expect(data.hooks.some((h) => h.event === 'SessionEnd')).toBe(true);
-    expect(data.hooks.some((h) => h.event === 'PreCompact')).toBe(true);
+    expect(Object.keys(data.hooks).length).toBe(2);
+    expect(data.hooks.SessionEnd).toBeDefined();
+    expect(data.hooks.PreCompact).toBeDefined();
   });
 
   it('createHook 失敗時 hooks.json 的現有條目不受影響', () => {
@@ -236,7 +236,7 @@ describe('createHook + updateHook 整合', () => {
     createHook({ event: 'BadEvent', command: scriptA }, pluginRoot);
 
     const afterFailed = JSON.parse(readFileSync(join(pluginRoot, 'hooks', 'hooks.json'), 'utf8'));
-    expect(afterFailed.hooks).toHaveLength(afterFirst.hooks.length); // 沒增加
+    expect(Object.keys(afterFailed.hooks).length).toBe(Object.keys(afterFirst.hooks).length);
   });
 });
 

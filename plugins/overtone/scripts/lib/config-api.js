@@ -80,14 +80,30 @@ function readSkillFile(skillPath) {
 }
 
 /**
- * 讀取 hooks.json
+ * 讀取 hooks.json（官方三層嵌套格式）
  * @param {string} pluginRoot
- * @returns {{ hooks: object[] }}
+ * @returns {{ hooks: object }} hooks 物件以事件名為 key
  */
 function readHooksJson(pluginRoot) {
   const hooksPath = join(pluginRoot, 'hooks', 'hooks.json');
-  if (!existsSync(hooksPath)) return { hooks: [] };
+  if (!existsSync(hooksPath)) return { hooks: {} };
   return JSON.parse(readFileSync(hooksPath, 'utf8'));
+}
+
+/**
+ * 從 hooks.json 取得指定事件的第一個 handler（扁平化）
+ * @param {object} hooksData - readHooksJson() 回傳值
+ * @param {string} event - 事件名稱
+ * @returns {{ type: string, command: string, matcher?: string, timeout?: number } | null}
+ */
+function getHookHandler(hooksData, event) {
+  const matcherGroups = hooksData.hooks?.[event];
+  if (!matcherGroups || !Array.isArray(matcherGroups) || matcherGroups.length === 0) return null;
+  const group = matcherGroups[0];
+  if (!group.hooks || group.hooks.length === 0) return null;
+  const handler = { ...group.hooks[0] };
+  if (group.matcher) handler.matcher = group.matcher;
+  return handler;
 }
 
 /**
@@ -371,24 +387,24 @@ function validateHook(event, pluginRoot) {
     return result;
   }
 
-  const hookEntry = hooksData.hooks.find((h) => h.event === event);
-  if (!hookEntry) {
+  const handler = getHookHandler(hooksData, event);
+  if (!handler) {
     addError(result, `hooks.json 中不存在 "${event}" 的條目`);
     return result;
   }
 
   // type 必須是 'command'
-  if (hookEntry.type !== 'command') {
-    addError(result, `hook type 必須是 command（實際值：${hookEntry.type}）`);
+  if (handler.type !== 'command') {
+    addError(result, `hook type 必須是 command（實際值：${handler.type}）`);
   }
 
   // command 腳本必須存在
-  if (!hookEntry.command) {
+  if (!handler.command) {
     addError(result, '缺少必填欄位：command');
   } else {
-    const resolvedCmd = resolveCommand(hookEntry.command, pluginRoot);
+    const resolvedCmd = resolveCommand(handler.command, pluginRoot);
     if (!existsSync(resolvedCmd)) {
-      addError(result, `command 指向的腳本不存在：${hookEntry.command}`);
+      addError(result, `command 指向的腳本不存在：${handler.command}`);
     }
   }
 
@@ -429,7 +445,7 @@ function validateAll(pluginRoot) {
   }
 
   // 掃描所有 hook events
-  let hooksData = { hooks: [] };
+  let hooksData = { hooks: {} };
   try {
     hooksData = readHooksJson(pluginRoot);
   } catch (e) {
@@ -437,15 +453,10 @@ function validateAll(pluginRoot) {
     allValid = false;
   }
 
-  const seenHookEvents = new Set();
-  for (const hookEntry of hooksData.hooks) {
-    const event = hookEntry.event;
-    if (!seenHookEvents.has(event)) {
-      seenHookEvents.add(event);
-      const r = validateHook(event, pluginRoot);
-      hookResults[event] = r;
-      if (!r.valid) allValid = false;
-    }
+  for (const event of Object.keys(hooksData.hooks)) {
+    const r = validateHook(event, pluginRoot);
+    hookResults[event] = r;
+    if (!r.valid) allValid = false;
   }
 
   // 掃描所有 skill 目錄
@@ -666,17 +677,17 @@ function createHook(opts, pluginRoot) {
     return { success: false, errors: [`無法讀取 hooks.json：${e.message}`] };
   }
 
-  // 建立新條目
-  const newEntry = {
-    event: opts.event,
-    type: 'command',
-    command: opts.command,
-  };
+  // 建立新條目（官方三層嵌套格式）
+  const handler = { type: 'command', command: opts.command };
+  const matcherGroup = { hooks: [handler] };
   if (opts.matcher !== undefined) {
-    newEntry.matcher = opts.matcher;
+    matcherGroup.matcher = opts.matcher;
   }
 
-  hooksData.hooks.push(newEntry);
+  if (!hooksData.hooks[opts.event]) {
+    hooksData.hooks[opts.event] = [];
+  }
+  hooksData.hooks[opts.event].push(matcherGroup);
   atomicWrite(hooksPath, hooksData);
 
   return { success: true, errors: [] };
@@ -699,12 +710,17 @@ function updateHook(event, updates, pluginRoot) {
     return { success: false, errors: [`無法讀取 hooks.json：${e.message}`] };
   }
 
-  const hookIndex = hooksData.hooks.findIndex((h) => h.event === event);
-  if (hookIndex === -1) {
+  const matcherGroups = hooksData.hooks[event];
+  if (!matcherGroups || !Array.isArray(matcherGroups) || matcherGroups.length === 0) {
     return { success: false, errors: [`hooks.json 中不存在 "${event}" 的條目`] };
   }
 
-  const hookEntry = { ...hooksData.hooks[hookIndex] };
+  const group = matcherGroups[0];
+  if (!group.hooks || group.hooks.length === 0) {
+    return { success: false, errors: [`hooks.json 中 "${event}" 缺少 handler`] };
+  }
+
+  const handler = { ...group.hooks[0] };
 
   // 驗證新 command 路徑（若有提供）
   if (updates.command !== undefined) {
@@ -712,19 +728,19 @@ function updateHook(event, updates, pluginRoot) {
     if (!existsSync(resolvedCmd)) {
       return { success: false, errors: [`command 指向的腳本不存在：${updates.command}`] };
     }
-    hookEntry.command = updates.command;
+    handler.command = updates.command;
   }
 
-  // 更新 matcher（null 表示移除）
+  // 更新 matcher（null 表示移除，操作在 group 層級）
   if (updates.matcher !== undefined) {
     if (updates.matcher === null) {
-      delete hookEntry.matcher;
+      delete group.matcher;
     } else {
-      hookEntry.matcher = updates.matcher;
+      group.matcher = updates.matcher;
     }
   }
 
-  hooksData.hooks[hookIndex] = hookEntry;
+  group.hooks[0] = handler;
   atomicWrite(hooksPath, hooksData);
 
   return { success: true, errors: [] };
@@ -844,4 +860,8 @@ module.exports = {
   updateHook,
   createSkill,
   updateSkill,
+
+  // 工具函式
+  readHooksJson,
+  getHookHandler,
 };

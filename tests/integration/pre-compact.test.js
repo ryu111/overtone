@@ -455,7 +455,7 @@ describe('Feature 4：systemMessage 長度截斷保護', () => {
 
 describe('Feature 5：timeline 事件 session:compact', () => {
   // Scenario 5.1: 有 workflow 時正確 emit session:compact
-  test('有 workflow 時 timeline.jsonl 新增 session:compact 事件', () => {
+  test('有 workflow 時 timeline.jsonl 新增 session:compact 事件（含 trigger 診斷欄位）', () => {
     const SESSION_TL = `pre-compact-tl-${TS}`;
     stateLib.initState(SESSION_TL, 'quick', ['DEV', 'REVIEW', 'TEST', 'RETRO']);
     const result = runHook({ session_id: SESSION_TL });
@@ -468,8 +468,45 @@ describe('Feature 5：timeline 事件 session:compact', () => {
     expect(compactEvent.workflowType).toBe('quick');
     expect(typeof compactEvent.ts).toBe('string'); // ISO 8601
     expect(compactEvent.category).toBe('session');
+    // trigger 診斷欄位（無 trigger 時為 '(empty)'）
+    expect(compactEvent.trigger).toBeDefined();
+    expect(compactEvent.counted).toBeDefined();
 
     rmSync(paths.sessionDir(SESSION_TL), { recursive: true, force: true });
+  });
+
+  // Scenario 5.1b: trigger 值正確記錄到 timeline
+  test('trigger=auto 時 timeline 事件記錄 trigger=auto, counted=auto', () => {
+    const SESSION_TL_AUTO = `pre-compact-tl-auto-${TS}`;
+    stateLib.initState(SESSION_TL_AUTO, 'quick', ['DEV', 'REVIEW', 'TEST', 'RETRO']);
+    runHook({ session_id: SESSION_TL_AUTO, trigger: 'auto' });
+    const events = readTimeline(SESSION_TL_AUTO);
+    const compactEvent = events.find(e => e.type === 'session:compact');
+    expect(compactEvent.trigger).toBe('auto');
+    expect(compactEvent.counted).toBe('auto');
+    rmSync(paths.sessionDir(SESSION_TL_AUTO), { recursive: true, force: true });
+  });
+
+  test('trigger=manual 時 timeline 事件記錄 trigger=manual, counted=manual', () => {
+    const SESSION_TL_MAN = `pre-compact-tl-man-${TS}`;
+    stateLib.initState(SESSION_TL_MAN, 'quick', ['DEV', 'REVIEW', 'TEST', 'RETRO']);
+    runHook({ session_id: SESSION_TL_MAN, trigger: 'manual' });
+    const events = readTimeline(SESSION_TL_MAN);
+    const compactEvent = events.find(e => e.type === 'session:compact');
+    expect(compactEvent.trigger).toBe('manual');
+    expect(compactEvent.counted).toBe('manual');
+    rmSync(paths.sessionDir(SESSION_TL_MAN), { recursive: true, force: true });
+  });
+
+  test('無 trigger 欄位時 timeline 記錄 trigger=(empty), counted=auto', () => {
+    const SESSION_TL_NONE = `pre-compact-tl-none-${TS}`;
+    stateLib.initState(SESSION_TL_NONE, 'quick', ['DEV', 'REVIEW', 'TEST', 'RETRO']);
+    runHook({ session_id: SESSION_TL_NONE });
+    const events = readTimeline(SESSION_TL_NONE);
+    const compactEvent = events.find(e => e.type === 'session:compact');
+    expect(compactEvent.trigger).toBe('(empty)');
+    expect(compactEvent.counted).toBe('auto');
+    rmSync(paths.sessionDir(SESSION_TL_NONE), { recursive: true, force: true });
   });
 
   // Scenario 5.2: session:compact 是已知的 registry 事件

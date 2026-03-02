@@ -117,9 +117,9 @@ function getActualCounts() {
   const registry = require(REGISTRY_JS);
   const workflowCount = Object.keys(registry.workflows || {}).length;
 
-  // Hook 數量：hooks.json 的 hooks 陣列長度
+  // Hook 數量：hooks.json 的事件數
   const hooksJson = JSON.parse(fs.readFileSync(HOOKS_JSON, 'utf8'));
-  const hookCount = (hooksJson.hooks || []).length;
+  const hookCount = Object.keys(hooksJson.hooks || {}).length;
 
   // Skill 數量：skills/ 目錄中含 SKILL.md 的子目錄數量
   const skillCount = countSkillsWithSkillMd();

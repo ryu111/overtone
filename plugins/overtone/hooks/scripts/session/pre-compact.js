@@ -52,10 +52,17 @@ safeRun(() => {
     process.exit(0);
   }
 
-  // emit timeline 事件（記錄 compaction 發生）
+  // Claude Code PreCompact stdin 用 trigger 欄位（'auto' | 'manual'）
+  // 注意：auto-compact 可能不送 trigger 欄位，所以預設歸類為 auto
+  const trigger = input.trigger || input.type || '';
+  const isManual = trigger === 'manual';
+
+  // emit timeline 事件（記錄 compaction 發生 + trigger 值供診斷）
   timeline.emit(sessionId, 'session:compact', {
     workflowType: currentState.workflowType,
     currentStage: currentState.currentStage,
+    trigger: trigger || '(empty)',
+    counted: isManual ? 'manual' : 'auto',
   });
 
   // 追蹤 compact 計數（auto vs manual）
@@ -67,12 +74,10 @@ safeRun(() => {
   } catch {
     // 檔案不存在時從 { auto: 0, manual: 0 } 開始
   }
-  // Claude Code PreCompact stdin 用 trigger 欄位（'auto' | 'manual'）
-  const trigger = input.trigger || input.type || '';
-  if (trigger === 'auto') {
-    compactCount.auto = (compactCount.auto || 0) + 1;
-  } else {
+  if (isManual) {
     compactCount.manual = (compactCount.manual || 0) + 1;
+  } else {
+    compactCount.auto = (compactCount.auto || 0) + 1;
   }
   atomicWrite(compactCountPath, compactCount);
 

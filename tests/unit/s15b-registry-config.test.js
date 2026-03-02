@@ -304,19 +304,18 @@ describe('6. hookEvents 與 hooks.json 一致性', () => {
     hooksJson = JSON.parse(readFileSync(HOOKS_JSON_PATH, 'utf8'));
   });
 
-  test('hooks.json 中每個 hook 的 event 都在 hookEvents 陣列中', () => {
+  test('hooks.json 中每個事件 key 都在 hookEvents 陣列中', () => {
     const hookEventSet = new Set(hookEvents);
-    for (const hook of hooksJson.hooks) {
+    for (const event of Object.keys(hooksJson.hooks)) {
       expect(
-        hookEventSet.has(hook.event),
-        `hooks.json 包含未在 hookEvents 中定義的 event: "${hook.event}"`
+        hookEventSet.has(event),
+        `hooks.json 包含未在 hookEvents 中定義的 event: "${event}"`
       ).toBe(true);
     }
   });
 
-  test('hookEvents 涵蓋 hooks.json 中所有使用的 event 類型', () => {
-    // 取得 hooks.json 中實際使用的所有唯一 event
-    const usedEvents = new Set(hooksJson.hooks.map(h => h.event));
+  test('hookEvents 涵蓋 hooks.json 中所有事件', () => {
+    const usedEvents = new Set(Object.keys(hooksJson.hooks));
     const hookEventSet = new Set(hookEvents);
 
     for (const usedEvent of usedEvents) {
@@ -327,28 +326,25 @@ describe('6. hookEvents 與 hooks.json 一致性', () => {
     }
   });
 
-  test('hooks.json 共有 11 個 hook 定義（對應 11 個 hook 腳本）', () => {
-    expect(hooksJson.hooks.length).toBe(11);
+  test('hooks.json 共有 11 個事件定義（對應 11 個 hook 腳本）', () => {
+    expect(Object.keys(hooksJson.hooks).length).toBe(11);
   });
 
-  test('hooks.json 中的 event 數量不超過 hookEvents 總數', () => {
-    const usedEvents = new Set(hooksJson.hooks.map(h => h.event));
-    expect(usedEvents.size).toBeLessThanOrEqual(hookEvents.length);
+  test('hooks.json 中的事件數量不超過 hookEvents 總數', () => {
+    const usedEvents = Object.keys(hooksJson.hooks);
+    expect(usedEvents.length).toBeLessThanOrEqual(hookEvents.length);
   });
 
   test('hooks.json 包含 TaskCompleted 和 Notification 這兩個後加入的事件', () => {
-    const usedEvents = new Set(hooksJson.hooks.map(h => h.event));
-    expect(usedEvents.has('TaskCompleted')).toBe(true);
-    expect(usedEvents.has('Notification')).toBe(true);
+    expect(hooksJson.hooks.TaskCompleted).toBeDefined();
+    expect(hooksJson.hooks.Notification).toBeDefined();
   });
 
-  test('hookEvents 包含 hooks.json 實際使用的所有不重複 event（雙向一致）', () => {
-    const usedEvents = new Set(hooksJson.hooks.map(h => h.event));
+  test('hookEvents 包含 hooks.json 所有事件 key（雙向一致）', () => {
     const hookEventSet = new Set(hookEvents);
 
-    // hooks.json 用到的每個 event 都在 hookEvents
-    for (const e of usedEvents) {
-      expect(hookEventSet.has(e)).toBe(true);
+    for (const event of Object.keys(hooksJson.hooks)) {
+      expect(hookEventSet.has(event)).toBe(true);
     }
   });
 });

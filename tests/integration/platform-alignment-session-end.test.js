@@ -306,14 +306,14 @@ describe('Feature 1d: SessionEnd hook（on-session-end.js）', () => {
 
   // Scenario 1d-10: hooks.json 包含 SessionEnd hook
   describe('Scenario 1d-10: hooks.json 包含 SessionEnd hook', () => {
-    test('找到 event 為 SessionEnd 的 hook 設定', () => {
+    test('找到 SessionEnd 事件的 hook 設定', () => {
       const hooksJsonPath = join(HOOKS_DIR, '..', 'hooks.json');
       const content = readFileSync(hooksJsonPath, 'utf8');
       const config = JSON.parse(content);
-      const sessionEndHook = config.hooks.find(h => h.event === 'SessionEnd');
-      expect(sessionEndHook).toBeDefined();
-      expect(sessionEndHook.type).toBe('command');
-      expect(sessionEndHook.command).toContain('on-session-end.js');
+      expect(config.hooks.SessionEnd).toBeDefined();
+      const handler = config.hooks.SessionEnd[0].hooks[0];
+      expect(handler.type).toBe('command');
+      expect(handler.command).toContain('on-session-end.js');
     });
   });
 

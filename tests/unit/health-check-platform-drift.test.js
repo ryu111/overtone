@@ -59,10 +59,10 @@ function makeTmpPluginRoot() {
     )
   );
 
-  // hooks.json（空陣列，無 hook 設定）
+  // hooks.json（空物件，無 hook 設定）
   writeFileSync(
     join(dir, 'hooks', 'hooks.json'),
-    JSON.stringify({ hooks: [] }, null, 2)
+    JSON.stringify({ hooks: {} }, null, 2)
   );
 
   return dir;

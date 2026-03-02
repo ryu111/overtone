@@ -391,15 +391,15 @@ describe('3. Compact-Count.json 精確度', () => {
     expect(countData.manual).toBe(1);
   });
 
-  // Scenario 3c: 無 trigger 欄位時視為 manual（非 auto）
-  test('無 trigger 欄位時計為 manual', () => {
+  // Scenario 3c: 無 trigger 欄位時預設歸類為 auto（Claude Code auto-compact 可能不送 trigger）
+  test('無 trigger 欄位時計為 auto', () => {
     const result = runPreCompact({ session_id: SESSION_COUNT_MIXED });
     expect(result.exitCode).toBe(0);
 
     const countData = readCompactCount(SESSION_COUNT_MIXED);
     expect(countData).not.toBeNull();
-    expect(countData.auto).toBe(0);
-    expect(countData.manual).toBe(1);
+    expect(countData.auto).toBe(1);
+    expect(countData.manual).toBe(0);
   });
 
   // Scenario 3d: 連續 3 次 auto compact 後 auto count = 3

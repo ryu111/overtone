@@ -15,7 +15,7 @@ const HOOK_PATH = join(HOOKS_DIR, 'prompt', 'on-submit.js');
  * 執行 on-submit.js hook，回傳解析後的 JSON 輸出
  * @param {{ user_prompt: string }} input - hook 的 stdin 輸入
  * @param {Record<string, string>} env - 額外的環境變數
- * @returns {Promise<object>} 解析後的 JSON
+ * @returns {Promise<object>} 解析後的 JSON（hookSpecificOutput 格式）
  */
 async function runHook(input, env = {}) {
   const proc = Bun.spawn(['node', HOOK_PATH], {
@@ -27,6 +27,15 @@ async function runHook(input, env = {}) {
   const output = await new Response(proc.stdout).text();
   await proc.exited;
   return JSON.parse(output);
+}
+
+/**
+ * 從 hook 輸出取得 additionalContext（hookSpecificOutput 格式）
+ * @param {object} result - runHook 回傳值
+ * @returns {string}
+ */
+function getContext(result) {
+  return result?.hookSpecificOutput?.additionalContext ?? '';
 }
 
 // ── 場景 8 所需的 session 管理 ──
@@ -53,23 +62,20 @@ afterAll(() => {
 // ────────────────────────────────────────────────────────────────────────────
 
 describe('/ot: 命令跳過', () => {
-  test('場景 1：prompt = /ot:auto → 回傳 { additionalContext: "" }', async () => {
+  test('場景 1：prompt = /ot:auto → 回傳空 additionalContext', async () => {
     const result = await runHook({ user_prompt: '/ot:auto' });
-    // hook 輸出 { additionalContext: '' } 明確表示「不注入任何內容」
-    expect(result).toEqual({ additionalContext: '' });
-    expect(result.additionalContext).toBe('');
+    // hook 輸出 hookSpecificOutput 格式，additionalContext 為空
+    expect(getContext(result)).toBe('');
   });
 
-  test('場景 2：prompt = /ot:plan → 回傳 { additionalContext: "" }', async () => {
+  test('場景 2：prompt = /ot:plan → 回傳空 additionalContext', async () => {
     const result = await runHook({ user_prompt: '/ot:plan' });
-    expect(result).toEqual({ additionalContext: '' });
-    expect(result.additionalContext).toBe('');
+    expect(getContext(result)).toBe('');
   });
 
-  test('場景 2b：prompt = /ot:standard → 回傳 { additionalContext: "" }', async () => {
+  test('場景 2b：prompt = /ot:standard → 回傳空 additionalContext', async () => {
     const result = await runHook({ user_prompt: '/ot:standard' });
-    expect(result).toEqual({ additionalContext: '' });
-    expect(result.additionalContext).toBe('');
+    expect(getContext(result)).toBe('');
   });
 });
 
@@ -83,12 +89,11 @@ describe('[workflow:xxx] 覆寫語法 — 有效 key', () => {
       { user_prompt: '請幫我新增功能 [workflow:standard]' },
       { CLAUDE_SESSION_ID: '' }
     );
-    expect(result.additionalContext).toBeDefined();
-    expect(result.additionalContext).toContain('standard');
-    // 應包含 workflow label「標準功能」
-    expect(result.additionalContext).toContain('標準功能');
-    // 應告知使用對應 skill
-    expect(result.additionalContext).toContain('/ot:standard');
+    const ctx = getContext(result);
+    expect(ctx).toBeTruthy();
+    expect(ctx).toContain('standard');
+    expect(ctx).toContain('標準功能');
+    expect(ctx).toContain('/ot:standard');
   });
 
   test('場景 4：[workflow:quick] → additionalContext 包含 quick 資訊', async () => {
@@ -96,10 +101,11 @@ describe('[workflow:xxx] 覆寫語法 — 有效 key', () => {
       { user_prompt: '快速修改 [workflow:quick]' },
       { CLAUDE_SESSION_ID: '' }
     );
-    expect(result.additionalContext).toBeDefined();
-    expect(result.additionalContext).toContain('quick');
-    expect(result.additionalContext).toContain('快速開發');
-    expect(result.additionalContext).toContain('/ot:quick');
+    const ctx = getContext(result);
+    expect(ctx).toBeTruthy();
+    expect(ctx).toContain('quick');
+    expect(ctx).toContain('快速開發');
+    expect(ctx).toContain('/ot:quick');
   });
 
   test('場景 4b：[workflow:tdd] → additionalContext 包含 tdd 資訊', async () => {
@@ -107,9 +113,10 @@ describe('[workflow:xxx] 覆寫語法 — 有效 key', () => {
       { user_prompt: '用 TDD 方式實作 [workflow:tdd]' },
       { CLAUDE_SESSION_ID: '' }
     );
-    expect(result.additionalContext).toBeDefined();
-    expect(result.additionalContext).toContain('tdd');
-    expect(result.additionalContext).toContain('測試驅動');
+    const ctx = getContext(result);
+    expect(ctx).toBeTruthy();
+    expect(ctx).toContain('tdd');
+    expect(ctx).toContain('測試驅動');
   });
 });
 
@@ -123,12 +130,10 @@ describe('[workflow:xxx] 覆寫語法 — 無效 key 降級', () => {
       { user_prompt: '請執行 [workflow:invalid]' },
       { CLAUDE_SESSION_ID: '' }
     );
-    // 不應 crash，應正常回傳 additionalContext
-    expect(result.additionalContext).toBeDefined();
-    // 降級後應注入 /ot:auto 指引（因為無 active workflow）
-    expect(result.additionalContext).toContain('/ot:auto');
-    // 不應包含 [Overtone] 工作流進行中 這樣的狀態摘要
-    expect(result.additionalContext).not.toContain('工作流進行中');
+    const ctx = getContext(result);
+    expect(ctx).toBeTruthy();
+    expect(ctx).toContain('/ot:auto');
+    expect(ctx).not.toContain('工作流進行中');
   });
 
   test('場景 5b：[workflow:xyz123] → 降級，不包含 xyz123 覆寫資訊', async () => {
@@ -136,9 +141,9 @@ describe('[workflow:xxx] 覆寫語法 — 無效 key 降級', () => {
       { user_prompt: 'hello [workflow:xyz123]' },
       { CLAUDE_SESSION_ID: '' }
     );
-    expect(result.additionalContext).toBeDefined();
-    // 不應出現無效 workflow key 的 skill 引導
-    expect(result.additionalContext).not.toContain('/ot:xyz123');
+    const ctx = getContext(result);
+    expect(ctx).toBeTruthy();
+    expect(ctx).not.toContain('/ot:xyz123');
   });
 });
 
@@ -152,10 +157,10 @@ describe('[workflow:xxx] 大小寫不敏感', () => {
       { user_prompt: '請執行 [workflow:STANDARD]' },
       { CLAUDE_SESSION_ID: '' }
     );
-    expect(result.additionalContext).toBeDefined();
-    // hook 使用 /i flag + .toLowerCase()，大寫應被正確處理
-    expect(result.additionalContext).toContain('standard');
-    expect(result.additionalContext).toContain('標準功能');
+    const ctx = getContext(result);
+    expect(ctx).toBeTruthy();
+    expect(ctx).toContain('standard');
+    expect(ctx).toContain('標準功能');
   });
 
   test('場景 6b：[workflow:QUICK] → 等同 [workflow:quick]', async () => {
@@ -163,9 +168,10 @@ describe('[workflow:xxx] 大小寫不敏感', () => {
       { user_prompt: '[workflow:QUICK]' },
       { CLAUDE_SESSION_ID: '' }
     );
-    expect(result.additionalContext).toBeDefined();
-    expect(result.additionalContext).toContain('quick');
-    expect(result.additionalContext).toContain('快速開發');
+    const ctx = getContext(result);
+    expect(ctx).toBeTruthy();
+    expect(ctx).toContain('quick');
+    expect(ctx).toContain('快速開發');
   });
 });
 
@@ -179,10 +185,10 @@ describe('無 workflow 狀態 — 注入 /ot:auto 指引', () => {
       { user_prompt: '請幫我修改程式碼' },
       { CLAUDE_SESSION_ID: '' }
     );
-    expect(result.additionalContext).toBeDefined();
-    expect(result.additionalContext).toContain('/ot:auto');
-    // 應包含 [Overtone] 標記
-    expect(result.additionalContext).toContain('[Overtone]');
+    const ctx = getContext(result);
+    expect(ctx).toBeTruthy();
+    expect(ctx).toContain('/ot:auto');
+    expect(ctx).toContain('[Overtone]');
   });
 
   test('場景 7b：prompt 為空字串 → 注入 /ot:auto', async () => {
@@ -190,12 +196,12 @@ describe('無 workflow 狀態 — 注入 /ot:auto 指引', () => {
       { user_prompt: '' },
       { CLAUDE_SESSION_ID: '' }
     );
-    expect(result.additionalContext).toBeDefined();
-    expect(result.additionalContext).toContain('/ot:auto');
+    const ctx = getContext(result);
+    expect(ctx).toBeTruthy();
+    expect(ctx).toContain('/ot:auto');
   });
 
   test('場景 7c：缺少 CLAUDE_SESSION_ID 環境變數 → 注入 /ot:auto', async () => {
-    // 不傳入 CLAUDE_SESSION_ID，hook 會讀到空字串
     const { CLAUDE_SESSION_ID: _, ...envWithoutSession } = process.env;
     const proc = Bun.spawn(['node', HOOK_PATH], {
       stdin: Buffer.from(JSON.stringify({ user_prompt: '你好' })),
@@ -206,8 +212,9 @@ describe('無 workflow 狀態 — 注入 /ot:auto 指引', () => {
     const output = await new Response(proc.stdout).text();
     await proc.exited;
     const result = JSON.parse(output);
-    expect(result.additionalContext).toBeDefined();
-    expect(result.additionalContext).toContain('/ot:auto');
+    const ctx = getContext(result);
+    expect(ctx).toBeTruthy();
+    expect(ctx).toContain('/ot:auto');
   });
 });
 
@@ -221,14 +228,12 @@ describe('有進行中 workflow — 注入狀態摘要', () => {
       { user_prompt: '繼續執行' },
       { CLAUDE_SESSION_ID: TEST_SESSION }
     );
-    expect(result.additionalContext).toBeDefined();
-    // 應包含工作流進行中的標識
-    expect(result.additionalContext).toContain('[Overtone]');
-    expect(result.additionalContext).toContain('quick');
-    // 應包含目前階段資訊
-    expect(result.additionalContext).toContain('DEV');
-    // 應包含繼續執行指引
-    expect(result.additionalContext).toContain('/ot:auto');
+    const ctx = getContext(result);
+    expect(ctx).toBeTruthy();
+    expect(ctx).toContain('[Overtone]');
+    expect(ctx).toContain('quick');
+    expect(ctx).toContain('DEV');
+    expect(ctx).toContain('/ot:auto');
   });
 
   test('場景 8b：狀態摘要為簡短格式（指引用戶查看 /ot:auto）', async () => {
@@ -236,12 +241,10 @@ describe('有進行中 workflow — 注入狀態摘要', () => {
       { user_prompt: '什麼狀況？' },
       { CLAUDE_SESSION_ID: TEST_SESSION }
     );
-    expect(result.additionalContext).toBeDefined();
-    // 簡化後格式：一行摘要 + /ot:auto 指引
-    // 詳細進度由 auto/SKILL.md 的 !`command` 動態注入，hook 不再組裝
-    const context = result.additionalContext;
-    expect(context).toContain('/ot:auto');
-    expect(context).toContain('工作流進行中');
+    const ctx = getContext(result);
+    expect(ctx).toBeTruthy();
+    expect(ctx).toContain('/ot:auto');
+    expect(ctx).toContain('工作流進行中');
   });
 
   test('場景 8c：failCount = 0 時不顯示失敗次數', async () => {
@@ -249,12 +252,10 @@ describe('有進行中 workflow — 注入狀態摘要', () => {
       { user_prompt: '繼續' },
       { CLAUDE_SESSION_ID: TEST_SESSION }
     );
-    // failCount 為 0 時，filter(Boolean) 會移除失敗次數行
-    expect(result.additionalContext).not.toContain('失敗次數');
+    expect(getContext(result)).not.toContain('失敗次數');
   });
 
   test('場景 8d：failCount > 0 時仍輸出簡短格式（失敗次數由 get-workflow-context.js 顯示）', async () => {
-    // 更新 state 設置 failCount = 2
     state.updateStateAtomic(TEST_SESSION, (s) => {
       s.failCount = 2;
       return s;
@@ -264,13 +265,11 @@ describe('有進行中 workflow — 注入狀態摘要', () => {
       { user_prompt: '繼續' },
       { CLAUDE_SESSION_ID: TEST_SESSION }
     );
-    // on-submit.js 簡化後不再顯示失敗次數；失敗次數由 auto/SKILL.md 的
-    // !`node get-workflow-context.js` 動態注入到 skill 內容
-    expect(result.additionalContext).not.toContain('失敗次數');
-    expect(result.additionalContext).toContain('工作流進行中');
-    expect(result.additionalContext).toContain('/ot:auto');
+    const ctx = getContext(result);
+    expect(ctx).not.toContain('失敗次數');
+    expect(ctx).toContain('工作流進行中');
+    expect(ctx).toContain('/ot:auto');
 
-    // 還原 failCount = 0
     state.updateStateAtomic(TEST_SESSION, (s) => {
       s.failCount = 0;
       return s;
@@ -288,11 +287,10 @@ describe('[workflow:xxx] 覆寫優先於 active workflow state', () => {
       { user_prompt: '我要重新開始 [workflow:single]' },
       { CLAUDE_SESSION_ID: TEST_SESSION }
     );
-    expect(result.additionalContext).toBeDefined();
-    // 覆寫指定了 single，應出現 single 資訊而非狀態摘要
-    expect(result.additionalContext).toContain('single');
-    expect(result.additionalContext).toContain('單步修改');
-    // 不應出現「工作流進行中」的狀態摘要
-    expect(result.additionalContext).not.toContain('工作流進行中');
+    const ctx = getContext(result);
+    expect(ctx).toBeTruthy();
+    expect(ctx).toContain('single');
+    expect(ctx).toContain('單步修改');
+    expect(ctx).not.toContain('工作流進行中');
   });
 });

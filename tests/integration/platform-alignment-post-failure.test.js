@@ -374,14 +374,14 @@ describe('Feature 1e: PostToolUseFailure hook（post-use-failure.js）', () => {
 
   // Scenario 1e-10: hooks.json 包含 PostToolUseFailure hook
   describe('Scenario 1e-10: hooks.json 包含 PostToolUseFailure hook', () => {
-    test('找到 event 為 PostToolUseFailure 的 hook 設定', () => {
+    test('找到 PostToolUseFailure 事件的 hook 設定', () => {
       const hooksJsonPath = join(HOOKS_DIR, '..', 'hooks.json');
       const content = readFileSync(hooksJsonPath, 'utf8');
       const config = JSON.parse(content);
-      const failureHook = config.hooks.find(h => h.event === 'PostToolUseFailure');
-      expect(failureHook).toBeDefined();
-      expect(failureHook.type).toBe('command');
-      expect(failureHook.command).toContain('post-use-failure.js');
+      expect(config.hooks.PostToolUseFailure).toBeDefined();
+      const handler = config.hooks.PostToolUseFailure[0].hooks[0];
+      expect(handler.type).toBe('command');
+      expect(handler.command).toContain('post-use-failure.js');
     });
   });
 

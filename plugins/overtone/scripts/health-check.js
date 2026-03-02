@@ -350,11 +350,13 @@ function checkDocCodeDrift() {
   const eventCount = Object.keys(timelineEvents).length;
   const stageCount = Object.keys(stages).length;
 
-  // 計算 hook 數量（hooks.json 陣列長度）
+  // 計算 hook 數量（hooks.json 事件數）
   let hookCount = 0;
   try {
     const hooksJson = JSON.parse(safeRead(HOOKS_JSON));
-    hookCount = Array.isArray(hooksJson.hooks) ? hooksJson.hooks.length : 0;
+    hookCount = (hooksJson.hooks && typeof hooksJson.hooks === 'object' && !Array.isArray(hooksJson.hooks))
+      ? Object.keys(hooksJson.hooks).length
+      : 0;
   } catch { /* ignore */ }
 
   // 計算 skill 數量（skills/ 目錄數量）

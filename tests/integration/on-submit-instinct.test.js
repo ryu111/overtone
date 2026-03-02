@@ -22,7 +22,7 @@ const instinct = require(join(SCRIPTS_LIB, 'instinct'));
 /**
  * 執行 on-submit.js hook，回傳解析後的 JSON 輸出
  * @param {object} input - hook 的 stdin 輸入
- * @returns {Promise<{ additionalContext: string }>}
+ * @returns {Promise<object>} hookSpecificOutput 格式
  */
 async function runHook(input) {
   const proc = Bun.spawn(['node', HOOK_PATH], {
@@ -36,6 +36,13 @@ async function runHook(input) {
   await proc.exited;
 
   return JSON.parse(output);
+}
+
+/**
+ * 從 hook 輸出取得 additionalContext
+ */
+function getContext(result) {
+  return result?.hookSpecificOutput?.additionalContext ?? '';
 }
 
 // ── Session 管理 ──
@@ -108,7 +115,7 @@ describe('場景 2：首次 prompt 不記錄 workflow_routing', () => {
     });
 
     // systemMessage 應注入 /ot:auto 指引
-    expect(output.additionalContext).toContain('/ot:auto');
+    expect(getContext(output)).toContain('/ot:auto');
 
     // 不應有 workflow_routing 觀察
     const observations = instinct.query(sessionId, { type: 'workflow_routing' });
@@ -205,7 +212,7 @@ describe('場景 5：hook 主流程不受 instinct 失敗影響', () => {
     });
 
     // systemMessage 應包含 workflow 狀態資訊
-    expect(output.additionalContext).toContain('quick');
-    expect(typeof output.additionalContext).toBe('string');
+    expect(getContext(output)).toContain('quick');
+    expect(typeof getContext(output)).toBe('string');
   });
 });

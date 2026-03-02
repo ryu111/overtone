@@ -187,7 +187,7 @@ Handoff 檔案存在 session 目錄，compact 後 Main Agent 可重新讀取。
 │
 └─ 系統事件的「自動反應」？
     └─ → Hook（script 放 hooks/scripts/）
-    └─ 宣告在 hooks.json
+    └─ 宣告在 hooks.json（官方三層嵌套格式：Event → MatcherGroup[] → Handler[]）
 ```
 
 ### Skill 建構規則

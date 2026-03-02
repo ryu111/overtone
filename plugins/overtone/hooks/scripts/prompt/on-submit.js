@@ -40,7 +40,9 @@ safeRun(() => {
 
   // 如果使用者已手動輸入 /ot: 命令，不覆蓋
   if (userPrompt.startsWith('/ot:')) {
-    process.stdout.write(JSON.stringify({ additionalContext: '' }));
+    process.stdout.write(JSON.stringify({
+      hookSpecificOutput: { hookEventName: 'UserPromptSubmit', additionalContext: '' },
+    }));
     process.exit(0);
   }
 
@@ -118,6 +120,11 @@ safeRun(() => {
     ].filter(Boolean).join('\n');
   }
 
-  process.stdout.write(JSON.stringify({ additionalContext: systemMessage }));
+  process.stdout.write(JSON.stringify({
+    hookSpecificOutput: {
+      hookEventName: 'UserPromptSubmit',
+      additionalContext: systemMessage,
+    },
+  }));
   process.exit(0);
-}, { additionalContext: '' });
+}, { hookSpecificOutput: { hookEventName: 'UserPromptSubmit', additionalContext: '' } });

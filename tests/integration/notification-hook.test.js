@@ -202,21 +202,21 @@ describe('Notification hook（on-notification.js）', () => {
       const hooksJsonPath = join(HOOKS_DIR, '..', 'hooks.json');
       const content = readFileSync(hooksJsonPath, 'utf8');
       const config = JSON.parse(content);
-      const notificationHook = config.hooks.find(h => h.event === 'Notification');
 
-      expect(notificationHook).toBeDefined();
-      expect(notificationHook.type).toBe('command');
-      expect(notificationHook.command).toContain('on-notification.js');
+      expect(config.hooks.Notification).toBeDefined();
+      const handler = config.hooks.Notification[0].hooks[0];
+      expect(handler.type).toBe('command');
+      expect(handler.command).toContain('on-notification.js');
     });
 
     test('Notification hook 不設定 matcher（接收所有通知類型）', () => {
       const hooksJsonPath = join(HOOKS_DIR, '..', 'hooks.json');
       const content = readFileSync(hooksJsonPath, 'utf8');
       const config = JSON.parse(content);
-      const notificationHook = config.hooks.find(h => h.event === 'Notification');
+      const group = config.hooks.Notification[0];
 
       // 不設定 matcher 表示接收所有通知
-      expect(notificationHook.matcher).toBeUndefined();
+      expect(group.matcher).toBeUndefined();
     });
   });
 });
