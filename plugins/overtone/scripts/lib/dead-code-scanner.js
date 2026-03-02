@@ -28,7 +28,7 @@ const DEFAULT_SEARCH_DIRS = [
   join(PROJECT_ROOT, 'tests'),
 ];
 
-// 排除規則：這些 lib 模組是 CLI entry points，直接被命令列呼叫，不計入孤立
+// 排除規則：這些 lib 模組是 CLI entry points 或頂層 orchestrator，直接被命令列呼叫，不計入孤立
 const ENTRY_POINT_BASENAMES = new Set([
   'health-check',
   'init-workflow',
@@ -43,6 +43,7 @@ const ENTRY_POINT_BASENAMES = new Set([
   'specs-resume',
   'statusline',
   'get-workflow-context',
+  'guard-system',  // 守衛體系頂層 orchestrator，設計為直接呼叫而非被 require
 ]);
 
 // ── 工具函式 ──────────────────────────────────────────────────────────────
