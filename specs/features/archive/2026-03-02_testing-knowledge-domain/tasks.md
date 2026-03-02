@@ -1,10 +1,10 @@
 ---
 feature: testing-knowledge-domain
 workflow: standard
-status: in-progress
+status: archived
 created: 2026-03-02
+archivedAt: 2026-03-02T07:38:32.378Z
 ---
-
 # testing-knowledge-domain
 
 建立 `testing` knowledge domain skill，合併 4 處散布的 BDD/testing 知識。
