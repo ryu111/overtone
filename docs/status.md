@@ -1,12 +1,12 @@
 # Overtone 現況
 
-> 最後更新：2026-03-02 | Plugin 版本：0.28.13
+> 最後更新：2026-03-03 | Plugin 版本：0.28.14
 
 ## 版本狀態
 
 | 版本 | 狀態 | 說明 |
 |------|------|------|
-| V1 | 進行中 | 2124 pass，0 fail，核心功能完整 + 守衛強化迭代 7/10 完成（Docs 同步 + Session 清理 + Test/Dead Code 掃描 + Guard 閘門 + Hook 報告 + Component 修復）|
+| V1 | 進行中 | 2167 pass，0 fail，核心功能完整 + 守衛強化迭代 8/10 完成（Docs 同步 + Session 清理 + Test/Dead Code 掃描 + Guard 閘門 + Hook 報告 + Component 修復 + Hook 診斷）|
 | V2 | 規劃中 | 延後 |
 
 ## 核心指標
@@ -16,8 +16,8 @@
 | Agent 數量 | 17（含 grader） |
 | Stage 數量 | 16 |
 | Workflow 模板 | 18 |
-| 測試通過 | 2124 pass / 0 fail |
-| 測試檔案 | 92 個 |
+| 測試通過 | 2167 pass / 0 fail |
+| 測試檔案 | 93 個 |
 | Hook 數量 | 11 個 |
 | Skill 數量 | 16（8 knowledge domain + orchestrator + pm + specs + 5 utility-with-refs） |
 | Knowledge Domain 數 | 8（testing、workflow-core、security-kb、database、dead-code、commit-convention、code-review、wording） |
@@ -25,6 +25,7 @@
 
 ## 近期變更（最近 3 筆）
 
+- **[0.28.14] 2026-03-03**：Hook 自我診斷 — hook-diagnostic.js（5 項診斷檢查：script 存在性 + 執行權限 + 依賴完整性 + 格式驗證 + event 覆蓋率）（+43 tests）→ 2167 pass / 93 files
 - **[0.28.13] 2026-03-02**：Component 自動修復 — component-repair.js（4 項偵測規則 + plugin.json agents 自動同步 + frontmatter/registry/hooks 一致性檢查）（+57 tests）→ 2124 pass / 92 files
 - **[0.28.12] 2026-03-02**：Dead Code Guard + 自動報告 — RETRO 完成時自動觸發 dead-code-scanner + instinct dead_code 觀察記錄（+4 tests）→ 2067 pass / 91 files
 - **[0.28.11] 2026-03-02**：Test 品質 Guard Test — Guard 閘門整合 + 空測試修復 + detectEmptyTests throw/assert 識別（+6 tests）→ 2063 pass / 91 files
