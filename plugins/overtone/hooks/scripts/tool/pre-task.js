@@ -16,10 +16,11 @@ const path = require('path');
 const state = require('../../../scripts/lib/state');
 const { stages } = require('../../../scripts/lib/registry');
 const identifyAgent = require('../../../scripts/lib/identify-agent');
-const { safeReadStdin, safeRun, getSessionId, buildWorkflowContext } = require('../../../scripts/lib/hook-utils');
+const { safeReadStdin, safeRun, getSessionId, buildWorkflowContext, buildSkillContext } = require('../../../scripts/lib/hook-utils');
 const { atomicWrite } = require('../../../scripts/lib/utils');
 const paths = require('../../../scripts/lib/paths');
 const { buildTestIndex } = require('../../../scripts/test-index');
+const { detectKnowledgeGaps } = require('../../../scripts/lib/knowledge-gap-detector');
 
 safeRun(() => {
   // ── 從 stdin 讀取 hook input ──
@@ -223,7 +224,7 @@ safeRun(() => {
     stage: targetStage,
   });
 
-  // ── 組裝 updatedInput（注入 workflow context + test-index 摘要）──
+  // ── 組裝 updatedInput（注入 workflow context + skill context + gap warnings + test-index 摘要）──
 
   const projectRoot = input.cwd || process.cwd();
   const context = buildWorkflowContext(sessionId, projectRoot);
@@ -236,17 +237,58 @@ safeRun(() => {
     testIndexSummary = buildTestIndex(testsDir);
   }
 
+  // skill context 注入（try/catch 靜默降級）
+  let skillContextStr = null;
+  try {
+    const pluginRoot = path.join(projectRoot, 'plugins', 'overtone');
+    skillContextStr = buildSkillContext(targetAgent, pluginRoot);
+  } catch { /* 靜默降級 — skill context 失敗不影響主流程 */ }
+
+  // gap detection（try/catch 靜默降級）
+  let gapWarnings = null;
+  try {
+    const pluginRoot = path.join(projectRoot, 'plugins', 'overtone');
+    const agentMdPath = path.join(pluginRoot, 'agents', `${targetAgent}.md`);
+    let agentSkills = [];
+    try {
+      const matter = require('gray-matter');
+      const { readFileSync, existsSync } = require('fs');
+      if (existsSync(agentMdPath)) {
+        const agentContent = readFileSync(agentMdPath, 'utf8');
+        const parsed = matter(agentContent);
+        agentSkills = Array.isArray(parsed.data.skills) ? parsed.data.skills : [];
+      }
+    } catch { /* 靜默 */ }
+
+    const originalPromptForGap = toolInput.prompt || '';
+    const gaps = detectKnowledgeGaps(originalPromptForGap, agentSkills);
+    if (gaps.length > 0) {
+      const gapLines = gaps.map(g =>
+        `- ${g.domain}（命中詞：${g.matchedKeywords.slice(0, 3).join('、')}）`
+      );
+      gapWarnings = `[知識缺口提示]\n可能有用的知識 domain（agent 尚未具備）：\n${gapLines.join('\n')}\n建議參考對應的 SKILL.md references。`;
+    }
+  } catch { /* 靜默降級 — gap detection 失敗不影響主流程 */ }
+
   const hasContext = !!context;
+  const hasSkillContext = !!skillContextStr;
+  const hasGapWarnings = !!gapWarnings;
   const hasTestIndex = !!testIndexSummary;
 
-  if (hasContext || hasTestIndex) {
+  if (hasContext || hasSkillContext || hasGapWarnings || hasTestIndex) {
     const originalPrompt = toolInput.prompt || '';
     let newPrompt = originalPrompt;
 
-    // 組裝順序：workflowContext → testIndex → originalPrompt
+    // 組裝順序：workflowContext → skillContext → gapWarnings → testIndex → originalPrompt
     const parts = [];
     if (hasContext) {
       parts.push(context);
+    }
+    if (hasSkillContext) {
+      parts.push(skillContextStr);
+    }
+    if (hasGapWarnings) {
+      parts.push(gapWarnings);
     }
     if (hasTestIndex) {
       parts.push(testIndexSummary);

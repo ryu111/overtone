@@ -2,7 +2,7 @@
 /**
  * hook-utils.js — Hook 共用工具
  *
- * 提供七個函式，統一所有 hook 的通用邏輯：
+ * 提供八個函式，統一所有 hook 的通用邏輯：
  *   safeReadStdin            — 同步讀取 stdin + JSON.parse，失敗回傳 {}
  *   safeRun                  — 頂層 try/catch 包裹，crash 時輸出 defaultOutput + exit 0
  *   hookError                — 統一 stderr 錯誤記錄（帶 [overtone/{hookName}] 前綴）
@@ -10,9 +10,10 @@
  *   buildProgressBar         — 產生 stage 進度條字串（emoji 圖示），供多個 hook 共用
  *   buildWorkflowContext     — 產生 workflow context 字串，供 PreToolUse updatedInput 注入
  *   getSessionId             — 從 hook input 取得 session ID（帶 fallback）
+ *   buildSkillContext        — 讀取 agent frontmatter skills → 載入 SKILL.md 正文摘要
  */
 
-const { readFileSync } = require('fs');
+const { readFileSync, existsSync } = require('fs');
 const path = require('path');
 
 /**
@@ -214,4 +215,83 @@ function getSessionId(input) {
   return (input.session_id || process.env.CLAUDE_SESSION_ID || '').trim();
 }
 
-module.exports = { safeReadStdin, safeRun, hookError, buildPendingTasksMessage, buildProgressBar, buildWorkflowContext, getSessionId };
+/**
+ * 讀取 agent frontmatter skills → 載入 SKILL.md 正文摘要。
+ *
+ * 步驟：
+ *   1. 讀取 agents/{agentName}.md，用 gray-matter 解析 frontmatter 取 skills 陣列
+ *   2. 讀取每個 skill 的 SKILL.md，去掉 frontmatter 保留正文
+ *   3. 截取前 maxCharsPerSkill chars（預設 800），總上限 maxTotalChars（預設 2400）
+ *   4. SKILL.md 不存在時靜默跳過
+ *   5. agent 無 skills、skills 為空、或載入後全部為空 → 回傳 null
+ *
+ * @param {string} agentName - agent 名稱（不含 .md）
+ * @param {string} pluginRoot - plugin 根目錄
+ * @param {object} [options]
+ * @param {number} [options.maxCharsPerSkill=800] - 每個 skill 最大字元數
+ * @param {number} [options.maxTotalChars=2400] - 所有 skill 總字元數上限
+ * @returns {string|null} skill context 文字，無 skills 時回傳 null
+ */
+function buildSkillContext(agentName, pluginRoot, options = {}) {
+  const maxCharsPerSkill = options.maxCharsPerSkill || 800;
+  const maxTotalChars = options.maxTotalChars || 2400;
+
+  try {
+    // 讀取 agent .md 檔案
+    const agentPath = path.join(pluginRoot, 'agents', `${agentName}.md`);
+    if (!existsSync(agentPath)) return null;
+
+    const agentContent = readFileSync(agentPath, 'utf8');
+
+    // 用 gray-matter 解析 frontmatter（延遲 require，僅在需要時載入）
+    const matter = require('gray-matter');
+    const parsed = matter(agentContent);
+    const skills = parsed.data && parsed.data.skills;
+
+    // 驗證 skills 欄位：必須是非空陣列
+    if (!Array.isArray(skills) || skills.length === 0) return null;
+
+    const skillBlocks = [];
+    let totalChars = 0;
+
+    for (const skillName of skills) {
+      // 達到總字元上限 → 停止載入更多 skill
+      if (totalChars >= maxTotalChars) break;
+
+      const skillPath = path.join(pluginRoot, 'skills', skillName, 'SKILL.md');
+      if (!existsSync(skillPath)) continue; // 靜默跳過不存在的 SKILL.md
+
+      try {
+        const skillContent = readFileSync(skillPath, 'utf8');
+        // 去掉 frontmatter，保留正文
+        const parsedSkill = matter(skillContent);
+        let body = parsedSkill.content ? parsedSkill.content.trim() : '';
+
+        if (!body) continue;
+
+        // 截取前 maxCharsPerSkill chars
+        if (body.length > maxCharsPerSkill) {
+          body = body.slice(0, maxCharsPerSkill) + '...（已截斷）';
+        }
+
+        // 剩餘可用字元
+        const remaining = maxTotalChars - totalChars;
+        if (body.length > remaining) {
+          body = body.slice(0, remaining) + '...（已截斷）';
+        }
+
+        const block = `--- ${skillName} ---\n${body}`;
+        skillBlocks.push(block);
+        totalChars += block.length;
+      } catch { /* 靜默跳過讀取失敗的 SKILL.md */ }
+    }
+
+    if (skillBlocks.length === 0) return null;
+
+    return `[Skill 知識摘要]\n\n${skillBlocks.join('\n\n')}`;
+  } catch {
+    return null;
+  }
+}
+
+module.exports = { safeReadStdin, safeRun, hookError, buildPendingTasksMessage, buildProgressBar, buildWorkflowContext, getSessionId, buildSkillContext };

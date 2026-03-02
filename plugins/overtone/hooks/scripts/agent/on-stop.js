@@ -20,6 +20,8 @@ const paths = require('../../../scripts/lib/paths');
 const parseResult = require('../../../scripts/lib/parse-result');
 const { safeReadStdin, safeRun, getSessionId } = require('../../../scripts/lib/hook-utils');
 const { formatSize } = require('../../../scripts/lib/utils');
+const { extractKnowledge } = require('../../../scripts/lib/knowledge-searcher');
+const { routeKnowledge, writeKnowledge } = require('../../../scripts/lib/skill-router');
 
 // ── 主流程（只在直接執行時觸發，require 時不執行）──
 if (require.main === module) {
@@ -300,6 +302,28 @@ safeRun(() => {
   // 提示 Main Agent 可選呼叫 grader
   if (result.verdict !== 'fail') {
     messages.push(`\n💡 可選：委派 grader agent 評估此階段輸出品質（subagent_type: ot:grader，傳入 STAGE=${actualStageKey} AGENT=${agentName} SESSION_ID=${sessionId}）`);
+  }
+
+  // ── Stage PASS 時：知識歸檔 ──
+  // 只在非 fail/reject 結果時才執行知識提取和歸檔
+  if (result.verdict !== 'fail' && result.verdict !== 'reject') {
+    try {
+      // 截斷 agentOutput 到 3000 chars，避免效能問題
+      const truncatedOutput = agentOutput.slice(0, 3000);
+      const pluginRoot = require('path').join(projectRoot, 'plugins', 'overtone');
+
+      const fragments = extractKnowledge(truncatedOutput, {
+        agentName,
+        stageName: actualStageKey,
+      });
+
+      for (const fragment of fragments) {
+        try {
+          const routeResult = routeKnowledge(fragment, { pluginRoot });
+          writeKnowledge(routeResult, fragment, pluginRoot, sessionId);
+        } catch { /* 單個 fragment 寫入失敗靜默跳過 */ }
+      }
+    } catch { /* 知識歸檔失敗不影響主流程 */ }
   }
 
   // ── RETRO 完成時：自動掃描 dead code ──
