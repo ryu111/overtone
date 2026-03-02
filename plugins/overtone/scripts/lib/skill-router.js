@@ -107,7 +107,7 @@ function writeKnowledge(routeResult, fragment, pluginRoot, sessionId) {
       const instinct = require('./instinct');
       instinct.emit(
         sessionId,
-        'dead_code', // 複用現有 type，表示「未分類知識」
+        'knowledge_gap',
         routeResult.observation || '未分類知識',
         `來自 ${fragment.source || 'unknown'} 的知識無法路由到已知 domain`,
         'knowledge-gap'

@@ -1,12 +1,12 @@
 # Overtone 現況
 
-> 最後更新：2026-03-03 | Plugin 版本：0.28.16
+> 最後更新：2026-03-03 | Plugin 版本：0.28.17
 
 ## 版本狀態
 
 | 版本 | 狀態 | 說明 |
 |------|------|------|
-| V1 | 進行中 | 2232 pass，0 fail，核心功能完整 + 守衛強化 10/10 迭代全部完成（三層自動維護架構：6 掃描器 + 4 guard + Hook 整合 + E2E 驗證）|
+| V1 | 進行中 | 2286 pass，0 fail，核心功能完整 + 守衛強化 10/10 + Knowledge Engine（skill context 自動注入 + gap detection + 知識歸檔）|
 | V2 | 規劃中 | 延後 |
 
 ## 核心指標
@@ -16,8 +16,8 @@
 | Agent 數量 | 17（含 grader） |
 | Stage 數量 | 16 |
 | Workflow 模板 | 18 |
-| 測試通過 | 2232 pass / 0 fail |
-| 測試檔案 | 95 個 |
+| 測試通過 | 2286 pass / 0 fail |
+| 測試檔案 | 99 個 |
 | Hook 數量 | 11 個 |
 | Skill 數量 | 16（8 knowledge domain + orchestrator + pm + specs + 5 utility-with-refs） |
 | Knowledge Domain 數 | 8（testing、workflow-core、security-kb、database、dead-code、commit-convention、code-review、wording） |
@@ -25,9 +25,9 @@
 
 ## 近期變更（最近 3 筆）
 
+- **[0.28.17] 2026-03-03**：Knowledge Engine — buildSkillContext 自動注入 + detectKnowledgeGaps gap 偵測 + searchKnowledge 三源搜尋 + skill-router 知識路由歸檔 + Code Review 修復（instinct type + orphan guard）（+54 tests）→ 2286 pass / 99 files
 - **[0.28.16] 2026-03-03**：三層觸發整合 + E2E — guard-system.js 統一入口（5 子系統 orchestrator）+ guard-system-e2e.test.js（三層完整性 + 真實 codebase 健康驗證）（+39 tests）→ 2232 pass / 95 files
 - **[0.28.15] 2026-03-03**：Guard Test 覆蓋率守衛 — guard-coverage.test.js meta-guard（6 scanner + 4 guard + 3 hook 覆蓋 + 最低測試閘門）（+26 tests）→ 2193 pass / 94 files
-- **[0.28.14] 2026-03-03**：Hook 自我診斷 — hook-diagnostic.js（5 項診斷 + hooks.json 格式驗證）（+43 tests）→ 2167 pass / 93 files
 
 ## 已知問題
 

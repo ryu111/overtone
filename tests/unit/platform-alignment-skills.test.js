@@ -349,7 +349,8 @@ describe('Feature: Skill 引用完整性驗證', () => {
   test('所有 reference/example 檔案至少被一個 SKILL.md 或 command 引用', () => {
     const refs = collectSkillRefs();
     const allFiles = collectReferenceFiles();
-    const orphans = allFiles.filter(f => !refs.has(f));
+    // auto-discovered.md 是 knowledge-engine 在 runtime 動態生成的，不被 SKILL.md 引用
+    const orphans = allFiles.filter(f => !refs.has(f) && !f.endsWith('auto-discovered.md'));
 
     if (orphans.length > 0) {
       throw new Error(
