@@ -74,9 +74,9 @@ plugins/overtone/   # Plugin 根目錄
 | SessionEnd | Session 結束收尾 + 狀態清理 |
 | PreCompact | context 壓縮前注入工作流狀態恢復訊息 |
 | UserPromptSubmit | systemMessage → /ot:auto |
-| PreToolUse(Task) | subagent_type 確定性映射 + 擋跳過必要階段 + 衝突警告 + updatedInput 注入 workflow context |
+| PreToolUse(Task) | subagent_type 確定性映射 + 擋跳過必要階段 + 衝突警告 + updatedInput 注入 workflow context + skill context + gap warnings |
 | PreToolUse(Write/Edit) | 元件檔案保護 — 阻擋直接編輯 agents/*.md、hooks.json、skills/*/SKILL.md、registry-data.json、plugin.json，強制使用 manage-component.js |
-| SubagentStop | 記錄結果 + 提示下一步 + 寫 state + emit timeline + featureName auto-sync + tasks.md 勾選（## Stages auto-managed） |
+| SubagentStop | 記錄結果 + 提示下一步 + 寫 state + emit timeline + featureName auto-sync + tasks.md 勾選 + 知識歸檔（PASS 時） |
 | PostToolUse | Instinct 觀察收集 + .md 措詞偵測（emoji-關鍵詞不匹配警告） |
 | TaskCompleted | Task 完成前品質門檻硬阻擋（test pass + lint clean） |
 | PostToolUseFailure | Tool 執行失敗事件處理 |
@@ -103,9 +103,11 @@ bun scripts/health-check.js
 # 驗證所有元件設定（17 agents + 11 hooks + 16 skills + 27 commands）
 bun scripts/validate-agents.js
 
-# 元件管理（建立/更新 agent、hook、skill）
+# 元件管理（建立/更新 agent、hook、skill + 版本更新）
 bun scripts/manage-component.js create agent '{"name":"...","model":"sonnet",...}'
 bun scripts/manage-component.js update agent developer '{"model":"opus"}'
+bun scripts/manage-component.js bump-version          # patch +1
+bun scripts/manage-component.js bump-version 1.0.0    # 指定版本
 bun scripts/manage-component.js --help  # 查看完整用法
 
 # 手動停止 Loop（需提供 sessionId）

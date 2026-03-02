@@ -54,8 +54,9 @@ function printUsage() {
     '用法：bun manage-component.js <action> <type> [name] \'<json>\'',
     '',
     'Actions:',
-    '  create  — 建立新元件',
-    '  update  — 更新現有元件',
+    '  create        — 建立新元件',
+    '  update        — 更新現有元件',
+    '  bump-version  — 更新版本號（預設 patch +1，或指定 x.y.z）',
     '',
     'Types:',
     '  agent   — Agent 定義（agents/*.md + registry-data.json + plugin.json）',
@@ -87,8 +88,22 @@ if (args.length === 0 || args[0] === '--help' || args[0] === '-h') {
 const action = args[0];
 const type = args[1];
 
+// ── bump-version 快速路徑 ──
+
+if (action === 'bump-version') {
+  const version = args[1] || null; // 可選：指定版本號
+  const result = configApi.bumpVersion(version, PLUGIN_ROOT);
+  if (result.success) {
+    console.log(`✅ 版本更新：${result.oldVersion} → ${result.newVersion}`);
+  } else {
+    console.error(`❌ 版本更新失敗：${result.errors.join(', ')}`);
+    process.exit(1);
+  }
+  process.exit(0);
+}
+
 if (!['create', 'update'].includes(action)) {
-  console.error(`❌ 不合法的 action：${action}（合法值：create, update）`);
+  console.error(`❌ 不合法的 action：${action}（合法值：create, update, bump-version）`);
   process.exit(1);
 }
 

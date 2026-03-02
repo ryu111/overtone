@@ -851,6 +851,39 @@ function updateSkill(name, updates, pluginRoot) {
   return { success: true, errors: [], path: skillPath };
 }
 
+// ── 版本管理 ──
+
+/**
+ * 更新 plugin.json 的版本號。
+ *
+ * @param {string} [version] - 指定版本號。若未提供則自動 patch +1
+ * @param {string} pluginRoot - plugin 根目錄
+ * @returns {{ success: boolean, errors: string[], oldVersion: string, newVersion: string }}
+ */
+function bumpVersion(version, pluginRoot) {
+  const pluginJson = readPluginJson(pluginRoot);
+  const oldVersion = pluginJson.version || '0.0.0';
+
+  let newVersion;
+  if (version) {
+    // 驗證 semver 格式
+    if (!/^\d+\.\d+\.\d+$/.test(version)) {
+      return { success: false, errors: [`版本號格式不合法：${version}（需要 x.y.z）`], oldVersion, newVersion: null };
+    }
+    newVersion = version;
+  } else {
+    // 自動 patch +1
+    const parts = oldVersion.split('.').map(Number);
+    parts[2] += 1;
+    newVersion = parts.join('.');
+  }
+
+  pluginJson.version = newVersion;
+  writePluginJson(pluginRoot, pluginJson);
+
+  return { success: true, errors: [], oldVersion, newVersion };
+}
+
 // ── 模組匯出 ──
 
 module.exports = {
@@ -867,6 +900,9 @@ module.exports = {
   updateHook,
   createSkill,
   updateSkill,
+
+  // 版本管理
+  bumpVersion,
 
   // 工具函式
   readHooksJson,

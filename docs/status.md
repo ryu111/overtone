@@ -16,7 +16,7 @@
 | Agent 數量 | 17（含 grader） |
 | Stage 數量 | 16 |
 | Workflow 模板 | 18 |
-| 測試通過 | 2286 pass / 0 fail |
+| 測試通過 | 2300 pass / 0 fail |
 | 測試檔案 | 99 個 |
 | Hook 數量 | 11 個 |
 | Skill 數量 | 16（8 knowledge domain + orchestrator + pm + specs + 5 utility-with-refs） |

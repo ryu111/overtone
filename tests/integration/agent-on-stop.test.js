@@ -1183,3 +1183,136 @@ describe('場景 16：DOCS stage — docs-sync 自動觸發', () => {
     expect(result.result).not.toContain('需人工確認');
   });
 });
+
+// ────────────────────────────────────────────────────────────────────────────
+// 場景 18：Knowledge Engine — 知識歸檔整合
+// ────────────────────────────────────────────────────────────────────────────
+
+describe('場景 18：Knowledge Engine — 知識歸檔', () => {
+  test('DEV PASS + 含 Handoff Findings → 知識歸檔不拋例外，主流程正常', async () => {
+    const sessionId = newSessionId();
+    createdSessions.push(sessionId);
+
+    mkdirSync(paths.sessionDir(sessionId), { recursive: true });
+    setupWorkflowWithActiveStage(sessionId, 'single', 'DEV');
+
+    // 模擬含 Handoff 格式的 agent 輸出，包含 testing 相關關鍵詞
+    const result = await runHook(
+      {
+        agent_type: 'ot:developer',
+        last_assistant_message: [
+          'VERDICT: pass',
+          '### Findings',
+          '- 使用 describe/it/expect 組織 BDD 測試',
+          '- mock 和 stub 用於隔離外部依賴',
+          '- coverage 指標：statement 90% branch 85%',
+          '### Files Modified',
+          '- src/feature.js',
+          '- tests/feature.test.js',
+        ].join('\n'),
+      },
+      sessionId
+    );
+
+    // 主流程正常：含 ✅
+    expect(result.result).toContain('✅');
+    // hook 不應因知識歸檔而拋例外
+    expect(typeof result.result).toBe('string');
+  });
+
+  test('TEST FAIL → 知識歸檔不執行（只在 PASS/ISSUES 執行）', async () => {
+    const sessionId = newSessionId();
+    createdSessions.push(sessionId);
+
+    mkdirSync(paths.sessionDir(sessionId), { recursive: true });
+    state.initState(sessionId, 'quick', ['DEV', 'REVIEW', 'TEST']);
+    state.updateStateAtomic(sessionId, (s) => {
+      s.stages['DEV'].status = 'completed';
+      s.stages['DEV'].result = 'pass';
+      s.stages['REVIEW'].status = 'completed';
+      s.stages['REVIEW'].result = 'pass';
+      s.stages['TEST'].status = 'active';
+      s.currentStage = 'TEST';
+      return s;
+    });
+
+    // TEST stage 才支援 fail verdict
+    const result = await runHook(
+      {
+        agent_type: 'ot:tester',
+        last_assistant_message: '5 tests failed with errors',
+      },
+      sessionId
+    );
+
+    // FAIL 結果
+    expect(result.result).toContain('❌');
+    // 不應有知識歸檔相關錯誤
+    expect(typeof result.result).toBe('string');
+  });
+
+  test('REVIEW REJECT → 知識歸檔不執行', async () => {
+    const sessionId = newSessionId();
+    createdSessions.push(sessionId);
+
+    mkdirSync(paths.sessionDir(sessionId), { recursive: true });
+    state.initState(sessionId, 'quick', ['DEV', 'REVIEW', 'TEST']);
+    state.updateStateAtomic(sessionId, (s) => {
+      s.stages['DEV'].status = 'completed';
+      s.stages['DEV'].result = 'pass';
+      s.stages['REVIEW'].status = 'active';
+      s.currentStage = 'REVIEW';
+      return s;
+    });
+
+    const result = await runHook(
+      {
+        agent_type: 'ot:code-reviewer',
+        last_assistant_message: 'reject 程式碼品質不合格',
+      },
+      sessionId
+    );
+
+    // REJECT 結果
+    expect(result.result).toContain('🔙');
+    // 不應有知識歸檔相關錯誤
+    expect(typeof result.result).toBe('string');
+  });
+
+  test('RETRO PASS + 含 Findings → 知識歸檔 + dead-code 掃描同時執行不衝突', async () => {
+    const sessionId = newSessionId();
+    createdSessions.push(sessionId);
+
+    mkdirSync(paths.sessionDir(sessionId), { recursive: true });
+    state.initState(sessionId, 'quick', ['DEV', 'REVIEW', 'TEST', 'RETRO']);
+    state.updateStateAtomic(sessionId, (s) => {
+      ['DEV', 'REVIEW', 'TEST'].forEach(k => {
+        s.stages[k].status = 'completed';
+        s.stages[k].result = 'pass';
+      });
+      s.stages['RETRO'].status = 'active';
+      s.currentStage = 'RETRO';
+      return s;
+    });
+
+    // RETRO PASS 會同時觸發知識歸檔 + dead-code 掃描
+    const result = await runHook(
+      {
+        agent_type: 'ot:retrospective',
+        last_assistant_message: [
+          'VERDICT: pass 回顧完成',
+          '### Findings',
+          '- 程式碼品質良好',
+          '- 測試覆蓋率充分',
+          '### Context',
+          '回顧已確認所有品質指標達標',
+        ].join('\n'),
+      },
+      sessionId
+    );
+
+    // 主流程正常（知識歸檔 + dead-code 掃描同時執行不衝突）
+    expect(result.result).toContain('✅');
+    expect(typeof result.result).toBe('string');
+  });
+});

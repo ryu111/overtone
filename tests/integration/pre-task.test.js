@@ -315,3 +315,146 @@ describe('場景 5：subagent_type ot: 前綴 → 確定性映射（L1）', () =
     expect(result.result).toBe('');
   });
 });
+
+// ────────────────────────────────────────────────────────────────────────────
+// 場景 6：Knowledge Engine — skillContext + gapWarnings 注入
+// ────────────────────────────────────────────────────────────────────────────
+
+describe('場景 6：Knowledge Engine — skillContext 注入', () => {
+  test('developer agent 放行時 updatedInput.prompt 包含 skill context 段落', async () => {
+    const sessionId = newSessionId();
+    createdSessions.push(sessionId);
+
+    mkdirSync(paths.sessionDir(sessionId), { recursive: true });
+    state.initState(sessionId, 'single', workflows['single'].stages);
+
+    const result = await runHook(
+      {
+        session_id: sessionId,
+        tool_name: 'Task',
+        tool_input: {
+          subagent_type: 'ot:developer',
+          description: '開發任務',
+          prompt: '請實作新功能',
+        },
+      },
+      sessionId
+    );
+
+    expect(isAllowed(result)).toBe(true);
+    // developer agent 有 skills: [commit-convention, wording]，
+    // updatedInput.prompt 應包含來自這些 domain 的摘要
+    const updatedPrompt = result.hookSpecificOutput?.updatedInput?.prompt || '';
+    // skill context 會包含知識域標記
+    expect(updatedPrompt.length).toBeGreaterThan('請實作新功能'.length);
+  });
+
+  test('tester agent 放行時 updatedInput.prompt 包含 testing domain 知識', async () => {
+    const sessionId = newSessionId();
+    createdSessions.push(sessionId);
+
+    mkdirSync(paths.sessionDir(sessionId), { recursive: true });
+    // tdd workflow: TEST:spec → DEV → TEST:verify
+    state.initState(sessionId, 'tdd', workflows['tdd'].stages);
+
+    const result = await runHook(
+      {
+        session_id: sessionId,
+        tool_name: 'Task',
+        tool_input: {
+          subagent_type: 'ot:tester',
+          description: '撰寫 BDD spec',
+          prompt: '請撰寫測試規格',
+        },
+      },
+      sessionId
+    );
+
+    expect(isAllowed(result)).toBe(true);
+    // tester 有 skills: [testing, wording]，prompt 應被注入知識
+    const updatedPrompt = result.hookSpecificOutput?.updatedInput?.prompt || '';
+    expect(updatedPrompt.length).toBeGreaterThan('請撰寫測試規格'.length);
+  });
+
+  test('skillContext 注入失敗不影響放行（靜默降級）', async () => {
+    const sessionId = newSessionId();
+    createdSessions.push(sessionId);
+
+    mkdirSync(paths.sessionDir(sessionId), { recursive: true });
+    state.initState(sessionId, 'single', workflows['single'].stages);
+
+    // 使用不存在的 cwd 觸發 skill context 讀取失敗
+    const result = await runHook(
+      {
+        session_id: sessionId,
+        tool_name: 'Task',
+        tool_input: {
+          subagent_type: 'ot:developer',
+          description: '開發任務',
+          prompt: '請實作',
+        },
+        cwd: '/tmp/nonexistent-project-xyz',
+      },
+      sessionId
+    );
+
+    // 即使 skill context 失敗，hook 仍應放行
+    expect(isAllowed(result)).toBe(true);
+  });
+});
+
+describe('場景 7：Knowledge Engine — gapWarnings 注入', () => {
+  test('prompt 含 security 相關詞但 agent 無 security-kb skill → 注入 gap 提示', async () => {
+    const sessionId = newSessionId();
+    createdSessions.push(sessionId);
+
+    mkdirSync(paths.sessionDir(sessionId), { recursive: true });
+    state.initState(sessionId, 'single', workflows['single'].stages);
+
+    // developer 無 security-kb skill，但 prompt 含 security 關鍵詞
+    const result = await runHook(
+      {
+        session_id: sessionId,
+        tool_name: 'Task',
+        tool_input: {
+          subagent_type: 'ot:developer',
+          description: '安全修復',
+          prompt: '修復 XSS vulnerability，檢查 authentication 和 authorization，加入 CSRF protection 和 input sanitization',
+        },
+      },
+      sessionId
+    );
+
+    expect(isAllowed(result)).toBe(true);
+    const updatedPrompt = result.hookSpecificOutput?.updatedInput?.prompt || '';
+    // gap detection 應偵測到 security domain 缺口
+    expect(updatedPrompt).toContain('知識缺口');
+    expect(updatedPrompt).toContain('security');
+  });
+
+  test('prompt 無明顯 domain 關鍵詞 → 無 gap warnings 注入', async () => {
+    const sessionId = newSessionId();
+    createdSessions.push(sessionId);
+
+    mkdirSync(paths.sessionDir(sessionId), { recursive: true });
+    state.initState(sessionId, 'single', workflows['single'].stages);
+
+    const result = await runHook(
+      {
+        session_id: sessionId,
+        tool_name: 'Task',
+        tool_input: {
+          subagent_type: 'ot:developer',
+          description: '簡單修改',
+          prompt: '把變數名稱改成 camelCase',
+        },
+      },
+      sessionId
+    );
+
+    expect(isAllowed(result)).toBe(true);
+    const updatedPrompt = result.hookSpecificOutput?.updatedInput?.prompt || '';
+    // 無明顯 domain 關鍵詞 → 不應有 gap warnings
+    expect(updatedPrompt).not.toContain('知識缺口');
+  });
+});

@@ -18,6 +18,7 @@ const {
   createSkill,
   updateSkill,
   validateAll,
+  bumpVersion,
 } = require('../../plugins/overtone/scripts/lib/config-api');
 
 // ── 輔助函式 ──
@@ -292,5 +293,75 @@ describe('createSkill + updateSkill 整合', () => {
     expect(content).toContain('user-invocable: false');
     expect(content).toContain('# 新說明');
     expect(content).not.toContain('# 舊說明');
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// bumpVersion
+// ────────────────────────────────────────────────────────────────────────────
+
+describe('bumpVersion — 版本管理', () => {
+  let pluginRoot;
+
+  beforeEach(() => {
+    pluginRoot = makeTmpPluginRoot();
+  });
+
+  it('無參數 → 自動 patch +1（0.1.0 → 0.1.1）', () => {
+    const result = bumpVersion(null, pluginRoot);
+    expect(result.success).toBe(true);
+    expect(result.oldVersion).toBe('0.1.0');
+    expect(result.newVersion).toBe('0.1.1');
+
+    // 驗證 plugin.json 實際更新
+    const pluginJson = JSON.parse(readFileSync(join(pluginRoot, '.claude-plugin', 'plugin.json'), 'utf8'));
+    expect(pluginJson.version).toBe('0.1.1');
+  });
+
+  it('指定版本號 → 寫入指定值', () => {
+    const result = bumpVersion('1.0.0', pluginRoot);
+    expect(result.success).toBe(true);
+    expect(result.oldVersion).toBe('0.1.0');
+    expect(result.newVersion).toBe('1.0.0');
+
+    const pluginJson = JSON.parse(readFileSync(join(pluginRoot, '.claude-plugin', 'plugin.json'), 'utf8'));
+    expect(pluginJson.version).toBe('1.0.0');
+  });
+
+  it('不合法版本號 → 失敗並回傳錯誤', () => {
+    const result = bumpVersion('abc', pluginRoot);
+    expect(result.success).toBe(false);
+    expect(result.errors.length).toBeGreaterThan(0);
+    expect(result.errors[0]).toContain('abc');
+
+    // plugin.json 版本不應被改動
+    const pluginJson = JSON.parse(readFileSync(join(pluginRoot, '.claude-plugin', 'plugin.json'), 'utf8'));
+    expect(pluginJson.version).toBe('0.1.0');
+  });
+
+  it('連續 bump 兩次 → 版本正確遞增', () => {
+    bumpVersion(null, pluginRoot);
+    const result = bumpVersion(null, pluginRoot);
+    expect(result.success).toBe(true);
+    expect(result.oldVersion).toBe('0.1.1');
+    expect(result.newVersion).toBe('0.1.2');
+  });
+
+  it('bump 不影響 agents 陣列', () => {
+    // 先建立一個 agent
+    createAgent({
+      name: 'test-agent', description: '測試', model: 'sonnet',
+      color: 'blue', stage: 'TEST', emoji: '🧪', label: 'Test',
+      maxTurns: 10, body: '# Test',
+    }, pluginRoot);
+
+    const before = JSON.parse(readFileSync(join(pluginRoot, '.claude-plugin', 'plugin.json'), 'utf8'));
+    expect(before.agents).toContain('./agents/test-agent.md');
+
+    bumpVersion(null, pluginRoot);
+
+    const after = JSON.parse(readFileSync(join(pluginRoot, '.claude-plugin', 'plugin.json'), 'utf8'));
+    expect(after.agents).toContain('./agents/test-agent.md');
+    expect(after.agents.length).toBe(before.agents.length);
   });
 });
