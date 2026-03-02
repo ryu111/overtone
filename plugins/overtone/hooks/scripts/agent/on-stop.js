@@ -302,6 +302,30 @@ safeRun(() => {
     messages.push(`\n💡 可選：委派 grader agent 評估此階段輸出品質（subagent_type: ot:grader，傳入 STAGE=${actualStageKey} AGENT=${agentName} SESSION_ID=${sessionId}）`);
   }
 
+  // ── RETRO 完成時：自動掃描 dead code ──
+  // 當 RETRO stage 成功完成時，執行 dead code 偵測，透過 instinct 記錄觀察
+  if (stageKey === 'RETRO' && result.verdict !== 'fail' && result.verdict !== 'reject') {
+    try {
+      const deadCodeScanner = require('../../../scripts/lib/dead-code-scanner');
+      const scanResult = deadCodeScanner.runDeadCodeScan();
+      const { unusedExports, orphanFiles } = scanResult;
+      if (unusedExports.length > 0 || orphanFiles.length > 0) {
+        // 透過 instinct 記錄觀察
+        instinct.emit(
+          sessionId,
+          'dead_code',
+          `RETRO complete`,
+          `Found ${unusedExports.length} unused exports, ${orphanFiles.length} orphan files`,
+          'auto-scan'
+        );
+        // 追加到 messages，提醒 Main Agent
+        messages.push(`\n🔍 Dead Code 掃描：偵測到 ${unusedExports.length} 個未使用 exports，${orphanFiles.length} 個孤立檔案。建議使用 dead-code guard 或 health-check 進一步確認。`);
+      }
+    } catch {
+      // dead-code 掃描失敗不影響主流程
+    }
+  }
+
   // ── DOCS 完成時：自動校驗文件數字 ──
   // 當 DOCS stage 成功完成時，執行文件數字同步檢查，確保 status.md / CLAUDE.md 數字正確
   if (stageKey === 'DOCS' && result.verdict !== 'fail' && result.verdict !== 'reject') {

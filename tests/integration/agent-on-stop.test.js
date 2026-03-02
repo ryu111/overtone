@@ -1003,6 +1003,113 @@ describe('場景 14：agent_performance Instinct 觀察', () => {
 });
 
 // ────────────────────────────────────────────────────────────────────────────
+// 場景 17：RETRO stage — dead code 掃描自動觸發
+// ────────────────────────────────────────────────────────────────────────────
+
+describe('場景 17：RETRO stage — dead code 掃描自動觸發', () => {
+  const instinct = require(join(SCRIPTS_LIB, 'instinct'));
+
+  // 建立 RETRO stage active 的 state
+  function setupRetroActiveState(sessionId) {
+    state.initState(sessionId, 'quick', ['DEV', 'REVIEW', 'TEST', 'RETRO']);
+    state.updateStateAtomic(sessionId, (s) => {
+      ['DEV', 'REVIEW', 'TEST'].forEach(k => {
+        s.stages[k].status = 'completed';
+        s.stages[k].result = 'pass';
+      });
+      s.stages['RETRO'].status = 'active';
+      s.currentStage = 'RETRO';
+      return s;
+    });
+  }
+
+  test('RETRO PASS → hook 正常輸出 ✅，主流程不受 dead-code 掃描影響', async () => {
+    const sessionId = newSessionId();
+    createdSessions.push(sessionId);
+
+    mkdirSync(paths.sessionDir(sessionId), { recursive: true });
+    setupRetroActiveState(sessionId);
+
+    const result = await runHook(
+      { agent_type: 'ot:retrospective', last_assistant_message: 'VERDICT: pass 回顧完成' },
+      sessionId
+    );
+
+    // 主流程正常：含 PASS 符號
+    expect(result.result).toContain('✅');
+    // result 為字串
+    expect(typeof result.result).toBe('string');
+  });
+
+  test('RETRO PASS → observations.jsonl 新增 dead_code 類型觀察（若有 dead code）', async () => {
+    const sessionId = newSessionId();
+    createdSessions.push(sessionId);
+
+    mkdirSync(paths.sessionDir(sessionId), { recursive: true });
+    setupRetroActiveState(sessionId);
+
+    await runHook(
+      { agent_type: 'ot:retrospective', last_assistant_message: 'VERDICT: pass 回顧完成' },
+      sessionId
+    );
+
+    // 查詢 dead_code 類型觀察（若 dead-code scanner 有找到結果才會有）
+    // 此測試只驗證：若觀察存在，格式必須正確；主流程不應因此失敗
+    const observations = instinct.query(sessionId, { type: 'dead_code' });
+    for (const obs of observations) {
+      expect(obs.type).toBe('dead_code');
+      expect(obs.tag).toBe('auto-scan');
+      expect(obs.trigger).toBe('RETRO complete');
+      expect(obs.action).toMatch(/Found \d+ unused exports, \d+ orphan files/);
+    }
+  });
+
+  test('非 RETRO stage（DOCS）PASS → dead-code 掃描不觸發（DOCS 有自己的 docs-sync）', async () => {
+    const sessionId = newSessionId();
+    createdSessions.push(sessionId);
+
+    mkdirSync(paths.sessionDir(sessionId), { recursive: true });
+    state.initState(sessionId, 'quick', ['DEV', 'REVIEW', 'TEST', 'RETRO', 'DOCS']);
+    state.updateStateAtomic(sessionId, (s) => {
+      ['DEV', 'REVIEW', 'TEST', 'RETRO'].forEach(k => {
+        s.stages[k].status = 'completed';
+        s.stages[k].result = 'pass';
+      });
+      s.stages['DOCS'].status = 'active';
+      s.currentStage = 'DOCS';
+      return s;
+    });
+
+    await runHook(
+      { agent_type: 'ot:doc-updater', last_assistant_message: 'VERDICT: pass 文件完成' },
+      sessionId
+    );
+
+    // DOCS PASS → 不觸發 RETRO dead-code 掃描
+    const observations = instinct.query(sessionId, { type: 'dead_code' });
+    expect(observations.length).toBe(0);
+  });
+
+  test('非 RETRO stage（DEV）PASS → dead-code 掃描不觸發', async () => {
+    const sessionId = newSessionId();
+    createdSessions.push(sessionId);
+
+    mkdirSync(paths.sessionDir(sessionId), { recursive: true });
+    setupWorkflowWithActiveStage(sessionId, 'single', 'DEV');
+
+    await runHook(
+      { agent_type: 'ot:developer', last_assistant_message: 'VERDICT: pass 開發完成' },
+      sessionId
+    );
+
+    // DEV PASS → 不觸發 dead-code 掃描
+    const observations = instinct.query(sessionId, { type: 'dead_code' });
+    expect(observations.length).toBe(0);
+    // result 正常
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────
 // 場景 16：DOCS stage — docs-sync 自動觸發
 // ────────────────────────────────────────────────────────────────────────────
 
