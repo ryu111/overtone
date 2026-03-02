@@ -1001,3 +1001,78 @@ describe('場景 14：agent_performance Instinct 觀察', () => {
     expect(second[0].confidence).toBe(0.35); // 0.3 + 0.05
   });
 });
+
+// ────────────────────────────────────────────────────────────────────────────
+// 場景 16：DOCS stage — docs-sync 自動觸發
+// ────────────────────────────────────────────────────────────────────────────
+
+describe('場景 16：DOCS stage — docs-sync 自動觸發', () => {
+  // 準備 DOCS stage 全部前置 stages 完成的 state
+  function setupDocsActiveState(sessionId) {
+    state.initState(sessionId, 'quick', ['DEV', 'REVIEW', 'TEST', 'RETRO', 'DOCS']);
+    state.updateStateAtomic(sessionId, (s) => {
+      ['DEV', 'REVIEW', 'TEST', 'RETRO'].forEach(k => {
+        s.stages[k].status = 'completed';
+        s.stages[k].result = 'pass';
+      });
+      s.stages['DOCS'].status = 'active';
+      s.currentStage = 'DOCS';
+      return s;
+    });
+  }
+
+  test('DOCS PASS → result 含 ✅，主流程不受 docs-sync 影響', async () => {
+    const sessionId = newSessionId();
+    createdSessions.push(sessionId);
+
+    mkdirSync(paths.sessionDir(sessionId), { recursive: true });
+    setupDocsActiveState(sessionId);
+
+    const result = await runHook(
+      { agent_type: 'ot:doc-updater', last_assistant_message: 'VERDICT: pass 文件撰寫完成' },
+      sessionId
+    );
+
+    // 主流程正常：含 PASS 符號
+    expect(result.result).toContain('✅');
+    // result 為字串（docs-sync 例外不影響主流程）
+    expect(typeof result.result).toBe('string');
+  });
+
+  test('DOCS PASS（docs-sync isClean）→ result 不含錯誤或警告訊息', async () => {
+    const sessionId = newSessionId();
+    createdSessions.push(sessionId);
+
+    mkdirSync(paths.sessionDir(sessionId), { recursive: true });
+    setupDocsActiveState(sessionId);
+
+    const result = await runHook(
+      { agent_type: 'ot:doc-updater', last_assistant_message: 'VERDICT: pass 文件完成' },
+      sessionId
+    );
+
+    // 數字已同步時不含修復提示
+    expect(result.result).not.toContain('文件同步錯誤');
+    // result 非空
+    expect(result.result.length).toBeGreaterThan(0);
+  });
+
+  test('非 DOCS stage（DEV）PASS → docs-sync 不觸發', async () => {
+    const sessionId = newSessionId();
+    createdSessions.push(sessionId);
+
+    mkdirSync(paths.sessionDir(sessionId), { recursive: true });
+    setupWorkflowWithActiveStage(sessionId, 'single', 'DEV');
+
+    const result = await runHook(
+      { agent_type: 'ot:developer', last_assistant_message: 'VERDICT: pass 開發完成' },
+      sessionId
+    );
+
+    // DEV PASS 含 ✅
+    expect(result.result).toContain('✅');
+    // 不含 docs-sync 修復訊息
+    expect(result.result).not.toContain('文件數字自動修復');
+    expect(result.result).not.toContain('需人工確認');
+  });
+});

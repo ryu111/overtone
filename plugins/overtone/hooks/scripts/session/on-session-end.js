@@ -16,6 +16,7 @@ const { unlinkSync, writeFileSync, existsSync } = require('fs');
 const paths = require('../../../scripts/lib/paths');
 const timeline = require('../../../scripts/lib/timeline');
 const { safeReadStdin, safeRun, getSessionId, hookError } = require('../../../scripts/lib/hook-utils');
+const { runCleanup } = require('../../../scripts/lib/session-cleanup');
 
 safeRun(() => {
   const input = safeReadStdin();
@@ -79,6 +80,24 @@ safeRun(() => {
     }
   } catch (err) {
     hookError('on-session-end', `清理 .current-session-id 失敗：${err.message || String(err)}`);
+  }
+
+  // ── 4. 清理過期 session 目錄和 orphan 暫存檔 ──
+
+  try {
+    const cleanupReport = runCleanup(sessionId);
+    const totalCleaned = cleanupReport.sessions.cleaned + cleanupReport.orphanFiles.cleaned;
+    if (totalCleaned > 0) {
+      process.stderr.write(
+        `[overtone/on-session-end] 清理完成：刪除 ${cleanupReport.sessions.cleaned} 個過期 session、${cleanupReport.orphanFiles.cleaned} 個暫存檔\n`
+      );
+    }
+    if (cleanupReport.sessions.errors.length > 0 || cleanupReport.orphanFiles.errors.length > 0) {
+      const allErrors = [...cleanupReport.sessions.errors, ...cleanupReport.orphanFiles.errors];
+      hookError('on-session-end', `清理時發生錯誤：${allErrors.join('; ')}`);
+    }
+  } catch (err) {
+    hookError('on-session-end', `runCleanup 失敗：${err.message || String(err)}`);
   }
 
   process.stdout.write(JSON.stringify({ result: '' }));
