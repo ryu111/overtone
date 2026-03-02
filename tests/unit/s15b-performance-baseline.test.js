@@ -117,6 +117,77 @@ describe('Hook Chain 延遲 — 基線 < 200ms', () => {
 });
 
 // ────────────────────────────────────────────────────────────────────────────
+// 面向 1b：Hook Chain 慢路徑延遲（有 workflow state）
+// ────────────────────────────────────────────────────────────────────────────
+
+describe('Hook Chain 延遲 — 慢路徑（有 workflow state） < 300ms', () => {
+  // 慢路徑：session 目錄存在 + workflow.json 已初始化
+  // 這是真實執行場景，hook 需要讀取 state 並注入 workflow context
+
+  let slowSession;
+
+  beforeEach(() => {
+    slowSession = makeSession('slowpath');
+    sessionsToClean.push(slowSession.dir);
+
+    // 建立有效的 workflow.json（模擬 initState 的輸出格式）
+    const workflowState = {
+      sessionId: slowSession.id,
+      workflowType: 'quick',
+      createdAt: new Date().toISOString(),
+      currentStage: 'DEV',
+      stages: {
+        DEV:    { status: 'pending', result: null },
+        REVIEW: { status: 'pending', result: null },
+        TEST:   { status: 'pending', result: null },
+        RETRO:  { status: 'pending', result: null },
+        DOCS:   { status: 'pending', result: null },
+      },
+      activeAgents: {},
+      failCount: 0,
+      rejectCount: 0,
+      retroCount: 0,
+      featureName: null,
+    };
+    writeFileSync(
+      join(slowSession.dir, 'workflow.json'),
+      JSON.stringify(workflowState),
+      'utf8'
+    );
+  });
+
+  afterEach(() => {
+    rmSync(slowSession.dir, { recursive: true, force: true });
+  });
+
+  test('on-submit.js 有 workflow state 時執行時間 < 300ms', () => {
+    const { exitCode, elapsed } = runHookTimed(
+      ON_SUBMIT_HOOK,
+      { prompt: 'implement new feature', session_id: slowSession.id },
+      { CLAUDE_SESSION_ID: slowSession.id }
+    );
+    expect(exitCode).toBe(0);
+    // 慢路徑：需讀取 workflow.json，閾值寬鬆為 300ms
+    expect(elapsed).toBeLessThan(300);
+  });
+
+  test('pre-task.js 有 workflow state 時執行時間 < 300ms', () => {
+    const { exitCode, elapsed } = runHookTimed(
+      PRE_TASK_HOOK,
+      {
+        tool_name: 'Task',
+        tool_input: { subagent_type: 'ot:developer', prompt: 'implement feature' },
+        session_id: slowSession.id,
+      },
+      { CLAUDE_SESSION_ID: slowSession.id }
+    );
+    expect(exitCode).toBe(0);
+    // 慢路徑：需讀取 workflow.json 並注入 context，閾值寬鬆為 300ms
+    expect(elapsed).toBeLessThan(300);
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────
 // 面向 2：Timeline JSONL 寫入效能
 // ────────────────────────────────────────────────────────────────────────────
 

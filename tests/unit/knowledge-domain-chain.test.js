@@ -13,6 +13,7 @@ const { describe, test, expect, beforeAll } = require('bun:test');
 const { join } = require('path');
 const fs = require('fs');
 const { PLUGIN_ROOT } = require('../helpers/paths');
+const { parseFrontmatter } = require('../helpers/frontmatter');
 
 const SKILLS_DIR = join(PLUGIN_ROOT, 'skills');
 const AGENTS_DIR = join(PLUGIN_ROOT, 'agents');
@@ -39,52 +40,6 @@ const AGENT_DOMAIN_MAP = new Map([
   ['refactor-cleaner',  'dead-code'],
   ['security-reviewer', 'security-kb'],
 ]);
-
-// ── 輔助函式：解析 YAML frontmatter ──
-
-function parseFrontmatter(filePath) {
-  const content = fs.readFileSync(filePath, 'utf8');
-  const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---/);
-  if (!match) return {};
-
-  const yaml = match[1];
-  const result = {};
-  let currentKey = null;
-  let inList = false;
-
-  for (const line of yaml.split('\n')) {
-    const listItemMatch = line.match(/^  - (.+)$/);
-    const kvMatch = line.match(/^([a-zA-Z_-]+):\s*(.*)$/);
-
-    if (listItemMatch && inList && currentKey) {
-      if (!Array.isArray(result[currentKey])) {
-        result[currentKey] = [];
-      }
-      result[currentKey].push(listItemMatch[1].trim());
-    } else if (kvMatch) {
-      currentKey = kvMatch[1];
-      const value = kvMatch[2].trim();
-      if (value === '') {
-        result[currentKey] = [];
-        inList = true;
-      } else if (value === 'true') {
-        result[currentKey] = true;
-        inList = false;
-      } else if (value === 'false') {
-        result[currentKey] = false;
-        inList = false;
-      } else if (!isNaN(Number(value)) && value !== '') {
-        result[currentKey] = Number(value);
-        inList = false;
-      } else {
-        result[currentKey] = value;
-        inList = false;
-      }
-    }
-  }
-
-  return result;
-}
 
 // 收集 domain 的所有 reference/example 檔案（相對路徑）
 function collectDomainFiles(domainName) {

@@ -14,60 +14,9 @@ const { describe, test, expect, beforeAll } = require('bun:test');
 const { join } = require('path');
 const fs = require('fs');
 const { PLUGIN_ROOT } = require('../helpers/paths');
+const { parseFrontmatter } = require('../helpers/frontmatter');
 
 const AGENTS_DIR = join(PLUGIN_ROOT, 'agents');
-
-// ── 輔助函式：解析 frontmatter ──
-
-/**
- * 手動解析 YAML frontmatter（簡易版，僅解析頂層 key: value 和 list 結構）
- * @param {string} filePath
- * @returns {object} frontmatter 物件
- */
-function parseFrontmatter(filePath) {
-  const content = fs.readFileSync(filePath, 'utf8');
-  const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---/);
-  if (!match) return {};
-
-  const yaml = match[1];
-  const result = {};
-  let currentKey = null;
-  let inList = false;
-
-  for (const line of yaml.split('\n')) {
-    const listItemMatch = line.match(/^  - (.+)$/);
-    const kvMatch = line.match(/^([a-zA-Z_-]+):\s*(.*)$/);
-
-    if (listItemMatch && inList && currentKey) {
-      if (!Array.isArray(result[currentKey])) {
-        result[currentKey] = [];
-      }
-      result[currentKey].push(listItemMatch[1].trim());
-    } else if (kvMatch) {
-      currentKey = kvMatch[1];
-      const value = kvMatch[2].trim();
-      if (value === '') {
-        // 後面接 list 的情形
-        result[currentKey] = [];
-        inList = true;
-      } else if (value === 'true') {
-        result[currentKey] = true;
-        inList = false;
-      } else if (value === 'false') {
-        result[currentKey] = false;
-        inList = false;
-      } else if (!isNaN(Number(value))) {
-        result[currentKey] = Number(value);
-        inList = false;
-      } else {
-        result[currentKey] = value;
-        inList = false;
-      }
-    }
-  }
-
-  return result;
-}
 
 // ── 讀取所有 agent frontmatter ──
 

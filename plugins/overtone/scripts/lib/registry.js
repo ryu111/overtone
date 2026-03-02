@@ -104,7 +104,7 @@ const retryDefaults = {
   maxRetries: 3,
 };
 
-// Timeline 事件類型（23 種，11 分類）
+// Timeline 事件類型（24 種，11 分類）
 // 已移除：handoff:create（Handoff 為虛擬，永遠不會 emit）
 const timelineEvents = {
   // workflow 類（3）
