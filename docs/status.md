@@ -1,6 +1,6 @@
 # Overtone 現況
 
-> 最後更新：2026-03-02 | Plugin 版本：0.28.6
+> 最後更新：2026-03-02 | Plugin 版本：0.28.7
 
 ## 版本狀態
 
@@ -16,8 +16,8 @@
 | Agent 數量 | 17（含 grader） |
 | Stage 數量 | 16 |
 | Workflow 模板 | 18 |
-| 測試通過 | 1917 pass / 0 fail |
-| 測試檔案 | 85 個 |
+| 測試通過 | 1945 pass / 0 fail |
+| 測試檔案 | 86 個 |
 | Hook 數量 | 11 個 |
 | Skill 數量 | 16（8 knowledge domain + orchestrator + pm + specs + 5 utility-with-refs） |
 | Knowledge Domain 數 | 8（testing、workflow-core、security-kb、database、dead-code、commit-convention、code-review、wording） |
@@ -25,6 +25,7 @@
 
 ## 近期變更（最近 3 筆）
 
+- **[0.28.7] 2026-03-02**：Docs 自動同步引擎 — docs-sync-engine.js 模組（scanDrift/fixDrift/runDocsSyncCheck）+ SubagentStop DOCS 完成時自動校驗數字（+28 tests）→ 1945 pass / 86 files
 - **[0.28.6] 2026-03-02**：閉迴圈工作流驗證 — workflow-closed-loop.test.js 驗證 GIVEN/WHEN/THEN 閉迴圈邏輯（51 tests，覆蓋 stop hook + loop 繼續 + 隱藏 task 處理）→ 1917 pass / 85 files
 - **[0.28.5] 2026-03-02**：Wording knowledge domain 轉 skill — 第 8 個 knowledge domain + 第 16 個 skill，8 個 agent 加入 wording skill（planner、architect、developer、code-reviewer、security-reviewer、database-reviewer、retrospective、doc-updater）+ config-api.js memory 欄位遺失 bug 修復（+18 tests）→ 1844 pass / 84 files
 - **[0.28.4] 2026-03-02**：Reference 完整性驗證 — reference-integrity.test.js 檢查所有 skills/commands 的 reference/ 路徑有效性 + skills 中文名稱正確性（+42 tests）→ 1826 pass / 84 files

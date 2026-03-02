@@ -302,6 +302,28 @@ safeRun(() => {
     messages.push(`\n💡 可選：委派 grader agent 評估此階段輸出品質（subagent_type: ot:grader，傳入 STAGE=${actualStageKey} AGENT=${agentName} SESSION_ID=${sessionId}）`);
   }
 
+  // ── DOCS 完成時：自動校驗文件數字 ──
+  // 當 DOCS stage 成功完成時，執行文件數字同步檢查，確保 status.md / CLAUDE.md 數字正確
+  if (stageKey === 'DOCS' && result.verdict !== 'fail' && result.verdict !== 'reject') {
+    try {
+      const docsSyncEngine = require('../../../scripts/lib/docs-sync-engine');
+      const syncResult = docsSyncEngine.runDocsSyncCheck();
+      if (!syncResult.wasClean) {
+        if (syncResult.fixed.length > 0) {
+          messages.push(`\n📄 文件數字自動修復（${syncResult.fixed.length} 項）：\n${syncResult.fixed.map(f => `  - ${f}`).join('\n')}`);
+        }
+        if (syncResult.skipped.length > 0) {
+          messages.push(`\n⚠️ 需人工確認（${syncResult.skipped.length} 項）：\n${syncResult.skipped.map(s => `  - ${s}`).join('\n')}`);
+        }
+        if (syncResult.errors.length > 0) {
+          messages.push(`\n❌ 文件同步錯誤（${syncResult.errors.length} 項）：\n${syncResult.errors.map(e => `  - ${e}`).join('\n')}`);
+        }
+      }
+    } catch {
+      // docs-sync 失敗不影響主流程
+    }
+  }
+
   process.stdout.write(JSON.stringify({
     result: messages.join('\n'),
   }));
