@@ -250,6 +250,19 @@ function findActualStageKey(currentState, baseStage) {
 }
 
 /**
+ * 檢查同 stage 的所有並行 instance 是否已全部完成（收斂）
+ *
+ * @param {object|null|undefined} stageEntry - stages[actualStageKey]
+ * @returns {boolean} true 若 parallelDone >= parallelTotal（或 parallelTotal 未設定，視為單 agent = 已收斂）
+ */
+function checkSameStageConvergence(stageEntry) {
+  if (!stageEntry) return true;
+  const { parallelTotal, parallelDone } = stageEntry;
+  if (!parallelTotal) return true;
+  return (parallelDone || 0) >= parallelTotal;
+}
+
+/**
  * 檢查並行群組是否收斂（全部完成）
  *
  * @param {object} currentState    - workflow state
@@ -293,7 +306,12 @@ function getNextStageHint(currentState, { stages, parallelGroups }) {
   // D2：若仍有 active agent，不推進到下一步，提示等待
   const activeAgentKeys = Object.keys(currentState.activeAgents || {});
   if (activeAgentKeys.length > 0) {
-    return `等待並行 agent 完成：${activeAgentKeys.join(', ')}`;
+    // instanceId 格式：agentName:timestamp36-random6 → 提取 agentName 並去重
+    const agentNames = [...new Set(activeAgentKeys.map((k) => {
+      const entry = (currentState.activeAgents || {})[k];
+      return entry?.agentName || k.split(':')[0];
+    }))];
+    return `等待並行 agent 完成：${agentNames.join(', ')}`;
   }
 
   const allCompleted = Object.values(currentState.stages).every(
@@ -347,6 +365,7 @@ module.exports = {
   setFeatureName,
   updateStateAtomic,
   findActualStageKey,
+  checkSameStageConvergence,
   checkParallelConvergence,
   getNextStageHint,
 };

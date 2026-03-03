@@ -8,7 +8,7 @@
  */
 
 const { readFileSync, existsSync, unlinkSync } = require('fs');
-const { readState, updateStateAtomic, findActualStageKey, checkParallelConvergence, getNextStageHint, setFeatureName } = require('../../../scripts/lib/state');
+const { readState, updateStateAtomic, findActualStageKey, checkSameStageConvergence, checkParallelConvergence, getNextStageHint, setFeatureName } = require('../../../scripts/lib/state');
 const timeline = require('../../../scripts/lib/timeline');
 const instinct = require('../../../scripts/lib/instinct');
 const { stages, parallelGroups, retryDefaults, specsConfig, scoringConfig } = require('../../../scripts/lib/registry');
@@ -31,9 +31,6 @@ safeRun(() => {
 
   if (!sessionId || !agentName) return exit0();
 
-  // 清除 active agent 追蹤
-  try { unlinkSync(paths.session.activeAgent(sessionId)); } catch { /* 靜默 */ }
-
   // 辨識 stage
   const stageKey = getStageByAgent(agentName, stages);
   if (!stageKey) return exit0();
@@ -45,18 +42,70 @@ safeRun(() => {
   const actualStageKey = findActualStageKey(currentState, stageKey);
   if (!actualStageKey) return exit0();
 
-  // 原子化更新 state
+  // 解析 instanceId（從 agentOutput regex）
+  const instanceIdMatch = agentOutput.match(/INSTANCE_ID:\s*(\S+)/);
+  let resolvedInstanceId = instanceIdMatch?.[1] || null;
+
+  // 原子化更新 state（含收斂門邏輯）
+  let isConvergedOrFailed = false;
+  let finalResult = result.verdict;
+
   const updatedState = updateStateAtomic(sessionId, (s) => {
-    delete s.activeAgents[agentName];
-    if (s.stages[actualStageKey]) {
-      Object.assign(s.stages[actualStageKey], { status: 'completed', result: result.verdict, completedAt: new Date().toISOString() });
-      const nextPending = Object.keys(s.stages).find((k) => s.stages[k].status === 'pending');
-      if (nextPending) s.currentStage = nextPending;
+    // 清除 activeAgents 中的 instanceId entry
+    if (resolvedInstanceId && s.activeAgents[resolvedInstanceId]) {
+      delete s.activeAgents[resolvedInstanceId];
+    } else {
+      // fallback：找最早登記的同名 instance（timestamp36 可字典序排序）
+      const candidates = Object.keys(s.activeAgents || {})
+        .filter((k) => (s.activeAgents[k]?.agentName || k.split(':')[0]) === agentName)
+        .sort();
+      const fallbackKey = candidates[0] || null;
+      if (fallbackKey) {
+        resolvedInstanceId = fallbackKey;
+        delete s.activeAgents[fallbackKey];
+      }
     }
+
+    if (s.stages[actualStageKey]) {
+      const entry = s.stages[actualStageKey];
+
+      // stage 已經 completed（先前有 agent fail/pass 觸發收斂）→ 只做 cleanup
+      if (entry.status === 'completed') {
+        // 仍遞增 parallelDone 做記錄
+        entry.parallelDone = (entry.parallelDone || 0) + 1;
+        return s;
+      }
+
+      // 遞增 parallelDone
+      entry.parallelDone = (entry.parallelDone || 0) + 1;
+
+      if (result.verdict === 'fail' || result.verdict === 'reject') {
+        // 任一 fail/reject → 立即標記 stage fail
+        Object.assign(entry, { status: 'completed', result: result.verdict, completedAt: new Date().toISOString() });
+        const nextPending = Object.keys(s.stages).find((k) => s.stages[k].status === 'pending');
+        if (nextPending) s.currentStage = nextPending;
+        isConvergedOrFailed = true;
+        finalResult = result.verdict;
+      } else if (checkSameStageConvergence(entry)) {
+        // 全部 pass + 已收斂
+        Object.assign(entry, { status: 'completed', result: 'pass', completedAt: new Date().toISOString() });
+        const nextPending = Object.keys(s.stages).find((k) => s.stages[k].status === 'pending');
+        if (nextPending) s.currentStage = nextPending;
+        isConvergedOrFailed = true;
+        finalResult = 'pass';
+      }
+      // 未收斂的 pass：stage 維持 active，不跳轉 currentStage
+    }
+
     if (result.verdict === 'fail') s.failCount = (s.failCount || 0) + 1;
     else if (result.verdict === 'reject') s.rejectCount = (s.rejectCount || 0) + 1;
     return s;
   });
+
+  // active-agent.json：僅收斂後才刪除（並行未完成時保留）
+  if (isConvergedOrFailed) {
+    try { unlinkSync(paths.session.activeAgent(sessionId)); } catch { /* 靜默 */ }
+  }
 
   // 記錄失敗到全域 store（跨 session 失敗模式追蹤）
   if (result.verdict === 'fail' || result.verdict === 'reject') {
@@ -78,8 +127,12 @@ safeRun(() => {
   if (result.verdict === 'fail') {
     timeline.emit(sessionId, 'agent:error', { agent: agentName, stage: actualStageKey, reason: result.reason || 'agent 回報 fail' });
   }
-  timeline.emit(sessionId, 'agent:complete', { agent: agentName, stage: actualStageKey, result: result.verdict });
-  timeline.emit(sessionId, 'stage:complete', { stage: actualStageKey, result: result.verdict });
+  // agent:complete 每個 instance 完成都 emit
+  timeline.emit(sessionId, 'agent:complete', { agent: agentName, stage: actualStageKey, result: result.verdict, instanceId: resolvedInstanceId });
+  // stage:complete 只在收斂（全部 pass）或 fail/reject 時 emit
+  if (isConvergedOrFailed) {
+    timeline.emit(sessionId, 'stage:complete', { stage: actualStageKey, result: finalResult });
+  }
 
   // agent_performance instinct
   try {

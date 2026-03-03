@@ -177,9 +177,13 @@ describe('BDD secure：DEV 完成後三成員並行組同時進入 active', () =
 
   test('activeAgents 同時包含 code-reviewer、tester、security-reviewer', () => {
     const ws = stateLib.readState(SESSION_ID);
-    expect(ws.activeAgents).toHaveProperty('code-reviewer');
-    expect(ws.activeAgents).toHaveProperty('tester');
-    expect(ws.activeAgents).toHaveProperty('security-reviewer');
+    // activeAgents key 格式為 instanceId，以 agentName 欄位驗證
+    const reviewerEntry = Object.values(ws.activeAgents).find(e => e.agentName === 'code-reviewer');
+    const testerEntry = Object.values(ws.activeAgents).find(e => e.agentName === 'tester');
+    const securityEntry = Object.values(ws.activeAgents).find(e => e.agentName === 'security-reviewer');
+    expect(reviewerEntry).toBeDefined();
+    expect(testerEntry).toBeDefined();
+    expect(securityEntry).toBeDefined();
   });
 });
 

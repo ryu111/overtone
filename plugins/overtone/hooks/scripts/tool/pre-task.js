@@ -172,8 +172,17 @@ safeRun(() => {
     return st.status === 'pending' || (st.status === 'completed' && (st.result === 'fail' || st.result === 'reject'));
   });
 
+  // 生成 instanceId（agentName:timestamp36-random6）
+  const instanceId = `${targetAgent}:${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+
+  // 從 prompt 解析 PARALLEL_TOTAL
+  const parallelTotalMatch = (toolInput.prompt || '').match(/PARALLEL_TOTAL:\s*(\d+)/);
+  const parallelTotal = parallelTotalMatch ? parseInt(parallelTotalMatch[1], 10) : null;
+
   state.updateStateAtomic(sessionId, (s) => {
-    s.activeAgents[targetAgent] = {
+    // instanceId 為 key，寫入 agentName 欄位
+    s.activeAgents[instanceId] = {
+      agentName: targetAgent,
       stage: targetStage,
       startedAt: new Date().toISOString(),
     };
@@ -182,8 +191,14 @@ safeRun(() => {
       if (s.stages[actualKey].result === 'fail' || s.stages[actualKey].result === 'reject') {
         delete s.stages[actualKey].result;
         delete s.stages[actualKey].completedAt;
+        delete s.stages[actualKey].parallelDone;
+        delete s.stages[actualKey].parallelTotal;
       }
       s.stages[actualKey].status = 'active';
+      if (parallelTotal !== null && !isNaN(parallelTotal)) {
+        // 取 max 防止並行 pre-task race condition
+        s.stages[actualKey].parallelTotal = Math.max(s.stages[actualKey].parallelTotal || 0, parallelTotal);
+      }
     }
     return s;
   });
@@ -320,13 +335,22 @@ safeRun(() => {
   const hasTestIndex = !!testIndexSummary;
   const hasScoreContext = !!scoreContext;
   const hasFailureWarning = !!failureWarning;
+  // 僅在有 parallelTotal 時注入 PARALLEL INSTANCE 區塊
+  const hasParallelInstance = parallelTotal !== null && !isNaN(parallelTotal);
 
-  if (hasContext || hasSkillContext || hasGapWarnings || hasTestIndex || hasScoreContext || hasFailureWarning) {
+  if (hasContext || hasSkillContext || hasGapWarnings || hasTestIndex || hasScoreContext || hasFailureWarning || hasParallelInstance) {
     const originalPrompt = toolInput.prompt || '';
-    let newPrompt = originalPrompt;
 
-    // 組裝順序：workflowContext → skillContext → gapWarnings → scoreContext → failureWarning → testIndex → originalPrompt
+    // 組裝順序：[PARALLEL INSTANCE] → workflowContext → skillContext → gapWarnings → scoreContext → failureWarning → testIndex → originalPrompt
     const parts = [];
+    if (hasParallelInstance) {
+      parts.push([
+        '[PARALLEL INSTANCE]',
+        `INSTANCE_ID: ${instanceId}`,
+        `PARALLEL_TOTAL: ${parallelTotal}`,
+        '（agent 回覆末尾請附上 INSTANCE_ID: ' + instanceId + '）',
+      ].join('\n'));
+    }
     if (hasContext) {
       parts.push(context);
     }
@@ -347,7 +371,7 @@ safeRun(() => {
     }
     parts.push(originalPrompt);
 
-    newPrompt = parts.join('\n\n---\n\n');
+    const newPrompt = parts.join('\n\n---\n\n');
 
     // 📋 MUST 保留所有原始 tool input 欄位（subagent_type 等），只更新 prompt
     const updatedToolInput = { ...toolInput, prompt: newPrompt };

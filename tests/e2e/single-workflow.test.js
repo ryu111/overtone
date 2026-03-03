@@ -98,7 +98,10 @@ describe('BDD F2：pre-task hook 放行 DEV 並更新 state + 記錄 timeline', 
 
   test('activeAgents 包含 developer', () => {
     const ws = state.readState(SESSION_ID);
-    expect(ws.activeAgents).toHaveProperty('developer');
+    // activeAgents key 格式為 instanceId（agentName:timestamp36-random6），以 agentName 欄位驗證
+    const devEntry = Object.values(ws.activeAgents).find(e => e.agentName === 'developer');
+    expect(devEntry).toBeDefined();
+    expect(devEntry.agentName).toBe('developer');
   });
 
   test('timeline.jsonl 包含 agent:delegate 事件，stage 為 DEV', () => {

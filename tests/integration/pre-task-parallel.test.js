@@ -67,7 +67,10 @@ describe('BDD F6：DEV 完成後委派 code-reviewer → 放行，REVIEW 設為 
 
     const ws = state.readState(sessionId);
     expect(ws.stages['REVIEW'].status).toBe('active');
-    expect(ws.activeAgents).toHaveProperty('code-reviewer');
+    // activeAgents key 格式為 instanceId（agentName:timestamp36-random6），以 agentName 欄位驗證
+    const reviewerEntry = Object.values(ws.activeAgents).find(e => e.agentName === 'code-reviewer');
+    expect(reviewerEntry).toBeDefined();
+    expect(reviewerEntry.agentName).toBe('code-reviewer');
   });
 });
 
@@ -96,7 +99,10 @@ describe('BDD F6：DEV 完成後委派 tester → 放行，TEST 設為 active', 
 
     const ws = state.readState(sessionId);
     expect(ws.stages['TEST'].status).toBe('active');
-    expect(ws.activeAgents).toHaveProperty('tester');
+    // activeAgents key 格式為 instanceId，以 agentName 欄位驗證
+    const testerEntry = Object.values(ws.activeAgents).find(e => e.agentName === 'tester');
+    expect(testerEntry).toBeDefined();
+    expect(testerEntry.agentName).toBe('tester');
   });
 });
 
@@ -124,9 +130,11 @@ describe('BDD F6：DEV 完成後同時委派 code-reviewer 和 tester → 兩者
     expect(ws.stages['REVIEW'].status).toBe('active');
     expect(ws.stages['TEST'].status).toBe('active');
 
-    // activeAgents 同時包含兩者
-    expect(ws.activeAgents).toHaveProperty('code-reviewer');
-    expect(ws.activeAgents).toHaveProperty('tester');
+    // activeAgents key 格式為 instanceId，以 agentName 欄位驗證
+    const reviewerEntry = Object.values(ws.activeAgents).find(e => e.agentName === 'code-reviewer');
+    const testerEntry = Object.values(ws.activeAgents).find(e => e.agentName === 'tester');
+    expect(reviewerEntry).toBeDefined();
+    expect(testerEntry).toBeDefined();
   });
 });
 
@@ -175,7 +183,8 @@ describe('BDD F6：prompt 含 .test.js 路徑時不誤判為 tester', () => {
     const ws = state.readState(sessionId);
     expect(ws.stages['TEST'].status).toBe('pending');
 
-    // activeAgents 不包含 tester
-    expect(ws.activeAgents).not.toHaveProperty('tester');
+    // activeAgents 不包含 tester（instanceId 格式，以 agentName 欄位驗證）
+    const noTesterEntry = Object.values(ws.activeAgents).find(e => e.agentName === 'tester');
+    expect(noTesterEntry).toBeUndefined();
   });
 });
