@@ -29,6 +29,9 @@
  * @param {string|null} ctx.featureName        - specs feature 名稱
  * @param {string}      ctx.projectRoot        - 專案根目錄
  * @param {object|null} [ctx.specsInfo]        - { checked, total } 從 specs 讀取的 checkbox 統計
+ * @param {object|null} [ctx.scoringConfig]    - registry.scoringConfig（gradedStages + lowScoreThreshold）
+ * @param {object|null} [ctx.lastScore]        - ScoreSummary | null（最近 N 筆同 stage 的平均分）
+ * @param {string|null} [ctx.workflowType]     - workflow 類型（用於 grader 評分提示）
  *
  * @returns {{
  *   messages: string[],
@@ -52,6 +55,9 @@ function buildStopMessages(ctx) {
     nextHint,
     featureName,
     specsInfo,
+    scoringConfig,
+    lastScore,
+    workflowType,
   } = ctx;
 
   const messages = [];
@@ -137,6 +143,24 @@ function buildStopMessages(ctx) {
         type: 'parallel:converge',
         data: { group: convergence.group },
       });
+    }
+
+    // 評分建議（在 gradedStages 中的 stage PASS 時插入）
+    if (scoringConfig && scoringConfig.gradedStages.includes(stageKey)) {
+      const workflowHint = workflowType ? ` WORKFLOW_TYPE=${workflowType}` : '';
+      messages.push(`🎯 建議委派 grader 評分：STAGE=${stageKey} AGENT=${agentName} SESSION_ID=${sessionId}${workflowHint}`);
+
+      // 低分警告（若有上一次分數且嚴格低於閾值）
+      if (lastScore && lastScore.avgOverall !== null && lastScore.avgOverall < scoringConfig.lowScoreThreshold) {
+        messages.push(`⚠️ ${stageKey} 歷史平均分偏低（${lastScore.avgOverall.toFixed(2)}/5.0），建議關注品質`);
+        stateUpdates.push({
+          type: 'emitQualitySignal',
+          agentName,
+          stageKey,
+          avgOverall: lastScore.avgOverall,
+          threshold: scoringConfig.lowScoreThreshold,
+        });
+      }
     }
 
     // 提示下一步

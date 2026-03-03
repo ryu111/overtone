@@ -210,6 +210,21 @@ const baselineDefaults = {
   maxRecordsPerType: 100,     // 每種 workflowType 最多保留幾筆記錄
 };
 
+// 評分設定（哪些 stage 觸發評分建議 + 低分閾值）
+const scoringConfig = {
+  // PASS 後觸發 grader 評分提示的 stage 清單
+  gradedStages: ['DEV', 'REVIEW', 'TEST'],
+
+  // overall 低分閾值（低於此值 → emit instinct quality_signal）
+  lowScoreThreshold: 3.0,
+};
+
+// 評分相關預設值（與 baselineDefaults 同層級）
+const scoringDefaults = {
+  compareWindowSize: 10,     // getScoreSummary 取最近幾筆
+  maxRecordsPerStage: 50,    // 每種 stage 最多保留幾筆
+};
+
 module.exports = {
   stages,
   agentModels,
@@ -225,6 +240,8 @@ module.exports = {
   instinctDefaults,
   globalInstinctDefaults,
   baselineDefaults,
+  scoringConfig,
+  scoringDefaults,
   specsConfig,
   knownTools,
   hookEvents,

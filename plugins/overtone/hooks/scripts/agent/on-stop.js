@@ -11,7 +11,7 @@ const { readFileSync, existsSync, unlinkSync } = require('fs');
 const { readState, updateStateAtomic, findActualStageKey, checkParallelConvergence, getNextStageHint, setFeatureName } = require('../../../scripts/lib/state');
 const timeline = require('../../../scripts/lib/timeline');
 const instinct = require('../../../scripts/lib/instinct');
-const { stages, parallelGroups, retryDefaults, specsConfig } = require('../../../scripts/lib/registry');
+const { stages, parallelGroups, retryDefaults, specsConfig, scoringConfig } = require('../../../scripts/lib/registry');
 const paths = require('../../../scripts/lib/paths');
 const parseResult = require('../../../scripts/lib/parse-result');
 const { safeReadStdin, safeRun, getSessionId, shouldSuggestCompact } = require('../../../scripts/lib/hook-utils');
@@ -113,11 +113,21 @@ safeRun(() => {
     } catch { /* 靜默 */ }
   }
 
+  // 取得上一次同 stage 的分數摘要（靜默失敗不影響主流程）
+  let lastScore = null;
+  try {
+    const scoreEngine = require('../../../scripts/lib/score-engine');
+    if (scoringConfig.gradedStages.includes(stageKey)) {
+      lastScore = scoreEngine.getScoreSummary(projectRoot, stageKey);
+    }
+  } catch { /* 靜默 */ }
+
   const buildResult = buildStopMessages({
     verdict: result.verdict, stageKey, actualStageKey, agentName, sessionId,
     state: updatedState, stages, retryDefaults, parallelGroups,
     tasksCheckboxWarning, compactSuggestion, convergence, nextHint,
     featureName: updatedState.featureName, projectRoot, specsInfo,
+    scoringConfig, lastScore, workflowType: updatedState.workflowType,
   });
 
   // 執行 builder 回傳的副作用
@@ -125,6 +135,12 @@ safeRun(() => {
   for (const upd of buildResult.stateUpdates) {
     if (upd.type === 'incrementRetroCount') {
       updateStateAtomic(sessionId, (s) => { s.retroCount = (s.retroCount || 0) + 1; return s; });
+    } else if (upd.type === 'emitQualitySignal') {
+      try {
+        const trigger = `${upd.agentName} 歷史平均 ${upd.avgOverall.toFixed(2)} at ${upd.stageKey}`;
+        const action = `${upd.stageKey} 品質低於閾值 ${upd.threshold}，建議加強產出品質`;
+        instinct.emit(sessionId, 'quality_signal', trigger, action, `quality-${upd.agentName}`);
+      } catch { /* 靜默 */ }
     }
   }
 

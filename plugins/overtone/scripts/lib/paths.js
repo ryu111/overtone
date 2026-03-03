@@ -75,6 +75,7 @@ const global = {
   dir:          (projectRoot) => join(GLOBAL_DIR, projectHash(projectRoot)),
   observations: (projectRoot) => join(GLOBAL_DIR, projectHash(projectRoot), 'observations.jsonl'),
   baselines:    (projectRoot) => join(GLOBAL_DIR, projectHash(projectRoot), 'baselines.jsonl'),
+  scores:       (projectRoot) => join(GLOBAL_DIR, projectHash(projectRoot), 'scores.jsonl'),
 };
 
 // ── 全域設定 ──
