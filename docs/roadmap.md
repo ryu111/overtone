@@ -44,7 +44,7 @@
 | 數值評分引擎 | score-engine.js（saveScore/queryScores/getScoreSummary 3 API）+ 趨勢分析（computeScoreTrend/formatScoreSummary）| ✅ v0.28.26 |
 | 即時回饋迴路引擎 | score context 注入 pre-task + session decay on-session-end | ✅ v0.28.25-26 |
 | 時間序列學習 | Pattern 效果隨時間的變化 | ⬜ |
-| 自動識別卡點 | 重複失敗模式辨識 + 改進 | ⬜ |
+| 自動識別卡點 | 重複失敗模式辨識 + 改進 | ✅ v0.28.27 |
 | 學習衰減 | 過時知識自動淡化（instinct decay）| ✅ v0.28.25 |
 | 效能基線追蹤 | baseline-tracker.js + execution-queue.js + 趨勢分析（computeBaselineTrend）完成 | ✅ v0.28.26 |
 

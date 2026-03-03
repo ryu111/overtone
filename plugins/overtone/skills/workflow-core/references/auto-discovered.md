@@ -678,3 +678,17 @@ Keywords: feedback, loop, level, agent, session, instinct
 - 測試數量從 2571 增加至 2595（+24 tests）
 Keywords: quick, workflow, handoff, baseline, tracker, computebaselinetrend, score, engine, computescoretrend, formatscoresummary
 
+---
+## 2026-03-03 | developer:DEV Context
+實作了 Level 3 卡點識別的第一步：跨 session 失敗模式聚合與注入。建立 `failure-tracker.js` 模組，整合到三個 hook，並補充完整的單元測試與整合防護測試。
+Keywords: level, session, failure, tracker, hook
+
+---
+## 2026-03-03 | doc-updater:DOCS Context
+本階段負責同步 v0.28.27 卡點識別功能的文檔。Handoff 收到的實裝包含：
+- 新增 `failure-tracker.js` 模組（跨 session 失敗模式聚合）
+- on-stop/on-start/pre-task hooks 整合
+- +48 個新測試（failure-tracker + level-2-integration）
+- 版本更新至 0.28.27
+Keywords: handoff, failure, tracker, session, stop, start, task, hooks, level, integration
+

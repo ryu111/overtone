@@ -129,7 +129,8 @@ Remote Core（核心引擎）
 全域層：~/.overtone/global/{projectHash}/
 ├─ observations.jsonl    # 跨 session 觀察記錄
 ├─ baselines.jsonl       # 效能基線歷史
-└─ scores.jsonl          # 評分歷史
+├─ scores.jsonl          # 評分歷史
+└─ failures.jsonl        # 失敗模式聚合（v0.28.27）
 
 Session 層：~/.overtone/sessions/{sessionId}/
 ├─ workflow.json         # 工作流狀態（同步更新）
@@ -218,6 +219,34 @@ scoringDefaults: {
 {"sessionId":"s_xxx","stage":"DEV","score":4.2,"dimensions":{"completeness":4,"quality":4.5,"performance":4},"timestamp":"2026-03-03T10:00:00Z"}
 ```
 
+### Module：failure-tracker.js（v0.28.27）
+
+**目的**：卡點識別——跨 session 聚合失敗模式，自動識別重複卡點並注入改進建議。
+
+**API**：
+- `recordFailure(sessionId, stage, agent, error)`：記錄 fail/reject 事件
+- `getFailurePatterns(projectHash, opts)`：聚合分析（byStage/byAgent/topPattern）
+- `formatFailureWarnings(stage, agent, opts)`：生成 stage 相關失敗警告（pre-task 注入）
+- `formatFailureSummary(projectHash, opts)`：失敗摘要（週期、頻次、建議）
+
+**設定**（registry.js）：
+```javascript
+failureDefaults: {
+  lookbackDays: 30,        // 往前查看 N 天的失敗記錄
+  maxRecordsPerStage: 100   // 單 stage 最多保留筆數
+}
+```
+
+**整合點**：
+- `SubagentStop hook`：fail/reject 時呼叫 recordFailure 記錄
+- `SessionStart hook`：注入 `formatFailureSummary` 提醒本專案重複卡點
+- `pre-task.js hook`：注入 `formatFailureWarnings` 提醒本 stage 的常見失敗
+
+**資料格式**（JSONL）：
+```json
+{"sessionId":"s_xxx","stage":"DEV","agent":"developer","error":"linting failed: E123","timestamp":"2026-03-03T10:00:00Z","frequency":3}
+```
+
 ### 路徑管理（paths.js）
 
 新增全域路徑：
@@ -233,6 +262,10 @@ global: {
   },
   scores: {
     path: "~/.overtone/global/{projectHash}/scores.jsonl",
+    append: true
+  },
+  failures: {
+    path: "~/.overtone/global/{projectHash}/failures.jsonl",
     append: true
   }
 }

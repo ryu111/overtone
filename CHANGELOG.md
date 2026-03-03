@@ -2,6 +2,26 @@
 
 所有重要變更記錄於此文件。
 
+## [0.28.27] - 2026-03-03
+
+### Level 2：卡點識別（失敗模式聚合）
+- **Failure Tracker**（新模組）：`scripts/lib/failure-tracker.js`
+  - `recordFailure(sessionId, stage, agent, error)`：在 fail/reject 時記錄失敗到 `~/.overtone/global/{projectHash}/failures.jsonl`
+  - `getFailurePatterns(projectHash, opts)`：聚合分析 byStage/byAgent/topPattern
+  - `formatFailureWarnings(stage, agent)`：生成 stage 相關失敗模式警告
+  - `formatFailureSummary(projectHash, opts)`：失敗摘要（週期、頻次、建議）
+- **Hook 整合**：
+  - `hooks/scripts/agent/on-stop.js`：fail/reject 時調用 recordFailure
+  - `hooks/scripts/session/on-start.js`：注入失敗模式摘要提醒
+  - `hooks/scripts/tool/pre-task.js`：注入 stage 相關失敗模式警告
+- **Registry 設定**：`failureDefaults: { lookbackDays: 30, maxRecordsPerStage: 100 }`
+- **測試**：
+  - 新增 `tests/unit/failure-tracker.test.js`（20 tests）
+  - 新增 `tests/unit/level-2-integration.test.js`（+12 tests）
+  - 累計 2643 pass / 0 fail（113 個測試檔）
+
+---
+
 ## [0.28.26] - 2026-03-03
 
 ### Level 2：趨勢分析引擎
