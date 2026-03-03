@@ -1,10 +1,10 @@
 ---
 feature: cross-session-memory
-status: in-progress
+status: archived
 workflow: standard
 created: 2026-03-03T06:33:09.824Z
+archivedAt: 2026-03-03T07:06:21.379Z
 ---
-
 ## Stages
 
 - [x] PLAN
