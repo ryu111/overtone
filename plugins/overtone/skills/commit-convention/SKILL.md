@@ -7,7 +7,7 @@ user-invocable: false
 
 # Commit Convention 知識域
 
-> 來源：Anthropic 官方 `awattar/claude-code-best-practices`
+> 來源：Anthropic 官方 awattar/claude-code-best-practices
 
 ## 消費者
 
@@ -20,3 +20,5 @@ user-invocable: false
 | 檔案 | 說明 |
 |------|------|
 | 💡 `${CLAUDE_PLUGIN_ROOT}/skills/commit-convention/references/commit-convention.md` | Conventional commit 完整規範 |
+| 💡 `${CLAUDE_PLUGIN_ROOT}/skills/commit-convention/references/commit-examples.md` | Overtone 實際 commit 範例（好例/壞例對比） |
+| 💡 `${CLAUDE_PLUGIN_ROOT}/skills/commit-convention/examples/good-bad-commits.md` | 完整好壞 commit 對比範例 |

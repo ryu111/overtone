@@ -5,6 +5,8 @@ model: sonnet
 permissionMode: bypassPermissions
 color: orange
 maxTurns: 50
+skills:
+  - build-system
 ---
 
 # 🔨 構建修復者

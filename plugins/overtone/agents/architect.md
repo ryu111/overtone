@@ -11,6 +11,7 @@ disallowedTools:
 memory: local
 skills:
   - wording
+  - architecture
 ---
 
 # 🏗️ 架構師

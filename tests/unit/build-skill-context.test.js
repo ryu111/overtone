@@ -76,9 +76,9 @@ describe('buildSkillContext — Scenario 1-1: Agent 有 skills 欄位時載入 S
 });
 
 describe('buildSkillContext — Scenario 1-2: Agent 無 skills 欄位時回傳 null', () => {
-  it('debugger 無 skills 欄位時回傳 null', () => {
-    // debugger.md 不含 skills 欄位
-    const result = buildSkillContext('debugger', PLUGIN_ROOT);
+  it('designer 無 skills 欄位時回傳 null', () => {
+    // designer.md 不含 skills 欄位
+    const result = buildSkillContext('designer', PLUGIN_ROOT);
     expect(result).toBeNull();
   });
 });

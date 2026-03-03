@@ -10,6 +10,8 @@ disallowedTools:
   - Edit
   - Task
   - NotebookEdit
+skills:
+  - debugging
 ---
 
 # 🔧 除錯者

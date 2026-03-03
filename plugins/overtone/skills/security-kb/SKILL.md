@@ -13,5 +13,6 @@ user-invocable: false
 
 | # | 檔案 | 用途 |
 |---|------|------|
-| 1 | references/owasp-top10-checklist.md | OWASP Top 10 檢查清單與修復指引 |
-| 2 | examples/security-report.md | 安全報告格式範例 |
+| 1 | 💡 `${CLAUDE_PLUGIN_ROOT}/skills/security-kb/references/owasp-top10-checklist.md` | OWASP Top 10 檢查清單與修復指引 |
+| 2 | 💡 `${CLAUDE_PLUGIN_ROOT}/skills/security-kb/references/js-security-patterns.md` | JavaScript/TypeScript 特定安全模式（prototype pollution、regex DoS 等） |
+| 3 | 💡 `${CLAUDE_PLUGIN_ROOT}/skills/security-kb/examples/security-report.md` | 安全報告格式範例 |

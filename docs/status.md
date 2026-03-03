@@ -16,11 +16,11 @@
 | Agent 數量 | 17（含 grader） |
 | Stage 數量 | 16 |
 | Workflow 模板 | 18 |
-| 測試通過 | 2298 pass / 0 fail |
+| 測試通過 | 2374 pass / 0 fail |
 | 測試檔案 | 99 個 |
 | Hook 數量 | 11 個 |
-| Skill 數量 | 16（8 knowledge domain + orchestrator + pm + specs + 5 utility-with-refs） |
-| Knowledge Domain 數 | 8（testing、workflow-core、security-kb、database、dead-code、commit-convention、code-review、wording） |
+| Skill 數量 | 19（11 knowledge domain + orchestrator + pm + specs + 5 utility-with-refs） |
+| Knowledge Domain 數 | 11（testing、workflow-core、security-kb、database、dead-code、commit-convention、code-review、wording、debugging、architecture、build-system） |
 | Command 數量 | 27（14 stage shortcut + 7 workflow pipeline + 6 utility） |
 
 ## 近期變更（最近 3 筆）

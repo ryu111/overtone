@@ -1,13 +1,15 @@
 ---
 name: code-review
-description: PR Review 知識域：四維度結構化審查（code quality / security / performance / observability）+ 回饋分級。
+description: >-
+  PR Review 知識域：四維度結構化審查（code quality / security / performance / observability）+
+  回饋分級。
 disable-model-invocation: true
 user-invocable: false
 ---
 
 # Code Review 知識域
 
-> 來源：Anthropic 官方 `awattar/claude-code-best-practices`
+> 來源：Anthropic 官方 awattar/claude-code-best-practices
 
 ## 消費者
 
@@ -20,6 +22,7 @@ user-invocable: false
 | 檔案 | 說明 |
 |------|------|
 | 💡 `${CLAUDE_PLUGIN_ROOT}/skills/code-review/references/pr-review-checklist.md` | PR Review 多維度檢查清單 |
+| 💡 `${CLAUDE_PLUGIN_ROOT}/skills/code-review/references/architecture-review.md` | 架構層面 review patterns（模組耦合、API 一致性、錯誤傳播） |
 
 ## 跨域引用
 

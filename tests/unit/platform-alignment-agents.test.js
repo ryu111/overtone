@@ -327,7 +327,7 @@ describe('Feature 1b: Agent skills 預載（agent frontmatter）', () => {
   describe('Scenario 1b-10: 未被指定預載的 agent 不含 skills 欄位', () => {
     // architect、planner 已加入 wording skill，不再符合「無 skills」
     // 僅驗證未加入任何 skill 的 agent
-    const noSkillsAgents = ['debugger'];
+    const noSkillsAgents = ['designer'];
 
     for (const agentName of noSkillsAgents) {
       test(`${agentName} frontmatter 不含 skills 欄位`, () => {
