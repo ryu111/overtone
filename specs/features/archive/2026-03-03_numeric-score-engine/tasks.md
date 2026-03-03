@@ -1,9 +1,9 @@
 ---
 feature: numeric-score-engine
 workflow: quick
-status: in-progress
+status: archived
+archivedAt: 2026-03-03T08:42:32.823Z
 ---
-
 ## Stages
 
 - [x] DEV
