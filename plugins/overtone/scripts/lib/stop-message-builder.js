@@ -147,8 +147,14 @@ function buildStopMessages(ctx) {
 
     // 評分建議（在 gradedStages 中的 stage PASS 時插入）
     if (scoringConfig && scoringConfig.gradedStages.includes(stageKey)) {
+      const MUST_GRADE_WORKFLOWS = ['standard', 'full', 'secure', 'product', 'product-full'];
+      const isMustGrade = workflowType && MUST_GRADE_WORKFLOWS.includes(workflowType);
       const workflowHint = workflowType ? ` WORKFLOW_TYPE=${workflowType}` : '';
-      messages.push(`🎯 建議委派 grader 評分：STAGE=${stageKey} AGENT=${agentName} SESSION_ID=${sessionId}${workflowHint}`);
+      if (isMustGrade) {
+        messages.push(`📋 MUST 委派 grader 評分：STAGE=${stageKey} AGENT=${agentName} SESSION_ID=${sessionId}${workflowHint}`);
+      } else {
+        messages.push(`🎯 建議委派 grader 評分：STAGE=${stageKey} AGENT=${agentName} SESSION_ID=${sessionId}${workflowHint}`);
+      }
 
       // 低分警告（若有上一次分數且嚴格低於閾值）
       if (lastScore && lastScore.avgOverall !== null && lastScore.avgOverall < scoringConfig.lowScoreThreshold) {

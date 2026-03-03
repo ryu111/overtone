@@ -399,8 +399,13 @@ describe('Feature 1b: Agent skills 預載（agent frontmatter）', () => {
 
 describe('Feature S10: Agent Memory', () => {
 
-  // S10-1: 啟用 memory 的 agent（opus 決策型；architect/retrospective 已降級 sonnet 並移除 memory）
-  const memoryAgents = ['code-reviewer', 'security-reviewer', 'product-manager'];
+  // S10-1: 啟用 memory 的 agent
+  // 決策型（opus）：code-reviewer、security-reviewer、product-manager
+  // 執行型（sonnet，Phase 2 個體學習升級）：developer、tester、debugger、planner、architect
+  const memoryAgents = [
+    'code-reviewer', 'security-reviewer', 'product-manager',
+    'developer', 'tester', 'debugger', 'planner', 'architect',
+  ];
   describe('S10-1: memory: local agent', () => {
     for (const agentName of memoryAgents) {
       test(`${agentName} frontmatter 包含 memory: local`, () => {

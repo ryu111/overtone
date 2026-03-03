@@ -8,6 +8,7 @@ maxTurns: 25
 disallowedTools:
   - Task
   - NotebookEdit
+memory: local
 skills:
   - wording
 ---

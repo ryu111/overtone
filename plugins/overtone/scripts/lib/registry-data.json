@@ -124,6 +124,11 @@
   "agentMemory": {
     "code-reviewer": "local",
     "security-reviewer": "local",
-    "product-manager": "local"
+    "product-manager": "local",
+    "developer": "local",
+    "tester": "local",
+    "debugger": "local",
+    "planner": "local",
+    "architect": "local"
   }
 }

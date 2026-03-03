@@ -139,7 +139,7 @@ describe('Feature 1: pre-task.js 注入 score context', () => {
     expect(hookOutput).toBeDefined();
     expect(hookOutput.permissionDecision).toBe('allow');
     expect(hookOutput.updatedInput).toBeDefined();
-    expect(hookOutput.updatedInput.prompt).toContain('[品質歷史 — DEV（1 筆）]');
+    expect(hookOutput.updatedInput.prompt).toContain('[品質歷史 — developer@DEV（1 筆）]');
     expect(hookOutput.updatedInput.prompt).toContain('clarity: 4.00/5.0');
     expect(hookOutput.updatedInput.prompt).toContain('completeness: 3.00/5.0');
     expect(hookOutput.updatedInput.prompt).toContain('actionability: 5.00/5.0');

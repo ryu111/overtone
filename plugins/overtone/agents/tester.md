@@ -5,6 +5,7 @@ model: sonnet
 permissionMode: bypassPermissions
 color: pink
 maxTurns: 50
+memory: local
 skills:
   - testing
   - wording

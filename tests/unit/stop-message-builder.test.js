@@ -296,3 +296,139 @@ describe('Feature 5: 附加條件', () => {
     expect(result.timelineEvents.some(e => e.type === 'session:compact-suggestion')).toBe(false);
   });
 });
+
+// ════════════════════════════════════════════════════════════════
+// Feature 6: Grader 強制化（BDD Feature 3）
+// ════════════════════════════════════════════════════════════════
+
+describe('Feature 6: Grader 強制化 — workflowType 切換用詞', () => {
+  // 建立含 scoringConfig 的 ctx，DEV stage 是 gradedStage
+  function makeGraderCtx(overrides = {}) {
+    return makeCtx({
+      stageKey: 'DEV',
+      scoringConfig: { gradedStages: ['DEV', 'REVIEW', 'TEST'], lowScoreThreshold: 3.0 },
+      ...overrides,
+    });
+  }
+
+  // Scenario 3-1: standard workflow — MUST 強制用詞
+  test('Scenario 3-1: workflowType=standard + DEV PASS — 含 MUST 強制用詞', () => {
+    const result = buildStopMessages(makeGraderCtx({
+      workflowType: 'standard',
+      verdict: 'pass',
+    }));
+
+    const joined = result.messages.join('\n');
+    expect(joined).toContain('📋 MUST 委派 grader 評分');
+    expect(joined).toContain('STAGE=DEV');
+    expect(joined).not.toContain('🎯 建議委派 grader 評分');
+  });
+
+  // Scenario 3-2: full workflow — MUST 強制用詞
+  test('Scenario 3-2: workflowType=full + gradedStage PASS — 含 MUST 強制用詞', () => {
+    const result = buildStopMessages(makeGraderCtx({
+      workflowType: 'full',
+      verdict: 'pass',
+    }));
+
+    const joined = result.messages.join('\n');
+    expect(joined).toContain('📋 MUST 委派 grader 評分');
+  });
+
+  // Scenario 3-3: secure workflow — MUST 強制用詞
+  test('Scenario 3-3: workflowType=secure + gradedStage PASS — 含 MUST 強制用詞', () => {
+    const result = buildStopMessages(makeGraderCtx({
+      workflowType: 'secure',
+      verdict: 'pass',
+    }));
+
+    const joined = result.messages.join('\n');
+    expect(joined).toContain('📋 MUST 委派 grader 評分');
+  });
+
+  // Scenario 3-4: product workflow — MUST 強制用詞
+  test('Scenario 3-4: workflowType=product + gradedStage PASS — 含 MUST 強制用詞', () => {
+    const result = buildStopMessages(makeGraderCtx({
+      workflowType: 'product',
+      verdict: 'pass',
+    }));
+
+    const joined = result.messages.join('\n');
+    expect(joined).toContain('📋 MUST 委派 grader 評分');
+  });
+
+  // Scenario 3-5: product-full workflow — MUST 強制用詞
+  test('Scenario 3-5: workflowType=product-full + gradedStage PASS — 含 MUST 強制用詞', () => {
+    const result = buildStopMessages(makeGraderCtx({
+      workflowType: 'product-full',
+      verdict: 'pass',
+    }));
+
+    const joined = result.messages.join('\n');
+    expect(joined).toContain('📋 MUST 委派 grader 評分');
+  });
+
+  // Scenario 3-6: quick workflow — 建議用詞
+  test('Scenario 3-6: workflowType=quick + gradedStage PASS — 含建議用詞，不含 MUST', () => {
+    const result = buildStopMessages(makeGraderCtx({
+      workflowType: 'quick',
+      verdict: 'pass',
+    }));
+
+    const joined = result.messages.join('\n');
+    expect(joined).toContain('🎯 建議委派 grader 評分');
+    expect(joined).not.toContain('MUST 委派 grader');
+  });
+
+  // Scenario 3-7: single workflow — 建議用詞
+  test('Scenario 3-7: workflowType=single + gradedStage PASS — 含建議用詞', () => {
+    const result = buildStopMessages(makeGraderCtx({
+      workflowType: 'single',
+      verdict: 'pass',
+    }));
+
+    const joined = result.messages.join('\n');
+    expect(joined).toContain('🎯 建議委派 grader 評分');
+  });
+
+  // Scenario 3-8: workflowType=null — 建議用詞（向後相容）
+  test('Scenario 3-8: workflowType=null — 含建議用詞，不拋出例外', () => {
+    const result = buildStopMessages(makeGraderCtx({
+      workflowType: null,
+      verdict: 'pass',
+    }));
+
+    const joined = result.messages.join('\n');
+    expect(joined).toContain('🎯 建議委派 grader 評分');
+    expect(result.messages).toBeDefined();
+  });
+
+  // Scenario 3-9: 不在 gradedStages 中的 stage — 不產生 grader 訊息
+  test('Scenario 3-9: workflowType=standard + DOCS stage（非 gradedStage）— 不含 grader 訊息', () => {
+    const result = buildStopMessages(makeCtx({
+      stageKey: 'DOCS',
+      workflowType: 'standard',
+      verdict: 'pass',
+      scoringConfig: { gradedStages: ['DEV', 'REVIEW', 'TEST'], lowScoreThreshold: 3.0 },
+    }));
+
+    const joined = result.messages.join('\n');
+    expect(joined).not.toContain('grader');
+    expect(joined).not.toContain('MUST 委派');
+    expect(joined).not.toContain('建議委派 grader');
+  });
+
+  // Scenario 3-10: FAIL verdict — 不產生 grader 訊息
+  test('Scenario 3-10: workflowType=standard + DEV FAIL — 不含 grader 訊息', () => {
+    const result = buildStopMessages(makeGraderCtx({
+      workflowType: 'standard',
+      verdict: 'fail',
+      state: { failCount: 1, rejectCount: 0, retroCount: 0 },
+    }));
+
+    const joined = result.messages.join('\n');
+    expect(joined).not.toContain('grader');
+    expect(joined).not.toContain('MUST 委派 grader');
+    expect(joined).toContain('DEBUGGER');
+  });
+});

@@ -325,7 +325,7 @@ safeRun(() => {
         const lowest = dims.reduce((a, b) => (a.val <= b.val ? a : b));
 
         scoreContext = [
-          `[品質歷史 — ${targetStage}（${summary.sessionCount} 筆）]`,
+          `[品質歷史 — ${targetAgent}@${targetStage}（${summary.sessionCount} 筆）]`,
           `  clarity: ${summary.avgClarity.toFixed(2)}/5.0`,
           `  completeness: ${summary.avgCompleteness.toFixed(2)}/5.0`,
           `  actionability: ${summary.avgActionability.toFixed(2)}/5.0`,

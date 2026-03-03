@@ -103,8 +103,13 @@ describe('registry.js 資料完整性', () => {
       expect(agentMemory['code-reviewer']).toBe('local');
       expect(agentMemory['security-reviewer']).toBe('local');
       expect(agentMemory['product-manager']).toBe('local');
-      // architect 和 retrospective 已降級為 sonnet，移除 memory 設定
-      expect(agentMemory['architect']).toBeUndefined();
+      // Phase 2：5 個執行型 agent 加入 memory: local（個體學習升級）
+      expect(agentMemory['developer']).toBe('local');
+      expect(agentMemory['tester']).toBe('local');
+      expect(agentMemory['debugger']).toBe('local');
+      expect(agentMemory['planner']).toBe('local');
+      expect(agentMemory['architect']).toBe('local');
+      // retrospective 尚未設定 memory
       expect(agentMemory['retrospective']).toBeUndefined();
     });
 

@@ -5,6 +5,7 @@ model: sonnet
 permissionMode: bypassPermissions
 color: yellow
 maxTurns: 50
+memory: local
 skills:
   - autonomous-control
   - commit-convention
