@@ -235,3 +235,139 @@ describe('writeKnowledge — routeResult.targetPath 為 null 時不拋例外', (
     expect(() => writeKnowledge(routeResult, fragment, TMP_ROOT)).not.toThrow();
   });
 });
+
+// ── Feature 4: 去重邏輯 ──
+
+describe('writeKnowledge — Scenario 4-7: 相同 content 不重複追加', () => {
+  it('相同 content 寫入兩次，檔案只出現一次', () => {
+    const pluginRoot = setupTmpPlugin();
+    const targetPath = join(pluginRoot, 'skills', 'testing', 'references', 'auto-discovered.md');
+
+    const routeResult = { action: 'append', domain: 'testing', targetPath };
+    const fragment = {
+      content: '唯一的測試知識：describe/it/expect 是 BDD 標準',
+      keywords: ['describe', 'test'],
+      source: 'developer:DEV',
+    };
+
+    // 第一次寫入
+    writeKnowledge(routeResult, fragment, pluginRoot);
+    // 第二次寫入相同 content
+    writeKnowledge(routeResult, fragment, pluginRoot);
+
+    const content = readFileSync(targetPath, 'utf8');
+    // content 本體只出現一次
+    const occurrences = (content.match(/唯一的測試知識/g) || []).length;
+    expect(occurrences).toBe(1);
+  });
+
+  it('多次重複寫入後，條目數量維持為 1', () => {
+    const pluginRoot = setupTmpPlugin();
+    const targetPath = join(pluginRoot, 'skills', 'testing', 'references', 'auto-discovered.md');
+
+    const routeResult = { action: 'append', domain: 'testing', targetPath };
+    const fragment = {
+      content: '重複測試：bun test 執行所有測試',
+      keywords: ['bun', 'test'],
+      source: 'developer:DEV',
+    };
+
+    // 重複寫入 5 次
+    for (let i = 0; i < 5; i++) {
+      writeKnowledge(routeResult, fragment, pluginRoot);
+    }
+
+    const content = readFileSync(targetPath, 'utf8');
+    // ## 標頭只出現一次（代表只有一筆條目）
+    const entryCount = (content.match(/^## \d{4}/gm) || []).length;
+    expect(entryCount).toBe(1);
+  });
+});
+
+describe('writeKnowledge — Scenario 4-8: 不同 content 正常追加', () => {
+  it('兩個不同 content 各自被寫入，最終有兩筆條目', () => {
+    const pluginRoot = setupTmpPlugin();
+    const targetPath = join(pluginRoot, 'skills', 'testing', 'references', 'auto-discovered.md');
+
+    const routeResult = { action: 'append', domain: 'testing', targetPath };
+    const fragmentA = {
+      content: '第一個不同知識：使用 mock 隔離依賴',
+      keywords: ['mock', 'test'],
+      source: 'developer:DEV',
+    };
+    const fragmentB = {
+      content: '第二個不同知識：使用 stub 取代外部 API',
+      keywords: ['stub', 'test'],
+      source: 'developer:DEV',
+    };
+
+    writeKnowledge(routeResult, fragmentA, pluginRoot);
+    writeKnowledge(routeResult, fragmentB, pluginRoot);
+
+    const content = readFileSync(targetPath, 'utf8');
+    expect(content).toContain('第一個不同知識');
+    expect(content).toContain('第二個不同知識');
+    const entryCount = (content.match(/^## \d{4}/gm) || []).length;
+    expect(entryCount).toBe(2);
+  });
+});
+
+describe('writeKnowledge — Scenario 4-9: content A 包含 content B 時不誤判', () => {
+  it('先寫長 content，再寫其子字串，子字串被正確阻擋（existingContent 包含它）', () => {
+    const pluginRoot = setupTmpPlugin();
+    const targetPath = join(pluginRoot, 'skills', 'testing', 'references', 'auto-discovered.md');
+
+    const routeResult = { action: 'append', domain: 'testing', targetPath };
+    // 長的 content 包含短的 content 作為子字串
+    const fragmentLong = {
+      content: '完整知識：使用 describe 組織測試，it 定義測試案例',
+      keywords: ['describe', 'test'],
+      source: 'developer:DEV',
+    };
+    const fragmentShort = {
+      content: '使用 describe 組織測試',
+      keywords: ['describe'],
+      source: 'developer:DEV',
+    };
+
+    // 先寫長的
+    writeKnowledge(routeResult, fragmentLong, pluginRoot);
+    // 再寫短的（是長的的子字串）→ 應被阻擋（existingContent 包含此子字串）
+    writeKnowledge(routeResult, fragmentShort, pluginRoot);
+
+    const content = readFileSync(targetPath, 'utf8');
+    // 只有一筆條目（短的被去重阻擋）
+    const entryCount = (content.match(/^## \d{4}/gm) || []).length;
+    expect(entryCount).toBe(1);
+    expect(content).toContain('完整知識');
+  });
+
+  it('先寫短 content，再寫包含它的長 content，長的可正常寫入', () => {
+    const pluginRoot = setupTmpPlugin();
+    const targetPath = join(pluginRoot, 'skills', 'testing', 'references', 'auto-discovered.md');
+
+    const routeResult = { action: 'append', domain: 'testing', targetPath };
+    const fragmentShort = {
+      content: '基礎知識：expect 斷言',
+      keywords: ['expect'],
+      source: 'developer:DEV',
+    };
+    const fragmentLong = {
+      content: '進階知識：expect 斷言 + toBe 精確比對 + toEqual 深度比對',
+      keywords: ['expect', 'toBe', 'toEqual'],
+      source: 'developer:DEV',
+    };
+
+    // 先寫短的
+    writeKnowledge(routeResult, fragmentShort, pluginRoot);
+    // 再寫長的（不是現有 content 的子字串）→ 應正常追加
+    writeKnowledge(routeResult, fragmentLong, pluginRoot);
+
+    const content = readFileSync(targetPath, 'utf8');
+    // 兩筆條目都存在
+    const entryCount = (content.match(/^## \d{4}/gm) || []).length;
+    expect(entryCount).toBe(2);
+    expect(content).toContain('基礎知識');
+    expect(content).toContain('進階知識');
+  });
+});

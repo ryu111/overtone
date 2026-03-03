@@ -128,19 +128,23 @@ function _appendToAutoDiscovered(routeResult, fragment) {
   const date = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
   const source = fragment.source || 'unknown';
   const keywords = Array.isArray(fragment.keywords) ? fragment.keywords.join(', ') : '';
-
-  const newEntry = [
-    `---`,
-    `## ${date} | ${source}`,
-    fragment.content.trim(),
-    keywords ? `Keywords: ${keywords}` : null,
-  ].filter(Boolean).join('\n') + '\n';
+  const contentTrimmed = fragment.content.trim();
 
   // 讀取現有內容
   let existingContent = '';
   if (existsSync(targetPath)) {
     existingContent = readFileSync(targetPath, 'utf8');
   }
+
+  // 去重：若現有內容已包含相同 content 本體，跳過不寫入
+  if (existingContent.includes(contentTrimmed)) return;
+
+  const newEntry = [
+    `---`,
+    `## ${date} | ${source}`,
+    contentTrimmed,
+    keywords ? `Keywords: ${keywords}` : null,
+  ].filter(Boolean).join('\n') + '\n';
 
   let newContent = existingContent + newEntry;
 
