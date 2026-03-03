@@ -627,7 +627,7 @@ stdin 提供完整 session 狀態（model、cost、context window、vim mode 等
 
 | # | 能力 | 觸發條件 |
 |---|------|---------|
-| 1 | **Agent `isolation: worktree`** | mul-dev 使用頻率證明需要時 |
+| 1 | **Agent `isolation: worktree`** | mul-agent 使用頻率證明需要時 |
 | 2 | **`prompt`/`agent` hook 類型** | 現有 command hook 無法滿足品質門檻需求時 |
 | 3 | **`sonnet[1m]` 1M context** | 出現大型 codebase 全面分析場景時 |
 
@@ -711,7 +711,7 @@ stdin 提供完整 session 狀態（model、cost、context window、vim mode 等
 
 | 能力 | 觸發條件 |
 |------|---------|
-| **Agent `isolation: worktree`** | mul-dev 使用頻率證明需要 |
+| **Agent `isolation: worktree`** | mul-agent 使用頻率證明需要 |
 | **`prompt`/`agent` hook 類型** | command hook 無法滿足時 |
 | **`sonnet[1m]` 1M context** | 大型 codebase 分析場景出現 |
 | **CLAUDE.md `@import`** | CLAUDE.md 精簡後仍超過 200 行時 |

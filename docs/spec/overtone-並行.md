@@ -108,9 +108,9 @@ workflows: {
 - [ ] 2.3 建立 OrderService | agent: developer | files: src/services/order.ts
 ```
 
-### DEV 階段內部並行：Mul-Dev 機制
+### DEV 階段內部並行：Mul-Agent 機制
 
-DEV 階段可進一步分解為多個並行子任務（Phase），通過 **mul-dev skill** 協調。
+DEV 階段可進一步分解為多個並行子任務（Phase），通過 **mul-agent command** 協調。
 
 **兩種模式**：
 
@@ -175,7 +175,7 @@ Mul-Dev 執行期間同步維護 TaskList，提供可見性（不取代 workflow
 | 子任務完成後 | `TaskUpdate → completed`；Mode A 同時回寫 tasks.md checkbox |
 | 退化（無法分解）時 | 仍建立一個 `TaskCreate`，操作同一般流程 |
 
-詳見 `skills/mul-dev/SKILL.md`。
+詳見 `commands/mul-agent.md`。
 
 ### 編排模式
 

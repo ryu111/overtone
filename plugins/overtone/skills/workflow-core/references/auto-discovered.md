@@ -2,65 +2,6 @@
 ## 2026-03-03 | retrospective:RETRO Findings
 **回顧摘要**：
 
-P2 Agent 進化的核心變更（architect + retrospective 從 opus 降級 sonnet、移除 memory: local）在程式碼層面執行得一致且完整：
-
-- **agent frontmatter**：兩個 agent 的 `model: sonnet` 和移除 `memory: local` 正確（`/Users/sbu/projects/overtone/plugins/overtone/agents/architect.md`、`/Users/sbu/projects/overtone/plugins/overtone/agents/retrospective.md`）
-- **registry-data.json**：agentModels 和 agentMemory 兩處同步正確（`/Users/sbu/projects/overtone/plugins/overtone/scripts/lib/registry-data.json`）
-- **config-api.js**：`updateAgent` 新增 `memoryChanged` 邏輯處理 memory 移除場景，null/空字串時正確 delete（`/Users/sbu/projects/overtone/plugins/overtone/scripts/lib/config-api.js` 第 638-655 行）
-- **測試**：`registry.test.js` 和 `platform-alignment-agents.test.js` 都已更新，明確測試 architect/retrospective 的 agentMemory 為 undefined（`/Users/sbu/projects/overtone/tests/unit/registry.test.js`、`/Users/sbu/projects/overtone/tests/unit/platform-alignment-agents.test.js`）
-- **plugin.json**：版本從 0.28.17 bump 到 0.28.18
-- **跨 Session 記憶章節**：兩個 agent prompt 的「跨 Session 記憶」章節已完整移除
-
-**品質確認點**：
-- 測試 2376 pass / 0 fail
-- agent、hook、skill 交叉驗證全部通過
-- config-api.js 的 memory 同步修復邏輯乾淨（條件分支清晰、null 和空字串兩種移除場景都處理）
-Keywords: agent, architect, retrospective, opus, sonnet, memory, local, frontmatter, model, users
----
-## 2026-03-03 | doc-updater:DOCS Findings
-**更新的文件和變更摘要：**
-
-1. **`docs/spec/overtone-agents.md`**（規格文件主文）
-   - architect 和 retrospective 的 Model 欄位：opus → sonnet
-   - Model 分級表更新：
-     - Opus 從 5 個降至 3 個（移除 architect、retrospective）
-     - Sonnet 從 9 個增至 11 個（新增 architect、retrospective）
-   - 其他 agent 配置無變化
-
-2. **`docs/reference/claude-code-platform.md`**（平台參考）
-   - Overtone Model 策略表：
-     - architect 從 `opus` 改為 `sonnet`，新增理由「充分的 domain knowledge，Sonnet 足以」
-     - retrospective 從 `opus` 改為 `sonnet`，新增理由「回顧分析（充分的 instinct 和 knowledge context）」
-   - S10 Agent Memory 完成項：更新為「3 個 opus 判斷型」（code-reviewer、security-reviewer、product-manager），註記 v0.28.18 時 architect/retrospective 降級並移除 memory: local
-
-3. **`docs/roadmap.md`**（產品路線圖）
-   - P2「Agent 進化」狀態：⬜ → ✅（已完成）
-   - S19「Agent 專一化精鍊」狀態：⚪ → 🔵（進行中）
-
-4. **`docs/status.md`**（現況快讀）
-   - 版本欄位註記：0.28.18（P2 Agent 進化 完成）
-
-5. **MEMORY.md**（個人記憶）
-   - Plugin 版本記錄：0.28.17 → 0.28.18
-Keywords: docs, spec, overtone, agents, architect, retrospective, model, opus, sonnet, agent
----
-## 2026-03-03 | developer:DEV Context
-修復 `skill-router.js` 的 `_appendToAutoDiscovered` 函式去重缺陷。原本函式只追加不去重，導致每次 SubagentStop hook 觸發時相同 content 被無限重複寫入 auto-discovered.md。`testing/references/auto-discovered.md` 有 170 行但內容只有 6 行重複了約 28 次。
-Keywords: skill, router, subagentstop, hook, content, auto, discovered, testing, references
----
-## 2026-03-03 | code-reviewer:REVIEW Findings
-審查了 15 個變更檔案，涵蓋兩個工作：P2 Agent 進化（architect/retrospective 降級 sonnet + memory 移除）和 skill-router.js 去重修復。
-
-**去重邏輯（核心審查對象）**：
-- `/Users/sbu/projects/overtone/plugins/overtone/scripts/lib/skill-router.js` 第 139-140 行的 `existingContent.includes(contentTrimmed)` 去重方式在此場景下合理。子字串 false positive 是已知且可接受的行為（測試 Scenario 4-9 明確驗證）。
-- 7 個新測試（`/Users/sbu/projects/overtone/tests/unit/skill-router.test.js`）覆蓋精確重複、多次重複、不同 content、子字串邊界。全部 pass。
-- `/Users/sbu/projects/overtone/plugins/overtone/skills/testing/references/auto-discovered.md` 從 170 行清理至 23
-Keywords: agent, architect, retrospective, sonnet, memory, skill, router, users, projects, overtone
-
----
-## 2026-03-03 | retrospective:RETRO Findings
-**回顧摘要**：
-
 本次 commit 包含兩個獨立工作：P2 Agent 進化（architect/retrospective 從 opus 降級 sonnet + 移除 memory: local）和 skill-router.js 去重修復。整體品質良好：
 
 - **去重邏輯正確**：`/Users/sbu/projects/overtone/plugins/overtone/scripts/lib/skill-router.js` 第 139-140 行的 `existingContent.includes(contentTrimmed)` 在讀取現有內容後、組裝 newEntry 前執行去重，時序正確。7 個新測試（`/Users/sbu/projects/overtone/tests/unit/skill-router.test.js` Scenario 4-7/4-8/4-9）覆蓋精確重複、多次重複、不同 content、子字串邊界四種場景。
@@ -858,4 +799,44 @@ mul-dev.md Mode B 清單（第 24 行）列出「quick / tdd / debug / single」
 
 此問題信心為 75% 但屬於文件措詞範圍而非邏輯錯誤，且 tester 已確認 2695 pass / 0 fail，整體判定為 PASS。
 Keywords: quick, workflow, command, mode, standard, full, secure, refactor, debug, arch
+
+---
+## 2026-03-03 | developer:DEV Findings
+**關鍵決策**：
+- 新建 `plugins/overtone/commands/mul-agent.md`，保留原有的 Mode A / Mode B 結構、Phase 標記格式、並行判斷標準、TaskList 同步邏輯，增加「適用場景」表格和 tester 並行範例
+- 泛化文字：「DEV 並行」→「並行」、「多個 developer agent」→「多個同類型 agent」、`activeForm` 範例 `開發中` → `執行中`、「退化為單一 developer」→「退化為單一 agent」
+- `architect.md` 和 `auto/SKILL.md` 須透過 `manage-component.js` 更新（有 pre-edit-guard 保護）
+- `auto-discovered.md` 中有舊的 mul-dev 歷史記錄，屬知識歸檔歷史文件，不影響功能，未修改
+
+**驗證結果**：2695 pass，0 fail（全 115 個測試檔）
+Keywords: plugins, overtone, commands, agent, mode, phase, tasklist, tester, developer, activeform
+
+---
+## 2026-03-03 | tester:TEST Findings
+測試結果摘要 — 2695 passed, 0 failed
+
+具體驗證項目：
+
+1. `mul-agent.md` 檔案存在於 `/Users/sbu/projects/overtone/plugins/overtone/commands/mul-agent.md`，frontmatter 包含 `disable-model-invocation: true`
+2. 活躍檔案中無遺漏的 `mul-dev` 引用（僅 `auto-discovered.md` 歷史觀察記錄中有舊記錄，已在排除範圍）
+3. `tests/unit/platform-alignment-skills.test.js` 中的 `nonWorkflowCommands` 陣列已正確更新為 `mul-agent`（57 tests 全部通過）
+4. 整體測試套件從 2658 pass 增加至 2695 pass（+37，顯示同期有其他測試新增）
+Keywords: passed, failed, agent, users, projects, overtone, plugins, commands, frontmatter, disable
+
+---
+## 2026-03-03 | retrospective:RETRO Findings
+**回顧摘要**：
+
+- mul-agent command 內容完整，泛化品質高（5 種 agent 類型、Mode A/B、TaskList 同步、失敗隔離均有描述）
+- 7 個 workflow command 的引用路徑已正確更新至 `commands/mul-agent.md`
+- architect.md 和 auto/SKILL.md 已同步更新，無殘留 mul-dev 引用
+- platform-alignment-skills.test.js 已更新 command 名稱為 `mul-agent`
+- plugin 核心程式碼（scripts/）無任何 mul-dev 殘留引用
+- auto-discovered.md 中的歷史觀察記錄屬知識歸檔，不是活躍引用，不需修改
+Keywords: agent, command, mode, tasklist, workflow, commands, architect, auto, skill, platform
+
+---
+## 2026-03-03 | retrospective:RETRO Context
+ISSUES — 發現 2 個值得更新的問題（信心 >=70%）。整體實作品質良好，核心功能（mul-agent command、7 個 workflow commands、architect.md、auto/SKILL.md、測試覆蓋）均已正確完成泛化。問題集中在 docs/ 的規格文件，屬文件未同步類，不影響功能運作。
+Keywords: issues, agent, command, workflow, commands, architect, auto, skill, docs
 
