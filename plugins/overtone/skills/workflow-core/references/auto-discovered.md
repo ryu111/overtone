@@ -1,65 +1,4 @@
 ---
-## 2026-03-03 | doc-updater:DOCS Context
-已完成 P3 Hook 純化的文件同步。根據 Handoff 的 Files Modified 清單，更新了所有受影響的文件：
-
-**變更類型**：
-- 新增 2 個 lib 模組（stop-message-builder.js、knowledge-archiver.js）
-- on-stop.js 重構（441 → 140 行）
-- 知識歸檔、docs sync 邏輯從 hook 遷移到 agent prompt 指導
-- 測試新增 22 個（stop-message-builder + knowledge-archiver）
-Keywords: hook, handoff, files, modified, stop, message, builder, knowledge, archiver, docs
-
----
-## 2026-03-03 | planner:PLAN Findings
-**需求分解**：
-
-1. **修復 1：agent/on-stop.js auto-sync 加 specsConfig 過濾** | agent: developer | files: `plugins/overtone/hooks/scripts/agent/on-stop.js`
-   - 在 featureName auto-sync（第 77-84 行）外層加 `specsConfig[workflowType]?.length > 0` 判斷
-   - 防止 single/discovery 等無 specs 的 workflow 綁定到 in-progress feature
-
-2. **修復 2：session/on-stop.js 歸檔前驗證 workflow 匹配** | agent: developer | files: `plugins/overtone/hooks/scripts/session/on-stop.js`
-   - 在 `archiveFeature` 呼叫前讀 tasks.md frontmatter 的 `workflow` 欄位
-   - 若與 `currentState.workflowType` 不符：跳過歸檔 + emit `specs:archive-skipped` + hookError 警告
-   - 需要 `paths` 模組取得 tasksPath，`specs.readTasksFrontmatter` 讀 frontmatter
-
-3. **修復 3：session/on-stop.js tasksStatus===null 診斷警告** | agent: developer | files: `plugins/overtone/hooks/scripts/session/on-stop.js`
-   - 在 `tasksStatus` 賦值後（第 89 行附近）加偵測邏輯
-   - 條件：`tasksStatus === null && specsConfig[workflowType]?.length > 0 && featureName`
-   - emit `specs:tasks-missing` + hookError（warn but don't block）
-
-4. **修復 4：6 個 command 模板加 featureName 參數提示** (parallel) | agent: developer | files: `plugins/overtone/commands/{standard,full,secure,refactor,tdd,quick}.md`
-   - 初始化指令從 `init-workflow.js {type} ${CLAUDE_SESSION_ID}` 改為 `init-workflow.js {type} ${CLAUDE_SESSION_ID} {featureName}`
-   - 加一行說明 featureName 必須 kebab-case
-   - 6 個檔案可完全並行修改
-
-5. **新增測試：agent-on-stop.test.js** | agent: tester | files: `tests/integration/agent-on-stop.test.js`
-   - 場景 A：single workflow + in-progress feature 存在 → auto-sync **不應**發生
-   - 場景 B：standard workflow + in-progress feature 存在 → auto-sync 正常發生
-
-6. **新增測試：session-stop.test.js** | agent: tester | files: `tests/integration/session-stop.test.js`
-   - 場景 C：workflow 完成 + featureName + tasks.md workflow 不符 → 跳過歸檔（`specs:archive-skipped`）
-   - 場景 D：standard workflow + featureName 存在但 tasks.md 不存在 → emit `specs:tasks-missing`（不 block）
-   - 場景 E：standard workflow + featureName + tasks.md workflow 匹配 → 正常歸檔（回歸測試）
-
-**優先順序**：
-
-- 修復 1、2、3 按邏輯順序：1 → (2+3 可並行，同檔案但不同區塊)
-- 修復 4（6 個 command 檔案）完全獨立，可與修復 1-3 並行
-- 測試（任務 5 + 6）與對應修復有依賴：修復完成後再加測試（也可 TDD 先寫）
-- 建議執行順序：
-  - 並行批次 A：修復 1（agent/on-stop）+ 修復 4（6 個 command）
-  - 串行批次 B：修復 2+3（session/on-stop，同檔案）
-  - 最後：新增測試（5+6），驗證 `bun test` 全過
-
-**範圍邊界**：
-
-- `init-workflow.js` 腳本不修改（第三參數 featureName 已支援）
-- `specsConfig` 內容（哪些 workflow 有 specs）不調整
-- Dashboard/SSE 顯示層不改動
-- 不新增 `specs:archive-skipped` 和 `specs:tasks-missing` 到 registry.js 的 `timelineEvents`（這兩個是診斷事件，不需要嚴格 SoT 管理）—— 此判斷留給 architect 確認
-Keywords: agent, stop, auto, sync, specsconfig, developer, files, plugins, overtone, hooks
-
----
 ## 2026-03-03 | architect:ARCH Findings
 **技術方案**：
 
@@ -910,4 +849,46 @@ Keywords: feature, control, skill, scenario, frontmatter, name, disable, model, 
 
 4. **測試結果**：2721 pass，0 fail，116 files。
 Keywords: architect, planner, bash, guard, control, skill, references, agent, frontmatter, hook
+
+---
+## 2026-03-03 | doc-updater:DOCS Findings
+更新了 4 份核心文件和相關補強項：
+
+1. **CLAUDE.md** — 新增「元件閉環」治理規則
+   - 規則：新增/修改 Skill、Agent、Hook 時，必須檢查三者依賴（Skill 需 Agent 消費、Agent 需 Hook 注入、危險操作需 Guard 保護）
+   - 位置：「開發規範」區段
+
+2. **docs/roadmap.md** — P3.0 子任務全部標記完成
+   - 將 P3.0 的 5 個子任務從 ⬜ 更新為 ✅
+   - 子任務包括：os-control SKILL.md、Agent frontmatter 集成、pre-bash-guard.js、hooks.json 登記、Guard 測試
+
+3. **docs/spec/overtone.md** — 版本號同步
+   - 從 v0.28.24 → v0.28.29（對齐 plugin.json）
+
+4. **pre-bash-guard.js 黑名單優化** — 測試與 RETRO 階段發現的改進
+   - 擴展根目錄刪除檢測：新增 `rm -rf /`（無 sudo）的識別
+   - 精準化邊界判定：`\s|$|\*` 避免誤判
+   - 黑名單規則從 10 條 → 11 條
+
+5. **workflow-core references** — auto-discovered.md 更新
+   - 自動同步各 reference 檔案的最新發現
+Keywords: claude, skill, agent, hook, guard, docs, roadmap, control, frontmatter, bash
+
+---
+## 2026-03-03 | retrospective:RETRO Findings
+**回顧摘要**：
+
+P3.0 閉環基礎整體品質達標。工作流從 PLAN 到 TEST:verify 完整流轉，測試結果 2728 pass / 0 fail，validate-agents 確認 17 agents + 11 hooks + 20 skills 全部通過。pre-bash-guard.js 的 11 條黑名單 regex 均使用 `\b` 詞邊界精準比對，REVIEW 首次 REJECT 後的修復方向正確（由過度攔截轉為精準比對）。os-control Skill 結構符合規範（SKILL.md 主體 1513 字元，低於 3000 字元上限；4 個 reference 檔案均非空）。
+
+**確認的品質點**：
+- pre-bash-guard.js 11 條黑名單 regex 覆蓋了 BDD spec 的所有危險命令場景，且精準度已通過 REVIEW 確認
+- 5 個 agent（developer、architect、tester、debugger、qa）frontmatter 均包含 os-control skill
+- hooks.json Bash matcher 維持官方三層嵌套格式，路徑指向正確
+- guard-coverage.test.js 已追蹤 `pre-bash-guard.test.js` 為必要整合測試
+
+**已知偏差（屬 PM 設計演進，非問題）**：
+- BDD spec 消費者名單（build-error-resolver/e2e-runner/refactor-cleaner）與實作（architect/tester/qa）不同，為 PM 決策調整
+- BDD spec reference 檔名（os-capabilities.md 等）與實作（perception.md 等）不同，為架構設計演進
+- BDD spec 黑名單定義 10 條，實作 11 條（sudo rm -rf / 為 REVIEW 後補加），為品質改善
+Keywords: plan, test, verify, pass, fail, validate, agents, hooks, skills, bash
 

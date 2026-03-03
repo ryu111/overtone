@@ -2,11 +2,11 @@
 /**
  * knowledge-domain-chain.test.js — Knowledge Domain 三層鏈路驗證
  *
- * 驗證 11 個 knowledge domain 的完整鏈路：
+ * 驗證 12 個 knowledge domain 的完整鏈路：
  *   A. Frontmatter 合規（disable-model-invocation + user-invocable + name）
  *   B. Agent → Skill 連結（consumer agent 的 skills frontmatter 指向存在的 domain）
  *   C. Skill → Reference 完整性（references/ 和 examples/ 下的檔案都存在）
- *   D. 閉環驗證（10 個有 consumer 的 domain 各至少 1 agent 引用 + 所有 reference 內容非空）
+ *   D. 閉環驗證（11 個有 consumer 的 domain 各至少 1 agent 引用 + 所有 reference 內容非空）
  */
 
 const { describe, test, expect, beforeAll } = require('bun:test');
@@ -18,7 +18,7 @@ const { parseFrontmatter } = require('../helpers/frontmatter');
 const SKILLS_DIR = join(PLUGIN_ROOT, 'skills');
 const AGENTS_DIR = join(PLUGIN_ROOT, 'agents');
 
-// 11 個 knowledge domain 定義
+// 12 個 knowledge domain 定義
 const KNOWLEDGE_DOMAINS = [
   'testing',
   'workflow-core',
@@ -31,9 +31,10 @@ const KNOWLEDGE_DOMAINS = [
   'debugging',
   'architecture',
   'build-system',
+  'os-control',
 ];
 
-// Agent → Domain 映射（10 個有 consumer 的 domain）
+// Agent → Domain 映射（11 個有 consumer 的 domain）
 // workflow-core 無直接 agent consumer
 // 使用陣列支援同一 agent 對應多個 domain（Map 不支援重複 key）
 const AGENT_DOMAIN_PAIRS = [
@@ -55,6 +56,11 @@ const AGENT_DOMAIN_PAIRS = [
   ['debugger',          'debugging'],
   ['architect',         'architecture'],
   ['build-error-resolver', 'build-system'],
+  ['developer',         'os-control'],
+  ['architect',         'os-control'],
+  ['tester',            'os-control'],
+  ['debugger',          'os-control'],
+  ['qa',                'os-control'],
 ];
 
 // 收集 domain 的所有 reference/example 檔案（相對路徑）
@@ -181,8 +187,8 @@ describe('Feature C：Skill → Reference 完整性', () => {
 // ────────────────────────────────────────────────────────────────────────────
 
 describe('Feature D：閉環驗證', () => {
-  // D-1：10 個有 consumer 的 domain 各至少 1 agent 引用
-  describe('D-1：10 個有 consumer 的 domain 至少 1 個 agent 引用', () => {
+  // D-1：11 個有 consumer 的 domain 各至少 1 agent 引用
+  describe('D-1：11 個有 consumer 的 domain 至少 1 個 agent 引用', () => {
     // 計算每個 domain 被多少 agent 引用（使用 pairs 陣列支援多對多）
     const domainsWithConsumer = new Set(AGENT_DOMAIN_PAIRS.map(([, d]) => d));
 
