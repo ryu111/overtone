@@ -1,12 +1,12 @@
 # Overtone 現況
 
-> 最後更新：2026-03-03 | Plugin 版本：0.28.25（回饋閉環）
+> 最後更新：2026-03-03 | Plugin 版本：0.28.26（趨勢分析）
 
 ## 版本狀態
 
 | 版本 | 狀態 | 說明 |
 |------|------|------|
-| V1 | 進行中 | 2571 pass，0 fail，核心功能完整 + 守衛強化 11/11 + Knowledge Engine（skill context 自動注入 + gap detection + 知識歸檔）+ Specs 歸檔驗證 + P4 文件對齊 + S19 Agent 專一化分析 + 跨 Session 長期記憶 + 全域觀察畢業 + 效能基線追蹤 + 執行佇列 + 數值評分引擎（Level 2 持續）+ 回饋閉環（score context 注入 + session decay）|
+| V1 | 進行中 | 2595 pass，0 fail，核心功能完整 + 守衛強化 11/11 + Knowledge Engine（skill context 自動注入 + gap detection + 知識歸檔）+ Specs 歸檔驗證 + P4 文件對齊 + S19 Agent 專一化分析 + 跨 Session 長期記憶 + 全域觀察畢業 + 效能基線追蹤 + 執行佇列 + 數值評分引擎 + 趨勢分析 + 回饋閉環（Level 2 進階）|
 | V2 | 規劃中 | 延後 |
 
 ## 核心指標
@@ -16,8 +16,8 @@
 | Agent 數量 | 17（含 grader） |
 | Stage 數量 | 16 |
 | Workflow 模板 | 18 |
-| 測試通過 | 2571 pass / 0 fail（110 個測試檔） |
-| 測試檔案 | 110 個 |
+| 測試通過 | 2595 pass / 0 fail（111 個測試檔） |
+| 測試檔案 | 111 個 |
 | Hook 數量 | 11 個 |
 | Skill 數量 | 19（11 knowledge domain + orchestrator + pm + specs + 5 utility-with-refs） |
 | Knowledge Domain 數 | 11（testing、workflow-core、security-kb、database、dead-code、commit-convention、code-review、wording、debugging、architecture、build-system） |
@@ -26,11 +26,9 @@
 
 ## 近期變更（最近 3 筆）
 
+- **[0.28.26] 2026-03-03**：趨勢分析引擎 — score-engine.js 新增 computeScoreTrend + formatScoreSummary，baseline-tracker.js 新增 computeBaselineTrend，on-start.js 注入品質評分摘要（+33 tests）→ 2595 pass / 111 files
 - **[0.28.25] 2026-03-03**：回饋閉環 — pre-task.js 注入歷史評分 context（gradedStages 過濾 + lowest 維度提示）+ on-session-end.js session 層 instinct decay（+21 tests）→ 2571 pass / 110 files
 - **[0.28.24] 2026-03-03**：數值評分引擎 — score-engine.js（saveScore/queryScores/getScoreSummary 3 個 API）+ paths.global.scores + registry.scoringConfig/scoringDefaults + grader 步驟 5 寫入 scores store + stop-message-builder 評分提示 + on-stop 低分 quality_signal（+44 tests）→ 2550 pass / 108 files
-- **[0.28.23] 2026-03-03**：效能基線追蹤 + 執行佇列 — baseline-tracker.js（computeSessionMetrics/saveBaseline/getBaseline/compareToBaseline/formatBaselineSummary 5 個 API）+ execution-queue.js（readQueue/writeQueue/getNext/getCurrent/advanceToNext/completeCurrent/formatQueueSummary/clearQueue 8 個 API）+ paths.global.baselines + registry.baselineDefaults（+38 tests）→ 2506 pass / 106 files
-- **[0.28.22] 2026-03-03**：跨 Session 長期記憶 — global-instinct.js（graduate/queryGlobal/summarizeGlobal/decayGlobal/pruneGlobal 5 個 API）+ paths.global + registry.globalInstinctDefaults + SessionEnd graduate 高信心觀察 + SessionStart 全域觀察注入（+50 tests）→ 2468 pass / 103 files
-- **[P4+S19] 2026-03-03**：Phase 2 終章 — Agent 專一化量化分析完成（17 agents × 6 維度評估，降級規則精鍊，文件全面對齊）+ CLAUDE.md knowledge domain 清單 + docs/analysis/agent-specialization.md（188 行）（+2 tests）→ 2410 pass / 101 files
 
 ## 已知問題
 

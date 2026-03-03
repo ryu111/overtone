@@ -645,3 +645,36 @@ Keywords: session, global, instinct, level
 全套測試 2492 pass / 0 fail。未發現高信心問題。
 Keywords: computesessionmetrics, savebaseline, getbaseline, comparetobaseline, formatbaselinesummary, jsonl, paths, registry, hook, sessionend
 
+---
+## 2026-03-03 | developer:DEV Findings
+**關鍵決策：**
+
+1. `instinct.js` 匯出的是 singleton instance（底部 `module.exports = instinct`），不是 class。因此 `on-session-end.js` 直接呼叫 `instinct.decay(sessionId)` 而非 `new Instinct()` 模式（Handoff 原本建議 `new`，但實際 API 是 singleton）。
+
+2. score context 的組裝順序調整為 `workflowContext → skillContext → gapWarnings → scoreContext → testIndex → originalPrompt`，scoreContext 在 gapWarnings 之後、testIndex 之前，符合「品質提示在最前面、測試 index 就在 prompt 前」的資訊層次。
+
+3. Unit 測試採用純函式測試策略：將 `buildScoreContext` 邏輯從 pre-task.js 中「模擬抽取」到測試檔，避免需要 spawn 子進程。Integration 測試才使用 Bun.spawn 真實執行。
+
+4. 原始 Handoff 中的 `lowScoreThreshold` 條件是 `< 3.0`（嚴格小於），`=== 3.0` 不觸發警告，測試 Scenario 4-2 驗證此邊界行為。
+
+**實際 API 確認：**
+- `scoreEngine.getScoreSummary(projectRoot, stageKey)` 回傳 `{ sessionCount, avgClarity, avgCompleteness, avgActionability, avgOverall }`
+- `instinct.decay(sessionId)` 回傳 `{ decayed, pruned }`
+- `scoringConfig.gradedStages = ['DEV', 'REVIEW', 'TEST']`
+- `scoringConfig.lowScoreThreshold = 3.0`
+Keywords: instinct, singleton, instance, module, exports, class, session, decay, sessionid, handoff
+
+---
+## 2026-03-03 | developer:DEV Context
+實作了回饋閉環（Feedback Loop）功能，讓 Level 2 持續學習系統真正閉環：Agent 被委派時能看到自己的歷史評分，session 結束時 instinct 觀察會自動衰減防止過期累積。
+Keywords: feedback, loop, level, agent, session, instinct
+
+---
+## 2026-03-03 | doc-updater:DOCS Context
+根據 quick workflow 回顧階段的 Handoff，同步 v0.28.26 趨勢分析引擎相關的文檔更新：
+- 新增 baseline-tracker.js 的 computeBaselineTrend 趨勢分析
+- 新增 score-engine.js 的 computeScoreTrend + formatScoreSummary 趨勢分析
+- 新增 on-start.js 品質評分摘要自動注入
+- 測試數量從 2571 增加至 2595（+24 tests）
+Keywords: quick, workflow, handoff, baseline, tracker, computebaselinetrend, score, engine, computescoretrend, formatscoresummary
+

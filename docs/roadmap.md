@@ -41,12 +41,12 @@
 | 任務 | 說明 | 狀態 |
 |------|------|:----:|
 | 跨 session 長期記憶 | global-instinct.js（5 API + projectHash 隔離）| ✅ |
-| 數值評分引擎 | score-engine.js（saveScore/queryScores/getScoreSummary 3 API + registry.scoringConfig/scoringDefaults） | 🔵 |
-| 即時回饋迴路引擎 | 接收外部信號並調整行為 | ⬜ |
+| 數值評分引擎 | score-engine.js（saveScore/queryScores/getScoreSummary 3 API）+ 趨勢分析（computeScoreTrend/formatScoreSummary）| ✅ v0.28.26 |
+| 即時回饋迴路引擎 | score context 注入 pre-task + session decay on-session-end | ✅ v0.28.25-26 |
 | 時間序列學習 | Pattern 效果隨時間的變化 | ⬜ |
 | 自動識別卡點 | 重複失敗模式辨識 + 改進 | ⬜ |
-| 學習衰減 | 過時知識自動淡化 | ⬜ |
-| 效能基線追蹤 | baseline-tracker.js + execution-queue.js 完成 | ✅ |
+| 學習衰減 | 過時知識自動淡化（instinct decay）| ✅ v0.28.25 |
+| 效能基線追蹤 | baseline-tracker.js + execution-queue.js + 趨勢分析（computeBaselineTrend）完成 | ✅ v0.28.26 |
 
 **完成標準**：系統能展示「第 10 次做同類任務比第 1 次更快更好」的量化數據。
 

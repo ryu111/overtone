@@ -2,6 +2,44 @@
 
 所有重要變更記錄於此文件。
 
+## [0.28.26] - 2026-03-03
+
+### Level 2：趨勢分析引擎
+- **Score Engine 趨勢分析**：`scripts/lib/score-engine.js`
+  - `computeScoreTrend(projectRoot, stageKey)`：計算分數趨勢（window-based 或全序列）
+  - `formatScoreSummary(projectRoot)`：生成人可讀的品質摘要
+  - 摘要格式：stage × 趨勢（↑/→/↓）+ 最新得分 + 歷史平均
+- **Baseline Tracker 趨勢分析**：`scripts/lib/baseline-tracker.js`
+  - `computeBaselineTrend(projectRoot, workflowType)`：計算效能趨勢
+  - 趨勢回傳：trend (UP/STABLE/DOWN) + delta (% 變化) + window 內樣本數
+  - 整合至 `formatBaselineSummary` 輸出
+- **SessionStart 品質摘要注入**：`hooks/scripts/session/on-start.js`
+  - Session 啟動時自動生成上次評分摘要並注入 systemMessage
+  - 包含各 stage 分數趨勢，提醒 agent 關注品質衝量
+- **測試**：
+  - 新增 `tests/unit/trend-analysis.test.js`（18 tests）
+  - 新增 `tests/unit/feedback-loop.test.js`（9 tests）
+  - 新增 `tests/integration/feedback-loop.test.js`（6 tests）
+  - 累計 2595 pass / 0 fail（111 個測試檔）
+
+---
+
+## [0.28.25] - 2026-03-03
+
+### Level 2：回饋閉環
+- **Score Context 注入**：`hooks/scripts/tool/pre-task.js`
+  - 在 task 進行前注入歷史評分 context（gradedStages 篩選）
+  - 提示最低得分維度，促進 agent 有意識改進
+- **Session 層 Instinct Decay**：`hooks/scripts/session/on-session-end.js`
+  - SessionEnd 時自動計算並降權過時 instinct（>7 days）
+  - 防止舊知識誤導未來 session
+- **測試**：
+  - 新增 `tests/unit/feedback-loop.test.js`（9 tests）
+  - 新增 `tests/integration/feedback-loop.test.js`（6 tests）
+  - 累計 2571 pass / 0 fail（110 個測試檔）
+
+---
+
 ## [0.28.24] - 2026-03-03
 
 ### Level 2：數值評分引擎

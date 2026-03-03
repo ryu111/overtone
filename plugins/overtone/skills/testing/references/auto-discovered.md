@@ -71,3 +71,59 @@ Keywords: passed, failed, tests, unit, global, instinct, test, features, prunegl
 - 邊界情況：空 store、無效 JSON、專案隔離、workflowType 隔離、未完成 workflow
 - 整合：SessionEnd 保存、SessionStart 載入、改善偵測、退化偵測、hook 執行
 Keywords: passed, failed, tests, unit, baseline, tracker, test, describe, integration, pass
+---
+## 2026-03-03 | tester:TEST Findings
+測試結果摘要：21 passed, 0 failed
+
+所有要求的 BDD scenario 均有對應測試，涵蓋：
+- Unit（15 tests）：score context 產生邏輯（3 個 scenario）、最低維度偵測（4 個 scenario）、無分數回傳 null（3 個 scenario）、lowScoreThreshold 警告閾值邊界（5 個 scenario）
+- Integration（6 tests）：pre-task.js 注入 score context（3 個 scenario）、on-session-end.js 執行 instinct decay（3 個 scenario）
+- 完整套件 2571 tests 全部通過，無回歸問題
+
+閾值邊界測試（= 3.0 不觸發警告）已明確驗證（Unit F4 S4-2），符合規格要求。
+Keywords: passed, failed, scenario, unit, tests, score, context, null, lowscorethreshold, integration
+---
+## 2026-03-03 | retrospective:RETRO Findings
+**回顧摘要**：
+
+**BDD 對齊度：完整**
+
+- BDD spec 的 10 個 Feature、37 個 Scenario 全部對應實作。
+- unit/score-engine.test.js 覆蓋 Feature 1-5、8-10（32 個 scenario）。
+- integration/grader-score-engine.test.js 覆蓋 Feature 6-7（14 個 scenario）。
+- integration/feedback-loop.test.js 覆蓋閉環整合（pre-task score context + session-end decay，新增 6 個 scenario）。
+- 全部 2571 pass / 0 fail（110 個測試檔）。
+
+**架構一致性：良好**
+
+- `score-engine.js` 對齊 `baseline-tracker.js` 模式（JSONL append-only + atomicWrite 截斷），不重複造輪子。
+- `scoringConfig` / `scoringDefaults` 放在 `registry.js`，與 `instinctDefaults`、`baselineDefaults` 同層級，符合 Single Source of Truth 設計。
+- `paths.global.scores()` 正確使用 projectHash 隔離不同專案，與 `paths.global.observations()` 及 `paths.global.baselines()` 格式一致。
+- `buildStopMessages` 純函式設計保持不變，副作用透過回傳值傳遞。
+
+**回饋閉環驗證：完整**
+
+資料路徑從 saveScore -> getScoreSummary -> pre-task.js score context 注入 -> agent prompt，資料流向完整且有端到端測試驗證。
+
+**session-end decay 順序：合理**
+
+操作順序：graduate（高信心觀察升至全域）-> decay（降低舊觀察信心）-> saveBaseline（效能指標保存）。decay 在 graduate 之後執行，確保即將畢業的高信心觀察不會被衰減誤刪，設計合理。
+
+**grader agent 整合：符合設計哲學**
+
+grader.md 步驟 5 使用 `$CLAUDE_PLUGIN_ROOT/scripts/lib/score-engine` Node.js CLI 寫入 scores.jsonl，符合「grader 觸發採 hook 提示 Main Agent 而非 hook 直接委派」的架構設計。
+
+**測試品質：良好**
+
+- 各測試使用獨立 projectRoot（含時間戳）避免測試間污染。
+- afterAll 正確清理 global scores 目錄和臨時目錄。
+- Feature 4 截斷測試使用真實 maxRecordsPerStage = 50，不 mock 設定值，測試更可靠。
+- Scenario 7-4 以實際子進程測試 on-stop.js 的靜默捕獲，屬於真正的整合測試。
+Keywords: spec, feature, scenario, unit, score, engine, test, integration, grader, feedback
+---
+## 2026-03-03 | tester:TEST Context
+模式：verify
+
+執行 v0.28.26 趨勢分析測試驗證。確認 `/Users/sbu/projects/overtone/tests/unit/trend-analysis.test.js`（24 個測試）的所有 scenario 均已通過，並確認完整測試套件維持穩定。
+Keywords: verify, users, projects, overtone, tests, unit, trend, analysis, test, scenario
+
