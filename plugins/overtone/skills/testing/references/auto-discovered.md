@@ -51,3 +51,10 @@ Keywords: describe, expect, test, coverage
 ## 2026-03-03 | developer:DEV Findings
 - 使用 describe/it/expect 組織 BDD 測試，coverage 達標
 Keywords: describe, expect, coverage
+---
+## 2026-03-03 | tester:TEST Findings
+測試結果摘要：**2468 passed, 0 failed**
+- `tests/unit/global-instinct.test.js`：38 個測試全部通過（Features 1、2、3、6、7、8、9 + pruneGlobal + merge 語意）
+- `tests/integration/cross-session-memory.test.js`：12 個測試全部通過（Features 4、5 + 端對端整合）
+- BDD spec 的 40 個 Scenario 全數有測試覆蓋
+Keywords: passed, failed, tests, unit, global, instinct, test, features, pruneglobal, merge

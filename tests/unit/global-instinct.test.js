@@ -351,8 +351,8 @@ describe('Feature 3: 全域衰減（decayGlobal）', () => {
 
     expect(result.decayed).toBe(1);
     const obs = globalInstinct.queryGlobal(projectRoot, {});
-    // 2 週衰減：0.8 - 0.02 = 0.78（只衰減一次，因為 decayGlobal 每次呼叫衰減一次 0.02）
-    expect(obs[0].confidence).toBeLessThan(0.8);
+    // 固定衰減：0.8 - 0.02 = 0.78（每次呼叫固定衰減 0.02，無論超過幾週）
+    expect(obs[0].confidence).toBe(0.78);
   });
 
   // Scenario 3-2
