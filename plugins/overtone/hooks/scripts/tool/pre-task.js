@@ -278,16 +278,48 @@ safeRun(() => {
     }
   } catch { /* 靜默降級 — gap detection 失敗不影響主流程 */ }
 
+  // score context 注入（try/catch 靜默降級）
+  let scoreContext = null;
+  try {
+    const { scoringConfig } = require('../../../scripts/lib/registry');
+    // 只對 gradedStages 的 agent 注入
+    if (scoringConfig && scoringConfig.gradedStages.includes(targetStage)) {
+      const scoreEngine = require('../../../scripts/lib/score-engine');
+      const summary = scoreEngine.getScoreSummary(projectRoot, targetStage);
+      if (summary.sessionCount > 0) {
+        // 找最低分維度
+        const dims = [
+          { name: 'clarity', val: summary.avgClarity },
+          { name: 'completeness', val: summary.avgCompleteness },
+          { name: 'actionability', val: summary.avgActionability },
+        ];
+        const lowest = dims.reduce((a, b) => (a.val <= b.val ? a : b));
+
+        scoreContext = [
+          `[品質歷史 — ${targetStage}（${summary.sessionCount} 筆）]`,
+          `  clarity: ${summary.avgClarity.toFixed(2)}/5.0`,
+          `  completeness: ${summary.avgCompleteness.toFixed(2)}/5.0`,
+          `  actionability: ${summary.avgActionability.toFixed(2)}/5.0`,
+          `  overall: ${summary.avgOverall.toFixed(2)}/5.0`,
+          summary.avgOverall < scoringConfig.lowScoreThreshold
+            ? `⚠️ 歷史平均分偏低，建議特別注意品質。重點提升 ${lowest.name}。`
+            : `💡 歷史最低維度：${lowest.name}（${lowest.val.toFixed(2)}），可優先關注。`,
+        ].join('\n');
+      }
+    }
+  } catch { /* 靜默降級 — score context 失敗不影響主流程 */ }
+
   const hasContext = !!context;
   const hasSkillContext = !!skillContextStr;
   const hasGapWarnings = !!gapWarnings;
   const hasTestIndex = !!testIndexSummary;
+  const hasScoreContext = !!scoreContext;
 
-  if (hasContext || hasSkillContext || hasGapWarnings || hasTestIndex) {
+  if (hasContext || hasSkillContext || hasGapWarnings || hasTestIndex || hasScoreContext) {
     const originalPrompt = toolInput.prompt || '';
     let newPrompt = originalPrompt;
 
-    // 組裝順序：workflowContext → skillContext → gapWarnings → testIndex → originalPrompt
+    // 組裝順序：workflowContext → skillContext → gapWarnings → scoreContext → testIndex → originalPrompt
     const parts = [];
     if (hasContext) {
       parts.push(context);
@@ -297,6 +329,9 @@ safeRun(() => {
     }
     if (hasGapWarnings) {
       parts.push(gapWarnings);
+    }
+    if (hasScoreContext) {
+      parts.push(scoreContext);
     }
     if (hasTestIndex) {
       parts.push(testIndexSummary);

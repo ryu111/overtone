@@ -89,6 +89,21 @@ safeRun(() => {
     hookError('on-session-end', `global-instinct.graduate 失敗：${err.message || String(err)}`);
   }
 
+  // ── 3b2. Session 層觀察衰減 ──
+  // 對超過 7 天未更新的 session 觀察降低信心值
+
+  try {
+    const instinct = require('../../../scripts/lib/instinct');
+    const { decayed, pruned } = instinct.decay(sessionId);
+    if (decayed > 0 || pruned > 0) {
+      process.stderr.write(
+        `[overtone/on-session-end] 觀察衰減：${decayed} 筆降權，${pruned} 筆刪除\n`
+      );
+    }
+  } catch (err) {
+    hookError('on-session-end', `instinct.decay 失敗：${err.message || String(err)}`);
+  }
+
   // ── 3c. 效能基線保存 ──
   // 若 workflow 已完成，記錄效能指標供跨 session 追蹤
 
