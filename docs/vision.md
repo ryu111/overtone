@@ -36,7 +36,7 @@ Overtone 不是一個開發工具，而是 **AI 的作業系統核心**（kernel
 | 框架 | 職責 | 現有實現 |
 |------|------|---------|
 | 守衛框架 | 定義和執行安全邊界 | hooks + guard-system.js |
-| 學習框架 | 觀察 → 記憶 → 改進 | Instinct + Knowledge Engine |
+| 學習框架 | 觀察 → 記憶 → 改進 | Instinct + Knowledge Engine（11 domains） |
 | 評分框架 | 多維度品質評估（不只 pass/fail） | 部分（需擴展為數值制） |
 | 收斂框架 | 識別冗餘、做減法 | 部分（需新增） |
 | 回饋迴路 | 接收外部信號並調整行為 | 部分（需通用化） |

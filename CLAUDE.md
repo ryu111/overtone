@@ -54,6 +54,7 @@ docs/               # 文件（spec / reference / archive / status.md）⚠️ �
 plugins/overtone/   # Plugin 根目錄
 ├── agents/         # 17 個 agent .md（WHO — 角色）
 ├── skills/         # 19 個 Skill（WHAT — 知識域 + orchestrator + utilities-with-refs）
+│   # 11 knowledge domains: testing, workflow-core, security-kb, database, dead-code, commit-convention, code-review, wording, debugging, architecture, build-system
 ├── commands/       # 27 個 Command（DO — stage shortcuts + workflow pipelines + utilities）
 ├── hooks/          # hooks.json + scripts/（HOW — 守衛）
 ├── scripts/lib/    # 共用庫（registry, state, timeline, specs, config-api 等）
