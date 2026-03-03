@@ -2,6 +2,36 @@
 
 所有重要變更記錄於此文件。
 
+## [0.28.20] - 2026-03-03（P3 Hook 純化）
+
+### 功能新增
+- **SubagentStop hook 重構**：on-stop.js 從 441 行精簡到 140 行
+  - 提取核心邏輯為獨立純函式模組：`stop-message-builder.js`（提示組裝）+ `knowledge-archiver.js`（知識歸檔）
+  - Hook 專注守衛職責：記錄結果、偵測 FAIL/REJECT、檢查並行收斂
+  - 副作用遷移：知識歸檔邏輯由 hook → agent（SubagentStop 結束時，PASS 時自動執行）
+  - Dead code 掃描、Docs sync 驗證：由 hook → agent prompt（在 retrospective、doc-updater 中作為指導，而非強制執行）
+
+### 架構改進
+- **Hook 純化**：11 個 hook，總行數從 ~1887 → ~1720
+  - on-stop.js：441 → 140（降低 68%）
+  - 核心 hook 功能保留：狀態管理、timeline emit、並行協調
+  - 邊界明確：hook 守衛層、agent 業務層
+- **Grader 評估指引**：移至 `skills/workflow-core/references/completion-signals.md`（替代 hook 內硬編碼提示）
+- **shouldSuggestCompact**：遷移至 `hook-utils.js`（多個 hook 共用，統一邏輯）
+- 新增 lib：`stop-message-builder.js`（121 行）+ `knowledge-archiver.js`（67 行）
+
+### 測試
+- 新增：stop-message-builder.test.js（16 tests）+ knowledge-archiver.test.js（6 tests）
+- 更新：agent-on-stop.test.js、compact-suggestion.test.js（import 調整）
+- 測試通過：2402 pass / 0 fail（+21）
+- 測試檔案：101 個
+
+### 文檔
+- 更新 docs/status.md：版本狀態、核心指標（測試 2381→2402、檔案 99→101）、近期變更
+- 更新 docs/roadmap.md：P3 完成標記、S20 版本標記
+
+---
+
 ## [0.28.6] - 2026-03-02（閉迴圈工作流驗證）
 
 ### 功能新增

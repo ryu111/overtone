@@ -43,3 +43,11 @@ Keywords: passed, failed, tests, unit, registry, test, platform, alignment, agen
 
 全部通過 — 17 agents + 11 hooks + 19 skills 配置正確。
 Keywords: pass, fail, scenario, tests, unit, skill, router, test, content, docs
+---
+## 2026-03-03 | developer:DEV Findings
+- 使用 describe/it/expect 組織 BDD 測試，test coverage 90%
+Keywords: describe, expect, test, coverage
+---
+## 2026-03-03 | developer:DEV Findings
+- 使用 describe/it/expect 組織 BDD 測試，coverage 達標
+Keywords: describe, expect, coverage

@@ -33,7 +33,7 @@
 |:-----:|------|------|:----:|
 | P1 | Skill 知識充實 | 新建 3 domain（debugging、architecture、build-system）+ 強化 5 既有 domain + 17 新 reference 檔案 | ✅ |
 | P2 | Agent 進化 | 評估 agent 拆分機會、職責邊界精鍊、model 降級空間（→ S19） | ✅ |
-| P3 | Hook 純化 | SubagentStop 核心邏輯遷移到 agent+skill、hook 簡化為守衛（→ S20） | ⬜ |
+| P3 | Hook 純化 | SubagentStop 核心邏輯遷移到 agent+skill、hook 簡化為守衛（→ S20） | ✅ |
 | P4 | 文件同步 | vision.md + roadmap.md + status.md + CLAUDE.md 全面對齊 | 🔵 進行中 |
 
 ### Level 2：持續學習
@@ -101,7 +101,7 @@
 | S17 | 測試覆蓋率分析 | Bun 覆蓋率工具鏈成熟度驗證 | ⏳ |
 | S18 | CI 環境感知 | isCI() + PR Auto-Review/Security Scan yaml | ⚪ |
 | S19 | Agent 專一化精鍊 | 評估 agent 拆分機會 + Model 降級空間 + skill 完善度與 model 需求的關係量化 | 🔵 |
-| S20 | Hook → Agent 遷移 | SubagentStop 核心邏輯（知識歸檔、docs sync）抽出為專職 agent，hook 純化為守衛 | ⚪ |
+| S20 | Hook → Agent 遷移 | SubagentStop 核心邏輯（知識歸檔、docs sync）抽出為專職 agent，hook 純化為守衛 | ✅ v0.28.20 |
 
 ---
 
