@@ -749,3 +749,57 @@ Keywords: plugins, overtone, skills, testing, references, auto, discovered, work
 全部 5 個項目均已完成：跨 Session 記憶 → 效能基線追蹤 → 數值評分引擎 → 回饋閉環 + 衰減修補 → 趨勢分析。本次時間序列學習為最後一項，Level 2 正式收口。
 Keywords: adjustconfidencebyids, level, global, instinct, store, decayglobal, pruneglobal, appliedobservationids, workflow, json
 
+---
+## 2026-03-03 | developer:DEV Findings
+- `getStageByAgent` 的實作是線性掃描 `Object.entries(stages)`，與 on-stop.js 原版語意完全等價。pre-task.js 原版用 `find()?.[0]` 語意相同，統一後行為一致。
+- `hook-utils.js` 的函式清單說明和 `module.exports` 都已同步更新。
+- 測試結果：2658 pass / 0 fail（無任何破壞性改動）。
+Keywords: getstagebyagent, object, entries, stages, stop, task, find, hook, utils, module
+
+---
+## 2026-03-03 | developer:DEV Context
+執行「核心衛生清理」任務，共完成 3 個修復：
+
+1. **清除 execution-queue 殘留**：`~/.overtone/global/7f2b45a9/execution-queue.json` 有一個狀態為 `in_progress` 的舊任務（「回饋閉環＋衰減修補」）和一個 `pending` 任務（「趨勢分析」），這些是 Level 2 第二批已完成的舊佇列。使用 `clearQueue()` API 刪除整個檔案。
+
+2. **抽取 getStageByAgent 共用函式**：在 `hook-utils.js` 新增 `getStageByAgent(agentName, stages)` 函式，消除 `on-stop.js`（3 行 for loop）和 `pre-task.js`（`Object.entries().find()` pattern）的重複邏輯。
+
+3. **health-check.js phantom events 觀察（只報告，不修改）**：
+   - `stop-message-builder.js` 中沒有直接 `timeline.emit()` 呼叫，因為它採用「副作用分離」設計，把 timeline 事件放入 `timelineEvents` 陣列回傳給 `on-stop.js` 執行。這是正確設計，不是 bug。
+   - `grader.md` 是 `.md` 格式，`collectJsFiles` 只掃 `.js`，所以不在掃描範圍。這也正確。
+   - health-check.js 無需修改。
+Keywords: execution, queue, overtone, global, json, pending, level, clearqueue, getstagebyagent, hook
+
+---
+## 2026-03-03 | code-reviewer:REVIEW Findings
+審查了以下面向，未發現高信心問題：
+
+1. **語意等價性**：`getStageByAgent` 與 on-stop.js 原版（for loop 建表 → 查表）和 pre-task.js 原版（`Object.entries().find()?.[0]`）語意完全等價。在 agent-to-stage 一對一映射的前提下（registry.js 定義保證），「回傳第一個」與「回傳最後一個」的差異不會觸發。找不到時 null vs undefined 在 falsy 檢查中行為一致。
+2. **Import/Export 正確性**：`hook-utils.js` 的 `module.exports` 和兩個消費者的 destructure import 都已正確更新。
+3. **JSDoc 註解**：參數型別、回傳值、用途說明完整。
+4. **測試覆蓋**：2658 pass / 0 fail，無迴歸。函式僅 3 行且被整合測試間接覆蓋，不需專門 unit test。
+5. **auto-discovered.md**：知識歸檔記錄，非邏輯變更。
+Keywords: getstagebyagent, stop, loop, task, object, entries, find, agent, stage, registry
+
+---
+## 2026-03-03 | retrospective:RETRO Findings
+**回顧摘要**：
+
+本次衛生清理涵蓋三項具體工作：新增 `getStageByAgent` 共用函式、清除 execution-queue 殘留、調查 health-check phantom events。以下為跨階段評估結果。
+
+**確認的品質點**：
+
+1. **重構語意等價性良好**：`getStageByAgent` 的實作（第 309-314 行）是標準線性掃描，邏輯清晰，與原 on-stop.js 和 pre-task.js 中的重複邏輯語意完全等價。REVIEW 的「語意等價」判斷準確。
+
+2. **null 防禦處理完整**：
+   - `on-stop.js` 第 39 行：`if (!stageKey) return exit0();`
+   - `pre-task.js` 第 111-115 行：`if (!targetStage) { process.stdout.write(...); process.exit(0); }`
+   兩處都正確處理了 `getStageByAgent` 回傳 null 的情況，不存在未守護的路徑。
+
+3. **間接測試覆蓋存在但無直接 unit test**：`shouldSuggestCompact`、`buildWorkflowContext`、`buildSkillContext` 等搬遷函式皆有獨立測試，但 `getStageByAgent` 目前僅透過 `agent-on-stop.test.js` 和 `pre-task.test.js` 的 integration test 間接覆蓋（透過 `ot:developer`、`ot:tester` 等 agentName）。這是模式上的輕微不一致，但不構成功能風險——REVIEW 已明確判斷「無需補 unit test」，信心不足 70%，不記為 ISSUES。
+
+4. **模組說明文件已同步**：`hook-utils.js` 頭部註解（第 15 行）已新增 `getStageByAgent` 說明，JSDoc 也完整記載了參數與回傳型別。
+
+5. **phantom-events 調查結論合理**：health-check scanner 的範圍限制（非全域掃描）是已知的設計決策，不是 bug，不需要修復。
+Keywords: getstagebyagent, execution, queue, health, check, phantom, events, stop, task, review
+
