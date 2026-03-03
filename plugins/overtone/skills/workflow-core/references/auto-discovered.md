@@ -1,19 +1,4 @@
 ---
-## 2026-03-03 | developer:DEV Context
-實作了時間序列學習機制（v0.28.28），建立觀察效果追蹤與品質反饋迴路：
-- 每個 session 開始時，記錄注入的全域觀察 ID 到 session state（`appliedObservationIds`）
-- session 結束時，比對品質趨勢（baseline trend + score trend），反向調整被注入觀察的 confidence
-- 新增 `adjustConfidenceByIds` API 作為批量調整入口
-- `globalInstinctDefaults` 新增 `feedbackBoost: 0.02` 和 `feedbackPenalty: -0.03` 設定值
-Keywords: session, state, appliedobservationids, baseline, trend, score, confidence, adjustconfidencebyids, globalinstinctdefaults, feedbackboost
-
----
-## 2026-03-03 | doc-updater:DOCS Findings
-- 變更檔案：`plugins/overtone/skills/testing/references/auto-discovered.md`、`plugins/overtone/skills/workflow-core/references/auto-discovered.md`
-- 判定：無 doc-relevant 變更（不在快速退出排除清單之外）
-Keywords: plugins, overtone, skills, testing, references, auto, discovered, workflow, core, relevant
-
----
 ## 2026-03-03 | retrospective:RETRO Findings
 **回顧摘要**：
 
@@ -828,4 +813,14 @@ Keywords: verify, statusline, stale, agent, stop, activeagents, cleanup, state, 
 
 - **BDD spec 對齊**：`specs/features/in-progress/statusline-stale-agent/tasks.md` 記錄的階段 DEV/REVIEW/TEST 均已完成 ([x])，與實際修復範圍吻合。
 Keywords: statusline, stale, agent, stop, cleanup, activeagents, findactualstagekey, early, exit, fallback
+
+---
+## 2026-03-03 | doc-updater:DOCS Context
+statusline-stale-agent 功能已完成（commits 1a15d84, 13084e7）。feature 涉及 Hook 層、狀態管理、Status Line 顯示的改進 — activeAgents 清理、TTL 防護、過期殘留處理。
+Keywords: statusline, stale, agent, commits, feature, hook, status, line, activeagents
+
+---
+## 2026-03-03 | developer:DEV Context
+修復 `plugins/overtone/scripts/lib/specs.js` 中 `readTasksCheckboxes` 函式的 fallback bug。當 tasks.md 缺少標準標頭（`## Stages` 或 `## Tasks`）時，原來的程式碼會 fallback 到掃描整個文件，導致 `## 子任務清單` 等非標準區塊的 checkbox 被算入 stage-level 判斷，阻擋自動歸檔。
+Keywords: plugins, overtone, scripts, specs, readtaskscheckboxes, fallback, tasks, stages, checkbox, stage
 

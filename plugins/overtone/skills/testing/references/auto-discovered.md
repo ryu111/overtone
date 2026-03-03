@@ -250,3 +250,32 @@ Keywords: verify, spec, specs, features, progress, parallel, convergence, gate, 
 6. pre-compact.js TTL 防護 → 確認程式碼實作存在（TTL=30min 一致）
 Keywords: pass, fail, files, tests, unit, statusline, test, integration, stop, stale
 
+---
+## 2026-03-03 | tester:TEST Findings
+測試結果摘要：
+
+| 測試範圍 | 結果 |
+|---------|------|
+| `tests/integration/specs.test.js` | 81 pass, 0 fail |
+| `tests/unit/get-workflow-context.test.js` | 9 pass, 0 fail |
+| 全量 `bun test` | 3030 pass, 0 fail（129 files） |
+
+4 個新增的 fallback scenario 全數通過：
+- `非標準標頭（## 子任務清單）時回傳 null` — PASS
+- `無任何 ## 標頭（純文字加 checkbox）時回傳 null` — PASS
+- `回歸測試：有 ## Stages 的正常檔案仍然正確解析` — PASS
+- `回歸測試：有 ## Tasks 的正常檔案仍然正確解析` — PASS
+
+測試數量符合預期（開發者 Handoff 預期 3030 pass）。
+Keywords: tests, integration, specs, test, pass, fail, unit, workflow, context, files
+
+---
+## 2026-03-03 | tester:TEST Context
+模式：verify
+
+執行 `readTasksCheckboxes` fallback 修復的驗證測試。確認以下三個目標：
+1. `tests/integration/specs.test.js` — 新增的 4 個 fallback 測試和全部 81 個案例通過
+2. `tests/unit/get-workflow-context.test.js` — 修正的 `# Tasks` → `## Tasks` 標頭後 9 個案例全通過
+3. 全量回歸確認無任何既有測試因 fallback 行為改變而失敗
+Keywords: verify, readtaskscheckboxes, fallback, tests, integration, specs, test, unit, workflow, context
+

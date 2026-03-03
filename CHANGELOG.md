@@ -2,6 +2,29 @@
 
 所有重要變更記錄於此文件。
 
+## [0.28.33] - 2026-03-04
+
+### Status Line TTL 防護：Agent 停止後殘留清理
+- **On-Stop Cleanup 重構**：`plugins/overtone/hooks/scripts/agent/on-stop.js`
+  - activeAgents cleanup 提前到 `findActualStageKey` 前執行，確保任何路徑都清除殘留
+  - instanceId 解析提前，第一個 `updateStateAtomic` 只做 cleanup
+  - `active-agent.json` 刪除策略：cleanup 後 activeAgents 為空才刪除；收斂後備份刪除
+  - `agent:complete` timeline 事件提前 emit
+- **Status Line TTL 過濾**：`plugins/overtone/scripts/statusline.js`
+  - `buildAgentDisplay()` 的 activeAgents fallback 加 30 分鐘 TTL
+  - 邏輯：有 active stage → 永不過期；無 active stage → 30 分鐘 TTL
+- **State TTL 防護**：`plugins/overtone/scripts/lib/state.js`
+  - `getNextStageHint` 的 activeAgents 讀取加 TTL 過濾邏輯
+  - 過期殘留不阻擋下一步 hint
+- **Pre-Compact TTL 防護**：`plugins/overtone/hooks/scripts/session/pre-compact.js`
+  - 活躍 agents 列表加 TTL 過濾，避免殘留誤報
+- **測試**：
+  - `tests/unit/statusline-ttl.test.js`：4 scenarios（TTL 過濾）
+  - `tests/integration/on-stop-stale-cleanup.test.js`：7 scenarios（cleanup + stale）
+  - 累計 3026 pass / 0 fail（129 個測試檔）
+
+---
+
 ## [0.28.32] - 2026-03-04
 
 ### P3.2 心跳引擎：自主控制層完成
