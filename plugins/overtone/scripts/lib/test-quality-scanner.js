@@ -353,5 +353,4 @@ module.exports = {
   detectMissingDescribe,
   detectHardcodedPaths,
   detectSkipOnly,
-  collectTestFiles,
 };

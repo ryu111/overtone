@@ -916,7 +916,4 @@ module.exports = {
   // 版本管理
   bumpVersion,
 
-  // 工具函式
-  readHooksJson,
-  getHookHandler,
 };

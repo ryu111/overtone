@@ -98,13 +98,10 @@ const project = {
 module.exports = {
   OVERTONE_HOME,
   SESSIONS_DIR,
-  GLOBAL_DIR,
   CURRENT_SESSION_FILE,
-  CONFIG_FILE,
   DASHBOARD_FILE,
   projectHash,
   sessionDir,
-  sessionFile,
   session,
   global,
   project,

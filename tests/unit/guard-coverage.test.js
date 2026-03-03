@@ -47,6 +47,7 @@ const GUARD_MODULE_TEST_PAIRS = [
   { module: 'dead-code-scanner.js',   test: join(TESTS_UNIT, 'dead-code-scanner.test.js') },
   { module: 'component-repair.js',    test: join(TESTS_UNIT, 'component-repair.test.js') },
   { module: 'hook-diagnostic.js',     test: join(TESTS_UNIT, 'hook-diagnostic.test.js') },
+  { module: 'guard-system.js',        test: join(TESTS_UNIT, 'guard-system.test.js') },
 ];
 
 // ── Feature 2：Guard Test 本身的存在性 ──

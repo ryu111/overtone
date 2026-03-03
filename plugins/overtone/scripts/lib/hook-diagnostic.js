@@ -388,7 +388,6 @@ function runDiagnostic(options = {}) {
 module.exports = {
   runDiagnostic,
   // 匯出子函式供單元測試使用
-  resolvePaths,
   extractScriptPaths,
   extractRequirePaths,
   checkScriptExists,

@@ -29,6 +29,7 @@ const HOOKS_JSON = path.join(PLUGIN_ROOT, 'hooks', 'hooks.json');
 const SKILLS_DIR = path.join(PLUGIN_ROOT, 'skills');
 const PROJECT_ROOT = findProjectRoot();
 const DOCS_DIR = path.join(PROJECT_ROOT, 'docs');
+const TESTS_DIR = path.join(PROJECT_ROOT, 'tests');
 
 // ── 工具函式 ──
 
@@ -215,8 +216,12 @@ function checkDeadExports() {
   // 收集 scripts/lib 下所有 .js（含子目錄 dashboard/ remote/）
   const libFiles = collectJsFiles(SCRIPTS_LIB);
 
-  // 收集 plugin 下所有 .js（排除 lib 自身、測試）
-  const allPluginJs = collectJsFiles(PLUGIN_ROOT).filter((f) => {
+  // 收集 plugin 下所有 .js（排除 lib 自身、health-check 自身、node_modules）
+  // 加入 tests/ 目錄，避免只在測試中使用的 exports 被誤報為 dead
+  const allPluginJs = [
+    ...collectJsFiles(PLUGIN_ROOT),
+    ...collectJsFiles(TESTS_DIR),
+  ].filter((f) => {
     return (
       f !== __filename &&
       !f.includes('health-check.js') &&
@@ -456,8 +461,12 @@ function checkUnusedPaths() {
   const exportKeys = parsePathsExports(content);
   if (exportKeys.length === 0) return [];
 
-  // 收集 plugin 下所有 .js（排除 paths.js 自身、測試）
-  const allPluginJs = collectJsFiles(PLUGIN_ROOT).filter((f) => {
+  // 收集 plugin 下所有 .js（排除 paths.js 自身、health-check 自身、node_modules）
+  // 加入 tests/ 目錄，避免只在測試中使用的 exports 被誤報為 dead
+  const allPluginJs = [
+    ...collectJsFiles(PLUGIN_ROOT),
+    ...collectJsFiles(TESTS_DIR),
+  ].filter((f) => {
     return (
       f !== pathsFile &&
       f !== __filename &&
