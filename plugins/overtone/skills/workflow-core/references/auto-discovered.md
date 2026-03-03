@@ -692,3 +692,60 @@ Keywords: level, session, failure, tracker, hook
 - 版本更新至 0.28.27
 Keywords: handoff, failure, tracker, session, stop, start, task, hooks, level, integration
 
+---
+## 2026-03-03 | developer:DEV Findings
+1. **`state.updateStateAtomic` 接受 modifier function**（`(state) => newState`），非 object 直接 merge，已正確使用 `(s) => ({ ...s, appliedObservationIds: appliedIds })` 保留既有欄位。
+
+2. **`adjustConfidenceByIds` 使用 `_writeAll` 全量寫回**，與現有 `decayGlobal`/`pruneGlobal` 一致（這些都需要批量更新），無需追加模式。
+
+3. **保守策略實作**：penalty（-0.03）略大於 boost（+0.02），只有 both baseline AND score degrading 才 penalty，任一 improving 即 boost，stagnant 不調整。
+
+4. `_readAll` 的 tag+type 合併去重邏輯：`adjustConfidenceByIds` 直接在 merge 後的 records 上修改，再用 `_writeAll` 寫回，符合現有設計。
+
+5. **新增測試 15 個**（time-series-learning.test.js 12 個 + level-2-integration.test.js 新增 3 個），總數 2658 pass / 114 files。
+Keywords: state, updatestateatomic, modifier, function, newstate, object, merge, appliedobservationids, appliedids, adjustconfidencebyids
+
+---
+## 2026-03-03 | developer:DEV Context
+實作了時間序列學習機制（v0.28.28），建立觀察效果追蹤與品質反饋迴路：
+- 每個 session 開始時，記錄注入的全域觀察 ID 到 session state（`appliedObservationIds`）
+- session 結束時，比對品質趨勢（baseline trend + score trend），反向調整被注入觀察的 confidence
+- 新增 `adjustConfidenceByIds` API 作為批量調整入口
+- `globalInstinctDefaults` 新增 `feedbackBoost: 0.02` 和 `feedbackPenalty: -0.03` 設定值
+Keywords: session, state, appliedobservationids, baseline, trend, score, confidence, adjustconfidencebyids, globalinstinctdefaults, feedbackboost
+
+---
+## 2026-03-03 | doc-updater:DOCS Findings
+- 變更檔案：`plugins/overtone/skills/testing/references/auto-discovered.md`、`plugins/overtone/skills/workflow-core/references/auto-discovered.md`
+- 判定：無 doc-relevant 變更（不在快速退出排除清單之外）
+Keywords: plugins, overtone, skills, testing, references, auto, discovered, workflow, core, relevant
+
+---
+## 2026-03-03 | retrospective:RETRO Findings
+**回顧摘要**：
+
+時間序列學習（v0.28.27 方向）整合了 `adjustConfidenceByIds` 回饋機制，完成 Level 2 持續學習的最後一塊閉環。以下是跨階段確認的品質點：
+
+**架構一致性**
+
+- `adjustConfidenceByIds` 在 `global-instinct.js` 實作，職責單純：讀取全域 store、批量調整、寫回。與既有 `decayGlobal`、`pruneGlobal` 模式完全一致，不引入新的抽象層。
+- `appliedObservationIds` 存入 `workflow.json` state，on-start.js 寫入、on-session-end.js 讀取，流向清晰，無旁路。
+- 不對稱設計（boost +0.02，penalty -0.03）與 `feedbackBoost`/`feedbackPenalty` 集中定義於 `registry.js`，符合 Single Source of Truth 原則。
+
+**守衛條件正確性**
+
+- `isImproving || isDegrading` 雙重守衛確保 stagnant 時不執行調整，避免無意義更新。
+- `isDegrading` 使用 AND 條件（兩個 trend 都退步才懲罰），比 `isImproving` 的 OR 更保守，設計合理。
+- 所有新增整合點都有獨立 `try/catch`，不影響其他清理步驟。
+
+**測試覆蓋**
+
+- `time-series-learning.test.js`：12 個 Scenario，覆蓋 `adjustConfidenceByIds` 的正向、邊界、精度、空值、不存在 ID 等路徑；Feature 2 靜態分析驗證 hook 邏輯存在；Feature 3 驗證 `appliedObservationIds` 寫入。
+- `level-2-integration.test.js` 新增 3 個 test（1-6、1-7、2-6），將新功能納入整合防護網，防止未來重構時意外移除。
+- 全套 2658 pass / 0 fail / 114 files。
+
+**Level 2 持續學習完整閉環確認**
+
+全部 5 個項目均已完成：跨 Session 記憶 → 效能基線追蹤 → 數值評分引擎 → 回饋閉環 + 衰減修補 → 趨勢分析。本次時間序列學習為最後一項，Level 2 正式收口。
+Keywords: adjustconfidencebyids, level, global, instinct, store, decayglobal, pruneglobal, appliedobservationids, workflow, json
+

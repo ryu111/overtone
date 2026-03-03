@@ -1,6 +1,6 @@
 # Overtone Roadmap
 
-> 最後更新：2026-03-03 | 當前 Phase：核心穩固（Level 1 → Level 2，P4 完成）
+> 最後更新：2026-03-03 | 當前 Phase：Phase 2 完成（Level 2 持續學習全部完成）
 
 ## Phase 總覽
 
@@ -10,7 +10,7 @@
 |:-----:|------|------|:----:|
 | 0 | 地基穩固 | 核心 pipeline 穩定運作 | ✅ 完成 |
 | 1 | 首次體驗 | 新使用者 5 分鐘上手 | ✅ 完成 |
-| 2 | 核心穩固 | Level 1 完成 + Level 2 持續學習 | 🔵 進行中 |
+| 2 | 核心穩固 | Level 1 完成 + Level 2 持續學習 | ✅ 完成 |
 | 3 | 感知操控 | Layer 2 基礎能力 | ⚪ 未開始 |
 | 4 | 自我進化 | Level 3 + 第一個垂直切片（交易） | ⚪ 未開始 |
 
@@ -43,7 +43,7 @@
 | 跨 session 長期記憶 | global-instinct.js（5 API + projectHash 隔離）| ✅ |
 | 數值評分引擎 | score-engine.js（saveScore/queryScores/getScoreSummary 3 API）+ 趨勢分析（computeScoreTrend/formatScoreSummary）| ✅ v0.28.26 |
 | 即時回饋迴路引擎 | score context 注入 pre-task + session decay on-session-end | ✅ v0.28.25-26 |
-| 時間序列學習 | Pattern 效果隨時間的變化 | ⬜ |
+| 時間序列學習 | 觀察效果追蹤 + 品質反饋（adjustConfidenceByIds）| ✅ v0.28.28 |
 | 自動識別卡點 | 重複失敗模式辨識 + 改進 | ✅ v0.28.27 |
 | 學習衰減 | 過時知識自動淡化（instinct decay）| ✅ v0.28.25 |
 | 效能基線追蹤 | baseline-tracker.js + execution-queue.js + 趨勢分析（computeBaselineTrend）完成 | ✅ v0.28.26 |

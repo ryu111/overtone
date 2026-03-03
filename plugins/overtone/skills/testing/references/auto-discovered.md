@@ -173,3 +173,23 @@ Keywords: tests, unit, failure, tracker, test, pass, level, integration, total, 
 - 測試檔 2：`tests/unit/level-2-integration.test.js`（26 個測試，5 個 describe）
 Keywords: verify, failure, tracker, tests, unit, test, describe, level, integration
 
+---
+## 2026-03-03 | tester:TEST Findings
+測試結果摘要：
+
+**指定測試（2 個檔案）**
+- `tests/unit/time-series-learning.test.js`：31 pass（Feature 1: adjustConfidenceByIds 7 個 Scenario + Feature 2: 品質反饋邏輯 3 個 Scenario + Feature 3: appliedObservationIds 1 個 Scenario）
+- `tests/unit/level-2-integration.test.js`：10 pass（Feature 1-5，含 SessionEnd/SessionStart/PreToolUse/模組可載入性/SubagentStop 整合點）
+- 合計：**41 pass, 0 fail**
+
+**完整測試套件**
+- **2658 pass, 0 fail**（共 114 個測試檔）
+- 無 regression，warn 項目（large-file、hardcoded-path）均為既有項目，不影響通過
+
+**驗證重點確認**
+1. `adjustConfidenceByIds` 核心邏輯全數通過：clamp（上限 1 / 下限 0）、精度 4 位小數、空輸入回傳 0、delta=0 回傳 0
+2. 品質反饋邏輯：improving/degrading/stagnant 三種條件正確區分，`adjustConfidenceByIds` 僅在 improving 或 degrading 時觸發
+3. `appliedObservationIds` 存入 session state 的靜態分析驗證通過
+4. Level 2 所有整合點（graduate、decay、saveBaseline、formatBaselineSummary、formatScoreSummary、failureWarning）均有防護
+Keywords: tests, unit, time, series, learning, test, pass, feature, adjustconfidencebyids, scenario
+
