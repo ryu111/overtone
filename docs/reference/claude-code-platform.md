@@ -621,7 +621,7 @@ stdin 提供完整 session 狀態（model、cost、context window、vim mode 等
 
 | # | 能力 | 說明 |
 |---|------|------|
-| 1 | **Agent `memory`** | v0.23.0 — 3 個 opus 判斷型 agent 啟用 `memory: local`（code-reviewer、security-reviewer、product-manager）；v0.28.18 retrospective/architect 降級為 Sonnet，移除 memory: local |
+| 1 | **Agent `memory`** | v0.23.0 — 3 個 opus 判斷型 agent 啟用 `memory: local`（code-reviewer、security-reviewer、product-manager）；v0.28.18 retrospective/architect 降級為 Sonnet，移除 memory: local；v0.28.35 — 擴大至 8 個 agent（新增 developer、tester、debugger、planner、architect），支援跨層級個體學習 |
 
 ### ⏳ S9 保留
 
@@ -678,9 +678,9 @@ stdin 提供完整 session 狀態（model、cost、context window、vim mode 等
 
 **`opusplan` 混合模式** — planner 試點 Opus 規劃 + Sonnet 執行
 
-### ✅ S10 已完成（v0.23.0）
+### ✅ S10 已完成（v0.23.0 → v0.28.35）
 
-**Agent `memory`** — 3 個 opus 判斷型 agent 啟用 `memory: local`（code-reviewer、security-reviewer、product-manager）；v0.28.18 retrospective/architect 降級為 Sonnet，移除 memory: local
+**Agent `memory`** — v0.23.0 初版 3 個 opus 判斷型 agent；v0.28.18 retrospective/architect 降級移除；v0.28.35 擴大至 8 個 agent（developer、tester、debugger、planner、architect、code-reviewer、security-reviewer、product-manager），支援跨層級個體學習
 
 ### ⚪ S11 待實作
 

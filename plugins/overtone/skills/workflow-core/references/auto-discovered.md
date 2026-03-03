@@ -1,128 +1,4 @@
 ---
-## 2026-03-03 | code-reviewer:REVIEW Findings
-所有變更面向已審查完畢，未發現高信心問題：
-
-1. **Dead exports 移除安全性**：5 個被移除的 export（readHooksJson、getHookHandler、resolvePaths、collectTestFiles、paths 常數 GLOBAL_DIR/CONFIG_FILE/sessionFile）經全域 grep 確認無外部引用。這些函式/常數均保留為模組內部使用，僅從 `module.exports` 中移除。
-
-2. **health-check.js 掃描範圍擴展**：將 `tests/` 目錄納入掃描範圍是正確的治本修復 -- 之前的 dead export 誤報是因為掃描範圍不含測試目錄，導致只在測試中被 require 的 export 被判定為 dead。
-
-3. **guard-system.test.js 測試品質**：33 個測試覆蓋所有 6 個公開 API，每個 eval 函式都測試了 null、__error、邊界值等情境。runFullGuardCheck 的結構驗證測試合理（檢查 key 存在、type 正確、數值一致性）。
-
-4. **guard-coverage.test.js 追蹤更新**：正確新增 guard-system.js 到 GUARD_MODULE_TEST_PAIRS。
-
-5. **文件同步**：status.md 和 plugin.json 版本號一致（0.28.29），測試數量對齊。
-Keywords: dead, exports, export, readhooksjson, gethookhandler, resolvepaths, collecttestfiles, paths, sessionfile, grep
-
----
-## 2026-03-03 | retrospective:RETRO Findings
-**回顧摘要**：
-
-- **Dead exports 移除正確**：`readHooksJson`、`getHookHandler`（config-api.js 私有函式）、`resolvePaths`（hook-diagnostic.js）、`collectTestFiles`（test-quality-scanner.js）、`GLOBAL_DIR`/`CONFIG_FILE`/`sessionFile`（paths.js 內部常數）均已確認無外部引用，從 module.exports 中移除後不影響任何呼叫端。
-
-- **health-check.js 治本修復確認**：第 32 行新增 `TESTS_DIR`，第 220 行和第 465 行的兩處 dead code 搜尋都已納入 tests/ 目錄，與 dead-code-scanner.js 的 `DEFAULT_SEARCH_DIRS`（第 28 行已含 tests/）對齊，dead export 誤報根因已消除。
-
-- **guard-system.test.js 測試品質達標**：33 tests 涵蓋 6 個公開 API（5 個 eval 函式 + runFullGuardCheck），每個 eval 函式測試了 null、__error、缺少 summary、邊界值等情境；runFullGuardCheck 的結構驗證測試確認 key 存在、type 正確、pass+warn+fail=total 等不變性。
-
-- **dead-code-scanner 實際執行結果**：`{ unusedExports: 0, orphanFiles: 0, total: 0 }`，掃描乾淨，證實移除的 exports 確實是 dead 的。
-
-- **整體測試結果**：2695 pass / 0 fail / 115 files，無退步。
-
-- **版本號與文件同步**：plugin.json v0.28.29、status.md 一致，guard-coverage.test.js 第 50 行已追蹤 guard-system.js。
-Keywords: dead, exports, readhooksjson, gethookhandler, config, resolvepaths, hook, diagnostic, collecttestfiles, test
-
----
-## 2026-03-03 | developer:DEV Context
-驗證 7 個 workflow command 檔案的 DEV 並行引導段落是否已正確加入，並確認測試套件通過。
-Keywords: workflow, command
-
----
-## 2026-03-03 | tester:TEST Context
-模式：verify
-
-任務來源為 quick workflow 中 DEV 階段後的 TEST:verify，說明為「純 command 文件修改，預期無影響」。DEV 最新 commit（`4b9f350`）內容：移除 5 個 dead exports、修正 health-check.js 掃描範圍、新增 guard-system.test.js（33 tests）、更新 guard-coverage.test.js。
-
-沒有對應的 in-progress BDD spec（無 specs/features/in-progress/ 目錄）。依任務說明，驗證目標為確認既有測試套件全部通過，無回歸。
-Keywords: verify, quick, workflow, test, command, commit, dead, exports, health, check
-
----
-## 2026-03-03 | code-reviewer:REVIEW Findings
-審查了 7 個 workflow command 檔案（`standard.md`, `full.md`, `secure.md`, `refactor.md`, `quick.md`, `debug.md`, `tdd.md`）的 DEV 段落 mul-dev 並行引導新增，以及 `auto-discovered.md` 的知識歸檔條目。未發現高信心問題。
-
-**逐項檢查結果**：
-
-1. **Mode A / Mode B 分類正確**
-   - Mode A（有 architect / specs）：`standard.md`、`full.md`、`secure.md`、`refactor.md` -- 這 4 個 workflow 都有 ARCH 階段，architect 會在 `tasks.md` 寫入 `Dev Phases`，使用 Mode A 正確。
-   - Mode B（無 architect）：`quick.md`、`debug.md`、`tdd.md` -- 這 3 個 workflow 沒有 ARCH 階段，由 Main Agent 自行分析，使用 Mode B 正確。
-   - 值得注意：`mul-dev.md` 第 15 行標題將 `tdd` 列在 Mode A 下（`standard / full / secure / tdd / refactor`），而 `tdd.md` 引用 Mode B。`tdd` 實際沒有 ARCH 階段，Mode B 是正確選擇。此不一致存在於 `mul-dev.md` 本身，為 **pre-existing** 問題，不在本次 diff 範圍內。
-
-2. **引用路徑正確** -- `${CLAUDE_PLUGIN_ROOT}/commands/mul-dev.md` 已確認存在於 `/Users/sbu/projects/overtone/plugins/overtone/commands/mul-dev.md`。
-
-3. **Workflow 覆蓋完整** -- 所有含 DEV 階段且使用 `developer` agent 的 workflow command 都已修改。未修改的 workflow command 合理排除：
-   - `dev.md`（single）：定位為「一行修改、小改動」，DEV 並行幾乎不適用，排除合理。
-   - `build-fix.md`：使用 `build-error-resolver` agent 非 `developer`，無 DEV 階段。
-   - `security.md`、`review.md`、`e2e.md`、`db-review.md`：無 DEV 階段。
-
-4. **措詞強度一致** -- 每行使用 `💡`（軟引導）開頭，`📋 MUST`（強規則）標記必要動作。語意正確：並行判斷是條件式的（💡），但若條件成立則必須執行（📋 MUST）。
-
-5. **`auto-discovered.md` 變更** -- 為前幾個 stage 的知識歸檔條目（code-reviewer、retrospective、developer），屬正常 SubagentStop 知識歸檔行為。
-Keywords: workflow, command, standard, full, secure, refactor, quick, debug, auto, discovered
-
----
-## 2026-03-03 | retrospective:RETRO Findings
-**回顧摘要**：
-
-本次 quick workflow 修改範圍明確（7 個 workflow command + mul-dev.md），執行品質良好。
-
-確認的品質點：
-
-- 7 個 workflow command 的 DEV 並行提示均已正確加入，格式一致
-- Mode A（standard / full / secure / refactor）和 Mode B（quick / tdd / debug）分類正確，與各 workflow 是否有 ARCH 階段完全對應
-- tdd 從 Mode A 修正為 Mode B 的修正是正確的（tdd 無 ARCH 階段，不會有 tasks.md Dev Phases）
-- mul-dev.md 的 Mode A/B 說明清晰，並行判斷標準完整
-
-跨文件輕微不一致（信心 75%，屬說明文件範圍）：
-
-mul-dev.md Mode B 清單（第 24 行）列出「quick / tdd / debug / single」，但對應的 `dev.md`（single workflow）沒有引用 mul-dev.md，且按其設計定位「一行修改、改設定、小改動」也不應加並行提示。這造成 mul-dev.md 的 Mode B 列表與實際 7 個 workflow command 修改範圍有一項不對齊（single 被列入但實際上不適用）。此問題不影響功能運作，屬文件說明精確度問題。
-
-此問題信心為 75% 但屬於文件措詞範圍而非邏輯錯誤，且 tester 已確認 2695 pass / 0 fail，整體判定為 PASS。
-Keywords: quick, workflow, command, mode, standard, full, secure, refactor, debug, arch
-
----
-## 2026-03-03 | developer:DEV Findings
-**關鍵決策**：
-- 新建 `plugins/overtone/commands/mul-agent.md`，保留原有的 Mode A / Mode B 結構、Phase 標記格式、並行判斷標準、TaskList 同步邏輯，增加「適用場景」表格和 tester 並行範例
-- 泛化文字：「DEV 並行」→「並行」、「多個 developer agent」→「多個同類型 agent」、`activeForm` 範例 `開發中` → `執行中`、「退化為單一 developer」→「退化為單一 agent」
-- `architect.md` 和 `auto/SKILL.md` 須透過 `manage-component.js` 更新（有 pre-edit-guard 保護）
-- `auto-discovered.md` 中有舊的 mul-dev 歷史記錄，屬知識歸檔歷史文件，不影響功能，未修改
-
-**驗證結果**：2695 pass，0 fail（全 115 個測試檔）
-Keywords: plugins, overtone, commands, agent, mode, phase, tasklist, tester, developer, activeform
-
----
-## 2026-03-03 | tester:TEST Findings
-測試結果摘要 — 2695 passed, 0 failed
-
-具體驗證項目：
-
-1. `mul-agent.md` 檔案存在於 `/Users/sbu/projects/overtone/plugins/overtone/commands/mul-agent.md`，frontmatter 包含 `disable-model-invocation: true`
-2. 活躍檔案中無遺漏的 `mul-dev` 引用（僅 `auto-discovered.md` 歷史觀察記錄中有舊記錄，已在排除範圍）
-3. `tests/unit/platform-alignment-skills.test.js` 中的 `nonWorkflowCommands` 陣列已正確更新為 `mul-agent`（57 tests 全部通過）
-4. 整體測試套件從 2658 pass 增加至 2695 pass（+37，顯示同期有其他測試新增）
-Keywords: passed, failed, agent, users, projects, overtone, plugins, commands, frontmatter, disable
-
----
-## 2026-03-03 | retrospective:RETRO Findings
-**回顧摘要**：
-
-- mul-agent command 內容完整，泛化品質高（5 種 agent 類型、Mode A/B、TaskList 同步、失敗隔離均有描述）
-- 7 個 workflow command 的引用路徑已正確更新至 `commands/mul-agent.md`
-- architect.md 和 auto/SKILL.md 已同步更新，無殘留 mul-dev 引用
-- platform-alignment-skills.test.js 已更新 command 名稱為 `mul-agent`
-- plugin 核心程式碼（scripts/）無任何 mul-dev 殘留引用
-- auto-discovered.md 中的歷史觀察記錄屬知識歸檔，不是活躍引用，不需修改
-Keywords: agent, command, mode, tasklist, workflow, commands, architect, auto, skill, platform
-
----
 ## 2026-03-03 | retrospective:RETRO Context
 ISSUES — 發現 2 個值得更新的問題（信心 >=70%）。整體實作品質良好，核心功能（mul-agent command、7 個 workflow commands、architect.md、auto/SKILL.md、測試覆蓋）均已正確完成泛化。問題集中在 docs/ 的規格文件，屬文件未同步類，不影響功能運作。
 Keywords: issues, agent, command, workflow, commands, architect, auto, skill, docs
@@ -812,4 +688,160 @@ Keywords: quick, workflow, level, phase, must, gradedstages, score, engine, stop
    - 自動同步：gradedStages 定義從 3 個更新至 7 個
    - 新增 PLAN/ARCH/DEBUG/RETRO 的評分維度說明
 Keywords: readme, pass, changelog, gradedstages, files, docs, status, level, spec, overtone
+
+---
+## 2026-03-03 | planner:PLAN Findings
+**需求分解**：
+
+1. 為 5 個 agent 加入 `memory: local` + 內文說明段落 | agent: developer | files: `plugins/overtone/agents/developer.md`、`plugins/overtone/agents/tester.md`、`plugins/overtone/agents/debugger.md`、`plugins/overtone/agents/planner.md`、`plugins/overtone/agents/architect.md`
+
+2. 更新 registry-data.json agentMemory 欄位（新增 5 個條目）(parallel) | agent: developer | files: `plugins/overtone/scripts/lib/registry-data.json`
+
+3. pre-task.js score context 標題加入 agentName 標註（`agentName@stageKey`） | agent: developer | files: `plugins/overtone/hooks/scripts/tool/pre-task.js`
+
+4. stop-message-builder.js grader 用語強制化（standard/full/secure/product/product-full → `📋 MUST`，其他維持「建議」） | agent: developer | files: `plugins/overtone/scripts/lib/stop-message-builder.js`
+
+**優先順序**：
+
+- 任務 1、2 操作不同檔案，無邏輯依賴，可並行
+- 任務 3、4 操作不同檔案，無邏輯依賴，可並行
+- 任務 1、2 和 3、4 之間亦無邏輯依賴（4 個任務可全部並行）
+- 唯一需要 architect 先確認的是：registry-data.json 修改路徑（是否有 guard 限制）
+
+**範圍邊界**：
+
+- 不在此次範圍：scores.jsonl 改為 agent-level 儲存、grader 強制的 hook 層阻擋（PreToolUse）、agent 記憶初始內容、向後相容性保護
+Keywords: agent, memory, local, developer, files, plugins, overtone, agents, tester, debugger
+
+---
+## 2026-03-03 | planner:PLAN Context
+Phase 2 的目標是讓 Level 1 agent 個體真正消費 Level 2 建立的學習數據，實現跨 session 記憶與品質強化迴路閉合。Phase 1 已完成最小閉環（全域觀察注入、failure 根因記錄），Phase 2 聚焦三個具體改善：(1) 擴大 `memory: local` 到 5 個核心 agent、(2) score context 加入 agent 名稱標註讓 agent 知道數據是「自己的」、(3) grader 評分在 standard/full/secure workflow 中改為強制用語。
+Keywords: phase, level, agent, session, failure, memory, local, score, context, grader
+
+---
+## 2026-03-03 | architect:ARCH Findings
+**技術方案**：
+
+- 採用最小必要修改策略：4 個精準的局部改動，不破壞現有行為
+- 子任務 1+2 合併：透過 `manage-component.js` 一次完成 agent frontmatter + registry-data.json 同步
+- score context 標題格式：`[品質歷史 — {agentName}@{targetStage}（N 筆）]`，資料仍為 stage-level 均值（語意上接受此設計，後續 Phase 3 再升級為個人歷史）
+- grader 強制化清單：`['standard', 'full', 'secure', 'product', 'product-full']`，其餘維持「建議」用詞
+
+**API 介面**：
+
+子任務 1+2（合併）：
+```bash
+bun scripts/manage-component.js update agent developer '{"memory":"local"}'
+# 重複 5 次，分別對應 tester/debugger/planner/architect
+```
+
+子任務 3（pre-task.js 第 327 行）：
+```javascript
+// 前：`[品質歷史 — ${targetStage}（${summary.sessionCount} 筆）]`
+// 後：`[品質歷史 — ${targetAgent}@${targetStage}（${summary.sessionCount} 筆）]`
+```
+
+子任務 4（stop-message-builder.js 第 151 行）：
+```javascript
+const MUST_GRADE_WORKFLOWS = ['standard', 'full', 'secure', 'product', 'product-full'];
+const graderPrefix = workflowType && MUST_GRADE_WORKFLOWS.includes(workflowType)
+  ? '📋 MUST 委派 grader 評分'
+  : '🎯 建議委派 grader 評分';
+messages.push(`${graderPrefix}：STAGE=${stageKey}...`);
+```
+
+**資料模型**：
+
+`registry-data.json` 的 `agentMemory` 欄位最終狀態（8 個 agent）：
+```json
+{
+  "code-reviewer": "local", "security-reviewer": "local", "product-manager": "local",
+  "developer": "local", "tester": "local", "debugger": "local",
+  "planner": "local", "architect": "local"
+}
+```
+
+**檔案結構**：
+
+修改的檔案（全部可並行）：
+- `plugins/overtone/agents/developer.md` — memory: local + 跨 Session 記憶段落
+- `plugins/overtone/agents/tester.md` — memory: local + 跨 Session 記憶段落
+- `plugins/overtone/agents/debugger.md` — memory: local + 跨 Session 記憶段落
+- `plugins/overtone/agents/planner.md` — memory: local + 跨 Session 記憶段落
+- `plugins/overtone/agents/architect.md` — memory: local + 跨 Session 記憶段落
+- `plugins/overtone/scripts/lib/registry-data.json` — agentMemory 新增 5 個 agent（由 manage-component.js 自動寫入）
+- `plugins/overtone/hooks/scripts/tool/pre-task.js` — score context 標題加入 agentName
+- `plugins/overtone/scripts/lib/stop-message-builder.js` — grader 訊息強制化分支
+
+新增的檔案：無
+
+**Dev Phases**：
+
+```
+Keywords: manage, component, agent, frontmatter, registry, data, json, score, context, agentname
+
+---
+## 2026-03-03 | developer:DEV Findings
+1. **scripts 路徑不同於 CLAUDE.md 說明**：Handoff 中提到 `bun scripts/manage-component.js`，但實際路徑是 `bun plugins/overtone/scripts/manage-component.js`（從專案根目錄執行）
+2. **FAIL verdict 已天然隔離 grader 訊息**：BDD Scenario 3-10 要求 FAIL 時不產生 grader 訊息，由現有 `if/else if/else` 結構自然保證，不需要額外 guard
+3. **受影響測試斷言需同步更新**：`registry.test.js` 的 agentMemory 測試、`platform-alignment-agents.test.js` 的 S10 測試、`feedback-loop.test.js` 的 score context 標題斷言，全部已更新對齊新行為
+4. **Feature 5 Scenario 5-2 維持不變**：現有測試「messages 不含 grader 字串」對無 scoringConfig 的場景仍然正確，與新的 Feature 6 測試不衝突
+Keywords: scripts, claude, handoff, manage, component, plugins, overtone, fail, verdict, grader
+
+---
+## 2026-03-03 | code-reviewer:REVIEW Findings
+1. **缺少「跨 Session 記憶」body 段落** -- 5 個 agent .md
+   - 檔案：`/Users/sbu/projects/overtone/plugins/overtone/agents/developer.md`、`tester.md`、`debugger.md`、`planner.md`、`architect.md`
+   - 問題：BDD Scenario 1-3 要求「文件 body 中包含『跨 Session 記憶』相關說明段落，AND 說明格式與 code-reviewer.md 的相應段落結構一致」。tasks.md 第 24 行也明確寫「frontmatter + body 說明段落」。目前 5 個 agent 只加了 frontmatter `memory: local`，body 無任何「跨 Session 記憶」段落。已有 memory 的 3 個 agent（code-reviewer.md 第 23-41 行、security-reviewer.md 第 22 行、product-manager.md 第 20 行）都有此段落結構（包含「記什麼」「不記什麼」「使用方式」三個子段），新加的 5 個 agent 完全缺失
+   - 建議修復：為 5 個 agent 各自加入角色適當的「跨 Session 記憶」段落，參考 code-reviewer.md 第 23-41 行的格式，但「記什麼」「不記什麼」的具體內容應依各 agent 的職責客製化
+   - 信心等級：95%（BDD spec 和 tasks.md 都明確要求，且有已有 agent 作為參考標準）
+Keywords: session, body, agent, users, projects, overtone, plugins, agents, developer, tester
+
+---
+## 2026-03-03 | code-reviewer:REVIEW Context
+程式碼審查未通過，需要修改。BDD Scenario 1-3 要求的「跨 Session 記憶」body 段落在 5 個 agent .md 中完全缺失。
+Keywords: scenario, session, body, agent
+
+---
+## 2026-03-03 | code-reviewer:REVIEW Findings
+審查了 12 個變更檔案，涵蓋以下面向：
+
+1. **功能完整性**：對照 BDD spec 23 個 scenario（Feature 1-4），所有要求的功能均已正確實作。5 個 agent frontmatter 加入 `memory: local`，body 包含結構一致的「跨 Session 記憶」段落。Score context 標題成功加入 agentName。Grader 強制化邏輯依 workflowType 正確切換用詞。
+2. **Error handling**：`targetAgent` 在 score context 使用處不可能為 null（有 early return 保護）。`workflowType` 為 null 時 `&&` 短路防護正確。
+3. **安全性**：無硬編碼 secrets、無注入風險。
+4. **Wording 一致性**：`📋
+Keywords: spec, scenario, feature, agent, frontmatter, memory, local, body, session, score
+
+---
+## 2026-03-03 | retrospective:RETRO Findings
+**回顧摘要**：
+
+本次 level2-integration-phase2 的 standard workflow 整體品質達標。5 個 agent 的記憶段落客製化內容完整（記什麼 / 不記什麼 / 使用方式三段結構與 code-reviewer.md 對齊），registry-data.json agentMemory 正確擴展至 8 個 agent，score context 標題格式已含 agentName，grader 強制化依 MUST_GRADE_WORKFLOWS 清單正確切換用詞，全套測試 3047 pass / 0 fail，BDD 23 個 Scenarios 全覆蓋。
+
+REVIEW REJECT 根因分析（參考第二輪修復的成功）：BDD Scenario 1-3 使用「格式與 code-reviewer.md 的相應段落結構一致」的措辭，要求 DEV 主動比對參考檔案。此為合理但依賴性強的規格寫法 —— 若 DEV 未主動閱讀 code-reviewer.md，容易忽略 body 段落的要求。第二輪成功的原因是 REJECT Handoff 提供了具體的遺漏段落說明。此為 spec 精確度問題，非 BDD 結構性缺陷。
+Keywords: integration, standard, workflow, agent, code, reviewer, registry, data, json, agentmemory
+
+---
+## 2026-03-03 | doc-updater:DOCS Findings
+**Phase 2 標準 workflow 核心變更：**
+- Agent Memory 配置從 3 個 opus（product-manager、code-reviewer、security-reviewer）擴大至 8 個跨層級 agent
+  - 新增 5 個 sonnet/opusplan：developer、tester、debugger、planner、architect
+  - `registry-data.json` agentMemory 對應擴大
+  
+- Score Context 個人化：pre-task.js 注入時加入 agentName，格式 `[品質歷史 — ${targetAgent}@${targetStage}]`
+
+- Grader 強制化：stop-message-builder.js 依 workflowType 決定用詞
+  - MUST workflows（standard/full/secure/product/product-full）用 `📋 MUST 委派 grader 評分`
+  - 其他 workflows 用 `🎯 建議委派 grader 評分`
+
+**文件漂移修正詳情：**
+- `docs/reference/claude-code-platform.md`：更新 S10 agent memory 描述（624 行 + 683 行）
+- `docs/spec/overtone-agents.md`：新增「Agent 記憶配置」表格段落，記錄 8 個 agent 的記憶焦點和機制
+- `docs/roadmap.md`：修正 S10 描述，明確列出 8 個 agent 分層（opus 3 個 + sonnet 5 個）
+
+**版本和核心指標同步：**
+- Plugin 版本：0.28.34 → 0.28.35（使用正規路徑 manage-component.js bump-version）
+- 測試數字：3037 pass → 3047 pass（統一更新於 status.md 核心指標表、README.md、CHANGELOG.md）
+- Status.md 版本標題：更新為「0.28.35（Level 2 → Level 1 Agent 個體學習升級）」
+Keywords: phase, workflow, agent, memory, opus, product, manager, code, reviewer, security
 

@@ -39,6 +39,23 @@
 - **Sonnet**（11 個執行型）：architect、designer、developer、debugger、database-reviewer、tester、qa、e2e-runner、build-error-resolver、refactor-cleaner、retrospective
 - **Haiku**（2 個輕量型）：doc-updater、grader
 
+### Agent 記憶配置（memory: local）
+
+8 個 agent 啟用跨 session 個體學習記憶（v0.28.35）：
+
+| Agent | Model | 用途 | 記憶焦點 |
+|-------|:-----:|------|---------|
+| product-manager | opus | 產品分析 | 產品決策模式、使用者需求理解 |
+| code-reviewer | opus | 審查 | 常見代碼問題、審查風格 |
+| security-reviewer | opus | 安全 | 安全漏洞模式、防護策略 |
+| planner | opusplan | 規劃 | 任務分解方式、優先順序判斷 |
+| architect | sonnet | 架構 | 系統設計決策、技術選型 |
+| developer | sonnet | 開發 | 實作模式、代碼風格、常見坑 |
+| tester | sonnet | 測試 | 測試場景識別、邊界情況 |
+| debugger | sonnet | 診斷 | 根因分析模式、常見問題症狀 |
+
+記憶機制：`score-engine.js` 儲存量化評分 + `global-instinct.js` 儲存質性觀察（confidence >= 0.8）。Pre-task.js 自動注入前 5 條高信心記憶，格式：`[品質歷史 — ${targetAgent}@${targetStage}（N 筆）]`。
+
 ### 色彩分組（9 組）
 
 | 色彩 | 組別 | Agents |

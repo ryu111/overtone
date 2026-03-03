@@ -31,7 +31,7 @@ function makeTmpProject(label = '') {
 /**
  * 模擬 pre-task.js 中 score context 的組裝邏輯（純函式抽取，便於測試）
  */
-function buildScoreContext(summary, stage) {
+function buildScoreContext(summary, agentName, stage) {
   if (!summary || summary.sessionCount === 0) return null;
 
   const dims = [
@@ -42,7 +42,7 @@ function buildScoreContext(summary, stage) {
   const lowest = dims.reduce((a, b) => (a.val <= b.val ? a : b));
 
   return [
-    `[品質歷史 — ${stage}（${summary.sessionCount} 筆）]`,
+    `[品質歷史 — ${agentName}@${stage}（${summary.sessionCount} 筆）]`,
     `  clarity: ${summary.avgClarity.toFixed(2)}/5.0`,
     `  completeness: ${summary.avgCompleteness.toFixed(2)}/5.0`,
     `  actionability: ${summary.avgActionability.toFixed(2)}/5.0`,
@@ -67,10 +67,10 @@ describe('Feature 1: score context 產生邏輯', () => {
       avgOverall: 3.9,
     };
 
-    const ctx = buildScoreContext(summary, 'DEV');
+    const ctx = buildScoreContext(summary, 'developer', 'DEV');
 
     expect(ctx).not.toBeNull();
-    expect(ctx).toContain('[品質歷史 — DEV（3 筆）]');
+    expect(ctx).toContain('[品質歷史 — developer@DEV（3 筆）]');
     expect(ctx).toContain('clarity: 4.00/5.0');
     expect(ctx).toContain('completeness: 3.50/5.0');
     expect(ctx).toContain('actionability: 4.20/5.0');
@@ -86,7 +86,7 @@ describe('Feature 1: score context 產生邏輯', () => {
       avgOverall: 5.0,
     };
 
-    const ctx = buildScoreContext(summary, 'REVIEW');
+    const ctx = buildScoreContext(summary, 'code-reviewer', 'REVIEW');
 
     expect(ctx).toContain('\n');
     const lines = ctx.split('\n');
@@ -103,9 +103,9 @@ describe('Feature 1: score context 產生邏輯', () => {
       avgOverall: 3.5,
     };
 
-    const ctx = buildScoreContext(summary, 'REVIEW');
+    const ctx = buildScoreContext(summary, 'code-reviewer', 'REVIEW');
 
-    expect(ctx).toContain('[品質歷史 — REVIEW（5 筆）]');
+    expect(ctx).toContain('[品質歷史 — code-reviewer@REVIEW（5 筆）]');
   });
 });
 
@@ -123,7 +123,7 @@ describe('Feature 2: 最低維度偵測', () => {
       avgOverall: 3.5,
     };
 
-    const ctx = buildScoreContext(summary, 'DEV');
+    const ctx = buildScoreContext(summary, 'developer', 'DEV');
 
     // overall 3.5 >= lowScoreThreshold(3.0)，顯示 💡 提示
     expect(ctx).toContain('💡 歷史最低維度：clarity（2.00），可優先關注。');
@@ -138,7 +138,7 @@ describe('Feature 2: 最低維度偵測', () => {
       avgOverall: 3.67,
     };
 
-    const ctx = buildScoreContext(summary, 'DEV');
+    const ctx = buildScoreContext(summary, 'developer', 'DEV');
 
     expect(ctx).toContain('💡 歷史最低維度：completeness（2.50），可優先關注。');
   });
@@ -152,7 +152,7 @@ describe('Feature 2: 最低維度偵測', () => {
       avgOverall: 3.33,
     };
 
-    const ctx = buildScoreContext(summary, 'TEST');
+    const ctx = buildScoreContext(summary, 'tester', 'TEST');
 
     expect(ctx).toContain('💡 歷史最低維度：actionability（1.50），可優先關注。');
   });
@@ -166,7 +166,7 @@ describe('Feature 2: 最低維度偵測', () => {
       avgOverall: 3.0,
     };
 
-    const ctx = buildScoreContext(summary, 'DEV');
+    const ctx = buildScoreContext(summary, 'developer', 'DEV');
 
     // reduce 取第一個最小，相同時取 a（clarity）
     expect(ctx).toContain('clarity');
@@ -187,13 +187,13 @@ describe('Feature 3: 無分數時回傳 null', () => {
       avgOverall: null,
     };
 
-    const ctx = buildScoreContext(summary, 'DEV');
+    const ctx = buildScoreContext(summary, 'developer', 'DEV');
 
     expect(ctx).toBeNull();
   });
 
   test('Scenario 3-2: summary 為 null 時回傳 null', () => {
-    const ctx = buildScoreContext(null, 'DEV');
+    const ctx = buildScoreContext(null, 'developer', 'DEV');
 
     expect(ctx).toBeNull();
   });
@@ -205,7 +205,7 @@ describe('Feature 3: 無分數時回傳 null', () => {
       const summary = scoreEngine.getScoreSummary(tmpProject, 'DEV');
 
       expect(summary.sessionCount).toBe(0);
-      expect(buildScoreContext(summary, 'DEV')).toBeNull();
+      expect(buildScoreContext(summary, 'developer', 'DEV')).toBeNull();
     } finally {
       rmSync(tmpProject, { recursive: true, force: true });
     }
@@ -227,7 +227,7 @@ describe('Feature 4: lowScoreThreshold 警告邏輯', () => {
       avgOverall: 2.9,
     };
 
-    const ctx = buildScoreContext(summary, 'DEV');
+    const ctx = buildScoreContext(summary, 'developer', 'DEV');
 
     expect(ctx).toContain('⚠️ 歷史平均分偏低，建議特別注意品質。重點提升 clarity。');
     expect(ctx).not.toContain('💡');
@@ -242,7 +242,7 @@ describe('Feature 4: lowScoreThreshold 警告邏輯', () => {
       avgOverall: 3.0,
     };
 
-    const ctx = buildScoreContext(summary, 'DEV');
+    const ctx = buildScoreContext(summary, 'developer', 'DEV');
 
     // 3.0 < 3.0 為 false，顯示 💡
     expect(ctx).toContain('💡');
@@ -258,7 +258,7 @@ describe('Feature 4: lowScoreThreshold 警告邏輯', () => {
       avgOverall: 4.23,
     };
 
-    const ctx = buildScoreContext(summary, 'REVIEW');
+    const ctx = buildScoreContext(summary, 'code-reviewer', 'REVIEW');
 
     expect(ctx).toContain('💡');
     expect(ctx).not.toContain('⚠️');

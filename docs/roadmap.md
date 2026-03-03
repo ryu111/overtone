@@ -201,7 +201,7 @@
 | S9a | Worktree Isolation | mul-agent 並行時獨立 worktree 避免衝突 | ⏳ 保留（衝突頻率 0，Phase 4 再評估） |
 | S9b | prompt/agent hook | hook 新增 LLM 判斷類型 | ❌ 關閉（違反「Hook 做確定性守衛」設計哲學） |
 | S9c | 1M Context | Sonnet 1M context window | ⏳ 保留（當前規模不需要，Phase 4 再評估） |
-| S10 | Agent Memory | 5 個 opus agent 啟用 memory: local（v0.23） | ✅ |
+| S10 | Agent Memory | 8 個跨層級 agent 啟用 memory: local — opus 3 個（product-manager、code-reviewer、security-reviewer）+ sonnet 5 個（developer、tester、debugger、planner、architect）（v0.23 → v0.28.35） | ✅ |
 | S11 | CLAUDE.md 精簡 | SoT 引用取代重複（198→121 行）+ argument-hint | ✅ |
 | S12 | 音效通知 | sound.js + Notification hook（v0.24） | ✅ |
 | S13 | Status Line | 雙行即時顯示 + ANSI 變色警告（v0.25） | ✅ |

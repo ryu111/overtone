@@ -2,6 +2,29 @@
 
 所有重要變更記錄於此文件。
 
+## [0.28.35] - 2026-03-04
+
+### Level 2 → Level 1 Agent 個體學習升級（Phase 2 完成）
+
+- **Agent Memory 擴大**：從 3 個 opus agent 擴大至 8 個跨層級 agent
+  - `registry-data.json` agentMemory 從 3 個新增至 8 個（新增 5 個：developer、tester、debugger、planner、architect）
+  - memory: local 配置支援多層級 agent（不限 opus）
+
+- **Score Context 個人化**：pre-task.js score context 標題加入 agentName
+  - 格式：`[品質歷史 — ${targetAgent}@${targetStage}（N 筆）]`
+  - 讓跨 session 歷史記憶聚焦於個別 agent 的學習曲線
+
+- **Grader 強制化**：stop-message-builder.js 依 workflowType 決定用詞
+  - MUST_GRADE_WORKFLOWS: standard/full/secure/product/product-full
+  - 對 MUST workflows 用 `📋 MUST 委派 grader 評分`，其他用 `🎯 建議委派 grader 評分`
+  - grader 成為所有決策 workflow 的正規環節
+
+- **測試**：
+  - Level 2 Phase 2 測試無新增（功能為配置層次升級）
+  - 累計 3047 pass / 0 fail（129 個測試檔）
+
+---
+
 ## [0.28.34] - 2026-03-04
 
 ### Level 2 → Level 1 最小閉環修復：學習信號消費完整化
