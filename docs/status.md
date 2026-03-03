@@ -6,7 +6,7 @@
 
 | 版本 | 狀態 | 說明 |
 |------|------|------|
-| V1 | 進行中 | 2759 pass，0 fail，核心功能完整 + 守衛強化 11/11 + Knowledge Engine + 跨 Session 長期記憶 + 效能基線追蹤 + 數值評分引擎 + 趨勢分析 + 回饋閉環 + 卡點識別 + 時間序列學習（Level 2 完成）+ 核心穩固清理 + mul-agent 泛化 + P3.0 閉環基礎 |
+| V1 | 進行中 | 2808 pass，0 fail，核心功能完整 + 守衛強化 11/11 + Knowledge Engine + 跨 Session 長期記憶 + 效能基線追蹤 + 數值評分引擎 + 趨勢分析 + 回饋閉環 + 卡點識別 + 時間序列學習（Level 2 完成）+ 核心穩固清理 + mul-agent 泛化 + P3.0 閉環基礎 + P3.1 感知層（screenshot.js + window.js + perception.md）|
 | V2 | 規劃中 | 延後 |
 
 ## 核心指標
@@ -16,7 +16,7 @@
 | Agent 數量 | 17（含 grader） |
 | Stage 數量 | 16 |
 | Workflow 模板 | 18 |
-| 測試通過 | 2759 pass / 0 fail（116 個測試檔） |
+| 測試通過 | 2808 pass / 0 fail（116 個測試檔） |
 | 測試檔案 | 116 個 |
 | Hook 數量 | 11 個 |
 | Skill 數量 | 20（11 knowledge domain + orchestrator + pm + specs + 5 utility-with-refs） |
@@ -26,9 +26,9 @@
 
 ## 近期變更（最近 3 筆）
 
-- **[0.28.30] 2026-03-03**：P3.0 OS 閉環基礎 + status line 並行顯示 — (1) statusline.js 修復並行 stage 數量查詢、null-safety；(2) manage-component.js 加入依賴提示 checklist；(3) statusline.test.js 補充並行顯示驗證 + P3.0 OS control 測試補全 → 2759 pass / 116 files
-- **[0.28.29] 2026-03-03**：核心穩固清理 + mul-agent 泛化 — (1) Dead exports 清理（health-check.js 加入 tests/ 搜尋，72→0），guard-system.test.js 補測試（+35）；(2) getStageByAgent 抽取消除 on-stop/pre-task 重複邏輯；(3) 7 個 workflow command 加入並行引導；(4) mul-dev→mul-agent 泛化（支援 developer/tester/debugger/reviewer 並行）
-- **[0.28.28] 2026-03-03**：時間序列學習 — adjustConfidenceByIds API + 觀察效果反饋迴路（SessionStart 記錄注入 ID，SessionEnd 比對 baseline/score 趨勢後調整 confidence），globalInstinctDefaults 新增 feedbackBoost/feedbackPenalty（+15 tests）
+- **[0.28.31] 2026-03-03**：P3.1 感知層完成 — (1) screenshot.js（4 API：captureFullScreen/captureRegion/captureWindow/checkPermission）+ 22 tests；(2) window.js（5 API：listProcesses/listWindows/focusApp/getFrontApp/checkAccessibility）+ 27 tests；(3) perception.md 完整 reference（API reference + 視覺分析模板 + 使用指引 + Permission 處理 + 完整工作流範例）→ 2808 pass / 116 files
+- **[0.28.30] 2026-03-03**：P3.0 OS 閉環基礎 + status line 並行顯示 — (1) statusline.js 修復並行 stage 數量查詢、null-safety；(2) manage-component.js 加入依賴提示 checklist；(3) statusline.test.js 補充並行顯示驗證 → 2759 pass / 116 files
+- **[0.28.29] 2026-03-03**：核心穩固清理 + mul-agent 泛化 — (1) Dead exports 清理（health-check.js 加入 tests/ 搜尋，72→0）；(2) getStageByAgent 抽取；(3) 7 個 workflow command 加入並行引導；(4) mul-dev→mul-agent 泛化
 
 ## Phase 3 規劃狀態
 
@@ -41,7 +41,7 @@ Phase 3 目標：Layer 2 完整 OS 能力，達到 Phase 4 Ready。
 | 階段 | 名稱 | 內容 | 狀態 |
 |:----:|------|------|:----:|
 | P3.0 | 閉環基礎 | os-control Skill 骨架 + Agent frontmatter + pre-bash-guard + hooks.json | ✅ |
-| P3.1 | 看得見 | 截圖 + 視覺理解 + 視窗管理 | ⬜ |
+| P3.1 | 看得見 | 截圖（screenshot.js + 4 API）+ 視窗管理（window.js + 5 API）+ 視覺分析模板 | ✅ |
 | P3.2 | 動得了 | 鍵盤/滑鼠模擬 + AppleScript + Computer Use | ⬜ |
 | P3.3 | 管得住 | Process + 剪貼簿 + 系統資訊 + 通知 + 檔案監控 | ⬜ |
 | P3.4 | 聽說能力 | WebSocket + TTS + STT | ⬜ |

@@ -1,145 +1,4 @@
 ---
-## 2026-03-03 | code-reviewer:REVIEW Findings
-1. **`specs:archive-skipped` 事件資料與 BDD spec 不一致**（信心 90%）
-   - 檔案：`/Users/sbu/projects/overtone/plugins/overtone/hooks/scripts/session/on-stop.js` 第 131-135 行
-   - BDD spec（`/Users/sbu/projects/overtone/sp
-Keywords: specs, archive, skipped, spec, users, projects, overtone, plugins, hooks, scripts
-
----
-## 2026-03-03 | retrospective:RETRO Findings
-**回顧摘要**：
-
-- **BDD spec 對齊度高**：6 Features / 26 Scenarios 中，關鍵路徑 Scenario 1-1/1-3（auto-sync 過濾）、2-1/2-2（workflow 匹配驗證）、3-1/3-2（tasksStatus 診斷）均有整合測試直接覆蓋。
-- **架構一致性確認**：specsConfig 保持 Single Source of Truth，agent/on-stop.js 和 session/on-stop.js 均從 registry.js 導入，無重複定義。
-- **REVIEW 修復有效**：第一輪 REJECT 的欄位命名問題（reason、tasksWorkflow、stateWorkflow）已在實作中正確對齊 BDD spec Scenario 2-1 的 THEN 條件。
-- **8 個 BDD 邊界場景未直接測試**：Scenario 1-2（discovery）、1-4（featureName 已存在）、1-5（projectRoot 空）、2-3/2-4（frontmatter 容錯）、3-3/3-4（featureName/tasksStatus 邊界）均無明確對應測試。這些場景信心判斷：
-  - discovery（1-2）：specsConfig['discovery'] = []，與 single 路徑等價，邏輯安全，但缺乏明確標記，信心 ~60%，不達門檻。
-  - 其餘場景：均由程式碼層級 guard 或既有場景間接保護，信心 ~55-65%，不達門檻。
-- **tests 54 pass / 0 fail**：兩個受影響測試檔目前全數通過。
-- **Feature 4（6 個 command 模板）**：`{featureName}` 參數提示已正確加入 standard/full/secure/refactor/tdd/quick.md，kebab-case 說明一致。
-- **registry.js 新增事件**：specs:archive-skipped（label: Specs 歸檔略過）和 specs:tasks-missing（label: Specs Tasks 遺失）格式符合 timelineEvents 規範，dashboard-registry 和 platform-alignment-registry 計數已同步更新（24→26）。
-Keywords: spec, features, scenarios, scenario, auto, sync, workflow, tasksstatus, specsconfig, single
-
----
-## 2026-03-03 | planner:PLAN Findings
-**需求分解**：
-
-**P4 子任務（4 個，全部可並行）**：
-
-1. [P4-1] CLAUDE.md 補充 knowledge domain 清單 | agent: developer | files: `/Users/sbu/projects/overtone/CLAUDE.md`
-   - 在 `skills/` 說明行補充「11 個 knowledge domain 完整名稱」，加入一行：testing、workflow-core、security-kb、database、dead-code、commit-convention、code-review、wording、debugging、architecture、build-system
-
-2. [P4-2] vision.md Layer 1 表格微幅更新 | agent: developer | files: `/Users/sbu/projects/overtone/docs/vision.md`
-   - 「學習框架」的「現有實現」欄補充 Knowledge Engine 的 11 個 domain 數量（「Instinct + Knowledge Engine（11 domain）」）
-
-3. [P4-3] roadmap.md 說明細化 | agent: developer | files: `/Users/sbu/projects/overtone/docs/roadmap.md`
-   - P1 欄位說明從「新建 3 domain」改為「新建 3 domain（debugging、architecture、build-system），共 11 個 domain 完整建立」
-   - P2 欄位說明補充「已完成：architect/retrospective 降級 Sonnet；S19 量化分析另立」
-   - 完成後標記 P4 為 ✅（這個在 S19-2 時一起做）
-
-4. [P4-4] status.md 確認一致性 | agent: developer | files: `/Users/sbu/projects/overtone/docs/status.md`
-   - 現況已對齊，確認後如無缺口則不動；如有小缺口則補齊
-
-**S19 子任務（2 個，序列）**：
-
-5. [S19-1] 新建 docs/analysis/agent-specialization.md | agent: developer | files: `/Users/sbu/projects/overtone/docs/analysis/agent-specialization.md`（新建目錄 + 新建檔案）
-   - 17 agents × 6 維度量化評分表（職責專一度、推理複雜度、Skill 依賴度、決策確定性、建議 Model、當前 Model）
-   - 5 個 Opus/Opusplan agents 深度分析（product-manager、planner、code-reviewer、security-reviewer、已完成的 architect、retrospective）
-   - Skill 完善度 vs Model 需求映射
-   - 結論：哪些可降級、哪些維持、理由
-
-6. [S19-2] roadmap.md 狀態更新 | agent: developer | files: `/Users/sbu/projects/overtone/docs/roadmap.md`（依賴 S19-1）
-   - S19 → ✅
-   - P4 → ✅
-
-**優先順序**：P4-1/P4-2/P4-3/P4-4 全部並行。S19-1 與 P4 可同時啟動。S19-2 等 S19-1 完成後再執行。
-
-**範圍邊界**：
-- 不修改任何 agent 的 model 配置（S19 只是分析文件，不執行降級）
-- 不修改 plugin.json（純文件，不 bump version）
-- 不建立新 skill 或 agent
-Keywords: claude, knowledge, domain, agent, developer, files, users, projects, overtone, skills
-
----
-## 2026-03-03 | developer:DEV Findings
-**關鍵決策**：
-- BDD spec（Feature 4, Scenario）列出的 17 agent 清單與實際存在的 agents 不符（BDD spec 有 researcher、data-analyst 等不存在的 agent）。採用實際存在的 17 個 agents 作為評分對象，才是正確的做法
-- 測試結果 2410 pass（比原本 2408 多 2），原因是 docs-sync.test.js 新增了 docs/analysis/ 目錄後，路徑引用驗證有更多通過的測試案例
-- designer agent 目前無 skill 配置，評分顯示在 sonnet 條件邊緣（Skill 依賴度 = 1），已在分析文件中標記
-
-**評分結論**：
-- haiku 已達條件：doc-updater、grader（維持現況）
-- sonnet 合理：architect、developer、tester、retrospective、qa、debugger、build-error-resolver、database-reviewer、e2e-runner、refactor-cleaner
-- opus 必要：product-manager（推理 5 + 確定性 2）、planner（推理 5）、code-reviewer（品質守衛）、security-reviewer（安全紅線）
-- designer：sonnet 邊緣（建議觀察）
-Keywords: spec, feature, scenario, agent, agents, researcher, data, analyst, pass, docs
-
----
-## 2026-03-03 | developer:DEV Context
-P4 文件同步 + S19 Agent 專一化精鍊分析已完成。純文件修改，無程式碼變動。
-
-**修改內容**：
-1. `CLAUDE.md`：在目錄結構 code block 的 `skills/` 行下方追加 11 knowledge domain 清單
-2. `docs/vision.md`：Layer 1 表格「學習框架」現有實現補充「（11 domains）」
-3. `docs/roadmap.md`：5 個位置修改 — 標頭「P4 完成」、P1 說明細化、P2 說明細化、P4 狀態 → ✅、S19 狀態 → ✅
-4. `docs/analysis/agent-specialization.md`（新建）：17 agents × 6 維度評分總表 + 評分方法論 + 4 個決策層 agent 深度分析 + architect/retrospective 降級回顧 + 結論與建議
-Keywords: agent, claude, code, block, skills, knowledge, domain, docs, vision, layer
-
----
-## 2026-03-03 | planner:PLAN Findings
-**技術決策（已定）**：
-
-1. 路徑：`~/.overtone/global/observations.jsonl`（不加 projectHash，Simple is better）
-2. 畢業閾值：`0.7`（沿用 `autoApplyThreshold`，語意一致）
-3. SessionStart 載入：top-50 依信心降序（兼顧實用與 context 效率）
-4. 膨脹控制：auto-compaction（沿用 instinct.js 現有機制，行數 > 唯一數 * 2 時重寫）
-5. 整合方式：新建 `global-instinct.js` 而非擴展 `instinct.js`（全域 merge 邏輯與 session 層不同，保持單一職責）
-
-**需求分解**：
-
-1. TEST:spec — BDD 規格撰寫 | agent: tester | files: `specs/features/in-progress/cross-session-memory/bdd.md`
-2. DEV-1 — paths.js 新增全域路徑 | agent: developer | files: `plugins/overtone/scripts/lib/paths.js`
-3. DEV-2 — registry.js 新增 globalInstinctDefaults | agent: developer | files: `plugins/overtone/scripts/lib/registry.js`（可與 DEV-1 並行）
-4. DEV-3 — 建立 global-instinct.js | agent: developer | files: `plugins/overtone/scripts/lib/global-instinct.js`（依賴 DEV-1、DEV-2）
-5. DEV-4 — SessionEnd hook 畢業機制 | agent: developer | files: `plugins/overtone/hooks/scripts/session/on-session-end.js`（依賴 DEV-3）
-6. DEV-5 — SessionStart hook 載入機制 | agent: developer | files: `plugins/overtone/hooks/scripts/session/on-start.js`（依賴 DEV-3，可與 DEV-4 並行）
-7. DEV-6 — unit 測試 | agent: developer | files: `tests/unit/global-instinct.test.js`（可與 DEV-4、DEV-5 並行）
-8. DEV-7 — integration 測試 | agent: developer | files: `tests/integration/cross-session-memory.test.js`（依賴 DEV-4、DEV-5）
-
-**優先順序**：
-
-```
-TEST:spec
-  ↓
-DEV-1 + DEV-2（可並行）
-  ↓
-DEV-3
-  ↓
-DEV-4 + DEV-5 + DEV-6（可並行）
-  ↓
-DEV-7
-```
-
-**範圍邊界（明確不做）**：
-
-- 專案維度隔離（projectHash）
-- 與 claude-mem MCP 整合
-- 進化候選自動觸發
-- SQLite 儲存、跨機器同步、UI 管理
-
----
-Keywords: overtone, global, observations, jsonl, projecthash, simple, better, autoapplythreshold, sessionstart, context
-
----
-## 2026-03-03 | planner:PLAN Context
-**需求**：為 Overtone 建立跨 session 長期記憶基礎設施。目前 Instinct 觀察系統是 session-scoped（`~/.overtone/sessions/{sessionId}/observations.jsonl`），session 結束後知識丟失。需要建立全域 store 並串接 SessionEnd（畢業）和 SessionStart（載入）兩個 hook，實現 Level 2「持續學習」。
-
-**為什麼**：這是 Level 2 成熟度的前提基礎設施。沒有這個，系統每次 session 都從零開始，無法達成「第 10 次比第 1 次更快更好」的目標。
-
----
-Keywords: overtone, session, instinct, scoped, sessions, sessionid, observations, jsonl, store, sessionend
-
----
 ## 2026-03-03 | architect:ARCH Findings
 **技術方案**：
 
@@ -818,4 +677,107 @@ Keywords: tests, unit, statusline, test, passed, failed, active, agent, json, wo
 
 然而回顧中發現一個測試隔離問題，導致一個真實 bug 未被偵測到：
 Keywords: buildagentdisplay, optional, chaining, workflow, stages, manage, component, stderr, pass
+
+---
+## 2026-03-03 | product-manager:PM Findings
+**目標用戶**：Overtone agent 群（developer、architect、tester、debugger、qa -- 已在 P3.0 加入 `skills: [os-control]` frontmatter），透過 Bash tool 呼叫 `scripts/os/*.js` 腳本。
+
+**成功指標**：
+- Agent 能執行 `bun scripts/os/screenshot.js` 取得螢幕截圖並產生 PNG 檔案
+- Agent 能執行 `bun scripts/os/window.js list` 取得目前視窗列表
+- Agent 能將截圖送入多模態分析取得結構化描述
+- perception.md reference 文件能被 pre-task.js 注入 agent context
+
+---
+
+**Discovery 五層追問**
+
+| 層 | 問題 | 回答 |
+|----|------|------|
+| L1 | 做什麼？ | 讓 agent 能截圖、理解視覺內容、管理視窗 |
+| L2 | 場景/誰在用？ | 5 個 agent（developer/architect/tester/debugger/qa）在 OS 操作驗證場景使用 |
+| L3 | 目前怎麼處理？ | 完全沒有替代方案。Agent 對 GUI 狀態完全不可見 |
+| L4 | 多常需要？ | Phase 3 Acid Test 的核心前提；P3.2 Computer Use 迴圈的必要輸入 |
+| L5 | 成功定義？ | `screencapture` 成功截圖 + Claude 多模態回傳結構化描述 + 視窗操作可用 |
+
+---
+
+**Codebase 現狀深度分析**
+
+| 維度 | 現況 | 佐證 |
+|------|------|------|
+| 腳本位置 | `scripts/os/` 目錄尚未建立 | `ls plugins/overtone/scripts/` 無 os/ 子目錄 |
+| SKILL.md | 骨架已就位，4 個 reference 標記為「待建」 | `/plugins/overtone/skills/os-control/SKILL.md` 49 行 |
+| Reference 預留 | `perception.md` 只有 3 行 placeholder | 內容：`# 感知層（P3.1）\n> 此文件將在 P3.1 階段填充。` |
+| Guard | `pre-bash-guard.js` 11 條黑名單已可用 | 79 行 + 完整整合測試（233 行） |
+| 測試模式 | `sound.js`（OS 操作先例）測試採 mock platform + 常數驗證 | `sound.test.js` 69 行 |
+| OS 相依性 | `screencapture` 存在但需 Screen Recording 權限；`osascript` 存在但視窗屬性需 Accessibility 權限 | 實測驗證（見下方） |
+
+**環境權限實測結果**（codebase 佐證 -- 本機實測）：
+
+| 工具 | 命令 | 結果 | 需要權限 |
+|------|------|------|----------|
+| screencapture | `screencapture -x /tmp/test.png` | **失敗** `could not create image from display` | Screen Recording |
+| osascript（進程列表） | `get name of every process whose visible is true` | **成功** | 無 |
+| osascript（視窗屬性） | `get {position, size} of window of process` | **失敗** `-1728 不允許輔助取用` | Accessibility |
+| osascript（視窗名稱） | `get name of every window of process "Finder"` | **失敗** `-1728` | Accessibility |
+| JXA | `Application("System Events").processes.whose(...)` | **成功**（進程列表） | 無（進程列表） |
+
+---
+
+**方案比較**
+Keywords: overtone, agent, developer, architect, tester, debugger, skills, control, frontmatter, bash
+
+---
+## 2026-03-03 | product-manager:PM Context
+**問題陳述**：Overtone 目前是「只有大腦沒有五官」的自治系統。agent 無法「看到」螢幕上正在發生什麼，也無法「理解」視覺內容。這限制了系統的自主能力 -- 例如 Phase 3 Acid Test 要求的「截圖+視覺驗證顯示正確」完全無法執行。
+
+**影響**：
+- 無法驗證 GUI 操作結果（啟動監控後無法確認畫面正確）
+- 無法進入 P3.2（操控層）-- 沒有眼睛就無法做 Computer Use 的「截圖 -> 理解 -> 操作 -> 驗證」迴圈
+- Phase 3 Acid Test 完全受阻
+
+**根因分析**：Layer 2（感知操控）中「眼睛」能力缺失。P3.0 已建立骨架（skill domain + guard + agent frontmatter），P3.1 負責填充第一批實際能力。
+Keywords: overtone, agent, phase, acid, test, computer, layer, skill, domain, guard
+
+---
+## 2026-03-03 | planner:PLAN Context
+P3.1「感知層」為 Overtone Phase 3 OS 能力的第一階段，目標是讓 agent 能自主截圖並「看見」畫面（透過 Claude Code Read tool 多模態），同時查詢視窗狀態。PM 已確認不建立 `visual.js`（原生 Read tool 即可），核心交付物為兩支腳本（`screenshot.js` + `window.js`）、一份完整 reference 文件（`perception.md`）以及對應的單元測試。
+
+proposal 已寫入：`specs/features/in-progress/p3-1-perception/proposal.md`
+
+---
+Keywords: overtone, phase, agent, claude, code, read, tool, visual, screenshot, window
+
+---
+## 2026-03-03 | developer:DEV Context
+實作 P3.1「看得見（感知層）」，為 Overtone 提供 macOS 截圖擷取和視窗/進程管理能力。新增兩個核心腳本模組、完整填充 perception.md reference 文件、兩個測試檔，並更新 os-control SKILL.md 索引。
+Keywords: overtone, macos, perception, reference, control, skill
+
+---
+## 2026-03-03 | retrospective:RETRO Findings
+**回顧摘要**：
+
+P3.1 感知層整體實作品質良好，四個交付維度均完整。
+
+**確認的品質點**：
+
+1. **Overtone 閉環模型完整**：腳本（`screenshot.js` + `window.js`）、Reference（`perception.md`）、SKILL.md 索引、測試（22 + 27 = 49 個 test）四項全部交付，閉環無缺口。
+
+2. **安全修復品質達標**：`sanitizeAppName()` 在 REVIEW REJECT 後正確實作，同時跳脫 `\` 和 `"` 兩個危險字元。3 個 sanitization 測試覆蓋了 injection payload 的核心場景，且測試實際驗證了 `capturedScript` 內容（不只是「不 throw」）。
+
+3. **統一 response schema 貫徹**：所有 9 個公開函式均遵守 `{ ok: boolean, ... }` 規約，無例外。錯誤不 throw 的設計一致性高。
+
+4. **BDD 偏差合理**：`listWindows` 空字串回傳 `[]`（非 `OSASCRIPT_PARSE_ERROR`）是語意上更正確的決策 — 空輸出意味著 App 無視窗，不是解析錯誤。BDD spec 的原意也未明確要求此情境為 error。此偏差已被 tester 接受，無需修改 spec。
+
+5. **感知層覆蓋 Acid Test 需求**：Phase 3 Acid Test 需要「截圖驗證」能力，`captureFullScreen()` + Claude Read tool 的多模態組合已完整覆蓋。`perception.md` 中的「截圖 → Read → 視覺分析模板 → 決策」工作流範例也明確說明了使用方式。
+
+6. **`isPermissionError` 修正品質**：初版誤判已修正，關鍵字清單（`could not create image`、`authorization denied`、`screen recording`、`not authorized to capture screen`）精確對應 macOS screencapture 的實際錯誤訊息，不會誤判一般指令失敗。
+
+**觀察到的邊界（信心 < 70%，不列為 ISSUES）**：
+
+- `captureRegion` 的座標 `${x},${y},${width},${height}` 直接嵌入 shell 指令，未做型別驗證（如非數字的輸入）。但 `captureRegion` 前置檢查只驗證欄位是否存在（`undefined/null`），若傳入字串型座標（如 `x: "100; rm -rf /"`），理論上可能造成 shell injection。然而：(1) 此函式的使用情境主要是 agent 內部呼叫，攻擊面極小；(2) REVIEW 第二輪已將此歸為「低風險，列 open questions」；(3) 信心約 55%（有問題存在，但實際影響可能性低）。建議未來 P3.2 開發時一起補強輸入型別驗證。
+
+- `listProcesses` 和其他 window.js 函式使用 `osascript -e '${script}'` 傳遞多行 script，若腳本中有單引號則可能提早終止 shell 引號。目前的靜態 script 字串均不含單引號，所以無即時風險。信心約 50%（潛在設計脆弱點，但目前腳本均為硬編碼字串）。
+Keywords: overtone, screenshot, window, reference, perception, skill, test, sanitizeappname, review, reject
 

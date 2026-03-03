@@ -75,10 +75,10 @@
 
 | 任務 | 說明 | 狀態 |
 |------|------|:----:|
-| screenshot.js | 全螢幕/視窗/區域截圖（`screencapture` wrapper） | ⬜ |
-| visual.js | 截圖 → Claude 多模態 → 結構化描述 pipeline | ⬜ |
-| window.js | 視窗列表/聚焦/移動/調整大小（AppleScript） | ⬜ |
-| Skill: perception ref | `skills/os-control/references/perception.md` | ⬜ |
+| screenshot.js | 全螢幕/視窗/區域截圖（`screencapture` wrapper） | ✅ |
+| visual.js | ~~截圖 → Claude 多模態 → 結構化描述 pipeline~~ → 改為 perception.md 中的分析模板（Read tool 原生多模態） | ✅ |
+| window.js | 視窗列表/聚焦（AppleScript）— P3.1 完成；移動/調整大小留 P3.2 | ✅ |
+| Skill: perception ref | `skills/os-control/references/perception.md` | ✅ |
 
 ### P3.2 動得了（操控層）
 
