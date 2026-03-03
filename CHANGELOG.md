@@ -2,6 +2,31 @@
 
 所有重要變更記錄於此文件。
 
+## [0.28.21] - 2026-03-03（Specs 歸檔系統修復）
+
+### 功能改進
+- **Specs 歸檔驗證強化**：agent/on-stop.js、session/on-stop.js 加入 specs workflow 匹配驗證
+  - featureName auto-sync 加入 specsConfig 過濾，只對有 specs 的 workflow 生效
+  - 歸檔前驗證 tasks.md workflow 匹配 + tasksStatus null 診斷警告
+  - 新增 timeline 事件：`specs:archive-skipped`、`specs:tasks-missing`
+
+### 架構改進
+- **Timeline events 擴充**：24 → 26 個事件（新增 2 個 specs 相關事件）
+- **Command 初始化提示**：6 個 command 模板 init 指令加 `{featureName}` 第三個參數提示
+
+### 測試
+- 新增：specs-archive-fix.test.js 等 specs 驗證測試
+- 更新：registry.js、on-stop.js、session-cleanup.test.js（specs 事件映射）
+- 測試通過：2408 pass / 0 fail（+6）
+- 測試檔案：101 個
+
+### 文檔
+- 更新 docs/status.md：版本狀態、核心指標（測試 2402→2408）、近期變更
+- 更新 CLAUDE.md：Hook 架構表（timeline events 24→26）
+- 更新 docs/roadmap.md：P4 進度更新
+
+---
+
 ## [0.28.20] - 2026-03-03（P3 Hook 純化）
 
 ### 功能新增

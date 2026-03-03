@@ -53,6 +53,49 @@ safeRun(() => {
     });
   }
 
+  // ── 檢查 workflow 完成度（在退出條件之前，確保歸檔不被繞過） ──
+
+  const stageStatuses = Object.entries(currentState.stages);
+  const totalStages = stageStatuses.length;
+  const completedStages = stageStatuses.filter(([, s]) => s.status === 'completed').length;
+  const allStagesCompleted = completedStages === totalStages;
+
+  // tasks.md 完成度（用 featureName 直接定位，避免多 feature 並行時取錯）
+  const featureName = currentState.featureName || null;
+  const tasksStatus = projectRoot ? loop.readTasksStatus(projectRoot, featureName) : null;
+  const allCompleted = allStagesCompleted && (tasksStatus === null || tasksStatus.allChecked);
+
+  // tasksStatus null 診斷警告
+  if (tasksStatus === null && specsConfig[currentState.workflowType]?.length > 0 && featureName && projectRoot) {
+    hookError('on-stop', `診斷：${featureName} tasks.md 不存在或無法讀取，無法驗證 specs 完成度`);
+    timeline.emit(sessionId, 'specs:tasks-missing', { featureName, workflowType: currentState.workflowType });
+  }
+
+  // Specs 自動歸檔：workflow 完成且無失敗 stage 時，無論退出原因都先歸檔
+  const hasFailedStage = allCompleted ? stageStatuses.some(([, s]) => s.result === 'fail') : false;
+  if (allCompleted && !hasFailedStage && featureName) {
+    try {
+      const specs = require('../../../scripts/lib/specs');
+      const tasksPath = join(specs.featurePath(projectRoot, featureName), 'tasks.md');
+      const frontmatter = specs.readTasksFrontmatter(tasksPath);
+      const taskWorkflow = frontmatter?.workflow;
+      if (taskWorkflow && taskWorkflow !== currentState.workflowType) {
+        hookError('on-stop', `警告：tasks.md workflow（${taskWorkflow}）與當前 workflow（${currentState.workflowType}）不匹配，跳過歸檔`);
+        timeline.emit(sessionId, 'specs:archive-skipped', {
+          featureName,
+          reason: 'workflow-mismatch',
+          tasksWorkflow: taskWorkflow,
+          stateWorkflow: currentState.workflowType,
+        });
+      } else {
+        const archivePath = specs.archiveFeature(projectRoot, featureName);
+        timeline.emit(sessionId, 'specs:archive', { featureName, archivePath });
+      }
+    } catch (archErr) {
+      hookError('on-stop', `警告：歸檔失敗 — ${archErr.message}`);
+    }
+  }
+
   // ── 檢查退出條件 ──
 
   // 1. /ot:stop 手動退出
@@ -78,32 +121,9 @@ safeRun(() => {
     process.exit(0);
   }
 
-  // ── 檢查 workflow 完成度 ──
-
-  const stageStatuses = Object.entries(currentState.stages);
-  const totalStages = stageStatuses.length;
-  const completedStages = stageStatuses.filter(([, s]) => s.status === 'completed').length;
-  const allStagesCompleted = completedStages === totalStages;
-
-  // tasks.md 完成度（用 featureName 直接定位，避免多 feature 並行時取錯）
-  const featureName = currentState.featureName || null;
-  const tasksStatus = projectRoot ? loop.readTasksStatus(projectRoot, featureName) : null;
-  const allCompleted = allStagesCompleted && (tasksStatus === null || tasksStatus.allChecked);
-
-  // 修復 3：tasksStatus null 診斷警告
-  // 條件：workflow 有 specs 設定、featureName 已知、tasksStatus 讀不到（tasks.md 遺失）
-  if (tasksStatus === null && specsConfig[currentState.workflowType]?.length > 0 && featureName && projectRoot) {
-    hookError('on-stop', `診斷：${featureName} tasks.md 不存在或無法讀取，無法驗證 specs 完成度`);
-    timeline.emit(sessionId, 'specs:tasks-missing', { featureName, workflowType: currentState.workflowType });
-  }
-
   // 4. 全部完成 → 允許退出
   if (allCompleted) {
-    // 判斷是否為異常完成：有任何 stage result 為 fail
-    const hasFailedStage = stageStatuses.some(([, s]) => s.result === 'fail');
-
     if (hasFailedStage) {
-      // 異常中斷（有 fail stage）→ emit workflow:abort
       loop.exitLoop(sessionId, loopState, '工作流異常中斷（含失敗階段）');
       timeline.emit(sessionId, 'workflow:abort', {
         workflowType: currentState.workflowType,
@@ -112,43 +132,10 @@ safeRun(() => {
         duration: calcDuration(currentState.createdAt),
       });
     } else {
-      // 正常完成 → emit workflow:complete
       loop.exitLoop(sessionId, loopState, '工作流完成');
-
-      // Specs 自動歸檔：workflow 完成且有對應 feature 時
-      if (featureName) {
-        try {
-          const specs = require('../../../scripts/lib/specs');
-
-          // 修復 2：歸檔前驗證 workflow 匹配
-          const tasksPath = join(specs.featurePath(projectRoot, featureName), 'tasks.md');
-          const frontmatter = specs.readTasksFrontmatter(tasksPath);
-          const taskWorkflow = frontmatter?.workflow;
-          // 允許歸檔：frontmatter 不存在、無 workflow 欄位、workflow 匹配
-          if (taskWorkflow && taskWorkflow !== currentState.workflowType) {
-            // workflow 不匹配 → 跳過歸檔
-            hookError('on-stop', `警告：tasks.md workflow（${taskWorkflow}）與當前 workflow（${currentState.workflowType}）不匹配，跳過歸檔`);
-            timeline.emit(sessionId, 'specs:archive-skipped', {
-              featureName,
-              taskWorkflow,
-              currentWorkflow: currentState.workflowType,
-            });
-          } else {
-            const archivePath = specs.archiveFeature(projectRoot, featureName);
-            timeline.emit(sessionId, 'specs:archive', {
-              featureName,
-              archivePath,
-            });
-          }
-        } catch (archErr) {
-          // 歸檔失敗不阻擋正常退出（可能已手動移動或不存在）
-          hookError('on-stop', `警告：歸檔失敗 — ${archErr.message}`);
-        }
-      } else {
-        // 診斷：workflow 完成但無 featureName → 無法自動歸檔
+      if (allCompleted && !featureName) {
         hookError('on-stop', '診斷：workflow 完成但 featureName 為空，跳過 specs 自動歸檔');
       }
-
       timeline.emit(sessionId, 'workflow:complete', {
         workflowType: currentState.workflowType,
         duration: calcDuration(currentState.createdAt),
@@ -157,10 +144,7 @@ safeRun(() => {
     }
 
     const summary = buildCompletionSummary(currentState);
-
-    process.stdout.write(JSON.stringify({
-      result: summary,
-    }));
+    process.stdout.write(JSON.stringify({ result: summary }));
     process.exit(0);
   }
 

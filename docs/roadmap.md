@@ -1,6 +1,6 @@
 # Overtone Roadmap
 
-> 最後更新：2026-03-03 | 當前 Phase：核心穩固（Level 1 → Level 2）
+> 最後更新：2026-03-03 | 當前 Phase：核心穩固（Level 1 → Level 2，P4 進行中）
 
 ## Phase 總覽
 

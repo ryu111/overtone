@@ -372,6 +372,9 @@ describe('Stop hook 場景 7：修復 2 — 歸檔前 workflow 匹配驗證', ()
     const events = timeline.query(sessionId, { type: 'specs:archive-skipped' });
     expect(events.length).toBeGreaterThan(0);
     expect(events[0].featureName).toBe('my-feature');
+    expect(events[0].reason).toBe('workflow-mismatch');
+    expect(events[0].tasksWorkflow).toBe('quick');
+    expect(events[0].stateWorkflow).toBe('standard');
   });
 
   test('Scenario 2-2：workflow 完成 + tasks.md workflow 匹配 → 正常歸檔（回歸）', async () => {
