@@ -237,3 +237,198 @@ Keywords: orchestrator, users, projects, overtone, plugins, hooks, scripts, agen
 - 測試新增 22 個（stop-message-builder + knowledge-archiver）
 Keywords: hook, handoff, files, modified, stop, message, builder, knowledge, archiver, docs
 
+---
+## 2026-03-03 | planner:PLAN Findings
+**需求分解**：
+
+1. **修復 1：agent/on-stop.js auto-sync 加 specsConfig 過濾** | agent: developer | files: `plugins/overtone/hooks/scripts/agent/on-stop.js`
+   - 在 featureName auto-sync（第 77-84 行）外層加 `specsConfig[workflowType]?.length > 0` 判斷
+   - 防止 single/discovery 等無 specs 的 workflow 綁定到 in-progress feature
+
+2. **修復 2：session/on-stop.js 歸檔前驗證 workflow 匹配** | agent: developer | files: `plugins/overtone/hooks/scripts/session/on-stop.js`
+   - 在 `archiveFeature` 呼叫前讀 tasks.md frontmatter 的 `workflow` 欄位
+   - 若與 `currentState.workflowType` 不符：跳過歸檔 + emit `specs:archive-skipped` + hookError 警告
+   - 需要 `paths` 模組取得 tasksPath，`specs.readTasksFrontmatter` 讀 frontmatter
+
+3. **修復 3：session/on-stop.js tasksStatus===null 診斷警告** | agent: developer | files: `plugins/overtone/hooks/scripts/session/on-stop.js`
+   - 在 `tasksStatus` 賦值後（第 89 行附近）加偵測邏輯
+   - 條件：`tasksStatus === null && specsConfig[workflowType]?.length > 0 && featureName`
+   - emit `specs:tasks-missing` + hookError（warn but don't block）
+
+4. **修復 4：6 個 command 模板加 featureName 參數提示** (parallel) | agent: developer | files: `plugins/overtone/commands/{standard,full,secure,refactor,tdd,quick}.md`
+   - 初始化指令從 `init-workflow.js {type} ${CLAUDE_SESSION_ID}` 改為 `init-workflow.js {type} ${CLAUDE_SESSION_ID} {featureName}`
+   - 加一行說明 featureName 必須 kebab-case
+   - 6 個檔案可完全並行修改
+
+5. **新增測試：agent-on-stop.test.js** | agent: tester | files: `tests/integration/agent-on-stop.test.js`
+   - 場景 A：single workflow + in-progress feature 存在 → auto-sync **不應**發生
+   - 場景 B：standard workflow + in-progress feature 存在 → auto-sync 正常發生
+
+6. **新增測試：session-stop.test.js** | agent: tester | files: `tests/integration/session-stop.test.js`
+   - 場景 C：workflow 完成 + featureName + tasks.md workflow 不符 → 跳過歸檔（`specs:archive-skipped`）
+   - 場景 D：standard workflow + featureName 存在但 tasks.md 不存在 → emit `specs:tasks-missing`（不 block）
+   - 場景 E：standard workflow + featureName + tasks.md workflow 匹配 → 正常歸檔（回歸測試）
+
+**優先順序**：
+
+- 修復 1、2、3 按邏輯順序：1 → (2+3 可並行，同檔案但不同區塊)
+- 修復 4（6 個 command 檔案）完全獨立，可與修復 1-3 並行
+- 測試（任務 5 + 6）與對應修復有依賴：修復完成後再加測試（也可 TDD 先寫）
+- 建議執行順序：
+  - 並行批次 A：修復 1（agent/on-stop）+ 修復 4（6 個 command）
+  - 串行批次 B：修復 2+3（session/on-stop，同檔案）
+  - 最後：新增測試（5+6），驗證 `bun test` 全過
+
+**範圍邊界**：
+
+- `init-workflow.js` 腳本不修改（第三參數 featureName 已支援）
+- `specsConfig` 內容（哪些 workflow 有 specs）不調整
+- Dashboard/SSE 顯示層不改動
+- 不新增 `specs:archive-skipped` 和 `specs:tasks-missing` 到 registry.js 的 `timelineEvents`（這兩個是診斷事件，不需要嚴格 SoT 管理）—— 此判斷留給 architect 確認
+Keywords: agent, stop, auto, sync, specsconfig, developer, files, plugins, overtone, hooks
+
+---
+## 2026-03-03 | architect:ARCH Findings
+**技術方案**：
+
+- 修復 1：在 `agent/on-stop.js` 的 featureName auto-sync 外層，加入 `specsConfig[workflowType]?.length > 0` 過濾條件，阻止 single/discovery 等無 specs workflow 綁定到 in-progress 的 feature
+- 修復 2：在 `session/on-stop.js` 的 `archiveFeature` 呼叫前，讀取 tasks.md frontmatter 驗證 `workflow` 欄位是否匹配 `currentState.workflowType`，不匹配時 emit `specs:archive-skipped` 並跳過歸檔
+- 修復 3：在 `session/on-stop.js` 的 `tasksStatus` 賦值後、`allCompleted` 判斷前，加入 `tasksStatus === null && specsConfig[wf]?.length > 0 && featureName` 診斷條件，emit `specs:tasks-missing`（warn but don't block）
+- 修復 4：6 個 command 模板（standard/full/secure/refactor/tdd/quick）的初始化指令加第三參數 `{featureName}` 和格式說明
+- registry.js：新增 `specs:archive-skipped`（label: 'Specs 歸檔略過'）和 `specs:tasks-missing`（label: 'Specs Tasks 遺失'）到 `timelineEvents` 的 specs 類別
+
+**關鍵技術決策**：
+- 新 timeline 事件必須加入 registry.js timelineEvents SoT，否則 platform-alignment / reference-integrity guard tests 會失敗
+- session/on-stop.js 讀 tasksPath 用 `join(specs.featurePath(root, name), 'tasks.md')` 而非引入 paths 模組
+- session/on-stop.js 在頂層 registry import 擴充加入 specsConfig（與現有 pattern 一致），path.join 在 try 區塊頂層取得
+
+**API 介面**：
+
+`specs:archive-skipped` timeline 事件資料：
+```javascript
+{ featureName: string, reason: 'workflow-mismatch', tasksWorkflow: string, stateWorkflow: string }
+```
+
+`specs:tasks-missing` timeline 事件資料：
+```javascript
+{ workflowType: string, featureName: string }
+```
+
+agent/on-stop.js 修復後 auto-sync 條件：
+```javascript
+if (!updatedState.featureName && projectRoot && specsConfig[currentState.workflowType]?.length > 0)
+```
+
+session/on-stop.js 修復後歸檔前置驗證：
+```javascript
+const { join } = require('path');
+const tasksPath = join(specs.featurePath(projectRoot, featureName), 'tasks.md');
+const frontmatter = specs.readTasksFrontmatter(tasksPath);
+if (frontmatter?.workflow && frontmatter.workflow !== currentState.workflowType) { /* skip */ }
+```
+
+**資料模型**：
+
+registry.js `timelineEvents` 新增（specs 類別，目前 2 個 → 4 個）：
+```javascript
+'specs:archive-skipped': { label: 'Specs 歸檔略過', category: 'specs' },
+'specs:tasks-missing':   { label: 'Specs Tasks 遺失', category: 'specs' },
+```
+
+**檔案結構**：
+
+修改（8 個）：
+- `plugins/overtone/hooks/scripts/agent/on-stop.js` — 修復 1（registry import + auto-sync guard）
+- `plugins/overtone/hooks/scripts/session/on-stop.js` — 修復 2+3（registry import + 歸檔驗證 + 診斷）
+- `plugins/overtone/scripts/lib/registry.js` — 新增 2 個 specs 事件類型
+- `plugins/overtone/commands/standard.md` — 修復 4（init 加 featureName 參數）
+- `plugins/overtone/commands/full.md` — 修復 4
+- `plugins/overtone/commands/secure.md` — 修復 4
+- `plugins/overtone/commands/refactor.md` — 修復 4
+- `plugins/overtone/commands/tdd.md` — 修復 4
+- `plugins/overtone/commands/quick.md` — 修復 4
+
+修改（測試，2 個）：
+- `tests/integration/agent-on-stop.test.js` — 新增 2 個場景驗證修復 1
+- `tests/integration/session-stop.test.j
+Keywords: agent, stop, featurename, auto, sync, specsconfig, workflowtype, length, single, discovery
+
+---
+## 2026-03-03 | developer:DEV Findings
+- `path.join` 在 session/on-stop.js 中原本不存在，需要新增 `const { join } = require('path')` import
+- commands/*.md 不在 pre-edit-guard 的 PROTECTED_PATTERNS 列表中，可直接編輯
+- dashboard-registry.test.js 和 platform-alignment-registry.test.js 有硬編碼的 timelineEvents 計數（24），需同步更新為 26
+- agent/on-stop.test.js 的新場景 1-3（standard workflow auto-sync 回歸）需要用完整的 standard stages 清單初始化 state，否則 DEV stage 不存在
+- session/on-stop.test.js 的新場景 8-1（tasks-missing）設計為 stages 未全部完成（loop 仍在進行），確保 tasksStatus 為 null 仍能 emit 事件
+Keywords: path, join, session, stop, const, require, import, commands, edit, guard
+
+---
+## 2026-03-03 | developer:DEV Context
+實作了 specs 歸檔系統的 4 個結構性修復：
+
+1. **修復 1**（agent/on-stop.js）：featureName auto-sync 加入 `specsConfig` 過濾條件，只有 `specsConfig[workflowType]?.length > 0` 的 workflow（standard、quick、full 等）才執行 auto-sync。single、discovery 等無 specs 的 workflow 不再搜尋 active feature。
+2. **修復 2**（session/on-stop.js）：歸檔前讀取 tasks.md frontmatter 的 `workflow` 欄位，與 session state 的 `workflowType` 比對。不匹配時 emit `specs:archive-skipped` 並跳過歸檔，且不阻擋退出。允許歸檔的條件：frontmatter 不存在、無 workflow 欄位、workflow 匹配。
+3. **修復 3**（session/on-stop.js）：有 specs 的 workflow + featureName 已知 + tasksStatus 為 null 時，emit `specs:tasks-missing` 診斷警告，warn but don't block。
+4. **修復 4**（6 個 command 模板）：init 指令加入 `{featureName}` 第三個參數提示，並加說明行。
+5. **registry.js**：新增 `specs:archive-skipped` 和 `specs:tasks-missing` 事件，事件總數 24 → 26。
+Keywords: specs, agent, stop, featurename, auto, sync, specsconfig, workflowtype, length, workflow
+
+---
+## 2026-03-03 | tester:TEST:2 Findings
+**測試結果：2408 pass, 0 fail**（從 2402 增加 6 個新測試）
+
+BDD Scenario 覆蓋分析：
+
+| Scenario | 狀態 | 備註 |
+|----------|------|------|
+| 1-1：single workflow auto-sync 不發生 | 有測試 | agent-on-stop 場景 19 |
+| 1-2：discovery workflow auto-sync 不發生 | 未直接測試 | 邏輯與 1-1 相同（都在 specsConfig 過濾），間接覆蓋 |
+| 1-3：standard workflow auto-sync 正常發生 | 有測試 | agent-on-stop 場景 19 |
+| 1-4：featureName 已存在不重複 auto-sync | 未直接測試 | 邊界條件未覆蓋 |
+| 1-5：projectRoot 為空不發生 | 未直接測試 | 錯誤處理路徑未覆蓋 |
+| 2-1：workflow 不匹配跳過歸檔 emit archive-skipped | 有測試 | session-stop 場景 7 |
+| 2-2：workflow 匹配正常歸檔 | 有測試 | session-stop 場景 7 |
+| 2-3：tasks.md 無 frontmatter 允許歸檔 | 未直接測試 | 容錯路徑未覆蓋 |
+| 2-4：frontmatter 無 workflow 欄位允許歸檔 | 未直接測試 | 容錯路徑未覆蓋 |
+| 2-5：workflow 未完成不執行歸檔 | 間接覆蓋 | 場景 2 block 行為等效 |
+| 3-1：standard + featureName + tasks.md 不存在 emit tasks-missing | 有測試 | session-stop 場景 8 |
+| 3-2：single workflow 不 emit tasks-missing | 有測試 | session-stop 場景 8 |
+| 3-3：featureName 為空不警告 | 未直接測試 | 邊界條件未覆蓋 |
+| 3-4：tasksStatus 正常不警告 | 未直接測試 | 回歸路徑未覆蓋 |
+| 4-1~4-6：6 個 command 模板包含 featureName | 人工確認通過 | 靜態文件，無自動化測試 |
+| 5-1：registry 包含 specs:archive-skipped（label/category 直接驗證） | 未直接測試 | platform-alignment 只驗證總數（26） |
+| 5-2：registry 包含 specs:tasks-missing（label/category 直接驗證） | 未直接測試 | 同上 |
+| 5-3：platform-alignment 測試不因新事件失敗 | 通過 | 5 pass |
+| 6-1：端對端全流程 archive + workflow:complete | 間接覆蓋 | 場景 6 + 7 組合涵蓋，無單一完整 E2E |
+| 6-2：featureName 為空跳過歸檔不 block | 間接覆蓋 | 場景 6 第二個測試部分等效 |
+
+**覆蓋摘要**：核心修復路徑（1-1, 1-3, 2-1, 2-2, 3-1, 3-2）全部有測試；邊界條件（1-2, 1-4, 1-5, 2-3, 2-4, 3-3, 3-4）和 Feature 5 直接驗證（5-1, 5-2）尚缺直接測試，但不影響主流程正確性。
+
+**其他確認項目**：
+- `validate-agents.js` 通過：17 agents + 11 hooks + 19 skills 全部正確
+- registry.js 兩個新事件 `specs:archive-skipped` 和 `specs:tasks-missing` 已定義且格式正確
+- 6 個 command 模板均已更新，包含 `{featureName}` 參數和 kebab-case 說明
+Keywords: pass, fail, scenario, single, workflow, auto, sync, agent, stop, discovery
+
+---
+## 2026-03-03 | code-reviewer:REVIEW Findings
+1. **`specs:archive-skipped` 事件資料與 BDD spec 不一致**（信心 90%）
+   - 檔案：`/Users/sbu/projects/overtone/plugins/overtone/hooks/scripts/session/on-stop.js` 第 131-135 行
+   - BDD spec（`/Users/sbu/projects/overtone/sp
+Keywords: specs, archive, skipped, spec, users, projects, overtone, plugins, hooks, scripts
+
+---
+## 2026-03-03 | retrospective:RETRO Findings
+**回顧摘要**：
+
+- **BDD spec 對齊度高**：6 Features / 26 Scenarios 中，關鍵路徑 Scenario 1-1/1-3（auto-sync 過濾）、2-1/2-2（workflow 匹配驗證）、3-1/3-2（tasksStatus 診斷）均有整合測試直接覆蓋。
+- **架構一致性確認**：specsConfig 保持 Single Source of Truth，agent/on-stop.js 和 session/on-stop.js 均從 registry.js 導入，無重複定義。
+- **REVIEW 修復有效**：第一輪 REJECT 的欄位命名問題（reason、tasksWorkflow、stateWorkflow）已在實作中正確對齊 BDD spec Scenario 2-1 的 THEN 條件。
+- **8 個 BDD 邊界場景未直接測試**：Scenario 1-2（discovery）、1-4（featureName 已存在）、1-5（projectRoot 空）、2-3/2-4（frontmatter 容錯）、3-3/3-4（featureName/tasksStatus 邊界）均無明確對應測試。這些場景信心判斷：
+  - discovery（1-2）：specsConfig['discovery'] = []，與 single 路徑等價，邏輯安全，但缺乏明確標記，信心 ~60%，不達門檻。
+  - 其餘場景：均由程式碼層級 guard 或既有場景間接保護，信心 ~55-65%，不達門檻。
+- **tests 54 pass / 0 fail**：兩個受影響測試檔目前全數通過。
+- **Feature 4（6 個 command 模板）**：`{featureName}` 參數提示已正確加入 standard/full/secure/refactor/tdd/quick.md，kebab-case 說明一致。
+- **registry.js 新增事件**：specs:archive-skipped（label: Specs 歸檔略過）和 specs:tasks-missing（label: Specs Tasks 遺失）格式符合 timelineEvents 規範，dashboard-registry 和 platform-alignment-registry 計數已同步更新（24→26）。
+Keywords: spec, features, scenarios, scenario, auto, sync, workflow, tasksstatus, specsconfig, single
+
