@@ -432,3 +432,68 @@ Keywords: specs, archive, skipped, spec, users, projects, overtone, plugins, hoo
 - **registry.js 新增事件**：specs:archive-skipped（label: Specs 歸檔略過）和 specs:tasks-missing（label: Specs Tasks 遺失）格式符合 timelineEvents 規範，dashboard-registry 和 platform-alignment-registry 計數已同步更新（24→26）。
 Keywords: spec, features, scenarios, scenario, auto, sync, workflow, tasksstatus, specsconfig, single
 
+---
+## 2026-03-03 | planner:PLAN Findings
+**需求分解**：
+
+**P4 子任務（4 個，全部可並行）**：
+
+1. [P4-1] CLAUDE.md 補充 knowledge domain 清單 | agent: developer | files: `/Users/sbu/projects/overtone/CLAUDE.md`
+   - 在 `skills/` 說明行補充「11 個 knowledge domain 完整名稱」，加入一行：testing、workflow-core、security-kb、database、dead-code、commit-convention、code-review、wording、debugging、architecture、build-system
+
+2. [P4-2] vision.md Layer 1 表格微幅更新 | agent: developer | files: `/Users/sbu/projects/overtone/docs/vision.md`
+   - 「學習框架」的「現有實現」欄補充 Knowledge Engine 的 11 個 domain 數量（「Instinct + Knowledge Engine（11 domain）」）
+
+3. [P4-3] roadmap.md 說明細化 | agent: developer | files: `/Users/sbu/projects/overtone/docs/roadmap.md`
+   - P1 欄位說明從「新建 3 domain」改為「新建 3 domain（debugging、architecture、build-system），共 11 個 domain 完整建立」
+   - P2 欄位說明補充「已完成：architect/retrospective 降級 Sonnet；S19 量化分析另立」
+   - 完成後標記 P4 為 ✅（這個在 S19-2 時一起做）
+
+4. [P4-4] status.md 確認一致性 | agent: developer | files: `/Users/sbu/projects/overtone/docs/status.md`
+   - 現況已對齊，確認後如無缺口則不動；如有小缺口則補齊
+
+**S19 子任務（2 個，序列）**：
+
+5. [S19-1] 新建 docs/analysis/agent-specialization.md | agent: developer | files: `/Users/sbu/projects/overtone/docs/analysis/agent-specialization.md`（新建目錄 + 新建檔案）
+   - 17 agents × 6 維度量化評分表（職責專一度、推理複雜度、Skill 依賴度、決策確定性、建議 Model、當前 Model）
+   - 5 個 Opus/Opusplan agents 深度分析（product-manager、planner、code-reviewer、security-reviewer、已完成的 architect、retrospective）
+   - Skill 完善度 vs Model 需求映射
+   - 結論：哪些可降級、哪些維持、理由
+
+6. [S19-2] roadmap.md 狀態更新 | agent: developer | files: `/Users/sbu/projects/overtone/docs/roadmap.md`（依賴 S19-1）
+   - S19 → ✅
+   - P4 → ✅
+
+**優先順序**：P4-1/P4-2/P4-3/P4-4 全部並行。S19-1 與 P4 可同時啟動。S19-2 等 S19-1 完成後再執行。
+
+**範圍邊界**：
+- 不修改任何 agent 的 model 配置（S19 只是分析文件，不執行降級）
+- 不修改 plugin.json（純文件，不 bump version）
+- 不建立新 skill 或 agent
+Keywords: claude, knowledge, domain, agent, developer, files, users, projects, overtone, skills
+
+---
+## 2026-03-03 | developer:DEV Findings
+**關鍵決策**：
+- BDD spec（Feature 4, Scenario）列出的 17 agent 清單與實際存在的 agents 不符（BDD spec 有 researcher、data-analyst 等不存在的 agent）。採用實際存在的 17 個 agents 作為評分對象，才是正確的做法
+- 測試結果 2410 pass（比原本 2408 多 2），原因是 docs-sync.test.js 新增了 docs/analysis/ 目錄後，路徑引用驗證有更多通過的測試案例
+- designer agent 目前無 skill 配置，評分顯示在 sonnet 條件邊緣（Skill 依賴度 = 1），已在分析文件中標記
+
+**評分結論**：
+- haiku 已達條件：doc-updater、grader（維持現況）
+- sonnet 合理：architect、developer、tester、retrospective、qa、debugger、build-error-resolver、database-reviewer、e2e-runner、refactor-cleaner
+- opus 必要：product-manager（推理 5 + 確定性 2）、planner（推理 5）、code-reviewer（品質守衛）、security-reviewer（安全紅線）
+- designer：sonnet 邊緣（建議觀察）
+Keywords: spec, feature, scenario, agent, agents, researcher, data, analyst, pass, docs
+
+---
+## 2026-03-03 | developer:DEV Context
+P4 文件同步 + S19 Agent 專一化精鍊分析已完成。純文件修改，無程式碼變動。
+
+**修改內容**：
+1. `CLAUDE.md`：在目錄結構 code block 的 `skills/` 行下方追加 11 knowledge domain 清單
+2. `docs/vision.md`：Layer 1 表格「學習框架」現有實現補充「（11 domains）」
+3. `docs/roadmap.md`：5 個位置修改 — 標頭「P4 完成」、P1 說明細化、P2 說明細化、P4 狀態 → ✅、S19 狀態 → ✅
+4. `docs/analysis/agent-specialization.md`（新建）：17 agents × 6 維度評分總表 + 評分方法論 + 4 個決策層 agent 深度分析 + architect/retrospective 降級回顧 + 結論與建議
+Keywords: agent, claude, code, block, skills, knowledge, domain, docs, vision, layer
+

@@ -1,12 +1,12 @@
 # Overtone 現況
 
-> 最後更新：2026-03-03 | Plugin 版本：0.28.21（Specs 歸檔系統修復）
+> 最後更新：2026-03-03 | Plugin 版本：0.28.21（P4 文件同步 + S19 Agent 專一化分析完成）
 
 ## 版本狀態
 
 | 版本 | 狀態 | 說明 |
 |------|------|------|
-| V1 | 進行中 | 2408 pass，0 fail，核心功能完整 + 守衛強化 10/10 + Knowledge Engine（skill context 自動注入 + gap detection + 知識歸檔）+ Specs 歸檔驗證|
+| V1 | 進行中 | 2410 pass，0 fail，核心功能完整 + 守衛強化 10/10 + Knowledge Engine（skill context 自動注入 + gap detection + 知識歸檔）+ Specs 歸檔驗證 + P4 文件對齊 + S19 Agent 專一化分析|
 | V2 | 規劃中 | 延後 |
 
 ## 核心指標
@@ -16,7 +16,7 @@
 | Agent 數量 | 17（含 grader） |
 | Stage 數量 | 16 |
 | Workflow 模板 | 18 |
-| 測試通過 | 2408 pass / 0 fail |
+| 測試通過 | 2410 pass / 0 fail |
 | 測試檔案 | 101 個 |
 | Hook 數量 | 11 個 |
 | Skill 數量 | 19（11 knowledge domain + orchestrator + pm + specs + 5 utility-with-refs） |
@@ -26,9 +26,9 @@
 
 ## 近期變更（最近 3 筆）
 
+- **[P4+S19] 2026-03-03**：Phase 2 終章 — Agent 專一化量化分析完成（17 agents × 6 維度評估，降級規則精鍊，文件全面對齊）+ CLAUDE.md knowledge domain 清單 + docs/analysis/agent-specialization.md（188 行 新建）（+2 tests）→ 2410 pass / 101 files
 - **[0.28.21] 2026-03-03**：Specs 歸檔系統修復 — featureName auto-sync 加 specsConfig 過濾 + 歸檔驗證 + specs:archive-skipped/specs:tasks-missing 兩個新事件（+6 tests）→ 2408 pass / 101 files
-- **[0.28.20] 2026-03-03**：P3 Hook 純化 — on-stop.js 重構為薄 orchestrator（441→140 行）+ stop-message-builder.js + knowledge-archiver.js + 知識歸檔邏輯遷移 agent + dead code/docs sync 掃描遷移 agent prompt（+21 tests）→ 2402 pass / 101 files
-- **[0.28.19] 2026-03-03**：auto-discovered dedup 修復（knowledge-searcher 去重邏輯）（+7 tests）→ 2381 pass / 99 files
+- **[0.28.20] 2026-03-03**：P3 Hook 純化 — on-stop.js 重構為薄 orchestrator（441→140 行）+ stop-message-builder.js + knowledge-archiver.js + 知識歸檔邏輯遷移 agent（+21 tests）→ 2402 pass / 101 files
 
 ## 已知問題
 

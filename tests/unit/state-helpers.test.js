@@ -85,14 +85,14 @@ describe('findActualStageKey — 邊界條件與錯誤處理', () => {
     expect(findActualStageKey(state, 'TEST')).toBeNull();
   });
 
-  it('所有相關 stage 均為 completed 時回傳 null', () => {
-    // GIVEN 所有相關 stage 均已 completed
+  it('所有相關 stage 均為 completed（pass）時回傳 null', () => {
+    // GIVEN 所有相關 stage 均已 completed 且 result 為 pass
     // WHEN 呼叫 findActualStageKey
-    // THEN 回傳 null
+    // THEN 回傳 null（pass 的 stage 不可重做）
     const state = {
       stages: {
-        'TEST':   { status: 'completed' },
-        'TEST:2': { status: 'completed' },
+        'TEST':   { status: 'completed', result: 'pass' },
+        'TEST:2': { status: 'completed', result: 'pass' },
       },
     };
     expect(findActualStageKey(state, 'TEST')).toBeNull();
@@ -105,6 +105,70 @@ describe('findActualStageKey — 邊界條件與錯誤處理', () => {
     const state = { stages: {} };
     expect(() => findActualStageKey(state, 'TEST')).not.toThrow();
     expect(findActualStageKey(state, 'TEST')).toBeNull();
+  });
+});
+
+describe('findActualStageKey — retry 場景（completed + fail/reject）', () => {
+  it('completed + fail 的 stage 可被找到（retry 安全網）', () => {
+    // GIVEN REVIEW stage 已完成但結果為 fail
+    // WHEN 呼叫 findActualStageKey(state, 'REVIEW')
+    // THEN 回傳 'REVIEW'（允許 retry 覆寫結果）
+    const state = {
+      stages: {
+        'REVIEW': { status: 'completed', result: 'fail' },
+      },
+    };
+    expect(findActualStageKey(state, 'REVIEW')).toBe('REVIEW');
+  });
+
+  it('completed + reject 的 stage 可被找到（retry 安全網）', () => {
+    // GIVEN REVIEW stage 已完成但結果為 reject
+    // WHEN 呼叫 findActualStageKey(state, 'REVIEW')
+    // THEN 回傳 'REVIEW'
+    const state = {
+      stages: {
+        'REVIEW': { status: 'completed', result: 'reject' },
+      },
+    };
+    expect(findActualStageKey(state, 'REVIEW')).toBe('REVIEW');
+  });
+
+  it('帶編號的 completed + fail stage 可被找到', () => {
+    // GIVEN TEST:2 已完成但結果為 fail
+    // WHEN 呼叫 findActualStageKey(state, 'TEST')
+    // THEN 回傳 'TEST:2'
+    const state = {
+      stages: {
+        'TEST':   { status: 'completed', result: 'pass' },
+        'TEST:2': { status: 'completed', result: 'fail' },
+      },
+    };
+    expect(findActualStageKey(state, 'TEST')).toBe('TEST:2');
+  });
+
+  it('active/pending 優先於 completed + fail（正常流程優先）', () => {
+    // GIVEN TEST 已 fail，但 TEST:2 是 pending
+    // WHEN 呼叫 findActualStageKey(state, 'TEST')
+    // THEN 回傳 'TEST:2'（pending 優先於 retry candidate）
+    const state = {
+      stages: {
+        'TEST':   { status: 'completed', result: 'fail' },
+        'TEST:2': { status: 'pending' },
+      },
+    };
+    expect(findActualStageKey(state, 'TEST')).toBe('TEST:2');
+  });
+
+  it('completed + pass 的 stage 不可被 retry 找到', () => {
+    // GIVEN REVIEW 已完成且 result 為 pass
+    // WHEN 呼叫 findActualStageKey(state, 'REVIEW')
+    // THEN 回傳 null（pass 不是 retry candidate）
+    const state = {
+      stages: {
+        'REVIEW': { status: 'completed', result: 'pass' },
+      },
+    };
+    expect(findActualStageKey(state, 'REVIEW')).toBeNull();
   });
 });
 

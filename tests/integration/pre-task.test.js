@@ -458,3 +458,126 @@ describe('場景 7：Knowledge Engine — gapWarnings 注入', () => {
     expect(updatedPrompt).not.toContain('知識缺口');
   });
 });
+
+// ────────────────────────────────────────────────────────────────────────────
+// 場景 20：retry 場景 — REJECT/FAIL 後重新委派 agent 應 reset stage
+// ────────────────────────────────────────────────────────────────────────────
+
+describe('場景 20：retry — completed + reject/fail 時重新委派', () => {
+  test('REVIEW reject 後重新委派 code-reviewer → stage reset 為 active', async () => {
+    const sessionId = newSessionId();
+    createdSessions.push(sessionId);
+
+    mkdirSync(paths.sessionDir(sessionId), { recursive: true });
+    const stageList = workflows['quick'].stages;
+    state.initState(sessionId, 'quick', stageList);
+
+    // 模擬 DEV 完成 + REVIEW reject
+    state.updateStateAtomic(sessionId, (s) => {
+      s.stages['DEV'].status = 'completed';
+      s.stages['DEV'].result = 'pass';
+      s.stages['REVIEW'].status = 'completed';
+      s.stages['REVIEW'].result = 'reject';
+      return s;
+    });
+
+    // 重新委派 code-reviewer（retry）
+    const result = await runHook(
+      {
+        session_id: sessionId,
+        tool_name: 'Task',
+        tool_input: {
+          subagent_type: 'ot:code-reviewer',
+          description: '重審',
+          prompt: '修復後重新審查',
+        },
+      },
+      sessionId
+    );
+
+    expect(isAllowed(result)).toBe(true);
+
+    // 驗證 stage 已 reset 為 active，舊 reject 結果已清除
+    const updated = state.readState(sessionId);
+    expect(updated.stages['REVIEW'].status).toBe('active');
+    expect(updated.stages['REVIEW'].result).toBeUndefined();
+  });
+
+  test('TEST fail 後重新委派 tester → stage reset 為 active', async () => {
+    const sessionId = newSessionId();
+    createdSessions.push(sessionId);
+
+    mkdirSync(paths.sessionDir(sessionId), { recursive: true });
+    const stageList = workflows['quick'].stages;
+    state.initState(sessionId, 'quick', stageList);
+
+    // 模擬 DEV + REVIEW 完成 + TEST fail
+    state.updateStateAtomic(sessionId, (s) => {
+      s.stages['DEV'].status = 'completed';
+      s.stages['DEV'].result = 'pass';
+      s.stages['REVIEW'].status = 'completed';
+      s.stages['REVIEW'].result = 'pass';
+      s.stages['TEST'].status = 'completed';
+      s.stages['TEST'].result = 'fail';
+      return s;
+    });
+
+    // 重新委派 tester（retry）
+    const result = await runHook(
+      {
+        session_id: sessionId,
+        tool_name: 'Task',
+        tool_input: {
+          subagent_type: 'ot:tester',
+          description: '重測',
+          prompt: '修復後重新測試',
+        },
+      },
+      sessionId
+    );
+
+    expect(isAllowed(result)).toBe(true);
+
+    const updated = state.readState(sessionId);
+    expect(updated.stages['TEST'].status).toBe('active');
+    expect(updated.stages['TEST'].result).toBeUndefined();
+  });
+
+  test('completed + pass 的 stage 不被 retry reset', async () => {
+    const sessionId = newSessionId();
+    createdSessions.push(sessionId);
+
+    mkdirSync(paths.sessionDir(sessionId), { recursive: true });
+    const stageList = workflows['quick'].stages;
+    state.initState(sessionId, 'quick', stageList);
+
+    // 模擬 DEV 完成 + REVIEW pass
+    state.updateStateAtomic(sessionId, (s) => {
+      s.stages['DEV'].status = 'completed';
+      s.stages['DEV'].result = 'pass';
+      s.stages['REVIEW'].status = 'completed';
+      s.stages['REVIEW'].result = 'pass';
+      return s;
+    });
+
+    // 再次委派 code-reviewer（不應 reset pass 的 stage）
+    const result = await runHook(
+      {
+        session_id: sessionId,
+        tool_name: 'Task',
+        tool_input: {
+          subagent_type: 'ot:code-reviewer',
+          description: '再審',
+          prompt: '再次審查',
+        },
+      },
+      sessionId
+    );
+
+    // 通過（不阻擋），但 stage 不會被 reset
+    expect(isAllowed(result)).toBe(true);
+    const updated = state.readState(sessionId);
+    // pass 的 stage 不被 retry 機制影響
+    expect(updated.stages['REVIEW'].result).toBe('pass');
+  });
+});

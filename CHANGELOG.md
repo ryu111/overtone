@@ -2,9 +2,20 @@
 
 所有重要變更記錄於此文件。
 
-## [0.28.21] - 2026-03-03（Specs 歸檔系統修復）
+## [0.28.21] - 2026-03-03
 
-### 功能改進
+### Phase 2 終章：P4 文件同步 + S19 Agent 專一化分析（純文件更新）
+- **Agent 專一化分析**：17 agents × 6 維度評估完成
+  - 新建 `docs/analysis/agent-specialization.md`（188 行）：聯合模型評估 + 降級規則量化
+  - 結論：opus 必要（PM、planner、code-reviewer、security-reviewer）；haiku 可達（tester 可從 sonnet 降級）
+- **文件全面對齊**（P4）：
+  - CLAUDE.md：追加 11 knowledge domain 清單
+  - docs/vision.md：Layer 1 表格補充 domain 數量
+  - docs/roadmap.md：P1/P2 說明細化 + P4→✅ / S19→✅ / S20→✅ v0.28.20 標記
+  - docs/status.md：測試數字對齊（2408→2410）+ 近期變更更新
+- 測試通過：2410 pass / 0 fail（+2）
+
+### 功能改進（0.28.21 核心）
 - **Specs 歸檔驗證強化**：agent/on-stop.js、session/on-stop.js 加入 specs workflow 匹配驗證
   - featureName auto-sync 加入 specsConfig 過濾，只對有 specs 的 workflow 生效
   - 歸檔前驗證 tasks.md workflow 匹配 + tasksStatus null 診斷警告
@@ -15,15 +26,9 @@
 - **Command 初始化提示**：6 個 command 模板 init 指令加 `{featureName}` 第三個參數提示
 
 ### 測試
-- 新增：specs-archive-fix.test.js 等 specs 驗證測試
+- 新增：specs-archive-fix.test.js、agent-specialization.test.js 等驗證測試
 - 更新：registry.js、on-stop.js、session-cleanup.test.js（specs 事件映射）
-- 測試通過：2408 pass / 0 fail（+6）
 - 測試檔案：101 個
-
-### 文檔
-- 更新 docs/status.md：版本狀態、核心指標（測試 2402→2408）、近期變更
-- 更新 CLAUDE.md：Hook 架構表（timeline events 24→26）
-- 更新 docs/roadmap.md：P4 進度更新
 
 ---
 

@@ -168,7 +168,10 @@ safeRun(() => {
 
   const actualKey = stageKeys.find((k) => {
     const base = k.split(':')[0];
-    return base === targetStage && currentState.stages[k].status === 'pending';
+    if (base !== targetStage) return false;
+    const st = currentState.stages[k];
+    // pending → 正常委派；completed + fail/reject → retry 委派
+    return st.status === 'pending' || (st.status === 'completed' && (st.result === 'fail' || st.result === 'reject'));
   });
 
   state.updateStateAtomic(sessionId, (s) => {
@@ -177,6 +180,11 @@ safeRun(() => {
       startedAt: new Date().toISOString(),
     };
     if (actualKey && s.stages[actualKey]) {
+      // retry：清除舊結果，重設為 active
+      if (s.stages[actualKey].result === 'fail' || s.stages[actualKey].result === 'reject') {
+        delete s.stages[actualKey].result;
+        delete s.stages[actualKey].completedAt;
+      }
       s.stages[actualKey].status = 'active';
     }
     return s;

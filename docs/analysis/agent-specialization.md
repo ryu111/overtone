@@ -21,9 +21,13 @@
 
 | 目標 Model | 條件 |
 |:----------:|------|
-| **haiku** | 職責專一度 ≥ 4 AND Skill 依賴度 ≥ 4 AND 決策確定性 ≥ 4 |
-| **sonnet** | 職責專一度 ≥ 3 AND（Skill 依賴度 ≥ 3 OR 決策確定性 ≥ 3） |
-| **opus** | 不滿足 sonnet 條件，或推理複雜度 ≥ 4（語義判斷為核心） |
+| **haiku** | 職責專一度 ≥ 4 AND 推理複雜度 ≤ 2 AND Skill 依賴度 ≥ 4 AND 決策確定性 ≥ 4 |
+| **sonnet** | 職責專一度 ≥ 3 AND（Skill 依賴度 ≥ 3 OR 決策確定性 ≥ 3）AND 不滿足 haiku 條件 AND 不觸發 opus 條件 |
+| **opus** | 不滿足 sonnet 條件，或（推理複雜度 ≥ 4 AND Skill 依賴度 < 3），或（推理複雜度 ≥ 4 AND 職責專一度 < 4 AND 決策確定性 < 4） |
+
+> **維持現況規則**：已是 haiku 的 agent（doc-updater、grader）不需重新滿足降級條件；上表適用於「從較高 model 降至目標 model」的評估場景。doc-updater（Skill 依賴度=2）和 grader（Skill 依賴度=1）的低 Skill 依賴度反映的是「任務本身不需要複雜知識支撐」，而非需要升級的訊號。
+>
+> **策略例外規則**：純分數推導與策略判斷可能產生差異。security-reviewer（4/4/3/3）評分與 architect/debugger 相同，但因安全漏洞的錯誤成本極高（生產漏洞 = 嚴重事故），採策略性保留在 opus，不依賴分數規則自動降級。此類例外在建議 Model 欄位以實際決策為準，並在深度分析中說明策略理由。
 
 ---
 
@@ -37,7 +41,7 @@
 | planner | 4 | 5 | 2 | 3 | opus | opusplan |
 | architect | 4 | 4 | 3 | 3 | sonnet | sonnet ✅ |
 | developer | 4 | 3 | 3 | 3 | sonnet | sonnet |
-| tester | 4 | 2 | 4 | 4 | sonnet | sonnet |
+| tester | 4 | 2 | 4 | 4 | haiku | sonnet |
 | code-reviewer | 3 | 4 | 4 | 3 | opus | opus |
 | security-reviewer | 4 | 4 | 3 | 3 | opus | opus |
 | retrospective | 4 | 3 | 2 | 3 | sonnet | sonnet ✅ |
@@ -147,15 +151,15 @@
 
 ### 可降級項目
 
-目前無立即可安全降級的 agent（architect 和 retrospective 已完成降級）。
+目前可安全降級的 agent：tester（建議 haiku，需增加 testing skill 的 BDD scenario 範本）。architect 和 retrospective 已完成降級（v0.28.18）。
 
 未來潛在降級路徑（需先強化 skill）：
 
 | Agent | 前提條件 | 目標 Model |
 |-------|----------|:--------:|
+| tester | 增加 testing skill 的 BDD scenario 範本，確認降級後任務品質維持 | haiku |
 | code-reviewer | 擴充 code-review skill（smell patterns + refactoring indicators）且降級後 3 個任務 pass rate ≥ 90% | sonnet |
 | security-reviewer | security-kb skill 涵蓋完整 OWASP checklist + attack patterns 資料庫 | sonnet |
-| tester | 目前已是 sonnet，確認可降至 haiku（需增加 testing skill 的 BDD scenario 範本） | haiku |
 
 ### 建議維持項目
 

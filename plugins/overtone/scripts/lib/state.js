@@ -238,7 +238,15 @@ function findActualStageKey(currentState, baseStage) {
   const pending = stageKeys.find(
     (k) => (k === baseStage || k.startsWith(baseStage + ':')) && currentState.stages[k].status === 'pending'
   );
-  return pending || null;
+  if (pending) return pending;
+
+  // 安全網：找 completed + fail/reject 的（retry 場景，PreToolUse 未正確 reset 時）
+  const retryCandidate = stageKeys.find(
+    (k) => (k === baseStage || k.startsWith(baseStage + ':')) &&
+      currentState.stages[k].status === 'completed' &&
+      (currentState.stages[k].result === 'fail' || currentState.stages[k].result === 'reject')
+  );
+  return retryCandidate || null;
 }
 
 /**
