@@ -16,7 +16,7 @@ const { join } = require('path');
 const state = require('../../../scripts/lib/state');
 const timeline = require('../../../scripts/lib/timeline');
 const loop = require('../../../scripts/lib/loop');
-const { stages, loopDefaults, specsConfig } = require('../../../scripts/lib/registry');
+const { stages, parallelGroups, loopDefaults, specsConfig } = require('../../../scripts/lib/registry');
 const { safeReadStdin, safeRun, hookError, buildProgressBar, getSessionId } = require('../../../scripts/lib/hook-utils');
 const { playSound, SOUNDS } = require('../../../scripts/lib/sound'); // 只用 HERO
 
@@ -186,20 +186,20 @@ safeRun(() => {
   });
 
   // 產生繼續 prompt（nextStage 已在上方 PM 互動模式檢查時定義）
-  const base = nextStage ? nextStage.split(':')[0] : null;
-  const def = base ? stages[base] : null;
-
   const progressBar = buildProgressBar(stageStatuses, stages);
 
   const tasksLine = tasksStatus
     ? `📋 Tasks：${tasksStatus.checked}/${tasksStatus.total} 完成`
     : null;
 
+  const hint = state.getNextStageHint(currentState, { stages, parallelGroups });
+  const hintLine = hint ? `⏭️ 繼續：${hint}` : '⏭️ 繼續執行下一步';
+
   const continueMessage = [
     `[Overtone Loop ${loopState.iteration}/${loopDefaults.maxIterations}]`,
     `進度：${progressBar} (${completedStages}/${totalStages})`,
     tasksLine,
-    def ? `⏭️ 繼續：委派 ${def.emoji} ${def.agent}（${def.label}）` : '⏭️ 繼續執行下一步',
+    hintLine,
     '⛔ 禁止詢問使用者，直接繼續執行。',
   ].filter(Boolean).join('\n');
 

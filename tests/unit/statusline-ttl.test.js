@@ -1,13 +1,12 @@
 'use strict';
 /**
- * statusline-ttl.test.js — statusline.js activeAgents TTL 過濾測試
+ * statusline-ttl.test.js — statusline.js activeAgents 顯示邏輯測試
  *
  * 測試範圍：
- *   - buildAgentDisplay activeAgents fallback 的 TTL 過濾邏輯
- *   - 過期 entry（無 active stage + 超過 30 分鐘）→ 不顯示
- *   - 有 active stage 的 entry → 永遠顯示（不受 TTL 影響）
- *   - 新鮮 entry（5 分鐘內）→ 正常顯示
- *   - 所有 stages completed + activeAgents 有殘留 → 顯示單行模式（不誤顯示 agent）
+ *   - buildAgentDisplay 只依賴 stages.status === 'active' 作為信號源
+ *   - activeAgents 欄位不影響 statusline 顯示（TTL 機制已移除）
+ *   - 有 active stage → 雙行顯示
+ *   - 無 active stage（全 completed 或 pending）→ 單行顯示
  */
 
 const { describe, it, expect } = require('bun:test');
@@ -44,13 +43,11 @@ function runStatuslineWithSession(sessionId, tmpHome, extraInput = {}) {
   });
 }
 
-// ── Feature 1: 過期殘留 entry 不顯示 ──
+// ── Feature 1: stages.status 是唯一 agent 顯示信號源 ──
 
-describe('activeAgents TTL 過濾 — 過期 entry', () => {
+describe('statusline agent 顯示 — stages.status 為唯一信號源', () => {
 
-  it('Scenario TTL-1: 超過 30 分鐘的 entry 且無 active stage → 不顯示（回到單行模式）', () => {
-    const expiredTime = new Date(Date.now() - 31 * 60 * 1000).toISOString(); // 31 分鐘前
-
+  it('Scenario SL-1: 無 active stage（全 completed）+ activeAgents 有殘留 → 單行模式', () => {
     const { tmpHome, sessionId, cleanup } = setupTmpSession({
       workflowType: 'quick',
       stages: {
@@ -58,10 +55,11 @@ describe('activeAgents TTL 過濾 — 過期 entry', () => {
         REVIEW: { status: 'completed', result: 'pass' },
       },
       activeAgents: {
+        // 殘留 entry，但 stages 無 active → 不顯示
         'developer:stale001-xxxx': {
           agentName: 'developer',
           stage: 'DEV',
-          startedAt: expiredTime,
+          startedAt: new Date().toISOString(),
         },
       },
     });
@@ -70,9 +68,9 @@ describe('activeAgents TTL 過濾 — 過期 entry', () => {
       const result = runStatuslineWithSession(sessionId, tmpHome);
       const plain = stripAnsi(result.stdout || '');
       const lines = plain.split('\n').filter(l => l.trim());
-      // 單行模式（無 agent 顯示）
+      // 單行模式（無 active stage）
       expect(lines.length).toBe(1);
-      // 不包含 developer（過期 entry 被過濾）
+      // 不包含 developer（無 active stage，activeAgents 不作為信號）
       expect(plain).not.toContain('developer');
       // 包含基礎 metrics
       expect(plain).toContain('ctx');
@@ -81,38 +79,28 @@ describe('activeAgents TTL 過濾 — 過期 entry', () => {
     }
   });
 
-  it('Scenario TTL-2: 有 active stage 的 entry → 永遠顯示（不受 TTL 限制）', () => {
-    const expiredTime = new Date(Date.now() - 60 * 60 * 1000).toISOString(); // 60 分鐘前（超過 TTL）
-
+  it('Scenario SL-2: 有 active stage → 雙行顯示（stages.status 信號）', () => {
     const { tmpHome, sessionId, cleanup } = setupTmpSession({
       workflowType: 'quick',
       stages: {
         DEV: { status: 'active' }, // 仍 active
       },
-      activeAgents: {
-        'developer:old001-xxxx': {
-          agentName: 'developer',
-          stage: 'DEV',
-          startedAt: expiredTime, // 很舊，但 stage 仍 active
-        },
-      },
+      activeAgents: {},
     });
 
     try {
       const result = runStatuslineWithSession(sessionId, tmpHome);
       const plain = stripAnsi(result.stdout || '');
       const lines = plain.split('\n').filter(l => l.trim());
-      // 雙行模式（agent 顯示 + metrics）— 有 active stage，TTL 不過期
+      // 雙行模式（有 active stage）
       expect(lines.length).toBe(2);
-      // 注意：有 active stage 時，會走 stages.status==='active' 路徑，而非 activeAgents fallback
-      // 所以 developer 仍然顯示
       expect(plain).toContain('developer');
     } finally {
       cleanup();
     }
   });
 
-  it('Scenario TTL-3: 5 分鐘內的新鮮 entry 且無 active stage → 正常顯示（TTL 未過期）', () => {
+  it('Scenario SL-3: 無 active stage（全 completed）+ activeAgents 有新鮮 entry → 仍為單行模式', () => {
     const freshTime = new Date(Date.now() - 5 * 60 * 1000).toISOString(); // 5 分鐘前
 
     const { tmpHome, sessionId, cleanup } = setupTmpSession({
@@ -121,6 +109,7 @@ describe('activeAgents TTL 過濾 — 過期 entry', () => {
         DEV: { status: 'completed', result: 'pass' },
       },
       activeAgents: {
+        // 新鮮 entry，但 stages 無 active → 不顯示（activeAgents fallback 已移除）
         'developer:fresh001-xxxx': {
           agentName: 'developer',
           stage: 'DEV',
@@ -133,17 +122,15 @@ describe('activeAgents TTL 過濾 — 過期 entry', () => {
       const result = runStatuslineWithSession(sessionId, tmpHome);
       const plain = stripAnsi(result.stdout || '');
       const lines = plain.split('\n').filter(l => l.trim());
-      // 雙行模式（TTL 未過期，entry 仍顯示）
-      expect(lines.length).toBe(2);
-      expect(plain).toContain('developer');
+      // 單行模式（無 active stage，activeAgents 不再作為 fallback 信號）
+      expect(lines.length).toBe(1);
+      expect(plain).not.toContain('developer');
     } finally {
       cleanup();
     }
   });
 
-  it('Scenario TTL-4: 所有 stages completed + activeAgents 有過期殘留 → 顯示單行模式', () => {
-    const expiredTime = new Date(Date.now() - 45 * 60 * 1000).toISOString(); // 45 分鐘前
-
+  it('Scenario SL-4: 所有 stages completed + activeAgents 有殘留 → 顯示單行模式', () => {
     const { tmpHome, sessionId, cleanup } = setupTmpSession({
       workflowType: 'standard',
       stages: {
@@ -156,8 +143,7 @@ describe('activeAgents TTL 過濾 — 過期 entry', () => {
         DOCS:   { status: 'completed', result: 'pass' },
       },
       activeAgents: {
-        // DEV 已 completed，entry 過期
-        'developer:stale001-aaaa': { agentName: 'developer', stage: 'DEV', startedAt: expiredTime },
+        'developer:stale001-aaaa': { agentName: 'developer', stage: 'DEV', startedAt: new Date().toISOString() },
       },
     });
 
@@ -165,7 +151,7 @@ describe('activeAgents TTL 過濾 — 過期 entry', () => {
       const result = runStatuslineWithSession(sessionId, tmpHome);
       const plain = stripAnsi(result.stdout || '');
       const lines = plain.split('\n').filter(l => l.trim());
-      // 單行（全部 completed，過期殘留被過濾）
+      // 單行（全部 completed，activeAgents 不影響顯示）
       expect(lines.length).toBe(1);
       expect(plain).not.toContain('developer');
       expect(plain).toContain('ctx');

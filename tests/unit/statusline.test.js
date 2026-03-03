@@ -352,9 +352,9 @@ describe('agent 顯示與中文模式', () => {
     expect(plain).toContain('♻️');
   });
 
-  // ── active-agent.json + workflow 並行 × N（主信號分支修復驗證）──
+  // ── workflow stages 並行 × N（純 workflow.json 信號）──
 
-  it('active-agent.json 主信號 + 並行 workflow stages 時顯示 × N', () => {
+  it('workflow 3 個並行 active DEV stages 時顯示 × 3', () => {
     writeWorkflow({
       workflowType: 'standard',
       stages: {
@@ -363,72 +363,34 @@ describe('agent 顯示與中文模式', () => {
         'DEV:3': { status: 'active' },
       },
     });
-    mkdirSync(sessionDir, { recursive: true });
-    writeFileSync(path.join(sessionDir, 'active-agent.json'), JSON.stringify({
-      agent: 'developer',
-      subagentType: 'ot:developer',
-      startedAt: new Date().toISOString(),
-    }));
 
     const result = runWithSession({ context_window: { used_percentage: 20 } });
     const plain = stripAnsi(result.stdout || '');
-    // 主信號分支應能讀取 workflow stages 並顯示 × 3
     expect(plain).toContain('× 3');
     expect(plain).toContain('developer');
-
-    // 清除 active-agent.json
-    try { require('fs').rmSync(path.join(sessionDir, 'active-agent.json')); } catch { /* 靜默 */ }
   });
 
-  it('active-agent.json 主信號單一 stage 時不顯示 × N', () => {
+  it('workflow 單一 active DEV stage 時不顯示 × N', () => {
     writeWorkflow({
       workflowType: 'quick',
       stages: {
         'DEV': { status: 'active' },
       },
     });
-    mkdirSync(sessionDir, { recursive: true });
-    writeFileSync(path.join(sessionDir, 'active-agent.json'), JSON.stringify({
-      agent: 'developer',
-      subagentType: 'ot:developer',
-      startedAt: new Date().toISOString(),
-    }));
 
     const result = runWithSession({ context_window: { used_percentage: 20 } });
     const plain = stripAnsi(result.stdout || '');
     expect(plain).toContain('developer');
     expect(plain).not.toContain('× 1');
     expect(plain).not.toContain('×');
-
-    // 清除 active-agent.json
-    try { require('fs').rmSync(path.join(sessionDir, 'active-agent.json')); } catch { /* 靜默 */ }
   });
 
-  // ── 無 workflow 但有 active-agent.json 時顯示 agent ──
+  // ── 無 workflow 時 active-agent.json 不影響顯示（已移除支援）──
 
-  it('無 workflow 但有 active-agent.json 時顯示 agent', () => {
-    // 確保清除前一個測試留下的 workflow.json，真正模擬無 workflow 情境
+  it('無 workflow 時即使有 active-agent.json 也只顯示單行', () => {
+    // 確保清除前一個測試留下的 workflow.json
     try { require('fs').rmSync(path.join(sessionDir, 'workflow.json')); } catch { /* 不存在則略過 */ }
-    // 不寫 workflow.json，只寫 active-agent.json
-    mkdirSync(sessionDir, { recursive: true });
-    writeFileSync(path.join(sessionDir, 'active-agent.json'), JSON.stringify({
-      agent: 'Explore',
-      subagentType: 'Explore',
-      startedAt: new Date().toISOString(),
-    }));
-
-    const result = runWithSession({ context_window: { used_percentage: 20 } });
-    const plain = stripAnsi(result.stdout || '');
-    const lines = plain.split('\n').filter(l => l.trim());
-    // 雙行（agent + metrics）
-    expect(lines.length).toBe(2);
-    expect(lines[0]).toContain('Explore');
-
-    // 清除 active-agent.json
-    try { require('fs').rmSync(path.join(sessionDir, 'active-agent.json')); } catch { /* 靜默 */ }
-  });
-
-  it('無 workflow 有 Overtone agent 時顯示 emoji', () => {
+    // active-agent.json 不再被讀取，不影響輸出
     mkdirSync(sessionDir, { recursive: true });
     writeFileSync(path.join(sessionDir, 'active-agent.json'), JSON.stringify({
       agent: 'developer',
@@ -438,10 +400,11 @@ describe('agent 顯示與中文模式', () => {
 
     const result = runWithSession({ context_window: { used_percentage: 20 } });
     const plain = stripAnsi(result.stdout || '');
-    expect(plain).toContain('developer');
-    expect(plain).toContain('💻');
+    const lines = plain.split('\n').filter(l => l.trim());
+    // 單行（無 workflow → 無 agent 顯示，active-agent.json 被忽略）
+    expect(lines.length).toBe(1);
 
-    // 清除
+    // 清除 active-agent.json
     try { require('fs').rmSync(path.join(sessionDir, 'active-agent.json')); } catch { /* 靜默 */ }
   });
 

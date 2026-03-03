@@ -7,7 +7,7 @@
  * 職責：記錄結果、偵測 FAIL/REJECT、並行收斂、提示下一步
  */
 
-const { readFileSync, existsSync, unlinkSync } = require('fs');
+const { readFileSync, existsSync } = require('fs');
 const { readState, updateStateAtomic, findActualStageKey, checkSameStageConvergence, checkParallelConvergence, getNextStageHint, setFeatureName } = require('../../../scripts/lib/state');
 const timeline = require('../../../scripts/lib/timeline');
 const instinct = require('../../../scripts/lib/instinct');
@@ -61,13 +61,6 @@ safeRun(() => {
     }
     return s;
   });
-
-  // active-agent.json：僅當 cleanup 後 activeAgents 為空時才刪除（並行場景仍有其他 agent 時保留）
-  const stateAfterCleanup = readState(sessionId);
-  const remainingActiveAgents = Object.keys(stateAfterCleanup?.activeAgents || {});
-  if (remainingActiveAgents.length === 0) {
-    try { unlinkSync(paths.session.activeAgent(sessionId)); } catch { /* 靜默 */ }
-  }
 
   // emit agent:complete（即使沒有 stage 對應也要記錄）
   timeline.emit(sessionId, 'agent:complete', { agent: agentName, stage: stageKey, result: result.verdict, instanceId: resolvedInstanceId });
@@ -140,8 +133,6 @@ safeRun(() => {
   // stage:complete 只在收斂（全部 pass）或 fail/reject 時 emit（agent:complete 已在上方提前 emit）
   if (isConvergedOrFailed) {
     timeline.emit(sessionId, 'stage:complete', { stage: actualStageKey, result: finalResult });
-    // 收斂後確保 active-agent.json 已刪除（若上方 cleanup 後仍有其他 entry 存在，現在收斂後補刪）
-    try { unlinkSync(paths.session.activeAgent(sessionId)); } catch { /* 靜默 */ }
   }
 
   // agent_performance instinct

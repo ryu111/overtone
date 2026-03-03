@@ -322,18 +322,14 @@ describe('Feature 3：on-stop.js 收斂門 — instanceId 解析', () => {
   });
 });
 
-describe('Feature 3：on-stop.js 收斂門 — active-agent.json 生命週期', () => {
+describe('Feature 3：on-stop.js 收斂門 — activeAgents 生命週期', () => {
 
-  // Scenario 3-8: active-agent.json 未收斂時不刪除，收斂後才刪除
-  test('Scenario 3-8: 未收斂（parallelDone < parallelTotal）active-agent.json 保留；收斂後才刪除', () => {
+  // Scenario 3-8: 並行收斂 — activeAgents entry 隨 on-stop 逐一清除，收斂後 stage 標記 completed
+  test('Scenario 3-8: 未收斂（parallelDone < parallelTotal）activeAgents 保留對應 entry；收斂後 stage 為 completed', () => {
     const sessionId = newSessionId();
     createdSessions.push(sessionId);
     mkdirSync(paths.sessionDir(sessionId), { recursive: true });
     state.initState(sessionId, 'single', workflows['single'].stages);
-
-    // 寫入 active-agent.json（模擬 pre-task 寫入）
-    const activeAgentPath = paths.session.activeAgent(sessionId);
-    atomicWrite(activeAgentPath, { agent: 'developer', startedAt: new Date().toISOString() });
 
     state.updateStateAtomic(sessionId, (s) => {
       s.stages['DEV'].status = 'active';
@@ -350,27 +346,25 @@ describe('Feature 3：on-stop.js 收斂門 — active-agent.json 生命週期', 
 
     const ws1 = state.readState(sessionId);
     expect(ws1.stages['DEV'].parallelDone).toBe(1);
-    // active-agent.json 仍然存在（未收斂）
-    expect(existsSync(activeAgentPath)).toBe(true);
-
-    // 補回 active-agent.json（可能第 2 次呼叫也需要）
-    atomicWrite(activeAgentPath, { agent: 'developer', startedAt: new Date().toISOString() });
+    // 未收斂 — stage 仍為 active，aaa001 entry 被清除，其他兩個仍在
+    expect(ws1.stages['DEV'].status).toBe('active');
+    expect(ws1.activeAgents['developer:aaa001-inst1']).toBeUndefined();
+    expect(ws1.activeAgents['developer:bbb002-inst2']).toBeDefined();
 
     // 第 2 個完成（parallelDone = 2，未收斂）
     runSubagentStop(sessionId, 'ot:developer', 'VERDICT: pass 任務二\n\nINSTANCE_ID: developer:bbb002-inst2');
     const ws2 = state.readState(sessionId);
     expect(ws2.stages['DEV'].parallelDone).toBe(2);
-
-    // 補回 active-agent.json
-    atomicWrite(activeAgentPath, { agent: 'developer', startedAt: new Date().toISOString() });
+    expect(ws2.stages['DEV'].status).toBe('active');
 
     // 第 3 個完成（parallelDone = 3，已收斂）
     runSubagentStop(sessionId, 'ot:developer', 'VERDICT: pass 任務三\n\nINSTANCE_ID: developer:ccc003-inst3');
 
     const ws3 = state.readState(sessionId);
     expect(ws3.stages['DEV'].status).toBe('completed');
-    // 收斂後 active-agent.json 被刪除
-    expect(existsSync(activeAgentPath)).toBe(false);
+    // 收斂後 activeAgents 中的所有 DEV entry 都被清除
+    const devEntries = Object.entries(ws3.activeAgents || {}).filter(([, info]) => info.stage === 'DEV');
+    expect(devEntries.length).toBe(0);
   });
 });
 

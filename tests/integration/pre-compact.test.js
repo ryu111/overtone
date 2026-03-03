@@ -279,17 +279,16 @@ describe('Feature 2：有 workflow state 時組裝狀態摘要', () => {
     expect(systemMessage).not.toContain('拒絕次數');
   });
 
-  // Scenario 2.4: 有活躍 agent
-  test('activeAgents 不為空時 systemMessage 包含活躍 Agents 行', () => {
+  // Scenario 2.4: pre-compact 執行後 activeAgents 被清空（B3 行為）
+  test('pre-compact 執行後 activeAgents 被清空（壓縮前殘留的 entry 應清除）', () => {
     const ws = stateLib.readState(SESSION_MAIN);
-    ws.activeAgents = { developer: { stage: 'DEV', startedAt: new Date().toISOString() } };
+    ws.activeAgents = { developer: { agentName: 'developer', stage: 'DEV', startedAt: new Date().toISOString() } };
     stateLib.writeState(SESSION_MAIN, ws);
     const result = runHook({ session_id: SESSION_MAIN });
-    const { systemMessage } = JSON.parse(result.stdout);
-    expect(systemMessage).toContain('活躍 Agents：developer（DEV）');
-    // 重置
-    ws.activeAgents = {};
-    stateLib.writeState(SESSION_MAIN, ws);
+    JSON.parse(result.stdout); // 確保 JSON 解析成功
+    // pre-compact 應清空 activeAgents
+    const wsAfter = stateLib.readState(SESSION_MAIN);
+    expect(Object.keys(wsAfter.activeAgents || {})).toHaveLength(0);
   });
 
   // Scenario 2.5: 無活躍 agent

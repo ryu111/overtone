@@ -122,9 +122,64 @@ function setFeatureName(sessionId, name) {
 }
 
 /**
+ * 不變量守衛 — 每次 updateStateAtomic 修改後、writeState 前執行
+ *
+ * 規則 1：孤兒 activeAgents 清除（stage key 不存在於 stages 中）
+ * 規則 2：status 單向（有 completedAt 但 status 非 completed → 修正）
+ * 規則 3：parallelDone ≤ parallelTotal
+ *
+ * @param {object} state - 已執行 modifier 的 state 物件
+ * @returns {object} 修正後的 state
+ */
+function enforceInvariants(state) {
+  const violations = [];
+
+  // 規則 1：孤兒 activeAgents 清除（stage key 不存在於 stages 中）
+  for (const [id, info] of Object.entries(state.activeAgents || {})) {
+    const stageBase = (info.stage || '').split(':')[0];
+    const hasStage = Object.keys(state.stages || {}).some((k) => k.split(':')[0] === stageBase);
+    if (!hasStage) {
+      violations.push({ rule: 'orphan_agent', id, stage: info.stage });
+      delete state.activeAgents[id];
+    }
+  }
+
+  // 規則 2：status 單向（pending → active → completed，不可逆轉）
+  const ORDER = { pending: 0, active: 1, completed: 2 };
+  for (const [key, entry] of Object.entries(state.stages || {})) {
+    // 若 completedAt 存在但 status 不是 completed → 修正（逆轉偵測）
+    if (entry.completedAt && entry.status !== 'completed') {
+      violations.push({ rule: 'status-regression', stageKey: key, from: entry.status, to: 'completed' });
+      entry.status = 'completed';
+    }
+  }
+
+  // 規則 3：parallelDone ≤ parallelTotal
+  for (const [key, entry] of Object.entries(state.stages || {})) {
+    if (entry.parallelTotal && entry.parallelDone > entry.parallelTotal) {
+      violations.push({ rule: 'parallel-done-overflow', stageKey: key, parallelDone: entry.parallelDone, parallelTotal: entry.parallelTotal });
+      entry.parallelDone = entry.parallelTotal;
+    }
+  }
+
+  // emit warnings（lazy require 避免循環依賴）
+  if (violations.length > 0) {
+    try {
+      const timeline = require('./timeline');
+      timeline.emit(state.sessionId, 'system:warning', {
+        source: 'state-invariant',
+        warnings: violations,
+      });
+    } catch { /* 靜默 */ }
+  }
+
+  return state;
+}
+
+/**
  * 原子化更新 state（Compare-and-Swap 模式）
  *
- * 讀取 state → 執行 modifier → 寫回前驗證 mtime 未變。
+ * 讀取 state → 執行 modifier → 不變量守衛 → 寫回前驗證 mtime 未變。
  * 若被其他 hook 修改則重試（最多 3 次 + exponential jitter），最終 fallback 強制寫入。
  *
  * D1 修復：在每次 retry 前加入 1–5ms 隨機 jitter，縮小 TOCTOU 窗口。
@@ -145,7 +200,8 @@ function updateStateAtomic(sessionId, modifier) {
     let mtime;
     try { mtime = statSync(filePath).mtimeMs; } catch { mtime = 0; }
 
-    const newState = modifier(current);
+    const modified = modifier(current);
+    const newState = enforceInvariants(modified);
 
     // CAS：寫入前再檢查 mtime
     let currentMtime;
@@ -172,7 +228,8 @@ function updateStateAtomic(sessionId, modifier) {
   // fallback：最後一次強制寫入
   const current = readState(sessionId);
   if (!current) throw new Error(`找不到 session 狀態：${sessionId}`);
-  const newState = modifier(current);
+  const modified = modifier(current);
+  const newState = enforceInvariants(modified);
   writeState(sessionId, newState);
   return newState;
 }
@@ -274,21 +331,8 @@ function getNextStageHint(currentState, { stages, parallelGroups }) {
   if (!nextStage) return null;
 
   // D2：若仍有 active agent，不推進到下一步，提示等待
-  // 加 TTL 過濾：無 active stage 對應且超過 30 分鐘的 entry 視為過期，不阻擋提示
-  const ACTIVE_AGENT_TTL_MS = 30 * 60 * 1000; // 30 分鐘
-  const nowMs = Date.now();
-  const activeAgentKeys = Object.keys(currentState.activeAgents || {}).filter((k) => {
-    const info = (currentState.activeAgents || {})[k];
-    // 有對應的 active stage → 永不過期
-    const stageBase = (info?.stage || '').split(':')[0];
-    const hasActiveStage = Object.entries(currentState.stages || {}).some(
-      ([sk, s]) => s.status === 'active' && sk.split(':')[0] === stageBase
-    );
-    if (hasActiveStage) return true;
-    // 無 active stage → 檢查 TTL（過期視為殘留，不阻擋 hint）
-    const startedAt = info?.startedAt ? new Date(info.startedAt).getTime() : 0;
-    return (nowMs - startedAt) < ACTIVE_AGENT_TTL_MS;
-  });
+  // 不變量守衛確保 activeAgents 中的 entry 都是合法的（孤兒已清除），無需 TTL 過濾
+  const activeAgentKeys = Object.keys(currentState.activeAgents || {});
   if (activeAgentKeys.length > 0) {
     // instanceId 格式：agentName:timestamp36-random6 → 提取 agentName 並去重
     const agentNames = [...new Set(activeAgentKeys.map((k) => {

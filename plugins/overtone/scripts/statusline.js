@@ -108,20 +108,6 @@ function readCompactCount(sessionId) {
 }
 
 /**
- * 讀取 active-agent.json（workflow 無關的 agent 追蹤）
- * @param {string} sessionId
- * @returns {{ agent: string, subagentType: string, startedAt: string } | null}
- */
-function readActiveAgent(sessionId) {
-  try {
-    const p = join(SESSIONS_DIR, sessionId, 'active-agent.json');
-    return JSON.parse(readFileSync(p, 'utf8'));
-  } catch {
-    return null;
-  }
-}
-
-/**
  * 取得 transcript 檔案大小
  * @param {string|undefined} transcriptPath - stdin 提供的 transcript_path
  * @returns {number|null}
@@ -150,43 +136,17 @@ function loadRegistryStages() {
 // ── Agent 顯示邏輯 ──
 
 /**
- * 從 active-agent.json + workflow.json 解析 agent 顯示字串
+ * 從 workflow.json 的 stages.status 解析 agent 顯示字串
  *
- * 主信號：active-agent.json（PreToolUse 寫入，SubagentStop 清除）
- * 副信號：workflow.json 的 stages.status==='active' 和 activeAgents
+ * 信號源：workflow.json 的 stages.status==='active'
  *
  * 無 active agent 時回傳 null（隱藏 Line 1）。
  *
- * @param {object|null} activeAgent  - active-agent.json 內容
  * @param {object|null} workflow     - workflow.json 內容
  * @param {object} registryStages
  * @returns {string|null}
  */
-function buildAgentDisplay(activeAgent, workflow, registryStages) {
-  // ── 主信號：active-agent.json（最即時，workflow 無關）──
-  if (activeAgent && activeAgent.agent) {
-    const name = activeAgent.agent;
-    // 嘗試從 registry 取得 emoji 及對應 stage key
-    const stageEntry = Object.entries(registryStages).find(([, d]) => d.agent === name);
-    const stageKey = stageEntry?.[0];
-    const stageDef = stageEntry?.[1];
-
-    // 計算並行數量：從 workflow.stages 找對應 stage key 的 active 條目
-    const stages = workflow?.stages || {};
-    const activeCount = stageKey
-      ? Object.entries(stages).filter(([k, s]) => s.status === 'active' && k.split(':')[0] === stageKey).length
-      : 0;
-    const count = activeCount > 1 ? activeCount : 0;  // 0 = 不顯示 × N
-
-    if (stageDef) {
-      const base = `${stageDef.emoji || ''} ${name}`;
-      return count > 1 ? `${base} × ${count}` : base;
-    }
-    // 非 Overtone agent（Explore、Plan 等）→ 直接顯示名稱
-    return count > 1 ? `🤖 ${name} × ${count}` : `🤖 ${name}`;
-  }
-
-  // ── 副信號：workflow.json（多 agent 並行時 active-agent.json 只記錄最後一個）──
+function buildAgentDisplay(workflow, registryStages) {
   if (!workflow) return null;
 
   const stages = workflow.stages || {};
@@ -213,30 +173,6 @@ function buildAgentDisplay(activeAgent, workflow, registryStages) {
       const agent = def.agent || base;
       parts.push(count > 1 ? `${emoji} ${agent} × ${count}` : `${emoji} ${agent}`);
     }
-    return parts.join(' + ');
-  }
-
-  // activeAgents fallback — 加 TTL 過濾，避免殘留 entry 誤顯示
-  const ACTIVE_AGENT_TTL_MS = 30 * 60 * 1000; // 30 分鐘
-  const now = Date.now();
-  const activeAgentEntries = Object.entries(workflow.activeAgents || {})
-    .filter(([, info]) => {
-      // 有對應的 active stage → 永不過期（stage 仍在進行中）
-      const stageBase = (info.stage || '').split(':')[0];
-      const hasActiveStage = Object.entries(stages).some(
-        ([k, s]) => s.status === 'active' && k.split(':')[0] === stageBase
-      );
-      if (hasActiveStage) return true;
-      // 無 active stage → 檢查 TTL（防止 on-stop 未清除的殘留）
-      const startedAt = info.startedAt ? new Date(info.startedAt).getTime() : 0;
-      return (now - startedAt) < ACTIVE_AGENT_TTL_MS;
-    });
-  if (activeAgentEntries.length > 0) {
-    const parts = activeAgentEntries.map(([, info]) => {
-      const base = (info.stage || '').split(':')[0];
-      const def = registryStages[base] || {};
-      return `${def.emoji || ''} ${def.agent || base}`;
-    });
     return parts.join(' + ');
   }
 
@@ -282,8 +218,7 @@ function main() {
 
   // ── 判斷是否有 active agent ──
 
-  const activeAgent = sessionId ? readActiveAgent(sessionId) : null;
-  const agentDisplay = buildAgentDisplay(activeAgent, workflow, registryStages);
+  const agentDisplay = buildAgentDisplay(workflow, registryStages);
 
   if (agentDisplay) {
     // 有 active subagent → 雙行

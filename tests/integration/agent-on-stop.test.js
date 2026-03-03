@@ -986,9 +986,11 @@ describe('場景 14：agent_performance Instinct 觀察', () => {
     expect(first[0].count).toBe(1);
     expect(first[0].confidence).toBe(0.3);
 
-    // 第二次完成（需要重設 stage 為 active）
+    // 第二次完成（需要重設 stage 為 active，同時清除 completedAt 以通過不變量守衛）
     state.updateStateAtomic(sessionId, (s) => {
       s.stages['DEV'].status = 'active';
+      delete s.stages['DEV'].completedAt;
+      delete s.stages['DEV'].result;
       return s;
     });
     await runHook(

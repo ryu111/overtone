@@ -16,7 +16,7 @@
 const { readFileSync } = require('fs');
 const state = require('../../../scripts/lib/state');
 const timeline = require('../../../scripts/lib/timeline');
-const { stages } = require('../../../scripts/lib/registry');
+const { stages, parallelGroups } = require('../../../scripts/lib/registry');
 const { atomicWrite } = require('../../../scripts/lib/utils');
 const { safeReadStdin, safeRun, buildPendingTasksMessage, buildProgressBar, getSessionId } = require('../../../scripts/lib/hook-utils');
 const paths = require('../../../scripts/lib/paths');
@@ -82,6 +82,9 @@ safeRun(() => {
   }
   atomicWrite(compactCountPath, compactCount);
 
+  // 壓縮後清空 activeAgents（舊 subagent 的 SubagentStop 不會觸發，清除殘留）
+  state.updateStateAtomic(sessionId, (s) => { s.activeAgents = {}; return s; });
+
   // ── 組裝 workflow 狀態摘要 ──
 
   const lines = [];
@@ -97,11 +100,11 @@ safeRun(() => {
   const progressBar = buildProgressBar(stageEntries, stages);
   lines.push(`進度：${progressBar} (${completed}/${total})`);
 
-  // 目前階段
-  if (currentState.currentStage) {
-    const base = currentState.currentStage.split(':')[0];
-    const def = stages[base];
-    lines.push(`目前階段：${def?.emoji || ''} ${def?.label || currentState.currentStage}`);
+  // 目前階段（使用 getNextStageHint 取得含並行群組資訊的提示）
+  // 注意：此時 activeAgents 已清空（B3），hint 只反映 stage 狀態
+  const stageHint = state.getNextStageHint(currentState, { stages, parallelGroups });
+  if (stageHint) {
+    lines.push(`目前階段：${stageHint}`);
   }
 
   // fail/reject 計數（僅大於 0 時顯示）
@@ -110,23 +113,6 @@ safeRun(() => {
   }
   if (currentState.rejectCount > 0) {
     lines.push(`拒絕次數：${currentState.rejectCount}/3`);
-  }
-
-  // 活躍 agents（僅有時顯示）— 加 TTL 過濾，避免殘留 entry 誤報
-  const ACTIVE_AGENT_TTL_MS = 30 * 60 * 1000; // 30 分鐘
-  const nowForAgents = Date.now();
-  const activeAgents = Object.entries(currentState.activeAgents || {}).filter(([, info]) => {
-    const stageBase = (info.stage || '').split(':')[0];
-    const hasActiveStage = Object.entries(currentState.stages || {}).some(
-      ([k, s]) => s.status === 'active' && k.split(':')[0] === stageBase
-    );
-    if (hasActiveStage) return true;
-    const startedAt = info.startedAt ? new Date(info.startedAt).getTime() : 0;
-    return (nowForAgents - startedAt) < ACTIVE_AGENT_TTL_MS;
-  });
-  if (activeAgents.length > 0) {
-    const agentList = activeAgents.map(([name, info]) => `${name}（${info.stage}）`).join(', ');
-    lines.push(`活躍 Agents：${agentList}`);
   }
 
   // featureName（若 workflow.json 有記錄）

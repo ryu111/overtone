@@ -113,18 +113,14 @@ describe('on-stop stale agent cleanup — findActualStageKey null 時', () => {
     expect(ws.activeAgents['developer:bbbb02-stale']).toBeDefined();
   });
 
-  // 場景：active-agent.json 應在 activeAgents 清空後刪除
-  test('Scenario SCA-3: DEV completed+pass，activeAgents cleanup 後只剩 0 entry → active-agent.json 被刪除', () => {
+  // 場景：on-stop 執行後 activeAgents entry 被清除（workflow.json 是唯一信號源）
+  test('Scenario SCA-3: DEV completed+pass，on-stop 執行後 activeAgents entry 被清除', () => {
     const sessionId = newSessionId();
     createdSessions.push(sessionId);
     mkdirSync(paths.sessionDir(sessionId), { recursive: true });
     state.initState(sessionId, 'quick', workflows['quick'].stages);
 
     const instanceId = 'developer:solo001-stale';
-    const activeAgentPath = paths.session.activeAgent(sessionId);
-
-    // 寫入 active-agent.json（模擬 pre-task 寫入）
-    atomicWrite(activeAgentPath, { agent: 'developer', startedAt: new Date().toISOString() });
 
     state.updateStateAtomic(sessionId, (s) => {
       s.stages['DEV'].status = 'completed';
@@ -142,21 +138,17 @@ describe('on-stop stale agent cleanup — findActualStageKey null 時', () => {
     runSubagentStop(sessionId, 'ot:developer', `VERDICT: pass\n\nINSTANCE_ID: ${instanceId}`);
 
     const ws = state.readState(sessionId);
-    // activeAgents 已清空
+    // activeAgents entry 已被清除
     expect(ws.activeAgents[instanceId]).toBeUndefined();
-    // active-agent.json 應被刪除（cleanup 後 activeAgents 為空）
-    expect(existsSync(activeAgentPath)).toBe(false);
+    // active-agent.json 不再由 on-stop 管理（已移除），不需驗證
   });
 
-  // 場景：並行場景 — activeAgents 仍有其他 entry，active-agent.json 應保留
-  test('Scenario SCA-4: DEV active 並行 2 個，第 1 個到達但 DEV stage 已因 fail 被 completed → active-agent.json 保留（仍有其他 entry）', () => {
+  // 場景：並行場景 — 第 1 個完成後 activeAgents 仍有第 2 個 entry
+  test('Scenario SCA-4: DEV active 並行 2 個，第 1 個 on-stop 後 activeAgents 清除 first001，second002 仍在', () => {
     const sessionId = newSessionId();
     createdSessions.push(sessionId);
     mkdirSync(paths.sessionDir(sessionId), { recursive: true });
     state.initState(sessionId, 'quick', workflows['quick'].stages);
-
-    const activeAgentPath = paths.session.activeAgent(sessionId);
-    atomicWrite(activeAgentPath, { agent: 'developer', startedAt: new Date().toISOString() });
 
     state.updateStateAtomic(sessionId, (s) => {
       // DEV 已 completed（因某 agent fail 觸發）
@@ -178,7 +170,7 @@ describe('on-stop stale agent cleanup — findActualStageKey null 時', () => {
       return s;
     });
 
-    // 第 1 個 instance 的 on-stop（DEV 已 completed+fail → findActualStageKey 仍能找到，這個場景測試 active-agent.json 保留）
+    // 第 1 個 instance 的 on-stop
     runSubagentStop(sessionId, 'ot:developer', 'VERDICT: pass inst1\n\nINSTANCE_ID: developer:first001-inst');
 
     const ws = state.readState(sessionId);
@@ -186,62 +178,30 @@ describe('on-stop stale agent cleanup — findActualStageKey null 時', () => {
     expect(ws.activeAgents['developer:first001-inst']).toBeUndefined();
     // second002 仍在（尚未完成）
     expect(ws.activeAgents['developer:second002-inst']).toBeDefined();
-    // active-agent.json 應保留（仍有 second002 在 activeAgents 中）
-    expect(existsSync(activeAgentPath)).toBe(true);
-
-    // 清理
-    try { require('fs').rmSync(activeAgentPath); } catch { /* 靜默 */ }
   });
 });
 
 // ────────────────────────────────────────────────────────────────────────────
-// Feature: getNextStageHint TTL 過濾
+// Feature: getNextStageHint activeAgents 阻擋邏輯
 // ────────────────────────────────────────────────────────────────────────────
 
-describe('getNextStageHint — TTL 過濾殘留 activeAgents', () => {
+describe('getNextStageHint — activeAgents 阻擋邏輯（TTL 已移除，改由不變量守衛清除孤兒）', () => {
 
   const { getNextStageHint } = require(join(SCRIPTS_LIB, 'state'));
   const { stages, parallelGroups } = require(join(SCRIPTS_LIB, 'registry'));
 
-  test('Scenario TTL-GNH-1: 過期 activeAgents（無 active stage + 超過 30 分鐘）→ 不阻擋 hint', () => {
-    const expiredTime = new Date(Date.now() - 31 * 60 * 1000).toISOString(); // 31 分鐘前
-
-    const staleState = {
-      currentStage: 'REVIEW',
-      stages: {
-        DEV:    { status: 'completed', result: 'pass' },
-        REVIEW: { status: 'pending' },
-      },
-      activeAgents: {
-        // DEV 已 completed（無 active stage），entry 超過 30 分鐘 → 過期
-        'developer:stale001-xxxx': {
-          agentName: 'developer',
-          stage: 'DEV',
-          startedAt: expiredTime,
-        },
-      },
-    };
-
-    const hint = getNextStageHint(staleState, { stages, parallelGroups });
-    // 過期 entry 不阻擋 hint，應返回下一步提示
-    expect(hint).not.toBeNull();
-    // 不應是「等待並行 agent 完成」
-    expect(hint).not.toContain('等待並行 agent 完成');
-    // 應包含 REVIEW 相關提示
-    expect(hint).toContain('code-reviewer');
-  });
-
-  test('Scenario TTL-GNH-2: 新鮮 activeAgents（5 分鐘內）且無 active stage → 仍阻擋 hint（TTL 未過期）', () => {
+  test('Scenario GNH-1: activeAgents 有合法 entry（stage 存在）→ 阻擋 hint（等待 agent 完成）', () => {
     const freshTime = new Date(Date.now() - 5 * 60 * 1000).toISOString(); // 5 分鐘前
 
-    const freshState = {
+    const stateWithActive = {
       currentStage: 'REVIEW',
       stages: {
         DEV:    { status: 'completed', result: 'pass' },
         REVIEW: { status: 'pending' },
       },
       activeAgents: {
-        'developer:fresh001-xxxx': {
+        // DEV stage 存在（不是孤兒），entry 合法 → 阻擋 hint
+        'developer:valid001-xxxx': {
           agentName: 'developer',
           stage: 'DEV',
           startedAt: freshTime,
@@ -249,14 +209,31 @@ describe('getNextStageHint — TTL 過濾殘留 activeAgents', () => {
       },
     };
 
-    const hint = getNextStageHint(freshState, { stages, parallelGroups });
-    // TTL 未過期，entry 仍有效 → 阻擋 hint
+    const hint = getNextStageHint(stateWithActive, { stages, parallelGroups });
+    // 有合法 activeAgents entry → 阻擋 hint
     expect(hint).not.toBeNull();
     expect(hint).toContain('等待並行 agent 完成');
     expect(hint).toContain('developer');
   });
 
-  test('Scenario TTL-GNH-3: active stage 對應的 activeAgents entry → 永不過期，仍阻擋 hint', () => {
+  test('Scenario GNH-2: activeAgents 為空 → 不阻擋 hint，返回下一步提示', () => {
+    const emptyState = {
+      currentStage: 'REVIEW',
+      stages: {
+        DEV:    { status: 'completed', result: 'pass' },
+        REVIEW: { status: 'pending' },
+      },
+      activeAgents: {},
+    };
+
+    const hint = getNextStageHint(emptyState, { stages, parallelGroups });
+    // activeAgents 為空 → 不阻擋，返回下一步提示
+    expect(hint).not.toBeNull();
+    expect(hint).not.toContain('等待並行 agent 完成');
+    expect(hint).toContain('code-reviewer');
+  });
+
+  test('Scenario GNH-3: active stage 對應的 activeAgents entry → 仍阻擋 hint', () => {
     const veryOldTime = new Date(Date.now() - 60 * 60 * 1000).toISOString(); // 60 分鐘前
 
     const activeStageState = {
@@ -268,13 +245,13 @@ describe('getNextStageHint — TTL 過濾殘留 activeAgents', () => {
         'developer:old001-xxxx': {
           agentName: 'developer',
           stage: 'DEV',
-          startedAt: veryOldTime, // 很舊，但 stage 仍 active
+          startedAt: veryOldTime, // 很舊，但 stage 仍 active → entry 合法
         },
       },
     };
 
     const hint = getNextStageHint(activeStageState, { stages, parallelGroups });
-    // 有 active stage 對應 → 永不過期，仍阻擋 hint
+    // 有 active stage 對應 → entry 合法，仍阻擋 hint
     expect(hint).not.toBeNull();
     expect(hint).toContain('等待並行 agent 完成');
     expect(hint).toContain('developer');
