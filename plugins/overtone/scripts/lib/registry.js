@@ -104,7 +104,7 @@ const retryDefaults = {
   maxRetries: 3,
 };
 
-// Timeline 事件類型（24 種，11 分類）
+// Timeline 事件類型（26 種，11 分類）
 // 已移除：handoff:create（Handoff 為虛擬，永遠不會 emit）
 const timelineEvents = {
   // workflow 類（3）
@@ -134,9 +134,11 @@ const timelineEvents = {
   // grader 類（1）
   'grader:score':       { label: 'Grader 評分', category: 'grader' },
 
-  // specs 類（2）
-  'specs:init':         { label: 'Specs 初始化', category: 'specs' },
-  'specs:archive':      { label: 'Specs 歸檔',   category: 'specs' },
+  // specs 類（4）
+  'specs:init':             { label: 'Specs 初始化',  category: 'specs' },
+  'specs:archive':          { label: 'Specs 歸檔',    category: 'specs' },
+  'specs:archive-skipped':  { label: 'Specs 歸檔略過', category: 'specs' },
+  'specs:tasks-missing':    { label: 'Specs Tasks 遺失', category: 'specs' },
 
   // error 類（1）
   'error:fatal':        { label: '嚴重錯誤',   category: 'error' },

@@ -4,7 +4,7 @@
  *
  * 覆蓋以下三個驗證面向：
  *   1. Pipeline 可視化資料完整性（buildPipelineSegments 並行段落驗證）
- *   2. Timeline 事件完整性（24 種事件、11 分類、無舊事件殘留）
+ *   2. Timeline 事件完整性（26 種事件、11 分類、無舊事件殘留）
  *   3. Dashboard HTML 引用驗證（JS 模組路徑存在、無舊 skill 名稱）
  */
 
@@ -168,8 +168,8 @@ describe('2. Timeline 事件完整性', () => {
     timelineEvents = TIMELINE_EVENTS_SNAPSHOT;
   });
 
-  test('registry 中共有 24 種 timelineEvents', () => {
-    expect(Object.keys(timelineEvents).length).toBe(24);
+  test('registry 中共有 26 種 timelineEvents', () => {
+    expect(Object.keys(timelineEvents).length).toBe(26);
   });
 
   test('每個 timelineEvent 都有 label 和 category', () => {

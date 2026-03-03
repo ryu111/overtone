@@ -37,10 +37,10 @@ describe('Feature 1h: registry.js tool:failure 事件', () => {
     });
   });
 
-  // Scenario 1h-2: timelineEvents 總數檢查（S14 加入 session:compact-suggestion → 24）
-  describe('Scenario 1h-2: timelineEvents 總數為 24', () => {
-    test('Object.keys(timelineEvents).length === 24', () => {
-      expect(Object.keys(timelineEvents).length).toBe(24);
+  // Scenario 1h-2: timelineEvents 總數檢查（specs-archive-fix 加入 2 個 specs 事件 → 26）
+  describe('Scenario 1h-2: timelineEvents 總數為 26', () => {
+    test('Object.keys(timelineEvents).length === 26', () => {
+      expect(Object.keys(timelineEvents).length).toBe(26);
     });
   });
 

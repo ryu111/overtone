@@ -9,8 +9,9 @@ description: 高風險功能開發工作流。PLAN → ARCH → TEST:spec → DE
 
 使用 Bash 執行：
 ```bash
-node ${CLAUDE_PLUGIN_ROOT}/scripts/init-workflow.js secure ${CLAUDE_SESSION_ID}
+node ${CLAUDE_PLUGIN_ROOT}/scripts/init-workflow.js secure ${CLAUDE_SESSION_ID} {featureName}
 ```
+# {featureName} 必須是 kebab-case（如 add-user-auth）
 
 ## 進度追蹤
 

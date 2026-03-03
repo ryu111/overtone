@@ -314,3 +314,181 @@ describe('Stop hook 場景 6：Specs archive 整合', () => {
     expect(exitCode).toBe(0);
   });
 });
+
+// ────────────────────────────────────────────────────────────────────────────
+// 場景 7：修復 2 — 歸檔前驗證 workflow 匹配
+// ────────────────────────────────────────────────────────────────────────────
+
+describe('Stop hook 場景 7：修復 2 — 歸檔前 workflow 匹配驗證', () => {
+  const { writeFileSync } = require('fs');
+  const timeline = require(join(SCRIPTS_LIB, 'timeline'));
+
+  test('Scenario 2-1：workflow 完成 + tasks.md workflow 不匹配 → 跳過歸檔並 emit archive-skipped', async () => {
+    const sessionId = newSessionId();
+    createdSessions.push(sessionId);
+
+    // 建立臨時 project root，feature 用 standard 初始化但 tasks.md frontmatter 寫 quick
+    const projectRoot = mkdtempSync(join(os.tmpdir(), 'overtone-archive-mismatch-'));
+    createdTmpDirs.push(projectRoot);
+
+    const featurePath = specs.initFeatureDir(projectRoot, 'my-feature', 'standard');
+    const tasksPath = join(featurePath, 'tasks.md');
+    // 覆寫 tasks.md，讓 frontmatter workflow 為 quick（不匹配 standard）
+    writeFileSync(tasksPath, [
+      '---',
+      'feature: my-feature',
+      'workflow: quick',
+      '---',
+      '',
+      '## Stages',
+      '- [x] DEV',
+    ].join('\n'));
+
+    mkdirSync(paths.sessionDir(sessionId), { recursive: true });
+    state.initState(sessionId, 'standard', ['PLAN', 'ARCH', 'TEST', 'DEV', 'REVIEW', 'TEST:2', 'RETRO', 'DOCS'], { featureName: 'my-feature' });
+    // 將所有 stages 標記為完成
+    state.updateStateAtomic(sessionId, (s) => {
+      for (const k of Object.keys(s.stages)) {
+        s.stages[k].status = 'completed';
+        s.stages[k].result = 'pass';
+      }
+      return s;
+    });
+
+    const { output, exitCode } = await runStopHook(
+      { stop_reason: 'end_turn', cwd: projectRoot },
+      sessionId
+    );
+
+    const parsed = JSON.parse(output);
+    // hook 不 block（允許退出）
+    expect(parsed.decision).not.toBe('block');
+    expect(exitCode).toBe(0);
+
+    // specs 目錄中 in-progress feature 仍存在（未被歸檔）
+    expect(existsSync(specs.featurePath(projectRoot, 'my-feature'))).toBe(true);
+
+    // timeline 應有 specs:archive-skipped 事件
+    const events = timeline.query(sessionId, { type: 'specs:archive-skipped' });
+    expect(events.length).toBeGreaterThan(0);
+    expect(events[0].featureName).toBe('my-feature');
+  });
+
+  test('Scenario 2-2：workflow 完成 + tasks.md workflow 匹配 → 正常歸檔（回歸）', async () => {
+    const sessionId = newSessionId();
+    createdSessions.push(sessionId);
+
+    // 建立臨時 project root，feature 用 standard 初始化，tasks.md frontmatter 寫 standard（匹配）
+    const projectRoot = mkdtempSync(join(os.tmpdir(), 'overtone-archive-match-'));
+    createdTmpDirs.push(projectRoot);
+
+    const featurePath = specs.initFeatureDir(projectRoot, 'my-feature', 'standard');
+    const tasksPath = join(featurePath, 'tasks.md');
+    // 覆寫 tasks.md，讓 frontmatter workflow 為 standard（匹配）
+    writeFileSync(tasksPath, [
+      '---',
+      'feature: my-feature',
+      'workflow: standard',
+      '---',
+      '',
+      '## Stages',
+      '- [x] DEV',
+    ].join('\n'));
+
+    mkdirSync(paths.sessionDir(sessionId), { recursive: true });
+    state.initState(sessionId, 'standard', ['PLAN', 'ARCH', 'TEST', 'DEV', 'REVIEW', 'TEST:2', 'RETRO', 'DOCS'], { featureName: 'my-feature' });
+    state.updateStateAtomic(sessionId, (s) => {
+      for (const k of Object.keys(s.stages)) {
+        s.stages[k].status = 'completed';
+        s.stages[k].result = 'pass';
+      }
+      return s;
+    });
+
+    const { output, exitCode } = await runStopHook(
+      { stop_reason: 'end_turn', cwd: projectRoot },
+      sessionId
+    );
+
+    const parsed = JSON.parse(output);
+    // hook 不 block
+    expect(parsed.decision).not.toBe('block');
+    expect(exitCode).toBe(0);
+
+    // in-progress feature 已被移除（歸檔完成）
+    expect(existsSync(specs.featurePath(projectRoot, 'my-feature'))).toBe(false);
+
+    // timeline 應有 specs:archive 事件（不是 skipped）
+    const archiveEvents = timeline.query(sessionId, { type: 'specs:archive' });
+    expect(archiveEvents.length).toBeGreaterThan(0);
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// 場景 8：修復 3 — tasksStatus null 診斷警告
+// ────────────────────────────────────────────────────────────────────────────
+
+describe('Stop hook 場景 8：修復 3 — tasksStatus null 診斷警告', () => {
+  const timeline = require(join(SCRIPTS_LIB, 'timeline'));
+
+  test('Scenario 3-1：standard workflow + featureName 存在 + tasks.md 不存在 → emit specs:tasks-missing', async () => {
+    const sessionId = newSessionId();
+    createdSessions.push(sessionId);
+
+    // 建立臨時 project root，不建立任何 feature 目錄（tasks.md 不存在）
+    const projectRoot = mkdtempSync(join(os.tmpdir(), 'overtone-tasks-missing-'));
+    createdTmpDirs.push(projectRoot);
+
+    mkdirSync(paths.sessionDir(sessionId), { recursive: true });
+    // standard workflow，featureName 已設定但無對應 tasks.md
+    state.initState(sessionId, 'standard', ['PLAN', 'ARCH', 'TEST', 'DEV', 'REVIEW', 'TEST:2', 'RETRO', 'DOCS'], { featureName: 'my-feature' });
+    // 讓部分 stages 未完成（不觸發 allCompleted）
+    state.updateStateAtomic(sessionId, (s) => {
+      s.stages['PLAN'].status = 'completed';
+      s.stages['PLAN'].result = 'pass';
+      return s;
+    });
+
+    const { output, exitCode } = await runStopHook(
+      { stop_reason: 'end_turn', cwd: projectRoot },
+      sessionId
+    );
+
+    // hook 不因診斷警告而 crash（exitCode 為 0）
+    expect(exitCode).toBe(0);
+
+    // timeline 應有 specs:tasks-missing 事件
+    const events = timeline.query(sessionId, { type: 'specs:tasks-missing' });
+    expect(events.length).toBeGreaterThan(0);
+    expect(events[0].featureName).toBe('my-feature');
+    expect(events[0].workflowType).toBe('standard');
+  });
+
+  test('Scenario 3-2：single workflow + featureName 存在 + tasks.md 不存在 → 不 emit specs:tasks-missing', async () => {
+    const sessionId = newSessionId();
+    createdSessions.push(sessionId);
+
+    const projectRoot = mkdtempSync(join(os.tmpdir(), 'overtone-tasks-single-'));
+    createdTmpDirs.push(projectRoot);
+
+    mkdirSync(paths.sessionDir(sessionId), { recursive: true });
+    // single workflow，featureName 已設定但 single 無 specsConfig
+    state.initState(sessionId, 'single', ['DEV'], { featureName: 'my-feature' });
+    state.updateStateAtomic(sessionId, (s) => {
+      s.stages['DEV'].status = 'completed';
+      s.stages['DEV'].result = 'pass';
+      return s;
+    });
+
+    const { output, exitCode } = await runStopHook(
+      { stop_reason: 'end_turn', cwd: projectRoot },
+      sessionId
+    );
+
+    expect(exitCode).toBe(0);
+
+    // single workflow → specsConfig['single'].length === 0 → 不 emit
+    const events = timeline.query(sessionId, { type: 'specs:tasks-missing' });
+    expect(events.length).toBe(0);
+  });
+});

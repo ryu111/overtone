@@ -1283,3 +1283,100 @@ describe('場景 18：Knowledge Engine — 知識歸檔', () => {
     expect(typeof result.result).toBe('string');
   });
 });
+
+// ────────────────────────────────────────────────────────────────────────────
+// 場景 19：修復 1 — featureName auto-sync 只對有 specs 的 workflow 執行
+// ────────────────────────────────────────────────────────────────────────────
+
+describe('場景 19：auto-sync specsConfig 過濾', () => {
+  const os = require('os');
+  const path = require('path');
+  const specs = require(join(SCRIPTS_LIB, 'specs'));
+
+  test('Scenario 1-1：single workflow + in-progress feature → auto-sync 不發生', async () => {
+    const sessionId = newSessionId();
+    createdSessions.push(sessionId);
+
+    // 建立臨時 project root，有 in-progress feature
+    const tmpProject = mkdtempSync(path.join(os.tmpdir(), 'overtone-autosync-single-'));
+    specs.initFeatureDir(tmpProject, 'my-feature', 'single');
+
+    // 建立 single workflow state（不帶 featureName）
+    mkdirSync(paths.sessionDir(sessionId), { recursive: true });
+    state.initState(sessionId, 'single', ['DEV']);
+    state.updateStateAtomic(sessionId, (s) => {
+      s.stages['DEV'].status = 'active';
+      s.featureName = null;
+      return s;
+    });
+
+    // 執行 hook
+    const proc = Bun.spawn(['node', HOOK_PATH], {
+      stdin: Buffer.from(JSON.stringify({
+        agent_type: 'ot:developer',
+        last_assistant_message: 'VERDICT: pass 開發完成',
+        cwd: tmpProject,
+      })),
+      env: { ...process.env, CLAUDE_SESSION_ID: sessionId },
+      stdout: 'pipe',
+      stderr: 'pipe',
+    });
+
+    const output = await new Response(proc.stdout).text();
+    await proc.exited;
+    const result = JSON.parse(output);
+
+    // hook 應正常輸出
+    expect(result.result).toContain('✅');
+
+    // single workflow → specsConfig['single'].length === 0 → auto-sync 不執行
+    const updatedState = state.readState(sessionId);
+    expect(updatedState.featureName).toBeNull();
+
+    rmSync(tmpProject, { recursive: true, force: true });
+  });
+
+  test('Scenario 1-3：standard workflow + in-progress feature → auto-sync 正常發生（回歸）', async () => {
+    const sessionId = newSessionId();
+    createdSessions.push(sessionId);
+
+    // 建立臨時 project root，有 in-progress feature
+    const tmpProject = mkdtempSync(path.join(os.tmpdir(), 'overtone-autosync-standard-'));
+    specs.initFeatureDir(tmpProject, 'my-feature', 'standard');
+
+    // 建立 standard workflow state（不帶 featureName）
+    mkdirSync(paths.sessionDir(sessionId), { recursive: true });
+    state.initState(sessionId, 'standard', ['PLAN', 'ARCH', 'TEST', 'DEV', 'REVIEW', 'TEST:2', 'RETRO', 'DOCS']);
+    state.updateStateAtomic(sessionId, (s) => {
+      // 將 DEV 設為 active
+      s.stages['DEV'].status = 'active';
+      s.featureName = null;
+      return s;
+    });
+
+    // 執行 hook
+    const proc = Bun.spawn(['node', HOOK_PATH], {
+      stdin: Buffer.from(JSON.stringify({
+        agent_type: 'ot:developer',
+        last_assistant_message: 'VERDICT: pass 開發完成',
+        cwd: tmpProject,
+      })),
+      env: { ...process.env, CLAUDE_SESSION_ID: sessionId },
+      stdout: 'pipe',
+      stderr: 'pipe',
+    });
+
+    const output = await new Response(proc.stdout).text();
+    await proc.exited;
+    const result = JSON.parse(output);
+
+    // hook 應正常輸出
+    expect(result.result).toContain('✅');
+
+    // standard workflow → specsConfig['standard'].length > 0 → auto-sync 執行
+    const updatedState = state.readState(sessionId);
+    expect(updatedState.featureName).toBe('my-feature');
+
+    rmSync(tmpProject, { recursive: true, force: true });
+  });
+});

@@ -12,10 +12,11 @@
  *   ✅ Dashboard 通知（透過 timeline emit → SSE file watcher 推送）
  */
 
+const { join } = require('path');
 const state = require('../../../scripts/lib/state');
 const timeline = require('../../../scripts/lib/timeline');
 const loop = require('../../../scripts/lib/loop');
-const { stages, loopDefaults } = require('../../../scripts/lib/registry');
+const { stages, loopDefaults, specsConfig } = require('../../../scripts/lib/registry');
 const { safeReadStdin, safeRun, hookError, buildProgressBar, getSessionId } = require('../../../scripts/lib/hook-utils');
 const { playSound, SOUNDS } = require('../../../scripts/lib/sound'); // 只用 HERO
 
@@ -89,6 +90,13 @@ safeRun(() => {
   const tasksStatus = projectRoot ? loop.readTasksStatus(projectRoot, featureName) : null;
   const allCompleted = allStagesCompleted && (tasksStatus === null || tasksStatus.allChecked);
 
+  // 修復 3：tasksStatus null 診斷警告
+  // 條件：workflow 有 specs 設定、featureName 已知、tasksStatus 讀不到（tasks.md 遺失）
+  if (tasksStatus === null && specsConfig[currentState.workflowType]?.length > 0 && featureName && projectRoot) {
+    hookError('on-stop', `診斷：${featureName} tasks.md 不存在或無法讀取，無法驗證 specs 完成度`);
+    timeline.emit(sessionId, 'specs:tasks-missing', { featureName, workflowType: currentState.workflowType });
+  }
+
   // 4. 全部完成 → 允許退出
   if (allCompleted) {
     // 判斷是否為異常完成：有任何 stage result 為 fail
@@ -111,11 +119,27 @@ safeRun(() => {
       if (featureName) {
         try {
           const specs = require('../../../scripts/lib/specs');
-          const archivePath = specs.archiveFeature(projectRoot, featureName);
-          timeline.emit(sessionId, 'specs:archive', {
-            featureName,
-            archivePath,
-          });
+
+          // 修復 2：歸檔前驗證 workflow 匹配
+          const tasksPath = join(specs.featurePath(projectRoot, featureName), 'tasks.md');
+          const frontmatter = specs.readTasksFrontmatter(tasksPath);
+          const taskWorkflow = frontmatter?.workflow;
+          // 允許歸檔：frontmatter 不存在、無 workflow 欄位、workflow 匹配
+          if (taskWorkflow && taskWorkflow !== currentState.workflowType) {
+            // workflow 不匹配 → 跳過歸檔
+            hookError('on-stop', `警告：tasks.md workflow（${taskWorkflow}）與當前 workflow（${currentState.workflowType}）不匹配，跳過歸檔`);
+            timeline.emit(sessionId, 'specs:archive-skipped', {
+              featureName,
+              taskWorkflow,
+              currentWorkflow: currentState.workflowType,
+            });
+          } else {
+            const archivePath = specs.archiveFeature(projectRoot, featureName);
+            timeline.emit(sessionId, 'specs:archive', {
+              featureName,
+              archivePath,
+            });
+          }
         } catch (archErr) {
           // 歸檔失敗不阻擋正常退出（可能已手動移動或不存在）
           hookError('on-stop', `警告：歸檔失敗 — ${archErr.message}`);

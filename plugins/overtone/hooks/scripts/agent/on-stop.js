@@ -11,7 +11,7 @@ const { readFileSync, existsSync, unlinkSync } = require('fs');
 const { readState, updateStateAtomic, findActualStageKey, checkParallelConvergence, getNextStageHint, setFeatureName } = require('../../../scripts/lib/state');
 const timeline = require('../../../scripts/lib/timeline');
 const instinct = require('../../../scripts/lib/instinct');
-const { stages, parallelGroups, retryDefaults } = require('../../../scripts/lib/registry');
+const { stages, parallelGroups, retryDefaults, specsConfig } = require('../../../scripts/lib/registry');
 const paths = require('../../../scripts/lib/paths');
 const parseResult = require('../../../scripts/lib/parse-result');
 const { safeReadStdin, safeRun, getSessionId, shouldSuggestCompact } = require('../../../scripts/lib/hook-utils');
@@ -74,8 +74,8 @@ safeRun(() => {
     instinct.emit(sessionId, 'agent_performance', trigger, action, `agent-${agentName}`);
   } catch { /* 靜默 */ }
 
-  // featureName auto-sync
-  if (!updatedState.featureName && projectRoot) {
+  // featureName auto-sync（僅限有 specs 文件的 workflow）
+  if (!updatedState.featureName && projectRoot && specsConfig[currentState.workflowType]?.length > 0) {
     try {
       const specs = require('../../../scripts/lib/specs');
       const af = specs.getActiveFeature(projectRoot);

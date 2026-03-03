@@ -9,8 +9,9 @@ description: 重構工作流。ARCH → TEST:spec → DEV → [REVIEW + TEST:ver
 
 使用 Bash 執行：
 ```bash
-node ${CLAUDE_PLUGIN_ROOT}/scripts/init-workflow.js refactor ${CLAUDE_SESSION_ID}
+node ${CLAUDE_PLUGIN_ROOT}/scripts/init-workflow.js refactor ${CLAUDE_SESSION_ID} {featureName}
 ```
+# {featureName} 必須是 kebab-case（如 add-user-auth）
 
 ## 進度追蹤
 
