@@ -7,6 +7,7 @@
  * 職責：
  *   ✅ 讀取 workflow.json 組裝狀態摘要
  *   ✅ 讀取 specs 活躍 feature 的未完成任務
+ *   ✅ 注入 execution-queue 未完成項目（跨 workflow 計劃恢復）
  *   ✅ 輸出 systemMessage 讓壓縮後的 Main Agent 能恢復工作
  *   ✅ emit session:compact timeline 事件
  *   ✅ 任何失敗 fallback { result: '' }（不阻擋 compaction）
@@ -128,6 +129,18 @@ safeRun(() => {
   if (pendingMsg) {
     lines.push('');
     lines.push(pendingMsg);
+  }
+
+  // ── execution-queue 注入（跨 workflow 計劃）──
+  try {
+    const executionQueue = require('../../../scripts/lib/execution-queue');
+    const queueSummary = executionQueue.formatQueueSummary(projectRoot);
+    if (queueSummary) {
+      lines.push('');
+      lines.push(queueSummary);
+    }
+  } catch {
+    // 佇列載入失敗不阻擋 compaction
   }
 
   // ── 行動指引 ──
