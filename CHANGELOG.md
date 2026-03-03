@@ -2,6 +2,44 @@
 
 所有重要變更記錄於此文件。
 
+## [0.28.30] - 2026-03-03
+
+### P3.0 閉環基礎：Status Line 並行顯示 + 組件管理強化
+- **Status Line 並行顯示修復**：`scripts/statusline.js`
+  - `buildAgentDisplay()`：修復 primary signal 分支（active-agent.json）中查詢並行 stage 數量，顯示 `agent × N` 格式
+  - `main()` 第 277 行：null-safety 修復（`workflow?.workflowType`）避免無 workflow 時 crash
+- **組件管理依賴提示**：`scripts/manage-component.js`
+  - create/update 成功後，向 stderr 輸出依賴提示 checklist
+  - 幫助開發者記住跨元件的依賴關係（agent → skills、hook → lib）
+- **測試補強**：`tests/unit/statusline.test.js`
+  - 新增 2 個並行顯示測試
+  - 修復「無 workflow」測試的隔離問題（前置清除 workflow.json）
+- **測試**：
+  - 累計 2759 pass / 0 fail（116 個測試檔）
+
+---
+
+## [0.28.29] - 2026-03-03
+
+### 核心穩固清理 + mul-agent 泛化
+- Dead exports 清理（health-check.js 加入 tests/ 搜尋，72→0）
+- getStageByAgent 抽取消除 on-stop/pre-task 重複邏輯
+- 7 個 workflow command 加入並行引導
+- mul-dev→mul-agent 泛化（支援 developer/tester/debugger/reviewer 並行）
+- 測試：2695 pass / 115 files
+
+---
+
+## [0.28.28] - 2026-03-03
+
+### Level 2：時間序列學習
+- adjustConfidenceByIds API + 觀察效果反饋迴路
+- SessionStart 記錄注入 ID，SessionEnd 比對 baseline/score 趨勢後調整 confidence
+- globalInstinctDefaults 新增 feedbackBoost/feedbackPenalty
+- 測試：2658 pass / 114 files
+
+---
+
 ## [0.28.27] - 2026-03-03
 
 ### Level 2：卡點識別（失敗模式聚合）

@@ -274,7 +274,7 @@ function main() {
 
   if (agentDisplay) {
     // 有 active subagent → 雙行
-    const workflowType = workflow.workflowType || '';
+    const workflowType = workflow?.workflowType || '';
     const modeLabel = WORKFLOW_LABELS[workflowType] || workflowType;
 
     // Line 1: agent 放前面，模式放後面

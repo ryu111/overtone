@@ -407,6 +407,8 @@ describe('agent 顯示與中文模式', () => {
   // ── 無 workflow 但有 active-agent.json 時顯示 agent ──
 
   it('無 workflow 但有 active-agent.json 時顯示 agent', () => {
+    // 確保清除前一個測試留下的 workflow.json，真正模擬無 workflow 情境
+    try { require('fs').rmSync(path.join(sessionDir, 'workflow.json')); } catch { /* 不存在則略過 */ }
     // 不寫 workflow.json，只寫 active-agent.json
     mkdirSync(sessionDir, { recursive: true });
     writeFileSync(path.join(sessionDir, 'active-agent.json'), JSON.stringify({
