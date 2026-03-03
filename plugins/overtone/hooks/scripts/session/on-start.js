@@ -228,6 +228,20 @@ safeRun(() => {
     // 基線載入失敗不阻擋 session 啟動
   }
 
+  // ── 品質評分摘要載入 ──
+  // 顯示歷史 stage 品質評分摘要，提供「輸出品質是否在提升」的量化參考
+
+  let scoreSummaryMsg = null;
+  try {
+    const scoreEngine = require('../../../scripts/lib/score-engine');
+    const summary = scoreEngine.formatScoreSummary(projectRoot);
+    if (summary) {
+      scoreSummaryMsg = '## 品質評分\n\n' + summary;
+    }
+  } catch {
+    // 品質評分載入失敗不阻擋 session 啟動
+  }
+
   // ── 執行佇列載入 ──
   // PM Discovery 確認的任務序列，注入 systemMessage 確保連續執行
 
@@ -258,6 +272,13 @@ safeRun(() => {
       output.systemMessage += '\n\n' + baselineSummaryMsg;
     } else {
       output.systemMessage = baselineSummaryMsg;
+    }
+  }
+  if (scoreSummaryMsg) {
+    if (output.systemMessage) {
+      output.systemMessage += '\n\n' + scoreSummaryMsg;
+    } else {
+      output.systemMessage = scoreSummaryMsg;
     }
   }
   if (queueMsg) {

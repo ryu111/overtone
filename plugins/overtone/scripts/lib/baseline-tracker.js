@@ -210,6 +210,100 @@ function compareToBaseline(sessionId, projectRoot) {
   return result;
 }
 
+// ── 趨勢分析常數 ──
+const TREND_THRESHOLD = 0.05;   // 5% 變化門檻
+const MIN_TREND_RECORDS = 4;    // 最少需要 4 筆才能分析趨勢
+
+/**
+ * 計算特定 workflowType 的效能趨勢
+ *
+ * 演算法：將最近 N 筆（N >= 4）分成前半和後半，
+ * 比較平均 duration 和 pass1Rate。
+ * duration 下降 = improving；上升 = degrading
+ * pass1Rate 上升 = improving；下降 = degrading
+ * 變化 < 5% = stagnant
+ *
+ * @param {string} projectRoot
+ * @param {string} workflowType
+ * @returns {{ direction: 'improving'|'stagnant'|'degrading', details: { duration: string, pass1Rate: string }, sessionCount: number }|null}
+ *    null when < 4 records available
+ */
+function computeBaselineTrend(projectRoot, workflowType) {
+  const windowSize = baselineDefaults.compareWindowSize;
+  const records = _readAll(projectRoot)
+    .filter(r => r.workflowType === workflowType)
+    .slice(-windowSize);
+
+  if (records.length < MIN_TREND_RECORDS) return null;
+
+  const mid = Math.floor(records.length / 2);
+  const firstHalf = records.slice(0, mid);
+  const secondHalf = records.slice(mid);
+
+  // ── duration 趨勢（下降 = improving）──
+  const avgDuration = (arr) => {
+    const valid = arr.filter(r => r.duration !== null);
+    if (valid.length === 0) return null;
+    return valid.reduce((sum, r) => sum + r.duration, 0) / valid.length;
+  };
+
+  const dur1 = avgDuration(firstHalf);
+  const dur2 = avgDuration(secondHalf);
+  let durationTrend = 'stagnant';
+  let durationStr = '穩定';
+  if (dur1 !== null && dur2 !== null && dur1 > 0) {
+    const change = (dur2 - dur1) / dur1; // 負 = 下降 = improving
+    if (change < -TREND_THRESHOLD) {
+      durationTrend = 'improving';
+      durationStr = '改善';
+    } else if (change > TREND_THRESHOLD) {
+      durationTrend = 'degrading';
+      durationStr = '退步';
+    }
+  }
+
+  // ── pass1Rate 趨勢（上升 = improving）──
+  const avgPass1Rate = (arr) => {
+    const valid = arr.filter(r => r.pass1Rate !== null);
+    if (valid.length === 0) return null;
+    return valid.reduce((sum, r) => sum + r.pass1Rate, 0) / valid.length;
+  };
+
+  const p1 = avgPass1Rate(firstHalf);
+  const p2 = avgPass1Rate(secondHalf);
+  let pass1Trend = 'stagnant';
+  let pass1Str = '穩定';
+  if (p1 !== null && p2 !== null && p1 > 0) {
+    const change = (p2 - p1) / p1; // 正 = 上升 = improving
+    if (change > TREND_THRESHOLD) {
+      pass1Trend = 'improving';
+      pass1Str = '改善';
+    } else if (change < -TREND_THRESHOLD) {
+      pass1Trend = 'degrading';
+      pass1Str = '退步';
+    }
+  }
+
+  // ── 總體方向（多數指標決定）──
+  const improvingCount = [durationTrend, pass1Trend].filter(t => t === 'improving').length;
+  const degradingCount = [durationTrend, pass1Trend].filter(t => t === 'degrading').length;
+
+  let direction;
+  if (improvingCount > degradingCount) {
+    direction = 'improving';
+  } else if (degradingCount > improvingCount) {
+    direction = 'degrading';
+  } else {
+    direction = 'stagnant';
+  }
+
+  return {
+    direction,
+    details: { duration: durationStr, pass1Rate: pass1Str },
+    sessionCount: records.length,
+  };
+}
+
 /**
  * 產生人類可讀的基線摘要文字（用於 SessionStart 注入）
  *
@@ -238,8 +332,14 @@ function formatBaselineSummary(projectRoot, workflowType) {
       ? `${Math.round(bl.avgPass1Rate * 100)}%`
       : 'N/A';
 
+    // 趨勢箭頭
+    const trend = computeBaselineTrend(projectRoot, wt);
+    const trendStr = trend
+      ? (trend.direction === 'improving' ? ' ↑ 進步中' : trend.direction === 'degrading' ? ' ↓ 退步中' : ' → 穩定')
+      : '';
+
     lines.push(
-      `- ${wt}（${bl.sessionCount} 次）：平均 ${durationStr}，重試 ${bl.avgRetries}，pass@1 ${pass1Str}`
+      `- ${wt}（${bl.sessionCount} 次）：平均 ${durationStr}，重試 ${bl.avgRetries}，pass@1 ${pass1Str}${trendStr}`
     );
   }
 
@@ -316,5 +416,6 @@ module.exports = {
   saveBaseline,
   getBaseline,
   compareToBaseline,
+  computeBaselineTrend,
   formatBaselineSummary,
 };

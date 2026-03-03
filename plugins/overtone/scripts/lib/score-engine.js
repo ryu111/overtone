@@ -122,6 +122,88 @@ function getScoreSummary(projectRoot, stageKey, n) {
   };
 }
 
+// ── 趨勢分析常數 ──
+const TREND_THRESHOLD = 0.05;   // 5% 變化門檻
+const MIN_TREND_RECORDS = 4;    // 最少需要 4 筆才能分析趨勢
+
+/**
+ * 計算特定 stage 的品質評分趨勢
+ *
+ * 與 baseline 趨勢類似，分前後半比較 avgOverall
+ *
+ * @param {string} projectRoot
+ * @param {string} stageKey
+ * @returns {{ direction: 'improving'|'stagnant'|'degrading', firstHalfAvg: number, secondHalfAvg: number, sessionCount: number }|null}
+ */
+function computeScoreTrend(projectRoot, stageKey) {
+  const windowSize = scoringDefaults.compareWindowSize;
+  const records = _readAll(projectRoot)
+    .filter(r => r.stage === stageKey)
+    .slice(-windowSize);
+
+  if (records.length < MIN_TREND_RECORDS) return null;
+
+  const mid = Math.floor(records.length / 2);
+  const firstHalf = records.slice(0, mid);
+  const secondHalf = records.slice(mid);
+
+  const avgOverall = (arr) =>
+    arr.reduce((sum, r) => sum + r.overall, 0) / arr.length;
+
+  const first = avgOverall(firstHalf);
+  const second = avgOverall(secondHalf);
+
+  let direction;
+  if (first > 0) {
+    const change = (second - first) / first; // 正 = 上升 = improving
+    if (change > TREND_THRESHOLD) {
+      direction = 'improving';
+    } else if (change < -TREND_THRESHOLD) {
+      direction = 'degrading';
+    } else {
+      direction = 'stagnant';
+    }
+  } else {
+    direction = 'stagnant';
+  }
+
+  return {
+    direction,
+    firstHalfAvg: Math.round(first * 100) / 100,
+    secondHalfAvg: Math.round(second * 100) / 100,
+    sessionCount: records.length,
+  };
+}
+
+/**
+ * 產生所有 stage 的品質評分摘要（用於 SessionStart 注入）
+ *
+ * @param {string} projectRoot
+ * @returns {string} Markdown 格式摘要，無資料時回傳空字串
+ */
+function formatScoreSummary(projectRoot) {
+  const { scoringConfig } = require('./registry');
+  const lines = [];
+
+  for (const stage of scoringConfig.gradedStages) {
+    const summary = getScoreSummary(projectRoot, stage);
+    if (summary.sessionCount === 0) continue;
+
+    const trend = computeScoreTrend(projectRoot, stage);
+    const trendStr = trend
+      ? (trend.direction === 'improving' ? ' ↑ 進步中' : trend.direction === 'degrading' ? ' ↓ 退步中' : ' → 穩定')
+      : '';
+
+    lines.push(
+      `- ${stage}（${summary.sessionCount} 筆）：overall ${summary.avgOverall}/5.0${trendStr}`
+    );
+  }
+
+  return lines.length > 0
+    ? '品質評分（歷史平均）：\n' + lines.join('\n')
+    : '';
+}
+
 // ── 低層工具 ──
 
 /**
@@ -185,4 +267,4 @@ function _trimIfNeeded(projectRoot) {
   atomicWrite(filePath, content ? content + '\n' : '');
 }
 
-module.exports = { saveScore, queryScores, getScoreSummary };
+module.exports = { saveScore, queryScores, getScoreSummary, computeScoreTrend, formatScoreSummary };
