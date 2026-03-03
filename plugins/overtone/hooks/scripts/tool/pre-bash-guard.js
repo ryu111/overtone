@@ -6,17 +6,18 @@
 // 職責：
 //   偵測黑名單中的危險系統命令，阻擋可能造成不可逆損害的操作
 //
-// 黑名單規則（10 條）：
-//   1. sudo rm -rf /    — 刪除根目錄
-//   2. mkfs             — 格式化磁碟
-//   3. dd if=... of=/dev/ — 直接寫入磁碟裝置
-//   4. passwd root      — 修改 root 密碼
-//   5. chmod 777 /      — 開放根目錄全權限
-//   6. visudo           — 修改 sudoers
-//   7. iptables -F      — 清空防火牆規則
-//   8. ifconfig ... down — 停用網路介面
-//   9. killall -9       — 強制終止所有進程
-//  10. kill -9 1        — 終止 init 進程
+// 黑名單規則（11 條）：
+//   1. sudo rm -rf /    — 刪除根目錄（有 sudo）
+//   2. rm -rf /         — 刪除根目錄（無 sudo）
+//   3. mkfs             — 格式化磁碟
+//   4. dd if=... of=/dev/ — 直接寫入磁碟裝置
+//   5. passwd root      — 修改 root 密碼
+//   6. chmod 777 /      — 開放根目錄全權限
+//   7. visudo           — 修改 sudoers
+//   8. iptables -F      — 清空防火牆規則
+//   9. ifconfig ... down — 停用網路介面
+//  10. killall -9       — 強制終止所有進程
+//  11. kill -9 1        — 終止 init 進程
 //
 // 允許：
 //   一般開發命令（bun、node、git、ls 等）
@@ -25,11 +26,12 @@ const { safeReadStdin, safeRun } = require('../../../scripts/lib/hook-utils');
 
 // 危險命令黑名單
 const BLACKLIST = [
-  { pattern: /\bsudo\s+rm\s+-rf\s+\//, label: '刪除根目錄' },
+  { pattern: /\bsudo\s+rm\s+-rf\s+\/(\s|$|\*)/, label: '刪除根目錄' },
+  { pattern: /\brm\s+-rf\s+\/(\s|$|\*)/, label: '刪除根目錄' },
   { pattern: /\bmkfs\b/, label: '格式化磁碟' },
   { pattern: /\bdd\s+if=.*of=\/dev\//, label: '直接寫入磁碟裝置' },
   { pattern: /\bpasswd\s+root\b/, label: '修改 root 密碼' },
-  { pattern: /\bchmod\s+777\s+\//, label: '開放根目錄全權限' },
+  { pattern: /\bchmod\s+777\s+\/(\s|$)/, label: '開放根目錄全權限' },
   { pattern: /\bvisudo\b/, label: '修改 sudoers' },
   { pattern: /\biptables\s+-F\b/, label: '清空防火牆規則' },
   { pattern: /\bifconfig.*down\b/, label: '停用網路介面' },

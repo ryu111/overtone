@@ -129,6 +129,7 @@ bun scripts/init-workflow.js {workflowType} [{sessionId}]
 - **registry.js 是 Single Source of Truth**：所有 agent/stage/workflow/event 映射從此 import
 - **Handoff 檔案格式**：Context → Findings → Files Modified → Open Questions
 - **不做向後相容**：舊 API / 舊欄位 / 舊函式直接改成新的，不保留舊版本；改完必須維持系統正常運作；沒有任何地方用到的程式碼直接刪除並在 commit message 標記（`[刪除未使用]`）
+- **元件閉環**：新增/修改 Skill、Agent、Hook 時，必須檢查三者依賴 — Skill 需要 Agent 消費（frontmatter skills）、Agent 需要 Hook 注入（pre-task.js）、危險操作需要 Guard 保護
 
 ## 關鍵文件
 

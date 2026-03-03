@@ -65,11 +65,11 @@
 
 | 任務 | 說明 | 狀態 |
 |------|------|:----:|
-| os-control SKILL.md | 建立第 12 個 knowledge domain 骨架（索引 + 各 reference 標記「待建」） | ⬜ |
-| Agent frontmatter | 5 個 agent 加入 `skills: [os-control]`：developer, architect, tester, debugger, qa | ⬜ |
-| pre-bash-guard.js | PreToolUse(Bash) 黑名單守衛骨架（危險命令攔截） | ⬜ |
-| hooks.json | 新增 PreToolUse(Bash) matcher 指向 pre-bash-guard.js | ⬜ |
-| Guard 測試 | pre-bash-guard 基礎測試（黑名單命中 deny + 正常命令 allow） | ⬜ |
+| os-control SKILL.md | 建立第 12 個 knowledge domain 骨架（索引 + 各 reference 標記「待建」） | ✅ |
+| Agent frontmatter | 5 個 agent 加入 `skills: [os-control]`：developer, architect, tester, debugger, qa | ✅ |
+| pre-bash-guard.js | PreToolUse(Bash) 黑名單守衛骨架（危險命令攔截） | ✅ |
+| hooks.json | 新增 PreToolUse(Bash) matcher 指向 pre-bash-guard.js | ✅ |
+| Guard 測試 | pre-bash-guard 基礎測試（黑名單命中 deny + 正常命令 allow） | ✅ |
 
 ### P3.1 看得見（感知層）
 

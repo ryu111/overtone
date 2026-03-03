@@ -35,12 +35,26 @@ function denyReason(parsed) {
 
 describe('PreBashGuard: 黑名單命令攔擋', () => {
 
-  test('sudo rm -rf / → deny（刪除根目錄）', () => {
+  test('sudo rm -rf / → deny（刪除根目錄，有 sudo）', () => {
     const result = runPreBashGuard({ command: 'sudo rm -rf /' });
     expect(result.exitCode).toBe(0);
     expect(isDenied(result.parsed)).toBe(true);
     expect(denyReason(result.parsed)).toContain('刪除根目錄');
     expect(denyReason(result.parsed)).toContain('sudo rm -rf /');
+  });
+
+  test('rm -rf / → deny（刪除根目錄，無 sudo）', () => {
+    const result = runPreBashGuard({ command: 'rm -rf /' });
+    expect(result.exitCode).toBe(0);
+    expect(isDenied(result.parsed)).toBe(true);
+    expect(denyReason(result.parsed)).toContain('刪除根目錄');
+  });
+
+  test('rm -rf /* → deny（刪除根目錄下全部，無 sudo）', () => {
+    const result = runPreBashGuard({ command: 'rm -rf /*' });
+    expect(result.exitCode).toBe(0);
+    expect(isDenied(result.parsed)).toBe(true);
+    expect(denyReason(result.parsed)).toContain('刪除根目錄');
   });
 
   test('mkfs /dev/sda → deny（格式化磁碟）', () => {
@@ -139,6 +153,24 @@ describe('PreBashGuard: 正常命令放行', () => {
 
   test('bun plugins/overtone/scripts/os/screenshot.js → allow', () => {
     const result = runPreBashGuard({ command: 'bun plugins/overtone/scripts/os/screenshot.js' });
+    expect(result.exitCode).toBe(0);
+    expect(isAllowed(result.parsed)).toBe(true);
+  });
+
+  test('sudo rm -rf /tmp/test → allow（一般暫存目錄清理，不應誤殺）', () => {
+    const result = runPreBashGuard({ command: 'sudo rm -rf /tmp/test' });
+    expect(result.exitCode).toBe(0);
+    expect(isAllowed(result.parsed)).toBe(true);
+  });
+
+  test('chmod 777 /tmp/script.sh → allow（一般腳本授權，不應誤殺）', () => {
+    const result = runPreBashGuard({ command: 'chmod 777 /tmp/script.sh' });
+    expect(result.exitCode).toBe(0);
+    expect(isAllowed(result.parsed)).toBe(true);
+  });
+
+  test('rm -rf /tmp/build → allow（一般建置目錄清理，不應誤殺）', () => {
+    const result = runPreBashGuard({ command: 'rm -rf /tmp/build' });
     expect(result.exitCode).toBe(0);
     expect(isAllowed(result.parsed)).toBe(true);
   });

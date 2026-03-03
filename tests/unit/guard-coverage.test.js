@@ -63,6 +63,7 @@ const HOOK_INTEGRATION_TEST_FILES = [
   join(TESTS_INTEGRATION, 'agent-on-stop.test.js'),
   join(TESTS_INTEGRATION, 'session-start.test.js'),
   join(TESTS_INTEGRATION, 'on-submit.test.js'),
+  join(TESTS_INTEGRATION, 'pre-bash-guard.test.js'),
 ];
 
 describe('Guard Coverage Meta-Guard', () => {
