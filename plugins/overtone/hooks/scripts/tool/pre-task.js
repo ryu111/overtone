@@ -16,7 +16,7 @@ const path = require('path');
 const state = require('../../../scripts/lib/state');
 const { stages } = require('../../../scripts/lib/registry');
 const identifyAgent = require('../../../scripts/lib/identify-agent');
-const { safeReadStdin, safeRun, getSessionId, buildWorkflowContext, buildSkillContext } = require('../../../scripts/lib/hook-utils');
+const { safeReadStdin, safeRun, getSessionId, buildWorkflowContext, buildSkillContext, getStageByAgent } = require('../../../scripts/lib/hook-utils');
 const { atomicWrite } = require('../../../scripts/lib/utils');
 const paths = require('../../../scripts/lib/paths');
 const { buildTestIndex } = require('../../../scripts/test-index');
@@ -106,9 +106,7 @@ safeRun(() => {
   }
 
   // 找到此 agent 對應的 stage
-  const targetStage = Object.entries(stages).find(
-    ([, def]) => def.agent === targetAgent
-  )?.[0];
+  const targetStage = getStageByAgent(targetAgent, stages);
 
   if (!targetStage) {
     process.stdout.write(JSON.stringify({ result: '' }));

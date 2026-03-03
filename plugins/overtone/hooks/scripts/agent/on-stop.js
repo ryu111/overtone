@@ -14,7 +14,7 @@ const instinct = require('../../../scripts/lib/instinct');
 const { stages, parallelGroups, retryDefaults, specsConfig, scoringConfig } = require('../../../scripts/lib/registry');
 const paths = require('../../../scripts/lib/paths');
 const parseResult = require('../../../scripts/lib/parse-result');
-const { safeReadStdin, safeRun, getSessionId, shouldSuggestCompact } = require('../../../scripts/lib/hook-utils');
+const { safeReadStdin, safeRun, getSessionId, shouldSuggestCompact, getStageByAgent } = require('../../../scripts/lib/hook-utils');
 const { atomicWrite } = require('../../../scripts/lib/utils');
 const { buildStopMessages } = require('../../../scripts/lib/stop-message-builder');
 const { archiveKnowledge } = require('../../../scripts/lib/knowledge-archiver');
@@ -35,9 +35,7 @@ safeRun(() => {
   try { unlinkSync(paths.session.activeAgent(sessionId)); } catch { /* 靜默 */ }
 
   // 辨識 stage
-  const agentToStage = {};
-  for (const [k, def] of Object.entries(stages)) agentToStage[def.agent] = k;
-  const stageKey = agentToStage[agentName];
+  const stageKey = getStageByAgent(agentName, stages);
   if (!stageKey) return exit0();
 
   const currentState = readState(sessionId);

@@ -12,6 +12,7 @@
  *   getSessionId             — 從 hook input 取得 session ID（帶 fallback）
  *   buildSkillContext        — 讀取 agent frontmatter skills → 載入 SKILL.md 正文摘要
  *   shouldSuggestCompact     — 判斷是否應該建議 compact（從 on-stop.js 搬遷）
+ *   getStageByAgent          — 根據 agent 名稱找對應 stage key（消除 on-stop/pre-task 重複邏輯）
  */
 
 const { readFileSync, existsSync, statSync } = require('fs');
@@ -296,6 +297,23 @@ function buildSkillContext(agentName, pluginRoot, options = {}) {
 }
 
 /**
+ * 根據 agent 名稱找到對應的 stage key。
+ *
+ * 線性掃描 stages 定義，找到 def.agent === agentName 的那個 key。
+ * 這是 on-stop.js 和 pre-task.js 中重複的 agentToStage 邏輯的共用版本。
+ *
+ * @param {string} agentName - agent 名稱（不含 ot: 前綴）
+ * @param {object} stages - registry.js 的 stages 定義
+ * @returns {string|null} stage key（如 'DEV'），找不到時回傳 null
+ */
+function getStageByAgent(agentName, stages) {
+  for (const [key, def] of Object.entries(stages)) {
+    if (def.agent === agentName) return key;
+  }
+  return null;
+}
+
+/**
  * 判斷是否應該建議 compact。
  *
  * 從 on-stop.js 搬遷到此處，供 SubagentStop hook 使用。
@@ -356,4 +374,4 @@ function shouldSuggestCompact({ transcriptPath, sessionId, thresholdBytes, minSt
   }
 }
 
-module.exports = { safeReadStdin, safeRun, hookError, buildPendingTasksMessage, buildProgressBar, buildWorkflowContext, getSessionId, buildSkillContext, shouldSuggestCompact };
+module.exports = { safeReadStdin, safeRun, hookError, buildPendingTasksMessage, buildProgressBar, buildWorkflowContext, getSessionId, buildSkillContext, shouldSuggestCompact, getStageByAgent };
