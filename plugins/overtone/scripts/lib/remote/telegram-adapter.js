@@ -342,6 +342,23 @@ class TelegramAdapter extends Adapter {
     }
   }
 
+  // ── 公開通知 API ──
+
+  /**
+   * 傳送純文字通知（公開方法，heartbeat 使用）
+   * chatId 為 null 時靜默 return，_sendMessage 拋出時捕獲不向外傳播。
+   * @param {string} message
+   * @returns {Promise<void>}
+   */
+  async notify(message) {
+    if (!this.chatId) return;
+    try {
+      await this._sendMessage(this.chatId, message);
+    } catch {
+      // 靜默失敗，不影響 heartbeat 主流程
+    }
+  }
+
   // ── Telegram API ──
 
   /**

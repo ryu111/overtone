@@ -98,15 +98,26 @@ function isProcessAlive(pid) {
 
 // ── 狀態檔工具 ──
 
+/** 預設依賴（供 _deps 覆蓋） */
+const DEFAULT_STATE_DEPS = {
+  atomicWrite,
+  existsSync,
+  readFileSync,
+  unlinkSync,
+};
+
 /**
  * 讀取 heartbeat-state.json
+ * @param {object} [_deps] - 可注入 existsSync / readFileSync 供測試替換
  * @returns {object|null}
  */
-function readState() {
+function readState(_deps = {}) {
+  const existsFn = _deps.existsSync || DEFAULT_STATE_DEPS.existsSync;
+  const readFn   = _deps.readFileSync || DEFAULT_STATE_DEPS.readFileSync;
   const stateFile = paths.HEARTBEAT_STATE_FILE;
-  if (!existsSync(stateFile)) return null;
+  if (!existsFn(stateFile)) return null;
   try {
-    return JSON.parse(readFileSync(stateFile, 'utf8'));
+    return JSON.parse(readFn(stateFile, 'utf8'));
   } catch {
     return null;
   }
@@ -115,9 +126,12 @@ function readState() {
 /**
  * 將 daemon 狀態持久化到 heartbeat-state.json
  * @param {object} state - daemon 記憶體狀態
+ * @param {object} [_deps] - 可注入 atomicWrite 供測試替換
  */
-function persistState(state) {
+function persistState(state, _deps = {}) {
+  const writeFn   = _deps.atomicWrite || DEFAULT_STATE_DEPS.atomicWrite;
   const stateFile = paths.HEARTBEAT_STATE_FILE;
+  const now = new Date().toISOString();
   const data = {
     pid: state.pid,
     projectRoot: state.projectRoot,
@@ -125,19 +139,24 @@ function persistState(state) {
     consecutiveFailures: state.consecutiveFailures,
     paused: state.paused,
     startedAt: state.startedAt,
-    lastPollAt: new Date().toISOString(),
+    lastPollAt: now,
   };
-  atomicWrite(stateFile, data);
+  // 更新 in-memory state 的 lastPollAt，供測試不需要讀檔即可驗證
+  state.lastPollAt = now;
+  writeFn(stateFile, data);
 }
 
 /**
  * 清理狀態檔
+ * @param {object} [_deps] - 可注入 existsSync / unlinkSync 供測試替換
  */
-function cleanState() {
+function cleanState(_deps = {}) {
+  const existsFn  = _deps.existsSync  || DEFAULT_STATE_DEPS.existsSync;
+  const unlinkFn  = _deps.unlinkSync  || DEFAULT_STATE_DEPS.unlinkSync;
   const stateFile = paths.HEARTBEAT_STATE_FILE;
   try {
-    if (existsSync(stateFile)) {
-      unlinkSync(stateFile);
+    if (existsFn(stateFile)) {
+      unlinkFn(stateFile);
     }
   } catch {
     // 靜默失敗
@@ -156,21 +175,23 @@ function cleanState() {
  * @param {object} deps.executionQueue
  * @param {Function} deps.spawnSession
  * @param {Function} deps.notify
+ * @param {Function} [deps.persistState] - 供測試替換，預設使用模組內的 persistState
  * @returns {Function} async poll()
  */
 function _createPollFn(projectRoot, state, deps) {
   const { executionQueue, spawnSession: spawnSessionFn, notify } = deps;
+  const persistStateFn = deps.persistState || persistState;
 
   return async function poll() {
     // 1. 有活躍 session → 跳過（並行 = 1）
     if (state.activeSession !== null) {
-      persistState(state);
+      persistStateFn(state);
       return;
     }
 
     // 2. paused → 跳過
     if (state.paused) {
-      persistState(state);
+      persistStateFn(state);
       return;
     }
 
@@ -179,11 +200,11 @@ function _createPollFn(projectRoot, state, deps) {
     try {
       current = executionQueue.getCurrent(projectRoot);
     } catch {
-      persistState(state);
+      persistStateFn(state);
       return;
     }
     if (current) {
-      persistState(state);
+      persistStateFn(state);
       return;
     }
 
@@ -192,11 +213,11 @@ function _createPollFn(projectRoot, state, deps) {
     try {
       next = executionQueue.getNext(projectRoot);
     } catch {
-      persistState(state);
+      persistStateFn(state);
       return;
     }
     if (!next) {
-      persistState(state);
+      persistStateFn(state);
       return;
     }
 
@@ -206,7 +227,7 @@ function _createPollFn(projectRoot, state, deps) {
     try {
       executionQueue.advanceToNext(projectRoot);
     } catch {
-      persistState(state);
+      persistStateFn(state);
       return;
     }
 
@@ -227,7 +248,7 @@ function _createPollFn(projectRoot, state, deps) {
         state.paused = true;
         notify('連續 3 次失敗，daemon 暫停');
       }
-      persistState(state);
+      persistStateFn(state);
       return;
     }
 
@@ -237,7 +258,7 @@ function _createPollFn(projectRoot, state, deps) {
       itemName: item.name,
       startedAt: new Date().toISOString(),
     };
-    persistState(state);
+    persistStateFn(state);
 
     // 9. 監聽 outcome（非同步）
     spawnResult.outcome.then((result) => {
@@ -258,13 +279,13 @@ function _createPollFn(projectRoot, state, deps) {
       }
 
       state.activeSession = null;
-      persistState(state);
+      persistStateFn(state);
     }).catch(() => {
       // outcome Promise 不應 throw，但防禦性捕獲
       state.activeSession = null;
       state.consecutiveFailures++;
       try { executionQueue.failCurrent(projectRoot, '未知錯誤'); } catch { /* 靜默 */ }
-      persistState(state);
+      persistStateFn(state);
     });
   };
 }

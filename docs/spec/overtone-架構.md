@@ -2,7 +2,7 @@
 
 > 本文件是 [Overtone 規格文件](overtone.md) 的子文件。
 > 主題：三層架構、Hook 系統、Context 管理、State 設計
-> 版本：v0.27.2
+> 版本：v0.28.32
 
 ---
 

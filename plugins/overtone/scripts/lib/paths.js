@@ -79,6 +79,11 @@ const global = {
   failures:     (projectRoot) => join(GLOBAL_DIR, projectHash(projectRoot), 'failures.jsonl'),
 };
 
+// ── Heartbeat 路徑 ──
+
+const HEARTBEAT_PID_FILE = join(OVERTONE_HOME, 'heartbeat.pid');
+const HEARTBEAT_STATE_FILE = join(OVERTONE_HOME, 'heartbeat-state.json');
+
 // ── 全域設定 ──
 
 const CONFIG_FILE = join(OVERTONE_HOME, 'config.json');
@@ -99,6 +104,8 @@ module.exports = {
   OVERTONE_HOME,
   SESSIONS_DIR,
   CURRENT_SESSION_FILE,
+  HEARTBEAT_PID_FILE,
+  HEARTBEAT_STATE_FILE,
   DASHBOARD_FILE,
   projectHash,
   sessionDir,

@@ -1,10 +1,10 @@
 ---
 feature: p3-1-perception
-status: in-progress
+status: archived
 workflow: standard
 created: 2026-03-03T14:42:33.063Z
+archivedAt: 2026-03-03T15:10:21.623Z
 ---
-
 ## Stages
 
 - [x] PLAN

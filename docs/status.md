@@ -16,7 +16,7 @@
 | Agent 數量 | 17（含 grader） |
 | Stage 數量 | 16 |
 | Workflow 模板 | 18 |
-| 測試通過 | 2855 pass / 0 fail（120 個測試檔） |
+| 測試通過 | 2858 pass / 0 fail（120 個測試檔） |
 | 測試檔案 | 120 個 |
 | Hook 數量 | 11 個 |
 | Skill 數量 | 21（13 knowledge domain + orchestrator + pm + specs + 5 utility-with-refs） |
@@ -26,10 +26,9 @@
 
 ## 近期變更（最近 3 筆）
 
-- **[0.28.32] 2026-03-04**：P3.2 心跳引擎完成 — (1) heartbeat.js（daemon start/stop/status/_daemon + PID 管理 + polling loop + SIGTERM 清理）；(2) session-spawner.js（spawn + stream-json 完成偵測 + timeout + _buildArgs）；(3) execution-queue.js 新增 failCurrent()；(4) TelegramAdapter 新增 notify()；(5) paths.js 新增 HEARTBEAT 常數；(6) 48 tests → 2855 pass / 120 files
-- **[0.28.31] 2026-03-03**：P3.1 感知層完成 — (1) screenshot.js（4 API：captureFullScreen/captureRegion/captureWindow/checkPermission）+ 22 tests；(2) window.js（5 API：listProcesses/listWindows/focusApp/getFrontApp/checkAccessibility）+ 27 tests；(3) perception.md 完整 reference（API reference + 視覺分析模板 + 使用指引 + Permission 處理 + 完整工作流範例）→ 2808 pass / 116 files
+- **[0.28.32] 2026-03-04**：P3.2 心跳引擎完成 — (1) heartbeat.js（daemon start/stop/status/_daemon + PID 管理 + polling loop + SIGTERM 清理）；(2) session-spawner.js（spawn + stream-json 完成偵測 + timeout + _buildArgs）；(3) autonomous-control SKILL（第 13 個 knowledge domain）；(4) 41 + 9 tests → 2858 pass / 120 files
+- **[0.28.31] 2026-03-03**：P3.1 感知層完成 — (1) screenshot.js（4 API：captureFullScreen/captureRegion/captureWindow/checkPermission）+ 22 tests；(2) window.js（5 API：listProcesses/listWindows/focusApp/getFrontApp/checkAccessibility）+ 27 tests；(3) perception.md 完整 reference → 2808 pass / 116 files
 - **[0.28.30] 2026-03-03**：P3.0 OS 閉環基礎 + status line 並行顯示 — (1) statusline.js 修復並行 stage 數量查詢、null-safety；(2) manage-component.js 加入依賴提示 checklist；(3) statusline.test.js 補充並行顯示驗證 → 2759 pass / 116 files
-- **[0.28.29] 2026-03-03**：核心穩固清理 + mul-agent 泛化 — (1) Dead exports 清理（health-check.js 加入 tests/ 搜尋，72→0）；(2) getStageByAgent 抽取；(3) 7 個 workflow command 加入並行引導；(4) mul-dev→mul-agent 泛化
 
 ## Phase 3 規劃狀態
 
@@ -43,7 +42,7 @@ Phase 3 目標：Layer 2 完整 OS 能力，達到 Phase 4 Ready。
 |:----:|------|------|:----:|
 | P3.0 | 閉環基礎 | os-control Skill 骨架 + Agent frontmatter + pre-bash-guard + hooks.json | ✅ |
 | P3.1 | 看得見 | 截圖（screenshot.js + 4 API）+ 視窗管理（window.js + 5 API）+ 視覺分析模板 | ✅ |
-| P3.2 | 動得了 | 鍵盤/滑鼠模擬 + AppleScript + Computer Use | ⬜ |
+| P3.2 | 心跳引擎 | Heartbeat daemon（start/stop/status）+ session-spawner.js + autonomous-control Skill | ✅ |
 | P3.3 | 管得住 | Process + 剪貼簿 + 系統資訊 + 通知 + 檔案監控 | ⬜ |
 | P3.4 | 聽說能力 | WebSocket + TTS + STT | ⬜ |
 | P3.5 | 安全整合 | Guard 精鍊 + E2E 驗證 + health-check 擴展 | ⬜ |

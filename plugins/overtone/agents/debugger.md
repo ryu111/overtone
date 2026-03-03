@@ -13,6 +13,7 @@ disallowedTools:
 skills:
   - debugging
   - os-control
+  - autonomous-control
 ---
 
 # 🔧 除錯者

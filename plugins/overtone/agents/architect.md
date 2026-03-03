@@ -9,9 +9,10 @@ disallowedTools:
   - Task
   - NotebookEdit
 skills:
-  - wording
+  - autonomous-control
   - architecture
   - os-control
+  - wording
 ---
 
 # 🏗️ 架構師

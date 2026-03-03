@@ -9,6 +9,7 @@ skills:
   - testing
   - wording
   - os-control
+  - autonomous-control
 ---
 
 # 🧪 測試者

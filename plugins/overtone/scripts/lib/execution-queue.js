@@ -140,6 +140,28 @@ function completeCurrent(projectRoot, name) {
 }
 
 /**
+ * 將目前正在執行的項目標記為失敗
+ * @param {string} projectRoot
+ * @param {string} [reason] - 失敗原因描述（可選）
+ * @returns {boolean} 是否成功標記
+ */
+function failCurrent(projectRoot, reason) {
+  const queue = readQueue(projectRoot);
+  if (!queue) return false;
+
+  const index = queue.items.findIndex(i => i.status === 'in_progress');
+  if (index === -1) return false;
+
+  queue.items[index].status = 'failed';
+  queue.items[index].failedAt = new Date().toISOString();
+  if (reason) queue.items[index].failReason = reason;
+
+  const filePath = _queuePath(projectRoot);
+  atomicWrite(filePath, queue);
+  return true;
+}
+
+/**
  * 取得佇列摘要（用於 SessionStart systemMessage 注入）
  * @param {string} projectRoot
  * @returns {string} 摘要文字，無佇列時回傳空字串
@@ -206,6 +228,7 @@ module.exports = {
   getCurrent,
   advanceToNext,
   completeCurrent,
+  failCurrent,
   formatQueueSummary,
   clearQueue,
 };

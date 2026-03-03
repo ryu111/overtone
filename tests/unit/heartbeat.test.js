@@ -98,6 +98,7 @@ async function runPoll({
   throwOnGetNext = false,
   outcomeResult = { status: 'success', sessionId: 'abc' },
   telegramNotified = [],
+  persistStateMock = null,
 } = {}) {
   const s = state || makeState();
   const mockQueue = makeMockQueue({ getCurrent, getNext, advanceToNextReturn, throwOnGetNext });
@@ -111,11 +112,14 @@ async function runPoll({
 
   const notify = (msg) => { telegramNotified.push(msg); };
 
-  const poll = heartbeat._createPollFn('/proj', s, {
+  const pollDeps = {
     executionQueue: mockQueue,
     spawnSession: mockSpawnSession,
     notify,
-  });
+  };
+  if (persistStateMock) pollDeps.persistState = persistStateMock;
+
+  const poll = heartbeat._createPollFn('/proj', s, pollDeps);
 
   await poll();
 
@@ -500,6 +504,30 @@ describe('Feature 4: 佇列監聽與 session 排程', () => {
 
     expect(spawnCalls.length).toBe(0);
   });
+
+  // Scenario 4-9: polling 每次執行後更新 state.lastPollAt（BDD 4-8）
+  test('Scenario 4-9: poll 執行後 state.lastPollAt 更新為 ISO 8601 格式時間戳記', async () => {
+    const s = makeState();
+    let callCount = 0;
+
+    // mock persistState：模擬真實函式中設定 state.lastPollAt 的行為，並記錄呼叫次數
+    const mockPersist = (state) => {
+      callCount++;
+      state.lastPollAt = new Date().toISOString();
+    };
+
+    await runPoll({
+      state: s,
+      getNext: null, // 無 pending 項目，走最短路徑
+      persistStateMock: mockPersist,
+    });
+
+    // 至少呼叫一次 persistState
+    expect(callCount).toBeGreaterThan(0);
+    // state.lastPollAt 應為 ISO 8601 格式
+    expect(s.lastPollAt).toBeTruthy();
+    expect(new Date(s.lastPollAt).toISOString()).toBe(s.lastPollAt);
+  });
 });
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -562,6 +590,32 @@ describe('Feature 5: 安全邊界 — 連續失敗暫停', () => {
   // Scenario 5-4: CONSECUTIVE_FAILURE_THRESHOLD 常數值為 3
   test('Scenario 5-4: CONSECUTIVE_FAILURE_THRESHOLD 值為 3', () => {
     expect(heartbeat.CONSECUTIVE_FAILURE_THRESHOLD).toBe(3);
+  });
+
+  // Scenario 5-5: 暫停狀態持久化 — paused:true 且 consecutiveFailures:3（BDD 5-4）
+  test('Scenario 5-5: 連續 3 次失敗後 persistState 以 paused:true, consecutiveFailures:3 呼叫', async () => {
+    const s = makeState({ consecutiveFailures: 2 });
+    const persistCalls = [];
+
+    const mockPersist = (state) => {
+      persistCalls.push({ paused: state.paused, consecutiveFailures: state.consecutiveFailures });
+    };
+
+    await runPoll({
+      state: s,
+      persistStateMock: mockPersist,
+      getCurrent: null,
+      getNext: { item: { name: 'my-feature', workflow: 'standard' }, index: 0 },
+      outcomeResult: { status: 'error', sessionId: null, errorCode: 'error_max_turns' },
+    });
+
+    // outcome 回呼後，state.paused === true, consecutiveFailures === 3
+    expect(s.paused).toBe(true);
+    expect(s.consecutiveFailures).toBe(3);
+
+    // 至少有一次 persistState 呼叫時帶著 paused:true 和 consecutiveFailures:3
+    const pausedCall = persistCalls.find(c => c.paused === true && c.consecutiveFailures === 3);
+    expect(pausedCall).toBeTruthy();
   });
 });
 

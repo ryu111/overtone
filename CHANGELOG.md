@@ -2,6 +2,57 @@
 
 所有重要變更記錄於此文件。
 
+## [0.28.32] - 2026-03-04
+
+### P3.2 心跳引擎：自主控制層完成
+- **Heartbeat Daemon**（新模組）：`scripts/heartbeat.js`
+  - `start [--project-root <path>]`：啟動常駐 daemon + PID 檔管理
+  - `stop`：停止 daemon + SIGTERM 清理
+  - `status`：查看心跳狀態
+  - 內部：polling loop + execution-queue 監聽 + failCurrent() 暫停機制
+- **Session Spawner**（新模組）：`scripts/lib/session-spawner.js`
+  - `spawn(taskSpec, options)`：`claude -p --plugin-dir` 封裝
+  - 參數組裝 + stream-json 完成偵測 + timeout (3600s) + 事件推送
+  - 整合 Telegram notify（spawn/完成/失敗/暫停）
+- **Autonomous Control Skill**（新 knowledge domain）：第 13 個
+  - `skills/autonomous-control/SKILL.md` + `references/heartbeat.md`
+  - 5 個 agent 新增 `skills: [autonomous-control]`：developer, architect, tester, debugger, qa
+- **Execution Queue 擴展**：`scripts/lib/execution-queue.js`
+  - 新增 `failCurrent()` API：暫停當前任務（連續失敗機制）
+- **Telegram 通知增強**：`scripts/lib/remote/telegram-adapter.js`
+  - 新增 `notify(event, message)` API
+- **測試**：
+  - `tests/unit/heartbeat.test.js`：41 tests
+  - `tests/unit/session-spawner.test.js`：9 tests
+  - 累計 2858 pass / 0 fail（120 個測試檔）
+
+---
+
+## [0.28.31] - 2026-03-03
+
+### P3.1 感知層：截圖 + 視窗管理完成
+- **Screenshot Engine**（新模組）：`scripts/lib/os/screenshot.js`
+  - `captureFullScreen(outputPath)`：全螢幕截圖
+  - `captureRegion(region, outputPath)`：區域截圖
+  - `captureWindow(appName, outputPath)`：特定視窗截圖
+  - `checkPermission()`：權限檢測（macOS 螢幕錄製權限）
+  - 底層：`screencapture` wrapper（macOS 原生）
+- **Window Management**（新模組）：`scripts/lib/os/window.js`
+  - `listProcesses()`、`listWindows(appName)`：進程/視窗列舉
+  - `focusApp(appName)`：聚焦應用
+  - `getFrontApp()`：取前景應用
+  - `checkAccessibility()`：Accessibility 權限檢測
+  - 底層：AppleScript/JXA（含 sanitizeAppName 安全注入防護）
+- **Perception Reference**：`skills/os-control/references/perception.md`
+  - 分析模板：截圖 → Read tool（多模態） → 結構化描述
+  - UI 視覺化辨識、文字提取、異常檢測範本
+- **測試**：
+  - `tests/unit/screenshot.test.js`：22 tests
+  - `tests/unit/window.test.js`：27 tests
+  - 累計 2808 pass / 0 fail（118 個測試檔）
+
+---
+
 ## [0.28.30] - 2026-03-03
 
 ### P3.0 閉環基礎：Status Line 並行顯示 + 組件管理強化

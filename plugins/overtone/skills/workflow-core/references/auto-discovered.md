@@ -1,81 +1,4 @@
 ---
-## 2026-03-03 | architect:ARCH Findings
-**技術方案**：
-
-- 新建 `global-instinct.js`（不擴展現有 `instinct.js`）——全域層的去重合併語意（同 tag+type 取 max confidence）與 session 層的 append-only 更新語意不同，分離保持單一職責
-- 全域路徑 `~/.overtone/global/observations.jsonl`，資料格式與 session 層相同，畢業時新增 `globalTs` 欄位
-- graduate() 執行時一併執行 decayGlobal()——SessionEnd 是做清理的自然時機，避免 SessionStart 延遲
-- systemMessage 注入使用純文字 Markdown 條列——與現有 `buildPendingTasksMessage` 格式一致
-- 全域 store 不存在時靜默跳過——首次 _append 時自動建立目錄和檔案
-
-**API 介面**：
-
-`global-instinct.js`：
-- `graduate(sessionId)` → `{ graduated, merged, decayed, pruned }`
-- `queryGlobal(filter)` → `object[]`（filter 支援 type / tag / minConfidence / limit，limit 時按 confidence 降序）
-- `summarizeGlobal()` → `{ total, applicable, byType, byTag }`
-- `decayGlobal()` → `{ decayed, pruned }`
-- `pruneGlobal()` → `number`
-
-`paths.js` 新增：
-- `GLOBAL_DIR = ~/.overtone/global`
-- `paths.global.dir()` / `paths.global.observations()`
-
-`registry.js` 新增：
-- `globalInstinctDefaults = { graduationThreshold: 0.7, loadTopN: 50 }`
-
-**資料模型**：
-
-全域 JSONL 格式與 session 層一致，新增 `globalTs` 欄位記錄首次畢業時間。去重鍵為 `tag + type`（不以 id），保留 session 層原有 id。
-
-**檔案結構**：
-
-新增：
-- `/Users/sbu/projects/overtone/plugins/overtone/scripts/lib/global-instinct.js`
-- `/Users/sbu/projects/overtone/tests/unit/global-instinct.test.js`
-- `/Users/sbu/projects/overtone/tests/integration/cross-session-memory.test.js`
-
-修改：
-- `/Users/sbu/projects/overtone/plugins/overtone/scripts/lib/paths.js`
-- `/Users/sbu/projects/overtone/plugins/overtone/scripts/lib/registry.js`
-- `/Users/sbu/projects/overtone/plugins/overtone/hooks/scripts/session/on-session-end.js`
-- `/Users/sbu/projects/overtone/plugins/overtone/hooks/scripts/session/on-start.js`
-
-**Dev Phases**：
-Keywords: global, instinct, type, confidence, session, append, only, overtone, observations, jsonl
-
----
-## 2026-03-03 | architect:ARCH Context
-為 Overtone 的跨 session 長期記憶功能完成技術設計。核心方案是新建 `global-instinct.js` 作為獨立全域層模組，沿用 JSONL append-only 機制，透過 SessionEnd 畢業高信心觀察、SessionStart 載入注入 systemMessage，實現跨 session 知識累積。
-Keywords: overtone, session, global, instinct, jsonl, append, only, sessionend, sessionstart, systemmessage
-
----
-## 2026-03-03 | doc-updater:DOCS Findings
-文件同步已全面完成，確保版本號、測試指標、功能說明與程式碼實作一致。
-
-**更新的核心內容：**
-
-1. **docs/status.md** — 版本狀態同步
-   - 更新版本標題為「跨 Session 長期記憶 + 全域觀察畢業」
-   - 核心指標更新：測試 2468 pass / 103 files
-   - 近期變更補充 global-instinct.js 五個 API 說明
-
-2. **docs/vision.md** — Level 2 能力標記
-   - 跨 session 長期記憶：⬜ → ✅（代表已完成實現）
-
-3. **docs/roadmap.md** — 技術詳節補充
-   - Level 2 長期記憶狀態更新為完成
-   - 詳細說明：global-instinct.js（5 API + projectHash 隔離）
-
-4. **docs/spec/overtone.md、overtone-子系統.md** — 規格版本同步
-   - 版本號：v0.28.21 → v0.28.22
-
-5. **README.md** — 技術資訊表更新
-   - Plugin 版本：0.28.2 → 0.28.22
-   - 測試覆蓋：1778 pass / 83 files → 2468 pass / 103 files
-Keywords: docs, status, session, pass, files, global, instinct, vision, level, roadmap
-
----
 ## 2026-03-03 | doc-updater:DOCS Context
 完成了跨 Session 長期記憶功能（v0.28.22）的文件同步。該功能引入了新的全域觀察畢業系統（global-instinct.js），支援跨 session 長期記憶，開啟了 Level 2「持續學習」階段。
 Keywords: session, global, instinct, level
@@ -780,4 +703,81 @@ P3.1 感知層整體實作品質良好，四個交付維度均完整。
 
 - `listProcesses` 和其他 window.js 函式使用 `osascript -e '${script}'` 傳遞多行 script，若腳本中有單引號則可能提早終止 shell 引號。目前的靜態 script 字串均不含單引號，所以無即時風險。信心約 50%（潛在設計脆弱點，但目前腳本均為硬編碼字串）。
 Keywords: overtone, screenshot, window, reference, perception, skill, test, sanitizeappname, review, reject
+
+---
+## 2026-03-03 | architect:ARCH Findings
+**技術方案**：
+- Bun 常駐 daemon（heartbeat.js），fork-detach 模式（`start` spawn `_daemon` 子命令為 detached 子程序後 parent exit）
+- PID 檔（`~/.overtone/heartbeat.pid`）+ 狀態檔（`~/.overtone/heartbeat-state.json`）管理 daemon 生命週期
+- session-spawner.js 封裝 `claude -p --plugin-dir --output-format stream-json`，監聽 stdout stream-json 行萃取 session_id，outcome Promise 統一回傳 `{ status, sessionId }`
+- TelegramAdapter 新增 `notify(message)` 公開方法，heartbeat 直接實例化不依賴 EventBus
+
+**關鍵技術決策**：
+- Q1 完成偵測：stream-json `result` 事件 + 60 分鐘 timeout 兜底 + `stdout close` 清理
+- Q2 prompt 格式：`開始執行 {featureName}，workflow: {workflow}` — 讓 UserPromptSubmit hook 接管
+- Q3 projectRoot：`--project-root` CLI 參數，fallback `process.cwd()`
+- Q4 Telegram：直接實例化，不透過 EventBus
+- Q5 resume：全新 session，不 resume
+
+**API 介面**：
+- `heartbeat.js` CLI：`start [--project-root <path>] | stop | status`（內部有 `_daemon` 子命令）
+- `spawnSession(prompt, opts, _deps)` → `{ child, outcome: Promise<{status, sessionId}> }`
+- `_buildArgs(opts)` → claude CLI 參數陣列（可單獨測試）
+- `TelegramAdapter.notify(message)` → 公開通知方法（新增）
+- `execution-queue.js` 新增 `failCurrent(projectRoot, reason)` → boolean
+
+**資料模型**：
+- `heartbeat-state.json`：`{ pid, projectRoot, activeItem, consecutiveFailures, paused, startedAt, lastPollAt }`
+- `heartbeat.pid`：純文字 PID 數字
+- 佇列狀態機：`pending → in_progress → completed | failed`（新增 failed 狀態）
+
+**檔案結構**：
+- `plugins/overtone/scripts/heartbeat.js` — 新增：daemon CLI + polling loop
+- `plugins/overtone/scripts/lib/session-spawner.js` — 新增：claude spawn 封裝
+- `tests/unit/heartbeat.test.js` — 新增
+- `tests/unit/session-spawner.test.js` — 新增
+- `plugins/overtone/scripts/lib/execution-queue.js` — 修改：新增 `failCurrent()`
+- `plugins/overtone/scripts/lib/remote/telegram-adapter.js` — 修改：新增 `notify()` + Should `/run` 命令
+- `plugins/overtone/scripts/lib/paths.js` — 修改：新增 `HEARTBEAT_PID_FILE` / `HEARTBEAT_STATE_FILE` 常數
+- `plugins/overtone/scripts/health-check.js` — 修改（Should）：新增第 8 項偵測
+
+**Dev Phases**：
+Keywords: daemon, heartbeat, fork, detach, start, spawn, detached, parent, exit, overtone
+
+---
+## 2026-03-03 | tester:TEST Findings
+**測試結果：PASS（有條件）**
+
+- 全套：2856 pass / 0 fail（40.55 秒）
+- P3.2 新增測試：48 個（session-spawner.test.js 9 個 + heartbeat.test.js 39 個）
+- `_deps` 注入策略正確，所有副作用（spawn、PID 讀寫、process.kill、setInterval）均透過依賴注入 mock，未 mock 受測邏輯本身
+- 斷言品質合格：使用具體值比對（`toBe`、`toContain`、`toMatch`），無單純存在性斷言
+
+**BDD 覆蓋率：44/46（95.6%）**
+
+2 個 Scenario 未完整覆蓋：
+
+**未覆蓋 1：Scenario 4-8（lastPollAt 更新）**
+- BDD 定義：`polling loop 每次執行完畢 → heartbeat-state.json 的 lastPollAt 欄位更新為最近時間戳記`
+- 問題：測試 4-8 實際覆蓋的是 BDD 4-4（paused = true 跳過 spawn），標籤錯位
+- 原因：Feature 4 共 8 個 BDD Scenario，但測試 4-3 是額外增補（getCurrent 守衛），造成後續編號整體向後 shift 一位，最後的 BDD 4-8（lastPollAt）沒有對應測試
+
+**未完整覆蓋 2：Scenario 5-4（paused 狀態持久化）**
+- BDD 定義：`daemon 因 3 次失敗 paused = true → heartbeat-state.json 的 paused 欄位為 true 且 consecutiveFailures 為 3`
+- 問題：測試 5-4 改為驗證 `CONSECUTIVE_FAILURE_THRESHOLD` 常數值（= 3），未驗證 `persistState` 寫入 `heartbeat-state.json` 的實際內容
+
+**其他觀察（非阻擋）**
+
+- `test-quality-guard` 回報 heartbeat.test.js 有 `[large-file]` 警告（816 行），屬建議性，不影響測試品質
+- Feature 4 測試 4-3 額外增補了 getCurrent 守衛路徑，測試覆蓋寬於 BDD 規格（可保留，屬良性）
+Keywords: pass, fail, session, spawner, test, heartbeat, spawn, process, kill, setinterval
+
+---
+## 2026-03-03 | code-reviewer:REVIEW Findings
+1. **CLAUDE.md knowledge domain 計數未同步**
+   - 檔案：`/Users/sbu/projects/overtone/CLAUDE.md`，第 57 行
+   - 問題：Skill 數量已更新（20 -> 21），但 knowledge domain 仍寫 "12 knowledge domains"，列表缺少 `autonomous-control`。`docs/status.md` 已正確更新為 13。
+   - 建議修復：將 "12 knowledge domains" 改為 "13 knowledge domains"，列表末尾加上 `autonomous-control`
+   - 信心等級：95%
+Keywords: claude, knowledge, domain, users, projects, overtone, skill, domains, autonomous, control
 

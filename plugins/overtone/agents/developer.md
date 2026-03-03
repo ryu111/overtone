@@ -6,6 +6,7 @@ permissionMode: bypassPermissions
 color: yellow
 maxTurns: 50
 skills:
+  - autonomous-control
   - commit-convention
   - wording
   - os-control

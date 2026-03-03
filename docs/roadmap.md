@@ -1,6 +1,6 @@
 # Overtone Roadmap
 
-> 最後更新：2026-03-03 | 當前 Phase：Phase 2 完成（Level 2 持續學習全部完成）
+> 最後更新：2026-03-04 | 當前 Phase：Phase 3 進行中（P3.2 心跳引擎完成）
 
 ## Phase 總覽
 
@@ -52,14 +52,17 @@
 
 ---
 
-## Phase 3：感知操控（Layer 2 完整 OS 能力）
+## Phase 3：感知操控 + 自主控制（Layer 2 完整能力）
 
-> 目標：讓 agent 擁有完整的 OS 感知和操控能力，達到 Phase 4 Ready。
-> 架構：Bun 腳本庫（`scripts/os/`）+ `os-control` knowledge domain skill（第 12 個）+ OS Guard
+> 目標：讓 agent 擁有 OS 感知操控 + 跨 session 閉環自主控制能力，達到 Phase 4 Ready。
+> 架構：Bun 腳本庫（`scripts/os/` + `scripts/heartbeat.js`）+ `os-control` knowledge domain skill + OS Guard
 > 桌面操控策略：AppleScript/JXA 原生優先 + Computer Use（截圖→理解→操作→驗證）兜底
+> 自主控制策略：`claude -p --plugin-dir` headless session spawn + Heartbeat Daemon 佇列驅動
 >
 > **閉環交付模型**：每個 P3.x 交付 = 腳本（能力）+ Reference（知識）+ SKILL.md 索引更新 + Guard 擴充 + 測試。
 > Agent 透過 frontmatter `skills: [os-control]` 宣告 → pre-task.js 自動注入知識。
+>
+> **方向重排（2026-03-04 PM Discovery）**：閉環自主控制比 UI 操控更優先 — 終端命令能完成 90% 的任務，但跨 session 接力是 Phase 4 的真正前提。原 P3.2（動得了）降為 P3.4。
 
 ### P3.0 閉環基礎（骨架層）
 
@@ -80,15 +83,19 @@
 | window.js | 視窗列表/聚焦（AppleScript）— P3.1 完成；移動/調整大小留 P3.2 | ✅ |
 | Skill: perception ref | `skills/os-control/references/perception.md` | ✅ |
 
-### P3.2 動得了（操控層）
+### P3.2 心跳引擎（自主控制層）✅
+
+> 方向重排：原 P3.2「動得了」降為 P3.4，插入心跳引擎作為閉環自主控制的核心。
+> 技術方案：Heartbeat Daemon（方案 A，RICE 4.8）— Bun 常駐程序 + `claude -p --plugin-dir` spawn session。
+> PoC 已驗證：`claude -p --plugin-dir` 完整載入 22 skills + 17 agents。
 
 | 任務 | 說明 | 狀態 |
 |------|------|:----:|
-| keyboard.js | 按鍵/快捷鍵/文字輸入（`osascript` System Events） | ⬜ |
-| mouse.js | 點擊/雙擊/拖曳/滾動（`cliclick`） | ⬜ |
-| applescript.js | AppleScript/JXA 執行引擎 | ⬜ |
-| computer-use.js | 截圖→理解→操作→驗證 協調迴圈 | ⬜ |
-| Skill: control ref | `skills/os-control/references/control.md` | ⬜ |
+| heartbeat.js | Bun 常駐 daemon（start/stop/status CLI + PID 檔 + polling loop） | ✅ |
+| session-spawner.js | `claude -p` session spawn 封裝（參數組裝 + stream-json 解析 + timeout） | ✅ |
+| 佇列整合 | execution-queue.json 監聽 + 自動 spawn + 安全邊界（並行鎖 + 連續失敗暫停） | ✅ |
+| Telegram 通知 | spawn/完成/失敗/暫停事件推送 + `/run` 遠端觸發（Should） | ✅ |
+| autonomous-control Skill | 新建第 13 個 knowledge domain（SKILL.md + references/heartbeat.md + Agent frontmatter 注入） | ✅ |
 
 ### P3.3 管得住（系統層）
 
@@ -101,7 +108,17 @@
 | fswatch.js | 檔案系統變更監控 | ⬜ |
 | Skill: system ref | `skills/os-control/references/system.md` | ⬜ |
 
-### P3.4 聽說能力（通訊層）
+### P3.4 動得了（操控層）← 原 P3.2，降優先
+
+| 任務 | 說明 | 狀態 |
+|------|------|:----:|
+| keyboard.js | 按鍵/快捷鍵/文字輸入（`osascript` System Events） | ⬜ |
+| mouse.js | 點擊/雙擊/拖曳/滾動（`cliclick`） | ⬜ |
+| applescript.js | AppleScript/JXA 執行引擎 | ⬜ |
+| computer-use.js | 截圖→理解→操作→驗證 協調迴圈 | ⬜ |
+| Skill: control ref | `skills/os-control/references/control.md` | ⬜ |
+
+### P3.5 聽說能力（通訊層）← 原 P3.4
 
 | 任務 | 說明 | 狀態 |
 |------|------|:----:|
@@ -110,18 +127,20 @@
 | stt.js | 語音轉文字（macOS Dictation / Whisper） | ⬜ |
 | Skill: realtime ref | `skills/os-control/references/realtime.md` | ⬜ |
 
-### P3.5 安全整合（守衛層）
+### P3.6 安全整合（守衛層）← 原 P3.5
 
 | 任務 | 說明 | 狀態 |
 |------|------|:----:|
 | Guard 精鍊 | pre-bash-guard.js 黑名單完善 + 各階段累積的危險模式整合 | ⬜ |
 | E2E 驗證 | 端到端測試：截圖→理解→操作→驗證 完整流程 | ⬜ |
-| health-check 擴展 | 偵測 cliclick/fswatch 等外部依賴是否安裝 | ⬜ |
+| health-check 擴展 | 偵測 cliclick/fswatch 等外部依賴是否安裝 + heartbeat daemon 狀態 | ⬜ |
 | Skill 完善 | os-control SKILL.md 正式版 + 所有 reference 完成度驗證 | ⬜ |
 
 ### Phase 3 完成標準（Phase 4 Ready）
 
-> 給系統指令：「研究幣安 API，建立加密貨幣價格監控系統」
+> **P3.2 里程碑**：給系統一個佇列（3 個任務），用戶離開電腦。系統自主循環完成所有任務，Telegram 推送進度，連續失敗自動暫停通知。
+>
+> **最終標準（P3.6 後）**：給系統指令：「研究幣安 API，建立加密貨幣價格監控系統」
 > 系統必須能自主完成：HTTP 研究 API → WebSocket 接收即時價格 → Process 啟動監控 → 截圖+視覺驗證顯示正確 → 通知價格異常 → 全程 OS Guard 保護
 
 ---
