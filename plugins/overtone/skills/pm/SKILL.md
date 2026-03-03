@@ -1,7 +1,6 @@
 ---
 name: pm
 description: 產品探索與需求釐清。引導 Main Agent 以 PM 角色探索需求、定義範圍、比較方案。三種模式：discovery（純探索）、product（PM + standard pipeline）、product-full（PM + full pipeline）。
-argument-hint: "[產品需求，例如：評估 A/B 方案的成本效益]"
 ---
 
 # 產品經理（PM）
@@ -23,7 +22,9 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/init-workflow.js product-full ${CLAUDE_SESSIO
 
 ## PM Stage — 🎯 產品分析
 
-委派 `product-manager` agent。
+📋 MUST 委派 `product-manager` agent。⛔ NEVER 由 Main Agent 自己回答。
+
+無論問題看起來多簡單，`/ot:pm` 被觸發時，所有分析工作都必須交給 product-manager agent。Main Agent 只負責委派和轉達結果。
 
 - **輸入**：使用者需求（可能模糊）
 - **產出**：Product Brief — 問題陳述 + 方案比較 + MVP 範圍 + BDD 驗收標準
