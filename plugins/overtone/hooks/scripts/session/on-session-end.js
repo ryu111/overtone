@@ -75,9 +75,10 @@ safeRun(() => {
   // ── 3b. 全域畢業（graduate）──
   // 將高信心 session 觀察升至全域 store，不影響其他清理步驟
 
+  const projectRoot = process.env.CLAUDE_PROJECT_ROOT || process.cwd();
+
   try {
     const globalInstinct = require('../../../scripts/lib/global-instinct');
-    const projectRoot = process.env.CLAUDE_PROJECT_ROOT || process.cwd();
     const result = globalInstinct.graduate(sessionId, projectRoot);
     if (result.graduated > 0 || result.merged > 0) {
       process.stderr.write(
@@ -86,6 +87,22 @@ safeRun(() => {
     }
   } catch (err) {
     hookError('on-session-end', `global-instinct.graduate 失敗：${err.message || String(err)}`);
+  }
+
+  // ── 3c. 效能基線保存 ──
+  // 若 workflow 已完成，記錄效能指標供跨 session 追蹤
+
+  try {
+    const baselineTracker = require('../../../scripts/lib/baseline-tracker');
+    const { saved, metrics } = baselineTracker.saveBaseline(sessionId, projectRoot);
+    if (saved) {
+      const durationSec = metrics.duration ? Math.round(metrics.duration / 1000) : '?';
+      process.stderr.write(
+        `[overtone/on-session-end] 效能基線：${metrics.workflowType} ${durationSec}s，pass@1 ${metrics.pass1Rate ?? 'N/A'}\n`
+      );
+    }
+  } catch (err) {
+    hookError('on-session-end', `baseline-tracker.saveBaseline 失敗：${err.message || String(err)}`);
   }
 
   // ── 3. 清理 .current-session-id ──

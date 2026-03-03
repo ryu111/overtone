@@ -58,3 +58,16 @@ Keywords: describe, expect, coverage
 - `tests/integration/cross-session-memory.test.js`：12 個測試全部通過（Features 4、5 + 端對端整合）
 - BDD spec 的 40 個 Scenario 全數有測試覆蓋
 Keywords: passed, failed, tests, unit, global, instinct, test, features, pruneglobal, merge
+---
+## 2026-03-03 | tester:TEST Findings
+測試結果摘要：2492 passed, 0 failed
+
+- `tests/unit/baseline-tracker.test.js`：19 個單元測試（6 個 describe 群組）
+- `tests/integration/baseline-tracker.test.js`：5 個整合測試（4 個 describe 群組）
+- 全量 2492 pass，0 fail，105 個測試檔案
+
+所有驗證重點均有覆蓋：
+- 5 個公開 API 全部驗證（computeSessionMetrics、saveBaseline、getBaseline、compareToBaseline、formatBaselineSummary）
+- 邊界情況：空 store、無效 JSON、專案隔離、workflowType 隔離、未完成 workflow
+- 整合：SessionEnd 保存、SessionStart 載入、改善偵測、退化偵測、hook 執行
+Keywords: passed, failed, tests, unit, baseline, tracker, test, describe, integration, pass

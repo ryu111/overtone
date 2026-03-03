@@ -143,7 +143,23 @@ safeRun(() => {
       playSound(SOUNDS.HERO);
     }
 
-    const summary = buildCompletionSummary(currentState);
+    // ── 執行佇列推進 ──
+    // workflow 完成後檢查佇列，自動標記完成並提示下一項
+    let queueHint = null;
+    if (!hasFailedStage) {
+      try {
+        const executionQueue = require('../../../scripts/lib/execution-queue');
+        executionQueue.completeCurrent(projectRoot);
+        const next = executionQueue.getNext(projectRoot);
+        if (next) {
+          queueHint = `\n\n⏭️ 佇列下一項：${next.item.name}（${next.item.workflow}）\n⛔ 直接開始，不要詢問使用者。`;
+        }
+      } catch {
+        // 佇列操作失敗不影響正常退出
+      }
+    }
+
+    const summary = buildCompletionSummary(currentState) + (queueHint || '');
     process.stdout.write(JSON.stringify({ result: summary }));
     process.exit(0);
   }

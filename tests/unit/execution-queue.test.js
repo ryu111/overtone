@@ -1,0 +1,240 @@
+'use strict';
+/**
+ * execution-queue.test.js — 執行佇列單元測試
+ *
+ * 測試面向：
+ *   1. writeQueue + readQueue：寫入與讀取
+ *   2. getNext + advanceToNext：推進邏輯
+ *   3. completeCurrent：完成標記
+ *   4. formatQueueSummary：摘要格式
+ *   5. clearQueue：清除
+ *   6. 邊界情況
+ */
+
+const { test, expect, describe, afterAll } = require('bun:test');
+const { rmSync, existsSync } = require('fs');
+const { join } = require('path');
+const { homedir } = require('os');
+const { SCRIPTS_LIB } = require('../helpers/paths');
+
+const executionQueue = require(join(SCRIPTS_LIB, 'execution-queue'));
+const paths = require(join(SCRIPTS_LIB, 'paths'));
+
+const TIMESTAMP = Date.now();
+const TEST_PROJECT = join(homedir(), '.overtone', 'test-eq-' + TIMESTAMP);
+
+afterAll(() => {
+  rmSync(paths.global.dir(TEST_PROJECT), { recursive: true, force: true });
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// 1. writeQueue + readQueue
+// ────────────────────────────────────────────────────────────────────────────
+
+describe('writeQueue + readQueue', () => {
+  test('寫入後可讀取', () => {
+    const items = [
+      { name: '效能基線追蹤', workflow: 'quick' },
+      { name: '數值評分引擎', workflow: 'standard' },
+    ];
+    const queue = executionQueue.writeQueue(TEST_PROJECT, items, 'PM Discovery test');
+
+    expect(queue.items.length).toBe(2);
+    expect(queue.items[0].status).toBe('pending');
+    expect(queue.autoExecute).toBe(true);
+    expect(queue.source).toBe('PM Discovery test');
+
+    const read = executionQueue.readQueue(TEST_PROJECT);
+    expect(read).not.toBeNull();
+    expect(read.items.length).toBe(2);
+  });
+
+  test('不存在時回傳 null', () => {
+    const read = executionQueue.readQueue('/tmp/no-such-project-' + TIMESTAMP);
+    expect(read).toBeNull();
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// 2. getNext + advanceToNext
+// ────────────────────────────────────────────────────────────────────────────
+
+describe('getNext + advanceToNext', () => {
+  test('getNext 回傳第一個 pending 項目', () => {
+    executionQueue.writeQueue(TEST_PROJECT, [
+      { name: 'A', workflow: 'quick' },
+      { name: 'B', workflow: 'standard' },
+    ], 'test');
+
+    const next = executionQueue.getNext(TEST_PROJECT);
+    expect(next).not.toBeNull();
+    expect(next.item.name).toBe('A');
+    expect(next.index).toBe(0);
+  });
+
+  test('advanceToNext 標記為 in_progress', () => {
+    executionQueue.writeQueue(TEST_PROJECT, [
+      { name: 'X', workflow: 'quick' },
+      { name: 'Y', workflow: 'standard' },
+    ], 'test');
+
+    const advanced = executionQueue.advanceToNext(TEST_PROJECT);
+    expect(advanced.item.name).toBe('X');
+
+    const queue = executionQueue.readQueue(TEST_PROJECT);
+    expect(queue.items[0].status).toBe('in_progress');
+    expect(queue.items[0].startedAt).toBeDefined();
+    expect(queue.items[1].status).toBe('pending');
+  });
+
+  test('所有項目完成後 getNext 回傳 null', () => {
+    executionQueue.writeQueue(TEST_PROJECT, [
+      { name: 'Done', workflow: 'quick' },
+    ], 'test');
+
+    executionQueue.advanceToNext(TEST_PROJECT);
+    executionQueue.completeCurrent(TEST_PROJECT);
+
+    const next = executionQueue.getNext(TEST_PROJECT);
+    expect(next).toBeNull();
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// 3. completeCurrent
+// ────────────────────────────────────────────────────────────────────────────
+
+describe('completeCurrent', () => {
+  test('標記 in_progress 為 completed', () => {
+    executionQueue.writeQueue(TEST_PROJECT, [
+      { name: 'Task1', workflow: 'quick' },
+      { name: 'Task2', workflow: 'standard' },
+    ], 'test');
+
+    executionQueue.advanceToNext(TEST_PROJECT);
+    const success = executionQueue.completeCurrent(TEST_PROJECT);
+    expect(success).toBe(true);
+
+    const queue = executionQueue.readQueue(TEST_PROJECT);
+    expect(queue.items[0].status).toBe('completed');
+    expect(queue.items[0].completedAt).toBeDefined();
+  });
+
+  test('無 in_progress 項目時回傳 false', () => {
+    executionQueue.writeQueue(TEST_PROJECT, [
+      { name: 'Pending', workflow: 'quick' },
+    ], 'test');
+
+    const success = executionQueue.completeCurrent(TEST_PROJECT);
+    expect(success).toBe(false);
+  });
+
+  test('指定 name 驗證不匹配時回傳 false', () => {
+    executionQueue.writeQueue(TEST_PROJECT, [
+      { name: 'RealTask', workflow: 'quick' },
+    ], 'test');
+    executionQueue.advanceToNext(TEST_PROJECT);
+
+    const success = executionQueue.completeCurrent(TEST_PROJECT, 'WrongName');
+    expect(success).toBe(false);
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// 4. formatQueueSummary
+// ────────────────────────────────────────────────────────────────────────────
+
+describe('formatQueueSummary', () => {
+  test('顯示佇列狀態和下一項指示', () => {
+    executionQueue.writeQueue(TEST_PROJECT, [
+      { name: '已完成項', workflow: 'quick' },
+      { name: '待執行項', workflow: 'standard' },
+    ], 'PM Discovery');
+
+    // 完成第一項
+    executionQueue.advanceToNext(TEST_PROJECT);
+    executionQueue.completeCurrent(TEST_PROJECT);
+
+    const summary = executionQueue.formatQueueSummary(TEST_PROJECT);
+    expect(summary).toContain('執行佇列');
+    expect(summary).toContain('✅');
+    expect(summary).toContain('⬜');
+    expect(summary).toContain('⛔'); // 不要詢問使用者
+    expect(summary).toContain('待執行項');
+  });
+
+  test('空佇列回傳空字串', () => {
+    const summary = executionQueue.formatQueueSummary('/tmp/no-queue-' + TIMESTAMP);
+    expect(summary).toBe('');
+  });
+
+  test('全部完成時不顯示 ⛔', () => {
+    executionQueue.writeQueue(TEST_PROJECT, [
+      { name: 'Only', workflow: 'quick' },
+    ], 'test');
+    executionQueue.advanceToNext(TEST_PROJECT);
+    executionQueue.completeCurrent(TEST_PROJECT);
+
+    const summary = executionQueue.formatQueueSummary(TEST_PROJECT);
+    expect(summary).not.toContain('⛔');
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// 5. clearQueue
+// ────────────────────────────────────────────────────────────────────────────
+
+describe('clearQueue', () => {
+  test('清除後 readQueue 回傳 null', () => {
+    executionQueue.writeQueue(TEST_PROJECT, [
+      { name: 'ToDelete', workflow: 'quick' },
+    ], 'test');
+
+    executionQueue.clearQueue(TEST_PROJECT);
+
+    const queue = executionQueue.readQueue(TEST_PROJECT);
+    expect(queue).toBeNull();
+  });
+
+  test('清除不存在的佇列不崩潰', () => {
+    expect(() => {
+      executionQueue.clearQueue('/tmp/nonexistent-' + TIMESTAMP);
+    }).not.toThrow();
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// 6. 完整流程
+// ────────────────────────────────────────────────────────────────────────────
+
+describe('完整流程', () => {
+  test('3 項佇列完整推進', () => {
+    executionQueue.writeQueue(TEST_PROJECT, [
+      { name: 'A', workflow: 'quick' },
+      { name: 'B', workflow: 'standard' },
+      { name: 'C', workflow: 'quick' },
+    ], 'test-full');
+
+    // 推進 A
+    executionQueue.advanceToNext(TEST_PROJECT);
+    expect(executionQueue.getCurrent(TEST_PROJECT).item.name).toBe('A');
+    executionQueue.completeCurrent(TEST_PROJECT);
+
+    // 推進 B
+    executionQueue.advanceToNext(TEST_PROJECT);
+    expect(executionQueue.getCurrent(TEST_PROJECT).item.name).toBe('B');
+    executionQueue.completeCurrent(TEST_PROJECT);
+
+    // 推進 C
+    executionQueue.advanceToNext(TEST_PROJECT);
+    expect(executionQueue.getCurrent(TEST_PROJECT).item.name).toBe('C');
+    executionQueue.completeCurrent(TEST_PROJECT);
+
+    // 全部完成
+    expect(executionQueue.getNext(TEST_PROJECT)).toBeNull();
+    expect(executionQueue.getCurrent(TEST_PROJECT)).toBeNull();
+
+    const queue = executionQueue.readQueue(TEST_PROJECT);
+    expect(queue.items.every(i => i.status === 'completed')).toBe(true);
+  });
+});

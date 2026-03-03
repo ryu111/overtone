@@ -214,6 +214,34 @@ safeRun(() => {
     // 全域觀察載入失敗不阻擋 session 啟動，靜默跳過
   }
 
+  // ── 效能基線摘要載入 ──
+  // 顯示歷史工作流效能基線，提供「系統是否在進步」的量化參考
+
+  let baselineSummaryMsg = null;
+  try {
+    const baselineTracker = require('../../../scripts/lib/baseline-tracker');
+    const summary = baselineTracker.formatBaselineSummary(projectRoot);
+    if (summary) {
+      baselineSummaryMsg = '## 效能基線\n\n' + summary;
+    }
+  } catch {
+    // 基線載入失敗不阻擋 session 啟動
+  }
+
+  // ── 執行佇列載入 ──
+  // PM Discovery 確認的任務序列，注入 systemMessage 確保連續執行
+
+  let queueMsg = null;
+  try {
+    const executionQueue = require('../../../scripts/lib/execution-queue');
+    const summary = executionQueue.formatQueueSummary(projectRoot);
+    if (summary) {
+      queueMsg = summary;
+    }
+  } catch {
+    // 佇列載入失敗不阻擋 session 啟動
+  }
+
   const output = { result: banner };
   if (pendingTasksMsg) {
     output.systemMessage = pendingTasksMsg;
@@ -223,6 +251,20 @@ safeRun(() => {
       output.systemMessage += '\n\n' + globalObservationsMsg;
     } else {
       output.systemMessage = globalObservationsMsg;
+    }
+  }
+  if (baselineSummaryMsg) {
+    if (output.systemMessage) {
+      output.systemMessage += '\n\n' + baselineSummaryMsg;
+    } else {
+      output.systemMessage = baselineSummaryMsg;
+    }
+  }
+  if (queueMsg) {
+    if (output.systemMessage) {
+      output.systemMessage += '\n\n' + queueMsg;
+    } else {
+      output.systemMessage = queueMsg;
     }
   }
 

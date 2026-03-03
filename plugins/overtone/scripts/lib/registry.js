@@ -204,6 +204,12 @@ const globalInstinctDefaults = {
   loadTopN: 50,               // SessionStart 載入筆數上限
 };
 
+// 效能基線追蹤設定
+const baselineDefaults = {
+  compareWindowSize: 10,      // 取最近 N 筆同類 workflow 計算基線
+  maxRecordsPerType: 100,     // 每種 workflowType 最多保留幾筆記錄
+};
+
 module.exports = {
   stages,
   agentModels,
@@ -218,6 +224,7 @@ module.exports = {
   remoteCommands,
   instinctDefaults,
   globalInstinctDefaults,
+  baselineDefaults,
   specsConfig,
   knownTools,
   hookEvents,

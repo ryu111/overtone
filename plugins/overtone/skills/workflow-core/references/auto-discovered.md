@@ -633,3 +633,15 @@ Keywords: docs, status, session, pass, files, global, instinct, vision, level, r
 完成了跨 Session 長期記憶功能（v0.28.22）的文件同步。該功能引入了新的全域觀察畢業系統（global-instinct.js），支援跨 session 長期記憶，開啟了 Level 2「持續學習」階段。
 Keywords: session, global, instinct, level
 
+---
+## 2026-03-03 | code-reviewer:REVIEW Findings
+審查了效能基線追蹤功能的 7 個檔案變更，涵蓋四個維度：
+
+1. **正確性**：5 個 API（computeSessionMetrics, saveBaseline, getBaseline, compareToBaseline, formatBaselineSummary）邏輯正確，API 簽名與上游模組一致，改善方向判斷無誤
+2. **架構**：遵循既有 JSONL + paths + registry 模式，hook 整合位置合理（SessionEnd 保存 / SessionStart 載入），依賴鏈乾淨
+3. **安全性**：無硬編碼 secrets、無注入風險、專案隔離由 projectHash 保證
+4. **測試**：24 個測試全部通過（19 unit + 5 integration），覆蓋正常路徑 + 邊界情況 + hook 端對端
+
+全套測試 2492 pass / 0 fail。未發現高信心問題。
+Keywords: computesessionmetrics, savebaseline, getbaseline, comparetobaseline, formatbaselinesummary, jsonl, paths, registry, hook, sessionend
+
