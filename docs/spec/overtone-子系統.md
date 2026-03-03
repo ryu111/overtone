@@ -195,12 +195,15 @@ baselineDefaults: {
 - **DEV**：功能完整度、程式碼品質、效能
 - **REVIEW**：正確性、安全性、可維護性
 - **TEST**：通過率、覆蓋率、邊界情況
-- **QA**：行為一致性、邊界處理、用戶體驗
+- **PLAN**：需求完整度、可行性、風險識別
+- **ARCH**：架構合理性、擴展性、技術選型
+- **DEBUG**：根因分析深度、診斷準確度
+- **RETRO**：問題發現覆蓋度、建議可行性
 
 **設定**（registry.js）：
 ```javascript
 scoringConfig: {
-  gradedStages: ['DEV', 'REVIEW', 'TEST'],
+  gradedStages: ['DEV', 'REVIEW', 'TEST', 'PLAN', 'ARCH', 'DEBUG', 'RETRO'],
   lowScoreThreshold: 3.0      // < 3.0 算低分，觸發 quality_signal
 },
 scoringDefaults: {

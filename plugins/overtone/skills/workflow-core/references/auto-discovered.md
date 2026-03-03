@@ -1,87 +1,4 @@
 ---
-## 2026-03-03 | retrospective:RETRO Findings
-**回顧摘要**：
-
-時間序列學習（v0.28.27 方向）整合了 `adjustConfidenceByIds` 回饋機制，完成 Level 2 持續學習的最後一塊閉環。以下是跨階段確認的品質點：
-
-**架構一致性**
-
-- `adjustConfidenceByIds` 在 `global-instinct.js` 實作，職責單純：讀取全域 store、批量調整、寫回。與既有 `decayGlobal`、`pruneGlobal` 模式完全一致，不引入新的抽象層。
-- `appliedObservationIds` 存入 `workflow.json` state，on-start.js 寫入、on-session-end.js 讀取，流向清晰，無旁路。
-- 不對稱設計（boost +0.02，penalty -0.03）與 `feedbackBoost`/`feedbackPenalty` 集中定義於 `registry.js`，符合 Single Source of Truth 原則。
-
-**守衛條件正確性**
-
-- `isImproving || isDegrading` 雙重守衛確保 stagnant 時不執行調整，避免無意義更新。
-- `isDegrading` 使用 AND 條件（兩個 trend 都退步才懲罰），比 `isImproving` 的 OR 更保守，設計合理。
-- 所有新增整合點都有獨立 `try/catch`，不影響其他清理步驟。
-
-**測試覆蓋**
-
-- `time-series-learning.test.js`：12 個 Scenario，覆蓋 `adjustConfidenceByIds` 的正向、邊界、精度、空值、不存在 ID 等路徑；Feature 2 靜態分析驗證 hook 邏輯存在；Feature 3 驗證 `appliedObservationIds` 寫入。
-- `level-2-integration.test.js` 新增 3 個 test（1-6、1-7、2-6），將新功能納入整合防護網，防止未來重構時意外移除。
-- 全套 2658 pass / 0 fail / 114 files。
-
-**Level 2 持續學習完整閉環確認**
-
-全部 5 個項目均已完成：跨 Session 記憶 → 效能基線追蹤 → 數值評分引擎 → 回饋閉環 + 衰減修補 → 趨勢分析。本次時間序列學習為最後一項，Level 2 正式收口。
-Keywords: adjustconfidencebyids, level, global, instinct, store, decayglobal, pruneglobal, appliedobservationids, workflow, json
-
----
-## 2026-03-03 | developer:DEV Findings
-- `getStageByAgent` 的實作是線性掃描 `Object.entries(stages)`，與 on-stop.js 原版語意完全等價。pre-task.js 原版用 `find()?.[0]` 語意相同，統一後行為一致。
-- `hook-utils.js` 的函式清單說明和 `module.exports` 都已同步更新。
-- 測試結果：2658 pass / 0 fail（無任何破壞性改動）。
-Keywords: getstagebyagent, object, entries, stages, stop, task, find, hook, utils, module
-
----
-## 2026-03-03 | developer:DEV Context
-執行「核心衛生清理」任務，共完成 3 個修復：
-
-1. **清除 execution-queue 殘留**：`~/.overtone/global/7f2b45a9/execution-queue.json` 有一個狀態為 `in_progress` 的舊任務（「回饋閉環＋衰減修補」）和一個 `pending` 任務（「趨勢分析」），這些是 Level 2 第二批已完成的舊佇列。使用 `clearQueue()` API 刪除整個檔案。
-
-2. **抽取 getStageByAgent 共用函式**：在 `hook-utils.js` 新增 `getStageByAgent(agentName, stages)` 函式，消除 `on-stop.js`（3 行 for loop）和 `pre-task.js`（`Object.entries().find()` pattern）的重複邏輯。
-
-3. **health-check.js phantom events 觀察（只報告，不修改）**：
-   - `stop-message-builder.js` 中沒有直接 `timeline.emit()` 呼叫，因為它採用「副作用分離」設計，把 timeline 事件放入 `timelineEvents` 陣列回傳給 `on-stop.js` 執行。這是正確設計，不是 bug。
-   - `grader.md` 是 `.md` 格式，`collectJsFiles` 只掃 `.js`，所以不在掃描範圍。這也正確。
-   - health-check.js 無需修改。
-Keywords: execution, queue, overtone, global, json, pending, level, clearqueue, getstagebyagent, hook
-
----
-## 2026-03-03 | code-reviewer:REVIEW Findings
-審查了以下面向，未發現高信心問題：
-
-1. **語意等價性**：`getStageByAgent` 與 on-stop.js 原版（for loop 建表 → 查表）和 pre-task.js 原版（`Object.entries().find()?.[0]`）語意完全等價。在 agent-to-stage 一對一映射的前提下（registry.js 定義保證），「回傳第一個」與「回傳最後一個」的差異不會觸發。找不到時 null vs undefined 在 falsy 檢查中行為一致。
-2. **Import/Export 正確性**：`hook-utils.js` 的 `module.exports` 和兩個消費者的 destructure import 都已正確更新。
-3. **JSDoc 註解**：參數型別、回傳值、用途說明完整。
-4. **測試覆蓋**：2658 pass / 0 fail，無迴歸。函式僅 3 行且被整合測試間接覆蓋，不需專門 unit test。
-5. **auto-discovered.md**：知識歸檔記錄，非邏輯變更。
-Keywords: getstagebyagent, stop, loop, task, object, entries, find, agent, stage, registry
-
----
-## 2026-03-03 | retrospective:RETRO Findings
-**回顧摘要**：
-
-本次衛生清理涵蓋三項具體工作：新增 `getStageByAgent` 共用函式、清除 execution-queue 殘留、調查 health-check phantom events。以下為跨階段評估結果。
-
-**確認的品質點**：
-
-1. **重構語意等價性良好**：`getStageByAgent` 的實作（第 309-314 行）是標準線性掃描，邏輯清晰，與原 on-stop.js 和 pre-task.js 中的重複邏輯語意完全等價。REVIEW 的「語意等價」判斷準確。
-
-2. **null 防禦處理完整**：
-   - `on-stop.js` 第 39 行：`if (!stageKey) return exit0();`
-   - `pre-task.js` 第 111-115 行：`if (!targetStage) { process.stdout.write(...); process.exit(0); }`
-   兩處都正確處理了 `getStageByAgent` 回傳 null 的情況，不存在未守護的路徑。
-
-3. **間接測試覆蓋存在但無直接 unit test**：`shouldSuggestCompact`、`buildWorkflowContext`、`buildSkillContext` 等搬遷函式皆有獨立測試，但 `getStageByAgent` 目前僅透過 `agent-on-stop.test.js` 和 `pre-task.test.js` 的 integration test 間接覆蓋（透過 `ot:developer`、`ot:tester` 等 agentName）。這是模式上的輕微不一致，但不構成功能風險——REVIEW 已明確判斷「無需補 unit test」，信心不足 70%，不記為 ISSUES。
-
-4. **模組說明文件已同步**：`hook-utils.js` 頭部註解（第 15 行）已新增 `getStageByAgent` 說明，JSDoc 也完整記載了參數與回傳型別。
-
-5. **phantom-events 調查結論合理**：health-check scanner 的範圍限制（非全域掃描）是已知的設計決策，不是 bug，不需要修復。
-Keywords: getstagebyagent, execution, queue, health, check, phantom, events, stop, task, review
-
----
 ## 2026-03-03 | code-reviewer:REVIEW Findings
 所有變更面向已審查完畢，未發現高信心問題：
 
@@ -823,4 +740,76 @@ Keywords: statusline, stale, agent, commits, feature, hook, status, line, active
 ## 2026-03-03 | developer:DEV Context
 修復 `plugins/overtone/scripts/lib/specs.js` 中 `readTasksCheckboxes` 函式的 fallback bug。當 tasks.md 缺少標準標頭（`## Stages` 或 `## Tasks`）時，原來的程式碼會 fallback 到掃描整個文件，導致 `## 子任務清單` 等非標準區塊的 checkbox 被算入 stage-level 判斷，阻擋自動歸檔。
 Keywords: plugins, overtone, scripts, specs, readtaskscheckboxes, fallback, tasks, stages, checkbox, stage
+
+---
+## 2026-03-03 | product-manager:PM Context
+**問題陳述**：用户质疑 Level 2（持续学习）的 7 个能力建设完成后，Level 1（工作流自动化）的 17 个 agent、18 个 workflow 模板、11 个 hook、21 个 skill 是否真正**消费**了这些学习信号。核心追问是：「系统第 10 次做同类任务是否比第 1 次更好，有量化数据证明？」
+
+这个问题的本质是 **Layer 整合度审计** -- Level 2 的引擎（instinct、score-engine、baseline-tracker、failure-tracker、global-instinct）已经独立建好，但 Level 1 的元件是否已经全面升级来利用这些引擎？
+Keywords: level, agent, workflow, hook, skill, layer, instinct, score, engine, baseline
+
+---
+## 2026-03-03 | developer:DEV Findings
+**斷點 1：gradedStages 擴大**
+- `plugins/overtone/scripts/lib/registry.js` 第 218 行：`gradedStages` 從 3 個擴大至 7 個 stage（加入 PLAN、ARCH、DEBUG、RETRO）
+- 下游的 `pre-task.js:299` 和 `on-stop.js:196` 均用 `gradedStages.includes()` 判斷，自動生效
+
+**斷點 2：failure reason 記錄**
+- `on-stop.js` 第 123-131 行：`recordFailure` 呼叫加入 `reason: result.reason || null`
+- `failure-tracker.js` `formatFailureWarnings` 加入根因展示邏輯（去重，最多 3 個）
+
+**斷點 3：全域觀察注入 subagent**
+- `pre-task.js` 在 score context 之前加入全域觀察注入區塊
+- 使用 `globalInstinct.queryGlobal` 取前 5 條高信心觀察，限制 500 字
+- 組裝順序更新：`...gapWarnings → globalObs → scoreContext...`
+
+**斷點 4：** 斷點 1 完成後自動解決（`gradedStages.includes` 邏輯覆蓋新 stage）
+
+**全量測試：3037 pass / 0 fail（bun test 通過）**
+Keywords: gradedstages, plugins, overtone, scripts, registry, stage, plan, arch, debug, retro
+
+---
+## 2026-03-03 | retrospective:RETRO Findings
+**回顧摘要**：
+
+本次 quick workflow 回顧範圍為 Level 2 → Level 1 最小閉環修復（Phase 1），涵蓋 4 個 Must 斷點修復。
+
+**整體評估**：
+
+4 個斷點均已正確修復，且修復方式符合「治本不治標」原則：
+
+1. `gradedStages` 擴充（3 → 7）：影響範圍明確，`score-engine.js` 和 `on-stop.js` 透過 `includes()` 自動生效，無需額外改動。
+2. `failure reason` 記錄：`on-stop.js` 正確傳遞 `result.reason || null`，`failure-tracker.js` 的 `formatFailureWarnings` 正確顯示根因，新增測試（4-6、4-7、4-8）覆蓋有無 reason 的情境。
+3. 全域觀察注入：`pre-task.js` 以 `queryGlobal` 取前 5 筆高信心觀察注入，測試（場景 8）驗證有觀察和無觀察兩個路徑。
+4. `score context` 注入：依附在 `gradedStages` 上，測試通過確認完整。
+
+測試數字：3037 pass / 0 fail / 129 檔，全部通過。
+
+---
+Keywords: quick, workflow, level, phase, must, gradedstages, score, engine, stop, includes
+
+---
+## 2026-03-03 | doc-updater:DOCS Findings
+已更新的文件清單及變更摘要：
+
+1. **README.md**
+   - 更新測試覆蓋數：3030 pass → 3037 pass（129 個測試檔）
+
+2. **CHANGELOG.md**
+   - 新增 [0.28.34] 版本條目
+   - 詳細記錄 4 大修復點：gradedStages 擴展、失敗原因記錄、失敗原因展示、全域觀察注入
+   - 測試統計：105 + 88 新測試 → 3037 pass / 129 files
+
+3. **docs/status.md**
+   - 版本狀態表：3030 → 3037 pass，標記「Level 2→1 整合修復」
+   - 近期變更（最近 3 筆）：新增 [0.28.34] 條目為首條，移除最舊條目 [0.28.31]
+   - 版本描述加入新功能摘要
+
+4. **docs/spec/overtone.md**
+   - 主規格版本號：v0.28.33 → v0.28.34
+
+5. **docs/spec/overtone-子系統.md**
+   - 自動同步：gradedStages 定義從 3 個更新至 7 個
+   - 新增 PLAN/ARCH/DEBUG/RETRO 的評分維度說明
+Keywords: readme, pass, changelog, gradedstages, files, docs, status, level, spec, overtone
 

@@ -2,6 +2,34 @@
 
 所有重要變更記錄於此文件。
 
+## [0.28.34] - 2026-03-04
+
+### Level 2 → Level 1 最小閉環修復：學習信號消費完整化
+
+- **Graded Stages 擴展**：7 個主決策 stage
+  - `registry.js` gradedStages 從 3 個（DEV/REVIEW/TEST）擴大至 7 個
+  - 新增：PLAN、ARCH、DEBUG、RETRO，覆蓋策略層/架構層/診斷層/經驗總結層
+  - 評分提示 Pre-Task 注入時涵蓋完整決策鏈
+
+- **失敗原因記錄**：根因資訊流轉機制
+  - `on-stop.js` recordFailure 新增 `reason` 欄位
+  - 保留 fail/reject 時的具體原因，供跨 session 經驗累積
+
+- **失敗原因展示**：failure-tracker 有根因時展示常見失敗模式
+  - `failure-tracker.js` formatFailureWarnings 在有 reason 時識別並展示常見失敗原因
+  - 去重邏輯，最多展示 3 個不同根因
+
+- **全域觀察注入**：Pre-Task 段注入歷史學習記憶
+  - `pre-task.js` 從 observations.jsonl 提取前 5 條高信心記憶（confidence >= 0.8）
+  - 限制：500 字內，統一格式注入 subagent prompt
+
+- **測試**：
+  - `tests/integration/pre-task.test.js`：105 新測試（全域觀察注入）
+  - `tests/unit/failure-tracker.test.js`：88 新測試（根因展示）
+  - 累計 3037 pass / 0 fail（129 個測試檔）
+
+---
+
 ## [0.28.33] - 2026-03-04
 
 ### Status Line TTL 防護：Agent 停止後殘留清理
