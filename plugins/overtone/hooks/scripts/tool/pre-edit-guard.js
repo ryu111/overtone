@@ -1,10 +1,11 @@
 #!/usr/bin/env node
 'use strict';
-// PreToolUse(Write|Edit) guard — 保護元件檔案
+// PreToolUse(Write|Edit) guard — 保護元件檔案 + MEMORY.md 行數守衛
 //
 // 觸發：每次 Claude 使用 Write 或 Edit 工具時
-// 職責：阻擋直接編輯受保護的元件檔案
-// 目的：強制使用 config-api 腳本建立/更新元件，確保驗證和一致性
+// 職責：
+//   1. 阻擋直接編輯受保護的元件檔案
+//   2. MEMORY.md 行數守衛（超過上限時阻擋）
 //
 // 受保護檔案：
 //   agents/<name>.md           — Agent 定義
@@ -15,11 +16,15 @@
 //
 // 不攔截：
 //   Node.js 腳本的 fs 操作（config-api 正常運作）
-//   plugin 目錄外的檔案
+//   plugin 目錄外的檔案（MEMORY.md 除外）
 //   非受保護的 plugin 檔案（commands、references 等）
 
 const { resolve, relative } = require('path');
+const { readFileSync, existsSync } = require('fs');
 const { safeReadStdin, safeRun } = require('../../../scripts/lib/hook-utils');
+
+// MEMORY.md 行數上限
+const MEMORY_LINE_LIMIT = 60;
 
 // Plugin 根目錄（此腳本位於 hooks/scripts/tool/，上三層）
 const PLUGIN_ROOT = resolve(__dirname, '..', '..', '..');
@@ -67,6 +72,59 @@ safeRun(() => {
   // 將檔案路徑轉為相對於 plugin root 的路徑
   const absPath = resolve(filePath);
   const relPath = relative(PLUGIN_ROOT, absPath);
+
+  // ── MEMORY.md 行數守衛 ──
+  // 不論是否在 plugin root 內，只要是 MEMORY.md 就檢查行數
+  if (absPath.endsWith('/memory/MEMORY.md') && absPath.includes('/.claude/projects/')) {
+    const toolName = input.tool_name || '';
+    let estimatedLines = 0;
+
+    if (toolName === 'Write') {
+      // Write 工具：直接計算 content 行數
+      const content = toolInput.content || '';
+      estimatedLines = content.split('\n').length;
+    } else if (toolName === 'Edit') {
+      // Edit 工具：讀取現有檔案 + 估算行數變化
+      const oldStr = toolInput.old_string || '';
+      const newStr = toolInput.new_string || '';
+      let currentLines = 0;
+      if (existsSync(absPath)) {
+        try {
+          currentLines = readFileSync(absPath, 'utf8').split('\n').length;
+        } catch { currentLines = 0; }
+      }
+      const oldLines = oldStr.split('\n').length;
+      const newLines = newStr.split('\n').length;
+      estimatedLines = currentLines - oldLines + newLines;
+    }
+
+    if (estimatedLines > MEMORY_LINE_LIMIT) {
+      const message = [
+        `⛔ MEMORY.md 超過 ${MEMORY_LINE_LIMIT} 行上限！（預估 ${estimatedLines} 行）`,
+        ``,
+        `MEMORY.md 定位：導航索引 + 活躍決策 + 地雷避免`,
+        ``,
+        `✅ 可記：當前進度、架構決策、Bug patterns、用戶偏好`,
+        `❌ 禁記：API 文檔、檔案清單、歷史 changelog、完整架構說明、已完成功能明細`,
+        ``,
+        `請先刪除低價值內容，再添加新內容。`,
+        `詳細資料應查閱原始檔案（docs/、status.md、source code）。`,
+      ].join('\n');
+
+      process.stdout.write(JSON.stringify({
+        hookSpecificOutput: {
+          hookEventName: 'PreToolUse',
+          permissionDecision: 'deny',
+          permissionDecisionReason: message,
+        },
+      }));
+      process.exit(0);
+    }
+
+    // 行數在限制內 → 放行
+    process.stdout.write(JSON.stringify({ result: '' }));
+    process.exit(0);
+  }
 
   // 路徑不在 plugin root 內（以 .. 開頭或絕對路徑）→ 放行
   if (relPath.startsWith('..') || relPath.startsWith('/')) {

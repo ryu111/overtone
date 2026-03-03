@@ -30,6 +30,24 @@
 - **[0.28.28] 2026-03-03**：時間序列學習 — adjustConfidenceByIds API + 觀察效果反饋迴路（SessionStart 記錄注入 ID，SessionEnd 比對 baseline/score 趨勢後調整 confidence），globalInstinctDefaults 新增 feedbackBoost/feedbackPenalty（+15 tests）→ 2658 pass / 114 files
 - **[0.28.27] 2026-03-03**：卡點識別 — failure-tracker.js 跨 session 失敗模式聚合（recordFailure/getFailurePatterns/formatFailureWarnings/formatFailureSummary），on-stop/on-start/pre-task 整合注入失敗警告（+48 tests）→ 2643 pass / 113 files
 
+## Phase 3 規劃狀態
+
+> Phase 2 完成 → Phase 3 規劃完成（2026-03-03 PM Discovery）
+
+Phase 3 目標：Layer 2 完整 OS 能力，達到 Phase 4 Ready。
+架構：Bun 腳本庫（`scripts/os/`）+ `os-control` knowledge domain（第 12 個）+ OS Guard。
+桌面操控：AppleScript/JXA 優先 + Computer Use 兜底。
+
+| 階段 | 名稱 | 內容 | 狀態 |
+|:----:|------|------|:----:|
+| P3.1 | 看得見 | 截圖 + 視覺理解 + 視窗管理 | ⬜ |
+| P3.2 | 動得了 | 鍵盤/滑鼠模擬 + AppleScript + Computer Use | ⬜ |
+| P3.3 | 管得住 | Process + 剪貼簿 + 系統資訊 + 通知 + 檔案監控 | ⬜ |
+| P3.4 | 聽說能力 | WebSocket + TTS + STT | ⬜ |
+| P3.5 | 安全整合 | OS Guard + os-control skill + E2E + health-check | ⬜ |
+
+> 詳細計劃見 `docs/roadmap.md` Phase 3 章節。
+
 ## 已知問題
 
 - F2 Model Grader 需真實執行環境驗證（grader:score 事件）

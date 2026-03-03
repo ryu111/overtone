@@ -4,11 +4,16 @@
 // 測試元件檔案保護機制：
 //   受保護檔案 → deny、非受保護檔案 → allow
 //   plugin 目錄外檔案 → allow、無 file_path → allow
+//   MEMORY.md 行數守衛 → 超過上限 deny、限制內 allow
 
 const { test, expect, describe } = require('bun:test');
 const { join } = require('path');
 const { PLUGIN_ROOT } = require('../helpers/paths');
 const { runPreEditGuard, isAllowed } = require('../helpers/hook-runner');
+
+// MEMORY.md 相關常數
+const MEMORY_LINE_LIMIT = 60;
+const MEMORY_PATH = '/Users/sbu/.claude/projects/-Users-sbu-projects-overtone/memory/MEMORY.md';
 
 // ── 輔助函式 ──
 
@@ -253,5 +258,69 @@ describe('PreEditGuard: 邊界情況', () => {
     expect(reason).toContain('manage-component.js');
     expect(reason).toContain('createAgent');
     expect(reason).toContain('updateAgent');
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// MEMORY.md 行數守衛
+// ────────────────────────────────────────────────────────────────────────────
+
+describe('PreEditGuard: MEMORY.md 行數守衛', () => {
+
+  test('Write 超過行數上限 → deny', () => {
+    // 產生超過上限的內容
+    const lines = Array.from({ length: MEMORY_LINE_LIMIT + 10 }, (_, i) => `第 ${i + 1} 行`);
+    const result = runPreEditGuard('Write', {
+      file_path: MEMORY_PATH,
+      content: lines.join('\n'),
+    });
+    expect(result.exitCode).toBe(0);
+    expect(isDenied(result.parsed)).toBe(true);
+    expect(denyReason(result.parsed)).toContain('MEMORY.md');
+    expect(denyReason(result.parsed)).toContain(`${MEMORY_LINE_LIMIT}`);
+  });
+
+  test('Write 在行數限制內 → allow', () => {
+    const lines = Array.from({ length: 30 }, (_, i) => `第 ${i + 1} 行`);
+    const result = runPreEditGuard('Write', {
+      file_path: MEMORY_PATH,
+      content: lines.join('\n'),
+    });
+    expect(result.exitCode).toBe(0);
+    expect(isAllowed(result.parsed)).toBe(true);
+  });
+
+  test('Write 剛好等於上限 → allow', () => {
+    const lines = Array.from({ length: MEMORY_LINE_LIMIT }, (_, i) => `第 ${i + 1} 行`);
+    const result = runPreEditGuard('Write', {
+      file_path: MEMORY_PATH,
+      content: lines.join('\n'),
+    });
+    expect(result.exitCode).toBe(0);
+    expect(isAllowed(result.parsed)).toBe(true);
+  });
+
+  test('deny 訊息包含記錄規則', () => {
+    const lines = Array.from({ length: 100 }, (_, i) => `第 ${i + 1} 行`);
+    const result = runPreEditGuard('Write', {
+      file_path: MEMORY_PATH,
+      content: lines.join('\n'),
+    });
+    expect(isDenied(result.parsed)).toBe(true);
+    const reason = denyReason(result.parsed);
+    expect(reason).toContain('可記');
+    expect(reason).toContain('禁記');
+    expect(reason).toContain('架構決策');
+    expect(reason).toContain('API 文檔');
+  });
+
+  test('非 .claude/projects 路徑的 MEMORY.md → 不觸發守衛', () => {
+    // 這不是 Claude Code 的 auto-memory 路徑，不應攔截
+    const result = runPreEditGuard('Write', {
+      file_path: '/tmp/memory/MEMORY.md',
+      content: Array.from({ length: 100 }, (_, i) => `${i}`).join('\n'),
+    });
+    expect(result.exitCode).toBe(0);
+    expect(isAllowed(result.parsed)).toBe(true);
   });
 });

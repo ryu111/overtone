@@ -47,16 +47,32 @@ Overtone 不是一個開發工具，而是 **AI 的作業系統核心**（kernel
 
 讓核心能精準操控電腦和感知世界的通用能力。一個能力可被所有領域共用。
 
-| 能力 | 說明 | 現況 |
-|------|------|:----:|
-| 檔案系統 | 讀寫檔案、目錄操作 | ✅ |
-| 終端操控 | 執行命令、讀取輸出 | ✅ |
-| HTTP/API | 呼叫任意 API | ✅ |
-| 瀏覽器操控 | 自主瀏覽、表單填寫、資料擷取 | 🟡（Chrome MCP 基礎） |
-| WebSocket | 即時雙向通訊 | ⬜ |
-| 視覺理解 | 螢幕截圖 → 結構化理解 | 🟡（多模態基礎） |
-| 聽覺/語音 | 語音輸入/輸出 | ⬜ |
-| 鍵鼠模擬 | 精準的 UI 操作 | ⬜ |
+**實現架構**：Bun 腳本庫（`scripts/os/`）——agent 透過 Bash tool 呼叫，輕量且可測試。
+**知識注入**：`os-control` knowledge domain skill（第 12 個）——讓 agent 知道有哪些 OS 能力、何時用、怎麼用。
+**桌面操控**：AppleScript/JXA 原生優先（快準）+ Computer Use 截圖→理解→操作→驗證兜底（通用）。
+
+| 能力 | 說明 | 實現 | 現況 |
+|------|------|------|:----:|
+| 檔案系統 | 讀寫檔案、目錄操作 | Claude Code 原生 | ✅ |
+| 終端操控 | 執行命令、讀取輸出 | Claude Code 原生 | ✅ |
+| HTTP/API | 呼叫任意 REST API | Claude Code 原生 | ✅ |
+| 瀏覽器操控 | 自主瀏覽、表單填寫、資料擷取 | Chrome MCP | 🟡 |
+| 截圖 | 全螢幕/視窗/區域截圖 | `screencapture` | ⬜ |
+| 視覺理解 | 螢幕截圖 → 結構化理解 | 截圖 + Claude 多模態 | 🟡 |
+| 鍵盤模擬 | 按鍵/快捷鍵/文字輸入 | `osascript` System Events | ⬜ |
+| 滑鼠模擬 | 點擊/拖曳/滾動 | `cliclick` | ⬜ |
+| AppleScript | macOS app 原生操控 | `osascript -l JavaScript` | ⬜ |
+| Computer Use | 截圖→理解→操作→驗證迴圈 | 組合能力 | ⬜ |
+| 視窗管理 | 列表/聚焦/移動/調整大小 | AppleScript + Accessibility | ⬜ |
+| Process 管理 | 列出/啟動/終止 process | `ps`/`kill`/`open` | ⬜ |
+| 剪貼簿 | 讀/寫剪貼簿 | `pbcopy`/`pbpaste` | ⬜ |
+| 系統資訊 | CPU/記憶體/磁碟/網路 | `sysctl`/`vm_stat` | ⬜ |
+| macOS 通知 | 系統通知推送 | `osascript` display notification | ⬜ |
+| 檔案監控 | 檔案系統變更偵測 | `fswatch` | ⬜ |
+| WebSocket | 即時雙向通訊 | Bun 原生 WebSocket API | ⬜ |
+| 文字轉語音 | TTS | macOS `say` | ⬜ |
+| 語音轉文字 | STT | macOS Dictation / Whisper | ⬜ |
+| OS Guard | OS 操作安全邊界 | guard-system 擴展 | ⬜ |
 
 ### Layer 3：專業領域模組（專業型）
 

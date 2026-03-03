@@ -11,7 +11,7 @@
 | 0 | 地基穩固 | 核心 pipeline 穩定運作 | ✅ 完成 |
 | 1 | 首次體驗 | 新使用者 5 分鐘上手 | ✅ 完成 |
 | 2 | 核心穩固 | Level 1 完成 + Level 2 持續學習 | ✅ 完成 |
-| 3 | 感知操控 | Layer 2 基礎能力 | ⚪ 未開始 |
+| 3 | 感知操控 | Layer 2 完整 OS 能力（5 階段：感知→操控→系統→通訊→守衛） | 📋 規劃完成 |
 | 4 | 自我進化 | Level 3 + 第一個垂直切片（交易） | ⚪ 未開始 |
 
 ---
@@ -52,14 +52,64 @@
 
 ---
 
-## Phase 3：感知操控（Layer 2 基礎）
+## Phase 3：感知操控（Layer 2 完整 OS 能力）
+
+> 目標：讓 agent 擁有完整的 OS 感知和操控能力，達到 Phase 4 Ready。
+> 架構：Bun 腳本庫（`scripts/os/`）+ `os-control` knowledge domain skill（第 12 個）+ OS Guard
+> 桌面操控策略：AppleScript/JXA 原生優先 + Computer Use（截圖→理解→操作→驗證）兜底
+
+### P3.1 看得見（感知層）
 
 | 任務 | 說明 | 狀態 |
 |------|------|:----:|
-| 瀏覽器自主操控 | 已有 Chrome MCP 基礎，強化為自主操作 | ⬜ |
-| API 精準呼叫 | 通用 HTTP/WebSocket client | ⬜ |
-| 視覺理解 | 螢幕截圖 → 結構化數據 | ⬜ |
-| 操控精準度守衛 | 確保動作正確的守衛模組 | ⬜ |
+| screenshot.js | 全螢幕/視窗/區域截圖（`screencapture` wrapper） | ⬜ |
+| visual.js | 截圖 → Claude 多模態 → 結構化描述 pipeline | ⬜ |
+| window.js | 視窗列表/聚焦/移動/調整大小（AppleScript） | ⬜ |
+| Skill: perception ref | `skills/os-control/references/perception.md` | ⬜ |
+
+### P3.2 動得了（操控層）
+
+| 任務 | 說明 | 狀態 |
+|------|------|:----:|
+| keyboard.js | 按鍵/快捷鍵/文字輸入（`osascript` System Events） | ⬜ |
+| mouse.js | 點擊/雙擊/拖曳/滾動（`cliclick`） | ⬜ |
+| applescript.js | AppleScript/JXA 執行引擎 | ⬜ |
+| computer-use.js | 截圖→理解→操作→驗證 協調迴圈 | ⬜ |
+| Skill: control ref | `skills/os-control/references/control.md` | ⬜ |
+
+### P3.3 管得住（系統層）
+
+| 任務 | 說明 | 狀態 |
+|------|------|:----:|
+| process.js | 列出/啟動/終止 process（`ps`/`kill`/`open`） | ⬜ |
+| clipboard.js | 讀/寫剪貼簿（`pbcopy`/`pbpaste`） | ⬜ |
+| system-info.js | CPU/記憶體/磁碟/網路狀態 | ⬜ |
+| notification.js | macOS 通知（`osascript` display notification） | ⬜ |
+| fswatch.js | 檔案系統變更監控 | ⬜ |
+| Skill: system ref | `skills/os-control/references/system.md` | ⬜ |
+
+### P3.4 聽說能力（通訊層）
+
+| 任務 | 說明 | 狀態 |
+|------|------|:----:|
+| websocket.js | WebSocket client（Bun 原生 WebSocket API） | ⬜ |
+| tts.js | 文字轉語音（macOS `say` command） | ⬜ |
+| stt.js | 語音轉文字（macOS Dictation / Whisper） | ⬜ |
+| Skill: realtime ref | `skills/os-control/references/realtime.md` | ⬜ |
+
+### P3.5 安全整合（守衛層）
+
+| 任務 | 說明 | 狀態 |
+|------|------|:----:|
+| os-guard.js | OS 操作安全邊界（統一守衛入口） | ⬜ |
+| os-control SKILL.md | 第 12 個 knowledge domain — OS 能力概覽 + 使用指引 | ⬜ |
+| E2E 驗證 | 端到端測試：截圖→理解→操作→驗證 完整流程 | ⬜ |
+| health-check 擴展 | 偵測 cliclick/fswatch 等外部依賴是否安裝 | ⬜ |
+
+### Phase 3 完成標準（Phase 4 Ready）
+
+> 給系統指令：「研究幣安 API，建立加密貨幣價格監控系統」
+> 系統必須能自主完成：HTTP 研究 API → WebSocket 接收即時價格 → Process 啟動監控 → 截圖+視覺驗證顯示正確 → 通知價格異常 → 全程 OS Guard 保護
 
 ---
 
