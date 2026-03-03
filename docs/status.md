@@ -1,12 +1,12 @@
 # Overtone 現況
 
-> 最後更新：2026-03-03 | Plugin 版本：0.28.30（P3.0 OS 閉環基礎 + status line 並行顯示）
+> 最後更新：2026-03-04 | Plugin 版本：0.28.32（P3.2 心跳引擎）
 
 ## 版本狀態
 
 | 版本 | 狀態 | 說明 |
 |------|------|------|
-| V1 | 進行中 | 2808 pass，0 fail，核心功能完整 + 守衛強化 11/11 + Knowledge Engine + 跨 Session 長期記憶 + 效能基線追蹤 + 數值評分引擎 + 趨勢分析 + 回饋閉環 + 卡點識別 + 時間序列學習（Level 2 完成）+ 核心穩固清理 + mul-agent 泛化 + P3.0 閉環基礎 + P3.1 感知層（screenshot.js + window.js + perception.md）|
+| V1 | 進行中 | 2855 pass，0 fail，核心功能完整 + 守衛強化 11/11 + Knowledge Engine + 跨 Session 長期記憶 + 效能基線追蹤 + 數值評分引擎 + 趨勢分析 + 回饋閉環 + 卡點識別 + 時間序列學習（Level 2 完成）+ 核心穩固清理 + mul-agent 泛化 + P3.0 閉環基礎 + P3.1 感知層（screenshot.js + window.js + perception.md）+ P3.2 心跳引擎（heartbeat.js + session-spawner.js）|
 | V2 | 規劃中 | 延後 |
 
 ## 核心指標
@@ -16,16 +16,17 @@
 | Agent 數量 | 17（含 grader） |
 | Stage 數量 | 16 |
 | Workflow 模板 | 18 |
-| 測試通過 | 2808 pass / 0 fail（116 個測試檔） |
-| 測試檔案 | 116 個 |
+| 測試通過 | 2855 pass / 0 fail（120 個測試檔） |
+| 測試檔案 | 120 個 |
 | Hook 數量 | 11 個 |
-| Skill 數量 | 20（11 knowledge domain + orchestrator + pm + specs + 5 utility-with-refs） |
-| Knowledge Domain 數 | 12（testing、workflow-core、security-kb、database、dead-code、commit-convention、code-review、wording、debugging、architecture、build-system、os-control） |
+| Skill 數量 | 21（13 knowledge domain + orchestrator + pm + specs + 5 utility-with-refs） |
+| Knowledge Domain 數 | 13（testing、workflow-core、security-kb、database、dead-code、commit-convention、code-review、wording、debugging、architecture、build-system、os-control、autonomous-control） |
 | Command 數量 | 27（14 stage shortcut + 7 workflow pipeline + 6 utility） |
 | Timeline Events | 26 個 |
 
 ## 近期變更（最近 3 筆）
 
+- **[0.28.32] 2026-03-04**：P3.2 心跳引擎完成 — (1) heartbeat.js（daemon start/stop/status/_daemon + PID 管理 + polling loop + SIGTERM 清理）；(2) session-spawner.js（spawn + stream-json 完成偵測 + timeout + _buildArgs）；(3) execution-queue.js 新增 failCurrent()；(4) TelegramAdapter 新增 notify()；(5) paths.js 新增 HEARTBEAT 常數；(6) 48 tests → 2855 pass / 120 files
 - **[0.28.31] 2026-03-03**：P3.1 感知層完成 — (1) screenshot.js（4 API：captureFullScreen/captureRegion/captureWindow/checkPermission）+ 22 tests；(2) window.js（5 API：listProcesses/listWindows/focusApp/getFrontApp/checkAccessibility）+ 27 tests；(3) perception.md 完整 reference（API reference + 視覺分析模板 + 使用指引 + Permission 處理 + 完整工作流範例）→ 2808 pass / 116 files
 - **[0.28.30] 2026-03-03**：P3.0 OS 閉環基礎 + status line 並行顯示 — (1) statusline.js 修復並行 stage 數量查詢、null-safety；(2) manage-component.js 加入依賴提示 checklist；(3) statusline.test.js 補充並行顯示驗證 → 2759 pass / 116 files
 - **[0.28.29] 2026-03-03**：核心穩固清理 + mul-agent 泛化 — (1) Dead exports 清理（health-check.js 加入 tests/ 搜尋，72→0）；(2) getStageByAgent 抽取；(3) 7 個 workflow command 加入並行引導；(4) mul-dev→mul-agent 泛化
