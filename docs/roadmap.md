@@ -57,6 +57,19 @@
 > 目標：讓 agent 擁有完整的 OS 感知和操控能力，達到 Phase 4 Ready。
 > 架構：Bun 腳本庫（`scripts/os/`）+ `os-control` knowledge domain skill（第 12 個）+ OS Guard
 > 桌面操控策略：AppleScript/JXA 原生優先 + Computer Use（截圖→理解→操作→驗證）兜底
+>
+> **閉環交付模型**：每個 P3.x 交付 = 腳本（能力）+ Reference（知識）+ SKILL.md 索引更新 + Guard 擴充 + 測試。
+> Agent 透過 frontmatter `skills: [os-control]` 宣告 → pre-task.js 自動注入知識。
+
+### P3.0 閉環基礎（骨架層）
+
+| 任務 | 說明 | 狀態 |
+|------|------|:----:|
+| os-control SKILL.md | 建立第 12 個 knowledge domain 骨架（索引 + 各 reference 標記「待建」） | ⬜ |
+| Agent frontmatter | 5 個 agent 加入 `skills: [os-control]`：developer, architect, tester, debugger, qa | ⬜ |
+| pre-bash-guard.js | PreToolUse(Bash) 黑名單守衛骨架（危險命令攔截） | ⬜ |
+| hooks.json | 新增 PreToolUse(Bash) matcher 指向 pre-bash-guard.js | ⬜ |
+| Guard 測試 | pre-bash-guard 基礎測試（黑名單命中 deny + 正常命令 allow） | ⬜ |
 
 ### P3.1 看得見（感知層）
 
@@ -101,10 +114,10 @@
 
 | 任務 | 說明 | 狀態 |
 |------|------|:----:|
-| os-guard.js | OS 操作安全邊界（統一守衛入口） | ⬜ |
-| os-control SKILL.md | 第 12 個 knowledge domain — OS 能力概覽 + 使用指引 | ⬜ |
+| Guard 精鍊 | pre-bash-guard.js 黑名單完善 + 各階段累積的危險模式整合 | ⬜ |
 | E2E 驗證 | 端到端測試：截圖→理解→操作→驗證 完整流程 | ⬜ |
 | health-check 擴展 | 偵測 cliclick/fswatch 等外部依賴是否安裝 | ⬜ |
+| Skill 完善 | os-control SKILL.md 正式版 + 所有 reference 完成度驗證 | ⬜ |
 
 ### Phase 3 完成標準（Phase 4 Ready）
 

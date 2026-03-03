@@ -11,6 +11,7 @@ disallowedTools:
   - NotebookEdit
 skills:
   - testing
+  - os-control
 ---
 
 # 🏁 品質驗證者

@@ -8,6 +8,7 @@ maxTurns: 50
 skills:
   - commit-convention
   - wording
+  - os-control
 ---
 
 # 💻 開發者

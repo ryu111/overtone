@@ -11,6 +11,7 @@ disallowedTools:
 skills:
   - wording
   - architecture
+  - os-control
 ---
 
 # 🏗️ 架構師

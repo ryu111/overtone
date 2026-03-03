@@ -8,6 +8,7 @@ maxTurns: 50
 skills:
   - testing
   - wording
+  - os-control
 ---
 
 # 🧪 測試者

@@ -12,6 +12,7 @@ disallowedTools:
   - NotebookEdit
 skills:
   - debugging
+  - os-control
 ---
 
 # 🔧 除錯者

@@ -15,6 +15,7 @@ const { HOOKS_DIR, SCRIPTS_DIR } = require('./paths');
 
 const PRE_TASK_PATH   = join(HOOKS_DIR, 'tool', 'pre-task.js');
 const PRE_EDIT_GUARD_PATH = join(HOOKS_DIR, 'tool', 'pre-edit-guard.js');
+const PRE_BASH_GUARD_PATH = join(HOOKS_DIR, 'tool', 'pre-bash-guard.js');
 const ON_STOP_PATH    = join(HOOKS_DIR, 'agent', 'on-stop.js');
 const SESSION_STOP_PATH = join(HOOKS_DIR, 'session', 'on-stop.js');
 const ON_START_PATH   = join(HOOKS_DIR, 'session', 'on-start.js');
@@ -232,9 +233,35 @@ function runPreEditGuard(toolName, toolInput = {}) {
   };
 }
 
+/**
+ * 執行 pre-bash-guard.js hook（同步）
+ * @param {object} toolInput - { command?, ... }
+ * @returns {{ exitCode: number, stdout: string, stderr: string, parsed: object|null }}
+ */
+function runPreBashGuard(toolInput = {}) {
+  const input = {
+    tool_name: 'Bash',
+    tool_input: toolInput,
+  };
+  const proc = Bun.spawnSync(['node', PRE_BASH_GUARD_PATH], {
+    stdin: Buffer.from(JSON.stringify(input)),
+    env: buildEnv(undefined),
+    stdout: 'pipe',
+    stderr: 'pipe',
+  });
+  const stdout = decodeOutput(proc.stdout);
+  return {
+    exitCode: proc.exitCode,
+    stdout,
+    stderr: decodeOutput(proc.stderr),
+    parsed: parseJsonOutput(stdout),
+  };
+}
+
 module.exports = {
   runPreTask,
   runPreEditGuard,
+  runPreBashGuard,
   runSubagentStop,
   runSessionStop,
   runOnStart,

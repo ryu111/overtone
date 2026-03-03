@@ -19,8 +19,8 @@
 | 測試通過 | 2695 pass / 0 fail（115 個測試檔） |
 | 測試檔案 | 115 個 |
 | Hook 數量 | 11 個 |
-| Skill 數量 | 19（11 knowledge domain + orchestrator + pm + specs + 5 utility-with-refs） |
-| Knowledge Domain 數 | 11（testing、workflow-core、security-kb、database、dead-code、commit-convention、code-review、wording、debugging、architecture、build-system） |
+| Skill 數量 | 20（11 knowledge domain + orchestrator + pm + specs + 5 utility-with-refs） |
+| Knowledge Domain 數 | 12（testing、workflow-core、security-kb、database、dead-code、commit-convention、code-review、wording、debugging、architecture、build-system、os-control） |
 | Command 數量 | 27（14 stage shortcut + 7 workflow pipeline + 6 utility） |
 | Timeline Events | 26 個 |
 
@@ -40,11 +40,12 @@ Phase 3 目標：Layer 2 完整 OS 能力，達到 Phase 4 Ready。
 
 | 階段 | 名稱 | 內容 | 狀態 |
 |:----:|------|------|:----:|
+| P3.0 | 閉環基礎 | os-control Skill 骨架 + Agent frontmatter + pre-bash-guard + hooks.json | ✅ |
 | P3.1 | 看得見 | 截圖 + 視覺理解 + 視窗管理 | ⬜ |
 | P3.2 | 動得了 | 鍵盤/滑鼠模擬 + AppleScript + Computer Use | ⬜ |
 | P3.3 | 管得住 | Process + 剪貼簿 + 系統資訊 + 通知 + 檔案監控 | ⬜ |
 | P3.4 | 聽說能力 | WebSocket + TTS + STT | ⬜ |
-| P3.5 | 安全整合 | OS Guard + os-control skill + E2E + health-check | ⬜ |
+| P3.5 | 安全整合 | Guard 精鍊 + E2E 驗證 + health-check 擴展 | ⬜ |
 
 > 詳細計劃見 `docs/roadmap.md` Phase 3 章節。
 
