@@ -72,7 +72,7 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/init-workflow.js full ${CLAUDE_SESSION_ID} {f
 - **產出**：Handoff（程式碼變更 + 實作說明）
 - 📋 MUST 按 BDD spec 和 UI 規格實作
 
-💡 **DEV 並行**：若 architect 在 `tasks.md` 中標記了 `(parallel)` Phase，📋 MUST 在同一訊息中委派多個 developer agent。判斷標準與調度方式：讀取 `${CLAUDE_PLUGIN_ROOT}/commands/mul-dev.md`（Mode A）
+💡 **並行**：若 architect 在 `tasks.md` 中標記了 `(parallel)` Phase，📋 MUST 在同一訊息中委派多個同類型 agent。判斷標準與調度方式：讀取 `${CLAUDE_PLUGIN_ROOT}/commands/mul-agent.md`（Mode A）
 
 ### 6-7. [REVIEW + TEST:verify] — 並行（第一組）
 

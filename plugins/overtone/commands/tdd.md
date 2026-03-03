@@ -44,7 +44,7 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/init-workflow.js tdd ${CLAUDE_SESSION_ID} {fe
 - **產出**：Handoff（程式碼變更 + 測試碼）
 - 📋 MUST 按 BDD spec 逐一實作每個場景
 
-💡 **DEV 並行**：若任務包含 2+ 個獨立子任務（操作不同檔案、無邏輯依賴），📋 MUST 在同一訊息中委派多個 developer agent。判斷標準與調度方式：讀取 `${CLAUDE_PLUGIN_ROOT}/commands/mul-dev.md`（Mode B）
+💡 **並行**：若任務包含 2+ 個獨立子任務（操作不同檔案、無邏輯依賴），📋 MUST 在同一訊息中委派多個同類型 agent。判斷標準與調度方式：讀取 `${CLAUDE_PLUGIN_ROOT}/commands/mul-agent.md`（Mode B）
 
 ### 3. TEST:verify — 🧪 測試驗證
 

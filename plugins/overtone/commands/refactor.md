@@ -53,7 +53,7 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/init-workflow.js refactor ${CLAUDE_SESSION_ID
 - **產出**：Handoff（重構後的程式碼變更）
 - ⛔ 不可改變外部行為（public API 保持不變）
 
-💡 **DEV 並行**：若 architect 在 `tasks.md` 中標記了 `(parallel)` Phase，📋 MUST 在同一訊息中委派多個 developer agent。判斷標準與調度方式：讀取 `${CLAUDE_PLUGIN_ROOT}/commands/mul-dev.md`（Mode A）
+💡 **並行**：若 architect 在 `tasks.md` 中標記了 `(parallel)` Phase，📋 MUST 在同一訊息中委派多個同類型 agent。判斷標準與調度方式：讀取 `${CLAUDE_PLUGIN_ROOT}/commands/mul-agent.md`（Mode A）
 
 ### 4-5. [REVIEW + TEST:verify] — 並行
 
