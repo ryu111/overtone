@@ -12,7 +12,7 @@ disable-model-invocation: true
 
 ## 兩種模式
 
-### Mode A — 有 specs（standard / full / secure / tdd / refactor）
+### Mode A — 有 specs（standard / full / secure / refactor）
 
 architect 在 ARCH 階段已將並行分析結果寫入 `specs/features/in-progress/{featureName}/tasks.md` 的 `## Dev Phases` 區塊。
 
@@ -21,7 +21,7 @@ architect 在 ARCH 階段已將並行分析結果寫入 `specs/features/in-progr
 2. 依 Phase 順序執行（sequential Phase 一個 developer，parallel Phase 同一訊息多個 Task）
 3. 等待當前 Phase 全部完成後，才啟動下一 Phase
 
-### Mode B — 無 specs（quick / debug / single）
+### Mode B — 無 specs（quick / tdd / debug / single）
 
 architect 不存在，由 Main Agent 自行在 context window 中分析。
 

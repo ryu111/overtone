@@ -35,6 +35,8 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/init-workflow.js quick ${CLAUDE_SESSION_ID} {
 - **輸入**：使用者需求
 - **產出**：Handoff（程式碼變更）
 
+💡 **DEV 並行**：若任務包含 2+ 個獨立子任務（操作不同檔案、無邏輯依賴），📋 MUST 在同一訊息中委派多個 developer agent。判斷標準與調度方式：讀取 `${CLAUDE_PLUGIN_ROOT}/commands/mul-dev.md`（Mode B）
+
 ### 2-3. [REVIEW + TEST] — 並行
 
 📋 MUST 在同一訊息中同時委派（兩個 Task 呼叫）：

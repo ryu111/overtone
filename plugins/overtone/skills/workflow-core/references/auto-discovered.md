@@ -1,37 +1,4 @@
 ---
-## 2026-03-03 | developer:DEV Context
-實作 P2 Agent 進化 — architect 和 retrospective model 從 opus 降級為 sonnet，同步移除 `memory: local` 欄位。過程中發現 `updateAgent` 函式未同步 `agentMemory`，一併修復並更新測試。Plugin 版本升至 0.28.18。
-Keywords: agent, architect, retrospective, model, opus, sonnet, memory, local, updateagent, agentmemory
----
-## 2026-03-03 | tester:TEST Context
-模式：verify（DEV 後驗證）
-
-architect 和 retrospective 從 Opus 降級為 Sonnet、移除 memory: local、修復 config-api.js 的 updateAgent agentMemory 同步後，執行完整 BDD 驗證。
-Keywords: verify, architect, retrospective, opus, sonnet, memory, local, config, updateagent, agentmemory
----
-## 2026-03-03 | code-reviewer:REVIEW Findings
-**問題 1：architect.md 和 retrospective.md 的 body 仍包含「跨 Session 記憶」章節（信心 95%）**
-
-- **檔案和行號**：
-  - `/Users/sbu/projects/overtone/plugins/overtone/agents/architect.md` 第 20-39 行
-  - `/Users/sbu/projects/overtone/plugins/overtone/agents/retrospective.md` 第 21-39 行
-- **問題描述**：`memory: local` 已從 frontmatter 移除，但 agent prompt body 中仍保留完整的「跨 Session 記憶」章節（包含路徑 `.claude/agent-memory-local/architect/MEMORY.md`、記什麼、不記什麼、使用方式三個子章節）。沒有 `memory: local` frontmatter，Claude Code 不會為這些 subagent 建立或自動載入 persistent memory 目錄。Agent prompt 中的記憶指示變成誤導性的：agent 可能浪費 turn 嘗試讀/寫不存在的 MEMORY.md，或即使寫入成功也不會在下次啟動時載入。
-- **建議的修復方式**：從兩個 agent 的 body 中移除整個「## 跨 Session 記憶」章節（包含「記什麼」、「不記什麼」、「使用方式」三個子區塊）。
-- **信心等級**：95%
-
-**審查通過的面向（無問題）：**
-
-1. **config-api.js memory 同步邏輯**：`updateAgent` 新增的 `memoryChanged` 偵測和 `null`/空字串處理正確。`buildAgentFrontmatter` 中 `if (fm.memory)` 對 falsy 值（null、空字串）正確跳過。合併邏輯 `updates[key] !== undefined` 不會被 `null` 繞過。registry-data.json 的 delete 操作對不存在的 key 是安全的 no-op。
-2. **registry-data.json 同步**：`agentModels` 中 architect 和 retrospective 已正確改為 `"sonnet"`。`agentMemory` 中已正確移除兩者，只剩 code-reviewer、security-reviewer、product-manager。
-3. **測試覆蓋**：`registry.test.js` 正確驗證 `agentMemory` 移除（`toBeUndefined()`）。`platform-alignment-agents.test.js` S10-1/S10-2 的 memory agent 清單已正確更新。三個測試檔共 199 tests 全部通過。
-4. **安全性**：無硬編碼 secrets、無 injection 風險。
-5. **registry-data.json 格式化變更**：從壓縮格式改為展開格式，純格式化變更，資料內容正確。
-
-**附帶觀察（非此次審查範圍）：**
-- `testing/references/auto-discovered.md` 有嚴重的重複寫入問題（127 行全是相同內容重複 21 次），這是 Knowledge Engine 知識歸檔功能的 dedup 缺陷，不屬於此次 P2 變更但值得後續追蹤。
-- `createAgent` 函式的 `fmToValidate` 未包含 `memory` 欄位（第 546-555 行），新建 agent 如需 memory 設定無法透過 `createAgent` API 帶入。這是既有問題，不阻擋此次變更。
-Keywords: architect, retrospective, body, session, users, projects, overtone, plugins, agents, memory
----
 ## 2026-03-03 | retrospective:RETRO Findings
 **回顧摘要**：
 
@@ -802,4 +769,93 @@ Keywords: getstagebyagent, stop, loop, task, object, entries, find, agent, stage
 
 5. **phantom-events 調查結論合理**：health-check scanner 的範圍限制（非全域掃描）是已知的設計決策，不是 bug，不需要修復。
 Keywords: getstagebyagent, execution, queue, health, check, phantom, events, stop, task, review
+
+---
+## 2026-03-03 | code-reviewer:REVIEW Findings
+所有變更面向已審查完畢，未發現高信心問題：
+
+1. **Dead exports 移除安全性**：5 個被移除的 export（readHooksJson、getHookHandler、resolvePaths、collectTestFiles、paths 常數 GLOBAL_DIR/CONFIG_FILE/sessionFile）經全域 grep 確認無外部引用。這些函式/常數均保留為模組內部使用，僅從 `module.exports` 中移除。
+
+2. **health-check.js 掃描範圍擴展**：將 `tests/` 目錄納入掃描範圍是正確的治本修復 -- 之前的 dead export 誤報是因為掃描範圍不含測試目錄，導致只在測試中被 require 的 export 被判定為 dead。
+
+3. **guard-system.test.js 測試品質**：33 個測試覆蓋所有 6 個公開 API，每個 eval 函式都測試了 null、__error、邊界值等情境。runFullGuardCheck 的結構驗證測試合理（檢查 key 存在、type 正確、數值一致性）。
+
+4. **guard-coverage.test.js 追蹤更新**：正確新增 guard-system.js 到 GUARD_MODULE_TEST_PAIRS。
+
+5. **文件同步**：status.md 和 plugin.json 版本號一致（0.28.29），測試數量對齊。
+Keywords: dead, exports, export, readhooksjson, gethookhandler, resolvepaths, collecttestfiles, paths, sessionfile, grep
+
+---
+## 2026-03-03 | retrospective:RETRO Findings
+**回顧摘要**：
+
+- **Dead exports 移除正確**：`readHooksJson`、`getHookHandler`（config-api.js 私有函式）、`resolvePaths`（hook-diagnostic.js）、`collectTestFiles`（test-quality-scanner.js）、`GLOBAL_DIR`/`CONFIG_FILE`/`sessionFile`（paths.js 內部常數）均已確認無外部引用，從 module.exports 中移除後不影響任何呼叫端。
+
+- **health-check.js 治本修復確認**：第 32 行新增 `TESTS_DIR`，第 220 行和第 465 行的兩處 dead code 搜尋都已納入 tests/ 目錄，與 dead-code-scanner.js 的 `DEFAULT_SEARCH_DIRS`（第 28 行已含 tests/）對齊，dead export 誤報根因已消除。
+
+- **guard-system.test.js 測試品質達標**：33 tests 涵蓋 6 個公開 API（5 個 eval 函式 + runFullGuardCheck），每個 eval 函式測試了 null、__error、缺少 summary、邊界值等情境；runFullGuardCheck 的結構驗證測試確認 key 存在、type 正確、pass+warn+fail=total 等不變性。
+
+- **dead-code-scanner 實際執行結果**：`{ unusedExports: 0, orphanFiles: 0, total: 0 }`，掃描乾淨，證實移除的 exports 確實是 dead 的。
+
+- **整體測試結果**：2695 pass / 0 fail / 115 files，無退步。
+
+- **版本號與文件同步**：plugin.json v0.28.29、status.md 一致，guard-coverage.test.js 第 50 行已追蹤 guard-system.js。
+Keywords: dead, exports, readhooksjson, gethookhandler, config, resolvepaths, hook, diagnostic, collecttestfiles, test
+
+---
+## 2026-03-03 | developer:DEV Context
+驗證 7 個 workflow command 檔案的 DEV 並行引導段落是否已正確加入，並確認測試套件通過。
+Keywords: workflow, command
+
+---
+## 2026-03-03 | tester:TEST Context
+模式：verify
+
+任務來源為 quick workflow 中 DEV 階段後的 TEST:verify，說明為「純 command 文件修改，預期無影響」。DEV 最新 commit（`4b9f350`）內容：移除 5 個 dead exports、修正 health-check.js 掃描範圍、新增 guard-system.test.js（33 tests）、更新 guard-coverage.test.js。
+
+沒有對應的 in-progress BDD spec（無 specs/features/in-progress/ 目錄）。依任務說明，驗證目標為確認既有測試套件全部通過，無回歸。
+Keywords: verify, quick, workflow, test, command, commit, dead, exports, health, check
+
+---
+## 2026-03-03 | code-reviewer:REVIEW Findings
+審查了 7 個 workflow command 檔案（`standard.md`, `full.md`, `secure.md`, `refactor.md`, `quick.md`, `debug.md`, `tdd.md`）的 DEV 段落 mul-dev 並行引導新增，以及 `auto-discovered.md` 的知識歸檔條目。未發現高信心問題。
+
+**逐項檢查結果**：
+
+1. **Mode A / Mode B 分類正確**
+   - Mode A（有 architect / specs）：`standard.md`、`full.md`、`secure.md`、`refactor.md` -- 這 4 個 workflow 都有 ARCH 階段，architect 會在 `tasks.md` 寫入 `Dev Phases`，使用 Mode A 正確。
+   - Mode B（無 architect）：`quick.md`、`debug.md`、`tdd.md` -- 這 3 個 workflow 沒有 ARCH 階段，由 Main Agent 自行分析，使用 Mode B 正確。
+   - 值得注意：`mul-dev.md` 第 15 行標題將 `tdd` 列在 Mode A 下（`standard / full / secure / tdd / refactor`），而 `tdd.md` 引用 Mode B。`tdd` 實際沒有 ARCH 階段，Mode B 是正確選擇。此不一致存在於 `mul-dev.md` 本身，為 **pre-existing** 問題，不在本次 diff 範圍內。
+
+2. **引用路徑正確** -- `${CLAUDE_PLUGIN_ROOT}/commands/mul-dev.md` 已確認存在於 `/Users/sbu/projects/overtone/plugins/overtone/commands/mul-dev.md`。
+
+3. **Workflow 覆蓋完整** -- 所有含 DEV 階段且使用 `developer` agent 的 workflow command 都已修改。未修改的 workflow command 合理排除：
+   - `dev.md`（single）：定位為「一行修改、小改動」，DEV 並行幾乎不適用，排除合理。
+   - `build-fix.md`：使用 `build-error-resolver` agent 非 `developer`，無 DEV 階段。
+   - `security.md`、`review.md`、`e2e.md`、`db-review.md`：無 DEV 階段。
+
+4. **措詞強度一致** -- 每行使用 `💡`（軟引導）開頭，`📋 MUST`（強規則）標記必要動作。語意正確：並行判斷是條件式的（💡），但若條件成立則必須執行（📋 MUST）。
+
+5. **`auto-discovered.md` 變更** -- 為前幾個 stage 的知識歸檔條目（code-reviewer、retrospective、developer），屬正常 SubagentStop 知識歸檔行為。
+Keywords: workflow, command, standard, full, secure, refactor, quick, debug, auto, discovered
+
+---
+## 2026-03-03 | retrospective:RETRO Findings
+**回顧摘要**：
+
+本次 quick workflow 修改範圍明確（7 個 workflow command + mul-dev.md），執行品質良好。
+
+確認的品質點：
+
+- 7 個 workflow command 的 DEV 並行提示均已正確加入，格式一致
+- Mode A（standard / full / secure / refactor）和 Mode B（quick / tdd / debug）分類正確，與各 workflow 是否有 ARCH 階段完全對應
+- tdd 從 Mode A 修正為 Mode B 的修正是正確的（tdd 無 ARCH 階段，不會有 tasks.md Dev Phases）
+- mul-dev.md 的 Mode A/B 說明清晰，並行判斷標準完整
+
+跨文件輕微不一致（信心 75%，屬說明文件範圍）：
+
+mul-dev.md Mode B 清單（第 24 行）列出「quick / tdd / debug / single」，但對應的 `dev.md`（single workflow）沒有引用 mul-dev.md，且按其設計定位「一行修改、改設定、小改動」也不應加並行提示。這造成 mul-dev.md 的 Mode B 列表與實際 7 個 workflow command 修改範圍有一項不對齊（single 被列入但實際上不適用）。此問題不影響功能運作，屬文件說明精確度問題。
+
+此問題信心為 75% 但屬於文件措詞範圍而非邏輯錯誤，且 tester 已確認 2695 pass / 0 fail，整體判定為 PASS。
+Keywords: quick, workflow, command, mode, standard, full, secure, refactor, debug, arch
 
