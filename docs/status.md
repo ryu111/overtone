@@ -1,12 +1,12 @@
 # Overtone 現況
 
-> 最後更新：2026-03-03 | Plugin 版本：0.28.22（跨 Session 長期記憶）
+> 最後更新：2026-03-03 | Plugin 版本：0.28.22（跨 Session 長期記憶 + 全域觀察畢業）
 
 ## 版本狀態
 
 | 版本 | 狀態 | 說明 |
 |------|------|------|
-| V1 | 進行中 | 2468 pass，0 fail，核心功能完整 + 守衛強化 10/10 + Knowledge Engine（skill context 自動注入 + gap detection + 知識歸檔）+ Specs 歸檔驗證 + P4 文件對齊 + S19 Agent 專一化分析 + 跨 Session 長期記憶|
+| V1 | 進行中 | 2468 pass，0 fail，核心功能完整 + 守衛強化 11/11 + Knowledge Engine（skill context 自動注入 + gap detection + 知識歸檔）+ Specs 歸檔驗證 + P4 文件對齊 + S19 Agent 專一化分析 + 跨 Session 長期記憶 + 全域觀察畢業（Level 2 開啟）|
 | V2 | 規劃中 | 延後 |
 
 ## 核心指標
@@ -26,8 +26,8 @@
 
 ## 近期變更（最近 3 筆）
 
-- **[0.28.22] 2026-03-03**：跨 Session 長期記憶 — global-instinct.js（5 個 API）+ paths.global + registry.globalInstinctDefaults + SessionEnd graduate + SessionStart 全域觀察注入（+50 tests）→ 2468 pass / 103 files
-- **[P4+S19] 2026-03-03**：Phase 2 終章 — Agent 專一化量化分析完成（17 agents × 6 維度評估，降級規則精鍊，文件全面對齊）+ CLAUDE.md knowledge domain 清單 + docs/analysis/agent-specialization.md（188 行 新建）（+2 tests）→ 2410 pass / 101 files
+- **[0.28.22] 2026-03-03**：跨 Session 長期記憶 — global-instinct.js（graduate/queryGlobal/summarizeGlobal/decayGlobal/pruneGlobal 5 個 API）+ paths.global + registry.globalInstinctDefaults + SessionEnd graduate 高信心觀察 + SessionStart 全域觀察注入（+50 tests）→ 2468 pass / 103 files
+- **[P4+S19] 2026-03-03**：Phase 2 終章 — Agent 專一化量化分析完成（17 agents × 6 維度評估，降級規則精鍊，文件全面對齊）+ CLAUDE.md knowledge domain 清單 + docs/analysis/agent-specialization.md（188 行）（+2 tests）→ 2410 pass / 101 files
 - **[0.28.21] 2026-03-03**：Specs 歸檔系統修復 — featureName auto-sync 加 specsConfig 過濾 + 歸檔驗證 + specs:archive-skipped/specs:tasks-missing 兩個新事件（+6 tests）→ 2408 pass / 101 files
 
 ## 已知問題
