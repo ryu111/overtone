@@ -16,7 +16,7 @@
 
 ---
 
-## Phase 2：核心穩固（進行中）
+## Phase 2：核心穩固（✅ 完成）
 
 ### Level 1 完成項
 
@@ -89,17 +89,19 @@
 | S6 | Skill 動態注入 | `!command` 取代 hook 注入 | ✅ |
 | S7 | TaskCompleted Hook | 品質門檻硬阻擋 | ✅ |
 | S8 | Opusplan 混合模式 | Opus 規劃 + Sonnet 執行 | ✅ |
-| S9 | 保留項目 | Worktree isolation、prompt/agent hook、1M context | ⏳ |
+| S9a | Worktree Isolation | mul-agent 並行時獨立 worktree 避免衝突 | ⏳ 保留（衝突頻率 0，Phase 4 再評估） |
+| S9b | prompt/agent hook | hook 新增 LLM 判斷類型 | ❌ 關閉（違反「Hook 做確定性守衛」設計哲學） |
+| S9c | 1M Context | Sonnet 1M context window | ⏳ 保留（當前規模不需要，Phase 4 再評估） |
 | S10 | Agent Memory | 5 個 opus agent 啟用 memory: local（v0.23） | ✅ |
 | S11 | CLAUDE.md 精簡 | SoT 引用取代重複（198→121 行）+ argument-hint | ✅ |
 | S12 | 音效通知 | sound.js + Notification hook（v0.24） | ✅ |
 | S13 | Status Line | 雙行即時顯示 + ANSI 變色警告（v0.25） | ✅ |
 | S14 | Strategic Compact | SubagentStop 自動建議壓縮（v0.26） | ✅ |
-| S15 | CBP 最佳實踐對齊 | /ot:commit + code-reviewer 四維度 | ⚪ |
+| S15 | CBP 最佳實踐對齊 | code-review skill 四維度 + commit-convention skill 已覆蓋 | ✅ 間接完成 |
 | S15b | 組件正規化 | 38 skills → 16 skills + 27 commands（v0.27.3-0.27.8） | ✅ |
-| S16 | Agent Prompt 強化 | description frontmatter + `<example>` 路由範例 | ⚪ |
-| S17 | 測試覆蓋率分析 | Bun 覆蓋率工具鏈成熟度驗證 | ⏳ |
-| S18 | CI 環境感知 | isCI() + PR Auto-Review/Security Scan yaml | ⚪ |
+| S16 | Agent Prompt 強化 | description 已結構化，路由由 PreToolUse hook 確定性保證 | ✅ 間接完成 |
+| S17 | 測試覆蓋率分析 | 驗證完成：`bun test --coverage` 可用（94% Funcs / 89% Lines） | ✅ |
+| S18 | CI 環境感知 | 個人 dogfooding 無 PR 流程，workflow agent 審查已覆蓋 | ❌ 不需要 |
 | S19 | Agent 專一化精鍊 | 評估 agent 拆分機會 + Model 降級空間 + skill 完善度與 model 需求的關係量化 | ✅ |
 | S20 | Hook → Agent 遷移 | SubagentStop 核心邏輯（知識歸檔、docs sync）抽出為專職 agent，hook 純化為守衛 | ✅ v0.28.20 |
 
