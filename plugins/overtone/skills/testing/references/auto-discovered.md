@@ -227,3 +227,26 @@ BDD spec：`specs/features/in-progress/parallel-convergence-gate/bdd.md`（7 個
 5. 執行完整套件驗證：3017 pass，0 fail（+15 新增）
 Keywords: verify, spec, specs, features, progress, parallel, convergence, gate, feature, scenario
 
+---
+## 2026-03-03 | tester:TEST Findings
+全量測試結果：**3026 pass, 0 fail**（129 files）
+
+重點測試套件個別結果：
+- `tests/unit/statusline-ttl.test.js`：4 pass
+- `tests/integration/on-stop-stale-cleanup.test.js`：7 pass（含 getNextStageHint TTL 3 scenarios）
+- `tests/unit/statusline.test.js`：pass
+- `tests/integration/statusline.test.js`：pass
+- `tests/integration/agent-on-stop.test.js`：pass
+- `tests/integration/parallel-convergence-gate.test.js`：pass
+
+共 109 pass，0 fail（6 個目標測試檔合計）
+
+**覆蓋範圍確認：**
+1. on-stop.js 根因修復（findActualStageKey null 時仍清除）→ SCA-1 驗證
+2. INSTANCE_ID fallback 清除邏輯 → SCA-2 驗證
+3. active-agent.json 生命週期管理 → SCA-3 / SCA-4 驗證
+4. statusline.js TTL 過濾 → TTL-1 / TTL-2 / TTL-3 / TTL-4 驗證
+5. state.js getNextStageHint TTL 過濾 → TTL-GNH-1 / TTL-GNH-2 / TTL-GNH-3 驗證
+6. pre-compact.js TTL 防護 → 確認程式碼實作存在（TTL=30min 一致）
+Keywords: pass, fail, files, tests, unit, statusline, test, integration, stop, stale
+

@@ -9,14 +9,14 @@ workflow: standard
 
 ## 子任務清單
 
-- [ ] PLAN
-- [ ] ARCH
-- [ ] TEST
-- [ ] DEV
-- [ ] REVIEW
-- [ ] TEST
-- [ ] RETRO
-- [ ] DOCS
+- [x] PLAN
+- [x] ARCH
+- [x] TEST
+- [x] DEV
+- [x] REVIEW
+- [x] TEST
+- [x] RETRO
+- [x] DOCS
 
 ## Dev Phases
 

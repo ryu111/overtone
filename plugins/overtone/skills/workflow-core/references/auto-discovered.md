@@ -1,46 +1,5 @@
 ---
 ## 2026-03-03 | developer:DEV Context
-實作了回饋閉環（Feedback Loop）功能，讓 Level 2 持續學習系統真正閉環：Agent 被委派時能看到自己的歷史評分，session 結束時 instinct 觀察會自動衰減防止過期累積。
-Keywords: feedback, loop, level, agent, session, instinct
-
----
-## 2026-03-03 | doc-updater:DOCS Context
-根據 quick workflow 回顧階段的 Handoff，同步 v0.28.26 趨勢分析引擎相關的文檔更新：
-- 新增 baseline-tracker.js 的 computeBaselineTrend 趨勢分析
-- 新增 score-engine.js 的 computeScoreTrend + formatScoreSummary 趨勢分析
-- 新增 on-start.js 品質評分摘要自動注入
-- 測試數量從 2571 增加至 2595（+24 tests）
-Keywords: quick, workflow, handoff, baseline, tracker, computebaselinetrend, score, engine, computescoretrend, formatscoresummary
-
----
-## 2026-03-03 | developer:DEV Context
-實作了 Level 3 卡點識別的第一步：跨 session 失敗模式聚合與注入。建立 `failure-tracker.js` 模組，整合到三個 hook，並補充完整的單元測試與整合防護測試。
-Keywords: level, session, failure, tracker, hook
-
----
-## 2026-03-03 | doc-updater:DOCS Context
-本階段負責同步 v0.28.27 卡點識別功能的文檔。Handoff 收到的實裝包含：
-- 新增 `failure-tracker.js` 模組（跨 session 失敗模式聚合）
-- on-stop/on-start/pre-task hooks 整合
-- +48 個新測試（failure-tracker + level-2-integration）
-- 版本更新至 0.28.27
-Keywords: handoff, failure, tracker, session, stop, start, task, hooks, level, integration
-
----
-## 2026-03-03 | developer:DEV Findings
-1. **`state.updateStateAtomic` 接受 modifier function**（`(state) => newState`），非 object 直接 merge，已正確使用 `(s) => ({ ...s, appliedObservationIds: appliedIds })` 保留既有欄位。
-
-2. **`adjustConfidenceByIds` 使用 `_writeAll` 全量寫回**，與現有 `decayGlobal`/`pruneGlobal` 一致（這些都需要批量更新），無需追加模式。
-
-3. **保守策略實作**：penalty（-0.03）略大於 boost（+0.02），只有 both baseline AND score degrading 才 penalty，任一 improving 即 boost，stagnant 不調整。
-
-4. `_readAll` 的 tag+type 合併去重邏輯：`adjustConfidenceByIds` 直接在 merge 後的 records 上修改，再用 `_writeAll` 寫回，符合現有設計。
-
-5. **新增測試 15 個**（time-series-learning.test.js 12 個 + level-2-integration.test.js 新增 3 個），總數 2658 pass / 114 files。
-Keywords: state, updatestateatomic, modifier, function, newstate, object, merge, appliedobservationids, appliedids, adjustconfidencebyids
-
----
-## 2026-03-03 | developer:DEV Context
 實作了時間序列學習機制（v0.28.28），建立觀察效果追蹤與品質反饋迴路：
 - 每個 session 開始時，記錄注入的全域觀察 ID 到 session state（`appliedObservationIds`）
 - session 結束時，比對品質趨勢（baseline trend + score trend），反向調整被注入觀察的 confidence
@@ -809,4 +768,64 @@ Keywords: passed, failed, coverage, feature, scenario, checksamestageconvergence
 
 並行收斂門的核心邏輯（`checkSameStageConvergence`、instanceId 追蹤、on-stop.js 收斂門）實作正確，測試覆蓋全面（27 個新測試，Feature 1~5 + Feature 7 完整覆蓋）。向後相容性設計良好，`parallelTotal` 未設定時預設視為 1，單 agent 場景行為與舊版一致。
 Keywords: checksamestageconvergence, instanceid, stop, feature, paralleltotal, agent
+
+---
+## 2026-03-03 | developer:DEV Findings
+**on-stop.js 重構邏輯**：
+- `instanceId` 解析移至 `findActualStageKey` 前
+- 新增第一個 `updateStateAtomic`（只做 activeAgents cleanup）
+- `active-agent.json` 刪除改為：cleanup 後 `remainingActiveAgents.length === 0` 才刪；若收斂後補刪（確保最終清除）
+- `agent:complete` 提前到 `findActualStageKey` 前 emit（使用 `stageKey` 而非 `actualStageKey`，在非重複 stage 情況下相同）
+- 移除後段重複的 `activeAgents cleanup` 和 `active-agent.json` 刪除邏輯
+
+**TTL 常數設計**：
+- 每個消費端各自定義 `ACTIVE_AGENT_TTL_MS = 30 * 60 * 1000`，Handoff 建議抽成共用常數，但考慮各消費端語境差異，選擇就地定義，確保可讀性。Reviewer 可評估是否需要抽出到 utils.js。
+
+**現有測試的影響評估**：
+- `Scenario 3-9`（agent:complete 計數）：現在 agent:complete 提前 emit，但在 3 agent 全部完成後計數仍為 3，測試通過
+- `Scenario 3-8`（active-agent.json 生命週期）：測試中補回 active-agent.json 的寫法確保後續步驟能正確驗證，邏輯不受影響
+- 全量 3026 pass，0 fail
+Keywords: stop, instanceid, findactualstagekey, updatestateatomic, activeagents, cleanup, active, agent, json, remainingactiveagents
+
+---
+## 2026-03-03 | developer:DEV Context
+修復 statusline 殘留 agent 顯示問題（feature: statusline-stale-agent）。
+
+根因：`on-stop.js` 在 `findActualStageKey` 回傳 null 時（RETRO 修補委派 developer，DEV stage 已 completed+pass）執行 early exit，跳過 `activeAgents` cleanup，導致殘留 entry 被 statusline fallback 讀取並誤顯示。
+
+採用雙層防護：
+1. **主修復（根因）**：提前 cleanup，確保任何退出路徑都能清除殘留
+2. **防禦層（TTL）**：三個消費端（statusline、state、pre-compact）加 30 分鐘 TTL 過濾，無 active stage 且超時的 entry 視為過期
+Keywords: statusline, agent, feature, stale, stop, findactualstagekey, null, retro, developer, stage
+
+---
+## 2026-03-03 | code-reviewer:REVIEW Findings
+審查了 on-stop.js 的重構邏輯（cleanup 提前 + 兩段 updateStateAtomic 無 race condition）、agent:complete 提前 emit 使用 stageKey 對所有 timeline consumer 安全、三處 TTL 過濾邏輯一致且防禦性處理完整（NaN/null/undefined 均有安全 fallback）、active-agent.json 刪除條件在並行場景正確、收斂門邏輯未受影響、error handling 完整、無安全漏洞。測試覆蓋 11 個場景，全量 3026 pass。
+Keywords: stop, cleanup, updatestateatomic, race, condition, agent, complete, emit, stagekey, timeline
+
+---
+## 2026-03-03 | tester:TEST Context
+模式：verify
+
+驗證 statusline stale agent 修復的所有變更，涵蓋根因修復（on-stop.js activeAgents cleanup 提前執行）及三處消費端 TTL 防護（statusline.js、state.js getNextStageHint、pre-compact.js）。
+Keywords: verify, statusline, stale, agent, stop, activeagents, cleanup, state, getnextstagehint, compact
+
+---
+## 2026-03-03 | retrospective:RETRO Findings
+**回顧摘要**：
+
+本次 statusline stale agent 修復涵蓋根因修復（on-stop.js cleanup 提前）與三個消費端的 TTL 防護層，整體設計清晰且執行完整。具體確認的品質點如下：
+
+- **根因修復位置正確**：`on-stop.js` 的 `activeAgents` cleanup 提前到 `findActualStageKey` 之前（第 48-63 行），確保即使 early exit 路徑也能清除殘留。fallback 機制（字典序排序取最早 entry）對多 instance 場景有合理處理。
+
+- **三個消費端 TTL 常數一致**：`statusline.js`、`state.js getNextStageHint`、`pre-compact.js` 三處均為 30 分鐘，邏輯結構也一致（有 active stage -> 永不過期，無 active stage -> 檢查 TTL）。reviewer 確認此三份各自定義未達回報門檻，屬於接受的技術債。
+
+- **兩段 updateStateAtomic 無 race condition**：第一段（cleanup）結束後才執行第二段（stage 狀態更新），中間的 `readState` 是安全的讀取快照，不形成 TOCTOU 問題。
+
+- **收斂門邏輯未受影響**：`parallelDone` 遞增邏輯在 stage 已 `completed` 時仍執行（第 89 行），保留了並行計數的完整性，不影響收斂判斷。
+
+- **測試覆蓋完整**：11 個新測試跨兩個測試檔，涵蓋核心場景（有 INSTANCE_ID / 無 INSTANCE_ID / active-agent.json 刪除 / 並行保留）與 TTL 過濾的三種狀態（過期 / 新鮮 / 有 active stage）。3026 pass，0 fail。
+
+- **BDD spec 對齊**：`specs/features/in-progress/statusline-stale-agent/tasks.md` 記錄的階段 DEV/REVIEW/TEST 均已完成 ([x])，與實際修復範圍吻合。
+Keywords: statusline, stale, agent, stop, cleanup, activeagents, findactualstagekey, early, exit, fallback
 

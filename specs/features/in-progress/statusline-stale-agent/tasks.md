@@ -7,10 +7,10 @@ created: 2026-03-03T20:56:40.114Z
 
 ## Stages
 
-- [ ] DEV
-- [ ] REVIEW
-- [ ] TEST
-- [ ] RETRO
+- [x] DEV
+- [x] REVIEW
+- [x] TEST
+- [x] RETRO
 - [ ] DOCS
 
 ## Tasks

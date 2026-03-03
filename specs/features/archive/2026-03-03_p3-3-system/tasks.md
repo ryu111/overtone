@@ -1,10 +1,10 @@
 ---
 feature: p3-3-system
-status: in-progress
+status: archived
 workflow: standard
 created: 2026-03-03T17:22:53.086Z
+archivedAt: 2026-03-03T18:42:16.360Z
 ---
-
 ## Stages
 
 - [x] PLAN
