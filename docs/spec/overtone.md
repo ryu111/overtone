@@ -1,7 +1,7 @@
 # Overtone 規格文件
 
 > Overtone 是 Claude Code plugin，提供 BDD 驅動的工作流自動化 + 即時監控 + 遠端控制。
-> 版本：v0.28.22 | 最後更新：2026-03-03
+> 版本：v0.28.24 | 最後更新：2026-03-03
 
 ---
 
@@ -29,7 +29,7 @@
 | [overtone-工作流.md](overtone-工作流.md) | 工作流 | 18 個 workflow 模板（含 3 個產品模板）、/ot:auto 選擇邏輯、命令清單、錯誤處理 |
 | [overtone-agents.md](overtone-agents.md) | Agent 系統 | 17 個 agent 職責與 Model 分配、Handoff 協定、BDD 整合 |
 | [overtone-並行.md](overtone-並行.md) | 並行執行 | Loop 模式、靜態/動態並行、Mul-Dev 機制、D1-D4 缺陷修復 |
-| [overtone-子系統.md](overtone-子系統.md) | 子系統 | Specs 生命週期、Dashboard 監控、Remote 控制、Timeline 26 種事件 |
+| [overtone-子系統.md](overtone-子系統.md) | 子系統 | Specs 生命週期、Dashboard 監控、Remote 控制、Timeline 事件、Config API、持久化系統（global-instinct + baseline-tracker + score-engine） |
 | [overtone-驗證品質.md](overtone-驗證品質.md) | 驗證品質 | 三信號驗證、pass@k 指標、Model Grader、Instinct 系統 |
 | [workflow-diagram.md](workflow-diagram.md) | 架構圖 | Mermaid 視覺化：三層全覽、執行流程、失敗處理迴圈 |
 

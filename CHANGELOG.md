@@ -2,6 +2,65 @@
 
 所有重要變更記錄於此文件。
 
+## [0.28.24] - 2026-03-03
+
+### Level 2：數值評分引擎
+- **Score Engine**（新模組）：`scripts/lib/score-engine.js`
+  - `saveScore(sessionId, stage, data)`：記錄單次評分
+  - `queryScores(sessionId, stage, opts)`：查詢評分歷史
+  - `getScoreSummary(sessionId, opts)`：彙總報告（含趨勢分析）
+  - 儲存路徑：`~/.overtone/global/{projectHash}/scores.jsonl`
+- **Registry 設定**：
+  - `scoringConfig: { gradedStages: ['DEV','REVIEW','TEST'], lowScoreThreshold: 3.0 }`
+  - `scoringDefaults: { compareWindowSize: 10, maxRecordsPerStage: 50 }`
+- **Grader 整合**：
+  - grader.md 新增「步驟 5：寫入 scores store」
+  - SubagentStop hook：grader PASS 後，低分（<3.0）emit `quality_signal` 事件
+- **UX 改進**：
+  - stop-message-builder.js：PASS 時提示是否需委派 grader 評分
+  - agent/on-stop.js：低分判定與通知
+- **測試**：
+  - 新增 `tests/unit/score-engine.test.js`（33 tests）
+  - 新增 `tests/integration/grader-score-engine.test.js`（11 tests）
+  - 累計 2550 pass / 0 fail（108 個測試檔）
+
+---
+
+## [0.28.23] - 2026-03-03
+
+### Level 2：效能基線追蹤 + 執行佇列
+- **Baseline Tracker**（新模組）：`scripts/lib/baseline-tracker.js`
+  - `computeSessionMetrics(sessionId)`：計算 session 關鍵指標
+  - `saveBaseline(sessionId, data)`、`getBaseline(projectHash, stage)`：持久化與查詢
+  - `compareToBaseline(sessionId, stage)`：與歷史比較
+  - `formatBaselineSummary(summary)`：格式化輸出
+- **Execution Queue**（新模組）：`scripts/lib/execution-queue.js`
+  - `readQueue(projectHash)`、`writeQueue(projectHash, queue)`：佇列讀寫
+  - `getNext/getCurrent/advanceToNext/completeCurrent`：狀態轉移
+  - `formatQueueSummary(queue)`：可視化
+- **Registry 設定**：`baselineDefaults: { compareWindowSize: 10, maxRecordsPerStage: 50 }`
+- **測試**：+38 tests → 2506 pass / 106 files
+
+---
+
+## [0.28.22] - 2026-03-03
+
+### Level 2：跨 Session 長期記憶
+- **Global Instinct Engine**（新模組）：`scripts/lib/global-instinct.js`
+  - `graduate(observations, threshold)`：高信心觀察畢業為全域知識
+  - `queryGlobal(projectHash, query)`：跨 session 查詢
+  - `summarizeGlobal(observations)`：觀察摘要
+  - `decayGlobal(observations, days)`：時間衰減（> 30 days 降權）
+  - `pruneGlobal(observations, maxSize)`：超大刪舊
+  - 儲存路徑：`~/.overtone/global/{projectHash}/observations.jsonl`
+- **Registry 設定**：`globalInstinctDefaults: { graduationThreshold: 0.85, projectHashLength: 12 }`
+- **Workflow 整合**：
+  - SessionStart：注入全域觀察背景
+  - SessionEnd：自動畢業高信心觀察
+- **測試**：+50 tests → 2468 pass / 103 files
+
+---
+
 ## [0.28.21] - 2026-03-03
 
 ### Phase 2 終章：P4 文件同步 + S19 Agent 專一化分析（純文件更新）

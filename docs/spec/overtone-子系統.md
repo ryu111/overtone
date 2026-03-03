@@ -1,8 +1,8 @@
 # Overtone 子系統
 
 > 本文件是 [Overtone 規格文件](overtone.md) 的子文件。
-> 主題：Specs 系統、Dashboard 監控、Remote 控制、Timeline 事件記錄、Config API
-> 版本：v0.28.22
+> 主題：Specs 系統、Dashboard 監控、Remote 控制、Timeline 事件記錄、Config API、持久化系統
+> 版本：v0.28.24
 
 ---
 
@@ -118,3 +118,131 @@ Remote Core（核心引擎）
 1. **CLI 工具驗證**：`validate-agents.js` 改為調用 validateAll()
 2. **外部工具整合**：其他工具可透過 config-api 驗證或更新 agent/hook/skill
 3. **自動化檢查**：健康檢查系統可用 config-api 驗證元件一致性
+
+---
+
+## 持久化系統（Level 2 持續學習）
+
+### 架構（三層）
+
+```
+全域層：~/.overtone/global/{projectHash}/
+├─ observations.jsonl    # 跨 session 觀察記錄
+├─ baselines.jsonl       # 效能基線歷史
+└─ scores.jsonl          # 評分歷史
+
+Session 層：~/.overtone/sessions/{sessionId}/
+├─ workflow.json         # 工作流狀態（同步更新）
+├─ timeline.jsonl        # 事件序列（append-only）
+├─ observations.jsonl    # Session 內觀察記錄
+└─ loop.json             # Loop 進度（迭代用）
+```
+
+### Module：global-instinct.js（v0.28.22）
+
+**目的**：跨 session 長期記憶——高信心觀察自動畢業為全域知識。
+
+**API**：
+- `graduate(observations, threshold=0.85)`：篩選高信心（>85%）觀察畢業
+- `queryGlobal(projectHash, query, opts)`：全域知識檢索
+- `summarizeGlobal(observations)`：多觀察摘要
+- `decayGlobal(observations, days=30)`：時間衰減（>30 days 權重 50%）
+- `pruneGlobal(observations, maxSize=1000)`：超大檔案刪舊
+
+**整合點**：
+- `SessionStart hook`：注入 `~/.overtone/global/{projectHash}/observations.jsonl` 背景
+- `SessionEnd hook`：自動畢業本 session 的高信心觀察
+
+**資料格式**（JSONL）：
+```json
+{"id":"obs_xxx","timestamp":"2026-03-03T10:00:00Z","confidence":0.88,"projectHash":"abc123","content":"...","age_days":5}
+```
+
+### Module：baseline-tracker.js（v0.28.23）
+
+**目的**：效能基線持久化——每 session 記錄關鍵指標（執行時間、測試通過率、lint error 數），支援趨勢分析。
+
+**API**：
+- `computeSessionMetrics(sessionId)`：計算關鍵指標（DEV 用時、TEST 通過率、lint error 數、stage 耗時分佈）
+- `saveBaseline(projectHash, stage, metrics)`：儲存基線
+- `getBaseline(projectHash, stage)`：查詢基線（最近 10 筆）
+- `compareToBaseline(sessionId, stage)`：與歷史比較（返回 delta + 趨勢）
+- `formatBaselineSummary(summary)`：可視化輸出
+
+**設定**（registry.js）：
+```javascript
+baselineDefaults: {
+  compareWindowSize: 10,        // 比較視窗（最近 N 筆）
+  maxRecordsPerStage: 50        // 單 stage 最多保留筆數
+}
+```
+
+**整合點**：
+- `SubagentStop hook`：計算並保存本 stage 的指標
+- `stop-message-builder.js`：加入趨勢對比的建議（例：「本次 DEV 比平均快 15%」）
+
+### Module：score-engine.js（v0.28.24）
+
+**目的**：通用多維度評分系統——取代 pass/fail 二元判斷，支援連續型評估（0-5 分）。
+
+**API**：
+- `saveScore(sessionId, stage, data)`：記錄評分（stage、score、dimensions、timestamp）
+- `queryScores(sessionId, stage, opts)`：查詢歷史
+- `getScoreSummary(projectHash, opts)`：彙總報告（含趨勢、維度對比）
+
+**評分維度**（stage-specific）：
+- **DEV**：功能完整度、程式碼品質、效能
+- **REVIEW**：正確性、安全性、可維護性
+- **TEST**：通過率、覆蓋率、邊界情況
+- **QA**：行為一致性、邊界處理、用戶體驗
+
+**設定**（registry.js）：
+```javascript
+scoringConfig: {
+  gradedStages: ['DEV', 'REVIEW', 'TEST'],
+  lowScoreThreshold: 3.0      // < 3.0 算低分，觸發 quality_signal
+},
+scoringDefaults: {
+  compareWindowSize: 10,
+  maxRecordsPerStage: 50
+}
+```
+
+**整合點**：
+- `grader.md`：grader agent 執行後寫入 scores.jsonl
+- `SubagentStop hook`：低分（<3.0）emit `quality_signal` 事件
+- `stop-message-builder.js`：PASS 時提示是否委派 grader 評分
+
+**資料格式**（JSONL）：
+```json
+{"sessionId":"s_xxx","stage":"DEV","score":4.2,"dimensions":{"completeness":4,"quality":4.5,"performance":4},"timestamp":"2026-03-03T10:00:00Z"}
+```
+
+### 路徑管理（paths.js）
+
+新增全域路徑：
+```javascript
+global: {
+  observations: {
+    path: "~/.overtone/global/{projectHash}/observations.jsonl",
+    append: true
+  },
+  baselines: {
+    path: "~/.overtone/global/{projectHash}/baselines.jsonl",
+    append: true
+  },
+  scores: {
+    path: "~/.overtone/global/{projectHash}/scores.jsonl",
+    append: true
+  }
+}
+```
+
+---
+
+## Timeline 事件擴充（26 種，v0.28.24）
+
+新增 `grader:score` 事件分類：
+| 分類 | 事件 | 說明 |
+|------|------|------|
+| **grader** | score | Grader 評分完成（維度評估結果） |

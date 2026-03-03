@@ -41,7 +41,7 @@
 | 任務 | 說明 | 狀態 |
 |------|------|:----:|
 | 跨 session 長期記憶 | global-instinct.js（5 API + projectHash 隔離）| ✅ |
-| 數值評分引擎 | 通用多維度評估（取代 pass/fail 二元判斷） | ⬜ |
+| 數值評分引擎 | score-engine.js（saveScore/queryScores/getScoreSummary 3 API + registry.scoringConfig/scoringDefaults） | 🔵 |
 | 即時回饋迴路引擎 | 接收外部信號並調整行為 | ⬜ |
 | 時間序列學習 | Pattern 效果隨時間的變化 | ⬜ |
 | 自動識別卡點 | 重複失敗模式辨識 + 改進 | ⬜ |
