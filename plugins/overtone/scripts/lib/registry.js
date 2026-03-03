@@ -198,6 +198,12 @@ const instinctDefaults = {
   agentEvolutionCount: 8,
 };
 
+// 全域 Instinct 設定
+const globalInstinctDefaults = {
+  graduationThreshold: 0.7,   // 畢業門檻（confidence >= 此值才畢業到全域）
+  loadTopN: 50,               // SessionStart 載入筆數上限
+};
+
 module.exports = {
   stages,
   agentModels,
@@ -211,6 +217,7 @@ module.exports = {
   timelineEvents,
   remoteCommands,
   instinctDefaults,
+  globalInstinctDefaults,
   specsConfig,
   knownTools,
   hookEvents,

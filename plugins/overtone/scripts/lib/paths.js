@@ -10,11 +10,13 @@
 
 const { join } = require('path');
 const { homedir } = require('os');
+const crypto = require('crypto');
 
 // ── 基本路徑 ──
 
 const OVERTONE_HOME = join(homedir(), '.overtone');
 const SESSIONS_DIR = join(OVERTONE_HOME, 'sessions');
+const GLOBAL_DIR = join(OVERTONE_HOME, 'global');
 
 // Bash 工具環境沒有 CLAUDE_SESSION_ID 環境變數，
 // UserPromptSubmit hook 會將當前 session ID 寫入此檔，
@@ -54,6 +56,26 @@ const session = {
   activeAgent:  (id) => sessionFile(id, 'active-agent.json'),
 };
 
+// ── 全域路徑（依專案隔離）──
+
+/**
+ * 從 projectRoot 計算穩定的 8 字元 hex hash（SHA-256 前 8 字元）
+ * 用途：不同專案的全域 store 互相隔離
+ * @param {string} projectRoot - 專案根目錄絕對路徑
+ * @returns {string} 8 字元 hex 字串
+ */
+function projectHash(projectRoot) {
+  return crypto.createHash('sha256').update(projectRoot).digest('hex').slice(0, 8);
+}
+
+/**
+ * 全域路徑物件（所有函式都需要 projectRoot 參數）
+ */
+const global = {
+  dir:          (projectRoot) => join(GLOBAL_DIR, projectHash(projectRoot)),
+  observations: (projectRoot) => join(GLOBAL_DIR, projectHash(projectRoot), 'observations.jsonl'),
+};
+
 // ── 全域設定 ──
 
 const CONFIG_FILE = join(OVERTONE_HOME, 'config.json');
@@ -73,11 +95,14 @@ const project = {
 module.exports = {
   OVERTONE_HOME,
   SESSIONS_DIR,
+  GLOBAL_DIR,
   CURRENT_SESSION_FILE,
   CONFIG_FILE,
   DASHBOARD_FILE,
+  projectHash,
   sessionDir,
   sessionFile,
   session,
+  global,
   project,
 };

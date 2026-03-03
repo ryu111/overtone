@@ -187,9 +187,43 @@ safeRun(() => {
     header: '未完成任務（上次 session 中斷）',
   });
 
+  // ── 全域觀察載入 ──
+  // 從全域 store 載入高信心觀察，注入 systemMessage 提供跨 session 知識連續性
+
+  let globalObservationsMsg = null;
+  try {
+    const globalInstinct = require('../../../scripts/lib/global-instinct');
+    const { globalInstinctDefaults } = require('../../../scripts/lib/registry');
+    const topObs = globalInstinct.queryGlobal(projectRoot, {
+      limit: globalInstinctDefaults.loadTopN,
+    });
+
+    if (topObs.length > 0) {
+      const lines = topObs.map(o =>
+        `- [${o.tag}/${o.type}] ${o.action}（信心 ${o.confidence}）`
+      );
+      globalObservationsMsg = [
+        '## 跨 Session 知識記憶',
+        '',
+        '以下是從過去 session 累積的高信心觀察，供本 session 參考：',
+        '',
+        ...lines,
+      ].join('\n');
+    }
+  } catch {
+    // 全域觀察載入失敗不阻擋 session 啟動，靜默跳過
+  }
+
   const output = { result: banner };
   if (pendingTasksMsg) {
     output.systemMessage = pendingTasksMsg;
+  }
+  if (globalObservationsMsg) {
+    if (output.systemMessage) {
+      output.systemMessage += '\n\n' + globalObservationsMsg;
+    } else {
+      output.systemMessage = globalObservationsMsg;
+    }
   }
 
   process.stdout.write(JSON.stringify(output));

@@ -72,6 +72,22 @@ safeRun(() => {
     hookError('on-session-end', `重置 loop.json 失敗：${err.message || String(err)}`);
   }
 
+  // ── 3b. 全域畢業（graduate）──
+  // 將高信心 session 觀察升至全域 store，不影響其他清理步驟
+
+  try {
+    const globalInstinct = require('../../../scripts/lib/global-instinct');
+    const projectRoot = process.env.CLAUDE_PROJECT_ROOT || process.cwd();
+    const result = globalInstinct.graduate(sessionId, projectRoot);
+    if (result.graduated > 0 || result.merged > 0) {
+      process.stderr.write(
+        `[overtone/on-session-end] 知識畢業：${result.graduated} 新增，${result.merged} 合併\n`
+      );
+    }
+  } catch (err) {
+    hookError('on-session-end', `global-instinct.graduate 失敗：${err.message || String(err)}`);
+  }
+
   // ── 3. 清理 .current-session-id ──
 
   try {

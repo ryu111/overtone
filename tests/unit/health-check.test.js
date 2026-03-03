@@ -224,7 +224,8 @@ describe('checkDeadExports', () => {
   test('instinct.js（class instance export）不被納入檢查', () => {
     const findings = checkDeadExports();
     // instinct.js 使用 module.exports = new Instinct()，應被排除
-    const instinctFindings = findings.filter((f) => f.file.includes('instinct.js'));
+    // 注意：過濾條件精確匹配 instinct.js，不含 global-instinct.js
+    const instinctFindings = findings.filter((f) => f.file.endsWith('lib/instinct.js'));
     expect(instinctFindings.length).toBe(0);
   });
 
