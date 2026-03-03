@@ -328,6 +328,84 @@ describe('readTasksCheckboxes', () => {
     expect(result.allChecked).toBe(true);
     expect(result.unchecked).toHaveLength(0);
   });
+
+  test('非標準標頭（## 子任務清單）時回傳 null', () => {
+    // parallel-convergence-gate 案例：tasks.md 用了 ## 子任務清單，應回傳 null
+    // 而非 fallback 到整個文件（否則子任務 checkbox 會阻擋歸檔）
+    const tasksPath = path.join(tmpDir, 'tasks.md');
+    writeFileSync(tasksPath, [
+      '---',
+      'feature: old-feature',
+      'status: in-progress',
+      '---',
+      '',
+      '## 子任務清單',
+      '',
+      '- [ ] 未完成的子任務 A',
+      '- [ ] 未完成的子任務 B',
+      '- [x] 已完成的子任務 C',
+    ].join('\n'));
+
+    const result = specs.readTasksCheckboxes(tasksPath);
+    expect(result).toBeNull();
+  });
+
+  test('無任何 ## 標頭（純文字加 checkbox）時回傳 null', () => {
+    // 沒有 ## Stages 也沒有 ## Tasks，無法可靠解析，應回傳 null
+    const tasksPath = path.join(tmpDir, 'tasks.md');
+    writeFileSync(tasksPath, [
+      '這是一個沒有標頭的 tasks 文件',
+      '',
+      '- [ ] 待辦任務 A',
+      '- [x] 已完成任務 B',
+      '- [ ] 待辦任務 C',
+    ].join('\n'));
+
+    const result = specs.readTasksCheckboxes(tasksPath);
+    expect(result).toBeNull();
+  });
+
+  test('回歸測試：有 ## Stages 的正常檔案仍然正確解析', () => {
+    // 確保修改 fallback 行為後，標準格式不受影響
+    const tasksPath = path.join(tmpDir, 'tasks.md');
+    writeFileSync(tasksPath, [
+      '---',
+      'feature: normal-feature',
+      'status: in-progress',
+      '---',
+      '',
+      '## Stages',
+      '',
+      '- [x] PLAN',
+      '- [x] DEV',
+      '- [ ] REVIEW',
+    ].join('\n'));
+
+    const result = specs.readTasksCheckboxes(tasksPath);
+    expect(result).not.toBeNull();
+    expect(result.total).toBe(3);
+    expect(result.checked).toBe(2);
+    expect(result.allChecked).toBe(false);
+    expect(result.unchecked).toEqual(['REVIEW']);
+  });
+
+  test('回歸測試：有 ## Tasks 的正常檔案仍然正確解析', () => {
+    // 確保修改 fallback 行為後，舊格式（只有 ## Tasks）不受影響
+    const tasksPath = path.join(tmpDir, 'tasks.md');
+    writeFileSync(tasksPath, [
+      '## Tasks',
+      '',
+      '- [x] 任務 A',
+      '- [x] 任務 B',
+      '- [x] 任務 C',
+    ].join('\n'));
+
+    const result = specs.readTasksCheckboxes(tasksPath);
+    expect(result).not.toBeNull();
+    expect(result.total).toBe(3);
+    expect(result.checked).toBe(3);
+    expect(result.allChecked).toBe(true);
+  });
 });
 
 // ── updateTasksFrontmatter ──

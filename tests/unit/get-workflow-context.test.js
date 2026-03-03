@@ -259,7 +259,7 @@ describe('有活躍 feature', () => {
       'status: in-progress',
       '---',
       '',
-      '# Tasks',
+      '## Tasks',
       '',
       '- [x] Task 1',
       '- [ ] Task 2',

@@ -173,8 +173,9 @@ function readTasksCheckboxes(tasksPath) {
       ? afterHeader.slice(0, nextSectionMatch + 2)
       : afterHeader;
   } else {
-    // 找不到任何標頭 → 整個文件（向後兼容）
-    sectionContent = content;
+    // 找不到 ## Stages 或 ## Tasks → 無法可靠解析，回傳 null
+    // 呼叫方（readTasksStatus）將 fallback 到純 workflow stage 完成度判斷
+    return null;
   }
 
   CHECKBOX_UNCHECKED_REGEX.lastIndex = 0;
