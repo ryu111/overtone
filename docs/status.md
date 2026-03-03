@@ -1,12 +1,12 @@
 # Overtone 現況
 
-> 最後更新：2026-03-03 | Plugin 版本：0.28.27（卡點識別）
+> 最後更新：2026-03-03 | Plugin 版本：0.28.28（時間序列學習）
 
 ## 版本狀態
 
 | 版本 | 狀態 | 說明 |
 |------|------|------|
-| V1 | 進行中 | 2643 pass，0 fail，核心功能完整 + 守衛強化 11/11 + Knowledge Engine（skill context 自動注入 + gap detection + 知識歸檔）+ Specs 歸檔驗證 + P4 文件對齊 + S19 Agent 專一化分析 + 跨 Session 長期記憶 + 全域觀察畢業 + 效能基線追蹤 + 執行佇列 + 數值評分引擎 + 趨勢分析 + 回饋閉環 + 卡點識別（Level 2 完成）|
+| V1 | 進行中 | 2658 pass，0 fail，核心功能完整 + 守衛強化 11/11 + Knowledge Engine（skill context 自動注入 + gap detection + 知識歸檔）+ Specs 歸檔驗證 + P4 文件對齊 + S19 Agent 專一化分析 + 跨 Session 長期記憶 + 全域觀察畢業 + 效能基線追蹤 + 執行佇列 + 數值評分引擎 + 趨勢分析 + 回饋閉環 + 卡點識別 + 時間序列學習（Level 2 完成）|
 | V2 | 規劃中 | 延後 |
 
 ## 核心指標
@@ -16,8 +16,8 @@
 | Agent 數量 | 17（含 grader） |
 | Stage 數量 | 16 |
 | Workflow 模板 | 18 |
-| 測試通過 | 2643 pass / 0 fail（113 個測試檔） |
-| 測試檔案 | 113 個 |
+| 測試通過 | 2658 pass / 0 fail（114 個測試檔） |
+| 測試檔案 | 114 個 |
 | Hook 數量 | 11 個 |
 | Skill 數量 | 19（11 knowledge domain + orchestrator + pm + specs + 5 utility-with-refs） |
 | Knowledge Domain 數 | 11（testing、workflow-core、security-kb、database、dead-code、commit-convention、code-review、wording、debugging、architecture、build-system） |
@@ -26,9 +26,9 @@
 
 ## 近期變更（最近 3 筆）
 
+- **[0.28.28] 2026-03-03**：時間序列學習 — adjustConfidenceByIds API + 觀察效果反饋迴路（SessionStart 記錄注入 ID，SessionEnd 比對 baseline/score 趨勢後調整 confidence），globalInstinctDefaults 新增 feedbackBoost/feedbackPenalty（+15 tests）→ 2658 pass / 114 files
 - **[0.28.27] 2026-03-03**：卡點識別 — failure-tracker.js 跨 session 失敗模式聚合（recordFailure/getFailurePatterns/formatFailureWarnings/formatFailureSummary），on-stop/on-start/pre-task 整合注入失敗警告（+48 tests）→ 2643 pass / 113 files
 - **[0.28.26] 2026-03-03**：趨勢分析引擎 — score-engine.js 新增 computeScoreTrend + formatScoreSummary，baseline-tracker.js 新增 computeBaselineTrend，on-start.js 注入品質評分摘要（+33 tests）→ 2595 pass / 111 files
-- **[0.28.25] 2026-03-03**：回饋閉環 — pre-task.js 注入歷史評分 context（gradedStages 過濾 + lowest 維度提示）+ on-session-end.js session 層 instinct decay（+21 tests）→ 2571 pass / 110 files
 
 ## 已知問題
 
