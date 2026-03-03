@@ -202,6 +202,8 @@ const instinctDefaults = {
 const globalInstinctDefaults = {
   graduationThreshold: 0.7,   // 畢業門檻（confidence >= 此值才畢業到全域）
   loadTopN: 50,               // SessionStart 載入筆數上限
+  feedbackBoost: 0.02,        // 品質改善時的信心提升（時間序列學習）
+  feedbackPenalty: -0.03,     // 品質退步時的信心下降（保守策略）
 };
 
 // 效能基線追蹤設定

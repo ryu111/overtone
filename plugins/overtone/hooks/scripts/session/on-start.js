@@ -209,6 +209,19 @@ safeRun(() => {
         '',
         ...lines,
       ].join('\n');
+
+      // ── 時間序列學習：記錄本 session 注入的觀察 ID ──
+      // 供 session 結束時比對品質結果，反向更新觀察 confidence
+      try {
+        if (sessionId) {
+          const appliedIds = topObs.map(o => o.id).filter(Boolean);
+          if (appliedIds.length > 0) {
+            state.updateStateAtomic(sessionId, (s) => ({ ...s, appliedObservationIds: appliedIds }));
+          }
+        }
+      } catch {
+        // 靜默跳過，不阻擋 session 啟動
+      }
     }
   } catch {
     // 全域觀察載入失敗不阻擋 session 啟動，靜默跳過

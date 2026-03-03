@@ -81,6 +81,21 @@ describe('Feature 1：SessionEnd 整合點', () => {
     );
     expect(baselineBlock).toContain('try');
   });
+
+  test('1-6 呼叫 adjustConfidenceByIds（觀察效果反饋）', () => {
+    expect(sessionEndSrc).toContain('adjustConfidenceByIds');
+    expect(sessionEndSrc).toContain('appliedObservationIds');
+  });
+
+  test('1-7 觀察效果反饋有 try/catch 保護', () => {
+    const idx = sessionEndSrc.indexOf('adjustConfidenceByIds');
+    expect(idx).toBeGreaterThan(-1);
+    const block = sessionEndSrc.slice(
+      sessionEndSrc.lastIndexOf('try', idx),
+      idx + 50
+    );
+    expect(block).toContain('try');
+  });
 });
 
 // ── Feature 2：SessionStart 整合點 ──
@@ -109,6 +124,11 @@ describe('Feature 2：SessionStart 整合點', () => {
   test('2-5 注入失敗模式摘要 formatFailureSummary', () => {
     expect(sessionStartSrc).toContain('failure-tracker');
     expect(sessionStartSrc).toContain('formatFailureSummary');
+  });
+
+  test('2-6 存入 appliedObservationIds 到 session state', () => {
+    expect(sessionStartSrc).toContain('appliedObservationIds');
+    expect(sessionStartSrc).toContain('updateStateAtomic');
   });
 });
 
@@ -157,11 +177,12 @@ describe('Feature 3：PreToolUse(Task) 整合點', () => {
 // ── Feature 4：模組可載入性 + API 匯出 ──
 
 describe('Feature 4：模組可載入性', () => {
-  test('4-1 global-instinct.js 匯出 graduate + decayGlobal + queryGlobal', () => {
+  test('4-1 global-instinct.js 匯出 graduate + decayGlobal + queryGlobal + adjustConfidenceByIds', () => {
     const mod = require(join(SCRIPTS_LIB, 'global-instinct'));
     expect(typeof mod.graduate).toBe('function');
     expect(typeof mod.decayGlobal).toBe('function');
     expect(typeof mod.queryGlobal).toBe('function');
+    expect(typeof mod.adjustConfidenceByIds).toBe('function');
   });
 
   test('4-2 baseline-tracker.js 匯出 saveBaseline + computeBaselineTrend + formatBaselineSummary', () => {

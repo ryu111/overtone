@@ -288,10 +288,44 @@ function pruneGlobal(projectRoot) {
   return pruned;
 }
 
+/**
+ * 根據 ID 列表批量調整 confidence
+ * 用於時間序列學習的品質反饋
+ *
+ * @param {string} projectRoot
+ * @param {string[]} ids - 觀察 ID 列表
+ * @param {number} delta - 信心分數調整量（正/負）
+ * @returns {number} 實際更新的筆數
+ */
+function adjustConfidenceByIds(projectRoot, ids, delta) {
+  if (!ids || ids.length === 0 || delta === 0) return 0;
+
+  const records = _readAll(projectRoot);
+  if (records.length === 0) return 0;
+
+  const idSet = new Set(ids);
+  let updated = 0;
+
+  for (const r of records) {
+    if (idSet.has(r.id)) {
+      const oldConf = r.confidence;
+      r.confidence = _clampConfidence((r.confidence || 0.3) + delta);
+      if (r.confidence !== oldConf) updated++;
+    }
+  }
+
+  if (updated > 0) {
+    _writeAll(projectRoot, records);
+  }
+
+  return updated;
+}
+
 module.exports = {
   graduate,
   queryGlobal,
   summarizeGlobal,
   decayGlobal,
   pruneGlobal,
+  adjustConfidenceByIds,
 };

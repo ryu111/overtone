@@ -104,6 +104,47 @@ safeRun(() => {
     hookError('on-session-end', `instinct.decay 失敗：${err.message || String(err)}`);
   }
 
+  // ── 3b3. 觀察效果反饋（時間序列學習）──
+  // 比對品質趨勢，反向更新被注入觀察的 confidence
+
+  try {
+    const currentState = require('../../../scripts/lib/state').readState(sessionId);
+    const appliedIds = currentState?.appliedObservationIds;
+
+    if (appliedIds && appliedIds.length > 0) {
+      const baselineTracker = require('../../../scripts/lib/baseline-tracker');
+      const scoreEngine = require('../../../scripts/lib/score-engine');
+      const { scoringConfig, globalInstinctDefaults: gid } = require('../../../scripts/lib/registry');
+
+      // 判斷 baseline trend
+      const workflowType = currentState.workflowType;
+      const bTrend = workflowType ? baselineTracker.computeBaselineTrend(projectRoot, workflowType) : null;
+
+      // 取第一個有資料的 graded stage 的 score trend
+      let sTrend = null;
+      for (const stage of (scoringConfig.gradedStages || [])) {
+        const t = scoreEngine.computeScoreTrend(projectRoot, stage);
+        if (t) { sTrend = t; break; }
+      }
+
+      const isImproving = (bTrend?.direction === 'improving') || (sTrend?.direction === 'improving');
+      const isDegrading = (bTrend?.direction === 'degrading') && (sTrend?.direction === 'degrading');
+
+      if (isImproving || isDegrading) {
+        const globalInstinct = require('../../../scripts/lib/global-instinct');
+        const delta = isImproving ? gid.feedbackBoost : gid.feedbackPenalty;
+        const updated = globalInstinct.adjustConfidenceByIds(projectRoot, appliedIds, delta);
+        if (updated > 0) {
+          process.stderr.write(
+            `[overtone/on-session-end] 觀察效果反饋：${updated} 筆 ${isImproving ? '提升' : '下降'} confidence（${delta > 0 ? '+' : ''}${delta}）\n`
+          );
+        }
+      }
+    }
+  } catch (err) {
+    hookError('on-session-end', `觀察效果反饋失敗：${err.message || String(err)}`);
+  }
+
   // ── 3c. 效能基線保存 ──
   // 若 workflow 已完成，記錄效能指標供跨 session 追蹤
 
