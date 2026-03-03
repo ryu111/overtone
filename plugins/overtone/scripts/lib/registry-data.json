@@ -1,50 +1,128 @@
 {
   "stages": {
-    "PM":        { "label": "產品",   "emoji": "🎯", "agent": "product-manager",      "color": "emerald" },
-    "PLAN":      { "label": "規劃",   "emoji": "📋", "agent": "planner",              "color": "purple" },
-    "ARCH":      { "label": "架構",   "emoji": "🏗️", "agent": "architect",            "color": "cyan" },
-    "DESIGN":    { "label": "設計",   "emoji": "🎨", "agent": "designer",             "color": "cyan" },
-    "DEV":       { "label": "開發",   "emoji": "💻", "agent": "developer",            "color": "yellow" },
-    "DEBUG":     { "label": "除錯",   "emoji": "🔧", "agent": "debugger",             "color": "orange" },
-    "REVIEW":    { "label": "審查",   "emoji": "🔍", "agent": "code-reviewer",        "color": "blue" },
-    "TEST":      { "label": "測試",   "emoji": "🧪", "agent": "tester",               "color": "pink" },
-    "SECURITY":  { "label": "安全",   "emoji": "🛡️", "agent": "security-reviewer",    "color": "red" },
-    "DB-REVIEW": { "label": "DB審查", "emoji": "🗄️", "agent": "database-reviewer",    "color": "red" },
-    "QA":        { "label": "驗證",   "emoji": "🏁", "agent": "qa",                   "color": "yellow" },
-    "E2E":       { "label": "E2E",    "emoji": "🌐", "agent": "e2e-runner",           "color": "green" },
-    "BUILD-FIX": { "label": "修構建", "emoji": "🔨", "agent": "build-error-resolver", "color": "orange" },
-    "REFACTOR":  { "label": "清理",   "emoji": "🧹", "agent": "refactor-cleaner",     "color": "blue" },
-    "RETRO":     { "label": "回顧",   "emoji": "🔁", "agent": "retrospective",        "color": "purple" },
-    "DOCS":      { "label": "文件",   "emoji": "📝", "agent": "doc-updater",          "color": "purple" }
+    "PM": {
+      "label": "產品",
+      "emoji": "🎯",
+      "agent": "product-manager",
+      "color": "emerald"
+    },
+    "PLAN": {
+      "label": "規劃",
+      "emoji": "📋",
+      "agent": "planner",
+      "color": "purple"
+    },
+    "ARCH": {
+      "label": "架構",
+      "emoji": "🏗️",
+      "agent": "architect",
+      "color": "cyan"
+    },
+    "DESIGN": {
+      "label": "設計",
+      "emoji": "🎨",
+      "agent": "designer",
+      "color": "cyan"
+    },
+    "DEV": {
+      "label": "開發",
+      "emoji": "💻",
+      "agent": "developer",
+      "color": "yellow"
+    },
+    "DEBUG": {
+      "label": "除錯",
+      "emoji": "🔧",
+      "agent": "debugger",
+      "color": "orange"
+    },
+    "REVIEW": {
+      "label": "審查",
+      "emoji": "🔍",
+      "agent": "code-reviewer",
+      "color": "blue"
+    },
+    "TEST": {
+      "label": "測試",
+      "emoji": "🧪",
+      "agent": "tester",
+      "color": "pink"
+    },
+    "SECURITY": {
+      "label": "安全",
+      "emoji": "🛡️",
+      "agent": "security-reviewer",
+      "color": "red"
+    },
+    "DB-REVIEW": {
+      "label": "DB審查",
+      "emoji": "🗄️",
+      "agent": "database-reviewer",
+      "color": "red"
+    },
+    "QA": {
+      "label": "驗證",
+      "emoji": "🏁",
+      "agent": "qa",
+      "color": "yellow"
+    },
+    "E2E": {
+      "label": "E2E",
+      "emoji": "🌐",
+      "agent": "e2e-runner",
+      "color": "green"
+    },
+    "BUILD-FIX": {
+      "label": "修構建",
+      "emoji": "🔨",
+      "agent": "build-error-resolver",
+      "color": "orange"
+    },
+    "REFACTOR": {
+      "label": "清理",
+      "emoji": "🧹",
+      "agent": "refactor-cleaner",
+      "color": "blue"
+    },
+    "RETRO": {
+      "label": "回顧",
+      "emoji": "🔁",
+      "agent": "retrospective",
+      "color": "purple"
+    },
+    "DOCS": {
+      "label": "文件",
+      "emoji": "📝",
+      "agent": "doc-updater",
+      "color": "purple"
+    }
   },
   "agentModels": {
-    "product-manager":     "opus",
-    "planner":             "opusplan",
-    "architect":           "opus",
-    "code-reviewer":       "opus",
-    "security-reviewer":   "opus",
-    "retrospective":       "opus",
-    "designer":            "sonnet",
-    "developer":           "sonnet",
-    "debugger":            "sonnet",
-    "database-reviewer":   "sonnet",
-    "tester":              "sonnet",
-    "qa":                  "sonnet",
-    "e2e-runner":          "sonnet",
-    "build-error-resolver":"sonnet",
-    "refactor-cleaner":    "sonnet",
-    "doc-updater":         "haiku"
+    "product-manager": "opus",
+    "planner": "opusplan",
+    "architect": "sonnet",
+    "code-reviewer": "opus",
+    "security-reviewer": "opus",
+    "retrospective": "sonnet",
+    "designer": "sonnet",
+    "developer": "sonnet",
+    "debugger": "sonnet",
+    "database-reviewer": "sonnet",
+    "tester": "sonnet",
+    "qa": "sonnet",
+    "e2e-runner": "sonnet",
+    "build-error-resolver": "sonnet",
+    "refactor-cleaner": "sonnet",
+    "doc-updater": "haiku"
   },
   "effortLevels": {
-    "opus":     "high",
+    "opus": "high",
     "opusplan": "high",
-    "sonnet":   "medium",
-    "haiku":    "low"
+    "sonnet": "medium",
+    "haiku": "low"
   },
   "agentMemory": {
     "code-reviewer": "local",
-    "retrospective": "local",
-    "architect": "local",
     "security-reviewer": "local",
     "product-manager": "local"
   }

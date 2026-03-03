@@ -14,7 +14,7 @@
 |:-:|-------|:-----:|:-----:|:----:|:--------------:|
 | 1 | product-manager | opus | emerald | 產品分析 | bypassPermissions |
 | 2 | planner | opusplan | purple | 規劃 | bypassPermissions |
-| 3 | architect | opus | cyan | 架構 | bypassPermissions |
+| 3 | architect | sonnet | cyan | 架構 | bypassPermissions |
 | 4 | designer | sonnet | cyan | UI/UX | bypassPermissions |
 | 5 | developer | sonnet | yellow | 開發 | bypassPermissions |
 | 6 | debugger | sonnet | orange | 診斷 | bypassPermissions |
@@ -26,7 +26,7 @@
 | 12 | e2e-runner | sonnet | green | E2E | bypassPermissions |
 | 13 | build-error-resolver | sonnet | orange | 修構建 | bypassPermissions |
 | 14 | refactor-cleaner | sonnet | blue | 死碼清理 | bypassPermissions |
-| 15 | retrospective | opus | purple | 迭代回顧 | bypassPermissions |
+| 15 | retrospective | sonnet | purple | 迭代回顧 | bypassPermissions |
 | 16 | doc-updater | haiku | purple | 文件 | bypassPermissions |
 | 17 | grader | haiku | purple | 品質評分（可選，非 workflow stage） | bypassPermissions |
 
@@ -34,9 +34,9 @@
 
 ### Model 分級
 
-- **Opus**（5 個決策型）：product-manager、architect、code-reviewer、security-reviewer、retrospective
+- **Opus**（3 個決策型）：product-manager、code-reviewer、security-reviewer
 - **Opusplan**（1 個混合型）：planner
-- **Sonnet**（9 個執行型）：designer、developer、debugger、database-reviewer、tester、qa、e2e-runner、build-error-resolver、refactor-cleaner
+- **Sonnet**（11 個執行型）：architect、designer、developer、debugger、database-reviewer、tester、qa、e2e-runner、build-error-resolver、refactor-cleaner、retrospective
 - **Haiku**（2 個輕量型）：doc-updater、grader
 
 ### 色彩分組（9 組）

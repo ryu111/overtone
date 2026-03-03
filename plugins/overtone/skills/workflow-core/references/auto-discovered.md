@@ -76,3 +76,36 @@ Keywords: agent, architect, retrospective, opus, sonnet, memory, local, frontmat
 5. **MEMORY.md**（個人記憶）
    - Plugin 版本記錄：0.28.17 → 0.28.18
 Keywords: docs, spec, overtone, agents, architect, retrospective, model, opus, sonnet, agent
+---
+## 2026-03-03 | developer:DEV Context
+修復 `skill-router.js` 的 `_appendToAutoDiscovered` 函式去重缺陷。原本函式只追加不去重，導致每次 SubagentStop hook 觸發時相同 content 被無限重複寫入 auto-discovered.md。`testing/references/auto-discovered.md` 有 170 行但內容只有 6 行重複了約 28 次。
+Keywords: skill, router, subagentstop, hook, content, auto, discovered, testing, references
+---
+## 2026-03-03 | code-reviewer:REVIEW Findings
+審查了 15 個變更檔案，涵蓋兩個工作：P2 Agent 進化（architect/retrospective 降級 sonnet + memory 移除）和 skill-router.js 去重修復。
+
+**去重邏輯（核心審查對象）**：
+- `/Users/sbu/projects/overtone/plugins/overtone/scripts/lib/skill-router.js` 第 139-140 行的 `existingContent.includes(contentTrimmed)` 去重方式在此場景下合理。子字串 false positive 是已知且可接受的行為（測試 Scenario 4-9 明確驗證）。
+- 7 個新測試（`/Users/sbu/projects/overtone/tests/unit/skill-router.test.js`）覆蓋精確重複、多次重複、不同 content、子字串邊界。全部 pass。
+- `/Users/sbu/projects/overtone/plugins/overtone/skills/testing/references/auto-discovered.md` 從 170 行清理至 23
+Keywords: agent, architect, retrospective, sonnet, memory, skill, router, users, projects, overtone
+
+---
+## 2026-03-03 | retrospective:RETRO Findings
+**回顧摘要**：
+
+本次 commit 包含兩個獨立工作：P2 Agent 進化（architect/retrospective 從 opus 降級 sonnet + 移除 memory: local）和 skill-router.js 去重修復。整體品質良好：
+
+- **去重邏輯正確**：`/Users/sbu/projects/overtone/plugins/overtone/scripts/lib/skill-router.js` 第 139-140 行的 `existingContent.includes(contentTrimmed)` 在讀取現有內容後、組裝 newEntry 前執行去重，時序正確。7 個新測試（`/Users/sbu/projects/overtone/tests/unit/skill-router.test.js` Scenario 4-7/4-8/4-9）覆蓋精確重複、多次重複、不同 content、子字串邊界四種場景。
+- **auto-discovered.md 清理完成**：`/Users/sbu/projects/overtone/plugins/overtone/skills/testing/references/auto-discovered.md` 從 170 行清理至 46 行（3 筆有效條目 + tester 歸檔）。
+- **config-api.js memory 同步修復乾淨**：`/Users/sbu/projects/overtone/plugins/overtone/scripts/lib/config-api.js` 第 638-655 行的 `memoryChanged` 分支正確處理 null 和空字串兩種移除場景，registry-data.json 同步一致。
+- **agent 設定一致性完整**：`/Users/sbu/projects/overtone/plugins/overtone/scripts/lib/registry-data.json` 的 agentMemory 只剩 3 個 agent（code-reviewer、security-reviewer、product-manager），與 agent .md frontmatter 完全吻合。`/Users/sbu/projects/overtone/docs/spec/overtone-agents.md` 的 model 分級表已正確更新。
+- **測試全部通過**：2381 pass / 0 fail / 99 files。
+
+**提醒 doc-updater 在 DOCS 階段同步以下項目**：
+
+1. `docs/status.md` 核心指標的測試通過數：2374 → 2381
+2. `docs/status.md` 近期變更：缺少 0.28.18（P2 Agent 進化）和 0.28.19（auto-discovered dedup 修復）兩筆條目
+3. CLAUDE.md 的 `Model 分配` 描述目前是泛稱（`opus（決策型）、sonnet（執行型）、haiku（輕量型）`），不需要具體改動，但 doc-updater 可確認是否需要更精確的數字
+Keywords: commit, agent, architect, retrospective, opus, sonnet, memory, local, skill, router
+

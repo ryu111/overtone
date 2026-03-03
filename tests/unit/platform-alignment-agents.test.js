@@ -399,9 +399,10 @@ describe('Feature 1b: Agent skills 預載（agent frontmatter）', () => {
 
 describe('Feature S10: Agent Memory', () => {
 
-  // S10-1: 啟用 memory 的 agent
+  // S10-1: 啟用 memory 的 agent（opus 決策型；architect/retrospective 已降級 sonnet 並移除 memory）
+  const memoryAgents = ['code-reviewer', 'security-reviewer', 'product-manager'];
   describe('S10-1: memory: local agent', () => {
-    for (const agentName of ['code-reviewer', 'retrospective', 'architect', 'security-reviewer', 'product-manager']) {
+    for (const agentName of memoryAgents) {
       test(`${agentName} frontmatter 包含 memory: local`, () => {
         const fm = agentFrontmatters[agentName];
         expect(fm.memory).toBe('local');
@@ -411,7 +412,7 @@ describe('Feature S10: Agent Memory', () => {
 
   // S10-2: 未啟用 memory 的 agent
   describe('S10-2: 其他 agent 不含 memory 欄位', () => {
-    const noMemoryAgents = agentFiles.filter(a => !['code-reviewer', 'retrospective', 'architect', 'security-reviewer', 'product-manager'].includes(a));
+    const noMemoryAgents = agentFiles.filter(a => !memoryAgents.includes(a));
     for (const agentName of noMemoryAgents) {
       test(`${agentName} frontmatter 不含 memory 欄位`, () => {
         const fm = agentFrontmatters[agentName];

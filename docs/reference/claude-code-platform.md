@@ -492,9 +492,11 @@ Opus（規劃 + 決策）→ Sonnet（執行 + 實作）
 
 | 角色 | Model | 理由 |
 |------|:-----:|------|
-| product-manager, architect | `opus` | 策略推理、架構決策 |
+| product-manager | `opus` | 策略推理 |
+| architect | `sonnet` | 架構決策（充分的 domain knowledge，Sonnet 足以） |
 | planner | `opusplan` | Opus 規劃 + Sonnet 執行（混合模式） |
-| code-reviewer, security-reviewer, retrospective | `opus` | 高信心判斷 |
+| code-reviewer, security-reviewer | `opus` | 高信心判斷 |
+| retrospective | `sonnet` | 回顧分析（充分的 instinct 和 knowledge context） |
 | developer, designer, tester, qa, debugger | `sonnet` | 實作效率 |
 | database-reviewer, e2e-runner, build-error-resolver, refactor-cleaner | `sonnet` | 專項執行 |
 | doc-updater, grader | `haiku` | 低成本機械任務 |
@@ -619,7 +621,7 @@ stdin 提供完整 session 狀態（model、cost、context window、vim mode 等
 
 | # | 能力 | 說明 |
 |---|------|------|
-| 1 | **Agent `memory`** | v0.23.0 — 5 個 opus 判斷型 agent 啟用 `memory: local`（code-reviewer、retrospective、architect、security-reviewer、product-manager） |
+| 1 | **Agent `memory`** | v0.23.0 — 3 個 opus 判斷型 agent 啟用 `memory: local`（code-reviewer、security-reviewer、product-manager）；v0.28.18 retrospective/architect 降級為 Sonnet，移除 memory: local |
 
 ### ⏳ S9 保留
 
@@ -678,7 +680,7 @@ stdin 提供完整 session 狀態（model、cost、context window、vim mode 等
 
 ### ✅ S10 已完成（v0.23.0）
 
-**Agent `memory`** — 5 個 opus 判斷型 agent 啟用 `memory: local`（code-reviewer、retrospective、architect、security-reviewer、product-manager）
+**Agent `memory`** — 3 個 opus 判斷型 agent 啟用 `memory: local`（code-reviewer、security-reviewer、product-manager）；v0.28.18 retrospective/architect 降級為 Sonnet，移除 memory: local
 
 ### ⚪ S11 待實作
 

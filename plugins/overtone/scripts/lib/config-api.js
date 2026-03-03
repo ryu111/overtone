@@ -635,10 +635,22 @@ function updateAgent(name, updates, pluginRoot) {
   // 原子寫入
   atomicWrite(agentPath, fileContent);
 
-  // 若 model 有變更，同步更新 registry-data.json
-  if (updates.model !== undefined && updates.model !== existingFrontmatter.model) {
+  // 若 model 或 memory 有變更，同步更新 registry-data.json
+  const modelChanged = updates.model !== undefined && updates.model !== existingFrontmatter.model;
+  const memoryChanged = updates.memory !== undefined && updates.memory !== existingFrontmatter.memory;
+  if (modelChanged || memoryChanged) {
     const registryData = readRegistryData(pluginRoot);
-    registryData.agentModels[name] = updates.model;
+    if (modelChanged) {
+      registryData.agentModels[name] = updates.model;
+    }
+    if (memoryChanged) {
+      if (updates.memory === null || updates.memory === '') {
+        // memory 被移除，從 agentMemory 中刪除該 agent
+        delete registryData.agentMemory[name];
+      } else {
+        registryData.agentMemory[name] = updates.memory;
+      }
+    }
     writeRegistryData(pluginRoot, registryData);
   }
 

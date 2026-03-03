@@ -1,6 +1,6 @@
 # Overtone 現況
 
-> 最後更新：2026-03-03 | Plugin 版本：0.28.17
+> 最後更新：2026-03-03 | Plugin 版本：0.28.19（auto-discovered dedup 修復）
 
 ## 版本狀態
 
@@ -16,7 +16,7 @@
 | Agent 數量 | 17（含 grader） |
 | Stage 數量 | 16 |
 | Workflow 模板 | 18 |
-| 測試通過 | 2374 pass / 0 fail |
+| 測試通過 | 2381 pass / 0 fail |
 | 測試檔案 | 99 個 |
 | Hook 數量 | 11 個 |
 | Skill 數量 | 19（11 knowledge domain + orchestrator + pm + specs + 5 utility-with-refs） |
@@ -25,9 +25,9 @@
 
 ## 近期變更（最近 3 筆）
 
-- **[0.28.17] 2026-03-03**：Knowledge Engine — buildSkillContext 自動注入 + detectKnowledgeGaps gap 偵測 + searchKnowledge 三源搜尋 + skill-router 知識路由歸檔 + Code Review 修復（instinct type + orphan guard）（+54 tests）→ 2286 pass / 99 files
-- **[0.28.16] 2026-03-03**：三層觸發整合 + E2E — guard-system.js 統一入口（5 子系統 orchestrator）+ guard-system-e2e.test.js（三層完整性 + 真實 codebase 健康驗證）（+39 tests）→ 2232 pass / 95 files
-- **[0.28.15] 2026-03-03**：Guard Test 覆蓋率守衛 — guard-coverage.test.js meta-guard（6 scanner + 4 guard + 3 hook 覆蓋 + 最低測試閘門）（+26 tests）→ 2193 pass / 94 files
+- **[0.28.19] 2026-03-03**：auto-discovered dedup 修復（knowledge-searcher 去重邏輯）（+7 tests）→ 2381 pass / 99 files
+- **[0.28.18] 2026-03-03**：P2 Agent 進化（architect + retrospective Opus→Sonnet，memory:local 移除，config-api.js agentMemory 同步修復）（+76 tests）→ 2376 pass / 99 files
+- **[0.28.17] 2026-03-03**：Knowledge Engine — buildSkillContext 自動注入 + detectKnowledgeGaps gap 偵測 + searchKnowledge 三源搜尋 + skill-router 知識路由歸檔 + Code Review 修復（instinct type + orphan guard）（+54 tests）→ 2300 pass / 99 files
 
 ## 已知問題
 

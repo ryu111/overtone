@@ -99,12 +99,13 @@ describe('registry.js 資料完整性', () => {
   });
 
   describe('agentMemory', () => {
-    test('包含 code-reviewer 和 retrospective', () => {
+    test('包含有 memory 設定的 agents（opus 決策型）', () => {
       expect(agentMemory['code-reviewer']).toBe('local');
-      expect(agentMemory['retrospective']).toBe('local');
-      expect(agentMemory['architect']).toBe('local');
       expect(agentMemory['security-reviewer']).toBe('local');
       expect(agentMemory['product-manager']).toBe('local');
+      // architect 和 retrospective 已降級為 sonnet，移除 memory 設定
+      expect(agentMemory['architect']).toBeUndefined();
+      expect(agentMemory['retrospective']).toBeUndefined();
     });
 
     test('只包含 agentModels 中存在的 agent', () => {
