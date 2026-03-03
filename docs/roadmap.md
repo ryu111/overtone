@@ -83,19 +83,46 @@
 | window.js | 視窗列表/聚焦（AppleScript）— P3.1 完成；移動/調整大小留 P3.2 | ✅ |
 | Skill: perception ref | `skills/os-control/references/perception.md` | ✅ |
 
-### P3.2 心跳引擎（自主控制層）✅
+### P3.2 心跳引擎（自主控制層）
 
 > 方向重排：原 P3.2「動得了」降為 P3.4，插入心跳引擎作為閉環自主控制的核心。
 > 技術方案：Heartbeat Daemon（方案 A，RICE 4.8）— Bun 常駐程序 + `claude -p --plugin-dir` spawn session。
 > PoC 已驗證：`claude -p --plugin-dir` 完整載入 22 skills + 17 agents。
+
+**Core 引擎 ✅**
 
 | 任務 | 說明 | 狀態 |
 |------|------|:----:|
 | heartbeat.js | Bun 常駐 daemon（start/stop/status CLI + PID 檔 + polling loop） | ✅ |
 | session-spawner.js | `claude -p` session spawn 封裝（參數組裝 + stream-json 解析 + timeout） | ✅ |
 | 佇列整合 | execution-queue.json 監聽 + 自動 spawn + 安全邊界（並行鎖 + 連續失敗暫停） | ✅ |
-| Telegram 通知 | spawn/完成/失敗/暫停事件推送 + `/run` 遠端觸發（Should） | ✅ |
+| Telegram notify | spawn/完成/失敗/暫停事件推送（`TelegramAdapter.notify()`） | ✅ |
 | autonomous-control Skill | 新建第 13 個 knowledge domain（SKILL.md + references/heartbeat.md + Agent frontmatter 注入） | ✅ |
+
+**整合層 ⬜（待實作 — 讓引擎可被使用）**
+
+> 現況：引擎能跑、能 poll、能 spawn、能通知、能暫停，但缺少「佇列入口」— 沒有方式把任務放進佇列。
+> 目標：至少一個入口能寫入佇列 → daemon 自動消費 → 完整閉環。
+
+| 任務 | 說明 | 狀態 |
+|------|------|:----:|
+| queue CLI | `bun scripts/queue.js add <name> <workflow>` / `list` / `clear` — 手動佇列管理 | ⬜ |
+| PM 自動寫入 | PM Discovery 產出多迭代計劃時，自動調用 `writeQueue()` 寫入佇列（PM agent 或 on-stop.js 整合） | ⬜ |
+| Telegram `/run` | `/run <featureName> [workflow]` 遠端命令，寫入佇列並通知（telegram-adapter.js `_handleUpdate` 擴充） | ⬜ |
+| session-spawner 防禦 | spawn 時移除 `CLAUDECODE` 環境變數（`env` 選項），防止嵌套 session 保護誤觸發 | ⬜ |
+| health-check 整合 | heartbeat-daemon 偵測（第 8 項：讀 PID 檔 + `process.kill(pid, 0)` 存活確認） | ⬜ |
+
+**並行委派 PoC ⏳**
+
+> CLAUDE.md 已加入「並行委派」📋 MUST 規則。下個 standard workflow 驗證 Main Agent 是否自然拆分並行委派。
+> 若成功 → 移除 tasks.md `(parallel)` 標記，並行判斷 100% 由 Main Agent 先天知識驅動。
+> 若失敗 → CLAUDE.md 原則 + tasks.md 標記兩條路並行。
+
+| 任務 | 說明 | 狀態 |
+|------|------|:----:|
+| CLAUDE.md 規則 | 已寫入「並行委派」區塊（📋 MUST 評估子任務可拆性） | ✅ |
+| PoC 驗證 | 下個 standard workflow 實測觀察 | ⏳ |
+| init-overtone | plugin 內建 `claude.md.d/` 片段 + SessionStart 偵測首次安裝 → 自動合併到用戶 CLAUDE.md（Command + Hook 配合） | ⬜ |
 
 ### P3.3 管得住（系統層）
 
@@ -138,7 +165,7 @@
 
 ### Phase 3 完成標準（Phase 4 Ready）
 
-> **P3.2 里程碑**：給系統一個佇列（3 個任務），用戶離開電腦。系統自主循環完成所有任務，Telegram 推送進度，連續失敗自動暫停通知。
+> **P3.2 里程碑**：(1) `bun scripts/queue.js add feature-a standard && bun scripts/heartbeat.js start` — 手動佇列 + 啟動 daemon。(2) Telegram `/run feature-b quick` — 遠端觸發。(3) 給系統 3 個任務佇列，用戶離開電腦，系統自主循環完成，Telegram 推送進度，連續失敗自動暫停通知。
 >
 > **最終標準（P3.6 後）**：給系統指令：「研究幣安 API，建立加密貨幣價格監控系統」
 > 系統必須能自主完成：HTTP 研究 API → WebSocket 接收即時價格 → Process 啟動監控 → 截圖+視覺驗證顯示正確 → 通知價格異常 → 全程 OS Guard 保護
