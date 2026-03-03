@@ -103,6 +103,35 @@ describe('recordFailure — JSONL append', () => {
     expect(parsed.verdict).toBe('fail');
   });
 
+  test('1-3 記錄 reason 欄位（可選）', () => {
+    const project = join(homedir(), '.overtone', 'test-fail-reason-' + TIMESTAMP);
+    dirsToClean.push(project);
+    clearFailures(project);
+
+    const record = makeRecord({ stage: 'DEV', agent: 'developer', verdict: 'fail', reason: '測試未通過：缺少邊界條件處理' });
+    failureTracker.recordFailure(project, record);
+
+    const filePath = getFailurePath(project);
+    const content = readFileSync(filePath, 'utf8').trim();
+    const parsed = JSON.parse(content.split('\n')[0]);
+    expect(parsed.reason).toBe('測試未通過：缺少邊界條件處理');
+  });
+
+  test('1-4 reason 為 null 時正常寫入（不影響現有欄位）', () => {
+    const project = join(homedir(), '.overtone', 'test-fail-reason-null-' + TIMESTAMP);
+    dirsToClean.push(project);
+    clearFailures(project);
+
+    const record = makeRecord({ stage: 'DEV', agent: 'developer', verdict: 'fail', reason: null });
+    failureTracker.recordFailure(project, record);
+
+    const filePath = getFailurePath(project);
+    const content = readFileSync(filePath, 'utf8').trim();
+    const parsed = JSON.parse(content.split('\n')[0]);
+    expect(parsed.stage).toBe('DEV');
+    expect(parsed.reason).toBeNull();
+  });
+
   test('1-2 多次呼叫累積多筆記錄', () => {
     const project = join(homedir(), '.overtone', 'test-fail-multi-' + TIMESTAMP);
     dirsToClean.push(project);
@@ -314,6 +343,65 @@ describe('formatFailureWarnings — threshold 控制', () => {
     const warning = failureTracker.formatFailureWarnings(project, 'TEST');
     expect(warning).toContain('TEST');
     expect(warning).toContain('建議');
+  });
+
+  test('4-6 有 reason 時警告包含根因文字', () => {
+    const project = join(homedir(), '.overtone', 'test-fail-warn-reason-' + TIMESTAMP);
+    dirsToClean.push(project);
+
+    const records = [
+      makeRecord({ stage: 'DEV', agent: 'developer', verdict: 'fail', reason: '缺少 null 檢查' }),
+      makeRecord({ stage: 'DEV', agent: 'developer', verdict: 'fail', reason: '缺少 null 檢查' }),
+      makeRecord({ stage: 'DEV', agent: 'developer', verdict: 'fail', reason: '型別錯誤' }),
+    ];
+    writeFailures(project, records);
+
+    const warning = failureTracker.formatFailureWarnings(project, 'DEV');
+    expect(warning).not.toBeNull();
+    expect(warning).toContain('常見失敗原因');
+    expect(warning).toContain('缺少 null 檢查');
+    expect(warning).toContain('型別錯誤');
+  });
+
+  test('4-7 無 reason 欄位時警告不含根因區塊', () => {
+    const project = join(homedir(), '.overtone', 'test-fail-warn-no-reason-' + TIMESTAMP);
+    dirsToClean.push(project);
+
+    const records = [
+      makeRecord({ stage: 'DEV', agent: 'developer', verdict: 'fail' }),
+      makeRecord({ stage: 'DEV', agent: 'developer', verdict: 'fail' }),
+      makeRecord({ stage: 'DEV', agent: 'developer', verdict: 'fail' }),
+    ];
+    writeFailures(project, records);
+
+    const warning = failureTracker.formatFailureWarnings(project, 'DEV');
+    expect(warning).not.toBeNull();
+    expect(warning).not.toContain('常見失敗原因');
+  });
+
+  test('4-8 reason 去重後最多顯示 3 個', () => {
+    const project = join(homedir(), '.overtone', 'test-fail-warn-dedup-' + TIMESTAMP);
+    dirsToClean.push(project);
+
+    const records = [
+      makeRecord({ stage: 'DEV', agent: 'developer', verdict: 'fail', reason: '原因 A' }),
+      makeRecord({ stage: 'DEV', agent: 'developer', verdict: 'fail', reason: '原因 B' }),
+      makeRecord({ stage: 'DEV', agent: 'developer', verdict: 'fail', reason: '原因 C' }),
+      makeRecord({ stage: 'DEV', agent: 'developer', verdict: 'fail', reason: '原因 D' }),
+      makeRecord({ stage: 'DEV', agent: 'developer', verdict: 'fail', reason: '原因 A' }),  // 重複
+    ];
+    writeFailures(project, records);
+
+    const warning = failureTracker.formatFailureWarnings(project, 'DEV');
+    expect(warning).not.toBeNull();
+    // 去重後最多 3 個，原因 A 重複只算一次
+    const reasonLines = warning.split('\n').filter(l => l.trim().startsWith('- '));
+    // 確認不超過 3 個 reason 項目（reasonLines 可能也包含其他項目，用根因區塊段計算更準確）
+    const reasonSectionMatch = warning.match(/常見失敗原因：([\s\S]*?)(?=\n[^\s-]|$)/);
+    if (reasonSectionMatch) {
+      const reasonEntries = reasonSectionMatch[1].split('\n').filter(l => l.trim().startsWith('-'));
+      expect(reasonEntries.length).toBeLessThanOrEqual(3);
+    }
   });
 });
 

@@ -460,6 +460,111 @@ describe('場景 7：Knowledge Engine — gapWarnings 注入', () => {
 });
 
 // ────────────────────────────────────────────────────────────────────────────
+// 場景 8：全域觀察注入 subagent
+// ────────────────────────────────────────────────────────────────────────────
+
+describe('場景 8：全域觀察注入 subagent', () => {
+  const { join: pathJoin } = require('path');
+  const { homedir } = require('os');
+  const { mkdirSync: mkdirSyncHelper, writeFileSync, rmSync: rmSyncHelper } = require('fs');
+  const globalInstinctModule = require(join(SCRIPTS_LIB, 'global-instinct'));
+  const pathsModule = require(join(SCRIPTS_LIB, 'paths'));
+
+  /**
+   * 建立測試用的全域觀察檔案
+   * @param {string} projectRoot
+   * @param {object[]} observations
+   */
+  function writeGlobalObs(projectRoot, observations) {
+    const filePath = pathsModule.global.observations(projectRoot);
+    mkdirSyncHelper(require('path').dirname(filePath), { recursive: true });
+    writeFileSync(
+      filePath,
+      observations.map(o => JSON.stringify(o)).join('\n') + '\n',
+      'utf8'
+    );
+  }
+
+  const OBS_PROJECT_ROOT = pathJoin(homedir(), '.overtone', 'test-pre-task-global-obs-' + Date.now());
+
+  afterAll(() => {
+    rmSyncHelper(OBS_PROJECT_ROOT, { recursive: true, force: true });
+  });
+
+  test('有全域觀察時，subagent prompt 包含跨 Session 知識記憶區塊', async () => {
+    const sessionId = newSessionId();
+    createdSessions.push(sessionId);
+
+    mkdirSync(paths.sessionDir(sessionId), { recursive: true });
+    state.initState(sessionId, 'single', workflows['single'].stages);
+
+    // 寫入高信心全域觀察
+    writeGlobalObs(OBS_PROJECT_ROOT, [
+      {
+        id: 'obs-1',
+        tag: 'agent-developer',
+        type: 'agent_performance',
+        trigger: 'developer pass at DEV',
+        action: '加入詳細的邊界條件測試可提高通過率',
+        confidence: 0.85,
+        count: 3,
+        lastSeen: new Date().toISOString(),
+        globalTs: new Date().toISOString(),
+      },
+    ]);
+
+    const result = await runHook(
+      {
+        session_id: sessionId,
+        tool_name: 'Task',
+        tool_input: {
+          subagent_type: 'ot:developer',
+          description: '開發任務',
+          prompt: '請實作新功能',
+        },
+        cwd: OBS_PROJECT_ROOT,
+      },
+      sessionId
+    );
+
+    expect(isAllowed(result)).toBe(true);
+    const updatedPrompt = result.hookSpecificOutput?.updatedInput?.prompt || '';
+    // 有全域觀察 → prompt 應包含跨 Session 知識記憶區塊
+    expect(updatedPrompt).toContain('跨 Session 知識記憶');
+  });
+
+  test('無全域觀察時，subagent prompt 不含跨 Session 知識記憶區塊', async () => {
+    const sessionId = newSessionId();
+    createdSessions.push(sessionId);
+
+    mkdirSync(paths.sessionDir(sessionId), { recursive: true });
+    state.initState(sessionId, 'single', workflows['single'].stages);
+
+    // 使用無全域觀察的獨立空目錄
+    const emptyProject = pathJoin(homedir(), '.overtone', 'test-pre-task-empty-obs-' + Date.now());
+
+    const result = await runHook(
+      {
+        session_id: sessionId,
+        tool_name: 'Task',
+        tool_input: {
+          subagent_type: 'ot:developer',
+          description: '開發任務',
+          prompt: '請實作新功能',
+        },
+        cwd: emptyProject,
+      },
+      sessionId
+    );
+
+    expect(isAllowed(result)).toBe(true);
+    const updatedPrompt = result.hookSpecificOutput?.updatedInput?.prompt || '';
+    // 無全域觀察 → prompt 不應包含跨 Session 知識記憶區塊
+    expect(updatedPrompt).not.toContain('跨 Session 知識記憶');
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────
 // 場景 20：retry 場景 — REJECT/FAIL 後重新委派 agent 應 reset stage
 // ────────────────────────────────────────────────────────────────────────────
 

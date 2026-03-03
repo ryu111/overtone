@@ -291,6 +291,22 @@ safeRun(() => {
     }
   } catch { /* 靜默降級 — gap detection 失敗不影響主流程 */ }
 
+  // 全域觀察注入 subagent（前 5 條高信心觀察，最多 500 字）
+  let globalObsContext = null;
+  try {
+    const globalInstinct = require('../../../scripts/lib/global-instinct');
+    const { globalInstinctDefaults } = require('../../../scripts/lib/registry');
+    const topObs = globalInstinct.queryGlobal(projectRoot, {
+      limit: Math.min(globalInstinctDefaults.loadTopN, 5),
+    });
+    if (topObs.length > 0) {
+      const lines = topObs.map(o => `- [${o.tag}] ${o.action}`);
+      const text = lines.join('\n');
+      // 限制 500 字避免 prompt 過長
+      globalObsContext = `[跨 Session 知識記憶]\n${text.slice(0, 500)}`;
+    }
+  } catch { /* 靜默降級 — 全域觀察注入失敗不影響主流程 */ }
+
   // score context 注入（try/catch 靜默降級）
   let scoreContext = null;
   try {
@@ -335,13 +351,14 @@ safeRun(() => {
   const hasTestIndex = !!testIndexSummary;
   const hasScoreContext = !!scoreContext;
   const hasFailureWarning = !!failureWarning;
+  const hasGlobalObs = !!globalObsContext;
   // 僅在有 parallelTotal 時注入 PARALLEL INSTANCE 區塊
   const hasParallelInstance = parallelTotal !== null && !isNaN(parallelTotal);
 
-  if (hasContext || hasSkillContext || hasGapWarnings || hasTestIndex || hasScoreContext || hasFailureWarning || hasParallelInstance) {
+  if (hasContext || hasSkillContext || hasGapWarnings || hasTestIndex || hasScoreContext || hasFailureWarning || hasGlobalObs || hasParallelInstance) {
     const originalPrompt = toolInput.prompt || '';
 
-    // 組裝順序：[PARALLEL INSTANCE] → workflowContext → skillContext → gapWarnings → scoreContext → failureWarning → testIndex → originalPrompt
+    // 組裝順序：[PARALLEL INSTANCE] → workflowContext → skillContext → gapWarnings → globalObs → scoreContext → failureWarning → testIndex → originalPrompt
     const parts = [];
     if (hasParallelInstance) {
       parts.push([
@@ -359,6 +376,9 @@ safeRun(() => {
     }
     if (hasGapWarnings) {
       parts.push(gapWarnings);
+    }
+    if (hasGlobalObs) {
+      parts.push(globalObsContext);
     }
     if (hasScoreContext) {
       parts.push(scoreContext);

@@ -128,6 +128,7 @@ safeRun(() => {
         agent: agentName,
         verdict: result.verdict,
         retryAttempt: (result.verdict === 'fail' ? (updatedState.failCount || 1) : (updatedState.rejectCount || 1)),
+        reason: result.reason || null,
       });
     } catch { /* 靜默 — 記錄失敗不影響主流程 */ }
   }

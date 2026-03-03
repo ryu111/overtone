@@ -215,7 +215,7 @@ const baselineDefaults = {
 // 評分設定（哪些 stage 觸發評分建議 + 低分閾值）
 const scoringConfig = {
   // PASS 後觸發 grader 評分提示的 stage 清單
-  gradedStages: ['DEV', 'REVIEW', 'TEST'],
+  gradedStages: ['DEV', 'REVIEW', 'TEST', 'PLAN', 'ARCH', 'DEBUG', 'RETRO'],
 
   // overall 低分閾值（低於此值 → emit instinct quality_signal）
   lowScoreThreshold: 3.0,

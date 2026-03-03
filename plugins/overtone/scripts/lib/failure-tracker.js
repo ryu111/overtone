@@ -149,6 +149,16 @@ function formatFailureWarnings(projectRoot, targetStage) {
       if (rejectCount > 0) parts.push(`reject: ${rejectCount}`);
       lines.push(`失敗類型：${parts.join('、')}`);
     }
+
+    // 列出最近失敗的根因（去重，最多 3 個）
+    const reasons = stageFailures
+      .filter(r => r.reason)
+      .map(r => r.reason);
+    const uniqueReasons = [...new Set(reasons)].slice(0, 3);
+    if (uniqueReasons.length > 0) {
+      lines.push('常見失敗原因：');
+      uniqueReasons.forEach(r => lines.push(`  - ${r}`));
+    }
   }
 
   lines.push('建議：仔細核對本次任務的輸出品質，避免重蹈歷史失敗模式。');
