@@ -6,7 +6,7 @@
 // 職責：
 //   偵測黑名單中的危險系統命令，阻擋可能造成不可逆損害的操作
 //
-// 黑名單規則（11 條）：
+// 黑名單規則（14 條）：
 //   1. sudo rm -rf /    — 刪除根目錄（有 sudo）
 //   2. rm -rf /         — 刪除根目錄（無 sudo）
 //   3. mkfs             — 格式化磁碟
@@ -16,8 +16,12 @@
 //   7. visudo           — 修改 sudoers
 //   8. iptables -F      — 清空防火牆規則
 //   9. ifconfig ... down — 停用網路介面
-//  10. killall -9       — 強制終止所有進程
+//  10. killall -9       — 強制終止所有進程（-9 flag）
 //  11. kill -9 1        — 終止 init 進程
+//  P3.3 新增：
+//  12. killall <name>   — name-based 批量終止進程（無 -9 也危險）
+//  13. pkill            — pattern-based 批量終止進程
+//  14. kill -9（多 PID）— 一次 kill 多個 PID
 //
 // 允許：
 //   一般開發命令（bun、node、git、ls 等）
@@ -37,6 +41,10 @@ const BLACKLIST = [
   { pattern: /\bifconfig.*down\b/, label: '停用網路介面' },
   { pattern: /\bkillall\s+-9\b/, label: '強制終止所有進程' },
   { pattern: /\bkill\s+-9\s+1\b/, label: '終止 init 進程' },
+  // P3.3 新增：擴充 kill 相關危險命令保護
+  { pattern: /\bkillall\s+(?!-)\S+/, label: 'name-based 批量終止進程' },
+  { pattern: /\bpkill\b/, label: 'pattern-based 批量終止進程' },
+  { pattern: /\bkill\s+-9\s+\d+\s+\d+/, label: '批量 kill -9 多個 PID' },
 ];
 
 safeRun(() => {

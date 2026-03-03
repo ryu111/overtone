@@ -23,7 +23,7 @@ OS 操控能力的集中索引。Agent 按需讀取對應的 reference 文件。
 |---|------|------|----------|
 | 1 | 💡 `${CLAUDE_PLUGIN_ROOT}/skills/os-control/references/perception.md` | 截圖、視覺理解、視窗管理（screenshot.js + window.js API + 視覺分析模板） | P3.1 ✅ |
 | 2 | 💡 `${CLAUDE_PLUGIN_ROOT}/skills/os-control/references/control.md` | 鍵盤/滑鼠模擬、AppleScript/JXA、Computer Use | P3.2 |
-| 3 | 💡 `${CLAUDE_PLUGIN_ROOT}/skills/os-control/references/system.md` | Process 管理、剪貼簿、系統資訊、通知、檔案監控 | P3.3 |
+| 3 | 💡 `${CLAUDE_PLUGIN_ROOT}/skills/os-control/references/system.md` | Process 管理、剪貼簿、系統資訊、通知、檔案監控 | P3.3 ✅ |
 | 4 | 💡 `${CLAUDE_PLUGIN_ROOT}/skills/os-control/references/realtime.md` | WebSocket、TTS、STT | P3.4 |
 
 ## OS 能力總覽

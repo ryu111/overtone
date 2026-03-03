@@ -93,12 +93,12 @@ describe('Feature 6：輸出格式驗證', () => {
     expect(output.summary).not.toBeNull();
   });
 
-  test('Scenario checks — checks 陣列長度為 7', () => {
+  test('Scenario checks — checks 陣列長度為 8', () => {
     const output = getParsed();
-    expect(output.checks.length).toBe(7);
+    expect(output.checks.length).toBe(8);
   });
 
-  test('Scenario checks — 包含所有 7 個偵測項目', () => {
+  test('Scenario checks — 包含所有 8 個偵測項目', () => {
     const output = getParsed();
     const names = output.checks.map((c) => c.name);
     expect(names).toContain('phantom-events');
@@ -108,6 +108,7 @@ describe('Feature 6：輸出格式驗證', () => {
     expect(names).toContain('duplicate-logic');
     expect(names).toContain('platform-drift');
     expect(names).toContain('doc-staleness');
+    expect(names).toContain('os-tools');
   });
 
   test('Scenario checks — 每個 check 包含 name、passed、findingsCount', () => {
@@ -230,10 +231,10 @@ describe('真實 codebase 執行驗證', () => {
     expect(() => JSON.parse(result.stdout)).not.toThrow();
   });
 
-  test('所有 7 個 check 都成功執行（findingsCount 為數字）', () => {
+  test('所有 8 個 check 都成功執行（findingsCount 為數字）', () => {
     const result = runHealthCheck();
     const output = JSON.parse(result.stdout);
-    expect(output.checks.length).toBe(7);
+    expect(output.checks.length).toBe(8);
     for (const c of output.checks) {
       expect(Number.isInteger(c.findingsCount)).toBe(true);
       expect(c.findingsCount).toBeGreaterThanOrEqual(0);

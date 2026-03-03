@@ -455,12 +455,12 @@ describe('runAllChecks', () => {
     expect(Array.isArray(result.findings)).toBe(true);
   });
 
-  test('checks 陣列長度為 7', () => {
+  test('checks 陣列長度為 8', () => {
     const { checks } = runAllChecks();
-    expect(checks.length).toBe(7);
+    expect(checks.length).toBe(8);
   });
 
-  test('checks 包含所有 7 個偵測項目名稱', () => {
+  test('checks 包含所有 8 個偵測項目名稱', () => {
     const { checks } = runAllChecks();
     const names = checks.map((c) => c.name);
     expect(names).toContain('phantom-events');
@@ -470,6 +470,7 @@ describe('runAllChecks', () => {
     expect(names).toContain('duplicate-logic');
     expect(names).toContain('platform-drift');
     expect(names).toContain('doc-staleness');
+    expect(names).toContain('os-tools');
   });
 
   test('每個 check 項目包含 name、passed、findingsCount', () => {

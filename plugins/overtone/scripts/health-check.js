@@ -3,7 +3,7 @@
 /**
  * health-check.js — Overtone 系統健康自動化偵測
  *
- * 執行 7 項確定性偵測：
+ * 執行 8 項確定性偵測：
  *   1. phantom-events   — registry 事件 vs 實際 emit 呼叫差異
  *   2. dead-exports     — scripts/lib 模組 export 但從未被 require 使用
  *   3. doc-code-drift   — docs 文件中的數量與程式碼實際值不符
@@ -11,6 +11,7 @@
  *   5. duplicate-logic  — hooks/scripts 中已知的重複邏輯 pattern
  *   6. platform-drift   — config-api 驗證 + 棄用 tools 白名單偵測
  *   7. doc-staleness    — docs/reference 無引用且超過 90 天未更新的過時文件
+ *   8. os-tools         — P3.3 系統層依賴的 macOS 工具可用性（pbcopy/pbpaste/osascript）
  *
  * 輸出：JSON stdout（HealthCheckOutput schema）
  * Exit code：有 findings → 1；無 findings → 0
@@ -791,6 +792,44 @@ function checkDocStaleness() {
   return findings;
 }
 
+// ── 8. OS Tools 可用性偵測 ──
+
+/**
+ * 偵測 P3.3 系統層所需的 macOS 工具是否可用。
+ * 檢查 pbcopy、pbpaste、osascript 三個工具。
+ * @returns {Finding[]}
+ */
+function checkOsTools() {
+  if (process.platform !== 'darwin') {
+    return [{
+      check: 'os-tools',
+      severity: 'info',
+      file: 'scripts/os/',
+      message: '非 macOS 平台，P3.3 系統層工具不可用',
+    }];
+  }
+
+  const { execSync } = require('child_process');
+  const tools = ['pbcopy', 'pbpaste', 'osascript'];
+  const findings = [];
+
+  for (const tool of tools) {
+    try {
+      execSync(`which ${tool}`, { stdio: 'pipe' });
+    } catch {
+      findings.push({
+        check: 'os-tools',
+        severity: 'warning',
+        file: 'scripts/os/',
+        message: `macOS 工具 "${tool}" 不可用，P3.3 部分功能將無法正常運作`,
+        detail: `which ${tool} 失敗`,
+      });
+    }
+  }
+
+  return findings;
+}
+
 // ── 主程式 ──
 
 /**
@@ -815,6 +854,7 @@ function runAllChecks() {
     { name: 'duplicate-logic',  fn: checkDuplicateLogic },
     { name: 'platform-drift',   fn: checkPlatformDrift },
     { name: 'doc-staleness',    fn: checkDocStaleness },
+    { name: 'os-tools',         fn: checkOsTools },
   ];
 
   const allFindings = [];
@@ -897,6 +937,7 @@ module.exports = {
   checkDuplicateLogic,
   checkPlatformDrift,
   checkDocStaleness,
+  checkOsTools,
   runAllChecks,
   // 工具函式
   collectJsFiles,
