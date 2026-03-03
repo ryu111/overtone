@@ -1,40 +1,4 @@
 ---
-## 2026-03-03 | doc-updater:DOCS Context
-完成了跨 Session 長期記憶功能（v0.28.22）的文件同步。該功能引入了新的全域觀察畢業系統（global-instinct.js），支援跨 session 長期記憶，開啟了 Level 2「持續學習」階段。
-Keywords: session, global, instinct, level
-
----
-## 2026-03-03 | code-reviewer:REVIEW Findings
-審查了效能基線追蹤功能的 7 個檔案變更，涵蓋四個維度：
-
-1. **正確性**：5 個 API（computeSessionMetrics, saveBaseline, getBaseline, compareToBaseline, formatBaselineSummary）邏輯正確，API 簽名與上游模組一致，改善方向判斷無誤
-2. **架構**：遵循既有 JSONL + paths + registry 模式，hook 整合位置合理（SessionEnd 保存 / SessionStart 載入），依賴鏈乾淨
-3. **安全性**：無硬編碼 secrets、無注入風險、專案隔離由 projectHash 保證
-4. **測試**：24 個測試全部通過（19 unit + 5 integration），覆蓋正常路徑 + 邊界情況 + hook 端對端
-
-全套測試 2492 pass / 0 fail。未發現高信心問題。
-Keywords: computesessionmetrics, savebaseline, getbaseline, comparetobaseline, formatbaselinesummary, jsonl, paths, registry, hook, sessionend
-
----
-## 2026-03-03 | developer:DEV Findings
-**關鍵決策：**
-
-1. `instinct.js` 匯出的是 singleton instance（底部 `module.exports = instinct`），不是 class。因此 `on-session-end.js` 直接呼叫 `instinct.decay(sessionId)` 而非 `new Instinct()` 模式（Handoff 原本建議 `new`，但實際 API 是 singleton）。
-
-2. score context 的組裝順序調整為 `workflowContext → skillContext → gapWarnings → scoreContext → testIndex → originalPrompt`，scoreContext 在 gapWarnings 之後、testIndex 之前，符合「品質提示在最前面、測試 index 就在 prompt 前」的資訊層次。
-
-3. Unit 測試採用純函式測試策略：將 `buildScoreContext` 邏輯從 pre-task.js 中「模擬抽取」到測試檔，避免需要 spawn 子進程。Integration 測試才使用 Bun.spawn 真實執行。
-
-4. 原始 Handoff 中的 `lowScoreThreshold` 條件是 `< 3.0`（嚴格小於），`=== 3.0` 不觸發警告，測試 Scenario 4-2 驗證此邊界行為。
-
-**實際 API 確認：**
-- `scoreEngine.getScoreSummary(projectRoot, stageKey)` 回傳 `{ sessionCount, avgClarity, avgCompleteness, avgActionability, avgOverall }`
-- `instinct.decay(sessionId)` 回傳 `{ decayed, pruned }`
-- `scoringConfig.gradedStages = ['DEV', 'REVIEW', 'TEST']`
-- `scoringConfig.lowScoreThreshold = 3.0`
-Keywords: instinct, singleton, instance, module, exports, class, session, decay, sessionid, handoff
-
----
 ## 2026-03-03 | developer:DEV Context
 實作了回饋閉環（Feedback Loop）功能，讓 Level 2 持續學習系統真正閉環：Agent 被委派時能看到自己的歷史評分，session 結束時 instinct 觀察會自動衰減防止過期累積。
 Keywords: feedback, loop, level, agent, session, instinct
@@ -780,4 +744,69 @@ Keywords: pass, fail, session, spawner, test, heartbeat, spawn, process, kill, s
    - 建議修復：將 "12 knowledge domains" 改為 "13 knowledge domains"，列表末尾加上 `autonomous-control`
    - 信心等級：95%
 Keywords: claude, knowledge, domain, users, projects, overtone, skill, domains, autonomous, control
+
+---
+## 2026-03-03 | planner:PLAN Findings
+**需求分解**：
+
+核心實作（5 個腳本 + 5 個測試，可並行）：
+1. process.js 實作 | agent: developer | files: `plugins/overtone/scripts/os/process.js`, `tests/unit/process.test.js`
+2. clipboard.js 實作 | agent: developer | files: `plugins/overtone/scripts/os/clipboard.js`, `tests/unit/clipboard.test.js`
+3. system-info.js 實作 | agent: developer | files: `plugins/overtone/scripts/os/system-info.js`, `tests/unit/system-info.test.js`
+4. notification.js 實作 | agent: developer | files: `plugins/overtone/scripts/os/notification.js`, `tests/unit/notification.test.js`
+5. fswatch.js 實作 | agent: developer | files: `plugins/overtone/scripts/os/fswatch.js`, `tests/unit/fswatch.test.js`
+
+知識整合（依賴核心實作完成）：
+6. system.md reference 建立 | agent: developer | files: `plugins/overtone/skills/os-control/references/system.md`
+7. SKILL.md 索引更新 | agent: developer | files: `plugins/overtone/skills/os-control/SKILL.md`
+
+Should 範圍（獨立，可與核心並行）：
+8. pre-bash-guard.js 擴充 | agent: developer | files: `plugins/overtone/hooks/scripts/tool/pre-bash-guard.js`
+9. health-check 擴充 | agent: developer | files: `plugins/overtone/scripts/health-check.js`
+
+**優先順序**：
+- 任務 1-5 可全部並行（互相無依賴）
+- 任務 6-7 依賴任務 1-5 完成後再執行（需要知道每個腳本的 API 才能寫 reference）
+- 任務 8-9 可與任務 1-5 並行執行（完全獨立）
+
+**範圍邊界**：
+- 不在此次範圍：跨平台支援、GUI 進程管理界面、fswatch recursive 深層監控
+- P3.4 操控層（keyboard.js/mouse.js/applescript.js）留待下一階段
+
+**共同模式**（已有 P3.1 建立，architect 需確認沿用）：
+- `'use strict'` + `_deps = { execSync }` 依賴注入 + 平台守衛 + 不 throw
+- 錯誤格式：`{ ok: false, error: 'ERROR_CODE', message: string }`
+- 成功格式：`{ ok: true, ...fields }`
+Keywords: process, agent, developer, files, plugins, overtone, scripts, tests, unit, test
+
+---
+## 2026-03-03 | tester:TEST Findings
+**測試結果：3017 passed, 0 failed**
+
+**BDD Coverage 矩陣**
+
+| Feature | 說明 | Scenario | 覆蓋狀態 |
+|---------|------|----------|---------|
+| F1 | checkSameStageConvergence | 1-1 ~ 1-6（6個）| state-convergence.test.js 完整覆蓋 |
+| F2 | pre-task.js PARALLEL_TOTAL 解析 | 2-1（activeAgents instanceId）| pre-task-parallel.test.js BDD F6 覆蓋 |
+| F2 | pre-task.js PARALLEL_TOTAL 解析 | 2-2 ~ 2-5（4個）| **新增** parallel-convergence-gate.test.js |
+| F3 | on-stop.js 收斂門 | 3-1 ~ 3-10（10個）| **新增** parallel-convergence-gate.test.js |
+| F4 | findActualStageKey 並行場景 | 4-1 ~ 4-3（3個）| state-convergence.test.js 完整覆蓋 |
+| F5 | getNextStageHint instanceId 格式 | 5-1 ~ 5-3（3個）| state-convergence.test.js 完整覆蓋 |
+| F6 | statusline × N 回歸 | 6-1 ~ 6-2（2個）| 未補寫（下方說明）|
+| F7 | 邊界案例 | 7-1, 7-3, 7-4（3個）| **新增** parallel-convergence-gate.test.js |
+| F7 | 邊界案例 | 7-2 CAS 重試 | 未補寫（下方說明）|
+
+**技術發現**
+
+- `parse-result.js` 只對 TEST/QA/E2E/BUILD-FIX stage 判定 fail；DEV stage 永遠 pass，Scenario 3-4 必須使用 tester agent 測試
+- Scenario 2-5 的 Math.max race condition 在序列測試中無法用兩次 pre-task 模擬（第一次已使 DEV active，第二次找不到 pending actualKey），改用手動設定初始 parallelTotal = 2 後呼叫第二個 pre-task
+Keywords: passed, failed, coverage, feature, scenario, checksamestageconvergence, state, convergence, test, task
+
+---
+## 2026-03-03 | retrospective:RETRO Findings
+**回顧摘要**：
+
+並行收斂門的核心邏輯（`checkSameStageConvergence`、instanceId 追蹤、on-stop.js 收斂門）實作正確，測試覆蓋全面（27 個新測試，Feature 1~5 + Feature 7 完整覆蓋）。向後相容性設計良好，`parallelTotal` 未設定時預設視為 1，單 agent 場景行為與舊版一致。
+Keywords: checksamestageconvergence, instanceid, stop, feature, paralleltotal, agent
 

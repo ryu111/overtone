@@ -104,10 +104,10 @@ bun test
 # 啟動 Dashboard 監控面板（port 7777）
 bun scripts/server.js
 
-# 系統健康檢查（7 項偵測）
+# 系統健康檢查（8 項偵測）— checkNodeVersion/checkBunVersion/checkPluginStructure/checkAgents/checkSkills/checkHooks/checkCommands/checkOsTools
 bun scripts/health-check.js
 
-# 驗證所有元件設定（17 agents + 11 hooks + 21 skills + 27 commands）
+# 驗證所有元件設定（17 agents + 11 hooks + 21 skills + 27 commands）— agents/skills/hooks/commands 結構校驗
 bun scripts/validate-agents.js
 
 # 元件管理（建立/更新 agent、hook、skill + 版本更新）

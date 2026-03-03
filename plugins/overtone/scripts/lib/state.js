@@ -109,36 +109,6 @@ function updateStage(sessionId, stageKey, update) {
 }
 
 /**
- * 記錄 active agent
- * @param {string} sessionId
- * @param {string} agentName
- * @param {string} stageKey
- */
-function setActiveAgent(sessionId, agentName, stageKey) {
-  const state = readState(sessionId);
-  if (!state) return;
-
-  state.activeAgents[agentName] = {
-    stage: stageKey,
-    startedAt: new Date().toISOString(),
-  };
-  writeState(sessionId, state);
-}
-
-/**
- * 移除 active agent
- * @param {string} sessionId
- * @param {string} agentName
- */
-function removeActiveAgent(sessionId, agentName) {
-  const state = readState(sessionId);
-  if (!state) return;
-
-  delete state.activeAgents[agentName];
-  writeState(sessionId, state);
-}
-
-/**
  * 設定對應的 Specs feature 名稱
  * 由 /ot:auto skill 或 workflow command 在大功能初始化 Specs 時呼叫
  * @param {string} sessionId
@@ -360,8 +330,6 @@ module.exports = {
   writeState,
   initState,
   updateStage,
-  setActiveAgent,
-  removeActiveAgent,
   setFeatureName,
   updateStateAtomic,
   findActualStageKey,

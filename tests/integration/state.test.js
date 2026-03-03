@@ -96,29 +96,6 @@ describe('updateStage', () => {
   });
 });
 
-describe('setActiveAgent / removeActiveAgent', () => {
-  test('新增和移除 active agent', () => {
-    state.initState(TEST_SESSION, 'quick', ['DEV', 'REVIEW', 'TEST']);
-
-    state.setActiveAgent(TEST_SESSION, 'developer', 'DEV');
-    let s = state.readState(TEST_SESSION);
-    expect(s.activeAgents.developer).toBeDefined();
-    expect(s.activeAgents.developer.stage).toBe('DEV');
-
-    state.removeActiveAgent(TEST_SESSION, 'developer');
-    s = state.readState(TEST_SESSION);
-    expect(s.activeAgents.developer).toBeUndefined();
-  });
-
-  test('不存在的 session 靜默處理', () => {
-    // 不應拋出，靜默忽略
-    expect(() => {
-      state.setActiveAgent('nonexistent', 'developer', 'DEV');
-      state.removeActiveAgent('nonexistent', 'developer');
-    }).not.toThrow();
-  });
-});
-
 describe('setFeatureName', () => {
   test('設定 featureName 後能正確讀回', () => {
     state.initState(TEST_SESSION, 'standard', ['PLAN', 'DEV']);
@@ -165,7 +142,11 @@ describe('setFeatureName', () => {
 describe('updateStateAtomic', () => {
   test('單次原子更新：合併多個修改', () => {
     state.initState(TEST_SESSION, 'quick', ['DEV', 'REVIEW', 'TEST']);
-    state.setActiveAgent(TEST_SESSION, 'developer', 'DEV');
+    // 直接透過 updateStateAtomic 設定 activeAgents（setActiveAgent 已移除）
+    state.updateStateAtomic(TEST_SESSION, (s) => {
+      s.activeAgents.developer = { stage: 'DEV', startedAt: new Date().toISOString() };
+      return s;
+    });
 
     const result = state.updateStateAtomic(TEST_SESSION, (s) => {
       delete s.activeAgents.developer;

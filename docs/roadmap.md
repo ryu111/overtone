@@ -1,6 +1,6 @@
 # Overtone Roadmap
 
-> 最後更新：2026-03-04 | 當前 Phase：Phase 3 進行中（P3.2 心跳引擎完成）
+> 最後更新：2026-03-04 | 當前 Phase：Phase 3 進行中（P3.3 系統層完成）
 
 ## Phase 總覽
 
@@ -99,10 +99,10 @@
 | Telegram notify | spawn/完成/失敗/暫停事件推送（`TelegramAdapter.notify()`） | ✅ |
 | autonomous-control Skill | 新建第 13 個 knowledge domain（SKILL.md + references/heartbeat.md + Agent frontmatter 注入） | ✅ |
 
-**整合層 ⬜（待實作 — 讓引擎可被使用）**
+**整合層 ✅ 並行收斂門（2026-03-04 完成）**
 
-> 現況：引擎能跑、能 poll、能 spawn、能通知、能暫停，但缺少「佇列入口」— 沒有方式把任務放進佇列。
-> 目標：至少一個入口能寫入佇列 → daemon 自動消費 → 完整閉環。
+> 完成：並行委派時，多個 subagent 在同一 stage 執行 → 同一 Main Agent 不阻擋。
+> 實作：checkSameStageConvergence() 去重、active-agent.json 佇列管理、instanceId 適配。
 
 | 任務 | 說明 | 狀態 |
 |------|------|:----:|
@@ -110,7 +110,7 @@
 | PM 自動寫入 | PM Discovery 產出多迭代計劃時，自動調用 `writeQueue()` 寫入佇列（PM agent 或 on-stop.js 整合） | ⬜ |
 | Telegram `/run` | `/run <featureName> [workflow]` 遠端命令，寫入佇列並通知（telegram-adapter.js `_handleUpdate` 擴充） | ⬜ |
 | session-spawner 防禦 | spawn 時移除 `CLAUDECODE` 環境變數（`env` 選項），防止嵌套 session 保護誤觸發 | ⬜ |
-| health-check 整合 | heartbeat-daemon 偵測（第 8 項：讀 PID 檔 + `process.kill(pid, 0)` 存活確認） | ⬜ |
+| health-check 整合 | heartbeat-daemon 偵測 + OS tools 檢測（第 8 項：pbcopy/pbpaste/osascript） | ✅ |
 
 **並行委派 PoC ⏳**
 
@@ -128,12 +128,12 @@
 
 | 任務 | 說明 | 狀態 |
 |------|------|:----:|
-| process.js | 列出/啟動/終止 process（`ps`/`kill`/`open`） | ⬜ |
-| clipboard.js | 讀/寫剪貼簿（`pbcopy`/`pbpaste`） | ⬜ |
-| system-info.js | CPU/記憶體/磁碟/網路狀態 | ⬜ |
-| notification.js | macOS 通知（`osascript` display notification） | ⬜ |
-| fswatch.js | 檔案系統變更監控 | ⬜ |
-| Skill: system ref | `skills/os-control/references/system.md` | ⬜ |
+| process.js | 列出/啟動/終止 process（`ps`/`kill`/`open`） | ✅ |
+| clipboard.js | 讀/寫剪貼簿（`pbcopy`/`pbpaste`） | ✅ |
+| system-info.js | CPU/記憶體/磁碟/網路狀態 | ✅ |
+| notification.js | macOS 通知（`osascript` display notification） | ✅ |
+| fswatch.js | 檔案系統變更監控 | ✅ |
+| Skill: system ref | `skills/os-control/references/system.md` | ✅ |
 
 ### P3.4 動得了（操控層）← 原 P3.2，降優先
 
