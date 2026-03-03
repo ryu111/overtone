@@ -186,6 +186,18 @@ if (result.success) {
   }
   // 輸出 JSON 供程式解析
   console.log(JSON.stringify(result));
+
+  // ── 依賴提示 checklist（輸出至 stderr，黃色前綴）──
+  const WARN = '\x1b[33m⚠️\x1b[0m';
+  if (action === 'create' && type === 'skill') {
+    process.stderr.write(`${WARN} 記得更新消費此 Skill 的 Agent frontmatter（skills 欄位）\n`);
+  } else if (action === 'create' && type === 'agent') {
+    process.stderr.write(`${WARN} 記得確認 agent 的 skills 是否有對應的 SKILL.md，以及是否需要新增 Guard\n`);
+  } else if (action === 'create' && type === 'hook') {
+    process.stderr.write(`${WARN} 記得確認 hooks.json 的 matcher 設定是否正確\n`);
+  } else if (action === 'update' && type === 'agent' && opts.skills !== undefined) {
+    process.stderr.write(`${WARN} 記得確認新增的 skill 存在於 skills/ 目錄\n`);
+  }
 } else {
   console.error(`❌ ${action} ${type} 失敗：`);
   for (const err of result.errors) {

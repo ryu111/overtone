@@ -166,13 +166,24 @@ function buildAgentDisplay(activeAgent, workflow, registryStages) {
   // ── 主信號：active-agent.json（最即時，workflow 無關）──
   if (activeAgent && activeAgent.agent) {
     const name = activeAgent.agent;
-    // 嘗試從 registry 取得 emoji
-    const stageDef = Object.values(registryStages).find(d => d.agent === name);
+    // 嘗試從 registry 取得 emoji 及對應 stage key
+    const stageEntry = Object.entries(registryStages).find(([, d]) => d.agent === name);
+    const stageKey = stageEntry?.[0];
+    const stageDef = stageEntry?.[1];
+
+    // 計算並行數量：從 workflow.stages 找對應 stage key 的 active 條目
+    const stages = workflow?.stages || {};
+    const activeCount = stageKey
+      ? Object.entries(stages).filter(([k, s]) => s.status === 'active' && k.split(':')[0] === stageKey).length
+      : 0;
+    const count = activeCount > 1 ? activeCount : 0;  // 0 = 不顯示 × N
+
     if (stageDef) {
-      return `${stageDef.emoji || ''} ${name}`;
+      const base = `${stageDef.emoji || ''} ${name}`;
+      return count > 1 ? `${base} × ${count}` : base;
     }
     // 非 Overtone agent（Explore、Plan 等）→ 直接顯示名稱
-    return `🤖 ${name}`;
+    return count > 1 ? `🤖 ${name} × ${count}` : `🤖 ${name}`;
   }
 
   // ── 副信號：workflow.json（多 agent 並行時 active-agent.json 只記錄最後一個）──
