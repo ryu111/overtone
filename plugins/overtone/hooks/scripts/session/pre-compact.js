@@ -112,8 +112,18 @@ safeRun(() => {
     lines.push(`拒絕次數：${currentState.rejectCount}/3`);
   }
 
-  // 活躍 agents（僅有時顯示）
-  const activeAgents = Object.entries(currentState.activeAgents || {});
+  // 活躍 agents（僅有時顯示）— 加 TTL 過濾，避免殘留 entry 誤報
+  const ACTIVE_AGENT_TTL_MS = 30 * 60 * 1000; // 30 分鐘
+  const nowForAgents = Date.now();
+  const activeAgents = Object.entries(currentState.activeAgents || {}).filter(([, info]) => {
+    const stageBase = (info.stage || '').split(':')[0];
+    const hasActiveStage = Object.entries(currentState.stages || {}).some(
+      ([k, s]) => s.status === 'active' && k.split(':')[0] === stageBase
+    );
+    if (hasActiveStage) return true;
+    const startedAt = info.startedAt ? new Date(info.startedAt).getTime() : 0;
+    return (nowForAgents - startedAt) < ACTIVE_AGENT_TTL_MS;
+  });
   if (activeAgents.length > 0) {
     const agentList = activeAgents.map(([name, info]) => `${name}（${info.stage}）`).join(', ');
     lines.push(`活躍 Agents：${agentList}`);

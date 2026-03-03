@@ -39,19 +39,13 @@ safeRun(() => {
   if (!currentState) return exit0();
 
   const result = parseResult(agentOutput, stageKey);
-  const actualStageKey = findActualStageKey(currentState, stageKey);
-  if (!actualStageKey) return exit0();
 
-  // 解析 instanceId（從 agentOutput regex）
+  // 解析 instanceId（從 agentOutput regex）— 提前到 findActualStageKey 之前
   const instanceIdMatch = agentOutput.match(/INSTANCE_ID:\s*(\S+)/);
   let resolvedInstanceId = instanceIdMatch?.[1] || null;
 
-  // 原子化更新 state（含收斂門邏輯）
-  let isConvergedOrFailed = false;
-  let finalResult = result.verdict;
-
-  const updatedState = updateStateAtomic(sessionId, (s) => {
-    // 清除 activeAgents 中的 instanceId entry
+  // activeAgents cleanup — 不依賴 actualStageKey，提前執行確保即使 early exit 也能清除殘留
+  updateStateAtomic(sessionId, (s) => {
     if (resolvedInstanceId && s.activeAgents[resolvedInstanceId]) {
       delete s.activeAgents[resolvedInstanceId];
     } else {
@@ -65,7 +59,27 @@ safeRun(() => {
         delete s.activeAgents[fallbackKey];
       }
     }
+    return s;
+  });
 
+  // active-agent.json：僅當 cleanup 後 activeAgents 為空時才刪除（並行場景仍有其他 agent 時保留）
+  const stateAfterCleanup = readState(sessionId);
+  const remainingActiveAgents = Object.keys(stateAfterCleanup?.activeAgents || {});
+  if (remainingActiveAgents.length === 0) {
+    try { unlinkSync(paths.session.activeAgent(sessionId)); } catch { /* 靜默 */ }
+  }
+
+  // emit agent:complete（即使沒有 stage 對應也要記錄）
+  timeline.emit(sessionId, 'agent:complete', { agent: agentName, stage: stageKey, result: result.verdict, instanceId: resolvedInstanceId });
+
+  const actualStageKey = findActualStageKey(currentState, stageKey);
+  if (!actualStageKey) return exit0();
+
+  // 原子化更新 state（含收斂門邏輯）
+  let isConvergedOrFailed = false;
+  let finalResult = result.verdict;
+
+  const updatedState = updateStateAtomic(sessionId, (s) => {
     if (s.stages[actualStageKey]) {
       const entry = s.stages[actualStageKey];
 
@@ -102,11 +116,6 @@ safeRun(() => {
     return s;
   });
 
-  // active-agent.json：僅收斂後才刪除（並行未完成時保留）
-  if (isConvergedOrFailed) {
-    try { unlinkSync(paths.session.activeAgent(sessionId)); } catch { /* 靜默 */ }
-  }
-
   // 記錄失敗到全域 store（跨 session 失敗模式追蹤）
   if (result.verdict === 'fail' || result.verdict === 'reject') {
     try {
@@ -127,11 +136,11 @@ safeRun(() => {
   if (result.verdict === 'fail') {
     timeline.emit(sessionId, 'agent:error', { agent: agentName, stage: actualStageKey, reason: result.reason || 'agent 回報 fail' });
   }
-  // agent:complete 每個 instance 完成都 emit
-  timeline.emit(sessionId, 'agent:complete', { agent: agentName, stage: actualStageKey, result: result.verdict, instanceId: resolvedInstanceId });
-  // stage:complete 只在收斂（全部 pass）或 fail/reject 時 emit
+  // stage:complete 只在收斂（全部 pass）或 fail/reject 時 emit（agent:complete 已在上方提前 emit）
   if (isConvergedOrFailed) {
     timeline.emit(sessionId, 'stage:complete', { stage: actualStageKey, result: finalResult });
+    // 收斂後確保 active-agent.json 已刪除（若上方 cleanup 後仍有其他 entry 存在，現在收斂後補刪）
+    try { unlinkSync(paths.session.activeAgent(sessionId)); } catch { /* 靜默 */ }
   }
 
   // agent_performance instinct

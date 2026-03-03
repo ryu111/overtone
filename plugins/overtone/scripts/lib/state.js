@@ -274,7 +274,21 @@ function getNextStageHint(currentState, { stages, parallelGroups }) {
   if (!nextStage) return null;
 
   // D2：若仍有 active agent，不推進到下一步，提示等待
-  const activeAgentKeys = Object.keys(currentState.activeAgents || {});
+  // 加 TTL 過濾：無 active stage 對應且超過 30 分鐘的 entry 視為過期，不阻擋提示
+  const ACTIVE_AGENT_TTL_MS = 30 * 60 * 1000; // 30 分鐘
+  const nowMs = Date.now();
+  const activeAgentKeys = Object.keys(currentState.activeAgents || {}).filter((k) => {
+    const info = (currentState.activeAgents || {})[k];
+    // 有對應的 active stage → 永不過期
+    const stageBase = (info?.stage || '').split(':')[0];
+    const hasActiveStage = Object.entries(currentState.stages || {}).some(
+      ([sk, s]) => s.status === 'active' && sk.split(':')[0] === stageBase
+    );
+    if (hasActiveStage) return true;
+    // 無 active stage → 檢查 TTL（過期視為殘留，不阻擋 hint）
+    const startedAt = info?.startedAt ? new Date(info.startedAt).getTime() : 0;
+    return (nowMs - startedAt) < ACTIVE_AGENT_TTL_MS;
+  });
   if (activeAgentKeys.length > 0) {
     // instanceId 格式：agentName:timestamp36-random6 → 提取 agentName 並去重
     const agentNames = [...new Set(activeAgentKeys.map((k) => {

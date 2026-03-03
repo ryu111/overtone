@@ -216,8 +216,21 @@ function buildAgentDisplay(activeAgent, workflow, registryStages) {
     return parts.join(' + ');
   }
 
-  // activeAgents fallback
-  const activeAgentEntries = Object.entries(workflow.activeAgents || {});
+  // activeAgents fallback — 加 TTL 過濾，避免殘留 entry 誤顯示
+  const ACTIVE_AGENT_TTL_MS = 30 * 60 * 1000; // 30 分鐘
+  const now = Date.now();
+  const activeAgentEntries = Object.entries(workflow.activeAgents || {})
+    .filter(([, info]) => {
+      // 有對應的 active stage → 永不過期（stage 仍在進行中）
+      const stageBase = (info.stage || '').split(':')[0];
+      const hasActiveStage = Object.entries(stages).some(
+        ([k, s]) => s.status === 'active' && k.split(':')[0] === stageBase
+      );
+      if (hasActiveStage) return true;
+      // 無 active stage → 檢查 TTL（防止 on-stop 未清除的殘留）
+      const startedAt = info.startedAt ? new Date(info.startedAt).getTime() : 0;
+      return (now - startedAt) < ACTIVE_AGENT_TTL_MS;
+    });
   if (activeAgentEntries.length > 0) {
     const parts = activeAgentEntries.map(([, info]) => {
       const base = (info.stage || '').split(':')[0];
