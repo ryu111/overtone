@@ -45,3 +45,10 @@
 - 所有 stages completed：每個階段的 agent 都回報了結果
 - 信號全部 PASS：對應 workflow 的所有信號都滿足
 - 任一信號 FAIL：啟動失敗處理流程（詳見 failure-handling.md）
+
+## Grader 評估（可選）
+
+Stage 完成且結果非 fail 時，Main Agent 可選擇委派 grader agent 評估輸出品質：
+- subagent_type: `ot:grader`
+- 傳入：`STAGE={actualStageKey} AGENT={agentName} SESSION_ID={sessionId}`
+- 此為可選操作，非必要步驟。

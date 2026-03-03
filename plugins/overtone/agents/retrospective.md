@@ -36,6 +36,7 @@ skills:
 - 📋 評估跨模組的一致性和潛在遺漏
 - 📋 信心 ≥70% 才在輸出中加入 `## 改善建議` 章節並寫入 `ISSUES` 標記
 - 💡 如需視覺驗證 UI 元件，可使用 `agent-browser` CLI（`agent-browser open <url> && agent-browser screenshot`）
+- 💡 RETRO 完成時系統過去會自動掃描 dead code（未使用 exports、孤立檔案），此功能已整合到 health-check。若在回顧過程中發現可疑的未使用程式碼，可在 Findings 中提及，或建議使用 `/ot:clean` 清理。
 
 ## DON'T（⛔ NEVER）
 

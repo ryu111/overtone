@@ -2,7 +2,7 @@
 /**
  * hook-utils.js — Hook 共用工具
  *
- * 提供八個函式，統一所有 hook 的通用邏輯：
+ * 提供九個函式，統一所有 hook 的通用邏輯：
  *   safeReadStdin            — 同步讀取 stdin + JSON.parse，失敗回傳 {}
  *   safeRun                  — 頂層 try/catch 包裹，crash 時輸出 defaultOutput + exit 0
  *   hookError                — 統一 stderr 錯誤記錄（帶 [overtone/{hookName}] 前綴）
@@ -11,9 +11,10 @@
  *   buildWorkflowContext     — 產生 workflow context 字串，供 PreToolUse updatedInput 注入
  *   getSessionId             — 從 hook input 取得 session ID（帶 fallback）
  *   buildSkillContext        — 讀取 agent frontmatter skills → 載入 SKILL.md 正文摘要
+ *   shouldSuggestCompact     — 判斷是否應該建議 compact（從 on-stop.js 搬遷）
  */
 
-const { readFileSync, existsSync } = require('fs');
+const { readFileSync, existsSync, statSync } = require('fs');
 const path = require('path');
 
 /**
@@ -294,4 +295,65 @@ function buildSkillContext(agentName, pluginRoot, options = {}) {
   }
 }
 
-module.exports = { safeReadStdin, safeRun, hookError, buildPendingTasksMessage, buildProgressBar, buildWorkflowContext, getSessionId, buildSkillContext };
+/**
+ * 判斷是否應該建議 compact。
+ *
+ * 從 on-stop.js 搬遷到此處，供 SubagentStop hook 使用。
+ *
+ * @param {object} opts
+ * @param {string|null} opts.transcriptPath        - transcript 檔案路徑
+ * @param {string}      opts.sessionId             - 當前 session ID
+ * @param {number}      [opts.thresholdBytes]      - 閾值（bytes），預設 5MB
+ * @param {number}      [opts.minStagesSinceCompact] - compact 後最少要有幾個 stage:complete，預設 2
+ * @returns {{ suggest: boolean, reason?: string, transcriptSize?: string }}
+ */
+function shouldSuggestCompact({ transcriptPath, sessionId, thresholdBytes, minStagesSinceCompact }) {
+  try {
+    // 1. 取得閾值（支援環境變數覆蓋）
+    const thresholdMb = Number(process.env.OVERTONE_COMPACT_THRESHOLD_MB) || 5;
+    const threshold = thresholdBytes !== undefined ? thresholdBytes : thresholdMb * 1_000_000;
+    const minStages = minStagesSinceCompact !== undefined ? minStagesSinceCompact : 2;
+
+    // 2. 讀取 transcript 大小
+    if (!transcriptPath) return { suggest: false };
+    let size;
+    try {
+      size = statSync(transcriptPath).size;
+    } catch {
+      return { suggest: false };
+    }
+
+    // 3. 大小未超過閾值 → 不建議
+    if (size <= threshold) return { suggest: false };
+
+    // 4. 查詢最後一次 session:compact 事件（延遲 require 避免循環依賴）
+    const timeline = require(path.join(__dirname, 'timeline'));
+    const lastCompact = timeline.latest(sessionId, 'session:compact');
+
+    if (lastCompact) {
+      // 5. 計算 compact 事件之後的 stage:complete 數量
+      const stageCompletes = timeline.query(sessionId, { type: 'stage:complete' });
+      const stagesAfterCompact = stageCompletes.filter(
+        (e) => e.ts >= lastCompact.ts
+      );
+      // 6. 若 compact 後 stage:complete 數量 < minStages → 跳過（剛 compact 過）
+      if (stagesAfterCompact.length < minStages) {
+        return { suggest: false };
+      }
+    }
+    // 7. 若從未 compact → 允許首次觸發（跳過上述 compact 後計數判斷）
+
+    // 8. 全部通過 → 建議 compact（延遲 require formatSize）
+    const { formatSize } = require(path.join(__dirname, 'utils'));
+    return {
+      suggest: true,
+      reason: `transcript 大小 ${formatSize(size)} 超過閾值 ${formatSize(threshold)}`,
+      transcriptSize: formatSize(size),
+    };
+  } catch {
+    // 所有錯誤靜默降級
+    return { suggest: false };
+  }
+}
+
+module.exports = { safeReadStdin, safeRun, hookError, buildPendingTasksMessage, buildProgressBar, buildWorkflowContext, getSessionId, buildSkillContext, shouldSuggestCompact };

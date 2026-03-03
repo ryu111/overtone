@@ -1003,12 +1003,10 @@ describe('場景 14：agent_performance Instinct 觀察', () => {
 });
 
 // ────────────────────────────────────────────────────────────────────────────
-// 場景 17：RETRO stage — dead code 掃描自動觸發
+// 場景 17：RETRO stage — hook result 不含 dead code 掃描（P3 純化後）
 // ────────────────────────────────────────────────────────────────────────────
 
-describe('場景 17：RETRO stage — dead code 掃描自動觸發', () => {
-  const instinct = require(join(SCRIPTS_LIB, 'instinct'));
-
+describe('場景 17：RETRO stage — hook result 不含 dead code 掃描（P3 純化）', () => {
   // 建立 RETRO stage active 的 state
   function setupRetroActiveState(sessionId) {
     state.initState(sessionId, 'quick', ['DEV', 'REVIEW', 'TEST', 'RETRO']);
@@ -1023,7 +1021,7 @@ describe('場景 17：RETRO stage — dead code 掃描自動觸發', () => {
     });
   }
 
-  test('RETRO PASS → hook 正常輸出 ✅，主流程不受 dead-code 掃描影響', async () => {
+  test('RETRO PASS → hook result 含 ✅，不含 dead code 掃描字串（P3 已移除）', async () => {
     const sessionId = newSessionId();
     createdSessions.push(sessionId);
 
@@ -1037,83 +1035,52 @@ describe('場景 17：RETRO stage — dead code 掃描自動觸發', () => {
 
     // 主流程正常：含 PASS 符號
     expect(result.result).toContain('✅');
-    // result 為字串
     expect(typeof result.result).toBe('string');
+    // P3 純化後：hook result 不含 dead code 掃描結果
+    expect(result.result).not.toContain('Dead Code 掃描');
+    expect(result.result).not.toContain('未使用 exports');
+    expect(result.result).not.toContain('孤立檔案');
   });
 
-  test('RETRO PASS → observations.jsonl 新增 dead_code 類型觀察（若有 dead code）', async () => {
+  test('RETRO PASS → hook 正常完成，不因移除 dead-code 掃描而影響主流程', async () => {
     const sessionId = newSessionId();
     createdSessions.push(sessionId);
 
     mkdirSync(paths.sessionDir(sessionId), { recursive: true });
     setupRetroActiveState(sessionId);
 
-    await runHook(
+    const result = await runHook(
       { agent_type: 'ot:retrospective', last_assistant_message: 'VERDICT: pass 回顧完成' },
       sessionId
     );
 
-    // 查詢 dead_code 類型觀察（若 dead-code scanner 有找到結果才會有）
-    // 此測試只驗證：若觀察存在，格式必須正確；主流程不應因此失敗
-    const observations = instinct.query(sessionId, { type: 'dead_code' });
-    for (const obs of observations) {
-      expect(obs.type).toBe('dead_code');
-      expect(obs.tag).toBe('auto-scan');
-      expect(obs.trigger).toBe('RETRO complete');
-      expect(obs.action).toMatch(/Found \d+ unused exports, \d+ orphan files/);
-    }
+    // hook 正常退出（result 為字串）
+    expect(typeof result.result).toBe('string');
+    expect(result.result.length).toBeGreaterThan(0);
   });
 
-  test('非 RETRO stage（DOCS）PASS → dead-code 掃描不觸發（DOCS 有自己的 docs-sync）', async () => {
-    const sessionId = newSessionId();
-    createdSessions.push(sessionId);
-
-    mkdirSync(paths.sessionDir(sessionId), { recursive: true });
-    state.initState(sessionId, 'quick', ['DEV', 'REVIEW', 'TEST', 'RETRO', 'DOCS']);
-    state.updateStateAtomic(sessionId, (s) => {
-      ['DEV', 'REVIEW', 'TEST', 'RETRO'].forEach(k => {
-        s.stages[k].status = 'completed';
-        s.stages[k].result = 'pass';
-      });
-      s.stages['DOCS'].status = 'active';
-      s.currentStage = 'DOCS';
-      return s;
-    });
-
-    await runHook(
-      { agent_type: 'ot:doc-updater', last_assistant_message: 'VERDICT: pass 文件完成' },
-      sessionId
-    );
-
-    // DOCS PASS → 不觸發 RETRO dead-code 掃描
-    const observations = instinct.query(sessionId, { type: 'dead_code' });
-    expect(observations.length).toBe(0);
-  });
-
-  test('非 RETRO stage（DEV）PASS → dead-code 掃描不觸發', async () => {
+  test('DEV PASS → hook result 不含 dead code 掃描（非 RETRO stage 也不觸發）', async () => {
     const sessionId = newSessionId();
     createdSessions.push(sessionId);
 
     mkdirSync(paths.sessionDir(sessionId), { recursive: true });
     setupWorkflowWithActiveStage(sessionId, 'single', 'DEV');
 
-    await runHook(
+    const result = await runHook(
       { agent_type: 'ot:developer', last_assistant_message: 'VERDICT: pass 開發完成' },
       sessionId
     );
 
-    // DEV PASS → 不觸發 dead-code 掃描
-    const observations = instinct.query(sessionId, { type: 'dead_code' });
-    expect(observations.length).toBe(0);
-    // result 正常
+    expect(result.result).toContain('✅');
+    expect(result.result).not.toContain('Dead Code 掃描');
   });
 });
 
 // ────────────────────────────────────────────────────────────────────────────
-// 場景 16：DOCS stage — docs-sync 自動觸發
+// 場景 16：DOCS stage — hook result 不含 docs-sync 結果（P3 純化後）
 // ────────────────────────────────────────────────────────────────────────────
 
-describe('場景 16：DOCS stage — docs-sync 自動觸發', () => {
+describe('場景 16：DOCS stage — hook result 不含 docs-sync 結果（P3 純化）', () => {
   // 準備 DOCS stage 全部前置 stages 完成的 state
   function setupDocsActiveState(sessionId) {
     state.initState(sessionId, 'quick', ['DEV', 'REVIEW', 'TEST', 'RETRO', 'DOCS']);
@@ -1128,7 +1095,7 @@ describe('場景 16：DOCS stage — docs-sync 自動觸發', () => {
     });
   }
 
-  test('DOCS PASS → result 含 ✅，主流程不受 docs-sync 影響', async () => {
+  test('DOCS PASS → result 含 ✅，不含文件數字自動修復字串（P3 已移除）', async () => {
     const sessionId = newSessionId();
     createdSessions.push(sessionId);
 
@@ -1142,11 +1109,13 @@ describe('場景 16：DOCS stage — docs-sync 自動觸發', () => {
 
     // 主流程正常：含 PASS 符號
     expect(result.result).toContain('✅');
-    // result 為字串（docs-sync 例外不影響主流程）
     expect(typeof result.result).toBe('string');
+    // P3 純化後：hook result 不含 docs sync 相關字串
+    expect(result.result).not.toContain('文件數字自動修復');
+    expect(result.result).not.toContain('docs sync');
   });
 
-  test('DOCS PASS（docs-sync isClean）→ result 不含錯誤或警告訊息', async () => {
+  test('DOCS PASS → result 不含文件同步錯誤訊息', async () => {
     const sessionId = newSessionId();
     createdSessions.push(sessionId);
 
@@ -1158,13 +1127,13 @@ describe('場景 16：DOCS stage — docs-sync 自動觸發', () => {
       sessionId
     );
 
-    // 數字已同步時不含修復提示
+    // P3 純化後：不再有 docs-sync 觸發的修復或錯誤訊息
     expect(result.result).not.toContain('文件同步錯誤');
-    // result 非空
+    expect(result.result).not.toContain('文件數字自動修復');
     expect(result.result.length).toBeGreaterThan(0);
   });
 
-  test('非 DOCS stage（DEV）PASS → docs-sync 不觸發', async () => {
+  test('DEV PASS → result 不含 docs-sync 修復訊息（非 DOCS stage）', async () => {
     const sessionId = newSessionId();
     createdSessions.push(sessionId);
 
@@ -1176,9 +1145,7 @@ describe('場景 16：DOCS stage — docs-sync 自動觸發', () => {
       sessionId
     );
 
-    // DEV PASS 含 ✅
     expect(result.result).toContain('✅');
-    // 不含 docs-sync 修復訊息
     expect(result.result).not.toContain('文件數字自動修復');
     expect(result.result).not.toContain('需人工確認');
   });

@@ -31,8 +31,10 @@ const stateLib = require(join(SCRIPTS_LIB, 'state'));
 const timeline = require(join(SCRIPTS_LIB, 'timeline'));
 
 // ── 直接 import 函式（unit-level 測試）──
+// shouldSuggestCompact 已搬遷至 hook-utils.js
 
-const { shouldSuggestCompact, formatSize } = require(ON_STOP_PATH);
+const { shouldSuggestCompact } = require(join(SCRIPTS_LIB, 'hook-utils'));
+const { formatSize } = require(join(SCRIPTS_LIB, 'utils'));
 
 // ── Session ID（加時戳避免衝突）──
 

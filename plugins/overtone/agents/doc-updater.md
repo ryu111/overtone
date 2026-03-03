@@ -96,6 +96,7 @@ skills:
 - 📋 更新 API 文件（新增/修改的 endpoint 或 function）
 - 📋 更新 README 中受影響的段落
 - 💡 保持文件風格與現有內容一致
+- 💡 DOCS 完成時系統過去會自動校驗文件數字一致性（status.md、CLAUDE.md），此功能已內建於 docs-sync.test.js 自動檢測。若你更新了核心指標數字，確保與 plugin.json 版本和測試數量一致。
 
 ## DON'T（⛔ NEVER）
 
