@@ -309,17 +309,25 @@ safeRun(() => {
     }
   } catch { /* 靜默降級 — score context 失敗不影響主流程 */ }
 
+  // failure warnings 注入（try/catch 靜默降級）
+  let failureWarning = null;
+  try {
+    const failureTracker = require('../../../scripts/lib/failure-tracker');
+    failureWarning = failureTracker.formatFailureWarnings(projectRoot, targetStage);
+  } catch { /* 靜默降級 — failure warning 失敗不影響主流程 */ }
+
   const hasContext = !!context;
   const hasSkillContext = !!skillContextStr;
   const hasGapWarnings = !!gapWarnings;
   const hasTestIndex = !!testIndexSummary;
   const hasScoreContext = !!scoreContext;
+  const hasFailureWarning = !!failureWarning;
 
-  if (hasContext || hasSkillContext || hasGapWarnings || hasTestIndex || hasScoreContext) {
+  if (hasContext || hasSkillContext || hasGapWarnings || hasTestIndex || hasScoreContext || hasFailureWarning) {
     const originalPrompt = toolInput.prompt || '';
     let newPrompt = originalPrompt;
 
-    // 組裝順序：workflowContext → skillContext → gapWarnings → scoreContext → testIndex → originalPrompt
+    // 組裝順序：workflowContext → skillContext → gapWarnings → scoreContext → failureWarning → testIndex → originalPrompt
     const parts = [];
     if (hasContext) {
       parts.push(context);
@@ -332,6 +340,9 @@ safeRun(() => {
     }
     if (hasScoreContext) {
       parts.push(scoreContext);
+    }
+    if (hasFailureWarning) {
+      parts.push(failureWarning);
     }
     if (hasTestIndex) {
       parts.push(testIndexSummary);

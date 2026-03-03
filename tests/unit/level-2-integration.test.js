@@ -9,13 +9,16 @@
  *   on-session-end.js 必須呼叫 graduate、decay、saveBaseline
  *
  * Feature 2：SessionStart 整合點
- *   on-start.js 必須注入 formatBaselineSummary、formatScoreSummary
+ *   on-start.js 必須注入 formatBaselineSummary、formatScoreSummary、formatFailureSummary
  *
  * Feature 3：PreToolUse(Task) 整合點
- *   pre-task.js 必須注入 scoreContext（品質歷史回饋）
+ *   pre-task.js 必須注入 scoreContext（品質歷史回饋）+ failureWarning（失敗模式警告）
  *
  * Feature 4：模組可載入性
  *   所有 Level 2 模組都能被 require 且匯出預期 API
+ *
+ * Feature 5：SubagentStop 整合點（Level 3 卡點識別）
+ *   on-stop.js（agent）必須呼叫 failure-tracker.recordFailure
  */
 
 const { describe, test, expect } = require('bun:test');
@@ -27,6 +30,7 @@ const { HOOKS_DIR, SCRIPTS_LIB } = require('../helpers/paths');
 const sessionEndSrc = readFileSync(join(HOOKS_DIR, 'session', 'on-session-end.js'), 'utf8');
 const sessionStartSrc = readFileSync(join(HOOKS_DIR, 'session', 'on-start.js'), 'utf8');
 const preTaskSrc = readFileSync(join(HOOKS_DIR, 'tool', 'pre-task.js'), 'utf8');
+const agentOnStopSrc = readFileSync(join(HOOKS_DIR, 'agent', 'on-stop.js'), 'utf8');
 
 // ── Feature 1：SessionEnd 整合點 ──
 
@@ -101,6 +105,11 @@ describe('Feature 2：SessionStart 整合點', () => {
     expect(sessionStartSrc).toContain('execution-queue');
     expect(sessionStartSrc).toContain('formatQueueSummary');
   });
+
+  test('2-5 注入失敗模式摘要 formatFailureSummary', () => {
+    expect(sessionStartSrc).toContain('failure-tracker');
+    expect(sessionStartSrc).toContain('formatFailureSummary');
+  });
 });
 
 // ── Feature 3：PreToolUse(Task) 整合點 ──
@@ -131,6 +140,17 @@ describe('Feature 3：PreToolUse(Task) 整合點', () => {
   test('3-5 注入 gapWarnings（知識缺口）', () => {
     expect(preTaskSrc).toContain('detectKnowledgeGaps');
     expect(preTaskSrc).toContain('gapWarnings');
+  });
+
+  test('3-6 注入 failureWarning（失敗模式警告）', () => {
+    expect(preTaskSrc).toContain('failure-tracker');
+    expect(preTaskSrc).toContain('formatFailureWarnings');
+    expect(preTaskSrc).toContain('hasFailureWarning');
+  });
+
+  test('3-7 failureWarning 在 parts 組裝中', () => {
+    const partsSection = preTaskSrc.slice(preTaskSrc.indexOf('const parts = []'));
+    expect(partsSection).toContain('failureWarning');
   });
 });
 
@@ -169,5 +189,41 @@ describe('Feature 4：模組可載入性', () => {
     expect(typeof mod.readQueue).toBe('function');
     expect(typeof mod.writeQueue).toBe('function');
     expect(typeof mod.formatQueueSummary).toBe('function');
+  });
+
+  test('4-6 failure-tracker.js 匯出 4 個 API', () => {
+    const mod = require(join(SCRIPTS_LIB, 'failure-tracker'));
+    expect(typeof mod.recordFailure).toBe('function');
+    expect(typeof mod.getFailurePatterns).toBe('function');
+    expect(typeof mod.formatFailureWarnings).toBe('function');
+    expect(typeof mod.formatFailureSummary).toBe('function');
+  });
+});
+
+// ── Feature 5：SubagentStop 整合點（Level 3 卡點識別）──
+
+describe('Feature 5：SubagentStop 整合點', () => {
+  test('5-1 on-stop.js（agent）呼叫 failure-tracker.recordFailure', () => {
+    expect(agentOnStopSrc).toContain('failure-tracker');
+    expect(agentOnStopSrc).toContain('recordFailure');
+  });
+
+  test('5-2 recordFailure 受 fail/reject 條件守衛', () => {
+    // 確認 recordFailure 在 verdict === 'fail' || verdict === 'reject' 條件內
+    const idx = agentOnStopSrc.indexOf('recordFailure');
+    expect(idx).toBeGreaterThan(-1);
+    // 找到 recordFailure 之前最近的條件判斷
+    const before = agentOnStopSrc.slice(0, idx);
+    const condIdx = before.lastIndexOf('fail');
+    expect(condIdx).toBeGreaterThan(-1);
+  });
+
+  test('5-3 recordFailure 有 try/catch 保護', () => {
+    const idx = agentOnStopSrc.indexOf('recordFailure');
+    const block = agentOnStopSrc.slice(
+      agentOnStopSrc.lastIndexOf('try', idx),
+      idx + 50
+    );
+    expect(block).toContain('try');
   });
 });

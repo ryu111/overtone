@@ -242,6 +242,20 @@ safeRun(() => {
     // 品質評分載入失敗不阻擋 session 啟動
   }
 
+  // ── 失敗模式摘要載入 ──
+  // 顯示跨 session 失敗模式聚合，提供「哪個 stage/agent 最常失敗」的量化參考
+
+  let failureSummaryMsg = null;
+  try {
+    const failureTracker = require('../../../scripts/lib/failure-tracker');
+    const summary = failureTracker.formatFailureSummary(projectRoot);
+    if (summary) {
+      failureSummaryMsg = '## 失敗模式\n\n' + summary;
+    }
+  } catch {
+    // 失敗模式載入失敗不阻擋 session 啟動
+  }
+
   // ── 執行佇列載入 ──
   // PM Discovery 確認的任務序列，注入 systemMessage 確保連續執行
 
@@ -279,6 +293,13 @@ safeRun(() => {
       output.systemMessage += '\n\n' + scoreSummaryMsg;
     } else {
       output.systemMessage = scoreSummaryMsg;
+    }
+  }
+  if (failureSummaryMsg) {
+    if (output.systemMessage) {
+      output.systemMessage += '\n\n' + failureSummaryMsg;
+    } else {
+      output.systemMessage = failureSummaryMsg;
     }
   }
   if (queueMsg) {

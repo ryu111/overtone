@@ -225,6 +225,13 @@ const scoringDefaults = {
   maxRecordsPerStage: 50,    // 每種 stage 最多保留幾筆
 };
 
+// 失敗模式追蹤設定
+const failureDefaults = {
+  maxRecords: 100,        // 最多保留幾筆
+  warningWindow: 20,      // 分析最近幾筆
+  warningThreshold: 2,    // 同 stage 失敗 >= 此值才產生警告
+};
+
 module.exports = {
   stages,
   agentModels,
@@ -242,6 +249,7 @@ module.exports = {
   baselineDefaults,
   scoringConfig,
   scoringDefaults,
+  failureDefaults,
   specsConfig,
   knownTools,
   hookEvents,

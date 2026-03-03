@@ -60,6 +60,22 @@ safeRun(() => {
     return s;
   });
 
+  // 記錄失敗到全域 store（跨 session 失敗模式追蹤）
+  if (result.verdict === 'fail' || result.verdict === 'reject') {
+    try {
+      const failureTracker = require('../../../scripts/lib/failure-tracker');
+      failureTracker.recordFailure(projectRoot, {
+        ts: new Date().toISOString(),
+        sessionId,
+        workflowType: currentState.workflowType,
+        stage: actualStageKey,
+        agent: agentName,
+        verdict: result.verdict,
+        retryAttempt: (result.verdict === 'fail' ? (updatedState.failCount || 1) : (updatedState.rejectCount || 1)),
+      });
+    } catch { /* 靜默 — 記錄失敗不影響主流程 */ }
+  }
+
   // emit timeline
   if (result.verdict === 'fail') {
     timeline.emit(sessionId, 'agent:error', { agent: agentName, stage: actualStageKey, reason: result.reason || 'agent 回報 fail' });
