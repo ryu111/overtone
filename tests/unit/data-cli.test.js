@@ -114,6 +114,21 @@ function makeMockDeps(overrides = {}) {
       },
       ...((overrides.paths) || {}),
     },
+    crossAnalyzer: {
+      analyzeFailureHotspot: () => ({
+        hotspots: [{ stage: 'DEV', agent: 'developer', count: 2, lastFailedAt: '2024-01-02T00:00:00Z' }],
+        totalFailures: 2,
+      }),
+      analyzeHookOverhead: (_deps, opts) => ({
+        hooks: [{ hook: 'UserPromptSubmit', avgMs: 150, maxMs: 200, count: 2 }],
+        sessionId: opts && opts.session ? opts.session : null,
+      }),
+      analyzeWorkflowVelocity: () => ({
+        stages: [{ stage: 'DEV', avgMs: 300000, minMs: 200000, maxMs: 400000, samples: 3 }],
+        sessionCount: 3,
+      }),
+      ...((overrides.crossAnalyzer) || {}),
+    },
   };
 }
 
@@ -808,5 +823,100 @@ describe('main — 路由整合', () => {
     });
 
     expect(dryRunCalled).toBe(true);
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// 附加：analyze 子命令路由整合測試
+// ────────────────────────────────────────────────────────────────────────────
+
+describe('main — analyze 路由', () => {
+  test('analyze failure-hotspot 正確路由並輸出結果', () => {
+    let analyzeCalled = false;
+    const deps = makeMockDeps({
+      crossAnalyzer: {
+        analyzeFailureHotspot: () => {
+          analyzeCalled = true;
+          return { hotspots: [{ stage: 'DEV', agent: 'developer', count: 3, lastFailedAt: '2024-01-01T00:00:00Z' }], totalFailures: 3 };
+        },
+        analyzeHookOverhead: () => ({ hooks: [], sessionId: null }),
+        analyzeWorkflowVelocity: () => ({ stages: [], sessionCount: 0 }),
+      },
+    });
+
+    const { logs } = runWithCapture(() => {
+      dataCli.main(['analyze', 'failure-hotspot'], deps);
+    });
+
+    expect(analyzeCalled).toBe(true);
+    const output = JSON.parse(logs[0]);
+    expect(output.totalFailures).toBe(3);
+    expect(Array.isArray(output.hotspots)).toBe(true);
+  });
+
+  test('analyze hook-overhead 傳遞 --session 並輸出結果', () => {
+    let capturedOpts = null;
+    const deps = makeMockDeps({
+      crossAnalyzer: {
+        analyzeFailureHotspot: () => ({ hotspots: [], totalFailures: 0 }),
+        analyzeHookOverhead: (_deps, opts) => {
+          capturedOpts = opts;
+          return { hooks: [{ hook: 'UserPromptSubmit', avgMs: 100, maxMs: 200, count: 1 }], sessionId: opts.session };
+        },
+        analyzeWorkflowVelocity: () => ({ stages: [], sessionCount: 0 }),
+      },
+    });
+
+    const { logs } = runWithCapture(() => {
+      dataCli.main(['analyze', 'hook-overhead', '--session', 'sess-abc'], deps);
+    });
+
+    expect(capturedOpts.session).toBe('sess-abc');
+    const output = JSON.parse(logs[0]);
+    expect(output.sessionId).toBe('sess-abc');
+    expect(Array.isArray(output.hooks)).toBe(true);
+  });
+
+  test('analyze workflow-velocity 正確路由並輸出結果', () => {
+    let analyzeCalled = false;
+    const deps = makeMockDeps({
+      crossAnalyzer: {
+        analyzeFailureHotspot: () => ({ hotspots: [], totalFailures: 0 }),
+        analyzeHookOverhead: () => ({ hooks: [], sessionId: null }),
+        analyzeWorkflowVelocity: () => {
+          analyzeCalled = true;
+          return { stages: [{ stage: 'DEV', avgMs: 300000, minMs: 200000, maxMs: 400000, samples: 3 }], sessionCount: 3 };
+        },
+      },
+    });
+
+    const { logs } = runWithCapture(() => {
+      dataCli.main(['analyze', 'workflow-velocity'], deps);
+    });
+
+    expect(analyzeCalled).toBe(true);
+    const output = JSON.parse(logs[0]);
+    expect(output.sessionCount).toBe(3);
+    expect(Array.isArray(output.stages)).toBe(true);
+  });
+
+  test('analyze 未知類型時報錯退出 1', () => {
+    const deps = makeMockDeps();
+    const { errors, exitCode } = runWithCapture(() => {
+      dataCli.main(['analyze', 'unknown-analysis'], deps);
+    });
+
+    expect(exitCode).toBe(1);
+    expect(errors.some(e => e.includes('unknown-analysis'))).toBe(true);
+  });
+
+  test('analyze 無類型時報錯退出 1', () => {
+    const deps = makeMockDeps();
+    const { errors, exitCode } = runWithCapture(() => {
+      dataCli.main(['analyze'], deps);
+    });
+
+    expect(exitCode).toBe(1);
+    expect(errors.length).toBeGreaterThan(0);
   });
 });

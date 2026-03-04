@@ -38,6 +38,7 @@ function _getDeps(_deps = {}) {
     baselineTracker:_deps.baselineTracker|| require('./lib/baseline-tracker'),
     sessionCleanup: _deps.sessionCleanup || require('./lib/session-cleanup'),
     paths:          _deps.paths          || require('./lib/paths'),
+    crossAnalyzer:  _deps.crossAnalyzer  || require('./lib/cross-analyzer'),
   };
 }
 
@@ -433,6 +434,100 @@ function cmdRecent(options, _deps = {}) {
   outputResult(sessions, options);
 }
 
+// ── analyze 子命令 ──
+
+/**
+ * 交叉分析
+ * @param {string[]} positional - [analysisType, ...]
+ * @param {object} options
+ * @param {string} projectRoot
+ * @param {object} _deps
+ */
+function cmdAnalyze(positional, options, projectRoot, _deps = {}) {
+  const deps = _getDeps(_deps);
+  const analysisType = positional[0];
+
+  if (!analysisType) {
+    console.error('用法：bun scripts/data.js analyze <failure-hotspot|hook-overhead|workflow-velocity> [options]');
+    process.exit(1);
+  }
+
+  switch (analysisType) {
+    case 'failure-hotspot': {
+      const result = deps.crossAnalyzer.analyzeFailureHotspot(deps, projectRoot);
+      if (options.table) {
+        outputResult(result.hotspots, options);
+      } else {
+        outputResult(result, options);
+      }
+      break;
+    }
+
+    case 'hook-overhead': {
+      // 若無 --session，嘗試從最近的 session 取
+      let sessionId = options.session || null;
+      if (!sessionId) {
+        try {
+          const sessionsDir = deps.paths.SESSIONS_DIR;
+          const entries = fs.readdirSync(sessionsDir);
+          const sessionInfos = entries
+            .map(entry => {
+              try {
+                const stat = fs.statSync(path.join(sessionsDir, entry));
+                return { entry, mtime: stat.mtimeMs };
+              } catch {
+                return null;
+              }
+            })
+            .filter(Boolean)
+            .sort((a, b) => b.mtime - a.mtime);
+          sessionId = sessionInfos.length > 0 ? sessionInfos[0].entry : null;
+        } catch {
+          sessionId = null;
+        }
+      }
+      const result = deps.crossAnalyzer.analyzeHookOverhead(deps, { session: sessionId }, projectRoot);
+      if (options.table) {
+        outputResult(result.hooks, options);
+      } else {
+        outputResult(result, options);
+      }
+      break;
+    }
+
+    case 'workflow-velocity': {
+      // 讀取所有 session ID
+      let sessionIds = [];
+      try {
+        const sessionsDir = deps.paths.SESSIONS_DIR;
+        if (fs.existsSync(sessionsDir)) {
+          sessionIds = fs.readdirSync(sessionsDir).filter(entry => {
+            try {
+              return fs.statSync(path.join(sessionsDir, entry)).isDirectory();
+            } catch {
+              return false;
+            }
+          });
+        }
+      } catch {
+        sessionIds = [];
+      }
+      const result = deps.crossAnalyzer.analyzeWorkflowVelocity(deps, sessionIds);
+      if (options.table) {
+        outputResult(result.stages, options);
+      } else {
+        outputResult(result, options);
+      }
+      break;
+    }
+
+    default:
+      console.error(`未知的分析類型：${analysisType}`);
+      console.error('支援類型：failure-hotspot, hook-overhead, workflow-velocity');
+      process.exit(1);
+  }
+}
+
 // ── help ──
 
 function printHelp() {
@@ -457,6 +552,13 @@ function printHelp() {
   console.log('');
   console.log('  recent                列出最近 session');
   console.log('    --limit N           最多列出幾個（預設 10）');
+  console.log('');
+  console.log('  analyze <type>        交叉分析');
+  console.log('    type：failure-hotspot | hook-overhead | workflow-velocity');
+  console.log('    failure-hotspot     失敗熱點分析（stage + agent 組合）');
+  console.log('    hook-overhead       Hook 開銷分析（平均/最大耗時）');
+  console.log('      --session <id>    指定 session（預設取最近的）');
+  console.log('    workflow-velocity   工作流速度分析（每個 stage 平均耗時）');
   console.log('');
   console.log('全域選項：');
   console.log('  --project-root <path>  專案根目錄（預設 cwd）');
@@ -512,6 +614,10 @@ function main(argv, _deps = {}) {
       cmdRecent(options, _deps);
       break;
 
+    case 'analyze':
+      cmdAnalyze(positional, options, projectRoot, _deps);
+      break;
+
     default:
       if (!command) {
         printHelp();
@@ -535,4 +641,5 @@ module.exports = {
   _cmdStats: cmdStats,
   _cmdGc: cmdGc,
   _cmdRecent: cmdRecent,
+  _cmdAnalyze: cmdAnalyze,
 };
