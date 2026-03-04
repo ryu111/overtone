@@ -10,6 +10,6 @@ created: 2026-03-04T05:23:23.420Z
 - [x] DEV
 - [x] REVIEW
 - [x] RETRO
-- [ ] DOCS
+- [x] DOCS
 
 ## Tasks
