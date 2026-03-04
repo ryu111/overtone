@@ -250,11 +250,7 @@ function checkDeadExports() {
     ...collectJsFiles(PLUGIN_ROOT),
     ...collectJsFiles(TESTS_DIR),
   ].filter((f) => {
-    return (
-      f !== __filename &&
-      !f.includes('health-check.js') &&
-      !f.includes('/node_modules/')
-    );
+    return !f.includes('/node_modules/');
   });
 
   const findings = [];
@@ -496,7 +492,7 @@ function checkUnusedPaths() {
   const exportKeys = parsePathsExports(content);
   if (exportKeys.length === 0) return [];
 
-  // 收集 plugin 下所有 .js（排除 paths.js 自身、health-check 自身、node_modules）
+  // 收集 plugin 下所有 .js（排除 paths.js 自身、node_modules）
   // 加入 tests/ 目錄，避免只在測試中使用的 exports 被誤報為 dead
   const allPluginJs = [
     ...collectJsFiles(PLUGIN_ROOT),
@@ -504,8 +500,6 @@ function checkUnusedPaths() {
   ].filter((f) => {
     return (
       f !== pathsFile &&
-      f !== __filename &&
-      !f.includes('health-check.js') &&
       !f.includes('/node_modules/')
     );
   });
