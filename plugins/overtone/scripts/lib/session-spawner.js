@@ -56,10 +56,13 @@ function spawnSession(prompt, opts = {}, _deps = {}) {
   // prompt 作為最後一個參數傳入
   const fullArgs = [...args, prompt];
 
-  // 環境變數防禦：標記 spawned session + 過濾敏感 env vars
+  // 環境變數防禦：標記 spawned session + 過濾敏感/嵌套偵測 env vars
   const SENSITIVE_KEYS = ['TELEGRAM_BOT_TOKEN', 'TELEGRAM_CHAT_ID'];
+  const SENSITIVE_PREFIXES = ['CLAUDECODE'];
   const childEnv = Object.fromEntries(
-    Object.entries(process.env).filter(([k]) => !SENSITIVE_KEYS.includes(k))
+    Object.entries(process.env).filter(([k]) =>
+      !SENSITIVE_KEYS.includes(k) && !SENSITIVE_PREFIXES.some(p => k.startsWith(p))
+    )
   );
   childEnv.OVERTONE_SPAWNED = '1';
 

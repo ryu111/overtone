@@ -273,4 +273,38 @@ describe('Feature 1: session-spawner.js — Claude Code session 啟動封裝', (
 
     return child.stdout.emit('close');
   });
+
+  // Scenario 1-12: CLAUDECODE 開頭的環境變數被過濾（防止嵌套 session 偵測誤觸發）
+  test('Scenario 1-12: CLAUDECODE_ prefix env vars 不傳給 child', () => {
+    const child = makeMockChild();
+    const mockSpawn = makeMockSpawn(child);
+
+    const origKeys = {};
+    const testVars = {
+      CLAUDECODE_SESSION_ID: 'test-session-id',
+      CLAUDECODEPID: '99999',
+    };
+    for (const [k, v] of Object.entries(testVars)) {
+      origKeys[k] = process.env[k];
+      process.env[k] = v;
+    }
+    // 確保非 CLAUDECODE 的 env 不被過濾
+    const origPath = process.env.PATH;
+
+    try {
+      spawnSession('test prompt', { timeout: 50 }, { spawn: mockSpawn });
+
+      const spawnOpts = mockSpawn.calls[0].opts;
+      expect(spawnOpts.env.CLAUDECODE_SESSION_ID).toBeUndefined();
+      expect(spawnOpts.env.CLAUDECODEPID).toBeUndefined();
+      expect(spawnOpts.env.PATH).toBe(origPath);
+    } finally {
+      for (const [k] of Object.entries(testVars)) {
+        if (origKeys[k] !== undefined) process.env[k] = origKeys[k];
+        else delete process.env[k];
+      }
+    }
+
+    return child.stdout.emit('close');
+  });
 });
