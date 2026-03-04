@@ -2,6 +2,32 @@
 
 所有重要變更記錄於此文件。
 
+## [0.28.36] - 2026-03-04
+
+### 核心簡化與不變量守衛——Layer 2 狀態穩固
+
+- **A 組：並行提示修復**
+  - `Stop` hook `continueMessage` 改用 `getNextStageHint()`（支援並行群組合併提示）
+  - `PreCompact` 狀態恢復訊息改用 `getNextStageHint()`
+  - 解決並行 stage 重複提示問題
+
+- **B 組：信號源簡化（雙信號源移除）**
+  - 移除 `active-agent.json` 雙信號源（pre-task.js 不寫入、on-stop.js 不清除）
+  - `statusline.js` 只讀 `workflow.json`（`buildAgentDisplay(workflow, registryStages)` 2 參數）
+  - `PreCompact` hook 壓縮後清空 `activeAgents`
+  - 單一 SoT（workflow.json）確保狀態一致性
+
+- **C 組：State 不變量守衛**（新增 `enforceInvariants()` 函式）
+  - **不變量 1**：孤兒清除——activeAgents 中不存在於 stages 的 agent 自動刪除
+  - **不變量 2**：status 逆轉修正——若 activeAgents 有 agent 但 stage status 非 active，修正為 active
+  - **不變量 3**：parallelDone 截斷——parallelDone 不能超過 parallelTotal
+  - 違反不變量時 emit `system:warning` 事件
+  - 移除 3 處 TTL workaround（`ACTIVE_AGENT_TTL_MS` 舊機制）
+
+- **測試**：3061 pass / 0 fail（+46 tests vs 3015 baseline，129 個測試檔）
+
+---
+
 ## [0.28.35] - 2026-03-04
 
 ### Level 2 → Level 1 Agent 個體學習升級（Phase 2 完成）

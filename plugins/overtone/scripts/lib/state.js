@@ -145,7 +145,6 @@ function enforceInvariants(state) {
   }
 
   // 規則 2：status 單向（pending → active → completed，不可逆轉）
-  const ORDER = { pending: 0, active: 1, completed: 2 };
   for (const [key, entry] of Object.entries(state.stages || {})) {
     // 若 completedAt 存在但 status 不是 completed → 修正（逆轉偵測）
     if (entry.completedAt && entry.status !== 'completed') {

@@ -1,201 +1,4 @@
 ---
-## 2026-03-03 | retrospective:RETRO Context
-ISSUES — 發現 2 個值得更新的問題（信心 >=70%）。整體實作品質良好，核心功能（mul-agent command、7 個 workflow commands、architect.md、auto/SKILL.md、測試覆蓋）均已正確完成泛化。問題集中在 docs/ 的規格文件，屬文件未同步類，不影響功能運作。
-Keywords: issues, agent, command, workflow, commands, architect, auto, skill, docs
-
----
-## 2026-03-03 | planner:PLAN Findings
-**需求分解**：
-
-1. **建立 os-control Skill 骨架** | agent: developer | files:
-   - `plugins/overtone/skills/os-control/SKILL.md`（新建，透過 `manage-component.js create skill`）
-   - `plugins/overtone/skills/os-control/references/perception.md`（空骨架）
-   - `plugins/overtone/skills/os-control/references/control.md`（空骨架）
-   - `plugins/overtone/skills/os-control/references/system.md`（空骨架）
-   - `plugins/overtone/skills/os-control/references/realtime.md`（空骨架）
-   - SKILL.md 內容必須包含：frontmatter（name/description/disable-model-invocation/user-invocable）、消費者表格（developer/architect/tester/debugger/qa）、reference 索引表格、OS 能力總覽段落、按需讀取提示
-   - 注意：skill 不需要 `user-invocable: true`，也不需要 `disable-model-invocation: true` 以外的特殊 frontmatter
-   - 接受標準：`bun scripts/validate-agents.js` 通過，SKILL.md 通過 frontmatter 格式驗證
-
-2. **5 個 Agent frontmatter 加入 os-control** | agent: developer | files:
-   - `plugins/overtone/agents/developer.md`（skills 現有：commit-convention, wording）
-   - `plugins/overtone/agents/architect.md`（skills 現有：wording, architecture）
-   - `plugins/overtone/agents/tester.md`（skills 現有：testing, wording）
-   - `plugins/overtone/agents/debugger.md`（skills 現有：debugging）
-   - `plugins/overtone/agents/qa.md`（skills 現有：testing）
-   - 必須透過 `bun plugins/overtone/scripts/manage-component.js update agent <name> '{"skills": [...現有..., "os-control"]}'`
-   - 接受標準：各 agent .md frontmatter 的 skills 陣列含 os-control，validate-agents 通過
-
-3. **建立 pre-bash-guard.js** | agent: developer | files:
-   - `plugins/overtone/hooks/scripts/tool/pre-bash-guard.js`（新建）
-   - 模式：遵循 `pre-edit-guard.js` 的 `safeRun + safeReadStdin` 結構（`require('../../../scripts/lib/hook-utils')`）
-   - stdin input 欄位：`tool_input.command`（Bash 工具的命令字串）
-   - 黑名單模式（精準，只擋確定危險）：
-     - `rm -rf /`、`rm -rf /*`（根目錄毀滅）
-     - `kill -9 1`（PID 1 kills）
-     - `chmod 000 /`（根目錄權限清零）
-     - `mkfs`（格式化磁碟）
-     - `dd if=... of=/dev/sd`（磁碟直寫）
-   - 放行邏輯：無 command → allow、command 不匹配黑名單 → allow
-   - deny 輸出格式與 pre-edit-guard.js 一致（`hookSpecificOutput.permissionDecision: 'deny'`）
-   - 接受標準：黑名單命令 → deny（含拒絕原因）；正常 bun/node 命令 → allow；空 command → allow
-
-4. **hooks.json 新增 Bash matcher** | agent: developer | files:
-   - `plugins/overtone/hooks/hooks.json`（透過 `manage-component.js create hook` 或直接 API 更新）
-   - 在 PreToolUse 陣列末端新增：
-     ```json
-     { "matcher": "Bash", "hooks": [{ "type": "command", "command": "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/tool/pre-bash-guard.js" }] }
-     ```
-   - 必須使用官方三層嵌套格式，不可用扁平格式
-   - 注意：hooks.json 是受保護檔案，必須透過 config-api.js 的 `createHook` 更新（`manage-component.js create hook`）
-   - 接受標準：hooks.json 格式驗證通過（guard test 自動驗證）
-
-5. **pre-bash-guard 測試** | agent: developer | files:
-   - `tests/integration/pre-bash-guard.test.js`（新建）
-   - 遵循 `tests/integration/p
-Keywords: control, skill, agent, developer, files, plugins, overtone, skills, manage, component
-
----
-## 2026-03-03 | planner:PLAN Context
-P3.0 是 Phase 3（OS 能力）的零號里程碑。目標是在任何 OS 操控腳本寫入前，先建立完整的 Skill → Agent → Hook 骨架，讓後續 P3.1–P3.5 只需往骨架裡填腳本和 reference，不需要再做架構層的工作。
-
-本次交付 5 個獨立的子任務，涵蓋：新 knowledge domain、5 個 agent 的 skill 更新、新 guard hook 腳本、hooks.json 更新、對應測試。
-
----
-Keywords: phase, skill, agent, hook, reference, knowledge, domain, guard, hooks, json
-
----
-## 2026-03-03 | architect:ARCH Findings
-**技術方案**：
-
-- 5 個子任務採「黑名單 Guard + 知識注入 Skill」的雙保險架構
-- Guard 黑名單採 regex 列表（精準比對），不用字串包含，避免誤殺正常命令
-- Skill 為輕量索引（≤120 行），body 只定義消費者表格 + reference 索引 + OS 能力概述
-- hooks.json 透過 createHook API 追加，不直接寫檔（繞過 pre-edit-guard 保護）
-- Agent 更新透過 updateAgent API，只 merge skills 欄位
-
-**API 介面**：
-
-```
-# 建立 Skill
-createSkill({
-  name: 'os-control',
-  description: 'OS 操控知識域。桌面自動化、系統管理、螢幕截圖、音訊控制等 OS 能力的 reference 索引。供 developer、architect、tester、debugger、qa 消費。',
-  'disable-model-invocation': true,
-  'user-invocable': false,
-  body: <SKILL.md 正文>
-}, pluginRoot)
-
-# 更新 Agent（5 個，格式相同）
-updateAgent('developer', {
-  skills: ['commit-convention', 'wording', 'os-control']
-}, pluginRoot)
-updateAgent('architect', {
-  skills: ['wording', 'architecture', 'os-control']
-}, pluginRoot)
-updateAgent('tester', {
-  skills: ['testing', 'wording', 'os-control']
-}, pluginRoot)
-updateAgent('debugger', {
-  skills: ['debugging', 'os-control']
-}, pluginRoot)
-updateAgent('qa', {
-  skills: ['testing', 'os-control']
-}, pluginRoot)
-
-# 建立 Hook
-createHook({
-  event: 'PreToolUse',
-  matcher: 'Bash',
-  command: '${CLAUDE_PLUGIN_ROOT}/hooks/scripts/tool/pre-bash-guard.js'
-}, pluginRoot)
-```
-
-**pre-bash-guard.js 的 stdin input schema**（官方文件確認）：
-
-```json
-{
-  "tool_name": "Bash",
-  "tool_input": {
-    "command": "<bash 命令字串>"
-  },
-  "session_id": "..."
-}
-```
-
-欄位路徑：`input.tool_input.command`（與 pre-edit-guard 的 `tool_input.file_path` 同一層）
-
-**Guard 黑名單設計（pre-bash-guard.js）**：
-
-```javascript
-const BLACKLIST = [
-  // 系統設定破壞
-  { pattern: /\bsudo\s+rm\s+-rf\s+\//, label: '刪除根目錄' },
-  { pattern: /\bmkfs\b/, label: '格式化磁碟' },
-  { pattern: /\bdd\s+if=.*of=\/dev\//, label: '直接寫入磁碟裝置' },
-
-  // 帳戶與權限破壞
-  { pattern: /\bpasswd\s+root\b/, label: '修改 root 密碼' },
-  { pattern: /\bchmod\s+777\s+\//, label: '開放根目錄全權限' },
-  { pattern: /\bvisudo\b/, label: '修改 sudoers' },
-
-  // 網路破壞
-  { pattern: /\biptables\s+-F\b/, label: '清空防火牆規則' },
-  { pattern: /\bifconfig.*down\b/, label: '停用網路介面' },
-
-  // 進程破壞
-  { pattern: /\bkillall\s+-9\b/, label: '強制終止所有進程' },
-  {
-Keywords: guard, skill, regex, body, reference, hooks, json, createhook, edit, agent
-
----
-## 2026-03-03 | architect:ARCH Context
-P3.0 的技術設計目標是用最小骨架建立 OS 能力的完整閉環：一個知識域 Skill、5 個 Agent 的 skill 更新、一個 PreToolUse(Bash) Guard 腳本、hooks.json 新增 matcher 條目、以及 Guard 的整合測試。
-
-技術決策核心：
-- **Skill**：沿用 testing SKILL.md 的 knowledge domain 模式（disable-model-invocation: true，純參考索引）
-- **Guard**：沿用 pre-edit-guard.js 的 safeRun + safeReadStdin + deny 輸出模式，不引入新 pattern
-- **hooks.json**：用 `createHook` API（已確認支援 matcher），不直接操作 JSON
-- **Agent 更新**：用 `updateAgent` API，merge skills 陣列
-Keywords: skill, agent, pretooluse, bash, guard, hooks, json, matcher, testing, knowledge
-
----
-## 2026-03-03 | tester:TEST Findings
-**Feature 1: os-control Skill 結構**（5 個 Scenario）
-- SKILL.md frontmatter 欄位驗證（name、disable-model-invocation、user-invocable）
-- 主體字元數不超過 3000（索引型設計）
-- 4 個 reference 檔案存在且非空
-- 消費者表格列出 5 個正確的 agent
-- validate-agents 通過
-
-**Feature 2: Agent 整合**（3 個 Scenario）
-- 5 個 agent skills 陣列包含 os-control
-- developer 原有 skill（commit-convention、wording）不被覆蓋
-- validate-agents 在更新後通過
-
-**Feature 3: pre-bash-guard 守衛**（7 個 Scenario）
-- 10 條黑名單 deny 行為（含 Scenario Outline 格式）
-- 正常命令 allow
-- 空 command allow
-- 缺少 command 欄位 allow
-- 組合命令中子命令命中黑名單整體 deny
-
-**Feature 4: hooks.json 結構**（4 個 Scenario）
-- PreToolUse 陣列包含 Bash matcher
-- 三層嵌套格式驗證
-- command 路徑指向正確的守衛腳本
-- guard-coverage 測試仍通過
-
-**Feature 5: 閉環驗證**（4 個 Scenario）
-- buildSkillContext 能讀取 os-control 摘要
-- agent 啟動時 prompt 包含 os-control 知識
-- 5 個 agent 均能獲得注入
-- 整體測試套件 0 fail
-
-**測試 pass/fail 統計**：N/A（spec 模式，不執行測試）
-Keywords: feature, control, skill, scenario, frontmatter, name, disable, model, invocation, user
-
----
 ## 2026-03-03 | developer:DEV Findings
 1. **前階段已完成大部分工作**：architect/planner 階段已建立了 `pre-bash-guard.js`、`os-control` skill、references 目錄、agent frontmatter 更新、hook 登記，以及 `hook-runner.js` 的 `runPreBashGuard` helper 和完整的 `pre-bash-guard.test.js`。
 
@@ -844,4 +647,143 @@ Keywords: integration, standard, workflow, agent, code, reviewer, registry, data
 - 測試數字：3037 pass → 3047 pass（統一更新於 status.md 核心指標表、README.md、CHANGELOG.md）
 - Status.md 版本標題：更新為「0.28.35（Level 2 → Level 1 Agent 個體學習升級）」
 Keywords: phase, workflow, agent, memory, opus, product, manager, code, reviewer, security
+
+---
+## 2026-03-03 | planner:PLAN Findings
+**需求分解**：
+
+1. **A1: Stop hook 並行提示** | agent: developer | files: `plugins/overtone/hooks/scripts/session/on-stop.js`
+   - 第 202 行 continueMessage 硬編碼提示改為呼叫 `state.getNextStageHint()`
+   - 需在 on-stop.js 加入 `parallelGroups` import
+
+2. **A2: PreCompact 並行提示** | agent: developer | files: `plugins/overtone/hooks/scripts/session/pre-compact.js`
+   - 第 101-105 行「目前階段」顯示改為呼叫 `getNextStageHint()`（可並行與 A1）
+
+3. **B1: 移除 active-agent.json 寫入** | agent: developer | files: `plugins/overtone/hooks/scripts/tool/pre-task.js`、`plugins/overtone/hooks/scripts/agent/on-stop.js`
+   - 刪除 pre-task.js 第 42-46 行、agent/on-stop.js 第 65-70 行和第 143-144 行
+
+4. **B2: statusline.js 簡化** | agent: developer | files: `plugins/overtone/scripts/statusline.js`
+   - 移除 `readActiveAgent()` 函式、主信號分支（第 165-187 行）、TTL workaround（第 219-233 行）
+   - 依賴 B1 完成後執行
+
+5. **B3: PreCompact 清空 activeAgents** | agent: developer | files: `plugins/overtone/hooks/scripts/session/pre-compact.js`
+   - 壓縮後執行 `state.updateStateAtomic(sessionId, s => { s.activeAgents = {}; return s; })`
+
+6. **C1: updateStateAtomic 不變量守衛** | agent: developer | files: `plugins/overtone/scripts/lib/state.js`
+   - 3 條規則：activeAgents 孤兒移除 / status 單向順序 / parallelDone 上限
+
+7. **C2: emit system:warning** | agent: developer | files: `plugins/overtone/scripts/lib/state.js`
+   - 不變量違規時收集 warnings 並呼叫 timeline.emit（依賴 C1）
+
+8. **C3: 移除剩餘 TTL workaround** | agent: developer | files: `plugins/overtone/scripts/lib/state.js`、`plugins/overtone/hooks/scripts/session/pre-compact.js`
+   - 依賴 B3 + C1 完成（確保無殘留風險後才移除 TTL）
+
+**優先順序與並行策略**：
+- Developer-1（A 組）：A1 + A2 並行執行，完全獨立
+- Developer-2（B 組）：B1 → B2 依序，B3 可與 C 組並行
+- Developer-3（C 組）：C1 → C2，C3 等 B3 + C1 完成
+
+**範圍邊界**：
+- 不移除 `paths.js` 的 `session.activeAgent` 定義（測試可能引用）
+- 不修改 `getNextStageHint()` 內部邏輯（只改呼叫方）
+- 不涉及 Dashboard SSE 推送
+Keywords: stop, hook, agent, developer, files, plugins, overtone, hooks, scripts, session
+
+---
+## 2026-03-03 | planner:PLAN Context
+使用者要求將 Overtone 的 workflow state 管理和 status line 顯示從「雙信號源 + TTL workaround」架構簡化為「單信號源 + 不變量守衛」。核心動機是消除三處重複的 TTL workaround 程式碼，統一 active agent 追蹤信號源，並在 state 層加入結構性保護，防止無效狀態轉換。
+Keywords: overtone, workflow, state, status, line, workaround, active, agent
+
+---
+## 2026-03-03 | architect:ARCH Findings
+**技術方案**：
+
+- A 組（並行提示修復）：on-stop.js 和 pre-compact.js 各自 import `parallelGroups`，以 `state.getNextStageHint(currentState, { stages, parallelGroups })` 取代硬編碼單步提示
+- B 組（信號源簡化）：先移除 pre-task.js 和 agent/on-stop.js 的寫入/刪除（B1），再清除 statusline.js 主信號分支（B2），最後在 PreCompact 加入 activeAgents 清空（B3）
+- C 組（不變量守衛）：在 updateStateAtomic 的 modifier 執行後深拷貝對比 status，自動修復 3 條規則後若有 violations 則 lazy require timeline 並 emit system:warning（C1+C2），最後移除 3 處 TTL workaround（C3）
+
+**API 介面**：
+
+- `updateStateAtomic(sessionId, modifier)` — 簽名不變，內部新增不變量守衛
+- `buildAgentDisplay(workflow, registryStages)` — 移除 `activeAgent` 參數（主信號整支移除）
+- `getNextStageHint(currentState, { stages, parallelGroups })` — 簽名不變，C3 後移除 TTL 過濾邏輯
+
+**資料模型**：
+
+- `workflow.json` 格式不變，`activeAgents` 由 B3（PreCompact 清空）和 C1（孤兒清除）雙重保障無殘留
+- `active-agent.json` 停止寫入（B1 後），但 `paths.session.activeAgent()` 定義保留
+
+**檔案結構**：
+
+修改的檔案：
+- `plugins/overtone/scripts/lib/state.js` — C1+C2 不變量守衛，C3 TTL 移除
+- `plugins/overtone/scripts/statusline.js` — B2 主信號移除，TTL 移除，buildAgentDisplay 簽名調整
+- `plugins/overtone/hooks/scripts/tool/pre-task.js` — B1 移除 active-agent.json 寫入
+- `plugins/overtone/hooks/scripts/agent/on-stop.js` — B1 移除 active-agent.json 刪除
+- `plugins/overtone/hooks/scripts/session/on-stop.js` — A1 getNextStageHint 呼叫
+- `plugins/overtone/hooks/scripts/session/pre-compact.js` — A2 getNextStageHint 呼叫，B3 清空 activeAgents，C3 TTL 移除
+- `tests/unit/statusline.test.js` — 移除/更新 4 個 active-agent.json 測試
+- `tests/integration/on-stop-stale-cleanup.test.js` — SCA-3/SCA-4 更新，TTL-GNH 系列更新
+
+不需新增檔案。
+
+**Dev Phases**：
+
+    ### Phase 1: A 組並行（parallel）
+    - [ ] A1+A2 同時執行 | files: hooks/scripts/session/on-stop.js, hooks/scripts/session/pre-compact.js
+
+    ### Phase 2: B+C 組依序（sequential）
+    - [ ] B1 → B2 → B3 → C1 → C2 → C3 | files: 見 tasks.md Dev Phases 清單
+    - [ ] 測試更新（隨各步驟同步執行）
+Keywords: stop, compact, import, parallelgroups, state, getnextstagehint, currentstate, stages, task, agent
+
+---
+## 2026-03-03 | architect:ARCH Context
+技術設計完成。核心決策：
+
+1. **C2 無循環依賴**：state.js 和 timeline.js 互不依賴，使用 lazy require 直接可行
+2. **不變量守衛選 API 選項 B**：updateStateAtomic 內部自動修復 + side-effect emit，呼叫方 signature 完全不變，5+ 個呼叫方零修改
+3. **DEV 策略改為 2 個 developer**：A 組（A1+A2 並行）+ B+C 組（B1→B2→B3→C1→C2→C3 依序）；改動量不大不需要第 3 個
+Keywords: state, timeline, lazy, require, updatestateatomic, side, effect, emit, signature, developer
+
+---
+## 2026-03-03 | developer:DEV Context
+實作 `core-simplification-guards` feature，完成 Architect 設計的全部 A/B/C 三組修改：
+
+- **A 組（並行提示修復）**：session/on-stop.js 和 pre-compact.js 改用 `getNextStageHint()` 提供含並行群組資訊的提示
+- **B 組（信號源簡化）**：移除 `active-agent.json` 雙信號源，`statusline.js` 改為只讀 `workflow.json` 的 `stages.status`，`pre-compact.js` 壓縮前清空 `activeAgents`
+- **C 組（不變量守衛）**：`state.js` 新增 `enforceInvariants()`，在 `updateStateAtomic` 每次執行後自動偵測並修復 3 種違規；移除所有 `ACTIVE_AGENT_TTL_MS` TTL workaround
+Keywords: core, simplification, guards, feature, architect, session, stop, compact, getnextstagehint, active
+
+---
+## 2026-03-03 | tester:TEST Findings
+**測試結果：3061 pass / 0 fail**
+
+驗收標準逐項確認：
+
+1. `bun test` 全套通過 — 3061 pass / 0 fail（DEV 報告 3061，符合並超過 3015 基線）
+2. 31 個 BDD scenario 全覆蓋 — 所有 scenario 均有對應測試
+3. active-agent.json 靜態掃描 — `pre-task.js` 不含 `active-agent.json` 或 `activeAgent(sessionId)` 字樣，`statusline.js` 不含 `readActiveAgent`
+4. `ACTIVE_AGENT_TTL_MS` 在所有相關檔案移除 — `state.js`、`statusline.js`、`pre-compact.js` 靜態掃描均無此常數
+5. `enforceInvariants()` 3 條規則覆蓋 — `state-invariants.test.js` Scenario 3-1 到 3-9 全部通過
+6. `statusline.js` 只讀 `workflow.json` — `buildAgentDisplay(workflow, registryStages)` 簽名確認（2 參數），不接受 `activeAgent` 參數
+
+**關鍵測試檔案確認**：
+
+- `/Users/sbu/projects/overtone/tests/unit/state-invariants.test.js` — 15 個測試，涵蓋 Feature 3 所有 scenario
+- `/Users/sbu/projects/overtone/tests/unit/statusline-ttl.test.js` — 4 個 scenario，驗證 stages.status 為唯一信號源
+- `/Users/sbu/projects/overtone/tests/unit/statusline.test.js` — 更新後的 statusline 測試
+- `/Users/sbu/projects/overtone/tests/integration/on-stop-stale-cleanup.test.js` — TTL 移除後行為驗證
+- `/Users/sbu/projects/overtone/tests/integration/parallel-convergence-gate.test.js` — 並行收斂門測試
+- `/Users/sbu/projects/overtone/tests/integration/pre-compact.test.js` — PreCompact activeAgents 清空驗證
+- `/Users/sbu/projects/overtone/tests/integration/agent-on-stop.test.js` — on-stop 完整流程
+Keywords: pass, fail, test, scenario, active, agent, json, task, activeagent, sessionid
+
+---
+## 2026-03-04 | doc-updater:DOCS Findings
+- **A 組：並行提示修復** — Stop/PreCompact hook 改用 getNextStageHint() 支援並行群組合併提示
+- **B 組：信號源簡化** — 移除 active-agent.json 雙信號源，statusline.js 只讀 workflow.json，PreCompact 壓縮後清空 activeAgents
+- **C 組：不變量守衛** — 新增 enforceInvariants() 保證狀態一致（孤兒清除、status 逆轉修正、parallelDone 截斷），移除 TTL workaround
+- **測試成果** — 3061 pass / 0 fail（+46 tests vs 0.28.35 baseline）
+Keywords: stop, precompact, hook, getnextstagehint, active, agent, json, statusline, workflow, activeagents
 

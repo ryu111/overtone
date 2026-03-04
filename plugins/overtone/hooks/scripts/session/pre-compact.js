@@ -84,6 +84,7 @@ safeRun(() => {
 
   // 壓縮後清空 activeAgents（舊 subagent 的 SubagentStop 不會觸發，清除殘留）
   state.updateStateAtomic(sessionId, (s) => { s.activeAgents = {}; return s; });
+  currentState.activeAgents = {}; // 同步記憶體物件，讓後續 getNextStageHint 讀到正確狀態
 
   // ── 組裝 workflow 狀態摘要 ──
 

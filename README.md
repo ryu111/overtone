@@ -67,6 +67,13 @@ Dashboard 在 SessionStart 自動啟動（`http://localhost:7777`），即時顯
 - **qa**、**e2e-runner** — 行為驗證、End-to-end 測試
 - **retrospective**、**doc-updater** 等後置 agent — 回顧與文件同步
 
+**核心指標：**
+
+- 3061 pass / 0 fail（129 個測試）
+- 17 個 agent + 11 個 hook + 21 個 skill + 27 個 command
+- 18 個 workflow 模板
+- 13 個 knowledge domain
+
 **三信號品質把關：**
 
 lint 0 error + test 0 fail + review PASS → 才算完成
