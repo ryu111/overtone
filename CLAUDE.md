@@ -63,14 +63,14 @@ plugins/overtone/   # Plugin 根目錄
 │   # 15 knowledge domains: testing, workflow-core, security-kb, database, dead-code, commit-convention, code-review, wording, debugging, architecture, build-system, os-control, autonomous-control, craft, claude-dev
 ├── commands/       # 28 個 Command（DO — stage shortcuts + workflow pipelines + utilities）
 ├── hooks/          # hooks.json + scripts/（HOW — 守衛）
-├── scripts/lib/    # 共用庫（registry, state, timeline, specs, config-api 等）
+├── scripts/lib/    # 共用庫（38 個模組：registry, state, timeline, specs, config-api, hook-timing, feature-sync, specs-archive-scanner, statusline-state 等）
 └── web/            # Dashboard 前端
 
 # Session 狀態：~/.overtone/sessions/{sessionId}/
-#   workflow.json / timeline.jsonl / loop.json / observations.jsonl / compact-count.json
+#   workflow.json / timeline.jsonl / loop.json / observations.jsonl / compact-count.json / statusline-state.json
 ```
 
-## Hook 架構（11 個，~1720 行 + config-api.js ~850 行）
+## Hook 架構（11 個，~2602 行 hooks/scripts + config-api.js ~919 行）
 
 ⚠️ **hooks.json 必須使用官方三層嵌套格式**（三層嵌套）。扁平陣列格式會導致部分 hook 無法觸發。
 > 詳細格式規範 + updatedInput REPLACE 語意：`plugins/overtone/skills/claude-dev/references/hooks-api.md`
@@ -92,8 +92,12 @@ plugins/overtone/   # Plugin 根目錄
 
 ## Status Line（settings.json 配置，非 Hook）
 
-`plugins/overtone/scripts/statusline.js` — CLI 底部即時顯示。有 active subagent 時雙行（agent + 中文模式 / ctx% + 檔案大小 + compact 計數），idle 時單行（ctx% + 檔案大小）。
-設定：SessionStart hook 自動寫入 `~/.claude/statusline.sh` wrapper + `settings.json`。
+`plugins/overtone/scripts/statusline.js` — CLI 底部即時顯示。狀態由 `statusline-state.json` 管理，支援三態：
+- **有 active agent**：雙行顯示（agent + 中文模式 / ctx% + compact 計數）
+- **Main 控制**：單行 Main 標籤
+- **idle / 無狀態**：單行簡潔（ctx% + 檔案大小）
+
+TTL 機制：idle 狀態持續 10 分鐘無更新自動過期。設定：SessionStart hook 自動寫入 `~/.claude/statusline.sh` wrapper + `settings.json`。
 
 ## 常用指令
 

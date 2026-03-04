@@ -2,6 +2,76 @@
 
 所有重要變更記錄於此文件。
 
+## [0.28.48] - 2026-03-05
+
+### Hook 共享模組抽取 + 並行門完整測試
+
+- **跨 Hook 共享模組抽取**（新增 3 個模組）：
+  - `specs-archive-scanner.js`：掃描式 Specs 歸檔工廠函式，統一 SubagentStop / SessionEnd 的歸檔邏輯
+  - `hook-timing.js`：hook:timing emit 工廠函式，統一時序事件發送格式
+  - `feature-sync.js`：featureName 自動同步工廠函式，統一 active feature 偵測邏輯
+
+- **Hook 現代化**（8 個 hook 改用新工廠函式）：
+  - `SubagentStop hook`：改用 specs-archive-scanner + hook-timing + feature-sync
+  - `SessionEnd hook`：改用 specs-archive-scanner
+  - `PostToolUse hook`：改用 hook-timing（觀察收集時序記錄）
+  - `TaskCompleted hook`：改用 hook-timing（task 完成時序）
+  - `PreCompact hook`：改用 hook-timing（context 壓縮時序）
+  - 共 8 個 hook 統一工廠函式使用
+
+- **並行門完整測試**（新增 `feature-sync.test.js`）：
+  - 7 個單元測試：featureName 抽取、陣列去重、 ᶜ並行收斂、狀態同步驗證
+  - 確保並行 agent 完成時狀態正確收斂
+
+- **文件同步**：
+  - `plugin.json`：版本 0.28.47 → 0.28.48
+  - `docs/status.md`：版本更新，測試 3231 → 3238（+7），檔案 139 → 140
+  - `CLAUDE.md`：scripts/lib 清單更新（38 個模組），Hook 架構行數對齊
+  - `docs/spec/overtone.md`：版本 v0.28.47 → v0.28.48
+
+- **測試**：3238 pass / 0 fail（140 個測試檔，+7 tests）
+
+---
+
+## [0.28.47] - 2026-03-04
+
+### Statusline 集中式狀態管理 + TTL 機制 + 並行 Agent 修復
+
+- **Statusline State 集中式管理**（新模組 `statusline-state.js`）：
+  - 職責：集中管理 statusline 顯示狀態（activeAgents、workflowType、idle）
+  - 狀態檔：`~/.overtone/sessions/{sessionId}/statusline-state.json`
+  - 事件：agent:start / agent:stop / turn:stop / workflow:init
+  - TTL 機制：idle 狀態持續 10 分鐘無更新 → 視為過期，statusline 自動收回
+
+- **Statusline 三態邏輯優化**（`statusline.js` 重構）：
+  - **態 1**：有 active agent → 雙行顯示（agent + 中文模式 / ctx% + compact count）
+  - **態 2**：Main 控制中（statusline state 存在 + idle=false）→ 單行 Main 標籤
+  - **態 3**：idle 或無 statusline state → 單行收回（ctx% + 檔案大小）
+  - 移除 pre-workflow 狀態
+
+- **並行 Agent Statusline 殘留修復**（`on-stop.js`）：
+  - 修復並行 agent 完成時 statusline 未清理 bug
+  - 前置條件：activeAgents 用 instanceId 為 key，on-stop.js 收斂後清理
+
+- **initState 防撞守衛**（`state.js` + `init-workflow.js`）：
+  - initState 防止與既有 workflow 衝突
+  - 驗證 workflow 狀態一致性
+
+- **Session ID 隔離**（測試改進）：
+  - OVERTONE_HOME 隔離確保測試互不干擾
+  - session-id-bridge.test.js 新增隔離驗證
+
+- **改進**：
+  - `plugins/overtone/scripts/get-workflow-context.js`：更新邏輯對齐新狀態模型
+  - `plugins/overtone/scripts/lib/paths.js`：路徑管理對齐
+  - `plugins/overtone/hooks/scripts/session/on-stop.js`：Session 停止邏輯同步
+  - `plugins/overtone/hooks/scripts/tool/pre-task.js`：Task 前置處理同步
+  - 測試新增 6 項（statusline-ttl、並行 agent 殘留、initState 守衛）
+
+- **測試**：預期 3208+ pass / 0 fail（138+ 個測試檔）
+
+---
+
 ## [0.28.46] - 2026-03-04
 
 ### Claude-Dev Skill 迭代 5 完成——整合 & 精簡
