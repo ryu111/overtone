@@ -187,6 +187,48 @@ describe('checkPhantomEvents', () => {
       expect(w.file).toContain('registry.js');
     }
   });
+
+  // 驗證真實 codebase 不產生假陽性（warning = 0）
+  // 已知 7 個事件曾被誤報：含 hyphen 的 event、物件字面量 type 欄位、bash printf 寫入的事件
+  test('真實 codebase 不產生 phantom-events warning（false positive 為 0）', () => {
+    const findings = checkPhantomEvents();
+    const warnings = findings.filter((f) => f.severity === 'warning');
+    expect(warnings.length).toBe(0);
+  });
+
+  // 驗證含 hyphen 的 registry 事件不被誤報
+  test('含 hyphen 的 registry 事件（specs:tasks-missing 等）不產生 warning', () => {
+    const findings = checkPhantomEvents();
+    const hyphenEvents = [
+      'specs:tasks-missing',
+      'specs:archive-skipped',
+      'session:compact-suggestion',
+    ];
+    const warnings = findings.filter((f) => f.severity === 'warning');
+    for (const evt of hyphenEvents) {
+      const found = warnings.some((w) => w.message.includes(evt));
+      expect(found).toBe(false);
+    }
+  });
+
+  // 驗證物件字面量 type 欄位的事件不被誤報（stop-message-builder 回傳模式）
+  test('物件字面量 type 欄位的事件（stage:retry、error:fatal、parallel:converge）不產生 warning', () => {
+    const findings = checkPhantomEvents();
+    const literalEvents = ['stage:retry', 'error:fatal', 'parallel:converge'];
+    const warnings = findings.filter((f) => f.severity === 'warning');
+    for (const evt of literalEvents) {
+      const found = warnings.some((w) => w.message.includes(evt));
+      expect(found).toBe(false);
+    }
+  });
+
+  // 驗證 bash printf 寫入 timeline 的事件（grader:score）不被誤報
+  test('bash printf 寫入 timeline 的事件（grader:score）不產生 warning', () => {
+    const findings = checkPhantomEvents();
+    const warnings = findings.filter((f) => f.severity === 'warning');
+    const found = warnings.some((w) => w.message.includes('grader:score'));
+    expect(found).toBe(false);
+  });
 });
 
 // ══════════════════════════════════════════════════════════════════

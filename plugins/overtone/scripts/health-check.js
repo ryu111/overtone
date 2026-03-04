@@ -122,14 +122,17 @@ function checkPhantomEvents() {
     );
   });
 
-  // 掃描 emit 呼叫，支援三種模式：
+  // 掃描 emit 呼叫，支援四種模式：
   // 1. timeline.emit(sessionId, 'event:type', ...) — 方法呼叫，事件名在第二參數
   // 2. emit(sessionId, 'event:type', ...) — 函式呼叫，事件名在第二參數
   // 3. emit('event:type', ...) — 事件名在第一參數
-  // 匹配含冒號的 event key（如 'workflow:start'）
-  const emitMethodRe = /\.emit\s*\([^,]+,\s*['"]([a-z]+:[a-z]+)['"]/g;
-  const emitFuncRe   = /\bemit\s*\([^'"]+,\s*['"]([a-z]+:[a-z]+)['"]/g;
-  const emitDirectRe = /\bemit\s*\(\s*['"]([a-z]+:[a-z]+)['"]/g;
+  // 4. { type: 'event:type', ... } — 物件字面量（stop-message-builder 回傳的 timelineEvents）
+  // 匹配含冒號的 event key（如 'workflow:start'、'session:compact-suggestion'）
+  // [a-z][a-z-]* 允許第二部分含 hyphen（如 compact-suggestion、tasks-missing）
+  const emitMethodRe  = /\.emit\s*\([^,]+,\s*['"]([a-z]+:[a-z][a-z-]*)['"]/g;
+  const emitFuncRe    = /\bemit\s*\([^'"]+,\s*['"]([a-z]+:[a-z][a-z-]*)['"]/g;
+  const emitDirectRe  = /\bemit\s*\(\s*['"]([a-z]+:[a-z][a-z-]*)['"]/g;
+  const typeLiteralRe = /\btype:\s*['"]([a-z]+:[a-z][a-z-]*)['"]/g;
 
   const emittedEvents = new Map(); // event -> [files]
 
@@ -145,6 +148,27 @@ function checkPhantomEvents() {
     for (const m of content.matchAll(emitFuncRe)) addEvent(m[1]);
     // 函式呼叫（第一參數）：emit('event:type')
     for (const m of content.matchAll(emitDirectRe)) addEvent(m[1]);
+    // 物件字面量：{ type: 'event:type', ... }（stop-message-builder 等）
+    for (const m of content.matchAll(typeLiteralRe)) addEvent(m[1]);
+  }
+
+  // 額外掃描 agents/*.md — bash printf 寫入 timeline 的事件（如 grader:score）
+  const agentsDir = path.join(PLUGIN_ROOT, 'agents');
+  const agentMdPattern = /"type":"([a-z]+:[a-z][a-z-]*)"/g;
+  let agentFiles;
+  try {
+    agentFiles = readdirSync(agentsDir).filter((n) => n.endsWith('.md'));
+  } catch {
+    agentFiles = [];
+  }
+  for (const mdFile of agentFiles) {
+    const fullPath = path.join(agentsDir, mdFile);
+    const content = safeRead(fullPath);
+    const addEvent = (evt) => {
+      if (!emittedEvents.has(evt)) emittedEvents.set(evt, []);
+      emittedEvents.get(evt).push(fullPath);
+    };
+    for (const m of content.matchAll(agentMdPattern)) addEvent(m[1]);
   }
 
   const findings = [];
