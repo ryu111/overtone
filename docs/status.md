@@ -1,6 +1,6 @@
 # Overtone 現況
 
-> 最後更新：2026-03-04 | Plugin 版本：0.28.40（10 次迭代穩定化 + 功能提升）
+> 最後更新：2026-03-04 | Plugin 版本：0.28.41（10 次迭代穩定化 + 功能提升）
 
 ## 版本狀態
 
@@ -26,7 +26,7 @@
 
 ## 近期變更（最近 3 筆）
 
-- **[0.28.40] 2026-03-04**：10 次迭代穩定化 — (1) 孤兒 active stage 守衛（enforceInvariants 規則 4 + sanitize 規則 3）；(2-5) health-check 假陽性 23→0 error（phantom-events/doc-drift/dead-exports/data-quality）；(6) passed 只看 errors + threshold 調優；(7) queue CLI（add/list/clear）；(8) PM 佇列整合（多迭代自動寫入 queue）；(9) quality-trends 閾值調優；(10) spawner 防禦（OVERTONE_SPAWNED + 敏感 env 過濾 + 遞迴防護）→ 3138 pass / 134 files（+34 tests）
+- **[0.28.41] 2026-03-04**：10 次迭代穩定化 — (1) 孤兒 active stage 守衛（enforceInvariants 規則 4 + sanitize 規則 3）；(2-5) health-check 假陽性 23→0 error（phantom-events/doc-drift/dead-exports/data-quality）；(6) passed 只看 errors + threshold 調優；(7) queue CLI（add/list/clear）；(8) PM 佇列整合（多迭代自動寫入 queue）；(9) quality-trends 閾值調優；(10) spawner 防禦（OVERTONE_SPAWNED + 敏感 env 過濾 + 遞迴防護）→ 3138 pass / 134 files（+34 tests）
 - **[0.28.38] 2026-03-04**：主動偵測 — health-check 新增 3 項偵測：(1) component-chain 元件依賴鏈驗證；(2) data-quality JSONL 格式審計；(3) quality-trends 失敗模式/分數趨勢/低分警告 → 3104 pass / 133 files（+21 tests）
 - **[0.28.37] 2026-03-04**：Hook Contract 自我修復 — (1) state.sanitize() 在 SessionStart 清理孤兒 activeAgent + status 不一致；(2) 8 個 hook 合約整合測試 + 11 個 sanitize 單元測試 → 3083 pass / 132 files
 
