@@ -164,9 +164,9 @@ describe('1. docs/status.md 核心指標數字', () => {
     expect(actual.skillCount).toBe(23);
   });
 
-  test('Command 數量：status.md 與 commands/ 目錄 .md 檔案一致（應為 27）', () => {
+  test('Command 數量：status.md 與 commands/ 目錄 .md 檔案一致（應為 28）', () => {
     expect(metrics['Command 數量']).toBe(actual.commandCount);
-    expect(actual.commandCount).toBe(27);
+    expect(actual.commandCount).toBe(28);
   });
 });
 

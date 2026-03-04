@@ -21,7 +21,7 @@
 | Hook 數量 | 11 個 |
 | Skill 數量 | 23（15 knowledge domain + orchestrator + pm + specs + 4 utility-with-refs） |
 | Knowledge Domain 數 | 15（testing、workflow-core、security-kb、database、dead-code、commit-convention、code-review、wording、debugging、architecture、build-system、os-control、autonomous-control、craft、claude-dev） |
-| Command 數量 | 27（14 stage shortcut + 7 workflow pipeline + 6 utility） |
+| Command 數量 | 28（14 stage shortcut + 7 workflow pipeline + 7 utility） |
 | Timeline Events | 27 個 |
 
 ## 近期變更（最近 3 筆）

@@ -61,7 +61,7 @@ plugins/overtone/   # Plugin 根目錄
 ├── agents/         # 18 個 agent .md（WHO — 角色）
 ├── skills/         # 23 個 Skill（WHAT — 知識域 + orchestrator + utilities-with-refs）
 │   # 15 knowledge domains: testing, workflow-core, security-kb, database, dead-code, commit-convention, code-review, wording, debugging, architecture, build-system, os-control, autonomous-control, craft, claude-dev
-├── commands/       # 27 個 Command（DO — stage shortcuts + workflow pipelines + utilities）
+├── commands/       # 28 個 Command（DO — stage shortcuts + workflow pipelines + utilities）
 ├── hooks/          # hooks.json + scripts/（HOW — 守衛）
 ├── scripts/lib/    # 共用庫（registry, state, timeline, specs, config-api 等）
 └── web/            # Dashboard 前端
@@ -110,7 +110,7 @@ bun scripts/server.js
 # 系統健康檢查（12 項偵測）— checkPhantomEvents/checkDeadExports/checkDocCodeDrift/checkUnusedPaths/checkDuplicateLogic/checkPlatformDrift/checkDocStaleness/checkOsTools/checkComponentChain/checkDataQuality/checkQualityTrends/checkTestGrowth
 bun scripts/health-check.js
 
-# 驗證所有元件設定（18 agents + 11 hooks + 23 skills + 27 commands）— agents/skills/hooks/commands 結構校驗
+# 驗證所有元件設定（18 agents + 11 hooks + 23 skills + 28 commands）— agents/skills/hooks/commands 結構校驗
 bun scripts/validate-agents.js
 
 # 元件管理（建立/更新 agent、hook、skill + 版本更新）
