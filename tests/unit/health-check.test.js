@@ -312,6 +312,44 @@ describe('checkDocCodeDrift', () => {
       expect(f.message).toMatch(/docs 記載 \d+ 個.+，但程式碼實際有 \d+ 個/);
     }
   });
+
+  test('複合短語不應被視為計數聲明（假陽性排除）', () => {
+    // 「8 個 agent 消費」「14 stage shortcut」「8 個 hook 合約」等複合短語
+    // 後面緊跟另一個詞，應被 checkDocCodeDrift 排除，不產生 finding
+    const findings = checkDocCodeDrift();
+    // 已知複合短語：8 個 agent 消費、14 stage shortcut、7 workflow pipeline、8 個 hook 合約等
+    // 這些不應出現在 findings 中
+    const compositeMatches = findings.filter(
+      (f) => f.detail && /match: "8 個 agent"/.test(f.detail) && /docs\/spec\/overtone/.test(f.file)
+    );
+    expect(compositeMatches.length).toBe(0);
+
+    const stageShortcut = findings.filter(
+      (f) => f.detail && /match: "14 stage"/.test(f.detail)
+    );
+    expect(stageShortcut.length).toBe(0);
+
+    const workflowPipeline = findings.filter(
+      (f) => f.detail && /match: "7 workflow"/.test(f.detail)
+    );
+    expect(workflowPipeline.length).toBe(0);
+  });
+
+  test('grader 豁免：agent 數為 actual+1 時不產生 finding', () => {
+    // grader.md 存在於 agents/ 目錄但不計入 registry stages，
+    // 所以文件中的「17 個 Agents」（16 stage agents + grader）應被豁免
+    const findings = checkDocCodeDrift();
+    const graderFalsePositives = findings.filter(
+      (f) => f.detail && /docs: 17/.test(f.detail) && /actual: 16/.test(f.detail) && /agent/i.test(f.detail)
+    );
+    expect(graderFalsePositives.length).toBe(0);
+  });
+
+  test('當前 codebase 無 doc-code-drift finding', () => {
+    // 確保所有文件中的計數描述與程式碼真值一致（含複合短語排除後）
+    const findings = checkDocCodeDrift();
+    expect(findings.length).toBe(0);
+  });
 });
 
 // ══════════════════════════════════════════════════════════════════

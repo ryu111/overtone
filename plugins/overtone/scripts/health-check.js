@@ -432,12 +432,19 @@ function checkDocCodeDrift() {
       const actual = truths[category];
       if (actual === undefined) continue;
 
-      // 豁免：文件中提及 grader 時，agent 數可以是 actual+1（grader 不計入 stages，但計入「agents」說法）
+      // 排除複合短語：若 category 後面緊跟另一個詞（英文字母或中文字），
+      // 則視為描述性片語（如「8 個 agent 消費」「14 stage shortcut」），而非計數聲明。
+      // 計數聲明後通常跟標點、空白、換行或句尾。
+      const matchEnd = m.index + m[0].length;
+      const afterText = content.slice(matchEnd, matchEnd + 20);
+      if (/^[^\S\n]*[a-zA-Z\u4e00-\u9fff]/.test(afterText)) {
+        continue;
+      }
+
+      // 豁免：agent 數可以是 actual+1（grader.md 存在但不計入 registry stages，
+      // 所以「17 個 agents」= 16 stage agents + grader，是正確的 all-agents 描述）
       if (category === 'agent' && docNum === actual + 1) {
-        // 文件整體有提到 grader → 整份文件豁免「actual+1」的 agent 數
-        if (content.includes('grader')) {
-          continue;
-        }
+        continue;
       }
 
       if (docNum !== actual) {
