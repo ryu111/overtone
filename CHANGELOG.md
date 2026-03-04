@@ -2,6 +2,78 @@
 
 所有重要變更記錄於此文件。
 
+## [0.28.46] - 2026-03-04
+
+### Claude-Dev Skill 迭代 5 完成——整合 & 精簡
+
+- **CLAUDE.md 文件規範整理**：
+  - hooks.json 格式規範（三層嵌套）改為 cross-reference → `plugins/overtone/skills/claude-dev/references/hooks-api.md`
+  - Agent prompt 四模式（信心過濾 + 邊界清單 + 誤判防護 + 停止條件）改為 cross-reference → `plugins/overtone/skills/claude-dev/references/agent-api.md`
+  - 元件閉環規則（Skill → Agent 消費 → Hook 注入 → Guard 保護）改為 cross-reference → `plugins/overtone/skills/claude-dev/references/overtone-conventions.md`
+
+- **Workflow 補齊**：
+  - `quick.md`：補齊 DOCS stage（第 55-61 行），與 registry SoT 對齊
+
+- **Status Line 四態邏輯**（`statusline.js`）：
+  - **態 1**：有 active agent → 雙行顯示（agent + 中文模式 / ctx% + compact count）
+  - **態 2**：無 active agent，但有 Main Agent → 單行顯示（Main 標籤）
+  - **態 3**：無 active agent，workflow 完成收回 → 單行顯示（ctx% + 檔案大小）
+  - **態 4**：無 workflow → 單行顯示（ctx% + 檔案大小）
+
+- **並行委派說明**：
+  - 7 個 command（quick.md、standard.md、full.md、secure.md、refactor.md、tdd.md、debug.md）的並行說明改為 inline（第 38 行註記 📋 並行委派）
+
+- **SubagentStop Hook 增強**（`on-stop.js`）：
+  - 新增 PM stage active 狀態處理（productManager key 支援）
+
+- **Specs 歸檔**：
+  - claude-dev-skill specs 遷移至 `docs/archive/specs/`（feature 完成）
+
+- **文件同步**：
+  - `docs/status.md`：版本 0.28.45 → 0.28.46，近期變更更新，測試 3141 → 3208（+67）
+  - `README.md`：版本、agent 數、skill 數、knowledge domain 數全部對齊
+  - `docs/spec/overtone.md`：版本 v0.28.44 → v0.28.46，agent 數 17 → 18
+
+- **測試**：3208 pass / 0 fail（138 個測試檔）
+
+---
+
+## [0.28.45] - 2026-03-04
+
+### Claude-Developer Agent — Plugin 元件開發專家
+
+- **新增第 18 個 agent**：claude-developer
+  - 職責：Plugin 元件開發（agent、hook、skill、command 建立/更新）
+  - 不對應任何 workflow stage，由 Main Agent 直接委派
+  - 消費 skills：claude-dev + commit-convention + wording
+
+- **Registry 配置**：
+  - `registry-data.json` agentModels：新增 claude-developer 配置（opus 模型，全 tool 許可）
+  - `registry-data.json` agentMemory：claude-developer 加入學習記憶（local scope）
+  - `plugin.json` agents：新增 claude-developer.md
+
+- **測試**：3141 pass / 0 fail（137 個測試檔）
+
+---
+
+## [0.28.44] - 2026-03-04
+
+### Claude-Dev Knowledge Domain — Plugin 開發知識庫（15 個 domain 完成）
+
+- **新增第 15 個 knowledge domain skill**：claude-dev
+  - 內容：hooks API（格式、驗證）、agent API（prompt 四模式、frontmatter）
+  - Reference 檔案：hooks-api.md、agent-api.md、overtone-conventions.md
+
+- **Agent Frontmatter 更新**：
+  - developer、architect 加入 `skills: [claude-dev, ...]`
+
+- **Knowledge Gap Detector 擴展**：
+  - knowledge-gap-detector.js 新增 claude-dev domain 關鍵詞識別（16 個關鍵詞）
+
+- **測試**：3141 pass / 0 fail（137 個測試檔）
+
+---
+
 ## [0.28.37] - 2026-03-04
 
 ### Hook Contract 自我修復——SessionStart 清理異常狀態

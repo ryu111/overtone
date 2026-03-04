@@ -1,6 +1,6 @@
 # Overtone 現況
 
-> 最後更新：2026-03-04 | Plugin 版本：0.28.45（claude-developer agent — Plugin 元件開發專家）
+> 最後更新：2026-03-04 | Plugin 版本：0.28.46（claude-dev skill 迭代 5 完成——hooks API、agent API、元件開發規範）
 
 ## 版本狀態
 
@@ -16,8 +16,8 @@
 | Agent 數量 | 18（含 grader） |
 | Stage 數量 | 16 |
 | Workflow 模板 | 18 |
-| 測試通過 | 3141 pass / 0 fail（137 個測試檔） |
-| 測試檔案 | 137 個 |
+| 測試通過 | 3208 pass / 0 fail（138 個測試檔） |
+| 測試檔案 | 138 個 |
 | Hook 數量 | 11 個 |
 | Skill 數量 | 23（15 knowledge domain + orchestrator + pm + specs + 4 utility-with-refs） |
 | Knowledge Domain 數 | 15（testing、workflow-core、security-kb、database、dead-code、commit-convention、code-review、wording、debugging、architecture、build-system、os-control、autonomous-control、craft、claude-dev） |
@@ -26,9 +26,9 @@
 
 ## 近期變更（最近 3 筆）
 
+- **[0.28.46] 2026-03-04**：claude-dev skill 迭代 5 完成——整合 & 精簡——(1) CLAUDE.md 散落規範改為 cross-reference（hooks-api.md、agent-api.md、overtone-conventions.md）；(2) quick.md 補齊 DOCS stage；(3) statusline.js 四態邏輯：active-agent / Main / 完成收回 / 無 workflow；(4) 7 個 command 並行說明改為 inline；(5) on-stop.js PM stage active 狀態處理；(6) specs 歸檔移至 archive；(7) 測試 +67（3141→3208，138 files）→ 0.28.46 發佈
 - **[0.28.45] 2026-03-04**：claude-developer agent — (1) 新增第 18 個 agent（Plugin 元件開發專家）；(2) 不對應 workflow stage，直接委派；(3) skills: claude-dev + commit-convention + wording；(4) 更新 registry-data.json（agentModels + agentMemory）+ plugin.json → 18 agents
 - **[0.28.44] 2026-03-04**：claude-dev knowledge domain — (1) 新增第 15 個 knowledge domain skill（hooks-api.md + agent-api.md）；(2) developer + architect frontmatter 加入 claude-dev skill；(3) knowledge-gap-detector.js 新增 claude-dev domain（16 關鍵詞）→ 23 skills / 15 knowledge domains
-- **[0.28.43] 2026-03-04**：全 Skill 知識補全 — (1) 新增 craft knowledge domain（clean code + SOLID + refactoring + design patterns + FP，5 references）；(2) 全 22 個 Skill 補齊 references/examples（新增 15 個 .md 檔案）；(3) code-review 回饋框架合併至 code-reviewer agent prompt；(4) architecture design-patterns.md 更名為 architectural-patterns.md 消歧義；(5) developer、code-reviewer、architect 預載 craft skill → 3141 pass / 137 files
 - **[0.28.42] 2026-03-04**：測試套件瘦身 + Hook 優化 — (16) data-auto-digest SessionEnd 自動摘要；(17) quick workflow 移除 TEST stage；(18) TaskCompleted hook 移除 bun test（消除 45s 假等待）；(19) test-suite-slimdown 刪除低價值測試（3235→3114，-121 tests）；(20) test-growth-monitor health-check 第 12 項偵測（20% 增長率閾值）→ 3127 pass / 137 files
 - **[0.28.41] 2026-03-04**：資料管理框架 — (1-10) 穩定化迭代；(11) data-hygiene 清理機制；(12) data-cli 統一查詢 CLI；(13) data-policy 資料保留策略；(14) hook-observability hook:timing 計時事件；(15) data-cross-analysis 跨資料源交叉分析（failure-hotspot + hook-overhead + workflow-velocity）→ 3213 pass / 137 files
 - **[0.28.38] 2026-03-04**：主動偵測 — health-check 新增 3 項偵測：(1) component-chain 元件依賴鏈驗證；(2) data-quality JSONL 格式審計；(3) quality-trends 失敗模式/分數趨勢/低分警告 → 3104 pass / 133 files（+21 tests）
