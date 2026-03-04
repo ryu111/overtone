@@ -205,6 +205,9 @@ Agent 間交接使用固定格式，確保 context 完整傳遞：
 
 Handoff 只存在於 Main Agent 的 context window，不寫入磁碟。
 
+> 完整欄位填寫規範 + Chaining 規則 + Agent → Agent 傳遞表格：
+> `${CLAUDE_PLUGIN_ROOT}/skills/workflow-core/references/handoff-protocol.md`
+
 ---
 
 ## 6. Agent Prompt 四模式
