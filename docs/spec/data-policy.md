@@ -98,12 +98,10 @@ Overtone 資料分為兩類：
 # 查看資料統計
 bun scripts/data.js stats --global
 
-# 清理舊 session 和孤兒目錄
-bun scripts/data.js gc
-
-# 清理特定類型資料
-bun scripts/data.js gc --sessions   # 只清理 session 目錄
-bun scripts/data.js gc --global     # 只清理孤兒 global hash 目錄
+# 清理孤兒 global hash 目錄（預設 30 天以上）
+bun scripts/data.js gc --dry-run            # 預覽將清理的目錄
+bun scripts/data.js gc                      # 執行清理
+bun scripts/data.js gc --max-age-days 60    # 自訂保留天數
 ```
 
 ---

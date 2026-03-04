@@ -1,81 +1,4 @@
 ---
-## 2026-03-03 | architect:ARCH Findings
-**技術方案**：
-- Bun 常駐 daemon（heartbeat.js），fork-detach 模式（`start` spawn `_daemon` 子命令為 detached 子程序後 parent exit）
-- PID 檔（`~/.overtone/heartbeat.pid`）+ 狀態檔（`~/.overtone/heartbeat-state.json`）管理 daemon 生命週期
-- session-spawner.js 封裝 `claude -p --plugin-dir --output-format stream-json`，監聽 stdout stream-json 行萃取 session_id，outcome Promise 統一回傳 `{ status, sessionId }`
-- TelegramAdapter 新增 `notify(message)` 公開方法，heartbeat 直接實例化不依賴 EventBus
-
-**關鍵技術決策**：
-- Q1 完成偵測：stream-json `result` 事件 + 60 分鐘 timeout 兜底 + `stdout close` 清理
-- Q2 prompt 格式：`開始執行 {featureName}，workflow: {workflow}` — 讓 UserPromptSubmit hook 接管
-- Q3 projectRoot：`--project-root` CLI 參數，fallback `process.cwd()`
-- Q4 Telegram：直接實例化，不透過 EventBus
-- Q5 resume：全新 session，不 resume
-
-**API 介面**：
-- `heartbeat.js` CLI：`start [--project-root <path>] | stop | status`（內部有 `_daemon` 子命令）
-- `spawnSession(prompt, opts, _deps)` → `{ child, outcome: Promise<{status, sessionId}> }`
-- `_buildArgs(opts)` → claude CLI 參數陣列（可單獨測試）
-- `TelegramAdapter.notify(message)` → 公開通知方法（新增）
-- `execution-queue.js` 新增 `failCurrent(projectRoot, reason)` → boolean
-
-**資料模型**：
-- `heartbeat-state.json`：`{ pid, projectRoot, activeItem, consecutiveFailures, paused, startedAt, lastPollAt }`
-- `heartbeat.pid`：純文字 PID 數字
-- 佇列狀態機：`pending → in_progress → completed | failed`（新增 failed 狀態）
-
-**檔案結構**：
-- `plugins/overtone/scripts/heartbeat.js` — 新增：daemon CLI + polling loop
-- `plugins/overtone/scripts/lib/session-spawner.js` — 新增：claude spawn 封裝
-- `tests/unit/heartbeat.test.js` — 新增
-- `tests/unit/session-spawner.test.js` — 新增
-- `plugins/overtone/scripts/lib/execution-queue.js` — 修改：新增 `failCurrent()`
-- `plugins/overtone/scripts/lib/remote/telegram-adapter.js` — 修改：新增 `notify()` + Should `/run` 命令
-- `plugins/overtone/scripts/lib/paths.js` — 修改：新增 `HEARTBEAT_PID_FILE` / `HEARTBEAT_STATE_FILE` 常數
-- `plugins/overtone/scripts/health-check.js` — 修改（Should）：新增第 8 項偵測
-
-**Dev Phases**：
-Keywords: daemon, heartbeat, fork, detach, start, spawn, detached, parent, exit, overtone
-
----
-## 2026-03-03 | tester:TEST Findings
-**測試結果：PASS（有條件）**
-
-- 全套：2856 pass / 0 fail（40.55 秒）
-- P3.2 新增測試：48 個（session-spawner.test.js 9 個 + heartbeat.test.js 39 個）
-- `_deps` 注入策略正確，所有副作用（spawn、PID 讀寫、process.kill、setInterval）均透過依賴注入 mock，未 mock 受測邏輯本身
-- 斷言品質合格：使用具體值比對（`toBe`、`toContain`、`toMatch`），無單純存在性斷言
-
-**BDD 覆蓋率：44/46（95.6%）**
-
-2 個 Scenario 未完整覆蓋：
-
-**未覆蓋 1：Scenario 4-8（lastPollAt 更新）**
-- BDD 定義：`polling loop 每次執行完畢 → heartbeat-state.json 的 lastPollAt 欄位更新為最近時間戳記`
-- 問題：測試 4-8 實際覆蓋的是 BDD 4-4（paused = true 跳過 spawn），標籤錯位
-- 原因：Feature 4 共 8 個 BDD Scenario，但測試 4-3 是額外增補（getCurrent 守衛），造成後續編號整體向後 shift 一位，最後的 BDD 4-8（lastPollAt）沒有對應測試
-
-**未完整覆蓋 2：Scenario 5-4（paused 狀態持久化）**
-- BDD 定義：`daemon 因 3 次失敗 paused = true → heartbeat-state.json 的 paused 欄位為 true 且 consecutiveFailures 為 3`
-- 問題：測試 5-4 改為驗證 `CONSECUTIVE_FAILURE_THRESHOLD` 常數值（= 3），未驗證 `persistState` 寫入 `heartbeat-state.json` 的實際內容
-
-**其他觀察（非阻擋）**
-
-- `test-quality-guard` 回報 heartbeat.test.js 有 `[large-file]` 警告（816 行），屬建議性，不影響測試品質
-- Feature 4 測試 4-3 額外增補了 getCurrent 守衛路徑，測試覆蓋寬於 BDD 規格（可保留，屬良性）
-Keywords: pass, fail, session, spawner, test, heartbeat, spawn, process, kill, setinterval
-
----
-## 2026-03-03 | code-reviewer:REVIEW Findings
-1. **CLAUDE.md knowledge domain 計數未同步**
-   - 檔案：`/Users/sbu/projects/overtone/CLAUDE.md`，第 57 行
-   - 問題：Skill 數量已更新（20 -> 21），但 knowledge domain 仍寫 "12 knowledge domains"，列表缺少 `autonomous-control`。`docs/status.md` 已正確更新為 13。
-   - 建議修復：將 "12 knowledge domains" 改為 "13 knowledge domains"，列表末尾加上 `autonomous-control`
-   - 信心等級：95%
-Keywords: claude, knowledge, domain, users, projects, overtone, skill, domains, autonomous, control
-
----
 ## 2026-03-03 | planner:PLAN Findings
 **需求分解**：
 
@@ -791,4 +714,42 @@ Keywords: skill, section, must, queue, completecurrent, product, manager, handof
 - **CLAUDE.md 常用指令更新**：queue.js 用法說明已同步新增，格式正確。
 - **安全性**：無硬編碼 secrets、無 SQL injection、無不安全的使用者輸入處理。
 Keywords: docs, status, users, projects, overtone, plugin, json, bump, claude, tests
+
+---
+## 2026-03-04 | tester:TEST Context
+模式：verify
+
+data-policy feature 的驗證工作。變更範圍包含：
+1. `docs/spec/data-policy.md` — 新增文件（無程式碼邏輯）
+2. `plugins/overtone/scripts/lib/session-cleanup.js` — 僅修改注釋（常數值未變）
+Keywords: verify, data, policy, feature, docs, spec, plugins, overtone, scripts, session
+
+---
+## 2026-03-04 | code-reviewer:REVIEW Findings
+1. **`/Users/sbu/projects/overtone/docs/spec/data-policy.md` 第 97-106 行 -- 手動清理指令描述不正確**
+   - **問題描述**：文件聲稱 `bun scripts/data.js gc` 可以 "清理舊 session 和孤兒目錄"，並列出 `--sessions` 和 `--global` 兩個旗標。但 `/Users/sbu/projects/overtone/plugins/overtone/scripts/data.js` 的 `cmdGc` 函式（第 337-364 行）只呼叫 `cleanupStaleGlobalDirs()`，不支援 `--sessions` 或 `--global` 旗標，也不清理 session 目錄。data.js 的 help 文字（第 454-456 行）也只列出 `--dry-run` 和 `--max-age-days`。
+   - **建議修復方式**：
+     - 方案 A：修正 data-policy.md，移除不存在的 `--sessions` / `--global` 旗標，將描述改為只清理 global hash 孤兒目錄（與實際行為一致）。
+     - 方案 B：在 data.js 中實作 `--sessions` 和 `--global` 旗標（但這超出 data-policy 文件本身的範疇）。
+   - **信心等級**：95% -- 文件描述的 CLI 旗標在程式碼中不存在，使用者按文件操作會得到非預期結果。
+Keywords: users, projects, overtone, docs, spec, data, policy, scripts, session, sessions
+
+---
+## 2026-03-04 | retrospective:RETRO Findings
+**回顧摘要**：
+
+data-policy 迭代整體品質良好，文件、程式碼、測試三者對齊，無跨階段的結構性問題。
+
+以下為確認的品質點：
+
+1. **文件與程式碼對齊完整** — `docs/spec/data-policy.md` 中的保留期限常數（`DEFAULT_MAX_AGE_DAYS = 7`、`DEFAULT_ORPHAN_MAX_AGE_HOURS = 1`、`DEFAULT_GLOBAL_MAX_AGE_DAYS = 30`）與 `plugins/overtone/scripts/lib/session-cleanup.js` 第 24-26 行的實際定義完全一致，且程式碼中已用「來源：docs/spec/data-policy.md」標注，建立了明確的 Single Source of Truth 關係。
+
+2. **CLI 描述與實作對齊** — REVIEW 階段發現並修正了 CLI 旗標問題。經驗證，`data-policy.md` 第 97-105 行的三條 CLI 指令（`bun scripts/data.js stats --global`、`bun scripts/data.js gc --dry-run`、`bun scripts/data.js gc --max-age-days`）均對應 `data.js` 中實際存在的功能（`cmdStats` 的 `options.global` 分支、`cmdGc` 的 `--dry-run` 和 `--max-age-days` 參數解析）。
+
+3. **測試覆蓋完整** — `tests/unit/session-cleanup.test.js` 對四個函式（`cleanupStaleSessions`、`cleanupOrphanFiles`、`cleanupStaleGlobalDirs`、`runCleanup`）均有充分的邊界測試：包含正常路徑、保護條件（currentSessionId、未超期）、錯誤路徑（目錄不存在）、混合場景、dry-run 模式，共 20 個測試案例。
+
+4. **設計原則貫徹** — 程式碼實作體現了文件中「保守刪除」原則：所有刪除操作均有 `try/catch` 保護、`getLatestMtime()` 以最新子檔案 mtime 為基準（防止目錄本身時間戳誤判）、當前 session 強制保護邏輯清晰。
+
+5. **文件完整性** — `data-policy.md` 涵蓋了所有主要資料源的保留策略（session-scoped、global-scoped、系統層），並列出警示閾值和自動清理機制，方便未來維運。
+Keywords: data, policy, docs, spec, plugins, overtone, scripts, session, cleanup, single
 

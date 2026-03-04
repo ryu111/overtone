@@ -391,3 +391,12 @@ Keywords: test, tests, unit, data, pass, fail, expect, calls, files, scripts
 檢查了六個面向：依賴注入設計、API 調用正確性（逐一比對 7 個底層模組 exports 的函式簽名）、GC 子命令安全性、錯誤處理完整性、測試覆蓋度、安全性。全部 39 個測試通過。未發現任何高信心問題（>80%）。
 Keywords: plugins, overtone, scripts, data, tests, unit, test, auto, discovered, exports
 
+---
+## 2026-03-04 | tester:TEST Findings
+測試結果摘要：3185 passed, 0 failed
+
+- `tests/unit/session-cleanup.test.js`：25 pass / 0 fail（全部通過）
+- 常數值確認未被修改：`DEFAULT_MAX_AGE_DAYS=7`，`DEFAULT_GLOBAL_MAX_AGE_DAYS=30`
+- 完整測試套件：3185 pass / 0 fail（135 個測試檔案）
+Keywords: passed, failed, tests, unit, session, cleanup, test, pass, fail
+
