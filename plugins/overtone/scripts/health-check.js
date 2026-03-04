@@ -995,6 +995,9 @@ function checkDataQuality(globalDirOverride) {
     }];
   }
 
+  // 聚合統計（每種檔案類型一個 finding，避免大量 project hash 產生爆炸性 findings）
+  const stats = {}; // { fileName: { totalFiles, corruptFiles, totalLines, corruptLines } }
+
   for (const projectDir of projectDirs) {
     for (const [fileName, rules] of Object.entries(fileRules)) {
       const filePath = path.join(projectDir, fileName);
@@ -1002,6 +1005,9 @@ function checkDataQuality(globalDirOverride) {
 
       const content = safeRead(filePath).trim();
       if (!content) continue;
+
+      if (!stats[fileName]) stats[fileName] = { totalFiles: 0, corruptFiles: 0, totalLines: 0, corruptLines: 0 };
+      const s = stats[fileName];
 
       const lines = content.split('\n');
       let corruptedCount = 0;
@@ -1035,26 +1041,32 @@ function checkDataQuality(globalDirOverride) {
 
       if (totalCount === 0) continue;
 
-      const corruptRate = corruptedCount / totalCount;
-      const relativePath = `~/.overtone/global/${path.basename(projectDir)}/${fileName}`;
+      s.totalFiles++;
+      s.totalLines += totalCount;
+      s.corruptLines += corruptedCount;
+      if (corruptedCount / totalCount > 0.1) s.corruptFiles++;
+    }
+  }
 
-      if (corruptRate > 0.1) {
-        findings.push({
-          check: 'data-quality',
-          severity: 'warning',
-          file: relativePath,
-          message: `${fileName} 損壞比例 ${Math.round(corruptRate * 100)}%（${corruptedCount}/${totalCount} 行）`,
-          detail: `損壞行數：${corruptedCount}，總行數：${totalCount}`,
-        });
-      } else if (corruptedCount > 0) {
-        findings.push({
-          check: 'data-quality',
-          severity: 'info',
-          file: relativePath,
-          message: `${fileName} 有 ${corruptedCount} 行損壞（${totalCount} 行中）`,
-          detail: `損壞行數：${corruptedCount}，總行數：${totalCount}`,
-        });
-      }
+  // 產生聚合 findings
+  for (const [fileName, s] of Object.entries(stats)) {
+    if (s.corruptFiles > 0) {
+      const overallRate = Math.round(s.corruptLines / s.totalLines * 100);
+      findings.push({
+        check: 'data-quality',
+        severity: 'warning',
+        file: `~/.overtone/global/*/${fileName}`,
+        message: `${fileName} 在 ${s.corruptFiles}/${s.totalFiles} 個專案目錄中損壞比例 > 10%（全域：${s.corruptLines}/${s.totalLines} 行，${overallRate}%）`,
+        detail: `損壞檔案數：${s.corruptFiles}，總檔案數：${s.totalFiles}，損壞行數：${s.corruptLines}，總行數：${s.totalLines}`,
+      });
+    } else if (s.corruptLines > 0) {
+      findings.push({
+        check: 'data-quality',
+        severity: 'info',
+        file: `~/.overtone/global/*/${fileName}`,
+        message: `${fileName} 全域有 ${s.corruptLines} 行損壞（${s.totalLines} 行中，${s.totalFiles} 個檔案）`,
+        detail: `損壞行數：${s.corruptLines}，總行數：${s.totalLines}`,
+      });
     }
   }
 
