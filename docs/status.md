@@ -16,7 +16,7 @@
 | Agent 數量 | 17（含 grader） |
 | Stage 數量 | 16 |
 | Workflow 模板 | 18 |
-| 測試通過 | 3213 pass / 0 fail（137 個測試檔） |
+| 測試通過 | 3114 pass / 0 fail（137 個測試檔） |
 | 測試檔案 | 137 個 |
 | Hook 數量 | 11 個 |
 | Skill 數量 | 21（13 knowledge domain + orchestrator + pm + specs + 5 utility-with-refs） |
@@ -26,6 +26,7 @@
 
 ## 近期變更（最近 3 筆）
 
+- **[0.28.42] 2026-03-04**：測試套件瘦身 + Hook 優化 — (16) data-auto-digest SessionEnd 自動摘要；(17) quick workflow 移除 TEST stage；(18) TaskCompleted hook 移除 bun test（消除 45s 假等待）；(19) test-suite-slimdown 刪除低價值測試（3235→3114，-121 tests）→ 3114 pass / 137 files
 - **[0.28.41] 2026-03-04**：資料管理框架 — (1-10) 穩定化迭代；(11) data-hygiene 清理機制；(12) data-cli 統一查詢 CLI；(13) data-policy 資料保留策略；(14) hook-observability hook:timing 計時事件；(15) data-cross-analysis 跨資料源交叉分析（failure-hotspot + hook-overhead + workflow-velocity）→ 3213 pass / 137 files
 - **[0.28.38] 2026-03-04**：主動偵測 — health-check 新增 3 項偵測：(1) component-chain 元件依賴鏈驗證；(2) data-quality JSONL 格式審計；(3) quality-trends 失敗模式/分數趨勢/低分警告 → 3104 pass / 133 files（+21 tests）
 - **[0.28.37] 2026-03-04**：Hook Contract 自我修復 — (1) state.sanitize() 在 SessionStart 清理孤兒 activeAgent + status 不一致；(2) 8 個 hook 合約整合測試 + 11 個 sanitize 單元測試 → 3083 pass / 132 files
