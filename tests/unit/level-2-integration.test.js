@@ -26,11 +26,12 @@ const { readFileSync } = require('fs');
 const { join } = require('path');
 const { HOOKS_DIR, SCRIPTS_LIB } = require('../helpers/paths');
 
-// 讀取 hook 原始碼（靜態分析用）
-const sessionEndSrc = readFileSync(join(HOOKS_DIR, 'session', 'on-session-end.js'), 'utf8');
-const sessionStartSrc = readFileSync(join(HOOKS_DIR, 'session', 'on-start.js'), 'utf8');
-const preTaskSrc = readFileSync(join(HOOKS_DIR, 'tool', 'pre-task.js'), 'utf8');
-const agentOnStopSrc = readFileSync(join(HOOKS_DIR, 'agent', 'on-stop.js'), 'utf8');
+// 讀取原始碼（靜態分析用）
+// 注意：薄殼化重構後，業務邏輯移至 handler 模組，靜態分析目標也需跟進
+const sessionEndSrc = readFileSync(join(SCRIPTS_LIB, 'session-end-handler.js'), 'utf8');
+const sessionStartSrc = readFileSync(join(SCRIPTS_LIB, 'session-start-handler.js'), 'utf8');
+const preTaskSrc = readFileSync(join(SCRIPTS_LIB, 'pre-task-handler.js'), 'utf8');
+const agentOnStopSrc = readFileSync(join(SCRIPTS_LIB, 'agent-stop-handler.js'), 'utf8');
 
 // ── Feature 1：SessionEnd 整合點 ──
 

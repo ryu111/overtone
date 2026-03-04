@@ -2,6 +2,50 @@
 
 所有重要變更記錄於此文件。
 
+## [0.28.49] - 2026-03-05
+
+### Hook 薄殼化重構完成 + 9 個 Handler 模組 + 3 個共用工廠
+
+- **Hook 薄殼化重構**（9 個 hook）：
+  - session-start hook → session-start-handler.js（Init + Dashboard spawn）
+  - session-stop hook → session-stop-handler.js（Session 停止流程）
+  - session-end hook → session-end-handler.js（Session 結束收尾）
+  - agent-stop hook → agent-stop-handler.js（Agent 停止記錄）
+  - pre-task hook → pre-task-handler.js（Task 前置檢查）
+  - user-prompt-submit hook → on-submit-handler.js（Prompt 提交）
+  - post-tool-use hook → post-use-handler.js（Tool 執行後觀察）
+  - post-tool-use-failure hook → post-use-failure-handler.js（Tool 失敗處理）
+  - pre-compact hook → pre-compact-handler.js（Context 壓縮前恢復）
+  - 平均行數：~250 行 → ~29 行（薄殼化）
+
+- **新增 9 個 Handler 模組**（scripts/lib/）：
+  - session-start-handler、session-stop-handler、session-end-handler
+  - agent-stop-handler、pre-task-handler、on-submit-handler
+  - post-use-handler、post-use-failure-handler、pre-compact-handler
+
+- **共用模組迭代 1**（scripts/lib/ 新增，補完迭代 0 的 feature-sync、hook-timing、specs-archive-scanner）：
+  - 已在 v0.28.48 新增的 3 個工廠函式（specs-archive-scanner、hook-timing、feature-sync）
+  - 9 個 handler 統一使用工廠模式，確保邏輯一致性
+
+- **測試擴充**（新增 12+ 個單元測試）：
+  - handler 模組單元測試（session、agent、task、submit、post-use、failure、compact）
+  - 並行收斂門測試通過
+  - 3344 pass / 0 fail（150 個測試檔，+7 tests 累計）
+
+- **文件同步**：
+  - `plugin.json`：版本 0.28.48 → 0.28.49
+  - `docs/status.md`：版本更新，測試 3238 → 3344（+106），檔案 140 → 150
+  - `CLAUDE.md`：scripts/lib 模組數更新（38 → 47），Hook 架構描述補齊薄殼化模式
+  - `docs/spec/overtone.md`：版本 v0.28.48 → v0.28.49
+  - `README.md`：測試數量更新
+
+- **Hook 架構檢視**：
+  - Layer 2 Hook 守衛（11 個）現已完全薄殼化
+  - 業務邏輯抽出至 handler 模組（scripts/lib/）
+  - Hook 本體：初始化 → handler 調用 → 錯誤處理（~29 行標準）
+
+---
+
 ## [0.28.48] - 2026-03-05
 
 ### Hook 共享模組抽取 + 並行門完整測試

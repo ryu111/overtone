@@ -1,0 +1,252 @@
+'use strict';
+/**
+ * agent-stop-handler.js — SubagentStop hook 業務邏輯
+ *
+ * 從 agent/on-stop.js 提取的純邏輯模組（Humble Object 模式）。
+ * Hook 保持薄殼，此模組負責所有業務決策。
+ *
+ * 回傳格式：
+ *   { output: { result: '...' } }
+ */
+
+const { readFileSync, existsSync } = require('fs');
+const {
+  readState,
+  updateStateAtomic,
+  findActualStageKey,
+  checkSameStageConvergence,
+  checkParallelConvergence,
+  getNextStageHint,
+} = require('./state');
+const { syncFeatureName } = require('./feature-sync');
+const timeline = require('./timeline');
+const instinct = require('./instinct');
+const { stages, parallelGroups, retryDefaults, specsConfig, scoringConfig } = require('./registry');
+const paths = require('./paths');
+const parseResult = require('./parse-result');
+const { shouldSuggestCompact, getStageByAgent } = require('./hook-utils');
+const { atomicWrite } = require('./utils');
+const { buildStopMessages } = require('./stop-message-builder');
+const { archiveKnowledge } = require('./knowledge-archiver');
+const { createHookTimer } = require('./hook-timing');
+
+/**
+ * 主入口：處理 agent stop 事件
+ * @param {object} input - hook stdin 輸入（含 agent_type, last_assistant_message 等欄位）
+ * @param {string|null} sessionId - 當前 session ID
+ * @returns {{ output: object }} 結構化結果
+ */
+function handleAgentStop(input, sessionId) {
+  const projectRoot = input.cwd || process.cwd();
+  const hookTimer = createHookTimer();
+  const rawAgentType = (input.agent_type || '').trim();
+  const agentName = rawAgentType.startsWith('ot:') ? rawAgentType.slice(3) : rawAgentType;
+  const agentOutput = (input.last_assistant_message || '').trim();
+
+  // 無 session 或 agent 名稱 → 靜默退出
+  if (!sessionId || !agentName) {
+    return { output: { result: '' } };
+  }
+
+  // 辨識 stage
+  const stageKey = getStageByAgent(agentName, stages);
+  if (!stageKey) {
+    return { output: { result: '' } };
+  }
+
+  const currentState = readState(sessionId);
+  if (!currentState) {
+    return { output: { result: '' } };
+  }
+
+  const result = parseResult(agentOutput, stageKey);
+
+  // 解析 instanceId（從 agentOutput regex）— 提前到 findActualStageKey 之前
+  const instanceIdMatch = agentOutput.match(/INSTANCE_ID:\s*(\S+)/);
+  let resolvedInstanceId = instanceIdMatch?.[1] || null;
+
+  // activeAgents cleanup — 不依賴 actualStageKey，提前執行確保即使 early exit 也能清除殘留
+  updateStateAtomic(sessionId, (s) => {
+    if (resolvedInstanceId && s.activeAgents[resolvedInstanceId]) {
+      delete s.activeAgents[resolvedInstanceId];
+    } else {
+      // fallback：找最早登記的同名 instance（timestamp36 可字典序排序）
+      const candidates = Object.keys(s.activeAgents || {})
+        .filter((k) => (s.activeAgents[k]?.agentName || k.split(':')[0]) === agentName)
+        .sort();
+      const fallbackKey = candidates[0] || null;
+      if (fallbackKey) {
+        resolvedInstanceId = fallbackKey;
+        delete s.activeAgents[fallbackKey];
+      }
+    }
+    return s;
+  });
+
+  // emit agent:complete（即使沒有 stage 對應也要記錄）
+  timeline.emit(sessionId, 'agent:complete', { agent: agentName, stage: stageKey, result: result.verdict, instanceId: resolvedInstanceId });
+
+  const actualStageKey = findActualStageKey(currentState, stageKey);
+
+  // statusline 狀態：pop agent（在 early exit 之前，避免並行 agent 殘留）
+  // 優先用 actualStageKey（精確匹配 TEST:2 等編號 key），fallback 用 stageKey（base key）
+  const statuslineState = require('./statusline-state');
+  statuslineState.update(sessionId, 'agent:stop', { stageKey: actualStageKey || stageKey });
+
+  if (!actualStageKey) {
+    return { output: { result: '' } };
+  }
+
+  // 原子化更新 state（含收斂門邏輯）
+  let isConvergedOrFailed = false;
+  let finalResult = result.verdict;
+
+  const updatedState = updateStateAtomic(sessionId, (s) => {
+    if (s.stages[actualStageKey]) {
+      const entry = s.stages[actualStageKey];
+
+      // stage 已經 completed（先前有 agent fail/pass 觸發收斂）→ 只做 cleanup
+      if (entry.status === 'completed') {
+        // 仍遞增 parallelDone 做記錄
+        entry.parallelDone = (entry.parallelDone || 0) + 1;
+        return s;
+      }
+
+      // 遞增 parallelDone
+      entry.parallelDone = (entry.parallelDone || 0) + 1;
+
+      if (result.verdict === 'fail' || result.verdict === 'reject') {
+        // 任一 fail/reject → 立即標記 stage fail
+        Object.assign(entry, { status: 'completed', result: result.verdict, completedAt: new Date().toISOString() });
+        const nextPending = Object.keys(s.stages).find((k) => s.stages[k].status === 'pending');
+        if (nextPending) s.currentStage = nextPending;
+        isConvergedOrFailed = true;
+        finalResult = result.verdict;
+      } else if (checkSameStageConvergence(entry)) {
+        // 全部 pass + 已收斂
+        Object.assign(entry, { status: 'completed', result: 'pass', completedAt: new Date().toISOString() });
+        const nextPending = Object.keys(s.stages).find((k) => s.stages[k].status === 'pending');
+        if (nextPending) s.currentStage = nextPending;
+        isConvergedOrFailed = true;
+        finalResult = 'pass';
+      }
+      // 未收斂的 pass：stage 維持 active，不跳轉 currentStage
+    }
+
+    if (result.verdict === 'fail') s.failCount = (s.failCount || 0) + 1;
+    else if (result.verdict === 'reject') s.rejectCount = (s.rejectCount || 0) + 1;
+    return s;
+  });
+
+  // 記錄失敗到全域 store（跨 session 失敗模式追蹤）
+  if (result.verdict === 'fail' || result.verdict === 'reject') {
+    try {
+      const failureTracker = require('./failure-tracker');
+      failureTracker.recordFailure(projectRoot, {
+        ts: new Date().toISOString(),
+        sessionId,
+        workflowType: currentState.workflowType,
+        stage: actualStageKey,
+        agent: agentName,
+        verdict: result.verdict,
+        retryAttempt: (result.verdict === 'fail' ? (updatedState.failCount || 1) : (updatedState.rejectCount || 1)),
+        reason: result.reason || null,
+      });
+    } catch { /* 靜默 — 記錄失敗不影響主流程 */ }
+  }
+
+  // emit timeline
+  if (result.verdict === 'fail') {
+    timeline.emit(sessionId, 'agent:error', { agent: agentName, stage: actualStageKey, reason: result.reason || 'agent 回報 fail' });
+  }
+  // stage:complete 只在收斂（全部 pass）或 fail/reject 時 emit（agent:complete 已在上方提前 emit）
+  if (isConvergedOrFailed) {
+    timeline.emit(sessionId, 'stage:complete', { stage: actualStageKey, result: finalResult });
+  }
+
+  // agent_performance instinct
+  try {
+    const trigger = `${agentName} ${result.verdict} at ${actualStageKey}`;
+    const action = result.verdict === 'pass' ? `${agentName} 成功完成 ${actualStageKey}` : `${agentName} 在 ${actualStageKey} 結果為 ${result.verdict}`;
+    instinct.emit(sessionId, 'agent_performance', trigger, action, `agent-${agentName}`);
+  } catch { /* 靜默 */ }
+
+  // featureName auto-sync（僅限有 specs 文件的 workflow）
+  if (!updatedState.featureName && projectRoot && specsConfig[currentState.workflowType]?.length > 0) {
+    const synced = syncFeatureName(projectRoot, sessionId);
+    if (synced) updatedState.featureName = synced;
+  }
+
+  // tasks.md checkbox
+  let tasksCheckboxWarning = null;
+  if (result.verdict !== 'fail' && result.verdict !== 'reject' && updatedState.featureName) {
+    const tasksPath = paths.project.featureTasks(projectRoot, updatedState.featureName);
+    if (existsSync(tasksPath)) {
+      try {
+        const content = readFileSync(tasksPath, 'utf8');
+        const baseStage = actualStageKey.split(':')[0];
+        const updated = content.replace(new RegExp(`^([ \\t]*- )\\[ \\]( ${baseStage})([ \\t]*)$`, 'm'), '$1[x]$2$3');
+        if (updated !== content) atomicWrite(tasksPath, updated);
+      } catch (err) { tasksCheckboxWarning = err.message; }
+    }
+  }
+
+  // 準備 builder 輸入
+  const convergence = checkParallelConvergence(updatedState, parallelGroups);
+  const nextHint = getNextStageHint(updatedState, { stages, parallelGroups });
+  const compactSuggestion = nextHint
+    ? shouldSuggestCompact({ transcriptPath: input.transcript_path || null, sessionId })
+    : { suggest: false };
+
+  let specsInfo = null;
+  if (updatedState.featureName && result.verdict !== 'fail' && result.verdict !== 'reject') {
+    try {
+      const specsLib = require('./specs');
+      const tasks = specsLib.readTasksCheckboxes(paths.project.featureTasks(projectRoot, updatedState.featureName));
+      if (tasks && tasks.total > 0) specsInfo = { checked: tasks.checked, total: tasks.total };
+    } catch { /* 靜默 */ }
+  }
+
+  // 取得上一次同 stage 的分數摘要（靜默失敗不影響主流程）
+  let lastScore = null;
+  try {
+    const scoreEngine = require('./score-engine');
+    if (scoringConfig.gradedStages.includes(stageKey)) {
+      lastScore = scoreEngine.getScoreSummary(projectRoot, stageKey);
+    }
+  } catch { /* 靜默 */ }
+
+  const buildResult = buildStopMessages({
+    verdict: result.verdict, stageKey, actualStageKey, agentName, sessionId,
+    state: updatedState, stages, retryDefaults, parallelGroups,
+    tasksCheckboxWarning, compactSuggestion, convergence, nextHint,
+    featureName: updatedState.featureName, projectRoot, specsInfo,
+    scoringConfig, lastScore, workflowType: updatedState.workflowType,
+  });
+
+  // 執行 builder 回傳的副作用
+  for (const evt of buildResult.timelineEvents) timeline.emit(sessionId, evt.type, evt.data);
+  for (const upd of buildResult.stateUpdates) {
+    if (upd.type === 'incrementRetroCount') {
+      updateStateAtomic(sessionId, (s) => { s.retroCount = (s.retroCount || 0) + 1; return s; });
+    } else if (upd.type === 'emitQualitySignal') {
+      try {
+        const trigger = `${upd.agentName} 歷史平均 ${upd.avgOverall.toFixed(2)} at ${upd.stageKey}`;
+        const action = `${upd.stageKey} 品質低於閾值 ${upd.threshold}，建議加強產出品質`;
+        instinct.emit(sessionId, 'quality_signal', trigger, action, `quality-${upd.agentName}`);
+      } catch { /* 靜默 */ }
+    }
+  }
+
+  // 知識歸檔
+  if (result.verdict !== 'fail' && result.verdict !== 'reject') {
+    archiveKnowledge(agentOutput.slice(0, 3000), { agentName, actualStageKey, projectRoot, sessionId });
+  }
+
+  // hook:timing — 記錄 SubagentStop 執行耗時
+  hookTimer.emit(sessionId, 'on-stop', 'SubagentStop', { agent: agentName, verdict: result.verdict });
+
+  return { output: { result: buildResult.messages.join('\n') } };
+}
+
+module.exports = { handleAgentStop };

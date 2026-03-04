@@ -63,14 +63,19 @@ plugins/overtone/   # Plugin 根目錄
 │   # 15 knowledge domains: testing, workflow-core, security-kb, database, dead-code, commit-convention, code-review, wording, debugging, architecture, build-system, os-control, autonomous-control, craft, claude-dev
 ├── commands/       # 28 個 Command（DO — stage shortcuts + workflow pipelines + utilities）
 ├── hooks/          # hooks.json + scripts/（HOW — 守衛）
-├── scripts/lib/    # 共用庫（38 個模組：registry, state, timeline, specs, config-api, hook-timing, feature-sync, specs-archive-scanner, statusline-state 等）
+├── scripts/lib/    # 共用庫（47 個模組：registry, state, timeline, specs, config-api, hook-timing, feature-sync, specs-archive-scanner, statusline-state, 9x handler 等）
 └── web/            # Dashboard 前端
 
 # Session 狀態：~/.overtone/sessions/{sessionId}/
 #   workflow.json / timeline.jsonl / loop.json / observations.jsonl / compact-count.json / statusline-state.json
 ```
 
-## Hook 架構（11 個，~2602 行 hooks/scripts + config-api.js ~919 行）
+## Hook 架構（11 個，薄殼化 + Handler 模組）
+
+**薄殼化架構**（v0.28.49）：
+- Hook 本體（hooks/scripts/）：初始化 + handler 調用 + 錯誤處理（~29 行標準）
+- 業務邏輯：scripts/lib/ 內 9 個 handler 模組（session-start-handler 等）
+- 共用工廠：specs-archive-scanner、hook-timing、feature-sync
 
 ⚠️ **hooks.json 必須使用官方三層嵌套格式**（三層嵌套）。扁平陣列格式會導致部分 hook 無法觸發。
 > 詳細格式規範 + updatedInput REPLACE 語意：`plugins/overtone/skills/claude-dev/references/hooks-api.md`

@@ -18,7 +18,7 @@ const { PLUGIN_ROOT } = require('../helpers/paths');
 const SKILLS_DIR = path.join(PLUGIN_ROOT, 'skills');
 const COMMANDS_DIR = path.join(PLUGIN_ROOT, 'commands');
 const AUTO_SKILL_PATH = path.join(SKILLS_DIR, 'auto', 'SKILL.md');
-const ON_SUBMIT_PATH = path.join(PLUGIN_ROOT, 'hooks', 'scripts', 'prompt', 'on-submit.js');
+const ON_SUBMIT_PATH = path.join(PLUGIN_ROOT, 'scripts', 'lib', 'on-submit-handler.js');
 
 // ────────────────────────────────────────────────────────────────────────────
 // 輔助函式
