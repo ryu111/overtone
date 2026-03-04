@@ -56,8 +56,16 @@ function spawnSession(prompt, opts = {}, _deps = {}) {
   // prompt 作為最後一個參數傳入
   const fullArgs = [...args, prompt];
 
+  // 環境變數防禦：標記 spawned session + 過濾敏感 env vars
+  const SENSITIVE_KEYS = ['TELEGRAM_BOT_TOKEN', 'TELEGRAM_CHAT_ID'];
+  const childEnv = Object.fromEntries(
+    Object.entries(process.env).filter(([k]) => !SENSITIVE_KEYS.includes(k))
+  );
+  childEnv.OVERTONE_SPAWNED = '1';
+
   const spawnOpts = {
     stdio: ['ignore', 'pipe', 'pipe'],
+    env: childEnv,
   };
   if (opts.cwd) {
     spawnOpts.cwd = opts.cwd;

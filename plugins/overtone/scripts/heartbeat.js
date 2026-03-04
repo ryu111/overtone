@@ -304,6 +304,13 @@ function cmdStart(projectRoot, _deps = {}) {
   const deletePidFn = _deps.deletePid || deletePid;
   const exitFn = _deps.exit || ((code) => process.exit(code));
 
+  // 遞迴防護：已在 spawned session 中不允許啟動 daemon
+  if (process.env.OVERTONE_SPAWNED === '1' && !_deps._skipSpawnedCheck) {
+    console.error('⛔ 不可在 spawned session 中啟動 heartbeat daemon（防止遞迴）');
+    exitFn(1);
+    return;
+  }
+
   // 檢查 PID 檔
   const existingPid = readPidFn(_deps);
   if (existingPid !== null) {

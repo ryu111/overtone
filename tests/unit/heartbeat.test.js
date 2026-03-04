@@ -208,6 +208,31 @@ describe('Feature 2: heartbeat.js CLI — start / stop / status', () => {
     expect(exitCode).toBe(0);
   });
 
+  // Scenario 2-3b: start 遞迴防護 — OVERTONE_SPAWNED=1 時拒絕啟動
+  test('Scenario 2-3b: start — OVERTONE_SPAWNED=1 時拒絕啟動（防遞迴）', () => {
+    let exitCode = null;
+    let spawnCalled = false;
+
+    const origSpawned = process.env.OVERTONE_SPAWNED;
+    process.env.OVERTONE_SPAWNED = '1';
+
+    try {
+      const deps = {
+        readPid: () => null,
+        spawn: () => { spawnCalled = true; return makeMockChild(); },
+        exit: (code) => { exitCode = code; },
+      };
+
+      heartbeat.cmdStart('/proj', deps);
+
+      expect(spawnCalled).toBe(false);
+      expect(exitCode).toBe(1);
+    } finally {
+      if (origSpawned !== undefined) process.env.OVERTONE_SPAWNED = origSpawned;
+      else delete process.env.OVERTONE_SPAWNED;
+    }
+  });
+
   // Scenario 2-4: stop 成功 — PID 檔存在
   test('Scenario 2-4: stop — PID 存在，發送 SIGTERM', () => {
     let exitCode = null;

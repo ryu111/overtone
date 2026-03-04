@@ -229,4 +229,48 @@ describe('Feature 1: session-spawner.js — Claude Code session 啟動封裝', (
     // 清理 timeout
     return result.outcome.catch(() => {});
   });
+
+  // Scenario 1-10: spawned session 設定 OVERTONE_SPAWNED env var
+  test('Scenario 1-10: spawn 的 child env 包含 OVERTONE_SPAWNED=1', () => {
+    const child = makeMockChild();
+    const mockSpawn = makeMockSpawn(child);
+
+    spawnSession('test prompt', { timeout: 50 }, { spawn: mockSpawn });
+
+    expect(mockSpawn.calls).toHaveLength(1);
+    const spawnOpts = mockSpawn.calls[0].opts;
+    expect(spawnOpts.env).toBeDefined();
+    expect(spawnOpts.env.OVERTONE_SPAWNED).toBe('1');
+
+    // 清理
+    return child.stdout.emit('close');
+  });
+
+  // Scenario 1-11: 敏感 env vars 被過濾
+  test('Scenario 1-11: TELEGRAM_BOT_TOKEN 和 TELEGRAM_CHAT_ID 不傳給 child', () => {
+    const child = makeMockChild();
+    const mockSpawn = makeMockSpawn(child);
+
+    // 設定敏感 env var（測試後還原）
+    const origToken = process.env.TELEGRAM_BOT_TOKEN;
+    const origChat = process.env.TELEGRAM_CHAT_ID;
+    process.env.TELEGRAM_BOT_TOKEN = 'test-secret-token';
+    process.env.TELEGRAM_CHAT_ID = 'test-chat-id';
+
+    try {
+      spawnSession('test prompt', { timeout: 50 }, { spawn: mockSpawn });
+
+      const spawnOpts = mockSpawn.calls[0].opts;
+      expect(spawnOpts.env.TELEGRAM_BOT_TOKEN).toBeUndefined();
+      expect(spawnOpts.env.TELEGRAM_CHAT_ID).toBeUndefined();
+    } finally {
+      // 還原
+      if (origToken !== undefined) process.env.TELEGRAM_BOT_TOKEN = origToken;
+      else delete process.env.TELEGRAM_BOT_TOKEN;
+      if (origChat !== undefined) process.env.TELEGRAM_CHAT_ID = origChat;
+      else delete process.env.TELEGRAM_CHAT_ID;
+    }
+
+    return child.stdout.emit('close');
+  });
 });
