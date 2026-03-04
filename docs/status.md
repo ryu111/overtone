@@ -1,6 +1,6 @@
 # Overtone 現況
 
-> 最後更新：2026-03-05 | Plugin 版本：0.28.49（Hook 薄殼化 + 9 個 Handler 模組 + 3 個共用工廠）
+> 最後更新：2026-03-05 | Plugin 版本：0.28.50（lib/ 結構優化 — config 拆分 + analyzers/ + knowledge/ 子目錄）
 
 ## 版本狀態
 

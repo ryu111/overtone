@@ -1,21 +1,4 @@
 ---
-## 2026-03-04 | developer:DEV Findings
-**三個根因，對應修復：**
-
-1. **Regex 不支援 hyphen**（`[a-z]+` → `[a-z][a-z-]*`）
-   - 受影響：`specs:tasks-missing`、`specs:archive-skipped`、`session:compact-suggestion`
-   - 這三個事件在 `on-stop.js` 有正常的 `timeline.emit()` 呼叫，只是 regex 無法匹配含 hyphen 的事件名後綴
-
-2. **未掃描物件字面量 type 欄位**（新增 `typeLiteralRe`）
-   - 受影響：`stage:retry`、`error:fatal`、`parallel:converge`
-   - `stop-message-builder.js` 回傳 `{ type: 'stage:retry', data: ... }` 物件，由 `on-subagent-stop.js` 接收後才實際 emit；舊邏輯只看 emit 呼叫，看不到物件字面量
-
-3. **bash printf 寫入 timeline**（掃描 `agents/*.md`）
-   - 受影響：`grader:score`
-   - `grader.md` 中 grader agent 用 bash printf 直接寫入 timeline JSONL，完全繞過 JavaScript emit；新增對 `.md` 檔案中 `"type":"event:name"` 模式的掃描
-Keywords: regex, hyphen, specs, tasks, missing, archive, skipped, session, compact, suggestion
-
----
 ## 2026-03-04 | developer:DEV Context
 實作 queue-cli 功能，包含：
 1. `plugins/overtone/scripts/queue.js`（新建）— 執行佇列 CLI，包裝 `execution-queue.js`，提供 `add`/`list`/`clear` 三個子命令
@@ -716,4 +699,18 @@ Keywords: tests, file, plugin, json, telegram, docs, status, claudecode, filter,
 - 無殘留舊 require 路徑
 - health-check 12 項全部通過
 Keywords: feature, scenario, phase, config, validator, validateagent, validateskill, validatehook, validateall, model
+
+---
+## 2026-03-04 | developer:DEV Context
+完成 `lib-structure-optimization` 重構 feature（Phase 1 + Phase 2a + Phase 2b 全部實作）：
+
+- **Phase 1**：`config-api.js`（919 行）拆分為三個模組：
+  - `config-io.js`：共用 IO 輔助（readAgentFile、readHooksJson 等 9 個函式）
+  - `config-validator.js`：L1 驗證（validateAgent/validateHook/validateSkill/validateAll）
+  - `config-api.js`：保留 L2 CRUD + re-export validate 函式（向後相容）
+
+- **Phase 2a**：7 個 analyzer 模組移至 `lib/analyzers/` 子目錄（guard-system、dead-code-scanner、docs-sync-engine、test-quality-scanner、component-repair、hook-diagnostic、cross-analyzer）
+
+- **Phase 2b**：6 個 knowledge 模組移至 `lib/knowledge/` 子目錄（instinct、global-instinct、knowledge-archiver、knowledge-gap-detector、knowledge-searcher、skill-router）
+Keywords: structure, optimization, feature, phase, config, readagentfile, readhooksjson, validator, validateagent, validatehook
 
