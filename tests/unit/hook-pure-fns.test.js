@@ -56,6 +56,7 @@ describe('require.main 守衛', () => {
     const mod = require(path.join(HOOKS_ROOT, 'tool/pre-edit-guard'));
     expect(typeof mod.checkProtected).toBe('function');
     expect(typeof mod.checkMemoryLineLimit).toBe('function');
+    expect(typeof mod.shouldWarnMainAgentCoding).toBe('function');
   });
 
   test('require() pre-bash-guard.js 不觸發 stdin 讀取，並匯出函數', () => {
@@ -484,7 +485,7 @@ describe('pre-task.js 純函數', () => {
 // ── tool/pre-edit-guard.js 純函數 ────────────────────────────────────────
 
 describe('pre-edit-guard.js 純函數', () => {
-  const { checkProtected, checkMemoryLineLimit } = require(path.join(HOOKS_ROOT, 'tool/pre-edit-guard'));
+  const { checkProtected, checkMemoryLineLimit, shouldWarnMainAgentCoding } = require(path.join(HOOKS_ROOT, 'tool/pre-edit-guard'));
 
   describe('checkProtected', () => {
     test('受保護的 agents 路徑回傳 label 和 api', () => {
@@ -549,6 +550,51 @@ describe('pre-edit-guard.js 純函數', () => {
       const filePath = '/Users/test/.claude/projects/-Users-test/memory/MEMORY.md';
       const result = checkMemoryLineLimit(filePath, 'Read', {}, 200);
       expect(result.exceeded).toBe(false);
+    });
+  });
+
+  describe('shouldWarnMainAgentCoding', () => {
+    test('DEV pending + 無 activeAgents → 回傳警告', () => {
+      const state = {
+        stages: { DEV: { status: 'pending', result: null }, REVIEW: { status: 'pending', result: null } },
+        activeAgents: {},
+      };
+      const result = shouldWarnMainAgentCoding(state);
+      expect(result).not.toBeNull();
+      expect(result).toContain('MUST');
+      expect(result).toContain('developer');
+    });
+
+    test('DEV completed → 回傳 null（不干預）', () => {
+      const state = {
+        stages: { DEV: { status: 'completed', result: 'pass' } },
+        activeAgents: {},
+      };
+      expect(shouldWarnMainAgentCoding(state)).toBeNull();
+    });
+
+    test('有 activeAgents → 回傳 null（subagent 在寫碼）', () => {
+      const state = {
+        stages: { DEV: { status: 'active', result: null } },
+        activeAgents: { 'developer:abc123': { agentName: 'developer' } },
+      };
+      expect(shouldWarnMainAgentCoding(state)).toBeNull();
+    });
+
+    test('無 DEV stage → 回傳 null（discovery 等 workflow）', () => {
+      const state = {
+        stages: { PM: { status: 'active', result: null } },
+        activeAgents: {},
+      };
+      expect(shouldWarnMainAgentCoding(state)).toBeNull();
+    });
+
+    test('state 為 null → 回傳 null', () => {
+      expect(shouldWarnMainAgentCoding(null)).toBeNull();
+    });
+
+    test('state.stages 為 undefined → 回傳 null', () => {
+      expect(shouldWarnMainAgentCoding({})).toBeNull();
     });
   });
 });

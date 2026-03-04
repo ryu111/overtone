@@ -21,7 +21,7 @@
 
 const { resolve, relative } = require('path');
 const { readFileSync, existsSync } = require('fs');
-const { safeReadStdin, safeRun } = require('../../../scripts/lib/hook-utils');
+const { safeReadStdin, safeRun, getSessionId } = require('../../../scripts/lib/hook-utils');
 
 // MEMORY.md 行數上限
 const MEMORY_LINE_LIMIT = 200;
@@ -141,6 +141,14 @@ safeRun(() => {
     process.exit(0);
   }
 
+  // ── Workflow 編碼守衛 ──
+  // DEV stage 是 pending 且無 activeAgents → Main Agent 在自己寫碼（應委派 developer）
+  const codeWarning = checkMainAgentCoding(input);
+  if (codeWarning) {
+    process.stdout.write(JSON.stringify({ result: codeWarning }));
+    process.exit(0);
+  }
+
   // 不在受保護範圍 → 放行
   process.stdout.write(JSON.stringify({ result: '' }));
   process.exit(0);
@@ -200,5 +208,50 @@ function checkMemoryLineLimit(filePath, toolName, toolInput, limit) {
   return { exceeded: estimatedLines > limit, estimatedLines };
 }
 
+/**
+ * 偵測 Main Agent 在有 active workflow 時直接編輯程式碼（入口 — 讀取 state）
+ * @param {object} input - hook stdin
+ * @returns {string|null} 警告 systemMessage 或 null
+ */
+function checkMainAgentCoding(input) {
+  try {
+    const sessionId = getSessionId(input);
+    if (!sessionId) return null;
+
+    const { readState } = require('../../../scripts/lib/state');
+    const currentState = readState(sessionId);
+    return shouldWarnMainAgentCoding(currentState);
+  } catch {
+    return null; // 靜默降級
+  }
+}
+
+/**
+ * 純判斷邏輯：workflow 有 DEV stage + DEV 未完成 + 無 activeAgents
+ * → Main Agent 還沒委派 developer 就自己寫碼了
+ * @param {object|null} state - workflow state
+ * @returns {string|null} 警告訊息或 null
+ */
+function shouldWarnMainAgentCoding(state) {
+  if (!state || !state.stages) return null;
+
+  // 沒有 DEV stage → 不適用（可能是 discovery 等不含 DEV 的 workflow）
+  if (!state.stages.DEV) return null;
+
+  // DEV 已完成 → 不干預
+  if (state.stages.DEV.status === 'completed') return null;
+
+  // 有 activeAgents → 代表是 subagent（developer 等）在寫碼，放行
+  const activeCount = Object.keys(state.activeAgents || {}).length;
+  if (activeCount > 0) return null;
+
+  // DEV pending/active + 無 activeAgents → Main Agent 自己寫碼
+  return [
+    '⚠️ 偵測到 Main Agent 直接編輯程式碼，但 DEV stage 尚未委派 developer agent。',
+    '⛔ MUST 委派 `ot:developer` agent 處理程式碼變更，不要自己寫碼。',
+    '💡 如果只是修改文件（docs/、README 等），可忽略此警告。',
+  ].join('\n');
+}
+
 // ── 純函數匯出 ──
-module.exports = { checkProtected, checkMemoryLineLimit };
+module.exports = { checkProtected, checkMemoryLineLimit, checkMainAgentCoding, shouldWarnMainAgentCoding };
