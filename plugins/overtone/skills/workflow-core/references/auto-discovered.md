@@ -1,40 +1,4 @@
 ---
-## 2026-03-03 | tester:TEST Context
-模式：verify
-
-驗證 statusline stale agent 修復的所有變更，涵蓋根因修復（on-stop.js activeAgents cleanup 提前執行）及三處消費端 TTL 防護（statusline.js、state.js getNextStageHint、pre-compact.js）。
-Keywords: verify, statusline, stale, agent, stop, activeagents, cleanup, state, getnextstagehint, compact
-
----
-## 2026-03-03 | retrospective:RETRO Findings
-**回顧摘要**：
-
-本次 statusline stale agent 修復涵蓋根因修復（on-stop.js cleanup 提前）與三個消費端的 TTL 防護層，整體設計清晰且執行完整。具體確認的品質點如下：
-
-- **根因修復位置正確**：`on-stop.js` 的 `activeAgents` cleanup 提前到 `findActualStageKey` 之前（第 48-63 行），確保即使 early exit 路徑也能清除殘留。fallback 機制（字典序排序取最早 entry）對多 instance 場景有合理處理。
-
-- **三個消費端 TTL 常數一致**：`statusline.js`、`state.js getNextStageHint`、`pre-compact.js` 三處均為 30 分鐘，邏輯結構也一致（有 active stage -> 永不過期，無 active stage -> 檢查 TTL）。reviewer 確認此三份各自定義未達回報門檻，屬於接受的技術債。
-
-- **兩段 updateStateAtomic 無 race condition**：第一段（cleanup）結束後才執行第二段（stage 狀態更新），中間的 `readState` 是安全的讀取快照，不形成 TOCTOU 問題。
-
-- **收斂門邏輯未受影響**：`parallelDone` 遞增邏輯在 stage 已 `completed` 時仍執行（第 89 行），保留了並行計數的完整性，不影響收斂判斷。
-
-- **測試覆蓋完整**：11 個新測試跨兩個測試檔，涵蓋核心場景（有 INSTANCE_ID / 無 INSTANCE_ID / active-agent.json 刪除 / 並行保留）與 TTL 過濾的三種狀態（過期 / 新鮮 / 有 active stage）。3026 pass，0 fail。
-
-- **BDD spec 對齊**：`specs/features/in-progress/statusline-stale-agent/tasks.md` 記錄的階段 DEV/REVIEW/TEST 均已完成 ([x])，與實際修復範圍吻合。
-Keywords: statusline, stale, agent, stop, cleanup, activeagents, findactualstagekey, early, exit, fallback
-
----
-## 2026-03-03 | doc-updater:DOCS Context
-statusline-stale-agent 功能已完成（commits 1a15d84, 13084e7）。feature 涉及 Hook 層、狀態管理、Status Line 顯示的改進 — activeAgents 清理、TTL 防護、過期殘留處理。
-Keywords: statusline, stale, agent, commits, feature, hook, status, line, activeagents
-
----
-## 2026-03-03 | developer:DEV Context
-修復 `plugins/overtone/scripts/lib/specs.js` 中 `readTasksCheckboxes` 函式的 fallback bug。當 tasks.md 缺少標準標頭（`## Stages` 或 `## Tasks`）時，原來的程式碼會 fallback 到掃描整個文件，導致 `## 子任務清單` 等非標準區塊的 checkbox 被算入 stage-level 判斷，阻擋自動歸檔。
-Keywords: plugins, overtone, scripts, specs, readtaskscheckboxes, fallback, tasks, stages, checkbox, stage
-
----
 ## 2026-03-03 | product-manager:PM Context
 **問題陳述**：用户质疑 Level 2（持续学习）的 7 个能力建设完成后，Level 1（工作流自动化）的 17 个 agent、18 个 workflow 模板、11 个 hook、21 个 skill 是否真正**消费**了这些学习信号。核心追问是：「系统第 10 次做同类任务是否比第 1 次更好，有量化数据证明？」
 
@@ -720,4 +684,54 @@ Keywords: retro, pass, session, stop, hook, claude
 
 5. `--table` 選項時，`failure-hotspot` 輸出 `hotspots` 陣列，`hook-overhead` 輸出 `hooks` 陣列，`workflow-velocity` 輸出 `stages` 陣列（皆是可直接表格化的陣列部分）。
 Keywords: analyzefailurehotspot, failuretracker, lastfailedat, toppattern, analyzehookoverhead, hook, timing, hookname, name, unknown
+
+---
+## 2026-03-04 | developer:DEV Findings
+- **DI pattern** 完整實作：`session-digest.js` 使用 `_getDeps()` 同 `cross-analyzer.js` 模式，所有外部依賴均可注入替換
+- **全失敗靜默降級**：所有 timeline/state/failureTracker 讀取都包在 try/catch，session 摘要是非關鍵功能，任何錯誤不影響 SessionEnd 其他邏輯
+- **paths.js 擴充**：在 `global` 物件加入 `digests` 路徑函式，與現有 `baselines`/`scores` 等一致
+- **data.js query digests** 與 `baselines` 實作模式完全對齊（直接讀 JSONL + 支援 `--workflow` 過濾 + `--limit`）
+- **on-session-end 整合位置**：放在 baseline 保存之後、`.current-session-id` 清理之前，編號 `3d` 保持順序合理
+Keywords: pattern, session, digest, cross, analyzer, timeline, state, failuretracker, catch, sessionend
+
+---
+## 2026-03-04 | developer:DEV Context
+實作了 `data-auto-digest` — SessionEnd 自動摘要功能。每次 session 結束時自動產生結構化摘要（工作流類型、timeline 事件統計、stage 執行結果、失敗熱點），寫入 `~/.overtone/global/{projectHash}/digests.jsonl`，並提供 `data.js query digests` CLI 查詢。
+Keywords: data, auto, digest, sessionend, session, timeline, stage, overtone, global, projecthash
+
+---
+## 2026-03-04 | tester:TEST Findings
+測試結果摘要：
+- `session-digest.test.js` 27 個測試：**27 pass, 0 fail**
+- 全量測試套件 138 files：**3240 pass, 0 fail**
+- 既有測試無任何破壞
+
+涵蓋範圍（Handoff 中的 5 個測試群組）：
+1. generateDigest — 正常 timeline 場景（5 tests）
+2. generateDigest — 空 timeline 場景（4 tests）
+3. generateDigest — 無 failure 場景（3 tests）
+4. generateDigest — stage 執行結果統計（3 tests）
+5. generateDigest — workflowType 和 featureName（3 tests）
+6. appendDigest — 寫入並可讀取（4 tests）
+7. data.js query digests — 路由測試（5 tests）
+Keywords: session, digest, test, pass, fail, files, handoff, generatedigest, timeline, tests
+
+---
+## 2026-03-04 | retrospective:RETRO Findings
+**回顧摘要**：
+
+1. **架構一致性確認**：`session-digest.js` 採用與 `cross-analyzer.js` 相同的 DI（Dependency Injection）模式，`_getDeps()` 接收可覆寫的依賴物件。這是整個 `lib/` 目錄下的統一設計，無偏離。
+
+2. **靜默降級完整性確認**：`generateDigest` 中每個 I/O 操作（`state.readState`、`timeline.query`、`failureTracker.getFailurePatterns`、時間計算）均有獨立的 `try/catch`，且靜默降級為安全預設值（`null` 或空陣列）。`appendDigest` 也有 `if (!projectRoot || !digest) return` 防禦。
+
+3. **整合點正確**：`on-session-end.js` 步驟 3d 正確嵌入，位置在 `saveBaseline`（3c）之後、清理 `.current-session-id` 之前，並使用 `try/catch` 包裹確保非關鍵功能失敗不影響主流程。
+
+4. **測試覆蓋完整性確認**：27 個測試覆蓋 7 個面向（正常 timeline、空 timeline、無 failure、stage 統計、workflowType/featureName 讀取、appendDigest 寫入、data.js CLI 路由），包含靜默降級和邊界情況，pass@1 = 27/27。
+
+5. **paths.js 一致性確認**：`global.digests` 函式簽章（`(projectRoot) => string`）與 `global.observations`、`global.baselines`、`global.scores`、`global.failures` 完全一致，零偏差。
+
+6. **data.js 整合確認**：`cmdQuery` 中的 `digests` case 實作與 `baselines` case 結構對稱，支援 `--workflow` 過濾和 `--limit` 截斷，模式一致。幫助文字（`printHelp`）也已更新加入 `digests` 類型。
+
+7. **步驟編號說明**：`on-session-end.js` 中步驟編號 `3b/3b2/3b3/3c/3d` 為既有命名慣例（其他 PR 先行加入的步驟），本次新增 `3d` 延續此慣例，無一致性問題。
+Keywords: session, digest, cross, analyzer, dependency, injection, generatedigest, state, readstate, timeline
 
