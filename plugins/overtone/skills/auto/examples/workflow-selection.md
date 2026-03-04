@@ -19,7 +19,7 @@
 - 明確的 UI bug
 - 修復範圍小（CSS 調整）
 - 需要驗證修復有效
-- → `quick`（DEV → [REVIEW + TEST]）
+- → `quick`（DEV → REVIEW → RETRO → DOCS）
 
 ## 範例 3：新功能 → `standard`
 

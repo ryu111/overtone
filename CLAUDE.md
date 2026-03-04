@@ -39,7 +39,7 @@ Layer 2: Hook 守衛（底層）— 記錄、擋、提示、通知
 ## 工作流模板
 
 18 個模板。BDD 規則：含 PLAN/ARCH 的 workflow 在 DEV 前加 TEST:spec。
-常用：`single`（DEV）、`quick`（DEV → [REVIEW+TEST] → RETRO → DOCS）、`standard`（PLAN → ARCH → TEST:spec → DEV → [R+T] → RETRO → DOCS）。
+常用：`single`（DEV）、`quick`（DEV → REVIEW → RETRO → DOCS）、`standard`（PLAN → ARCH → TEST:spec → DEV → [R+T] → RETRO → DOCS）。
 > 完整清單：`docs/spec/overtone-工作流.md`
 
 ## 技術棧

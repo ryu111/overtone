@@ -6,7 +6,7 @@
 
 | 群組名 | Stages | 使用於 |
 |--------|--------|--------|
-| `quality` | REVIEW + TEST:verify | quick, standard, refactor |
+| `quality` | REVIEW + TEST:verify | standard, refactor |
 | `verify` | QA + E2E | full |
 | `secure-quality` | REVIEW + TEST:verify + SECURITY | secure |
 

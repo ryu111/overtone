@@ -35,7 +35,7 @@ Dashboard 在 SessionStart 自動啟動（`http://localhost:7777`），即時顯
 | Workflow | 適合場景 | 階段 |
 |----------|---------|------|
 | `single` | 一行改動、文件修正 | DEV |
-| `quick` | 小功能、bug 修復 | DEV → [REVIEW + TEST] → RETRO |
+| `quick` | 小功能、bug 修復 | DEV → REVIEW → RETRO → DOCS |
 | `standard` | 新功能開發 | PLAN → ARCH → TEST:spec → DEV → [REVIEW + TEST:verify] → RETRO → DOCS |
 
 還有 15 個特化 workflow（tdd、debug、secure、refactor、e2e-only 等）→ 完整清單見 [docs/spec/overtone-工作流.md](docs/spec/overtone-工作流.md)
