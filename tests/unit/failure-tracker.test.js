@@ -71,10 +71,10 @@ function makeRecord(overrides = {}) {
 afterAll(() => {
   for (const dir of dirsToClean) {
     rmSync(dir, { recursive: true, force: true });
+    // 清理每個測試 projectRoot 對應的全域 hash 目錄
+    const globalDir = paths.global.dir(dir);
+    if (existsSync(globalDir)) rmSync(globalDir, { recursive: true, force: true });
   }
-  // 清理全域 failures 測試檔
-  const globalDir = paths.global.dir(TEST_PROJECT_ROOT);
-  if (existsSync(globalDir)) rmSync(globalDir, { recursive: true, force: true });
 });
 
 // ────────────────────────────────────────────────────────────────────────────

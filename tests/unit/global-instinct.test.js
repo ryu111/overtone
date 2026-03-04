@@ -87,6 +87,8 @@ describe('Feature 1: 畢業機制（graduate）', () => {
   afterEach(() => {
     rmSync(projectRoot, { recursive: true, force: true });
     rmSync(session.dir, { recursive: true, force: true });
+    // 清理全域 hash 目錄，避免 ~/.overtone/global/{hash}/ 洩漏
+    rmSync(paths.global.dir(projectRoot), { recursive: true, force: true });
   });
 
   // Scenario 1-1
@@ -212,6 +214,7 @@ describe('Feature 2: 全域查詢（queryGlobal）', () => {
   afterEach(() => {
     rmSync(projectRoot, { recursive: true, force: true });
     rmSync(session.dir, { recursive: true, force: true });
+    rmSync(paths.global.dir(projectRoot), { recursive: true, force: true });
   });
 
   function seedGlobal(observations) {
@@ -330,6 +333,7 @@ describe('Feature 3: 全域衰減（decayGlobal）', () => {
 
   afterEach(() => {
     rmSync(projectRoot, { recursive: true, force: true });
+    rmSync(paths.global.dir(projectRoot), { recursive: true, force: true });
   });
 
   function seedGlobalObs(observations) {
@@ -443,6 +447,7 @@ describe('Feature 7: 自動壓縮（auto-compaction）', () => {
 
   afterEach(() => {
     rmSync(projectRoot, { recursive: true, force: true });
+    rmSync(paths.global.dir(projectRoot), { recursive: true, force: true });
   });
 
   // Scenario 7-1
@@ -538,6 +543,7 @@ describe('Feature 8: 統計摘要（summarizeGlobal）', () => {
 
   afterEach(() => {
     rmSync(projectRoot, { recursive: true, force: true });
+    rmSync(paths.global.dir(projectRoot), { recursive: true, force: true });
   });
 
   function seedGlobal(observations) {
@@ -626,6 +632,8 @@ describe('Feature 9: 專案維度隔離（projectHash）', () => {
     rmSync(projectB, { recursive: true, force: true });
     rmSync(sessionA.dir, { recursive: true, force: true });
     rmSync(sessionB.dir, { recursive: true, force: true });
+    rmSync(paths.global.dir(projectA), { recursive: true, force: true });
+    rmSync(paths.global.dir(projectB), { recursive: true, force: true });
   });
 
   // Scenario 9-1
@@ -707,6 +715,7 @@ describe('pruneGlobal — 清除低信心觀察', () => {
 
   afterEach(() => {
     rmSync(projectRoot, { recursive: true, force: true });
+    rmSync(paths.global.dir(projectRoot), { recursive: true, force: true });
   });
 
   test('刪除信心低於 0.2 的觀察', () => {
@@ -759,6 +768,7 @@ describe('graduate merge 語意', () => {
   afterEach(() => {
     rmSync(projectRoot, { recursive: true, force: true });
     rmSync(session.dir, { recursive: true, force: true });
+    rmSync(paths.global.dir(projectRoot), { recursive: true, force: true });
   });
 
   test('merge 時 count 相加', () => {

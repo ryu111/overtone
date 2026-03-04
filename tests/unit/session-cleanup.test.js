@@ -16,7 +16,7 @@ const path = require('path');
 const os = require('os');
 const { SCRIPTS_LIB } = require('../helpers/paths');
 
-const { cleanupStaleSessions, cleanupOrphanFiles, runCleanup } = require(
+const { cleanupStaleSessions, cleanupOrphanFiles, cleanupStaleGlobalDirs, runCleanup } = require(
   path.join(SCRIPTS_LIB, 'session-cleanup')
 );
 
@@ -326,22 +326,161 @@ describe('cleanupOrphanFiles — orphan 暫存檔清理', () => {
   });
 });
 
+// ── cleanupStaleGlobalDirs ──
+
+describe('cleanupStaleGlobalDirs — 全域 hash 目錄清理', () => {
+
+  test('正確刪除超過 maxAgeDays 的孤兒 hash 目錄', () => {
+    // 建立 global 目錄
+    const globalDir = path.join(tmpDir, 'global');
+    fs.mkdirSync(globalDir, { recursive: true });
+
+    // 建立一個過期 hash 目錄（35 天前）
+    const staleHash = 'abc12345';
+    const stalePath = path.join(globalDir, staleHash);
+    fs.mkdirSync(stalePath);
+    fs.writeFileSync(path.join(stalePath, 'observations.jsonl'), '');
+    setMtime(stalePath, daysAgo(35));
+    setMtime(path.join(stalePath, 'observations.jsonl'), daysAgo(35));
+
+    const result = cleanupStaleGlobalDirs({ globalDir, maxAgeDays: 30 });
+
+    expect(result.cleaned).toBe(1);
+    expect(result.errors).toEqual([]);
+    expect(fs.existsSync(stalePath)).toBe(false);
+  });
+
+  test('保留最近更新過的 hash 目錄', () => {
+    const globalDir = path.join(tmpDir, 'global');
+    fs.mkdirSync(globalDir, { recursive: true });
+
+    // 建立一個最近更新的 hash 目錄（5 天前）
+    const recentHash = 'def67890';
+    const recentPath = path.join(globalDir, recentHash);
+    fs.mkdirSync(recentPath);
+    fs.writeFileSync(path.join(recentPath, 'scores.jsonl'), '');
+    setMtime(recentPath, daysAgo(5));
+    setMtime(path.join(recentPath, 'scores.jsonl'), daysAgo(5));
+
+    const result = cleanupStaleGlobalDirs({ globalDir, maxAgeDays: 30 });
+
+    expect(result.cleaned).toBe(0);
+    expect(result.skipped).toBe(1);
+    expect(fs.existsSync(recentPath)).toBe(true);
+  });
+
+  test('dry-run 模式：回傳清單但不實際刪除', () => {
+    const globalDir = path.join(tmpDir, 'global');
+    fs.mkdirSync(globalDir, { recursive: true });
+
+    // 建立過期 hash 目錄
+    const staleHash = 'aaa11111';
+    const stalePath = path.join(globalDir, staleHash);
+    fs.mkdirSync(stalePath);
+    setMtime(stalePath, daysAgo(40));
+
+    const result = cleanupStaleGlobalDirs({ globalDir, maxAgeDays: 30, dryRun: true });
+
+    // dry-run：不刪除，但 dryRunList 有該路徑
+    expect(result.cleaned).toBe(0);
+    expect(result.dryRunList).toContain(stalePath);
+    expect(fs.existsSync(stalePath)).toBe(true);
+  });
+
+  test('混合場景：過期和最近的 hash 目錄並存', () => {
+    const globalDir = path.join(tmpDir, 'global');
+    fs.mkdirSync(globalDir, { recursive: true });
+
+    // 過期目錄（35 天前）
+    const staleHash1 = 'stale001';
+    const stalePath1 = path.join(globalDir, staleHash1);
+    fs.mkdirSync(stalePath1);
+    setMtime(stalePath1, daysAgo(35));
+
+    const staleHash2 = 'stale002';
+    const stalePath2 = path.join(globalDir, staleHash2);
+    fs.mkdirSync(stalePath2);
+    setMtime(stalePath2, daysAgo(60));
+
+    // 最近目錄（10 天前）
+    const recentHash = 'recent01';
+    const recentPath = path.join(globalDir, recentHash);
+    fs.mkdirSync(recentPath);
+    setMtime(recentPath, daysAgo(10));
+
+    const result = cleanupStaleGlobalDirs({ globalDir, maxAgeDays: 30 });
+
+    expect(result.cleaned).toBe(2);
+    expect(result.skipped).toBe(1);
+    expect(fs.existsSync(stalePath1)).toBe(false);
+    expect(fs.existsSync(stalePath2)).toBe(false);
+    expect(fs.existsSync(recentPath)).toBe(true);
+  });
+
+  test('global 目錄不存在時回傳空結果（不拋例外）', () => {
+    const nonExistentDir = path.join(tmpDir, 'no-such-global');
+
+    const result = cleanupStaleGlobalDirs({ globalDir: nonExistentDir });
+
+    expect(result.cleaned).toBe(0);
+    expect(result.errors).toEqual([]);
+    expect(result.dryRunList).toEqual([]);
+    expect(result.skipped).toBe(0);
+  });
+
+  test('目錄內的最新檔案 mtime 決定存活（目錄本身舊但檔案新）', () => {
+    const globalDir = path.join(tmpDir, 'global');
+    fs.mkdirSync(globalDir, { recursive: true });
+
+    const hashDir = 'mixmtime';
+    const hashPath = path.join(globalDir, hashDir);
+    fs.mkdirSync(hashPath);
+
+    // 目錄本身設為 60 天前，但內部有一個 20 天前的檔案
+    const recentFile = path.join(hashPath, 'failures.jsonl');
+    fs.writeFileSync(recentFile, '');
+    setMtime(hashPath, daysAgo(60));
+    setMtime(recentFile, daysAgo(20));
+
+    const result = cleanupStaleGlobalDirs({ globalDir, maxAgeDays: 30 });
+
+    // 檔案 20 天前（新的），不應刪除
+    expect(result.cleaned).toBe(0);
+    expect(result.skipped).toBe(1);
+    expect(fs.existsSync(hashPath)).toBe(true);
+  });
+
+  test('空 global 目錄時回傳 cleaned: 0', () => {
+    const globalDir = path.join(tmpDir, 'global');
+    fs.mkdirSync(globalDir, { recursive: true });
+
+    const result = cleanupStaleGlobalDirs({ globalDir, maxAgeDays: 30 });
+
+    expect(result.cleaned).toBe(0);
+    expect(result.errors).toEqual([]);
+  });
+});
+
 // ── runCleanup ──
 
 describe('runCleanup — 一鍵清理入口', () => {
 
-  test('回傳包含 sessions 和 orphanFiles 的完整報告', () => {
+  test('回傳包含 sessions、orphanFiles 和 globalDirs 的完整報告', () => {
     const sessionsDir = path.join(tmpDir, 'sessions');
+    const globalDir = path.join(tmpDir, 'global');
     fs.mkdirSync(sessionsDir, { recursive: true });
+    fs.mkdirSync(globalDir, { recursive: true });
 
     const report = runCleanup('', tmpDir);
 
     expect(report).toHaveProperty('sessions');
     expect(report).toHaveProperty('orphanFiles');
+    expect(report).toHaveProperty('globalDirs');
     expect(report.sessions).toHaveProperty('cleaned');
     expect(report.sessions).toHaveProperty('errors');
     expect(report.sessions).toHaveProperty('skipped');
     expect(report.orphanFiles).toHaveProperty('cleaned');
+    expect(report.globalDirs).toHaveProperty('cleaned');
   });
 
   test('同時清理過期 session 和過期暫存檔', () => {
@@ -381,5 +520,23 @@ describe('runCleanup — 一鍵清理入口', () => {
     expect(report.sessions.cleaned).toBe(0);
     expect(report.sessions.skipped).toContain(currentId);
     expect(fs.existsSync(currentPath)).toBe(true);
+  });
+
+  test('同時清理過期 global hash 目錄', () => {
+    const sessionsDir = path.join(tmpDir, 'sessions');
+    const globalDir = path.join(tmpDir, 'global');
+    fs.mkdirSync(sessionsDir, { recursive: true });
+    fs.mkdirSync(globalDir, { recursive: true });
+
+    // 建立過期 global hash 目錄（40 天前）
+    const staleHash = 'deadbeef';
+    const staleHashPath = path.join(globalDir, staleHash);
+    fs.mkdirSync(staleHashPath);
+    setMtime(staleHashPath, daysAgo(40));
+
+    const report = runCleanup('', tmpDir, { globalMaxAgeDays: 30 });
+
+    expect(report.globalDirs.cleaned).toBe(1);
+    expect(fs.existsSync(staleHashPath)).toBe(false);
   });
 });

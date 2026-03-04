@@ -3,9 +3,10 @@
 /**
  * session-cleanup.js — Session 過期清理工具
  *
- * 提供三個函式：
- *   cleanupStaleSessions(options)   — 清理 ~/.overtone/sessions/ 下過期 session 目錄
+ * 提供四個函式：
+ *   cleanupStaleSessions(options)    — 清理 ~/.overtone/sessions/ 下過期 session 目錄
  *   cleanupOrphanFiles(overtoneHome) — 清理 ~/.overtone/ 下過期暫存檔
+ *   cleanupStaleGlobalDirs(options)  — 清理 ~/.overtone/global/ 下超過 30 天未更新的孤兒 hash 目錄
  *   runCleanup(sessionId, overtoneHome) — 一鍵清理入口
  *
  * 設計原則：
@@ -21,6 +22,7 @@ const os = require('os');
 const DEFAULT_OVERTONE_HOME = path.join(os.homedir(), '.overtone');
 const DEFAULT_MAX_AGE_DAYS = 7;
 const DEFAULT_ORPHAN_MAX_AGE_HOURS = 1;
+const DEFAULT_GLOBAL_MAX_AGE_DAYS = 30;
 
 /**
  * 取得目錄內所有檔案的最新 mtime（毫秒）。
@@ -203,19 +205,97 @@ function cleanupOrphanFiles(overtoneHome, options = {}) {
 }
 
 /**
+ * 清理 ~/.overtone/global/ 下超過 maxAgeDays 天未更新的孤兒 hash 目錄。
+ *
+ * 每個 hash 目錄對應一個專案的全域 store（由 projectRoot SHA-256 前 8 字元決定）。
+ * 測試執行時每次 makeTmpProject() 都產生新 hash 目錄，測試結束後若未清理則形成孤兒。
+ * 此函式掃描所有 hash 目錄，以最深層檔案的 mtime 為基準，刪除超過 maxAgeDays 天的目錄。
+ *
+ * @param {object} [options]
+ * @param {number} [options.maxAgeDays=30] - 超過此天數視為孤兒
+ * @param {string} [options.globalDir] - ~/.overtone/global 路徑（測試用）
+ * @param {boolean} [options.dryRun=false] - true 時只回傳清單不實際刪除
+ * @returns {{ cleaned: number, dryRunList: string[], errors: string[], skipped: number }}
+ */
+function cleanupStaleGlobalDirs(options = {}) {
+  const maxAgeDays = options.maxAgeDays != null ? options.maxAgeDays : DEFAULT_GLOBAL_MAX_AGE_DAYS;
+  const globalDir = options.globalDir || path.join(DEFAULT_OVERTONE_HOME, 'global');
+  const dryRun = options.dryRun === true;
+
+  const result = { cleaned: 0, dryRunList: [], errors: [], skipped: 0 };
+
+  // global 目錄不存在時直接回傳
+  if (!fs.existsSync(globalDir)) {
+    return result;
+  }
+
+  let entries;
+  try {
+    entries = fs.readdirSync(globalDir);
+  } catch (err) {
+    result.errors.push(`無法讀取 global 目錄：${err.message || String(err)}`);
+    return result;
+  }
+
+  const nowMs = Date.now();
+  const maxAgeMs = maxAgeDays * 24 * 60 * 60 * 1000;
+
+  for (const entry of entries) {
+    const hashDirPath = path.join(globalDir, entry);
+
+    // 確認是目錄（hash 目錄格式為 8 字元 hex）
+    try {
+      const stat = fs.statSync(hashDirPath);
+      if (!stat.isDirectory()) {
+        continue;
+      }
+    } catch {
+      continue;
+    }
+
+    // 取得目錄內最新 mtime（含子檔案）
+    const latestMtime = getLatestMtime(hashDirPath);
+    const ageMs = nowMs - latestMtime;
+
+    // 未超過最大存活時間 → 跳過
+    if (ageMs <= maxAgeMs) {
+      result.skipped++;
+      continue;
+    }
+
+    if (dryRun) {
+      // dry-run 模式：只記錄不刪除
+      result.dryRunList.push(hashDirPath);
+    } else {
+      // 刪除孤兒 hash 目錄
+      try {
+        fs.rmSync(hashDirPath, { recursive: true, force: true });
+        result.cleaned++;
+      } catch (err) {
+        result.errors.push(`刪除 global hash 目錄 ${entry} 失敗：${err.message || String(err)}`);
+      }
+    }
+  }
+
+  return result;
+}
+
+/**
  * 一鍵清理入口。
  *
- * 呼叫 cleanupStaleSessions + cleanupOrphanFiles，回傳完整報告。
+ * 呼叫 cleanupStaleSessions + cleanupOrphanFiles + cleanupStaleGlobalDirs，回傳完整報告。
  *
  * @param {string} [currentSessionId] - 當前 session ID（不刪除此 session）
  * @param {string} [overtoneHome] - ~/.overtone 路徑（測試用可傳入替代路徑）
  * @param {object} [options]
  * @param {number} [options.maxAgeDays=7] - session 過期天數
- * @returns {{ sessions: object, orphanFiles: object }}
+ * @param {number} [options.globalMaxAgeDays=30] - global hash 目錄過期天數
+ * @returns {{ sessions: object, orphanFiles: object, globalDirs: object }}
  */
 function runCleanup(currentSessionId, overtoneHome, options = {}) {
   const homeDir = overtoneHome || DEFAULT_OVERTONE_HOME;
   const sessionsDir = path.join(homeDir, 'sessions');
+  const globalDir = path.join(homeDir, 'global');
 
   const sessionsResult = cleanupStaleSessions({
     maxAgeDays: options.maxAgeDays,
@@ -227,14 +307,22 @@ function runCleanup(currentSessionId, overtoneHome, options = {}) {
     maxAgeHours: options.maxAgeHours,
   });
 
+  const globalResult = cleanupStaleGlobalDirs({
+    maxAgeDays: options.globalMaxAgeDays,
+    globalDir,
+    dryRun: options.dryRun,
+  });
+
   return {
     sessions: sessionsResult,
     orphanFiles: orphanResult,
+    globalDirs: globalResult,
   };
 }
 
 module.exports = {
   cleanupStaleSessions,
   cleanupOrphanFiles,
+  cleanupStaleGlobalDirs,
   runCleanup,
 };
