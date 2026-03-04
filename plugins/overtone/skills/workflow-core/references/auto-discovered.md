@@ -1,16 +1,4 @@
 ---
-## 2026-03-03 | product-manager:PM Context
-**問題陳述**：Overtone 目前是「只有大腦沒有五官」的自治系統。agent 無法「看到」螢幕上正在發生什麼，也無法「理解」視覺內容。這限制了系統的自主能力 -- 例如 Phase 3 Acid Test 要求的「截圖+視覺驗證顯示正確」完全無法執行。
-
-**影響**：
-- 無法驗證 GUI 操作結果（啟動監控後無法確認畫面正確）
-- 無法進入 P3.2（操控層）-- 沒有眼睛就無法做 Computer Use 的「截圖 -> 理解 -> 操作 -> 驗證」迴圈
-- Phase 3 Acid Test 完全受阻
-
-**根因分析**：Layer 2（感知操控）中「眼睛」能力缺失。P3.0 已建立骨架（skill domain + guard + agent frontmatter），P3.1 負責填充第一批實際能力。
-Keywords: overtone, agent, phase, acid, test, computer, layer, skill, domain, guard
-
----
 ## 2026-03-03 | planner:PLAN Context
 P3.1「感知層」為 Overtone Phase 3 OS 能力的第一階段，目標是讓 agent 能自主截圖並「看見」畫面（透過 Claude Code Read tool 多模態），同時查詢視窗狀態。PM 已確認不建立 `visual.js`（原生 Read tool 即可），核心交付物為兩支腳本（`screenshot.js` + `window.js`）、一份完整 reference 文件（`perception.md`）以及對應的單元測試。
 
@@ -774,4 +762,21 @@ Keywords: plugins, overtone, scripts, state, enforceinvariants, sanitize, tests,
 **state-sanitize.test.js（規則 3 — sanitize）：**
 - Scenario 8（4 個 test case）：無 completedAt → pending、有 completedAt → completed、有對應 activeAgent 不修復、fixed 訊息格式驗證（全部 PASS）
 Keywords: passed, failed, scenario, state, invariants, test, enforceinvariants, stage, active, activeagents
+
+---
+## 2026-03-04 | developer:DEV Findings
+**三個根因，對應修復：**
+
+1. **Regex 不支援 hyphen**（`[a-z]+` → `[a-z][a-z-]*`）
+   - 受影響：`specs:tasks-missing`、`specs:archive-skipped`、`session:compact-suggestion`
+   - 這三個事件在 `on-stop.js` 有正常的 `timeline.emit()` 呼叫，只是 regex 無法匹配含 hyphen 的事件名後綴
+
+2. **未掃描物件字面量 type 欄位**（新增 `typeLiteralRe`）
+   - 受影響：`stage:retry`、`error:fatal`、`parallel:converge`
+   - `stop-message-builder.js` 回傳 `{ type: 'stage:retry', data: ... }` 物件，由 `on-subagent-stop.js` 接收後才實際 emit；舊邏輯只看 emit 呼叫，看不到物件字面量
+
+3. **bash printf 寫入 timeline**（掃描 `agents/*.md`）
+   - 受影響：`grader:score`
+   - `grader.md` 中 grader agent 用 bash printf 直接寫入 timeline JSONL，完全繞過 JavaScript emit；新增對 `.md` 檔案中 `"type":"event:name"` 模式的掃描
+Keywords: regex, hyphen, specs, tasks, missing, archive, skipped, session, compact, suggestion
 
