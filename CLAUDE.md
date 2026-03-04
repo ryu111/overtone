@@ -104,7 +104,7 @@ bun test
 # 啟動 Dashboard 監控面板（port 7777）
 bun scripts/server.js
 
-# 系統健康檢查（11 項偵測）— checkPhantomEvents/checkDeadExports/checkDocCodeDrift/checkUnusedPaths/checkDuplicateLogic/checkPlatformDrift/checkDocStaleness/checkOsTools/checkComponentChain/checkDataQuality/checkQualityTrends
+# 系統健康檢查（12 項偵測）— checkPhantomEvents/checkDeadExports/checkDocCodeDrift/checkUnusedPaths/checkDuplicateLogic/checkPlatformDrift/checkDocStaleness/checkOsTools/checkComponentChain/checkDataQuality/checkQualityTrends/checkTestGrowth
 bun scripts/health-check.js
 
 # 驗證所有元件設定（17 agents + 11 hooks + 21 skills + 27 commands）— agents/skills/hooks/commands 結構校驗
