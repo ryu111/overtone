@@ -974,7 +974,7 @@ function checkDataQuality(globalDirOverride) {
       },
     },
     'observations.jsonl': {
-      required: ['id', 'ts', 'type', 'confidence'],
+      required: ['id', 'type', 'confidence'],
       validate: (record) => {
         const msgs = [];
         if (typeof record.confidence !== 'number' || record.confidence < 0 || record.confidence > 1) {
@@ -984,7 +984,7 @@ function checkDataQuality(globalDirOverride) {
       },
     },
     'baselines.jsonl': {
-      required: ['ts', 'type'],
+      required: ['ts', 'workflowType'],
       validate: () => [],
     },
   };

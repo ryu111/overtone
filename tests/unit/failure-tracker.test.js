@@ -491,6 +491,7 @@ describe('損壞 JSON 行靜默跳過', () => {
   test('7-1 損壞行不影響讀取其他記錄', () => {
     const project = join(homedir(), '.overtone', 'test-fail-corrupt-' + TIMESTAMP);
     dirsToClean.push(project);
+    dirsToClean.push(paths.global.dir(project));
 
     const filePath = getFailurePath(project);
     mkdirSync(require('path').dirname(filePath), { recursive: true });
