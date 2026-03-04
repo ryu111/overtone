@@ -98,7 +98,10 @@ plugins/overtone/   # Plugin 根目錄
 ## 常用指令
 
 ```bash
-# 執行所有測試（從專案根目錄）
+# 執行所有測試（多進程並行，~14s）
+bun scripts/test-parallel.js
+
+# 執行所有測試（單進程，~53s）
 bun test
 
 # 啟動 Dashboard 監控面板（port 7777）

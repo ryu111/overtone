@@ -24,12 +24,12 @@ const TEST_DIRS = ['tests/unit', 'tests/integration', 'tests/e2e'];
 
 // 已知重量級檔案（ms，來自實測）——定期用 --calibrate 更新
 const KNOWN_WEIGHTS = {
-  'tests/integration/session-start.test.js': 11600,
   'tests/integration/health-check.test.js': 8200,
   'tests/unit/health-check.test.js': 6400,
+  'tests/integration/session-start.test.js': 6200,
   'tests/integration/platform-alignment-session-end.test.js': 3400,
-  'tests/integration/pre-compact.test.js': 2900,
   'tests/unit/health-check-proactive.test.js': 2500,
+  'tests/integration/pre-compact.test.js': 2200,
   'tests/e2e/full-workflow.test.js': 1300,
   'tests/e2e/workflow-lifecycle.test.js': 1200,
   'tests/integration/agent-on-stop.test.js': 1200,

@@ -26,6 +26,9 @@ const HOOK_PATH = join(HOOKS_DIR, 'session', 'pre-compact.js');
 const ON_START_PATH = join(HOOKS_DIR, 'session', 'on-start.js');
 const paths = require(join(SCRIPTS_LIB, 'paths'));
 const stateLib = require(join(SCRIPTS_LIB, 'state'));
+const { stages, parallelGroups } = require(join(SCRIPTS_LIB, 'registry'));
+const { buildPendingTasksMessage, buildProgressBar } = require(join(SCRIPTS_LIB, 'hook-utils'));
+const { buildCompactMessage } = require(HOOK_PATH);
 
 // ── Session ID（每個 describe 獨立，加時戳避免衝突）──
 
@@ -127,6 +130,20 @@ function readTimeline(sessionId) {
   }).filter(Boolean);
 }
 
+/**
+ * 用 sessionId 建立標準 ctx 物件，供 buildCompactMessage 直接呼叫
+ */
+function buildCtxFromSession(sessionId, projectRoot = null) {
+  const currentState = stateLib.readState(sessionId);
+  const stageEntries = Object.entries(currentState.stages || {});
+  const completed = stageEntries.filter(([, s]) => s.status === 'completed').length;
+  const total = stageEntries.length;
+  const progressBar = buildProgressBar(stageEntries, stages);
+  const stageHint = stateLib.getNextStageHint(currentState, { stages, parallelGroups });
+  const pendingMsg = projectRoot ? buildPendingTasksMessage(projectRoot) : null;
+  return { currentState, progressBar, completed, total, stageHint, pendingMsg, queueSummary: null };
+}
+
 // ── 清理 ──
 
 afterAll(() => {
@@ -201,85 +218,89 @@ describe('Feature 2：有 workflow state 時組裝狀態摘要', () => {
     stateLib.updateStage(SESSION_MAIN, 'ARCH', { status: 'completed', result: 'pass' });
   });
 
-  // Scenario 2.1
+  // Scenario 2.1 — buildCompactMessage 直接驗證 systemMessage 內容
   test('systemMessage 首行為 [Overtone 狀態恢復（compact 後）]', () => {
-    const result = runHook({ session_id: SESSION_MAIN });
-    expect(result.exitCode).toBe(0);
-    const output = JSON.parse(result.stdout);
-    expect(output.systemMessage).toBeDefined();
-    expect(output.systemMessage.startsWith('[Overtone 狀態恢復（compact 後）]')).toBe(true);
+    const ctx = buildCtxFromSession(SESSION_MAIN);
+    const systemMessage = buildCompactMessage(ctx);
+    expect(systemMessage.startsWith('[Overtone 狀態恢復（compact 後）]')).toBe(true);
   });
 
   test('systemMessage 包含工作流類型', () => {
-    const result = runHook({ session_id: SESSION_MAIN });
-    const { systemMessage } = JSON.parse(result.stdout);
+    const ctx = buildCtxFromSession(SESSION_MAIN);
+    const systemMessage = buildCompactMessage(ctx);
     expect(systemMessage).toContain('工作流：standard');
   });
 
   test('systemMessage 包含進度條（✅ 標記 completed stage）', () => {
-    const result = runHook({ session_id: SESSION_MAIN });
-    const { systemMessage } = JSON.parse(result.stdout);
+    const ctx = buildCtxFromSession(SESSION_MAIN);
+    const systemMessage = buildCompactMessage(ctx);
     expect(systemMessage).toContain('進度：');
     expect(systemMessage).toContain('✅'); // PLAN, ARCH 已完成
     expect(systemMessage).toContain('⬜'); // 未完成的 stage
   });
 
   test('systemMessage 末尾包含行動指引', () => {
-    const result = runHook({ session_id: SESSION_MAIN });
-    const { systemMessage } = JSON.parse(result.stdout);
+    const ctx = buildCtxFromSession(SESSION_MAIN);
+    const systemMessage = buildCompactMessage(ctx);
     expect(systemMessage).toContain('⛔ 禁止詢問使用者「我該繼續嗎？」');
     expect(systemMessage).toContain('/ot:auto');
   });
 
   // Scenario 2.2: failCount > 0 時顯示失敗計數
   test('failCount > 0 時 systemMessage 包含失敗次數', () => {
-    const ws = stateLib.readState(SESSION_MAIN);
-    ws.failCount = 2;
-    stateLib.writeState(SESSION_MAIN, ws);
-    const result = runHook({ session_id: SESSION_MAIN });
-    const { systemMessage } = JSON.parse(result.stdout);
+    const currentState = stateLib.readState(SESSION_MAIN);
+    currentState.failCount = 2;
+    const stageEntries = Object.entries(currentState.stages || {});
+    const completed = stageEntries.filter(([, s]) => s.status === 'completed').length;
+    const total = stageEntries.length;
+    const progressBar = buildProgressBar(stageEntries, stages);
+    const stageHint = stateLib.getNextStageHint(currentState, { stages, parallelGroups });
+    const systemMessage = buildCompactMessage({ currentState, progressBar, completed, total, stageHint, pendingMsg: null, queueSummary: null });
     expect(systemMessage).toContain('失敗次數：2/3');
-    // 重置
-    ws.failCount = 0;
-    stateLib.writeState(SESSION_MAIN, ws);
   });
 
   // Scenario 2.3: rejectCount > 0
   test('rejectCount > 0 時 systemMessage 包含拒絕次數', () => {
-    const ws = stateLib.readState(SESSION_MAIN);
-    ws.rejectCount = 1;
-    ws.failCount = 0;
-    stateLib.writeState(SESSION_MAIN, ws);
-    const result = runHook({ session_id: SESSION_MAIN });
-    const { systemMessage } = JSON.parse(result.stdout);
+    const currentState = stateLib.readState(SESSION_MAIN);
+    currentState.rejectCount = 1;
+    currentState.failCount = 0;
+    const stageEntries = Object.entries(currentState.stages || {});
+    const completed = stageEntries.filter(([, s]) => s.status === 'completed').length;
+    const total = stageEntries.length;
+    const progressBar = buildProgressBar(stageEntries, stages);
+    const stageHint = stateLib.getNextStageHint(currentState, { stages, parallelGroups });
+    const systemMessage = buildCompactMessage({ currentState, progressBar, completed, total, stageHint, pendingMsg: null, queueSummary: null });
     expect(systemMessage).toContain('拒絕次數：1/3');
     expect(systemMessage).not.toContain('失敗次數');
-    // 重置
-    ws.rejectCount = 0;
-    stateLib.writeState(SESSION_MAIN, ws);
   });
 
   // Scenario 2.2: failCount = 0 時不顯示失敗次數
   test('failCount = 0 時 systemMessage 不包含失敗次數行', () => {
-    const ws = stateLib.readState(SESSION_MAIN);
-    ws.failCount = 0;
-    stateLib.writeState(SESSION_MAIN, ws);
-    const result = runHook({ session_id: SESSION_MAIN });
-    const { systemMessage } = JSON.parse(result.stdout);
+    const currentState = stateLib.readState(SESSION_MAIN);
+    currentState.failCount = 0;
+    const stageEntries = Object.entries(currentState.stages || {});
+    const completed = stageEntries.filter(([, s]) => s.status === 'completed').length;
+    const total = stageEntries.length;
+    const progressBar = buildProgressBar(stageEntries, stages);
+    const stageHint = stateLib.getNextStageHint(currentState, { stages, parallelGroups });
+    const systemMessage = buildCompactMessage({ currentState, progressBar, completed, total, stageHint, pendingMsg: null, queueSummary: null });
     expect(systemMessage).not.toContain('失敗次數');
   });
 
   // Scenario 2.3: rejectCount = 0 時不顯示拒絕次數
   test('rejectCount = 0 時 systemMessage 不包含拒絕次數行', () => {
-    const ws = stateLib.readState(SESSION_MAIN);
-    ws.rejectCount = 0;
-    stateLib.writeState(SESSION_MAIN, ws);
-    const result = runHook({ session_id: SESSION_MAIN });
-    const { systemMessage } = JSON.parse(result.stdout);
+    const currentState = stateLib.readState(SESSION_MAIN);
+    currentState.rejectCount = 0;
+    const stageEntries = Object.entries(currentState.stages || {});
+    const completed = stageEntries.filter(([, s]) => s.status === 'completed').length;
+    const total = stageEntries.length;
+    const progressBar = buildProgressBar(stageEntries, stages);
+    const stageHint = stateLib.getNextStageHint(currentState, { stages, parallelGroups });
+    const systemMessage = buildCompactMessage({ currentState, progressBar, completed, total, stageHint, pendingMsg: null, queueSummary: null });
     expect(systemMessage).not.toContain('拒絕次數');
   });
 
-  // Scenario 2.4: pre-compact 執行後 activeAgents 被清空（B3 行為）
+  // Scenario 2.4: pre-compact 執行後 activeAgents 被清空（B3 行為）— 需要 spawn（驗證副作用）
   test('pre-compact 執行後 activeAgents 被清空（壓縮前殘留的 entry 應清除）', () => {
     const ws = stateLib.readState(SESSION_MAIN);
     ws.activeAgents = { developer: { agentName: 'developer', stage: 'DEV', startedAt: new Date().toISOString() } };
@@ -293,11 +314,14 @@ describe('Feature 2：有 workflow state 時組裝狀態摘要', () => {
 
   // Scenario 2.5: 無活躍 agent
   test('activeAgents 為空時 systemMessage 不包含活躍 Agents 行', () => {
-    const ws = stateLib.readState(SESSION_MAIN);
-    ws.activeAgents = {};
-    stateLib.writeState(SESSION_MAIN, ws);
-    const result = runHook({ session_id: SESSION_MAIN });
-    const { systemMessage } = JSON.parse(result.stdout);
+    const currentState = stateLib.readState(SESSION_MAIN);
+    currentState.activeAgents = {};
+    const stageEntries = Object.entries(currentState.stages || {});
+    const completed = stageEntries.filter(([, s]) => s.status === 'completed').length;
+    const total = stageEntries.length;
+    const progressBar = buildProgressBar(stageEntries, stages);
+    const stageHint = stateLib.getNextStageHint(currentState, { stages, parallelGroups });
+    const systemMessage = buildCompactMessage({ currentState, progressBar, completed, total, stageHint, pendingMsg: null, queueSummary: null });
     expect(systemMessage).not.toContain('活躍 Agents');
   });
 });
@@ -321,25 +345,24 @@ describe('Feature 3：有活躍 feature 時注入未完成任務清單', () => {
     ]);
   });
 
-  // Scenario 3.1
+  // Scenario 3.1 — 直接用 buildCompactMessage 驗證 systemMessage 內容
   test('有未完成任務時 systemMessage 包含 feature 名稱統計行', () => {
-    const result = runHook({ session_id: SESSION_FEAT, cwd: TMP_ROOT });
-    expect(result.exitCode).toBe(0);
-    const { systemMessage } = JSON.parse(result.stdout);
+    const ctx = buildCtxFromSession(SESSION_FEAT, TMP_ROOT);
+    const systemMessage = buildCompactMessage(ctx);
     expect(systemMessage).toContain(`Feature：${FEATURE_NAME}（2/5 完成）`);
   });
 
   test('systemMessage 包含未完成任務 checkbox 行', () => {
-    const result = runHook({ session_id: SESSION_FEAT, cwd: TMP_ROOT });
-    const { systemMessage } = JSON.parse(result.stdout);
+    const ctx = buildCtxFromSession(SESSION_FEAT, TMP_ROOT);
+    const systemMessage = buildCompactMessage(ctx);
     expect(systemMessage).toContain('- [ ] 未完成任務 1');
     expect(systemMessage).toContain('- [ ] 未完成任務 2');
     expect(systemMessage).toContain('- [ ] 未完成任務 3');
   });
 
   test('systemMessage 包含 TaskCreate 提示', () => {
-    const result = runHook({ session_id: SESSION_FEAT, cwd: TMP_ROOT });
-    const { systemMessage } = JSON.parse(result.stdout);
+    const ctx = buildCtxFromSession(SESSION_FEAT, TMP_ROOT);
+    const systemMessage = buildCompactMessage(ctx);
     expect(systemMessage).toContain('→ 請使用 TaskCreate 重建以上任務的 TaskList，然後繼續執行。');
   });
 
@@ -358,8 +381,8 @@ describe('Feature 3：有活躍 feature 時注入未完成任務清單', () => {
       '- [ ] 任務 7',
       '- [ ] 任務 8',
     ]);
-    const result = runHook({ session_id: SESSION_8, cwd: ROOT_8 });
-    const { systemMessage } = JSON.parse(result.stdout);
+    const ctx = buildCtxFromSession(SESSION_8, ROOT_8);
+    const systemMessage = buildCompactMessage(ctx);
     // 前 5 個出現，第 6 個不出現
     expect(systemMessage).toContain('- [ ] 任務 5');
     expect(systemMessage).not.toContain('- [ ] 任務 6');
@@ -373,9 +396,8 @@ describe('Feature 3：有活躍 feature 時注入未完成任務清單', () => {
   test('所有任務完成時 systemMessage 不包含未完成任務段落', () => {
     stateLib.initState(SESSION_EMPTY_TASKS, 'quick', ['DEV', 'REVIEW', 'TEST', 'RETRO']);
     createFeature(TMP_ROOT_EMPTY, 'all-done', ['- [x] 任務 A', '- [x] 任務 B']);
-    const result = runHook({ session_id: SESSION_EMPTY_TASKS, cwd: TMP_ROOT_EMPTY });
-    expect(result.exitCode).toBe(0);
-    const { systemMessage } = JSON.parse(result.stdout);
+    const ctx = buildCtxFromSession(SESSION_EMPTY_TASKS, TMP_ROOT_EMPTY);
+    const systemMessage = buildCompactMessage(ctx);
     expect(systemMessage).toBeDefined();
     expect(systemMessage).not.toContain('📋 **未完成任務**');
     expect(systemMessage).toContain('[Overtone 狀態恢復（compact 後）]');
@@ -387,9 +409,8 @@ describe('Feature 3：有活躍 feature 時注入未完成任務清單', () => {
     const SESSION_NO_FEAT = `pre-compact-no-feat-${TS}`;
     stateLib.initState(SESSION_NO_FEAT, 'quick', ['DEV', 'REVIEW', 'TEST', 'RETRO']);
     mkdirSync(join(ROOT_EMPTY_DIR, 'specs', 'features', 'in-progress'), { recursive: true });
-    const result = runHook({ session_id: SESSION_NO_FEAT, cwd: ROOT_EMPTY_DIR });
-    expect(result.exitCode).toBe(0);
-    const { systemMessage } = JSON.parse(result.stdout);
+    const ctx = buildCtxFromSession(SESSION_NO_FEAT, ROOT_EMPTY_DIR);
+    const systemMessage = buildCompactMessage(ctx);
     expect(systemMessage).toBeDefined();
     expect(systemMessage).not.toContain('📋 **未完成任務**');
     // 清理
@@ -401,13 +422,12 @@ describe('Feature 3：有活躍 feature 時注入未完成任務清單', () => {
   test('specs 讀取失敗時仍輸出 workflow 摘要（不拋錯）', () => {
     const SESSION_SPEC_ERR = `pre-compact-spec-err-${TS}`;
     stateLib.initState(SESSION_SPEC_ERR, 'quick', ['DEV', 'REVIEW', 'TEST', 'RETRO']);
-    // 傳入不存在的 cwd，specs.getActiveFeature 會讀取失敗
-    const result = runHook({ session_id: SESSION_SPEC_ERR, cwd: '/nonexistent/path/xyz' });
-    expect(result.exitCode).toBe(0);
-    const output = JSON.parse(result.stdout);
-    expect(output.systemMessage).toBeDefined();
-    expect(output.systemMessage).toContain('[Overtone 狀態恢復（compact 後）]');
-    expect(output.systemMessage).not.toContain('📋 **未完成任務**');
+    // 傳入不存在的 projectRoot，buildPendingTasksMessage 內部有 try/catch 會回傳 null
+    const ctx = buildCtxFromSession(SESSION_SPEC_ERR, '/nonexistent/path/xyz');
+    const systemMessage = buildCompactMessage(ctx);
+    expect(systemMessage).toBeDefined();
+    expect(systemMessage).toContain('[Overtone 狀態恢復（compact 後）]');
+    expect(systemMessage).not.toContain('📋 **未完成任務**');
     // 清理
     rmSync(paths.sessionDir(SESSION_SPEC_ERR), { recursive: true, force: true });
   });
@@ -422,9 +442,8 @@ describe('Feature 4：systemMessage 長度截斷保護', () => {
   test('正常 systemMessage 不含截斷提示', () => {
     const SESSION_SHORT = `pre-compact-short-${TS}`;
     stateLib.initState(SESSION_SHORT, 'single', ['DEV']);
-    const result = runHook({ session_id: SESSION_SHORT });
-    expect(result.exitCode).toBe(0);
-    const { systemMessage } = JSON.parse(result.stdout);
+    const ctx = buildCtxFromSession(SESSION_SHORT);
+    const systemMessage = buildCompactMessage(ctx);
     expect(systemMessage).not.toContain('已截斷，完整狀態請查看');
     rmSync(paths.sessionDir(SESSION_SHORT), { recursive: true, force: true });
   });
@@ -438,9 +457,8 @@ describe('Feature 4：systemMessage 長度截斷保護', () => {
     const longName = '這是一個極度冗長的任務名稱用來撐爆 systemMessage 的長度限制測試項目。'.repeat(12);
     const manyTasks = Array.from({ length: 5 }, (_, i) => `- [ ] ${longName} 第 ${i + 1} 個`);
     createFeature(ROOT_LONG, 'long-feature', manyTasks);
-    const result = runHook({ session_id: SESSION_LONG, cwd: ROOT_LONG });
-    expect(result.exitCode).toBe(0);
-    const { systemMessage } = JSON.parse(result.stdout);
+    const ctx = buildCtxFromSession(SESSION_LONG, ROOT_LONG);
+    const systemMessage = buildCompactMessage(ctx);
     expect(systemMessage.length).toBeLessThanOrEqual(2000);
     expect(systemMessage).toContain('已截斷，完整狀態請查看 workflow.json');
     rmSync(ROOT_LONG, { recursive: true, force: true });

@@ -7,9 +7,14 @@
  *   2. 建立目錄後向 timeline 寫入 session:start 事件
  *   3. 無 session_id 時靜默跳過，exit 0
  *   4. 有未完成 specs tasks 時，輸出含 systemMessage 的 pending tasks 提示
+ *
+ * 遷移策略（Humble Object）：
+ *   - 場景 4：systemMessage 內容改用直接呼叫 buildPendingTasksMessage + buildStartOutput
+ *   - 場景 6：banner 字串格式改用直接呼叫 buildBanner
+ *   - 副作用場景（目錄建立、timeline 事件、state 修改）保留 spawn 測試
  */
 
-const { test, expect, describe, afterAll } = require('bun:test');
+const { test, expect, describe, afterAll, beforeAll } = require('bun:test');
 const { existsSync, rmSync, readFileSync, mkdirSync, writeFileSync } = require('fs');
 const { join } = require('path');
 const { homedir } = require('os');
@@ -19,6 +24,10 @@ const { HOOKS_DIR, SCRIPTS_LIB } = require('../helpers/paths');
 
 const HOOK_PATH = join(HOOKS_DIR, 'session', 'on-start.js');
 const paths = require(join(SCRIPTS_LIB, 'paths'));
+
+// ── 純函數直接 require（Humble Object 模式）──
+const { buildBanner, buildStartOutput } = require(join(HOOKS_DIR, 'session', 'on-start.js'));
+const { buildPendingTasksMessage } = require(join(SCRIPTS_LIB, 'hook-utils'));
 
 // 每個場景使用唯一 sessionId 避免衝突
 const TIMESTAMP = Date.now();
@@ -151,10 +160,12 @@ describe('場景 3：無 session_id — 靜默跳過，exit 0', () => {
 
 // ────────────────────────────────────────────────────────────────────────────
 // 場景 4：有未完成 specs tasks 時，輸出含 systemMessage 的 pending tasks 提示
+// ── 業務邏輯改用純函數直接測試（buildPendingTasksMessage + buildStartOutput）
 // ────────────────────────────────────────────────────────────────────────────
 
-describe('場景 4：有未完成 tasks — 輸出 systemMessage', () => {
-  test('setup: 建立暫存 in-progress feature 目錄及 tasks.md', () => {
+describe('場景 4：有未完成 tasks — 業務邏輯（純函數）', () => {
+  // setup：建立暫存 feature 目錄，供下方純函數測試使用
+  beforeAll(() => {
     mkdirSync(TMP_FEATURE_DIR, { recursive: true });
     writeFileSync(join(TMP_FEATURE_DIR, 'tasks.md'), [
       '---',
@@ -169,47 +180,43 @@ describe('場景 4：有未完成 tasks — 輸出 systemMessage', () => {
       '- [ ] ARCH',
       '- [ ] DEV',
     ].join('\n'));
-    expect(existsSync(join(TMP_FEATURE_DIR, 'tasks.md'))).toBe(true);
   });
 
-  test('hook 輸出 JSON 含 systemMessage 字段', () => {
-    const result = runHook({ cwd: TMP_PROJECT_ROOT });
-    expect(result.exitCode).toBe(0);
-
-    const output = JSON.parse(result.stdout);
-    expect(output.systemMessage).toBeDefined();
+  test('buildPendingTasksMessage 回傳含 feature 名稱的訊息', () => {
+    const msg = buildPendingTasksMessage(TMP_PROJECT_ROOT, { header: '未完成任務（上次 session 中斷）' });
+    expect(typeof msg).toBe('string');
+    expect(msg).toContain('pending-tasks-test');
   });
 
-  test('systemMessage 包含 feature 名稱', () => {
-    const result = runHook({ cwd: TMP_PROJECT_ROOT });
-    const output = JSON.parse(result.stdout);
-    expect(output.systemMessage).toContain('pending-tasks-test');
+  test('buildPendingTasksMessage 包含未完成任務（ARCH、DEV）', () => {
+    const msg = buildPendingTasksMessage(TMP_PROJECT_ROOT, { header: '未完成任務（上次 session 中斷）' });
+    expect(msg).toContain('ARCH');
+    expect(msg).toContain('DEV');
   });
 
-  test('systemMessage 包含未完成任務（ARCH、DEV）', () => {
-    const result = runHook({ cwd: TMP_PROJECT_ROOT });
-    const output = JSON.parse(result.stdout);
-    expect(output.systemMessage).toContain('ARCH');
-    expect(output.systemMessage).toContain('DEV');
-  });
-
-  test('systemMessage 不包含已完成任務（PLAN）', () => {
-    const result = runHook({ cwd: TMP_PROJECT_ROOT });
-    const output = JSON.parse(result.stdout);
-    // PLAN 已完成，不應出現在未完成列表中
-    // 注意：PLAN 出現在 feature 名稱統計行不算，要確認不在 checkbox 列表中
-    const lines = output.systemMessage.split('\n');
+  test('buildPendingTasksMessage 不包含已完成任務（PLAN）的 checkbox', () => {
+    const msg = buildPendingTasksMessage(TMP_PROJECT_ROOT, { header: '未完成任務（上次 session 中斷）' });
+    const lines = msg.split('\n');
     const checkboxLines = lines.filter(l => l.startsWith('- [ ]'));
     expect(checkboxLines.some(l => l.includes('PLAN'))).toBe(false);
   });
 
-  test('所有任務完成時 hook 輸出不含 systemMessage', () => {
+  test('buildStartOutput 含 msg 時輸出有 systemMessage', () => {
+    const msg = '## 未完成任務\n\nFeature：test（1/2 完成）\n- [ ] ARCH';
+    const output = buildStartOutput({}, { banner: 'banner text', msgs: [msg] });
+    expect(output.systemMessage).toBe(msg);
+  });
+
+  test('buildStartOutput 無 msg 時輸出不含 systemMessage', () => {
+    const output = buildStartOutput({}, { banner: 'banner text', msgs: [] });
+    expect(output.systemMessage).toBeUndefined();
+  });
+
+  test('所有任務完成時 buildPendingTasksMessage 回傳 null', () => {
     // 建立另一個所有 checkbox 都勾選的 feature
     const allDoneFeatureName = 'all-done-feature';
-    const allDoneFeatureDir = join(TMP_PROJECT_ROOT, 'specs', 'features', 'in-progress', allDoneFeatureName);
-    // 注意：只能有一個 in-progress feature（getActiveFeature 取字母序第一個）
-    // 先移除原本的 feature，建立全勾的 feature
-    rmSync(TMP_FEATURE_DIR, { recursive: true, force: true });
+    const allDoneRoot = join(homedir(), '.overtone', 'test-tmp', `session-start-alldone-${TIMESTAMP}`);
+    const allDoneFeatureDir = join(allDoneRoot, 'specs', 'features', 'in-progress', allDoneFeatureName);
     mkdirSync(allDoneFeatureDir, { recursive: true });
     writeFileSync(join(allDoneFeatureDir, 'tasks.md'), [
       '---',
@@ -224,12 +231,19 @@ describe('場景 4：有未完成 tasks — 輸出 systemMessage', () => {
       '- [x] DEV',
     ].join('\n'));
 
+    const msg = buildPendingTasksMessage(allDoneRoot, {});
+    expect(msg).toBeNull();
+
+    // 清理
+    rmSync(allDoneRoot, { recursive: true, force: true });
+  });
+
+  test('hook 整合驗證：有未完成 tasks 時 stdout 含 systemMessage（spawn 整合）', () => {
     const result = runHook({ cwd: TMP_PROJECT_ROOT });
     expect(result.exitCode).toBe(0);
-
     const output = JSON.parse(result.stdout);
-    // 全部完成時不應注入 systemMessage
-    expect(output.systemMessage).toBeUndefined();
+    expect(output.systemMessage).toBeDefined();
+    expect(output.systemMessage).toContain('pending-tasks-test');
   });
 });
 
@@ -288,9 +302,30 @@ describe('場景 5：active feature 自動補寫 workflow.json.featureName', () 
 
 // ────────────────────────────────────────────────────────────────────────────
 // 場景 7：CLAUDE_ENV_FILE 機制 — 寫入 CLAUDE_CODE_EFFORT_LEVEL
+// ── 映射邏輯用純函數測試（registry.effortLevels），副作用保留 1 個 spawn
 // ────────────────────────────────────────────────────────────────────────────
 
-describe('場景 7：CLAUDE_ENV_FILE — 寫入 CLAUDE_CODE_EFFORT_LEVEL', () => {
+describe('場景 7：CLAUDE_CODE_EFFORT_LEVEL 映射邏輯（純函數 registry.effortLevels）', () => {
+  const { effortLevels } = require(join(SCRIPTS_LIB, 'registry'));
+
+  test('opus 對應 high', () => {
+    expect(effortLevels['opus']).toBe('high');
+  });
+
+  test('sonnet 對應 medium', () => {
+    expect(effortLevels['sonnet']).toBe('medium');
+  });
+
+  test('haiku 對應 low', () => {
+    expect(effortLevels['haiku']).toBe('low');
+  });
+
+  test('未知 model 對應 undefined（不寫入）', () => {
+    expect(effortLevels['unknown-model']).toBeUndefined();
+  });
+});
+
+describe('場景 7b：CLAUDE_ENV_FILE — 寫入副作用整合測試（spawn）', () => {
   const SESSION_7 = `test-start-007-${TIMESTAMP}`;
   const tmpEnvFile = join(homedir(), '.overtone', 'test-tmp', `session-start-env-${TIMESTAMP}.txt`);
 
@@ -300,88 +335,78 @@ describe('場景 7：CLAUDE_ENV_FILE — 寫入 CLAUDE_CODE_EFFORT_LEVEL', () =>
     rmSync(tmpEnvFile, { force: true });
   });
 
-  test('model=opus 時寫入 CLAUDE_CODE_EFFORT_LEVEL=high 到 CLAUDE_ENV_FILE', () => {
-    // 預先建立空的 env 檔（模擬 Claude Code 提供的臨時檔案）
+  test('model=opus 時實際寫入 CLAUDE_CODE_EFFORT_LEVEL=high 到檔案', () => {
     writeFileSync(tmpEnvFile, '');
-
     const result = runHook(
       { session_id: SESSION_7, model: 'opus' },
       { CLAUDE_ENV_FILE: tmpEnvFile, CLAUDE_CODE_EFFORT_LEVEL: '' }
     );
     expect(result.exitCode).toBe(0);
-
     const envContent = readFileSync(tmpEnvFile, 'utf8');
     expect(envContent).toContain('CLAUDE_CODE_EFFORT_LEVEL=high');
   });
 
-  test('model=sonnet 時寫入 CLAUDE_CODE_EFFORT_LEVEL=medium', () => {
-    writeFileSync(tmpEnvFile, '');
-
-    const result = runHook(
-      { session_id: SESSION_7, model: 'sonnet' },
-      { CLAUDE_ENV_FILE: tmpEnvFile, CLAUDE_CODE_EFFORT_LEVEL: '' }
-    );
-    expect(result.exitCode).toBe(0);
-
-    const envContent = readFileSync(tmpEnvFile, 'utf8');
-    expect(envContent).toContain('CLAUDE_CODE_EFFORT_LEVEL=medium');
-  });
-
-  test('model=haiku 時寫入 CLAUDE_CODE_EFFORT_LEVEL=low', () => {
-    writeFileSync(tmpEnvFile, '');
-
-    const result = runHook(
-      { session_id: SESSION_7, model: 'haiku' },
-      { CLAUDE_ENV_FILE: tmpEnvFile, CLAUDE_CODE_EFFORT_LEVEL: '' }
-    );
-    expect(result.exitCode).toBe(0);
-
-    const envContent = readFileSync(tmpEnvFile, 'utf8');
-    expect(envContent).toContain('CLAUDE_CODE_EFFORT_LEVEL=low');
-  });
-
   test('CLAUDE_CODE_EFFORT_LEVEL 已存在時不覆蓋', () => {
     writeFileSync(tmpEnvFile, '');
-
     const result = runHook(
       { session_id: SESSION_7, model: 'opus' },
       { CLAUDE_ENV_FILE: tmpEnvFile, CLAUDE_CODE_EFFORT_LEVEL: 'max' }
     );
     expect(result.exitCode).toBe(0);
-
-    // 已存在時不應寫入 CLAUDE_ENV_FILE
     const envContent = readFileSync(tmpEnvFile, 'utf8');
     expect(envContent).not.toContain('CLAUDE_CODE_EFFORT_LEVEL');
   });
 
-  test('CLAUDE_ENV_FILE 不存在時靜默跳過，exit 0', () => {
-    // 指向一個不存在的路徑
-    const nonExistentFile = join(homedir(), '.overtone', 'test-tmp', `nonexistent-${TIMESTAMP}.txt`);
-    const result = runHook(
-      { session_id: SESSION_7, model: 'opus' },
-      { CLAUDE_ENV_FILE: nonExistentFile, CLAUDE_CODE_EFFORT_LEVEL: '' }
-    );
-    // 不存在的路徑，appendFileSync 實際上會建立檔案，所以不會拋錯
-    // 此場景改為驗證：CLAUDE_ENV_FILE 未設定時靜默跳過
-    expect(result.exitCode).toBe(0);
-  });
-
   test('CLAUDE_ENV_FILE 未設定時不寫入任何檔案，exit 0', () => {
-    // 不傳 CLAUDE_ENV_FILE
     const result = runHook(
       { session_id: SESSION_7, model: 'opus' },
       { CLAUDE_CODE_EFFORT_LEVEL: '' }
     );
     expect(result.exitCode).toBe(0);
-    // 無 CLAUDE_ENV_FILE，只要 exit 0 即可
   });
 });
 
 // ────────────────────────────────────────────────────────────────────────────
-// 場景 6：OVERTONE_NO_DASHBOARD — 跳過 Dashboard spawn
+// 場景 6：banner 字串格式（純函數）+ OVERTONE_NO_DASHBOARD 整合
+// ── banner 內容改用直接呼叫 buildBanner；副作用場景保留 spawn
 // ────────────────────────────────────────────────────────────────────────────
 
-describe('場景 6：OVERTONE_NO_DASHBOARD=1 — 跳過 Dashboard spawn', () => {
+describe('場景 6：banner 字串格式（純函數 buildBanner）', () => {
+  test('buildBanner 回傳包含版本號的字串', () => {
+    const banner = buildBanner('0.28.43', 'test-session-id', 7777, {});
+    expect(typeof banner).toBe('string');
+    expect(banner).toContain('0.28.43');
+  });
+
+  test('buildBanner 包含 session ID 前 8 碼', () => {
+    const banner = buildBanner('1.0.0', 'abcdef1234567890', 7777, {});
+    expect(banner).toContain('abcdef12');
+  });
+
+  test('buildBanner 包含 Dashboard URL（有 port 時）', () => {
+    const banner = buildBanner('1.0.0', 'test-session', 7777, {});
+    expect(banner).toContain('http://localhost:7777/');
+  });
+
+  test('buildBanner 無 port 時不顯示 Dashboard URL', () => {
+    const banner = buildBanner('1.0.0', 'test-session', null, {});
+    expect(banner).not.toContain('Dashboard:');
+  });
+
+  test('buildBanner 包含 agentBrowserStatus（非 null 時）', () => {
+    const banner = buildBanner('1.0.0', 'test-session', null, {
+      agentBrowserStatus: '  🌐 agent-browser: 已安裝',
+    });
+    expect(banner).toContain('agent-browser: 已安裝');
+  });
+
+  test('buildBanner 無 sessionId 時不顯示 Session 行', () => {
+    const banner = buildBanner('1.0.0', null, null, {});
+    expect(banner).not.toContain('Session:');
+  });
+});
+
+describe('場景 6b：OVERTONE_NO_DASHBOARD=1 — 跳過 Dashboard spawn（副作用整合）', () => {
   const SESSION_6 = `test-start-006-${TIMESTAMP}`;
 
   // 清理場景 6 的 session
@@ -390,43 +415,12 @@ describe('場景 6：OVERTONE_NO_DASHBOARD=1 — 跳過 Dashboard spawn', () => 
     rmSync(dir6, { recursive: true, force: true });
   });
 
-  test('OVERTONE_NO_DASHBOARD=1 時 hook exit code 仍為 0', () => {
-    // runHook 已預設注入 OVERTONE_NO_DASHBOARD=1，extraEnv 可覆蓋確認
+  test('OVERTONE_NO_DASHBOARD=1 時 exit 0、stdout result 為字串、stderr 無錯誤', () => {
     const result = runHook({ session_id: SESSION_6 }, { OVERTONE_NO_DASHBOARD: '1' });
     expect(result.exitCode).toBe(0);
-  });
-
-  test('OVERTONE_NO_DASHBOARD=1 時 stdout 包含 banner 輸出', () => {
-    const result = runHook({ session_id: SESSION_6 }, { OVERTONE_NO_DASHBOARD: '1' });
-    expect(result.exitCode).toBe(0);
-    // banner 在 JSON result 欄位中輸出
     const parsed = JSON.parse(result.stdout);
-    expect(parsed.result).toBeDefined();
     expect(typeof parsed.result).toBe('string');
-  });
-
-  test('OVERTONE_NO_DASHBOARD=1 時 stderr 無錯誤訊息', () => {
-    const result = runHook({ session_id: SESSION_6 }, { OVERTONE_NO_DASHBOARD: '1' });
-    expect(result.exitCode).toBe(0);
-    // 允許 stderr 為空或只有無關警告，不應出現 Dashboard 相關錯誤
     expect(result.stderr).not.toContain('Dashboard 啟動失敗');
-  });
-
-  test('OVERTONE_NO_DASHBOARD 未設定但明確傳入空字串時仍正常啟動流程', () => {
-    // extraEnv 傳入空字串代表「不跳過」— 此場景確認 falsy 值不跳過
-    // 因測試環境 runHook 預設已有 OVERTONE_NO_DASHBOARD=1，需用 delete 語意覆蓋
-    // 改用直接 spawnSync 繞過 runHook 的預設值
-    const proc = Bun.spawnSync(['node', HOOK_PATH], {
-      stdin: Buffer.from(JSON.stringify({ session_id: SESSION_6 })),
-      env: {
-        ...process.env,
-        CLAUDE_SESSION_ID: '',
-        OVERTONE_NO_DASHBOARD: '1', // 保持跳過，只驗證 exit 0
-      },
-      stdout: 'pipe',
-      stderr: 'pipe',
-    });
-    expect(proc.exitCode).toBe(0);
   });
 });
 
