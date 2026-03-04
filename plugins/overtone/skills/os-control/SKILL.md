@@ -26,6 +26,10 @@ OS 操控能力的集中索引。Agent 按需讀取對應的 reference 文件。
 | 3 | 💡 `${CLAUDE_PLUGIN_ROOT}/skills/os-control/references/system.md` | Process 管理、剪貼簿、系統資訊、通知、檔案監控 | P3.3 ✅ |
 | 4 | 💡 `${CLAUDE_PLUGIN_ROOT}/skills/os-control/references/realtime.md` | WebSocket、TTS、STT | P3.4 |
 
+## Examples
+
+💡 macOS 自動化場景範例集：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/os-control/examples/automation-scenarios.md`
+
 ## OS 能力總覽
 
 Overtone 的 OS 能力架構：

@@ -256,6 +256,18 @@ describe('Feature 1b: Agent skills 預載（agent frontmatter）', () => {
       expect(fm.skills).toContain('dead-code');
     });
   });
+
+  // Scenario 1b-14: developer、code-reviewer、architect 預載 craft skill
+  describe('Scenario 1b-14: craft skill 預載', () => {
+    test('developer、code-reviewer、architect 的 skills 包含 craft', () => {
+      for (const agentName of ['developer', 'code-reviewer', 'architect']) {
+        const fm = agentFrontmatters[agentName];
+        expect(fm.skills, `${agentName}: skills should be defined`).toBeDefined();
+        const skills = Array.isArray(fm.skills) ? fm.skills : [fm.skills];
+        expect(skills, `${agentName}: should contain craft`).toContain('craft');
+      }
+    });
+  });
 });
 
 // ────────────────────────────────────────────────────────────────────────────

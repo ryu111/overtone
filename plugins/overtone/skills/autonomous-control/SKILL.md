@@ -6,19 +6,21 @@ user-invocable: false
 
 # Autonomous Control 知識域
 
-心跳引擎（Heartbeat Daemon）的操作指引與 headless 環境行為規範。跨 session 自主執行能力的集中索引。
+> 來源：Overtone 自主控制子系統
 
 ## 消費者
 
 | Agent | 用途 |
 |-------|------|
-| developer | 實作 heartbeat 相關功能、呼叫 session-spawner API |
-| architect | 設計自主執行架構、評估佇列策略 |
-| tester | 測試 heartbeat 行為、驗證 polling 邏輯 |
-| debugger | 診斷 daemon 相關問題、追蹤 session 失敗原因 |
+| architect | 設計自主執行流程時參考 heartbeat 和佇列機制 |
+| debugger | 診斷自主執行失敗時查詢 spawner 防護和佇列狀態 |
+| developer | 實作跨 session 任務時使用佇列 API 和 session spawner |
+| tester | 驗證自主控制功能的行為規格 |
 
-## Reference 索引
+## 資源索引
 
 | 檔案 | 說明 |
 |------|------|
-| 💡 `${CLAUDE_PLUGIN_ROOT}/skills/autonomous-control/references/heartbeat.md` | heartbeat CLI 使用方式、session-spawner API、headless 模式注意事項（AskUserQuestion 不可用、Telegram 通知替代螢幕、安全邊界） |
+| 💡 `${CLAUDE_PLUGIN_ROOT}/skills/autonomous-control/references/heartbeat.md` | Heartbeat daemon 使用指引：start/stop/status + 常駐模式 |
+| 💡 `${CLAUDE_PLUGIN_ROOT}/skills/autonomous-control/references/queue-management.md` | 執行佇列管理：CLI 操作 + API 參考 + 生命週期 + 錯誤處理決策樹 |
+| 💡 `${CLAUDE_PLUGIN_ROOT}/skills/autonomous-control/references/session-spawner.md` | Session Spawner：spawnSession API + 三層安全防護 + timeout 機制 |

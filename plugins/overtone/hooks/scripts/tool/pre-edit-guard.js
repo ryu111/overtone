@@ -24,7 +24,7 @@ const { readFileSync, existsSync } = require('fs');
 const { safeReadStdin, safeRun } = require('../../../scripts/lib/hook-utils');
 
 // MEMORY.md 行數上限
-const MEMORY_LINE_LIMIT = 60;
+const MEMORY_LINE_LIMIT = 200;
 
 // Plugin 根目錄（此腳本位於 hooks/scripts/tool/，上三層）
 const PLUGIN_ROOT = resolve(__dirname, '..', '..', '..');

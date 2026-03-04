@@ -1,7 +1,6 @@
 ---
 name: issue
 description: 從 GitHub Issue 啟動 Overtone workflow。讀取 Issue 內容，根據 labels 自動選擇 workflow 類型，建立 feature branch 並啟動執行。
-argument-hint: "[GitHub Issue URL 或 #number]"
 disable-model-invocation: false
 ---
 
@@ -126,6 +125,12 @@ try {
 然後讀取對應 workflow command 開始執行：`/ot:<workflowType>`
 
 將 Issue title 和 body 作為使用者需求輸入，傳遞給第一個 stage agent。
+
+## 參考文件
+
+按需讀取：
+- Label 映射表：`${CLAUDE_PLUGIN_ROOT}/skills/issue/references/label-workflow-map.md`
+- Issue 分類決策樹：`${CLAUDE_PLUGIN_ROOT}/skills/issue/references/issue-triage.md`
 
 ## 完成條件
 

@@ -4,42 +4,17 @@ description: 分析 Instinct 觀察記錄，摘要知識積累狀態，建議或
 disable-model-invocation: false
 ---
 
-# /ot:evolve — Instinct 知識進化
+# Evolve 知識域
 
-## 職責
+> Instinct 觀察記錄的分析與進化管理
 
-分析 `observations.jsonl`，評估哪些 instinct 已達進化門檻，
-引導 Main Agent 決定是否將累積的知識固化為 Skill 或 Agent。
+## 消費者
 
-## 何時使用
+此 Skill 為 utility，由 /ot:evolve command 觸發，不綁定特定 agent。
 
-- 工作流完成後，想了解系統學到了什麼
-- 懷疑有重複失敗的 pattern 值得關注
-- 主動清理低信心觀察（週衰減）
-- 決定是否將某類知識進化為 Skill
+## 資源索引
 
-## 執行步驟
-
-1. **摘要**：`node scripts/lib/instinct.js summarize {SESSION_ID}`
-2. **衰減清理**（可選）：`node scripts/lib/instinct.js decay {SESSION_ID}` — 超過 7 天未更新 -0.02/週，信心 < 0.2 自動刪除
-3. **查看可應用**：`node scripts/lib/instinct.js applicable {SESSION_ID}` — 列出信心 >= 0.7 的 instinct
-4. **建議進化**：若 `evolutionCandidates.skills` 不為空，查詢觀察（`instinct.js query`）後人工確認是否固化為 Skill
-
-## 信心分數摘要
-
-| 範圍 | 狀態 | 行為 |
-|:----:|------|------|
-| `< 0.2` | 過時 | 自動刪除 |
-| `0.3` | 初始值 | 剛記錄 |
-| `0.3-0.65` | 累積中 | 重複確認提升 |
-| `>= 0.7` | 高信心 | 可自動應用 |
-
-信心變化：`+0.05` 確認 / `-0.10` 矛盾 / `-0.02` 週衰減。
-
-💡 完整演算法、衰減計算與進化門檻：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/evolve/references/confidence-scoring.md`
-
-## 限制
-
-- ⛔ 不自動修改 `skills/` 或 `agents/` 目錄（需人工確認）
-- 進化決策由 Main Agent 判斷，不強制執行
-- V1 收集 4 種 pattern：`error_resolutions`、`tool_preferences`、`agent_performance`、`workflow_routing`
+| 檔案 | 說明 |
+|------|------|
+| 💡 `${CLAUDE_PLUGIN_ROOT}/skills/evolve/references/confidence-scoring.md` | 信心分數計算方法：觀察頻率 + 一致性 + 跨 session 驗證 |
+| 💡 `${CLAUDE_PLUGIN_ROOT}/skills/evolve/references/evolution-patterns.md` | 進化模式：Instinct→Skill→Agent 進化決策樹 + 時機判斷 |

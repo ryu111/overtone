@@ -11,6 +11,7 @@ skills:
   - commit-convention
   - wording
   - os-control
+  - craft
 ---
 
 # 💻 開發者

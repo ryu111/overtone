@@ -42,3 +42,7 @@ user-invocable: false
 💡 Handoff 交接協定：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/workflow-core/references/handoff-protocol.md`
 
 💡 完成信號定義：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/workflow-core/references/completion-signals.md`
+
+## Examples
+
+💡 Standard workflow 完整執行軌跡：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/workflow-core/examples/standard-workflow-walkthrough.md`

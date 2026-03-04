@@ -14,6 +14,7 @@ skills:
   - architecture
   - os-control
   - wording
+  - craft
 ---
 
 # 🏗️ 架構師

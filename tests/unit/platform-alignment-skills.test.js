@@ -104,6 +104,30 @@ describe('Feature 1b: ref skill SKILL.md frontmatter', () => {
     });
   });
 
+  // Scenario 1b-14: craft knowledge domain 具備正確設定
+  describe('Scenario 1b-14: craft SKILL.md frontmatter', () => {
+    const skillPath = join(SKILLS_DIR, 'craft', 'SKILL.md');
+
+    test('craft SKILL.md 檔案存在', () => {
+      expect(fs.existsSync(skillPath)).toBe(true);
+    });
+
+    test('craft frontmatter 包含 name: craft', () => {
+      const fm = parseFrontmatter(skillPath);
+      expect(fm.name).toBe('craft');
+    });
+
+    test('craft frontmatter 包含 disable-model-invocation: true', () => {
+      const fm = parseFrontmatter(skillPath);
+      expect(fm['disable-model-invocation']).toBe(true);
+    });
+
+    test('craft frontmatter 包含 user-invocable: false', () => {
+      const fm = parseFrontmatter(skillPath);
+      expect(fm['user-invocable']).toBe(false);
+    });
+  });
+
   // Scenario 1b-4: 已刪除的 ref-* skill 不存在
   describe('Scenario 1b-4: 已刪除的 ref-* skill 目錄不存在', () => {
     const deletedSkills = ['ref-bdd-guide', 'ref-failure-handling', 'ref-wording-guide', 'ref-agent-prompt-patterns', 'ref-test-strategy', 'ref-commit-convention', 'ref-pr-review-checklist'];
@@ -118,7 +142,7 @@ describe('Feature 1b: ref skill SKILL.md frontmatter', () => {
 
   // Scenario 1b-9: knowledge domain index SKILL.md 精簡（索引式，非內容式）
   describe('Scenario 1b-9: knowledge domain index SKILL.md 精簡', () => {
-    const knowledgeDomains = ['code-review', 'commit-convention', 'testing', 'workflow-core', 'security-kb', 'database', 'dead-code'];
+    const knowledgeDomains = ['code-review', 'commit-convention', 'testing', 'workflow-core', 'security-kb', 'database', 'dead-code', 'craft'];
 
     for (const skillName of knowledgeDomains) {
       test(`${skillName} index SKILL.md 不超過 3000 字元`, () => {

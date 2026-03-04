@@ -3,7 +3,6 @@ name: pm
 description: 產品探索與需求釐清。引導 Main Agent 以 PM 角色探索需求、定義範圍、比較方案。三種模式：discovery（純探索）、product（PM + standard pipeline）、product-full（PM + full pipeline）。
 ---
 
-
 # 產品經理（PM）
 
 ## 初始化
@@ -134,6 +133,7 @@ node -e "require('${CLAUDE_PLUGIN_ROOT}/scripts/lib/execution-queue').completeCu
 - 反模式指南：`${CLAUDE_PLUGIN_ROOT}/skills/pm/references/anti-patterns.md`
 - Product Brief 範本：`${CLAUDE_PLUGIN_ROOT}/skills/pm/references/product-brief-template.md`
 - Drift 偵測：`${CLAUDE_PLUGIN_ROOT}/skills/pm/references/drift-detection.md`
+- Discovery 實戰範例：`${CLAUDE_PLUGIN_ROOT}/skills/pm/examples/discovery-session-walkthrough.md`
 
 ## 完成條件
 
