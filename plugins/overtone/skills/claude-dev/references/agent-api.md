@@ -45,7 +45,7 @@ skills:                           # 可選：knowledge domain skills（注入 pr
 
 **建立 agent**（同時更新 registry-data.json + plugin.json）：
 ```bash
-bun plugins/overtone/scripts/manage-component.js create agent '{
+bun scripts/manage-component.js create agent '{
   "name": "my-agent",
   "description": "說明",
   "model": "sonnet",
@@ -61,10 +61,10 @@ bun plugins/overtone/scripts/manage-component.js create agent '{
 **更新 agent**（skills 是 replace 不是 append）：
 ```bash
 # 更新 model
-bun plugins/overtone/scripts/manage-component.js update agent developer '{"model":"opus"}'
+bun scripts/manage-component.js update agent developer '{"model":"opus"}'
 
 # 更新 skills（必須帶入完整陣列，會完全替換原有 skills）
-bun plugins/overtone/scripts/manage-component.js update agent developer '{
+bun scripts/manage-component.js update agent developer '{
   "skills": ["autonomous-control","commit-convention","wording","os-control","craft","claude-dev"]
 }'
 ```

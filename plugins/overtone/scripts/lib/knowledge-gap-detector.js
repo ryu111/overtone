@@ -6,13 +6,15 @@
  * 提供 gap 建議讓 pre-task hook 注入警告訊息。
  *
  * 導出：
- *   DOMAIN_KEYWORDS — 12 個 domain 的關鍵詞靜態表
+ *   DOMAIN_KEYWORDS — 12/15 個 knowledge domain 的關鍵詞靜態表
+ *                     （os-control、autonomous-control、craft 3 個 domain 尚未加入，留待後續迭代）
  *   detectKnowledgeGaps — 主要偵測函式
  */
 
 /**
- * 12 個 knowledge domain 的關鍵詞靜態表。
+ * 12/15 個 knowledge domain 的關鍵詞靜態表。
  * 每個 domain 約 10-15 個關鍵詞，涵蓋該領域的核心概念。
+ * 注意：os-control、autonomous-control、craft 3 個 domain 尚未加入，留待後續迭代。
  */
 const DOMAIN_KEYWORDS = {
   'testing': [

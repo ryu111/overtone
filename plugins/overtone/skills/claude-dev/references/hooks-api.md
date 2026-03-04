@@ -133,8 +133,8 @@ const updatedInput = { prompt: newPrompt };
 
 正確修改路徑：
 ```bash
-bun plugins/overtone/scripts/manage-component.js update agent developer '{"model":"opus"}'
-bun plugins/overtone/scripts/manage-component.js update skill my-skill '{"description":"新描述"}'
+bun scripts/manage-component.js update agent developer '{"model":"opus"}'
+bun scripts/manage-component.js update skill my-skill '{"description":"新描述"}'
 ```
 
 ### hooks.json 必須使用三層嵌套格式
