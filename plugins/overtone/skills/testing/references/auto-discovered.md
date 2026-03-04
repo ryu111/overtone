@@ -307,3 +307,54 @@ Keywords: tests, unit, stop, message, builder, test, pass, fail, feature, grader
 所有 Scenario 均有測試覆蓋，測試品質良好（包含 happy path、邊界條件、複合情況、錯誤路徑）。
 Keywords: passed, failed, feature, tests, unit, state, sanitize, test, scenario, integration
 
+---
+## 2026-03-04 | tester:TEST Findings
+測試結果：**61 passed, 0 failed**
+
+- `tests/unit/queue-cli.test.js`：12 pass（queue-cli CLI 功能全覆蓋）
+- `tests/unit/state-invariants.test.js`：部分（含於 49 pass 總計中）
+- `tests/unit/state-sanitize.test.js`：部分（含於 49 pass 總計中）
+- `tests/unit/execution-queue.test.js`：部分（含於 49 pass 總計中）
+
+所有指定的測試 scenario 均通過，state.js 修改無回歸。
+Keywords: passed, failed, tests, unit, queue, test, pass, state, invariants, sanitize
+
+---
+## 2026-03-04 | tester:TEST Findings
+測試結果摘要 — **29 passed, 0 failed**
+
+| 檔案 | 結果 | 測試數 |
+|------|------|--------|
+| `tests/unit/queue-cli.test.js` | PASS | 15 (12 原有 + 3 PM 整合) |
+| `tests/unit/execution-queue.test.js` | PASS | 14 (底層庫無回歸) |
+
+PM 整合流程的 3 個新測試（`PM 整合流程` describe 區塊）全部通過：
+1. 模擬 PM 多次迭代寫入佇列（5 項、來源標記）
+2. advanceToNext 後 getCurrent 回傳第一項
+3. 完成一項後下一項仍為 pending
+Keywords: passed, failed, tests, unit, queue, test, pass, execution, describe, advancetonext
+
+---
+## 2026-03-04 | developer:DEV Findings
+**子任務 1 - 修復 `global-instinct.test.js` 洩漏**
+- 每個 describe block 的 `afterEach` 漏清 `~/.overtone/global/{hash}/`
+- 修復方式：在所有 8 個 `afterEach` 中加入 `rmSync(paths.global.dir(projectRoot), { recursive: true, force: true })`
+- 對應 describe：Feature 1, 2, 3, 7, 8, 9, pruneGlobal, graduate merge
+
+**子任務 1 延伸 - 修復 `failure-tracker.test.js` 洩漏**
+- 原 `afterAll` 只清理 `TEST_PROJECT_ROOT` 的 global dir，但每個 test 都有獨立的 projectRoot（如 `test-fail-append-...`, `test-fail-reason-...` 等），這些 projectRoot 對應的 global hash 目錄未被清理
+- 修復方式：在 `afterAll` 迭代 `dirsToClean` 時，同時清理每個對應的 `paths.global.dir(dir)`
+
+**子任務 2 - `cleanupStaleGlobalDirs()` 新增**
+- 在 `/Users/sbu/projects/overtone/plugins/overtone/scripts/lib/session-cleanup.js` 中新增函式
+- 利用現有的 `getLatestMtime()` 輔助函式，以最深層檔案的 mtime 為安全閥
+- 支援 `dryRun` 模式（回傳 `dryRunList` 不實際刪除）
+- 整合到 `runCleanup()` 中，新增 `options.globalMaxAgeDays` 參數，回傳新增 `globalDirs` 欄位
+
+**子任務 3 - 測試覆蓋**
+- 在 `session-cleanup.test.js` 新增 7 個 `cleanupStaleGlobalDirs` 測試（過期刪除、保留新目錄、dry-run、混合場景、目錄不存在、mtime 以檔案為準、空目錄）
+- 更新 `runCleanup` 測試（驗證 `globalDirs` 欄位 + 新增 global dirs 並行清理測試）
+
+**注意**：`score-engine.test.js` 已在 `afterAll` 中正確清理兩個 `TEST_PROJECT_ROOT` 的 global dir，無需修改。
+Keywords: global, instinct, test, describe, block, aftereach, overtone, hash, rmsync, paths
+

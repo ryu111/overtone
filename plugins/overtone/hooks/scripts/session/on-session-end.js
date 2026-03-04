@@ -175,14 +175,14 @@ safeRun(() => {
 
   try {
     const cleanupReport = runCleanup(sessionId);
-    const totalCleaned = cleanupReport.sessions.cleaned + cleanupReport.orphanFiles.cleaned;
+    const totalCleaned = cleanupReport.sessions.cleaned + cleanupReport.orphanFiles.cleaned + cleanupReport.globalDirs.cleaned;
     if (totalCleaned > 0) {
       process.stderr.write(
-        `[overtone/on-session-end] 清理完成：刪除 ${cleanupReport.sessions.cleaned} 個過期 session、${cleanupReport.orphanFiles.cleaned} 個暫存檔\n`
+        `[overtone/on-session-end] 清理完成：刪除 ${cleanupReport.sessions.cleaned} 個過期 session、${cleanupReport.orphanFiles.cleaned} 個暫存檔、${cleanupReport.globalDirs.cleaned} 個全域目錄\n`
       );
     }
-    if (cleanupReport.sessions.errors.length > 0 || cleanupReport.orphanFiles.errors.length > 0) {
-      const allErrors = [...cleanupReport.sessions.errors, ...cleanupReport.orphanFiles.errors];
+    if (cleanupReport.sessions.errors.length > 0 || cleanupReport.orphanFiles.errors.length > 0 || cleanupReport.globalDirs.errors.length > 0) {
+      const allErrors = [...cleanupReport.sessions.errors, ...cleanupReport.orphanFiles.errors, ...cleanupReport.globalDirs.errors];
       hookError('on-session-end', `清理時發生錯誤：${allErrors.join('; ')}`);
     }
   } catch (err) {
