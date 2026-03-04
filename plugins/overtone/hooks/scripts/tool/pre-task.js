@@ -25,6 +25,7 @@ safeRun(() => {
 
   const input = safeReadStdin();
   const sessionId = getSessionId(input);
+  const _hookStartTime = Date.now();
 
   // ── 取得 Task 工具參數 ──
 
@@ -123,6 +124,21 @@ safeRun(() => {
     }
   }
 
+  // 輔助：emit hook:timing（只在有 sessionId 時才寫入，失敗不影響 hook 功能）
+  const emitPreTaskTiming = (extra = {}) => {
+    if (!sessionId) return;
+    try {
+      const tl = require('../../../scripts/lib/timeline');
+      tl.emit(sessionId, 'hook:timing', {
+        hook: 'pre-task',
+        event: 'PreToolUse',
+        durationMs: Date.now() - _hookStartTime,
+        agent: targetAgent,
+        ...extra,
+      });
+    } catch { /* 計時 emit 失敗不影響 hook 功能 */ }
+  };
+
   if (skippedStages.length > 0) {
     // 有被跳過的必要階段 → 阻擋
     const message = [
@@ -134,6 +150,7 @@ safeRun(() => {
       '請先完成前置階段再繼續。',
     ].join('\n');
 
+    emitPreTaskTiming({ denied: true });
     process.stdout.write(JSON.stringify({
       hookSpecificOutput: {
         hookEventName: 'PreToolUse',
@@ -377,6 +394,7 @@ safeRun(() => {
 
     // 📋 MUST 保留所有原始 tool input 欄位（subagent_type 等），只更新 prompt
     const updatedToolInput = { ...toolInput, prompt: newPrompt };
+    emitPreTaskTiming();
     process.stdout.write(JSON.stringify({
       hookSpecificOutput: {
         hookEventName: 'PreToolUse',
@@ -387,6 +405,7 @@ safeRun(() => {
     process.exit(0);
   }
 
+  emitPreTaskTiming();
   process.stdout.write(JSON.stringify({ result: '' }));
   process.exit(0);
 }, { result: '' });

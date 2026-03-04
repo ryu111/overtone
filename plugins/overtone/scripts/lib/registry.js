@@ -154,6 +154,9 @@ const timelineEvents = {
 
   // system 類（1）
   'system:warning':     { label: '系統警告',     category: 'system' },
+
+  // hook 類（1）
+  'hook:timing':        { label: 'Hook 計時',    category: 'hook' },
 };
 
 // Remote 控制命令

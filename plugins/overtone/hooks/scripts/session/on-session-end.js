@@ -21,6 +21,7 @@ const { runCleanup } = require('../../../scripts/lib/session-cleanup');
 safeRun(() => {
   const input = safeReadStdin();
   const sessionId = getSessionId(input);
+  const startTime = Date.now();
 
   // 無 sessionId → 靜默退出
   if (!sessionId) {
@@ -188,6 +189,15 @@ safeRun(() => {
   } catch (err) {
     hookError('on-session-end', `runCleanup 失敗：${err.message || String(err)}`);
   }
+
+  // hook:timing — 記錄 SessionEnd 執行耗時（try/catch 不影響主流程）
+  try {
+    timeline.emit(sessionId, 'hook:timing', {
+      hook: 'on-session-end',
+      event: 'SessionEnd',
+      durationMs: Date.now() - startTime,
+    });
+  } catch { /* 計時 emit 失敗不影響 hook 功能 */ }
 
   process.stdout.write(JSON.stringify({ result: '' }));
   process.exit(0);

@@ -24,6 +24,7 @@ safeRun(() => {
   const input = safeReadStdin();
   const sessionId = getSessionId(input);
   const projectRoot = input.cwd || process.cwd();
+  const _hookStartTime = Date.now();
   const rawAgentType = (input.agent_type || '').trim();
   const agentName = rawAgentType.startsWith('ot:') ? rawAgentType.slice(3) : rawAgentType;
   const agentOutput = (input.last_assistant_message || '').trim();
@@ -216,6 +217,17 @@ safeRun(() => {
   if (result.verdict !== 'fail' && result.verdict !== 'reject') {
     archiveKnowledge(agentOutput.slice(0, 3000), { agentName, actualStageKey, projectRoot, sessionId });
   }
+
+  // hook:timing — 記錄 SubagentStop 執行耗時（try/catch 不影響主流程）
+  try {
+    timeline.emit(sessionId, 'hook:timing', {
+      hook: 'on-stop',
+      event: 'SubagentStop',
+      durationMs: Date.now() - _hookStartTime,
+      agent: agentName,
+      verdict: result.verdict,
+    });
+  } catch { /* 計時 emit 失敗不影響 hook 功能 */ }
 
   exit0(buildResult.messages.join('\n'));
 }, { result: '' });

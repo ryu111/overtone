@@ -24,6 +24,7 @@ const { effortLevels } = require('../../../scripts/lib/registry');
 // session ID 優先從 hook stdin JSON 讀取，環境變數作為 fallback
 const input = safeReadStdin();
 const sessionId = getSessionId(input);
+const _hookStartTime = Date.now();
 
 safeRun(() => {
   // ── 設定 CLAUDE_CODE_EFFORT_LEVEL（透過 CLAUDE_ENV_FILE 機制）──
@@ -329,6 +330,17 @@ safeRun(() => {
     } else {
       output.systemMessage = queueMsg;
     }
+  }
+
+  // hook:timing — 記錄 SessionStart 執行耗時（try/catch 不影響主流程）
+  if (sessionId) {
+    try {
+      timeline.emit(sessionId, 'hook:timing', {
+        hook: 'on-start',
+        event: 'SessionStart',
+        durationMs: Date.now() - _hookStartTime,
+      });
+    } catch { /* 計時 emit 失敗不影響 hook 功能 */ }
   }
 
   process.stdout.write(JSON.stringify(output));

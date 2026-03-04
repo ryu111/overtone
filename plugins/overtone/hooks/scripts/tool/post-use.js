@@ -25,6 +25,7 @@ const { WORDING_RULES, detectWordingMismatch } = require('../../../scripts/lib/w
 
 if (require.main === module) safeRun(() => {
   const input = safeReadStdin();
+  const startTime = Date.now();
 
   const sessionId = getSessionId(input);
   if (!sessionId) {
@@ -36,12 +37,27 @@ if (require.main === module) safeRun(() => {
   const toolInput = input.tool_input || {};
   const toolResponse = input.tool_response || {};
 
+  // 輔助：emit hook:timing（失敗不影響 hook 功能）
+  const emitPostUseTiming = (extra = {}) => {
+    try {
+      const timeline = require('../../../scripts/lib/timeline');
+      timeline.emit(sessionId, 'hook:timing', {
+        hook: 'post-use',
+        event: 'PostToolUse',
+        durationMs: Date.now() - startTime,
+        toolName,
+        ...extra,
+      });
+    } catch { /* 計時 emit 失敗不影響 hook 功能 */ }
+  };
+
   try {
     // V1 Pattern 1：error_resolutions — Bash 非零 exit code
     if (toolName === 'Bash') {
       const errorGuard = observeBashError(sessionId, toolInput, toolResponse);
       if (errorGuard) {
         // 重大 Bash 錯誤 → 注入自我修復指令給 Main Agent
+        emitPostUseTiming({ errorGuard: true });
         process.stdout.write(JSON.stringify({ result: errorGuard }));
         process.exit(0);
       }
@@ -90,11 +106,13 @@ if (require.main === module) safeRun(() => {
       const output = {
         result: `[Overtone 措詞檢查] 偵測到 emoji-關鍵詞不匹配（${filePath}）：\n${wordingWarnings.join('\n')}\n參考：${process.env.CLAUDE_PLUGIN_ROOT ?? 'plugins/overtone'}/skills/wording/references/wording-guide.md`,
       };
+      emitPostUseTiming({ wordingMismatch: true });
       process.stdout.write(JSON.stringify(output));
       process.exit(0);
     }
   }
 
+  emitPostUseTiming();
   process.stdout.write(JSON.stringify({ result: '' }));
   process.exit(0);
 }, { result: '' });
