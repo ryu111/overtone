@@ -196,3 +196,65 @@ describe('CLI 入口', () => {
     expect(logs[0]).toContain('用法');
   });
 });
+
+// ────────────────────────────────────────────────────────────────────────────
+// 5. PM 整合流程
+// ────────────────────────────────────────────────────────────────────────────
+
+describe('PM 整合流程', () => {
+  test('模擬 PM 多次迭代寫入佇列', () => {
+    // 模擬 PM 產出的 5 次迭代
+    const { logs } = runCli([
+      'add', '--project-root', TEST_PROJECT,
+      '--source', 'PM Discovery 2026-03-04',
+      'phantom-events-fix', 'quick',
+      'doc-drift-precision', 'quick',
+      'data-quality-cleanup', 'quick',
+      'queue-cli', 'quick',
+      'pm-auto-queue', 'quick',
+    ]);
+
+    expect(logs[0]).toContain('已建立佇列（5 項）');
+
+    const queue = executionQueue.readQueue(TEST_PROJECT);
+    expect(queue.items).toHaveLength(5);
+    expect(queue.source).toBe('PM Discovery 2026-03-04');
+    expect(queue.items.every(i => i.status === 'pending')).toBe(true);
+  });
+
+  test('PM 佇列推進：advanceToNext 後 getCurrent 回傳第一項', () => {
+    runCli([
+      'add', '--project-root', TEST_PROJECT,
+      '--source', 'PM Discovery 2026-03-04',
+      'phantom-events-fix', 'quick',
+      'doc-drift-precision', 'quick',
+    ]);
+
+    executionQueue.advanceToNext(TEST_PROJECT);
+
+    const current = executionQueue.getCurrent(TEST_PROJECT);
+    expect(current).not.toBeNull();
+    expect(current.item.name).toBe('phantom-events-fix');
+    expect(current.item.status).toBe('in_progress');
+  });
+
+  test('PM 佇列完成一項後下一項仍為 pending', () => {
+    runCli([
+      'add', '--project-root', TEST_PROJECT,
+      '--source', 'PM Discovery 2026-03-04',
+      'phantom-events-fix', 'quick',
+      'doc-drift-precision', 'quick',
+    ]);
+
+    executionQueue.advanceToNext(TEST_PROJECT);
+    executionQueue.completeCurrent(TEST_PROJECT);
+
+    const queue = executionQueue.readQueue(TEST_PROJECT);
+    expect(queue.items[0].status).toBe('completed');
+    expect(queue.items[1].status).toBe('pending');
+
+    const next = executionQueue.getNext(TEST_PROJECT);
+    expect(next).not.toBeNull();
+    expect(next.item.name).toBe('doc-drift-precision');
+  });
+});

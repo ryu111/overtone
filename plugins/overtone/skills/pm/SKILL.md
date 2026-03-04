@@ -3,6 +3,7 @@ name: pm
 description: 產品探索與需求釐清。引導 Main Agent 以 PM 角色探索需求、定義範圍、比較方案。三種模式：discovery（純探索）、product（PM + standard pipeline）、product-full（PM + full pipeline）。
 ---
 
+
 # 產品經理（PM）
 
 ## 初始化
@@ -104,6 +105,26 @@ PM 產出多次迭代計畫（如「3 次迭代分層精鍊」）且使用者批
 - 每次迭代完成後直接 commit → init 下一個 workflow → 繼續執行
 - ⛔ 只有在迭代 **失敗**（REVIEW REJECT 或 TEST FAIL 且 retry 用盡）時才暫停詢問
 - 使用者已批准計畫 = 授權連續執行，無需重複確認
+
+### 佇列整合（📋 MUST）
+
+PM 產出多次迭代計畫時，📋 MUST 在開始第一次迭代前，將所有迭代寫入執行佇列：
+
+```bash
+bun ${CLAUDE_PLUGIN_ROOT}/scripts/queue.js add \
+  --source "PM Discovery $(date +%Y-%m-%d)" \
+  "<迭代1名稱>" "<workflow1>" \
+  "<迭代2名稱>" "<workflow2>" \
+  ...
+```
+
+這確保即使 session 中斷，heartbeat daemon 仍可從佇列接續執行。
+
+每個迭代完成後，呼叫 `completeCurrent` 推進佇列：
+```bash
+node -e "require('${CLAUDE_PLUGIN_ROOT}/scripts/lib/execution-queue').completeCurrent(process.cwd())"
+```
+
 
 ## 參考文件
 

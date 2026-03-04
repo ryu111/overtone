@@ -1,6 +1,6 @@
 # Overtone 現況
 
-> 最後更新：2026-03-04 | Plugin 版本：0.28.39（health-check 精確度提升）
+> 最後更新：2026-03-04 | Plugin 版本：0.28.40（PM 佇列整合 + queue CLI）
 
 ## 版本狀態
 
