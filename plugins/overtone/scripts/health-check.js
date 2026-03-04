@@ -3,7 +3,7 @@
 /**
  * health-check.js — Overtone 系統健康自動化偵測
  *
- * 執行 8 項確定性偵測：
+ * 執行 11 項確定性偵測：
  *   1. phantom-events   — registry 事件 vs 實際 emit 呼叫差異
  *   2. dead-exports     — scripts/lib 模組 export 但從未被 require 使用
  *   3. doc-code-drift   — docs 文件中的數量與程式碼實際值不符
@@ -12,6 +12,9 @@
  *   6. platform-drift   — config-api 驗證 + 棄用 tools 白名單偵測
  *   7. doc-staleness    — docs/reference 無引用且超過 90 天未更新的過時文件
  *   8. os-tools         — P3.3 系統層依賴的 macOS 工具可用性（pbcopy/pbpaste/osascript）
+ *   9. component-chain  — Skill → Agent → Hook 依賴鏈斷裂偵測
+ *  10. data-quality     — 全域學習資料（JSONL）格式與欄位正確性審計
+ *  11. quality-trends   — 失敗模式 / 分數趨勢 / 低分連續警告
  *
  * 輸出：JSON stdout（HealthCheckOutput schema）
  * Exit code：有 findings → 1；無 findings → 0
@@ -830,6 +833,315 @@ function checkOsTools() {
   return findings;
 }
 
+// ── 9. Component Chain 偵測 ──
+
+/**
+ * 偵測 Skill → Agent → Hook 依賴鏈的斷裂。
+ *
+ * 1. Agent → Stage 對齊：registry stages 每個 agent 的 .md 檔案是否存在
+ * 2. Agent → Skill 引用：每個 agent frontmatter 的 skills 陣列中的 skill 是否存在
+ *
+ * @param {string} [pluginRootOverride] - 供測試使用的 pluginRoot 覆蓋
+ * @returns {Finding[]}
+ */
+function checkComponentChain(pluginRootOverride) {
+  const matter = require('gray-matter');
+  const { existsSync } = require('fs');
+  const { stages } = require('./lib/registry');
+
+  const root = pluginRootOverride || PLUGIN_ROOT;
+  const agentsDir = path.join(root, 'agents');
+  const skillsDir = path.join(root, 'skills');
+
+  const findings = [];
+
+  // ── 1. Agent .md 存在性偵測 ──
+  for (const [stageKey, stageDef] of Object.entries(stages)) {
+    const agentName = stageDef.agent;
+    if (!agentName) continue;
+
+    const agentFile = path.join(agentsDir, `${agentName}.md`);
+    if (!existsSync(agentFile)) {
+      findings.push({
+        check: 'component-chain',
+        severity: 'error',
+        file: path.relative(root, agentFile),
+        message: `Stage "${stageKey}" 的 agent "${agentName}.md" 不存在`,
+        detail: `預期路徑：${path.relative(root, agentFile)}`,
+      });
+      continue; // agent 不存在，跳過 skill 檢查
+    }
+
+    // ── 2. Agent → Skill 引用偵測 ──
+    const rawContent = safeRead(agentFile);
+    if (!rawContent) continue;
+
+    let frontmatter;
+    try {
+      frontmatter = matter(rawContent).data;
+    } catch {
+      continue;
+    }
+
+    const skills = frontmatter.skills;
+    if (!Array.isArray(skills) || skills.length === 0) continue;
+
+    for (const skillName of skills) {
+      const skillFile = path.join(skillsDir, skillName, 'SKILL.md');
+      if (!existsSync(skillFile)) {
+        findings.push({
+          check: 'component-chain',
+          severity: 'warning',
+          file: path.relative(root, agentFile),
+          message: `agent "${agentName}" 引用的 skill "${skillName}" 不存在（SKILL.md 缺失）`,
+          detail: `預期路徑：${path.relative(root, skillFile)}`,
+        });
+      }
+    }
+  }
+
+  return findings;
+}
+
+// ── 10. Data Quality 學習資料品質審計 ──
+
+/**
+ * 掃描全域學習資料檔案，驗證格式正確性。
+ *
+ * 掃描路徑：~/.overtone/global/ 下所有專案目錄的 scores.jsonl、failures.jsonl、
+ *           observations.jsonl、baselines.jsonl
+ *
+ * @returns {Finding[]}
+ */
+function checkDataQuality() {
+  const { existsSync, readdirSync: readdir } = require('fs');
+  const { GLOBAL_DIR } = require('./lib/paths');
+
+  // 各 JSONL 類型的驗證規則
+  const fileRules = {
+    'scores.jsonl': {
+      required: ['ts', 'stage', 'agent', 'scores', 'overall'],
+      validate: (record) => {
+        const msgs = [];
+        if (typeof record.overall !== 'number' || record.overall < 0 || record.overall > 5) {
+          msgs.push(`overall 超出範圍：${record.overall}`);
+        }
+        if (record.scores && typeof record.scores === 'object') {
+          for (const dim of ['clarity', 'completeness', 'actionability']) {
+            const v = record.scores[dim];
+            if (typeof v !== 'number' || v < 1 || v > 5) {
+              msgs.push(`scores.${dim} 超出範圍：${v}`);
+            }
+          }
+        }
+        return msgs;
+      },
+    },
+    'failures.jsonl': {
+      required: ['ts', 'stage', 'agent', 'verdict'],
+      validate: (record) => {
+        const msgs = [];
+        if (!['fail', 'reject'].includes(record.verdict)) {
+          msgs.push(`verdict 非法值：${record.verdict}`);
+        }
+        return msgs;
+      },
+    },
+    'observations.jsonl': {
+      required: ['id', 'ts', 'type', 'confidence'],
+      validate: (record) => {
+        const msgs = [];
+        if (typeof record.confidence !== 'number' || record.confidence < 0 || record.confidence > 1) {
+          msgs.push(`confidence 超出範圍：${record.confidence}`);
+        }
+        return msgs;
+      },
+    },
+    'baselines.jsonl': {
+      required: ['ts', 'type'],
+      validate: () => [],
+    },
+  };
+
+  const findings = [];
+
+  // 確認 GLOBAL_DIR 存在
+  if (!existsSync(GLOBAL_DIR)) {
+    return [{
+      check: 'data-quality',
+      severity: 'info',
+      file: '~/.overtone/global/',
+      message: '全域學習資料目錄不存在（~/.overtone/global/），尚無學習資料',
+    }];
+  }
+
+  // 列出所有專案 hash 子目錄
+  let projectDirs = [];
+  try {
+    projectDirs = readdir(GLOBAL_DIR, { withFileTypes: true })
+      .filter((e) => e.isDirectory())
+      .map((e) => path.join(GLOBAL_DIR, e.name));
+  } catch {
+    return [];
+  }
+
+  if (projectDirs.length === 0) {
+    return [{
+      check: 'data-quality',
+      severity: 'info',
+      file: '~/.overtone/global/',
+      message: '全域學習資料目錄為空，尚無學習資料',
+    }];
+  }
+
+  for (const projectDir of projectDirs) {
+    for (const [fileName, rules] of Object.entries(fileRules)) {
+      const filePath = path.join(projectDir, fileName);
+      if (!existsSync(filePath)) continue;
+
+      const content = safeRead(filePath).trim();
+      if (!content) continue;
+
+      const lines = content.split('\n');
+      let corruptedCount = 0;
+      let totalCount = 0;
+
+      for (const line of lines) {
+        if (!line.trim()) continue;
+        totalCount++;
+
+        let record;
+        try {
+          record = JSON.parse(line);
+        } catch {
+          corruptedCount++;
+          continue;
+        }
+
+        // 必要欄位檢查
+        const missingFields = rules.required.filter((f) => record[f] === undefined || record[f] === null);
+        if (missingFields.length > 0) {
+          corruptedCount++;
+          continue;
+        }
+
+        // 值域驗證
+        const validationErrors = rules.validate(record);
+        if (validationErrors.length > 0) {
+          corruptedCount++;
+        }
+      }
+
+      if (totalCount === 0) continue;
+
+      const corruptRate = corruptedCount / totalCount;
+      const relativePath = `~/.overtone/global/${path.basename(projectDir)}/${fileName}`;
+
+      if (corruptRate > 0.1) {
+        findings.push({
+          check: 'data-quality',
+          severity: 'warning',
+          file: relativePath,
+          message: `${fileName} 損壞比例 ${Math.round(corruptRate * 100)}%（${corruptedCount}/${totalCount} 行）`,
+          detail: `損壞行數：${corruptedCount}，總行數：${totalCount}`,
+        });
+      } else if (corruptedCount > 0) {
+        findings.push({
+          check: 'data-quality',
+          severity: 'info',
+          file: relativePath,
+          message: `${fileName} 有 ${corruptedCount} 行損壞（${totalCount} 行中）`,
+          detail: `損壞行數：${corruptedCount}，總行數：${totalCount}`,
+        });
+      }
+    }
+  }
+
+  return findings;
+}
+
+// ── 11. Quality Trends 品質趨勢警告 ──
+
+/**
+ * 分析學習資料中的異常模式。
+ *
+ * 1. 失敗模式偵測：某 stage 失敗 >= 3 次 → warning
+ * 2. 分數趨勢偵測：direction === 'degrading' → warning
+ * 3. 低分連續偵測：avgOverall < lowScoreThreshold 且 sessionCount >= 3 → warning
+ *
+ * @param {string} [projectRootOverride] - 供測試使用的 projectRoot 覆蓋
+ * @returns {Finding[]}
+ */
+function checkQualityTrends(projectRootOverride) {
+  const projectRoot = projectRootOverride || process.env.CLAUDE_PROJECT_ROOT || process.cwd();
+  const { scoringConfig } = require('./lib/registry');
+  const { getFailurePatterns } = require('./lib/failure-tracker');
+  const { computeScoreTrend, getScoreSummary } = require('./lib/score-engine');
+
+  const findings = [];
+  const FAILURE_THRESHOLD = 3;
+
+  // ── 1. 失敗模式偵測 ──
+  try {
+    const patterns = getFailurePatterns(projectRoot);
+    for (const [stage, data] of Object.entries(patterns.byStage)) {
+      if (data.count >= FAILURE_THRESHOLD) {
+        findings.push({
+          check: 'quality-trends',
+          severity: 'warning',
+          file: '~/.overtone/global/',
+          message: `Stage "${stage}" 最近失敗 ${data.count} 次，存在重複失敗模式`,
+          detail: `stage: ${stage}，失敗次數：${data.count}`,
+        });
+      }
+    }
+  } catch {
+    // 失敗模式偵測失敗，靜默跳過
+  }
+
+  // ── 2. 分數趨勢偵測 ──
+  for (const stageKey of scoringConfig.gradedStages) {
+    try {
+      const trend = computeScoreTrend(projectRoot, stageKey);
+      if (trend && trend.direction === 'degrading') {
+        findings.push({
+          check: 'quality-trends',
+          severity: 'warning',
+          file: '~/.overtone/global/',
+          message: `Stage "${stageKey}" 品質評分呈下降趨勢（${trend.firstHalfAvg} → ${trend.secondHalfAvg}）`,
+          detail: `direction: degrading，分析 ${trend.sessionCount} 筆記錄`,
+        });
+      }
+    } catch {
+      // 個別 stage 趨勢分析失敗，靜默跳過
+    }
+  }
+
+  // ── 3. 低分連續偵測 ──
+  for (const stageKey of scoringConfig.gradedStages) {
+    try {
+      const summary = getScoreSummary(projectRoot, stageKey);
+      if (
+        summary.sessionCount >= 3 &&
+        summary.avgOverall !== null &&
+        summary.avgOverall < scoringConfig.lowScoreThreshold
+      ) {
+        findings.push({
+          check: 'quality-trends',
+          severity: 'warning',
+          file: '~/.overtone/global/',
+          message: `Stage "${stageKey}" 近期平均分 ${summary.avgOverall}/5.0 低於門檻（${scoringConfig.lowScoreThreshold}），共 ${summary.sessionCount} 筆`,
+          detail: `avgOverall: ${summary.avgOverall}，threshold: ${scoringConfig.lowScoreThreshold}，sessionCount: ${summary.sessionCount}`,
+        });
+      }
+    } catch {
+      // 個別 stage 摘要查詢失敗，靜默跳過
+    }
+  }
+
+  return findings;
+}
+
 // ── 主程式 ──
 
 /**
@@ -855,6 +1167,9 @@ function runAllChecks() {
     { name: 'platform-drift',   fn: checkPlatformDrift },
     { name: 'doc-staleness',    fn: checkDocStaleness },
     { name: 'os-tools',         fn: checkOsTools },
+    { name: 'component-chain',  fn: checkComponentChain },
+    { name: 'data-quality',     fn: checkDataQuality },
+    { name: 'quality-trends',   fn: checkQualityTrends },
   ];
 
   const allFindings = [];
@@ -938,6 +1253,9 @@ module.exports = {
   checkPlatformDrift,
   checkDocStaleness,
   checkOsTools,
+  checkComponentChain,
+  checkDataQuality,
+  checkQualityTrends,
   runAllChecks,
   // 工具函式
   collectJsFiles,

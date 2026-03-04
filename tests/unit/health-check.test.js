@@ -455,12 +455,12 @@ describe('runAllChecks', () => {
     expect(Array.isArray(result.findings)).toBe(true);
   });
 
-  test('checks 陣列長度為 8', () => {
+  test('checks 陣列長度為 11（含 F1/F2/F3 三個主動偵測）', () => {
     const { checks } = runAllChecks();
-    expect(checks.length).toBe(8);
+    expect(checks.length).toBe(11);
   });
 
-  test('checks 包含所有 8 個偵測項目名稱', () => {
+  test('checks 包含所有 11 個偵測項目名稱', () => {
     const { checks } = runAllChecks();
     const names = checks.map((c) => c.name);
     expect(names).toContain('phantom-events');
@@ -471,6 +471,9 @@ describe('runAllChecks', () => {
     expect(names).toContain('platform-drift');
     expect(names).toContain('doc-staleness');
     expect(names).toContain('os-tools');
+    expect(names).toContain('component-chain');
+    expect(names).toContain('data-quality');
+    expect(names).toContain('quality-trends');
   });
 
   test('每個 check 項目包含 name、passed、findingsCount', () => {
@@ -509,9 +512,13 @@ describe('runAllChecks', () => {
     }
   });
 
-  test('所有 finding 的 check 只能是已知 7 個 check 名稱之一', () => {
+  test('所有 finding 的 check 只能是已知 11 個 check 名稱之一', () => {
     const { findings } = runAllChecks();
-    const validChecks = new Set(['phantom-events', 'dead-exports', 'doc-code-drift', 'unused-paths', 'duplicate-logic', 'platform-drift', 'doc-staleness']);
+    const validChecks = new Set([
+      'phantom-events', 'dead-exports', 'doc-code-drift', 'unused-paths',
+      'duplicate-logic', 'platform-drift', 'doc-staleness', 'os-tools',
+      'component-chain', 'data-quality', 'quality-trends',
+    ]);
     for (const f of findings) {
       expect(validChecks.has(f.check)).toBe(true);
     }
