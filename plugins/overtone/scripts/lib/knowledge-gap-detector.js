@@ -78,7 +78,7 @@ const DOMAIN_KEYWORDS = {
     'subagent stop', 'sessionstart', 'userpromptsubmit',
     'updatedinput', 'hook script', 'agent frontmatter', 'agent.md',
     'bypasspermissions', 'plugin hook', 'claude code plugin',
-    'hook-development', 'agent-development',
+    'manage-component',
   ],
 };
 
