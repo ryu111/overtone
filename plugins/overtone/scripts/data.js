@@ -39,6 +39,7 @@ function _getDeps(_deps = {}) {
     sessionCleanup: _deps.sessionCleanup || require('./lib/session-cleanup'),
     paths:          _deps.paths          || require('./lib/paths'),
     crossAnalyzer:  _deps.crossAnalyzer  || require('./lib/cross-analyzer'),
+    sessionDigest:  _deps.sessionDigest  || require('./lib/session-digest'),
   };
 }
 
@@ -127,7 +128,7 @@ function cmdQuery(positional, options, projectRoot, _deps = {}) {
   const limit = options.limit ? parseInt(options.limit, 10) : undefined;
 
   if (!type) {
-    console.error('用法：bun scripts/data.js query <timeline|failures|scores|observations|baselines> [options]');
+    console.error('用法：bun scripts/data.js query <timeline|failures|scores|observations|baselines|digests> [options]');
     process.exit(1);
   }
 
@@ -223,9 +224,40 @@ function cmdQuery(positional, options, projectRoot, _deps = {}) {
       break;
     }
 
+    case 'digests': {
+      let records;
+      try {
+        const filePath = deps.paths.global.digests(projectRoot);
+        if (!fs.existsSync(filePath)) {
+          outputResult([], options);
+          break;
+        }
+        const content = fs.readFileSync(filePath, 'utf8').trim();
+        if (!content) {
+          outputResult([], options);
+          break;
+        }
+        records = content.split('\n')
+          .filter(Boolean)
+          .map(line => { try { return JSON.parse(line); } catch { return null; } })
+          .filter(Boolean);
+
+        if (options.workflow) {
+          records = records.filter(r => r.workflowType === options.workflow);
+        }
+        if (limit) {
+          records = records.slice(-limit);
+        }
+      } catch {
+        records = [];
+      }
+      outputResult(records, options);
+      break;
+    }
+
     default:
       console.error(`未知的資料類型：${type}`);
-      console.error('支援類型：timeline, failures, scores, observations, baselines');
+      console.error('支援類型：timeline, failures, scores, observations, baselines, digests');
       process.exit(1);
   }
 }
@@ -535,7 +567,7 @@ function printHelp() {
   console.log('');
   console.log('子命令：');
   console.log('  query <type>          查詢資料');
-  console.log('    type：timeline | failures | scores | observations | baselines');
+  console.log('    type：timeline | failures | scores | observations | baselines | digests');
   console.log('    --session <id>      （timeline 必要）指定 session ID');
   console.log('    --type <type>       篩選事件/觀察類型');
   console.log('    --stage <stage>     篩選 stage');

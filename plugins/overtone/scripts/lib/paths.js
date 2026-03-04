@@ -76,6 +76,7 @@ const global = {
   baselines:    (projectRoot) => join(GLOBAL_DIR, projectHash(projectRoot), 'baselines.jsonl'),
   scores:       (projectRoot) => join(GLOBAL_DIR, projectHash(projectRoot), 'scores.jsonl'),
   failures:     (projectRoot) => join(GLOBAL_DIR, projectHash(projectRoot), 'failures.jsonl'),
+  digests:      (projectRoot) => join(GLOBAL_DIR, projectHash(projectRoot), 'digests.jsonl'),
 };
 
 // ── Heartbeat 路徑 ──

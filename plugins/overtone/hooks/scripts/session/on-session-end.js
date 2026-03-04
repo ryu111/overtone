@@ -162,6 +162,20 @@ safeRun(() => {
     hookError('on-session-end', `baseline-tracker.saveBaseline 失敗：${err.message || String(err)}`);
   }
 
+  // ── 3d. Session 摘要自動產生 ──
+  // 非關鍵功能，失敗時靜默降級，不影響其他清理步驟
+
+  try {
+    const sessionDigest = require('../../../scripts/lib/session-digest');
+    const digest = sessionDigest.generateDigest(sessionId, projectRoot);
+    sessionDigest.appendDigest(projectRoot, digest);
+    process.stderr.write(
+      `[overtone/on-session-end] session 摘要已寫入：${digest.totalEvents} 個事件，工作流 ${digest.workflowType || 'unknown'}\n`
+    );
+  } catch (err) {
+    hookError('on-session-end', `session-digest 產生失敗：${err.message || String(err)}`);
+  }
+
   // ── 3. 清理 .current-session-id ──
 
   try {
