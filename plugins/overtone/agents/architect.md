@@ -15,6 +15,7 @@ skills:
   - os-control
   - wording
   - craft
+  - claude-dev
 ---
 
 # 🏗️ 架構師

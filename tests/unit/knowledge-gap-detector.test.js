@@ -146,8 +146,8 @@ describe('detectKnowledgeGaps — 額外邊界情況', () => {
     expect(() => detectKnowledgeGaps('test spec coverage', null)).not.toThrow();
   });
 
-  it('DOMAIN_KEYWORDS 有 11 個 domain', () => {
-    expect(Object.keys(DOMAIN_KEYWORDS).length).toBe(11);
+  it('DOMAIN_KEYWORDS 有 12 個 domain', () => {
+    expect(Object.keys(DOMAIN_KEYWORDS).length).toBe(12);
   });
 
   it('每個 domain 至少有 10 個關鍵詞', () => {

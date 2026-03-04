@@ -6,12 +6,12 @@
  * 提供 gap 建議讓 pre-task hook 注入警告訊息。
  *
  * 導出：
- *   DOMAIN_KEYWORDS — 11 個 domain 的關鍵詞靜態表
+ *   DOMAIN_KEYWORDS — 12 個 domain 的關鍵詞靜態表
  *   detectKnowledgeGaps — 主要偵測函式
  */
 
 /**
- * 11 個 knowledge domain 的關鍵詞靜態表。
+ * 12 個 knowledge domain 的關鍵詞靜態表。
  * 每個 domain 約 10-15 個關鍵詞，涵蓋該領域的核心概念。
  */
 const DOMAIN_KEYWORDS = {
@@ -70,6 +70,13 @@ const DOMAIN_KEYWORDS = {
     'typescript', 'tsc', 'compile error', 'build error', 'bundle',
     'webpack', 'vite', 'dependency conflict', 'package.json',
     'tsconfig', 'type error', 'strict mode',
+  ],
+  'claude-dev': [
+    'hooks.json', 'hook event', 'pretooluse', 'posttooluse',
+    'subagent stop', 'sessionstart', 'userpromptsubmit',
+    'updatedinput', 'hook script', 'agent frontmatter', 'agent.md',
+    'bypasspermissions', 'plugin hook', 'claude code plugin',
+    'hook-development', 'agent-development',
   ],
 };
 

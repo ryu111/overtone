@@ -12,6 +12,7 @@ skills:
   - wording
   - os-control
   - craft
+  - claude-dev
 ---
 
 # 💻 開發者
