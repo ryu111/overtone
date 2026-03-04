@@ -155,16 +155,15 @@ describe('C. 並行群組定義合理性', () => {
 describe('D. quick workflow 完整鏈路驗證', () => {
   const { workflows, stages } = registry;
 
-  test('quick workflow 定義正確 stage 序列', () => {
+  test('quick workflow 定義正確 stage 序列（不含 TEST）', () => {
     const quick = workflows.quick;
-    expect(quick.stages).toEqual(['DEV', 'REVIEW', 'TEST', 'RETRO', 'DOCS']);
+    expect(quick.stages).toEqual(['DEV', 'REVIEW', 'RETRO', 'DOCS']);
   });
 
   test('quick workflow 每個 stage 都有 agent 映射', () => {
     const expected = {
       DEV: 'developer',
       REVIEW: 'code-reviewer',
-      TEST: 'tester',
       RETRO: 'retrospective',
       DOCS: 'doc-updater',
     };
@@ -177,7 +176,6 @@ describe('D. quick workflow 完整鏈路驗證', () => {
     const expectedAgents = {
       DEV: { agent: 'developer', skills: ['commit-convention', 'wording'] },
       REVIEW: { agent: 'code-reviewer', skills: ['code-review', 'wording'] },
-      TEST: { agent: 'tester', skills: ['testing', 'wording'] },
       RETRO: { agent: 'retrospective', skills: ['wording'] },
       DOCS: { agent: 'doc-updater', skills: ['wording'] },
     };
@@ -199,7 +197,6 @@ describe('D. quick workflow 完整鏈路驗證', () => {
     const allSkillsUsed = [
       'commit-convention',
       'code-review',
-      'testing',
       'wording',
     ];
 
@@ -210,12 +207,9 @@ describe('D. quick workflow 完整鏈路驗證', () => {
     }
   });
 
-  test('quick workflow 使用 quality 並行群組（REVIEW + TEST）', () => {
+  test('quick workflow 不使用並行群組（移除 TEST stage 後無需並行）', () => {
     const quick = workflows.quick;
-    expect(quick.parallelGroups).toContain('quality');
-    const { parallelGroupDefs } = registry;
-    expect(parallelGroupDefs.quality).toContain('REVIEW');
-    expect(parallelGroupDefs.quality).toContain('TEST');
+    expect(quick.parallelGroups).toEqual([]);
   });
 });
 
@@ -225,11 +219,11 @@ describe('D. quick workflow 完整鏈路驗證', () => {
 
 describe('E. State 生命週期閉環（quick workflow）', () => {
   test('initState 後 readState 驗證初始狀態正確', () => {
-    const s = state.initState(TEST_SESSION, 'quick', ['DEV', 'REVIEW', 'TEST', 'RETRO', 'DOCS']);
+    const s = state.initState(TEST_SESSION, 'quick', ['DEV', 'REVIEW', 'RETRO', 'DOCS']);
 
     expect(s.workflowType).toBe('quick');
     expect(s.currentStage).toBe('DEV');
-    expect(Object.keys(s.stages)).toEqual(['DEV', 'REVIEW', 'TEST', 'RETRO', 'DOCS']);
+    expect(Object.keys(s.stages)).toEqual(['DEV', 'REVIEW', 'RETRO', 'DOCS']);
 
     // 所有 stages 初始為 pending
     for (const stageKey of Object.keys(s.stages)) {
@@ -242,7 +236,7 @@ describe('E. State 生命週期閉環（quick workflow）', () => {
   });
 
   test('updateStateAtomic 更新 DEV stage → currentStage 推進到 REVIEW', () => {
-    state.initState(TEST_SESSION, 'quick', ['DEV', 'REVIEW', 'TEST', 'RETRO', 'DOCS']);
+    state.initState(TEST_SESSION, 'quick', ['DEV', 'REVIEW', 'RETRO', 'DOCS']);
 
     const updated = state.updateStateAtomic(TEST_SESSION, (s) => {
       s.stages.DEV.status = 'completed';
@@ -264,9 +258,9 @@ describe('E. State 生命週期閉環（quick workflow）', () => {
   });
 
   test('所有 stages 完成後完成度為 100%（currentStage 不再有 pending）', () => {
-    state.initState(TEST_SESSION, 'quick', ['DEV', 'REVIEW', 'TEST', 'RETRO', 'DOCS']);
+    state.initState(TEST_SESSION, 'quick', ['DEV', 'REVIEW', 'RETRO', 'DOCS']);
 
-    const stageList = ['DEV', 'REVIEW', 'TEST', 'RETRO', 'DOCS'];
+    const stageList = ['DEV', 'REVIEW', 'RETRO', 'DOCS'];
     for (const stageKey of stageList) {
       state.updateStateAtomic(TEST_SESSION, (s) => {
         s.stages[stageKey].status = 'completed';

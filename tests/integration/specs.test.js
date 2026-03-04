@@ -999,15 +999,15 @@ describe('buildTasksMd — tasks.md checkbox 內容驗證', () => {
   });
 
   test('quick workflow（specsConfig 有 tasks）的 checkbox 應為 workflow stages', () => {
-    // quick workflow stages: ['DEV', 'REVIEW', 'TEST', 'RETRO', 'DOCS']
+    // quick workflow stages: ['DEV', 'REVIEW', 'RETRO', 'DOCS']（不含 TEST）
     const result = specs.initFeatureDir(tmpDir, 'quick-feature', 'quick');
     const tasksPath = path.join(result, 'tasks.md');
     const content = readFileSync(tasksPath, 'utf8');
 
     expect(content).toContain('- [ ] DEV');
     expect(content).toContain('- [ ] REVIEW');
-    expect(content).toContain('- [ ] TEST');
     expect(content).toContain('- [ ] RETRO');
+    expect(content).not.toContain('- [ ] TEST');
 
     // 不應包含文件類型名稱
     expect(content).not.toContain('- [ ] tasks');
@@ -1068,10 +1068,10 @@ describe('buildTasksMd — tasks.md checkbox 內容驗證', () => {
     const tasksIdx = content.indexOf('## Tasks');
     const stagesSection = content.slice(stagesIdx, tasksIdx);
 
-    // quick stages：DEV, REVIEW, TEST, RETRO, DOCS
+    // quick stages：DEV, REVIEW, RETRO, DOCS（不含 TEST）
     expect(stagesSection).toContain('- [ ] DEV');
     expect(stagesSection).toContain('- [ ] REVIEW');
-    expect(stagesSection).toContain('- [ ] TEST');
+    expect(stagesSection).not.toContain('- [ ] TEST');
     expect(stagesSection).toContain('- [ ] RETRO');
     expect(stagesSection).toContain('- [ ] DOCS');
   });

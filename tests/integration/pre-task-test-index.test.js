@@ -77,7 +77,7 @@ afterAll(() => {
  * 初始化 quick workflow 並將前置 stages 設為 completed，
  * 讓目標 stage 可以通過前置檢查。
  *
- * quick workflow: DEV(0) → REVIEW(1) → TEST(2) → RETRO(3) → DOCS(4)
+ * quick workflow: DEV(0) → REVIEW(1) → RETRO(2) → DOCS(3)
  *
  * @param {string} sessionId
  * @param {string[]} completedStageKeys - 要設為 completed 的 stage key（如 ['DEV']）

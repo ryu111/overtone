@@ -66,16 +66,11 @@ describe('1. Pipeline 可視化 — buildPipelineSegments 並行段落驗證', (
     workflowParallelGroups[name] = wf.parallelGroups;
   }
 
-  test('quick workflow：REVIEW + TEST 合為一個 parallel segment', () => {
-    const stagesObj = toStagesObj(['DEV', 'REVIEW', 'TEST', 'RETRO', 'DOCS']);
+  test('quick workflow：無並行 segment（移除 TEST stage 後 REVIEW 獨立執行）', () => {
+    const stagesObj = toStagesObj(['DEV', 'REVIEW', 'RETRO', 'DOCS']);
     const segments = buildPipelineSegments(stagesObj, 'quick', parallelGroupDefs, workflowParallelGroups);
     const parallelSegs = segments.filter(s => s.type === 'parallel');
-    expect(parallelSegs.length).toBe(1);
-    const qualityGroup = parallelSegs.find(s => s.groupName === 'quality');
-    expect(qualityGroup).toBeDefined();
-    const groupStageKeys = qualityGroup.stages.map(s => s.key);
-    expect(groupStageKeys).toContain('REVIEW');
-    expect(groupStageKeys).toContain('TEST');
+    expect(parallelSegs.length).toBe(0);
   });
 
   test('standard workflow：DEV 後的 REVIEW + TEST 合為 quality parallel segment', () => {

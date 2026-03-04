@@ -613,8 +613,8 @@ describe('場景 20：retry — completed + reject/fail 時重新委派', () => 
     createdSessions.push(sessionId);
 
     mkdirSync(paths.sessionDir(sessionId), { recursive: true });
-    const stageList = workflows['quick'].stages;
-    state.initState(sessionId, 'quick', stageList);
+    // 使用含 TEST 的自訂 stages（quick 已移除 TEST）
+    state.initState(sessionId, 'standard', ['DEV', 'REVIEW', 'TEST', 'RETRO']);
 
     // 模擬 DEV + REVIEW 完成 + TEST fail
     state.updateStateAtomic(sessionId, (s) => {

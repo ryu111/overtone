@@ -40,7 +40,8 @@ function setupQuickWithDevCompleted() {
   const sessionId = newSessionId();
   createdSessions.push(sessionId);
   mkdirSync(paths.sessionDir(sessionId), { recursive: true });
-  state.initState(sessionId, 'quick', workflows['quick'].stages);
+  // 使用含 DEV + REVIEW + TEST 的自訂 stages（quick 已移除 TEST，但此測試需要並行 REVIEW+TEST 的環境）
+  state.initState(sessionId, 'standard', ['DEV', 'REVIEW', 'TEST', 'RETRO']);
   state.updateStateAtomic(sessionId, (s) => {
     s.stages['DEV'].status = 'completed';
     s.stages['DEV'].result = 'pass';

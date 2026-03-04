@@ -209,8 +209,8 @@ describe('Feature 3：on-stop.js 收斂門 — fail 立即觸發', () => {
     const sessionId = newSessionId();
     createdSessions.push(sessionId);
     mkdirSync(paths.sessionDir(sessionId), { recursive: true });
-    // 建立含 DEV + TEST 的 workflow，讓 DEV 先完成，TEST 設為並行 active
-    state.initState(sessionId, 'quick', workflows['quick'].stages);
+    // 建立含 DEV + TEST 的自訂 workflow（DEV 後有 REVIEW + TEST 並行）
+    state.initState(sessionId, 'standard', ['DEV', 'REVIEW', 'TEST', 'RETRO']);
 
     state.updateStateAtomic(sessionId, (s) => {
       s.stages['DEV'].status = 'completed';

@@ -153,14 +153,19 @@ describe('場景 1：on-start 建立目錄，init-workflow 初始化 quick workf
     expect(ws.stages).toHaveProperty('REVIEW');
   });
 
-  test('workflow.json 中 stages 包含 TEST', () => {
-    const ws = state.readState(SESSION_ID);
-    expect(ws.stages).toHaveProperty('TEST');
-  });
-
   test('workflow.json 中 stages 包含 RETRO', () => {
     const ws = state.readState(SESSION_ID);
     expect(ws.stages).toHaveProperty('RETRO');
+  });
+
+  test('workflow.json 中 stages 包含 DOCS', () => {
+    const ws = state.readState(SESSION_ID);
+    expect(ws.stages).toHaveProperty('DOCS');
+  });
+
+  test('workflow.json 中 stages 不含 TEST（quick workflow 已移除）', () => {
+    const ws = state.readState(SESSION_ID);
+    expect(ws.stages).not.toHaveProperty('TEST');
   });
 });
 

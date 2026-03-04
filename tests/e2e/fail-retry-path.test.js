@@ -26,17 +26,28 @@ afterAll(() => {
   rmSync(paths.sessionDir(SESSION_ID), { recursive: true, force: true });
 });
 
-// ── 前置：建立 quick workflow 並完成 DEV + 啟動 TEST ──
+// ── 前置：建立 standard workflow（含 TEST stage）並完成前置 stages + 啟動 TEST ──
 beforeAll(() => {
   runOnStart(SESSION_ID);
-  runInitWorkflow('quick', SESSION_ID);
+  // 使用 standard workflow，DEV 後有 REVIEW + TEST（quality 並行群組）
+  runInitWorkflow('standard', SESSION_ID);
 
-  // DEV PASS
+  // DEV PASS（前置：PLAN→ARCH→TEST:spec 直接設定完成，避免流程複雜化）
+  stateLib.updateStateAtomic(SESSION_ID, (s) => {
+    s.stages['PLAN'].status = 'completed';
+    s.stages['PLAN'].result = 'pass';
+    s.stages['ARCH'].status = 'completed';
+    s.stages['ARCH'].result = 'pass';
+    s.stages['TEST'].status = 'completed';
+    s.stages['TEST'].result = 'pass';
+    s.currentStage = 'DEV';
+    return s;
+  });
+
   runPreTask(SESSION_ID, { description: '委派 developer 實作功能' });
   runSubagentStop(SESSION_ID, 'ot:developer', 'VERDICT: pass 開發完成');
 
-  // 委派並行組並只啟動 TEST（REVIEW 不啟動，避免並行干擾）
-  // 直接設定 TEST 為 active
+  // DEV 完成後進入 quality 並行群組，直接設定 REVIEW 完成、TEST 為 active
   stateLib.updateStateAtomic(SESSION_ID, (s) => {
     s.stages['REVIEW'].status = 'completed';
     s.stages['REVIEW'].result = 'pass';
