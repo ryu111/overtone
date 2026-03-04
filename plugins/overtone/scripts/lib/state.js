@@ -218,7 +218,7 @@ function updateStateAtomic(sessionId, modifier) {
     let mtime;
     try { mtime = statSync(filePath).mtimeMs; } catch { mtime = 0; }
 
-    const modified = modifier(current);
+    const modified = modifier(current) ?? current;
     const newState = enforceInvariants(modified);
 
     // CAS：寫入前再檢查 mtime
@@ -246,7 +246,7 @@ function updateStateAtomic(sessionId, modifier) {
   // fallback：最後一次強制寫入
   const current = readState(sessionId);
   if (!current) throw new Error(`找不到 session 狀態：${sessionId}`);
-  const modified = modifier(current);
+  const modified = modifier(current) ?? current;
   const newState = enforceInvariants(modified);
   writeState(sessionId, newState);
   return newState;

@@ -122,6 +122,11 @@ bun scripts/heartbeat.js start [--project-root <path>]  # 啟動常駐 daemon
 bun scripts/heartbeat.js stop                            # 停止 daemon
 bun scripts/heartbeat.js status                          # 查看狀態
 
+# 執行佇列管理
+bun scripts/queue.js add <name> <workflow> [...]  # 新增項目
+bun scripts/queue.js list                          # 列出佇列狀態
+bun scripts/queue.js clear                         # 清除佇列
+
 # 手動停止 Loop（需提供 sessionId）
 bun scripts/stop-loop.js {sessionId}
 
