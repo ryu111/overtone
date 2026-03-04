@@ -158,6 +158,9 @@ const timelineEvents = {
 
   // hook 類（1）
   'hook:timing':        { label: 'Hook 計時',    category: 'hook' },
+
+  // queue 類（1）
+  'queue:auto-write':   { label: '佇列自動寫入', category: 'queue' },
 };
 
 // Remote 控制命令
