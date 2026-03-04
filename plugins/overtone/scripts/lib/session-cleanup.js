@@ -20,9 +20,10 @@ const path = require('path');
 const os = require('os');
 
 const DEFAULT_OVERTONE_HOME = path.join(os.homedir(), '.overtone');
-const DEFAULT_MAX_AGE_DAYS = 7;
-const DEFAULT_ORPHAN_MAX_AGE_HOURS = 1;
-const DEFAULT_GLOBAL_MAX_AGE_DAYS = 30;
+// 保留策略常數 — 來源：docs/spec/data-policy.md
+const DEFAULT_MAX_AGE_DAYS = 7;          // session 目錄保留天數
+const DEFAULT_ORPHAN_MAX_AGE_HOURS = 1;  // 暫存檔（.tmp/.bak/.lock）保留小時數
+const DEFAULT_GLOBAL_MAX_AGE_DAYS = 30;  // global hash 孤兒目錄保留天數
 
 /**
  * 取得目錄內所有檔案的最新 mtime（毫秒）。
