@@ -38,9 +38,13 @@ describe('Feature 1h: registry.js tool:failure 事件', () => {
   });
 
   // Scenario 1h-2: timelineEvents 總數檢查（至少包含已知的核心事件）
-  describe('Scenario 1h-2: timelineEvents 總數至少為 27', () => {
+  describe('Scenario 1h-2: timelineEvents 總數至少為 27 且包含代表性事件', () => {
     test('Object.keys(timelineEvents).length >= 27', () => {
       expect(Object.keys(timelineEvents).length).toBeGreaterThanOrEqual(27);
+    });
+    test('包含代表性事件 stage:start 和 workflow:start', () => {
+      expect(timelineEvents['stage:start']).toBeDefined();
+      expect(timelineEvents['workflow:start']).toBeDefined();
     });
   });
 
