@@ -10,7 +10,7 @@
  */
 
 const { describe, test, expect } = require('bun:test');
-const { handleAgentStop } = require('../../plugins/overtone/scripts/lib/agent-stop-handler');
+const { handleAgentStop, _parseQueueTable } = require('../../plugins/overtone/scripts/lib/agent-stop-handler');
 
 // ── 模組介面 ──────────────────────────────────────────────────────────────
 
@@ -52,5 +52,69 @@ describe('handleAgentStop 邊界情況', () => {
     expect(() => JSON.stringify(result)).not.toThrow();
     const parsed = JSON.parse(JSON.stringify(result));
     expect(typeof parsed.output).toBe('object');
+  });
+});
+
+// ── _parseQueueTable 佇列表格解析 ──────────────────────────────────────────
+
+describe('_parseQueueTable 佇列表格解析', () => {
+  test('解析標準 PM 輸出的佇列表格', () => {
+    const output = `
+## HANDOFF
+
+**執行佇列**：
+| # | 名稱 | Workflow | 說明 |
+|---|------|---------|------|
+| 1 | claudecode-env-filter | single | session-spawner 加入過濾 |
+| 2 | pm-queue-auto-write | quick | agent-stop-handler 整合 |
+| 3 | telegram-run-command | quick | Telegram /run 命令 |
+
+Some other text after.
+`;
+    const items = _parseQueueTable(output);
+    expect(items).toEqual([
+      { name: 'claudecode-env-filter', workflow: 'single' },
+      { name: 'pm-queue-auto-write', workflow: 'quick' },
+      { name: 'telegram-run-command', workflow: 'quick' },
+    ]);
+  });
+
+  test('無佇列表格 → 回傳空陣列', () => {
+    const output = '## HANDOFF\n\nSome analysis without queue table.';
+    expect(_parseQueueTable(output)).toEqual([]);
+  });
+
+  test('佇列表格為空（只有表頭）→ 回傳空陣列', () => {
+    const output = `
+**執行佇列**：
+| # | 名稱 | Workflow | 說明 |
+|---|------|---------|------|
+`;
+    expect(_parseQueueTable(output)).toEqual([]);
+  });
+
+  test('單項佇列', () => {
+    const output = `
+**執行佇列**：
+| # | 名稱 | Workflow | 說明 |
+|---|------|---------|------|
+| 1 | fix-bug | single | 修 bug |
+`;
+    const items = _parseQueueTable(output);
+    expect(items).toEqual([{ name: 'fix-bug', workflow: 'single' }]);
+  });
+
+  test('佇列表格後有其他內容不影響解析', () => {
+    const output = `
+**執行佇列**：
+| # | 名稱 | Workflow | 說明 |
+|---|------|---------|------|
+| 1 | task-a | standard | 任務 A |
+
+### Open Questions
+1. Some question
+`;
+    const items = _parseQueueTable(output);
+    expect(items).toEqual([{ name: 'task-a', workflow: 'standard' }]);
   });
 });

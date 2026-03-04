@@ -162,6 +162,18 @@ function handleAgentStop(input, sessionId) {
   // stage:complete 只在收斂（全部 pass）或 fail/reject 時 emit（agent:complete 已在上方提前 emit）
   if (isConvergedOrFailed) {
     timeline.emit(sessionId, 'stage:complete', { stage: actualStageKey, result: finalResult });
+
+    // PM stage 完成時，自動解析輸出中的佇列表格並寫入 execution-queue
+    if (stageKey === 'PM' && finalResult === 'pass') {
+      try {
+        const queueItems = _parseQueueTable(agentOutput);
+        if (queueItems.length > 0) {
+          const executionQueue = require('./execution-queue');
+          executionQueue.writeQueue(projectRoot, queueItems, `PM Discovery ${new Date().toISOString().slice(0, 10)}`);
+          timeline.emit(sessionId, 'queue:auto-write', { count: queueItems.length, source: 'PM' });
+        }
+      } catch { /* 靜默 — 佇列寫入失敗不影響主流程 */ }
+    }
   }
 
   // agent_performance instinct
@@ -249,4 +261,62 @@ function handleAgentStop(input, sessionId) {
   return { output: { result: buildResult.messages.join('\n') } };
 }
 
-module.exports = { handleAgentStop };
+/**
+ * 從 PM agent 輸出解析執行佇列表格
+ * 格式：| # | 名稱 | Workflow | 說明 |
+ * @param {string} text - agent 輸出文字
+ * @returns {Array<{name: string, workflow: string}>}
+ */
+function _parseQueueTable(text) {
+  // 搜尋以「執行佇列」開頭的區塊，然後匹配 Markdown 表格行
+  const lines = text.split('\n');
+  let inQueue = false;
+  let headerPassed = false;
+  const items = [];
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+
+    // 偵測佇列區塊開始（支援多種標記格式）
+    if (/執行佇列/.test(trimmed)) {
+      inQueue = true;
+      headerPassed = false;
+      continue;
+    }
+
+    if (!inQueue) continue;
+
+    // 跳過表頭行（含 # | 名稱 | Workflow）
+    if (/\|\s*#\s*\|/.test(trimmed)) {
+      continue;
+    }
+
+    // 跳過分隔行 |---|
+    if (/^\|[\s\-|]+\|$/.test(trimmed)) {
+      headerPassed = true;
+      continue;
+    }
+
+    // 資料行：| 1 | name | workflow | desc |
+    if (headerPassed && trimmed.startsWith('|')) {
+      const cells = trimmed.split('|').map(c => c.trim()).filter(Boolean);
+      if (cells.length >= 3) {
+        const name = cells[1];
+        const workflow = cells[2];
+        if (name && workflow && !/^[-\s]+$/.test(name)) {
+          items.push({ name, workflow });
+        }
+      }
+      continue;
+    }
+
+    // 非表格行且已經在佇列區塊 → 結束
+    if (headerPassed && !trimmed.startsWith('|') && trimmed.length > 0) {
+      break;
+    }
+  }
+
+  return items;
+}
+
+module.exports = { handleAgentStop, _parseQueueTable };
