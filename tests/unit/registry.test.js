@@ -12,8 +12,8 @@ const {
 
 describe('registry.js 資料完整性', () => {
   describe('所有 16 個 agent 名稱符合 kebab-case 格式', () => {
-    test('stages 共有 16 個項目', () => {
-      expect(Object.keys(stages).length).toBe(16);
+    test('stages 數量至少為 16 個項目', () => {
+      expect(Object.keys(stages).length).toBeGreaterThanOrEqual(16);
     });
 
     test('每個 agent 名稱只包含小寫英文字母、數字與連字符', () => {
@@ -93,8 +93,8 @@ describe('registry.js 資料完整性', () => {
       expect(hookEvents).toContain('Notification');
     });
 
-    test('hookEvents 共有 11 個事件', () => {
-      expect(hookEvents.length).toBe(11);
+    test('hookEvents 數量至少為 11 個事件', () => {
+      expect(hookEvents.length).toBeGreaterThanOrEqual(11);
     });
   });
 

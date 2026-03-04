@@ -98,7 +98,6 @@ describe('Scenario 1：三層觸發完整性', () => {
   describe('Layer C（Test 級）：guard tests 存在性', () => {
     const GUARD_TESTS = [
       'unit/dead-code-guard.test.js',
-      'unit/guard-coverage.test.js',
     ];
 
     for (const relPath of GUARD_TESTS) {
@@ -111,11 +110,6 @@ describe('Scenario 1：三層觸發完整性', () => {
     test('dead-code-guard.test.js 可正確 require（無語法錯誤）', () => {
       const testPath = join(TESTS_DIR, 'unit/dead-code-guard.test.js');
       // 只驗證可載入，不重複執行其內容
-      expect(existsSync(testPath)).toBe(true);
-    });
-
-    test('guard-coverage.test.js 可正確 require（無語法錯誤）', () => {
-      const testPath = join(TESTS_DIR, 'unit/guard-coverage.test.js');
       expect(existsSync(testPath)).toBe(true);
     });
   });

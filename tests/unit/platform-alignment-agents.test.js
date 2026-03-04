@@ -50,142 +50,74 @@ describe('Feature 1a: disallowedTools 遷移', () => {
       'code-reviewer', 'debugger', 'security-reviewer', 'database-reviewer', 'retrospective',
     ];
 
-    for (const agentName of readonlyAgents) {
-      test(`${agentName} disallowedTools 包含 Write`, () => {
+    test('所有唯讀 agent 的 disallowedTools 包含 Write、Edit、Task、NotebookEdit', () => {
+      for (const agentName of readonlyAgents) {
         const fm = agentFrontmatters[agentName];
         expect(fm.disallowedTools).toBeDefined();
         expect(fm.disallowedTools).toContain('Write');
-      });
-
-      test(`${agentName} disallowedTools 包含 Edit`, () => {
-        const fm = agentFrontmatters[agentName];
         expect(fm.disallowedTools).toContain('Edit');
-      });
-
-      test(`${agentName} disallowedTools 包含 Task`, () => {
-        const fm = agentFrontmatters[agentName];
         expect(fm.disallowedTools).toContain('Task');
-      });
-
-      test(`${agentName} disallowedTools 包含 NotebookEdit`, () => {
-        const fm = agentFrontmatters[agentName];
         expect(fm.disallowedTools).toContain('NotebookEdit');
-      });
-    }
+      }
+    });
   });
 
   // Scenario 1a-2: architect 可使用 Write 和 Edit（只禁 Task 和 NotebookEdit）
   describe('Scenario 1a-2: architect disallowedTools 只含 Task 和 NotebookEdit', () => {
-    test('architect disallowedTools 包含 Task', () => {
+    test('architect disallowedTools 包含 Task 和 NotebookEdit，不包含 Write 和 Edit', () => {
       const fm = agentFrontmatters['architect'];
       expect(fm.disallowedTools).toBeDefined();
       expect(fm.disallowedTools).toContain('Task');
-    });
-
-    test('architect disallowedTools 包含 NotebookEdit', () => {
-      const fm = agentFrontmatters['architect'];
       expect(fm.disallowedTools).toContain('NotebookEdit');
-    });
-
-    test('architect disallowedTools 不包含 Write', () => {
-      const fm = agentFrontmatters['architect'];
       expect(fm.disallowedTools).not.toContain('Write');
-    });
-
-    test('architect disallowedTools 不包含 Edit', () => {
-      const fm = agentFrontmatters['architect'];
       expect(fm.disallowedTools).not.toContain('Edit');
     });
   });
 
   // Scenario 1a-3: planner 可使用 Write 和 Edit
   describe('Scenario 1a-3: planner disallowedTools 只含 Task 和 NotebookEdit', () => {
-    test('planner disallowedTools 包含 Task', () => {
+    test('planner disallowedTools 包含 Task 和 NotebookEdit，不包含 Write 和 Edit', () => {
       const fm = agentFrontmatters['planner'];
       expect(fm.disallowedTools).toBeDefined();
       expect(fm.disallowedTools).toContain('Task');
-    });
-
-    test('planner disallowedTools 包含 NotebookEdit', () => {
-      const fm = agentFrontmatters['planner'];
       expect(fm.disallowedTools).toContain('NotebookEdit');
-    });
-
-    test('planner disallowedTools 不包含 Write', () => {
-      const fm = agentFrontmatters['planner'];
       expect(fm.disallowedTools).not.toContain('Write');
-    });
-
-    test('planner disallowedTools 不包含 Edit', () => {
-      const fm = agentFrontmatters['planner'];
       expect(fm.disallowedTools).not.toContain('Edit');
     });
   });
 
   // Scenario 1a-4: qa 可使用 Write 但無法使用 Edit
   describe('Scenario 1a-4: qa 禁用 Edit 但允許 Write', () => {
-    test('qa disallowedTools 包含 Edit', () => {
+    test('qa disallowedTools 包含 Edit、Task、NotebookEdit，不包含 Write', () => {
       const fm = agentFrontmatters['qa'];
       expect(fm.disallowedTools).toBeDefined();
       expect(fm.disallowedTools).toContain('Edit');
-    });
-
-    test('qa disallowedTools 包含 Task', () => {
-      const fm = agentFrontmatters['qa'];
       expect(fm.disallowedTools).toContain('Task');
-    });
-
-    test('qa disallowedTools 包含 NotebookEdit', () => {
-      const fm = agentFrontmatters['qa'];
       expect(fm.disallowedTools).toContain('NotebookEdit');
-    });
-
-    test('qa disallowedTools 不包含 Write（可使用 Write）', () => {
-      const fm = agentFrontmatters['qa'];
       expect(fm.disallowedTools).not.toContain('Write');
     });
   });
 
   // Scenario 1a-5: product-manager 和 designer 保留 Write 和 Edit
   describe('Scenario 1a-5: product-manager 和 designer 只禁 Task 和 NotebookEdit', () => {
-    for (const agentName of ['product-manager', 'designer']) {
-      test(`${agentName} disallowedTools 不包含 Write`, () => {
-        const fm = agentFrontmatters[agentName];
-        expect(fm.disallowedTools).not.toContain('Write');
-      });
-
-      test(`${agentName} disallowedTools 不包含 Edit`, () => {
-        const fm = agentFrontmatters[agentName];
-        expect(fm.disallowedTools).not.toContain('Edit');
-      });
-
-      test(`${agentName} disallowedTools 包含 Task`, () => {
+    test('product-manager 和 designer 的 disallowedTools 包含 Task 和 NotebookEdit，不包含 Write 和 Edit', () => {
+      for (const agentName of ['product-manager', 'designer']) {
         const fm = agentFrontmatters[agentName];
         expect(fm.disallowedTools).toBeDefined();
         expect(fm.disallowedTools).toContain('Task');
-      });
-
-      test(`${agentName} disallowedTools 包含 NotebookEdit`, () => {
-        const fm = agentFrontmatters[agentName];
         expect(fm.disallowedTools).toContain('NotebookEdit');
-      });
-    }
+        expect(fm.disallowedTools).not.toContain('Write');
+        expect(fm.disallowedTools).not.toContain('Edit');
+      }
+    });
   });
 
   // Scenario 1a-6: grader 維持 tools 白名單
   describe('Scenario 1a-6: grader 維持 tools 白名單不使用 disallowedTools', () => {
-    test('grader frontmatter 包含 tools 欄位', () => {
+    test('grader tools 白名單包含 Read 和 Bash', () => {
       const fm = agentFrontmatters['grader'];
       expect(fm.tools).toBeDefined();
-    });
-
-    test('grader tools 包含 Read', () => {
-      const fm = agentFrontmatters['grader'];
       expect(fm.tools).toContain('Read');
-    });
-
-    test('grader tools 包含 Bash', () => {
-      const fm = agentFrontmatters['grader'];
       expect(fm.tools).toContain('Bash');
     });
   });
@@ -194,18 +126,13 @@ describe('Feature 1a: disallowedTools 遷移', () => {
   describe('Scenario 1a-7: tester、developer、e2e-runner 等不含工具限制欄位', () => {
     const unrestrictedAgents = ['tester', 'developer', 'e2e-runner', 'build-error-resolver', 'refactor-cleaner', 'doc-updater'];
 
-    for (const agentName of unrestrictedAgents) {
-      test(`${agentName} frontmatter 不含 tools 白名單欄位`, () => {
+    test('所有無限制 agent 不含 tools 白名單欄位和 disallowedTools 欄位', () => {
+      for (const agentName of unrestrictedAgents) {
         const fm = agentFrontmatters[agentName];
-        // 這些 agent 沒有 tools（白名單）也沒有 disallowedTools
         expect(fm.tools).toBeUndefined();
-      });
-
-      test(`${agentName} frontmatter 不含 disallowedTools 欄位`, () => {
-        const fm = agentFrontmatters[agentName];
         expect(fm.disallowedTools).toBeUndefined();
-      });
-    }
+      }
+    });
   });
 
   // Scenario 1a-8: 10 個遷移 agent 不含舊的 tools 白名單
@@ -215,12 +142,12 @@ describe('Feature 1a: disallowedTools 遷移', () => {
       'architect', 'planner', 'qa', 'product-manager', 'designer',
     ];
 
-    for (const agentName of migratedAgents) {
-      test(`${agentName} frontmatter 不含 tools 白名單欄位（已遷移至 disallowedTools）`, () => {
+    test('所有遷移 agent 不含 tools 白名單欄位（已遷移至 disallowedTools）', () => {
+      for (const agentName of migratedAgents) {
         const fm = agentFrontmatters[agentName];
         expect(fm.tools).toBeUndefined();
-      });
-    }
+      }
+    });
   });
 });
 
@@ -232,93 +159,47 @@ describe('Feature 1b: Agent skills 預載（agent frontmatter）', () => {
 
   // Scenario 1b-5: tester 預載 testing skill
   describe('Scenario 1b-5: tester 的 skills 欄位', () => {
-    test('tester frontmatter 含 skills 欄位', () => {
+    test('tester skills 包含 testing，不含已刪除的舊 ref', () => {
       const fm = agentFrontmatters['tester'];
       expect(fm.skills).toBeDefined();
-    });
-
-    test('tester skills 包含 testing', () => {
-      const fm = agentFrontmatters['tester'];
       expect(fm.skills).toContain('testing');
-    });
-
-    test('tester skills 不包含已刪除的 ref-bdd-guide', () => {
-      const fm = agentFrontmatters['tester'];
       expect(fm.skills).not.toContain('ref-bdd-guide');
-    });
-
-    test('tester skills 不包含已刪除的 ref-failure-handling', () => {
-      const fm = agentFrontmatters['tester'];
       expect(fm.skills).not.toContain('ref-failure-handling');
     });
   });
 
   // Scenario 1b-6: developer 預載 commit-convention
   describe('Scenario 1b-6: developer 的 skills 欄位', () => {
-    test('developer frontmatter 含 skills 欄位', () => {
+    test('developer skills 包含 commit-convention，不含已刪除的舊 ref', () => {
       const fm = agentFrontmatters['developer'];
       expect(fm.skills).toBeDefined();
-    });
-
-    test('developer skills 包含 commit-convention', () => {
-      const fm = agentFrontmatters['developer'];
       expect(fm.skills).toContain('commit-convention');
-    });
-
-    test('developer skills 不包含已刪除的 ref-commit-convention', () => {
-      const fm = agentFrontmatters['developer'];
       expect(fm.skills).not.toContain('ref-commit-convention');
-    });
-
-    test('developer skills 不包含已刪除的 ref-bdd-guide', () => {
-      const fm = agentFrontmatters['developer'];
       expect(fm.skills).not.toContain('ref-bdd-guide');
     });
   });
 
   // Scenario 1b-7: code-reviewer 預載 code-review
   describe('Scenario 1b-7: code-reviewer 的 skills 欄位', () => {
-    test('code-reviewer frontmatter 含 skills 欄位', () => {
+    test('code-reviewer skills 包含 code-review，不含已刪除的舊 ref', () => {
       const fm = agentFrontmatters['code-reviewer'];
       expect(fm.skills).toBeDefined();
-    });
-
-    test('code-reviewer skills 包含 code-review', () => {
-      const fm = agentFrontmatters['code-reviewer'];
       expect(fm.skills).toContain('code-review');
-    });
-
-    test('code-reviewer skills 不包含已刪除的 ref-pr-review-checklist', () => {
-      const fm = agentFrontmatters['code-reviewer'];
       expect(fm.skills).not.toContain('ref-pr-review-checklist');
-    });
-
-    test('code-reviewer skills 不包含已刪除的 ref-wording-guide', () => {
-      const fm = agentFrontmatters['code-reviewer'];
       expect(fm.skills).not.toContain('ref-wording-guide');
     });
   });
 
   // Scenario 1b-8: qa 含 testing skill；doc-updater 含 wording skill
   describe('Scenario 1b-8: qa 含 testing skill；doc-updater 含 wording skill', () => {
-    test('qa frontmatter 含 skills 欄位', () => {
-      const fm = agentFrontmatters['qa'];
-      expect(fm.skills).toBeDefined();
-    });
+    test('qa skills 包含 testing，doc-updater skills 包含 wording', () => {
+      const qaFm = agentFrontmatters['qa'];
+      expect(qaFm.skills).toBeDefined();
+      expect(qaFm.skills).toContain('testing');
 
-    test('qa skills 包含 testing', () => {
-      const fm = agentFrontmatters['qa'];
-      expect(fm.skills).toContain('testing');
-    });
-
-    test('doc-updater frontmatter 含 skills 欄位', () => {
-      const fm = agentFrontmatters['doc-updater'];
-      expect(fm.skills).toBeDefined();
-    });
-
-    test('doc-updater skills 包含 wording', () => {
-      const fm = agentFrontmatters['doc-updater'];
-      const skills = Array.isArray(fm.skills) ? fm.skills : [fm.skills];
+      const docFm = agentFrontmatters['doc-updater'];
+      expect(docFm.skills).toBeDefined();
+      const skills = Array.isArray(docFm.skills) ? docFm.skills : [docFm.skills];
       expect(skills).toContain('wording');
     });
   });
@@ -329,65 +210,49 @@ describe('Feature 1b: Agent skills 預載（agent frontmatter）', () => {
     // 僅驗證未加入任何 skill 的 agent
     const noSkillsAgents = ['designer'];
 
-    for (const agentName of noSkillsAgents) {
-      test(`${agentName} frontmatter 不含 skills 欄位`, () => {
+    test('designer 不含 skills 欄位', () => {
+      for (const agentName of noSkillsAgents) {
         const fm = agentFrontmatters[agentName];
         expect(fm.skills).toBeUndefined();
-      });
-    }
+      }
+    });
   });
 
   // Scenario 1b-12: architect 和 planner 含 wording skill（新增）
   describe('Scenario 1b-12: architect 和 planner 含 wording skill', () => {
-    for (const agentName of ['architect', 'planner']) {
-      test(`${agentName} frontmatter 含 skills 欄位`, () => {
+    test('architect 和 planner 的 skills 包含 wording', () => {
+      for (const agentName of ['architect', 'planner']) {
         const fm = agentFrontmatters[agentName];
         expect(fm.skills).toBeDefined();
-      });
-
-      test(`${agentName} skills 包含 wording`, () => {
-        const fm = agentFrontmatters[agentName];
         const skills = Array.isArray(fm.skills) ? fm.skills : [fm.skills];
         expect(skills).toContain('wording');
-      });
-    }
+      }
+    });
   });
 
   // Scenario 1b-11: security-reviewer 預載 security-kb
   describe('Scenario 1b-11: security-reviewer 的 skills 欄位', () => {
-    test('security-reviewer frontmatter 含 skills 欄位', () => {
-      const fm = agentFrontmatters['security-reviewer'];
-      expect(fm.skills).toBeDefined();
-    });
-
     test('security-reviewer skills 包含 security-kb', () => {
       const fm = agentFrontmatters['security-reviewer'];
+      expect(fm.skills).toBeDefined();
       expect(fm.skills).toContain('security-kb');
     });
   });
 
   // Scenario 1b-12: database-reviewer 預載 database
   describe('Scenario 1b-12: database-reviewer 的 skills 欄位', () => {
-    test('database-reviewer frontmatter 含 skills 欄位', () => {
-      const fm = agentFrontmatters['database-reviewer'];
-      expect(fm.skills).toBeDefined();
-    });
-
     test('database-reviewer skills 包含 database', () => {
       const fm = agentFrontmatters['database-reviewer'];
+      expect(fm.skills).toBeDefined();
       expect(fm.skills).toContain('database');
     });
   });
 
   // Scenario 1b-13: refactor-cleaner 預載 dead-code
   describe('Scenario 1b-13: refactor-cleaner 的 skills 欄位', () => {
-    test('refactor-cleaner frontmatter 含 skills 欄位', () => {
-      const fm = agentFrontmatters['refactor-cleaner'];
-      expect(fm.skills).toBeDefined();
-    });
-
     test('refactor-cleaner skills 包含 dead-code', () => {
       const fm = agentFrontmatters['refactor-cleaner'];
+      expect(fm.skills).toBeDefined();
       expect(fm.skills).toContain('dead-code');
     });
   });
@@ -407,22 +272,22 @@ describe('Feature S10: Agent Memory', () => {
     'developer', 'tester', 'debugger', 'planner', 'architect',
   ];
   describe('S10-1: memory: local agent', () => {
-    for (const agentName of memoryAgents) {
-      test(`${agentName} frontmatter 包含 memory: local`, () => {
+    test('所有啟用 memory 的 agent frontmatter 包含 memory: local', () => {
+      for (const agentName of memoryAgents) {
         const fm = agentFrontmatters[agentName];
         expect(fm.memory).toBe('local');
-      });
-    }
+      }
+    });
   });
 
   // S10-2: 未啟用 memory 的 agent
   describe('S10-2: 其他 agent 不含 memory 欄位', () => {
     const noMemoryAgents = agentFiles.filter(a => !memoryAgents.includes(a));
-    for (const agentName of noMemoryAgents) {
-      test(`${agentName} frontmatter 不含 memory 欄位`, () => {
+    test('所有未啟用 memory 的 agent 不含 memory 欄位', () => {
+      for (const agentName of noMemoryAgents) {
         const fm = agentFrontmatters[agentName];
         expect(fm.memory).toBeUndefined();
-      });
-    }
+      }
+    });
   });
 });

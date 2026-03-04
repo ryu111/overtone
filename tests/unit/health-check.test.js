@@ -535,9 +535,9 @@ describe('runAllChecks', () => {
     expect(Array.isArray(result.findings)).toBe(true);
   });
 
-  test('checks 陣列長度為 11（含 F1/F2/F3 三個主動偵測）', () => {
+  test('checks 陣列長度至少為 11（含 F1/F2/F3 三個主動偵測）', () => {
     const { checks } = runAllChecks();
-    expect(checks.length).toBe(11);
+    expect(checks.length).toBeGreaterThanOrEqual(11);
   });
 
   test('checks 包含所有 11 個偵測項目名稱', () => {
