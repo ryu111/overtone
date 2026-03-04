@@ -122,6 +122,13 @@ bun scripts/heartbeat.js start [--project-root <path>]  # 啟動常駐 daemon
 bun scripts/heartbeat.js stop                            # 停止 daemon
 bun scripts/heartbeat.js status                          # 查看狀態
 
+# 資料查詢與管理（timeline/failures/scores/observations/baselines）
+bun scripts/data.js query timeline --session <id>   # 查詢 timeline 事件
+bun scripts/data.js query failures --stage DEV       # 查詢失敗模式
+bun scripts/data.js stats --global                   # 全域統計摘要
+bun scripts/data.js gc --dry-run                     # 預覽全域目錄清理
+bun scripts/data.js recent --limit 5                 # 列出最近 session
+
 # 執行佇列管理
 bun scripts/queue.js add <name> <workflow> [...]  # 新增項目
 bun scripts/queue.js list                          # 列出佇列狀態

@@ -358,3 +358,36 @@ Keywords: passed, failed, tests, unit, queue, test, pass, execution, describe, a
 **注意**：`score-engine.test.js` 已在 `afterAll` 中正確清理兩個 `TEST_PROJECT_ROOT` 的 global dir，無需修改。
 Keywords: global, instinct, test, describe, block, aftereach, overtone, hash, rmsync, paths
 
+---
+## 2026-03-04 | developer:DEV Context
+迭代 2/6 — 建立統一資料查詢 CLI `plugins/overtone/scripts/data.js`。
+
+本次迭代確認了 data.js 在迭代 1 已有完整實作（539 行，含依賴注入設計支援測試）。測試檔 `tests/unit/data-cli.test.js` 也已存在（813 行，39 個測試案例）。
+
+驗收結果：
+- `bun plugins/overtone/scripts/data.js --help` 顯示所有子命令
+- 各 query 子命令（timeline/failures/scores/observations/baselines）正確調用底層 API
+- gc --dry-run 正確調用 cleanupStaleGlobalDirs
+- 39 個測試全部通過
+- `bun test` 全部 3185 個測試通過
+Keywords: plugins, overtone, scripts, data, tests, unit, test, help, query, timeline
+
+---
+## 2026-03-04 | tester:TEST Findings
+- `bun test tests/unit/data-cli.test.js`：**39 pass / 0 fail**
+- `bun test`（全套）：**3185 pass / 0 fail / 7200 expect() calls**（135 files）
+- `bun scripts/data.js --help`：正常顯示所有子命令（query / stats / gc / recent + 全域選項）
+- 所有 BDD 驗收標準通過：
+  - `--help` 顯示所有子命令 ✅
+  - `query scores` 輸出 JSON ✅
+  - `gc --dry-run` 不實際刪除 ✅
+  - 全域測試 3185+ pass / 0 fail ✅
+Keywords: test, tests, unit, data, pass, fail, expect, calls, files, scripts
+
+---
+## 2026-03-04 | code-reviewer:REVIEW Findings
+審查了 `plugins/overtone/scripts/data.js`（539 行）和 `tests/unit/data-cli.test.js`（813 行，39 個測試），以及兩個 `auto-discovered.md` 的知識歸檔變更。
+
+檢查了六個面向：依賴注入設計、API 調用正確性（逐一比對 7 個底層模組 exports 的函式簽名）、GC 子命令安全性、錯誤處理完整性、測試覆蓋度、安全性。全部 39 個測試通過。未發現任何高信心問題（>80%）。
+Keywords: plugins, overtone, scripts, data, tests, unit, test, auto, discovered, exports
+
