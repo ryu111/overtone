@@ -127,6 +127,8 @@ function setFeatureName(sessionId, name) {
  * 規則 1：孤兒 activeAgents 清除（stage key 不存在於 stages 中）
  * 規則 2：status 單向（有 completedAt 但 status 非 completed → 修正）
  * 規則 3：parallelDone ≤ parallelTotal
+ * 規則 4：孤兒 active stage（status=active 但無對應 activeAgents entry）
+ *         → 有 completedAt 修正為 completed，無 completedAt 修正為 pending（保守策略）
  *
  * @param {object} state - 已執行 modifier 的 state 物件
  * @returns {object} 修正後的 state
@@ -158,6 +160,23 @@ function enforceInvariants(state) {
     if (entry.parallelTotal && entry.parallelDone > entry.parallelTotal) {
       violations.push({ rule: 'parallel-done-overflow', stageKey: key, parallelDone: entry.parallelDone, parallelTotal: entry.parallelTotal });
       entry.parallelDone = entry.parallelTotal;
+    }
+  }
+
+  // 規則 4：孤兒 active stage（status=active 但無對應 activeAgents entry）
+  // 修正策略：有 completedAt → completed（SubagentStop 已完成但未標記）
+  //           無 completedAt → pending（保守策略：重做而非跳過）
+  for (const [key, entry] of Object.entries(state.stages || {})) {
+    if (entry.status === 'active') {
+      const stageBase = key.split(':')[0];
+      const hasActiveAgent = Object.values(state.activeAgents || {}).some(
+        (info) => (info.stage || '').split(':')[0] === stageBase
+      );
+      if (!hasActiveAgent) {
+        const correctedStatus = entry.completedAt ? 'completed' : 'pending';
+        violations.push({ rule: 'orphan-active-stage', stageKey: key, had: 'active', correctedTo: correctedStatus });
+        entry.status = correctedStatus;
+      }
     }
   }
 
@@ -318,6 +337,8 @@ function checkParallelConvergence(currentState, parallelGroups) {
  *
  * 規則 1：清除無對應 stage 的 activeAgents entry（孤兒）
  * 規則 2：修復有 completedAt 但 status 非 completed 的 stage
+ * 規則 3：修復孤兒 active stage（status=active 但無對應 activeAgents entry）
+ *         → 有 completedAt 修正為 completed，無 completedAt 修正為 pending
  *
  * 此函式直接操作檔案（writeState），適合在 SessionStart 時呼叫清理上一個
  * session 可能遺留的不一致狀態。
@@ -347,6 +368,22 @@ function sanitize(sessionId) {
       const originalStatus = entry.status;
       entry.status = 'completed';
       fixed.push(`修復 ${key} status: ${originalStatus} → completed`);
+    }
+  }
+
+  // 規則 3：修復孤兒 active stage（status=active 但無對應 activeAgents entry）
+  // 規則 2 已先執行，此時 active stage 若有 completedAt 已被修正，無需重複處理
+  for (const [key, entry] of Object.entries(s.stages || {})) {
+    if (entry.status === 'active') {
+      const stageBase = key.split(':')[0];
+      const hasActiveAgent = Object.values(s.activeAgents || {}).some(
+        (info) => (info.stage || '').split(':')[0] === stageBase
+      );
+      if (!hasActiveAgent) {
+        const correctedStatus = entry.completedAt ? 'completed' : 'pending';
+        entry.status = correctedStatus;
+        fixed.push(`修復孤兒 active stage ${key}: active → ${correctedStatus}`);
+      }
     }
   }
 

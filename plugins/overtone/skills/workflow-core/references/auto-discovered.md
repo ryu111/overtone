@@ -1,54 +1,4 @@
 ---
-## 2026-03-03 | product-manager:PM Findings
-**目標用戶**：Overtone agent 群（developer、architect、tester、debugger、qa -- 已在 P3.0 加入 `skills: [os-control]` frontmatter），透過 Bash tool 呼叫 `scripts/os/*.js` 腳本。
-
-**成功指標**：
-- Agent 能執行 `bun scripts/os/screenshot.js` 取得螢幕截圖並產生 PNG 檔案
-- Agent 能執行 `bun scripts/os/window.js list` 取得目前視窗列表
-- Agent 能將截圖送入多模態分析取得結構化描述
-- perception.md reference 文件能被 pre-task.js 注入 agent context
-
----
-
-**Discovery 五層追問**
-
-| 層 | 問題 | 回答 |
-|----|------|------|
-| L1 | 做什麼？ | 讓 agent 能截圖、理解視覺內容、管理視窗 |
-| L2 | 場景/誰在用？ | 5 個 agent（developer/architect/tester/debugger/qa）在 OS 操作驗證場景使用 |
-| L3 | 目前怎麼處理？ | 完全沒有替代方案。Agent 對 GUI 狀態完全不可見 |
-| L4 | 多常需要？ | Phase 3 Acid Test 的核心前提；P3.2 Computer Use 迴圈的必要輸入 |
-| L5 | 成功定義？ | `screencapture` 成功截圖 + Claude 多模態回傳結構化描述 + 視窗操作可用 |
-
----
-
-**Codebase 現狀深度分析**
-
-| 維度 | 現況 | 佐證 |
-|------|------|------|
-| 腳本位置 | `scripts/os/` 目錄尚未建立 | `ls plugins/overtone/scripts/` 無 os/ 子目錄 |
-| SKILL.md | 骨架已就位，4 個 reference 標記為「待建」 | `/plugins/overtone/skills/os-control/SKILL.md` 49 行 |
-| Reference 預留 | `perception.md` 只有 3 行 placeholder | 內容：`# 感知層（P3.1）\n> 此文件將在 P3.1 階段填充。` |
-| Guard | `pre-bash-guard.js` 11 條黑名單已可用 | 79 行 + 完整整合測試（233 行） |
-| 測試模式 | `sound.js`（OS 操作先例）測試採 mock platform + 常數驗證 | `sound.test.js` 69 行 |
-| OS 相依性 | `screencapture` 存在但需 Screen Recording 權限；`osascript` 存在但視窗屬性需 Accessibility 權限 | 實測驗證（見下方） |
-
-**環境權限實測結果**（codebase 佐證 -- 本機實測）：
-
-| 工具 | 命令 | 結果 | 需要權限 |
-|------|------|------|----------|
-| screencapture | `screencapture -x /tmp/test.png` | **失敗** `could not create image from display` | Screen Recording |
-| osascript（進程列表） | `get name of every process whose visible is true` | **成功** | 無 |
-| osascript（視窗屬性） | `get {position, size} of window of process` | **失敗** `-1728 不允許輔助取用` | Accessibility |
-| osascript（視窗名稱） | `get name of every window of process "Finder"` | **失敗** `-1728` | Accessibility |
-| JXA | `Application("System Events").processes.whose(...)` | **成功**（進程列表） | 無（進程列表） |
-
----
-
-**方案比較**
-Keywords: overtone, agent, developer, architect, tester, debugger, skills, control, frontmatter, bash
-
----
 ## 2026-03-03 | product-manager:PM Context
 **問題陳述**：Overtone 目前是「只有大腦沒有五官」的自治系統。agent 無法「看到」螢幕上正在發生什麼，也無法「理解」視覺內容。這限制了系統的自主能力 -- 例如 Phase 3 Acid Test 要求的「截圖+視覺驗證顯示正確」完全無法執行。
 
@@ -775,4 +725,53 @@ Keywords: state, sanitize, sessionstart, activeagent, status, hook, contract, te
 
 **測試設計決策**：由於 `checkComponentChain` 依賴真實的 `registry.stages`（無 mock 機制），F1 的部分場景（agent 缺失）改為格式驗證而非行為驗證。F3 的「不存在 projectRoot」場景驗證回傳空陣列（無學習資料時正確行為）。
 Keywords: checkcomponentchain, check, registry, stages, stage, agent, agents, gray, matter, frontmatter
+
+---
+## 2026-03-04 | developer:DEV Findings
+**修正策略（兩處一致）：**
+- 有 `completedAt` → 修正為 `completed`（SubagentStop 完成但未標記情境）
+- 無 `completedAt` → 修正為 `pending`（保守策略：重做而非跳過）
+
+**執行順序注意：**
+- `sanitize` 中規則 2（completedAt 修正）先執行，規則 3（孤兒 active stage）後執行
+- 因此有 `completedAt` 的孤兒 active stage 實際由規則 2 處理，規則 3 為兜底
+- `enforceInvariants` 邏輯相同，規則 4 加在規則 2 之後，但規則 2 已將有 `completedAt` 的情況處理完
+
+**stageBase 比對：** 並行場景中 stageKey 和 `info.stage` 都可能含 `:` 後綴，兩者都用 `split(':')[0]` 提取 base 後比對。
+
+**測試覆蓋：** 新增 9 個測試（5 個 invariants + 4 個 sanitize），全量 3113/3113 通過。
+Keywords: completedat, completed, subagentstop, pending, sanitize, active, stage, enforceinvariants, stagebase, stagekey
+
+---
+## 2026-03-04 | developer:DEV Context
+實作了 `enforceInvariants` 規則 4 + `sanitize` 規則 3：孤兒 active stage 偵測與修復。
+
+問題場景：`stage.status === 'active'` 但 `activeAgents` 中無對應 entry，導致 status line 卡住（如 `🔍 code-reviewer` 永不消失）。
+Keywords: enforceinvariants, sanitize, active, stage, status, activeagents, entry, line, code, reviewer
+
+---
+## 2026-03-04 | code-reviewer:REVIEW Findings
+審查了 `plugins/overtone/scripts/lib/state.js` 的 enforceInvariants 規則 4 和 sanitize 規則 3 新增邏輯，以及 `tests/unit/state-invariants.test.js`（5 個測試）和 `tests/unit/state-sanitize.test.js`（4 個測試）。
+
+檢查面向：邏輯正確性、規則執行順序（規則 2 與規則 4 的重疊安全性）、stageBase 比對一致性、error handling 完整性、getNextStageHint 連動正確性、測試覆蓋度、安全性。
+
+沒有發現高信心問題。所有 35 個測試（含新增 9 個）通過。
+Keywords: plugins, overtone, scripts, state, enforceinvariants, sanitize, tests, unit, invariants, test
+
+---
+## 2026-03-04 | tester:TEST Findings
+測試結果摘要：**35 passed, 0 failed**（目標測試檔案）；**3113 passed, 0 failed**（全量）
+
+已驗證的 Scenario：
+
+**state-invariants.test.js（規則 4 — enforceInvariants）：**
+- Scenario 4-1：stage active + 無 activeAgents + 無 completedAt → 修正為 pending（PASS）
+- Scenario 4-2：stage active + 無 activeAgents + 有 completedAt → 修正為 completed（PASS）
+- Scenario 4-3：stage active + 有對應 activeAgents → 維持 active（PASS）
+- Scenario 4-4：多個 stage 混合，只修正孤兒 active stage（PASS）
+- Scenario 4-5：並行場景，含 instance suffix 正確比對（PASS）
+
+**state-sanitize.test.js（規則 3 — sanitize）：**
+- Scenario 8（4 個 test case）：無 completedAt → pending、有 completedAt → completed、有對應 activeAgent 不修復、fixed 訊息格式驗證（全部 PASS）
+Keywords: passed, failed, scenario, state, invariants, test, enforceinvariants, stage, active, activeagents
 

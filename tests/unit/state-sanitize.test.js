@@ -229,6 +229,91 @@ describe('Scenario 6: 複合情況同時修復', () => {
 });
 
 // ────────────────────────────────────────────────────────────────────────────
+// Scenario 8: 孤兒 active stage（status=active 但無對應 activeAgents）被修復（規則 3）
+// ────────────────────────────────────────────────────────────────────────────
+
+describe('Scenario 8: 孤兒 active stage 被修復（規則 3）', () => {
+  it('無 completedAt 的孤兒 active stage 修正為 pending', () => {
+    const sessionId = newSessionId();
+    state.initState(sessionId, 'quick', ['DEV', 'REVIEW']);
+
+    // 注入孤兒 active stage（無 completedAt、無 activeAgents）
+    const s = state.readState(sessionId);
+    s.stages['DEV'].status = 'active';
+    s.activeAgents = {};
+    state.writeState(sessionId, s);
+
+    const result = state.sanitize(sessionId);
+    expect(result.fixed.length).toBe(1);
+    expect(result.fixed[0]).toContain('DEV');
+    expect(result.fixed[0]).toContain('pending');
+
+    const ws = state.readState(sessionId);
+    expect(ws.stages['DEV'].status).toBe('pending');
+  });
+
+  it('有 completedAt 的孤兒 active stage 修正為 completed', () => {
+    const sessionId = newSessionId();
+    state.initState(sessionId, 'quick', ['DEV', 'REVIEW']);
+
+    // 注入有 completedAt 但 status 仍為 active 的孤兒 stage
+    const s = state.readState(sessionId);
+    s.stages['DEV'].status = 'active';
+    s.stages['DEV'].completedAt = new Date().toISOString();
+    s.stages['DEV'].result = 'pass';
+    s.activeAgents = {};
+    state.writeState(sessionId, s);
+
+    const result = state.sanitize(sessionId);
+    // 規則 2 會先修復（completedAt 存在但 status 非 completed）
+    // 無論哪條規則先觸發，最終 status 應為 completed
+    const ws = state.readState(sessionId);
+    expect(ws.stages['DEV'].status).toBe('completed');
+    expect(result.fixed.length).toBeGreaterThan(0);
+  });
+
+  it('有對應 activeAgent 的 active stage 不被修復', () => {
+    const sessionId = newSessionId();
+    state.initState(sessionId, 'quick', ['DEV', 'REVIEW']);
+
+    // 注入 active stage + 對應 activeAgent
+    const s = state.readState(sessionId);
+    s.stages['DEV'].status = 'active';
+    s.activeAgents = {
+      'developer:valid001': {
+        agentName: 'developer',
+        stage: 'DEV',
+        startedAt: new Date().toISOString(),
+      },
+    };
+    state.writeState(sessionId, s);
+
+    const result = state.sanitize(sessionId);
+    expect(result.fixed).toEqual([]);
+
+    const ws = state.readState(sessionId);
+    expect(ws.stages['DEV'].status).toBe('active'); // 維持 active
+  });
+
+  it('固定訊息格式包含 stage key 和修正方向', () => {
+    const sessionId = newSessionId();
+    state.initState(sessionId, 'quick', ['DEV', 'REVIEW']);
+
+    const s = state.readState(sessionId);
+    s.stages['REVIEW'].status = 'active';
+    s.activeAgents = {};
+    state.writeState(sessionId, s);
+
+    const result = state.sanitize(sessionId);
+    expect(result.fixed.length).toBe(1);
+    // fixed 訊息應包含 stage key 和目標狀態
+    expect(result.fixed[0]).toContain('REVIEW');
+    expect(result.fixed[0]).toContain('active');
+    expect(result.fixed[0]).toContain('pending');
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────
 // Scenario 7: sanitize() 已匯出
 // ────────────────────────────────────────────────────────────────────────────
 

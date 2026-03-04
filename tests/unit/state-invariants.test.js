@@ -288,6 +288,157 @@ describe('state 不變量守衛 — timeline system:warning 事件', () => {
 });
 
 // ────────────────────────────────────────────────────────────────────────────
+// Feature 3: 孤兒 active stage 修復（規則 4）
+// ────────────────────────────────────────────────────────────────────────────
+
+describe('state 不變量守衛 — 孤兒 active stage 修復（規則 4）', () => {
+
+  it('Scenario 4-1: stage active + 無 activeAgents + 無 completedAt → 修正為 pending', () => {
+    const sessionId = newSessionId();
+    createdSessions.push(sessionId);
+    mkdirSync(paths.sessionDir(sessionId), { recursive: true });
+    state.initState(sessionId, 'quick', ['DEV', 'REVIEW']);
+
+    // 直接寫入孤兒 active stage（無 completedAt，無 activeAgents）
+    state.writeState(sessionId, {
+      ...state.readState(sessionId),
+      stages: {
+        DEV: { status: 'active', result: null }, // 孤兒：activeAgents 無對應 entry
+        REVIEW: { status: 'pending', result: null },
+      },
+      activeAgents: {}, // 無任何 active agent
+    });
+
+    // 觸發不變量守衛
+    state.updateStateAtomic(sessionId, (s) => s);
+
+    const ws = state.readState(sessionId);
+    // 無 completedAt → 修正為 pending（保守策略）
+    expect(ws.stages['DEV'].status).toBe('pending');
+  });
+
+  it('Scenario 4-2: stage active + 無 activeAgents + 有 completedAt → 修正為 completed', () => {
+    const sessionId = newSessionId();
+    createdSessions.push(sessionId);
+    mkdirSync(paths.sessionDir(sessionId), { recursive: true });
+    state.initState(sessionId, 'quick', ['DEV', 'REVIEW']);
+
+    // 直接寫入有 completedAt 的孤兒 active stage
+    state.writeState(sessionId, {
+      ...state.readState(sessionId),
+      stages: {
+        DEV: { status: 'active', result: 'pass', completedAt: new Date().toISOString() }, // 孤兒但有 completedAt
+        REVIEW: { status: 'pending', result: null },
+      },
+      activeAgents: {},
+    });
+
+    state.updateStateAtomic(sessionId, (s) => s);
+
+    const ws = state.readState(sessionId);
+    // 有 completedAt → 修正為 completed
+    expect(ws.stages['DEV'].status).toBe('completed');
+  });
+
+  it('Scenario 4-3: stage active + 有對應 activeAgents → 不修正（正常運作中）', () => {
+    const sessionId = newSessionId();
+    createdSessions.push(sessionId);
+    mkdirSync(paths.sessionDir(sessionId), { recursive: true });
+    state.initState(sessionId, 'quick', ['DEV', 'REVIEW']);
+
+    // 設定 active stage + 對應的 activeAgent（正常運作中）
+    state.writeState(sessionId, {
+      ...state.readState(sessionId),
+      stages: {
+        DEV: { status: 'active', result: null },
+        REVIEW: { status: 'pending', result: null },
+      },
+      activeAgents: {
+        'developer:abc123': {
+          agentName: 'developer',
+          stage: 'DEV',
+          startedAt: new Date().toISOString(),
+        },
+      },
+    });
+
+    state.updateStateAtomic(sessionId, (s) => s);
+
+    const ws = state.readState(sessionId);
+    // 有對應 activeAgent → 維持 active（正常運作中）
+    expect(ws.stages['DEV'].status).toBe('active');
+  });
+
+  it('Scenario 4-4: 多個 stage 混合，只修正孤兒 active stage', () => {
+    const sessionId = newSessionId();
+    createdSessions.push(sessionId);
+    mkdirSync(paths.sessionDir(sessionId), { recursive: true });
+    state.initState(sessionId, 'standard', ['DEV', 'REVIEW', 'TEST', 'RETRO']);
+
+    // 設定複合情境：
+    // - DEV: completed（正常）
+    // - REVIEW: active + 無 activeAgent + 無 completedAt（孤兒 → pending）
+    // - TEST: active + 有對應 activeAgent（正常運作中 → 維持 active）
+    // - RETRO: pending（正常）
+    state.writeState(sessionId, {
+      ...state.readState(sessionId),
+      stages: {
+        DEV: { status: 'completed', result: 'pass', completedAt: new Date().toISOString() },
+        REVIEW: { status: 'active', result: null }, // 孤兒
+        TEST: { status: 'active', result: null }, // 有 activeAgent，正常
+        RETRO: { status: 'pending', result: null },
+      },
+      activeAgents: {
+        'tester:inst001': {
+          agentName: 'tester',
+          stage: 'TEST',
+          startedAt: new Date().toISOString(),
+        },
+        // REVIEW 無對應 entry → 孤兒
+      },
+    });
+
+    state.updateStateAtomic(sessionId, (s) => s);
+
+    const ws = state.readState(sessionId);
+    expect(ws.stages['DEV'].status).toBe('completed'); // 不變
+    expect(ws.stages['REVIEW'].status).toBe('pending'); // 孤兒 → pending
+    expect(ws.stages['TEST'].status).toBe('active'); // 有 activeAgent → 維持 active
+    expect(ws.stages['RETRO'].status).toBe('pending'); // 不變
+  });
+
+  it('Scenario 4-5: 並行場景 — stageKey 含 instance suffix（REVIEW:inst_xxx）正確比對', () => {
+    const sessionId = newSessionId();
+    createdSessions.push(sessionId);
+    mkdirSync(paths.sessionDir(sessionId), { recursive: true });
+    state.initState(sessionId, 'quick', ['DEV', 'REVIEW']);
+
+    // 並行場景：stage key 含 instanceId 後綴
+    state.writeState(sessionId, {
+      ...state.readState(sessionId),
+      stages: {
+        DEV: { status: 'completed', result: 'pass', completedAt: new Date().toISOString() },
+        REVIEW: { status: 'active', result: null }, // 孤兒（activeAgent stage 用基礎 key）
+      },
+      activeAgents: {
+        // info.stage 使用基礎 key（REVIEW），stage key 也是 REVIEW → 應匹配
+        'code-reviewer:abc001': {
+          agentName: 'code-reviewer',
+          stage: 'REVIEW', // 基礎 key
+          startedAt: new Date().toISOString(),
+        },
+      },
+    });
+
+    state.updateStateAtomic(sessionId, (s) => s);
+
+    const ws = state.readState(sessionId);
+    // 有匹配的 activeAgent（REVIEW base 對應）→ 維持 active
+    expect(ws.stages['REVIEW'].status).toBe('active');
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────
 // Feature 3: 靜態掃描（Scenarios 3-11, 3-12, 3-13）
 // ────────────────────────────────────────────────────────────────────────────
 
