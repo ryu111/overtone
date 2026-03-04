@@ -96,6 +96,42 @@ safeRun(() => {
     }
   }
 
+  // ── 掃描式歸檔 fallback ──
+  // 掃描 in-progress 下所有 feature，找出 checkbox 全勾選但未歸檔的目錄
+  // 不依賴 workflow.json 的 featureName，解決 context 壓縮後 featureName 遺失的問題
+  try {
+    const specs = require('../../../scripts/lib/specs');
+    const { readdirSync, statSync, existsSync } = require('fs');
+    const ipDir = specs.inProgressDir(projectRoot);
+    if (projectRoot && existsSync(ipDir)) {
+      const dirs = readdirSync(ipDir).filter(name => {
+        try { return statSync(join(ipDir, name)).isDirectory(); } catch { return false; }
+      });
+      const archived = [];
+      for (const name of dirs) {
+        // 跳過當前 featureName（已由上方邏輯處理）
+        if (name === featureName) continue;
+        const tasksPath = join(ipDir, name, 'tasks.md');
+        const status = specs.readTasksCheckboxes(tasksPath);
+        if (status && status.total > 0 && status.allChecked) {
+          try {
+            specs.archiveFeature(projectRoot, name);
+            archived.push(name);
+          } catch { /* 單一 feature 歸檔失敗不影響其他 */ }
+        }
+      }
+      if (archived.length > 0) {
+        timeline.emit(sessionId, 'specs:archive-scan', {
+          source: 'on-stop',
+          archived,
+          count: archived.length,
+        });
+      }
+    }
+  } catch {
+    // 掃描歸檔失敗不影響主流程
+  }
+
   // ── 檢查退出條件 ──
 
   // 1. /ot:stop 手動退出

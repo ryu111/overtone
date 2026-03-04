@@ -12,7 +12,7 @@ const { PLUGIN_ROOT } = require('../helpers/paths');
 const { runPreEditGuard, isAllowed } = require('../helpers/hook-runner');
 
 // MEMORY.md 相關常數
-const MEMORY_LINE_LIMIT = 60;
+const MEMORY_LINE_LIMIT = 200;
 const MEMORY_PATH = '/Users/sbu/.claude/projects/-Users-sbu-projects-overtone/memory/MEMORY.md';
 
 // ── 輔助函式 ──
@@ -301,7 +301,7 @@ describe('PreEditGuard: MEMORY.md 行數守衛', () => {
   });
 
   test('deny 訊息包含記錄規則', () => {
-    const lines = Array.from({ length: 100 }, (_, i) => `第 ${i + 1} 行`);
+    const lines = Array.from({ length: MEMORY_LINE_LIMIT + 10 }, (_, i) => `第 ${i + 1} 行`);
     const result = runPreEditGuard('Write', {
       file_path: MEMORY_PATH,
       content: lines.join('\n'),

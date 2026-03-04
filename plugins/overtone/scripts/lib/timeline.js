@@ -4,7 +4,7 @@
  * timeline.js — JSONL append-only 事件記錄
  *
  * 每行一個 JSON 物件，append-only。
- * 22 種事件類型定義在 registry.js。
+ * 28 種事件類型定義在 registry.js。
  */
 
 const { appendFileSync, readFileSync, mkdirSync } = require('fs');

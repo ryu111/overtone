@@ -698,7 +698,41 @@ function checkPlatformDrift(pluginRootOverride) {
     findings.push({ check: 'platform-drift', severity: 'warning', file: crossFile, message: msg });
   }
 
-  // ── 2. 偵測棄用 tools 白名單（grader 例外）──
+  // ── 2. 偵測 in-progress tasks.md 幽靈 checkbox（workflow 模板已變更但 checkbox 殘留）──
+  const { workflows } = require('./lib/registry');
+  const specsLib = require('./lib/specs');
+  const inProgressDir = path.join(PROJECT_ROOT, 'specs', 'features', 'in-progress');
+  try {
+    const featureDirs = readdirSync(inProgressDir);
+    for (const dir of featureDirs) {
+      const tasksPath = path.join(inProgressDir, dir, 'tasks.md');
+      if (!safeRead(tasksPath)) continue;
+
+      const fm = specsLib.readTasksFrontmatter(tasksPath);
+      if (!fm || !fm.workflow) continue;
+
+      const wf = workflows[fm.workflow];
+      if (!wf) continue;
+
+      const currentStages = new Set(wf.stages);
+      const checkboxes = specsLib.readTasksCheckboxes(tasksPath);
+      if (!checkboxes || checkboxes.total === 0) continue;
+
+      // unchecked 陣列中找出不在當前 workflow stages 的幽靈 checkbox
+      for (const label of checkboxes.unchecked) {
+        if (!currentStages.has(label)) {
+          findings.push({
+            check: 'platform-drift',
+            severity: 'warning',
+            file: `specs/features/in-progress/${dir}/tasks.md`,
+            message: `幽靈 checkbox「${label}」：workflow "${fm.workflow}" 已不含此 stage，tasks.md 需同步`,
+          });
+        }
+      }
+    }
+  } catch { /* in-progress 目錄不存在時跳過 */ }
+
+  // ── 3. 偵測棄用 tools 白名單（grader 例外）──
   const agentsDir = path.join(root, 'agents');
   let agentFiles = [];
   try {

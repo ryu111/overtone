@@ -134,10 +134,11 @@ const timelineEvents = {
   // grader 類（1）
   'grader:score':       { label: 'Grader 評分', category: 'grader' },
 
-  // specs 類（4）
+  // specs 類（5）
   'specs:init':             { label: 'Specs 初始化',  category: 'specs' },
   'specs:archive':          { label: 'Specs 歸檔',    category: 'specs' },
   'specs:archive-skipped':  { label: 'Specs 歸檔略過', category: 'specs' },
+  'specs:archive-scan':     { label: 'Specs 掃描歸檔', category: 'specs' },
   'specs:tasks-missing':    { label: 'Specs Tasks 遺失', category: 'specs' },
 
   // error 類（1）

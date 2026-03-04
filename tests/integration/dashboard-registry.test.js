@@ -163,8 +163,8 @@ describe('2. Timeline 事件完整性', () => {
     timelineEvents = TIMELINE_EVENTS_SNAPSHOT;
   });
 
-  test('registry 中共有 27 種 timelineEvents', () => {
-    expect(Object.keys(timelineEvents).length).toBe(27);
+  test('registry 中共有 28 種 timelineEvents', () => {
+    expect(Object.keys(timelineEvents).length).toBe(28);
   });
 
   test('每個 timelineEvent 都有 label 和 category', () => {

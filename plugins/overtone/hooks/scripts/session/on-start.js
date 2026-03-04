@@ -95,6 +95,38 @@ safeRun(() => {
     });
   }
 
+  // ── 掃描式歸檔（自癒）──
+  // 清理上一個 session 遺留的已完成 feature（checkbox 全勾選但未歸檔）
+  try {
+    const { readdirSync, statSync, existsSync } = require('fs');
+    const ipDir = specs.inProgressDir(projectRoot);
+    if (projectRoot && existsSync(ipDir)) {
+      const dirs = readdirSync(ipDir).filter(name => {
+        try { return statSync(path.join(ipDir, name)).isDirectory(); } catch { return false; }
+      });
+      const archived = [];
+      for (const name of dirs) {
+        const tasksPath = path.join(ipDir, name, 'tasks.md');
+        const status = specs.readTasksCheckboxes(tasksPath);
+        if (status && status.total > 0 && status.allChecked) {
+          try {
+            specs.archiveFeature(projectRoot, name);
+            archived.push(name);
+          } catch { /* 單一 feature 歸檔失敗不影響其他 */ }
+        }
+      }
+      if (archived.length > 0 && sessionId) {
+        timeline.emit(sessionId, 'specs:archive-scan', {
+          source: 'on-start',
+          archived,
+          count: archived.length,
+        });
+      }
+    }
+  } catch {
+    // 掃描歸檔失敗不阻擋 session 啟動
+  }
+
   // ── Dashboard spawn ──
 
   const dashboardPid = require('../../../scripts/lib/dashboard/pid');
