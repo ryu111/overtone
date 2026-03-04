@@ -221,9 +221,9 @@ describe('agent 顯示與中文模式', () => {
     });
   }
 
-  // ── 無 active agent 時隱藏 Line 1 ──
+  // ── 無 active agent 但 workflow 未完成 → 顯示 Main ──
 
-  it('無 active stage 但 workflow 未完成時只顯示單行 metrics', () => {
+  it('無 active stage 但 workflow 未完成時顯示 🧠 Main（雙行）', () => {
     writeWorkflow({
       workflowType: 'quick',
       stages: {
@@ -235,10 +235,10 @@ describe('agent 顯示與中文模式', () => {
     const result = runWithSession({ context_window: { used_percentage: 20 } });
     const plain = stripAnsi(result.stdout || '');
     const lines = plain.split('\n').filter(l => l.trim());
-    // 單行（只有 metrics + compact count）
-    expect(lines.length).toBe(1);
-    expect(lines[0]).toContain('ctx');
-    expect(lines[0]).toContain('♻️');
+    // 雙行（Main + 模式 │ metrics）
+    expect(lines.length).toBe(2);
+    expect(lines[0]).toContain('Main');
+    expect(lines[0]).toContain('快速');
   });
 
   it('全部 completed 時只輸出一行', () => {
@@ -341,7 +341,7 @@ describe('agent 顯示與中文模式', () => {
     expect(plain).toContain('0a 0m');
   });
 
-  it('有 workflow 無 active agent 時仍顯示 ♻️ compact 計數', () => {
+  it('workflow 全部完成時收回單行（無 ♻️）', () => {
     writeWorkflow({
       workflowType: 'quick',
       stages: { DEV: { status: 'completed' } },
@@ -349,7 +349,9 @@ describe('agent 顯示與中文模式', () => {
 
     const result = runWithSession({ context_window: { used_percentage: 20 } });
     const plain = stripAnsi(result.stdout || '');
-    expect(plain).toContain('♻️');
+    const lines = plain.split('\n').filter(l => l.trim());
+    expect(lines.length).toBe(1);
+    expect(plain).toContain('ctx');
   });
 
   // ── workflow stages 並行 × N（純 workflow.json 信號）──

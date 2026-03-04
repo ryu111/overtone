@@ -92,7 +92,25 @@ DEV 完成後，讀取 developer Handoff 的 `### Test Scope` 區塊決定委派
 - `⚠️` → 自行判斷；全部 `--` → 跳過；缺失 → 預設委派 tester
 - 💡 完整規則：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/testing/references/test-scope-dispatch.md`
 
-**Mul Agent**（同類型 Agent 並行）：tasks.md 有 `## Dev Phases` → 按 Phase 調度；否則讀取 `${CLAUDE_PLUGIN_ROOT}/commands/mul-agent.md` 自行判斷並行。只有一個子任務 → 退化為單一 agent。
+### Mul Agent（同類型 Agent 並行）
+
+📋 **MUST 在每個 DEV/TEST/DEBUG 階段開始前判斷是否並行**：
+
+**Mode A（有 specs — standard/full/secure/refactor）**：
+1. 讀取 `tasks.md` 的 `## Dev Phases` 區塊
+2. `(parallel)` Phase → 📋 MUST 同一訊息發多個 Agent tool call（每個子任務一個）
+3. `(sequential)` Phase → 單一 agent 依序完成
+4. 等當前 Phase 全部完成後才啟動下一 Phase
+
+**Mode B（無 specs — quick/tdd/debug）**：
+1. 分析任務是否有 2+ 個**獨立**子任務
+2. 獨立 = 操作不同檔案 + 無邏輯依賴（B 不需要 A 的輸出）
+3. 有 → 📋 MUST 同一訊息發多個 Agent tool call
+4. 無 → 單一 agent
+
+**退化**：只有一個子任務 → 單一 agent，不分拆。
+**失敗隔離**：某子任務 FAIL → 只重試該子任務，不影響同 Phase 其他子任務。
+💡 完整格式與範例：`${CLAUDE_PLUGIN_ROOT}/commands/mul-agent.md`
 
 ## BDD 規則
 

@@ -208,6 +208,16 @@ safeRun(() => {
   // 完成時由 SubagentStop（委派模式）或 Main Agent 標記（直接模式）
   const nextStage = currentState.currentStage;
   if (nextStage === 'PM') {
+    // 設 PM status = active，讓 statusline 顯示 PM agent
+    try {
+      state.updateStateAtomic(sessionId, (s) => {
+        const pmKey = Object.keys(s.stages).find((k) => k.split(':')[0] === 'PM');
+        if (pmKey && s.stages[pmKey].status === 'pending') {
+          s.stages[pmKey].status = 'active';
+        }
+        return s;
+      });
+    } catch { /* 狀態更新失敗不阻擋 PM 流程 */ }
     process.stdout.write(JSON.stringify({ result: '' }));
     process.exit(0);
   }

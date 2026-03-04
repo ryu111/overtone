@@ -1,10 +1,10 @@
 ---
 feature: claude-dev-skill
-status: in-progress
+status: archived
 workflow: standard
 created: 2026-03-04
----
-## Stages
+archivedAt: 2026-03-04T12:05:16.306Z
+---## Stages
 
 - [x] PLAN
 - [x] ARCH

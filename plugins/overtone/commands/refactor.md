@@ -53,7 +53,7 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/init-workflow.js refactor ${CLAUDE_SESSION_ID
 - **產出**：Handoff（重構後的程式碼變更）
 - ⛔ 不可改變外部行為（public API 保持不變）
 
-💡 **並行**：若 architect 在 `tasks.md` 中標記了 `(parallel)` Phase，📋 MUST 在同一訊息中委派多個同類型 agent。判斷標準與調度方式：讀取 `${CLAUDE_PLUGIN_ROOT}/commands/mul-agent.md`（Mode A）
+📋 **並行委派**：讀取 `tasks.md` 的 `## Dev Phases`。`(parallel)` Phase → 同一訊息發多個 Agent tool call（每個子任務一個）；`(sequential)` Phase → 單一 agent；等當前 Phase 全部完成才啟動下一 Phase。無 Dev Phases 或只有一個子任務 → 單一 agent。
 
 ### 4-5. [REVIEW + TEST:verify] — 並行
 

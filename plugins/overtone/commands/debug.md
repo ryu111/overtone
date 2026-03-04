@@ -42,7 +42,7 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/init-workflow.js debug ${CLAUDE_SESSION_ID}
 - **產出**：Handoff（程式碼修復 + 修改說明）
 - 📋 MUST 按 debugger 的診斷結果修復
 
-💡 **並行**：若 debugger 診斷出多個獨立修復點（操作不同檔案、無邏輯依賴），📋 MUST 在同一訊息中委派多個同類型 agent。判斷標準與調度方式：讀取 `${CLAUDE_PLUGIN_ROOT}/commands/mul-agent.md`（Mode B）
+📋 **並行委派**：判斷是否有 2+ 個獨立修復點（操作不同檔案 + 無邏輯依賴）。有 → 同一訊息發多個 Agent tool call（每個修復點一個）；無 → 單一 agent。
 
 ### 3. TEST — 🧪 驗證
 

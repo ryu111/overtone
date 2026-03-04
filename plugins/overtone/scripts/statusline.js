@@ -6,11 +6,12 @@
  * 由 Claude Code settings.json 的 statusLine 設定呼叫。
  * 讀取 stdin JSON → 格式化輸出。
  *
- * 輸出格式（有 active subagent）：
- *   Line 1:  💻 developer  │  快速
+ * 輸出格式（有 active agent 或 Main 控制中）：
+ *   Line 1:  💻 developer  │  快速     ← active agent
+ *   Line 1:  🧠 Main  │  快速          ← Main Agent 控制中
  *   Line 2:  ctx 45%  │  12.3MB  │  ♻️ 2a 1m
  *
- * 輸出格式（workflow 全部完成或無 workflow）：
+ * 輸出格式（workflow 完成或無 workflow → 單行收回）：
  *   Line 1:  ctx 45%  │  12.3MB
  *
  * 效能要求：< 100ms（純本地讀取，無網路呼叫）
@@ -58,6 +59,7 @@ const WORKFLOW_LABELS = {
   'product':       '產品',
   'product-full':  '產品完整',
   'discovery':     '探索',
+  // 新模式在此追加
 };
 
 // ── 格式化工具 ──
@@ -133,14 +135,16 @@ function loadRegistryStages() {
   }
 }
 
-// ── Agent 顯示邏輯 ──
+// ── Line 1 顯示邏輯 ──
 
 /**
- * 從 workflow.json 的 stages.status 解析 agent 顯示字串
+ * 從 workflow.json 的 stages.status 解析 Line 1 顯示字串
  *
- * 信號源：workflow.json 的 stages.status==='active'
- *
- * 無 active agent 時回傳 null（隱藏 Line 1）。
+ * 四態邏輯：
+ *   1. 有 active agent → "💻 developer" / "💻 developer × 3"
+ *   2. 無 active、workflow 未完成 → "🧠 Main"
+ *   3. Workflow 全部完成 → null（收回單行）
+ *   4. 無 workflow → null（收回單行）
  *
  * @param {object|null} workflow     - workflow.json 內容
  * @param {object} registryStages
@@ -150,8 +154,11 @@ function buildAgentDisplay(workflow, registryStages) {
   if (!workflow) return null;
 
   const stages = workflow.stages || {};
+  const entries = Object.entries(stages);
+  if (entries.length === 0) return null;
 
-  const activeEntries = Object.entries(stages).filter(([, s]) => s.status === 'active');
+  // 1. 有 active agent
+  const activeEntries = entries.filter(([, s]) => s.status === 'active');
 
   if (activeEntries.length === 1) {
     const [key] = activeEntries[0];
@@ -176,7 +183,13 @@ function buildAgentDisplay(workflow, registryStages) {
     return parts.join(' + ');
   }
 
-  return null;
+  // 2/3. 無 active agent — 判斷是否全部成功完成
+  const allDone = entries.every(([, s]) => s.status === 'completed');
+  const hasFail = entries.some(([, s]) => s.result === 'fail' || s.result === 'reject');
+  if (allDone && !hasFail) return null; // 全部成功 → 收回單行
+
+  // 未完成、Main Agent 在控制
+  return '🧠 Main';
 }
 
 // ── 主函式 ──
@@ -216,32 +229,30 @@ function main() {
   const ctxStr  = `${ANSI.cyan}ctx${ANSI.reset} ${colorPct(ctxUsed, 65, 80)}`;
   const sizeStr = formatSize(transcriptSize);
 
-  // ── 判斷是否有 active agent ──
+  // ── Line 1 判斷（四態：active agent / Main / 完成→收回 / 無 workflow） ──
 
   const agentDisplay = buildAgentDisplay(workflow, registryStages);
 
   if (agentDisplay) {
-    // 有 active subagent → 雙行
+    // 雙行：agent/Main + 模式 │ metrics + compact
     const workflowType = workflow?.workflowType || '';
     const modeLabel = WORKFLOW_LABELS[workflowType] || workflowType;
 
-    // Line 1: agent 放前面，模式放後面
     const line1Parts = [agentDisplay];
     if (modeLabel) line1Parts.push(modeLabel);
     const line1 = `  ${line1Parts.join(SEP)}`;
 
-    // Line 2: ctx + size + compact
     const compactStr = `${ANSI.cyan}♻️${ANSI.reset} ${compactCount.auto || 0}a ${compactCount.manual || 0}m`;
     const line2 = `  ${[ctxStr, sizeStr, compactStr].join(SEP)}`;
 
     process.stdout.write(line1 + '\n' + line2 + '\n');
   } else if (workflow) {
-    // 有 workflow 但 main agent 在工作 → 單行 metrics + compact
+    // 單行：workflow 完成 → 收回但保留 compact 計數
     const compactStr = `${ANSI.cyan}♻️${ANSI.reset} ${compactCount.auto || 0}a ${compactCount.manual || 0}m`;
     const line = `  ${[ctxStr, sizeStr, compactStr].join(SEP)}`;
     process.stdout.write(line + '\n');
   } else {
-    // 無 workflow → 單行 metrics
+    // 單行：無 workflow
     const line = `  ${[ctxStr, sizeStr].join(SEP)}`;
     process.stdout.write(line + '\n');
   }

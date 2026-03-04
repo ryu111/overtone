@@ -96,7 +96,7 @@ describe('完整 stdin 輸入格式', () => {
     expect(lines[0]).toContain('30%');
   });
 
-  it('有 workflow 未完成但無 active agent 時只顯示單行 metrics', () => {
+  it('有 workflow 未完成但無 active agent 時顯示 🧠 Main（雙行）', () => {
     writeFileSync(path.join(sessionDir, 'workflow.json'), JSON.stringify({
       workflowType: 'quick',
       stages: {
@@ -108,10 +108,10 @@ describe('完整 stdin 輸入格式', () => {
     const result = runStatusline({ context_window: { used_percentage: 30 } });
     const plain = stripAnsi(result.stdout || '');
     const lines = plain.split('\n').filter(l => l.trim());
-    // 單行（只有 metrics + compact count）
-    expect(lines.length).toBe(1);
-    expect(lines[0]).toContain('ctx');
-    expect(lines[0]).toContain('♻️');
+    // 雙行（Main + 模式 │ metrics）
+    expect(lines.length).toBe(2);
+    expect(lines[0]).toContain('Main');
+    expect(lines[0]).toContain('快速');
   });
 
   it('不包含 5h / 7d 欄位（已移除）', () => {
