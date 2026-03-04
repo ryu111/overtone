@@ -20,7 +20,7 @@ const { join } = require('path');
 const os = require('os');
 
 const { SCRIPTS_LIB } = require('../helpers/paths');
-const SCANNER_PATH = join(SCRIPTS_LIB, 'test-quality-scanner.js');
+const SCANNER_PATH = join(SCRIPTS_LIB, 'analyzers/test-quality-scanner.js');
 
 const {
   detectEmptyTests,

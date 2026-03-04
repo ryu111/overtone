@@ -17,8 +17,8 @@ const { join } = require('path');
 // ── 路徑常數 ──────────────────────────────────────────────────────────────
 
 // 從此模組位置推算專案根目錄
-// 此檔位於 plugins/overtone/scripts/lib/docs-sync-engine.js
-const PLUGIN_ROOT = join(__dirname, '..', '..');
+// 此檔位於 plugins/overtone/scripts/lib/analyzers/docs-sync-engine.js
+const PLUGIN_ROOT = join(__dirname, '..', '..', '..');
 const PROJECT_ROOT = join(PLUGIN_ROOT, '..', '..');
 
 const AGENTS_DIR   = join(PLUGIN_ROOT, 'agents');

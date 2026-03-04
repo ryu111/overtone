@@ -17,7 +17,7 @@ const { join } = require('path');
 const { homedir } = require('os');
 const { SCRIPTS_LIB, HOOKS_DIR } = require('../helpers/paths');
 
-const globalInstinct = require(join(SCRIPTS_LIB, 'global-instinct'));
+const globalInstinct = require(join(SCRIPTS_LIB, 'knowledge/global-instinct'));
 const paths = require(join(SCRIPTS_LIB, 'paths'));
 const registry = require(join(SCRIPTS_LIB, 'registry'));
 

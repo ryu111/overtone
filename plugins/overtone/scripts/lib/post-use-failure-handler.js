@@ -7,7 +7,7 @@
  */
 
 const timeline = require('./timeline');
-const instinct = require('./instinct');
+const instinct = require('./knowledge/instinct');
 const { getSessionId, hookError } = require('./hook-utils');
 
 // 重大失敗工具清單（需要注入 systemMessage）

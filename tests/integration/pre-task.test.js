@@ -467,7 +467,7 @@ describe('場景 8：全域觀察注入 subagent', () => {
   const { join: pathJoin } = require('path');
   const { homedir } = require('os');
   const { mkdirSync: mkdirSyncHelper, writeFileSync, rmSync: rmSyncHelper } = require('fs');
-  const globalInstinctModule = require(join(SCRIPTS_LIB, 'global-instinct'));
+  const globalInstinctModule = require(join(SCRIPTS_LIB, 'knowledge/global-instinct'));
   const pathsModule = require(join(SCRIPTS_LIB, 'paths'));
 
   /**

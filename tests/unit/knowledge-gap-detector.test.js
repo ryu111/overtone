@@ -8,7 +8,7 @@ const { describe, it, expect } = require('bun:test');
 const { join } = require('path');
 const { SCRIPTS_LIB } = require('../helpers/paths');
 
-const { detectKnowledgeGaps, DOMAIN_KEYWORDS } = require(join(SCRIPTS_LIB, 'knowledge-gap-detector'));
+const { detectKnowledgeGaps, DOMAIN_KEYWORDS } = require(join(SCRIPTS_LIB, 'knowledge/knowledge-gap-detector'));
 
 // ── Feature 2: detectKnowledgeGaps ──
 

@@ -15,7 +15,7 @@ const { HOOKS_DIR, SCRIPTS_LIB } = require('../helpers/paths');
 const HOOK_PATH = join(HOOKS_DIR, 'prompt', 'on-submit.js');
 const paths = require(join(SCRIPTS_LIB, 'paths'));
 const state = require(join(SCRIPTS_LIB, 'state'));
-const instinct = require(join(SCRIPTS_LIB, 'instinct'));
+const instinct = require(join(SCRIPTS_LIB, 'knowledge/instinct'));
 
 // ── 輔助函式 ──
 

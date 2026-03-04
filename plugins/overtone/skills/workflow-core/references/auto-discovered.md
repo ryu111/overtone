@@ -1,21 +1,4 @@
 ---
-## 2026-03-04 | tester:TEST Findings
-測試結果摘要：**35 passed, 0 failed**（目標測試檔案）；**3113 passed, 0 failed**（全量）
-
-已驗證的 Scenario：
-
-**state-invariants.test.js（規則 4 — enforceInvariants）：**
-- Scenario 4-1：stage active + 無 activeAgents + 無 completedAt → 修正為 pending（PASS）
-- Scenario 4-2：stage active + 無 activeAgents + 有 completedAt → 修正為 completed（PASS）
-- Scenario 4-3：stage active + 有對應 activeAgents → 維持 active（PASS）
-- Scenario 4-4：多個 stage 混合，只修正孤兒 active stage（PASS）
-- Scenario 4-5：並行場景，含 instance suffix 正確比對（PASS）
-
-**state-sanitize.test.js（規則 3 — sanitize）：**
-- Scenario 8（4 個 test case）：無 completedAt → pending、有 completedAt → completed、有對應 activeAgent 不修復、fixed 訊息格式驗證（全部 PASS）
-Keywords: passed, failed, scenario, state, invariants, test, enforceinvariants, stage, active, activeagents
-
----
 ## 2026-03-04 | developer:DEV Findings
 **三個根因，對應修復：**
 
@@ -708,4 +691,29 @@ Keywords: iteration, single, source, truth, claude, hooks, json, cross, referenc
      - CLAUDECODE env filter（session-spawner.js 防嵌套偵測）
    - 測試統計更新：+16 tests（3344 → 3360），+1 file（150 → 151）
 Keywords: tests, file, plugin, json, telegram, docs, status, claudecode, filter, pass
+
+---
+## 2026-03-04 | tester:TEST Findings
+定義了以下 Feature 和 Scenario：
+
+**Phase 1 — config-api.js 拆分（15 個 Scenario）**
+- config-validator.js 的 validateAgent/validateSkill/validateHook/validateAll 行為一致性
+- 缺少必填欄位、非法 model、permissionMode 錯誤、互斥工具、不存在 skill 的錯誤路徑
+- config-api.js 保留的 CRUD 函式（createAgent/updateAgent/createSkill/createHook/bumpVersion）行為不變
+- 三個消費者（manage-component.js、validate-agents.js、health-check.js）相容性驗證
+
+**Phase 2a — lib/analyzers/ 子目錄（8 個 Scenario）**
+- cross-analyzer、dead-code-scanner、docs-sync-engine、guard-system、component-repair、hook-diagnostic、test-quality-scanner 移動後功能不變
+- data.js 透過新路徑正常載入 cross-analyzer
+
+**Phase 2b — lib/knowledge/ 子目錄（6 個 Scenario）**
+- instinct、knowledge-archiver、knowledge-gap-detector、knowledge-searcher、skill-router、global-instinct 移動後功能不變
+- 6 個 handler 的 require 路徑更新後無 MODULE_NOT_FOUND 錯誤
+
+**整合驗證（4 個 Scenario）**
+- 所有 3366 個測試全部 pass
+- 測試數量不減少
+- 無殘留舊 require 路徑
+- health-check 12 項全部通過
+Keywords: feature, scenario, phase, config, validator, validateagent, validateskill, validatehook, validateall, model
 

@@ -14,7 +14,7 @@ const { join } = require('path');
 const { homedir } = require('os');
 const { SCRIPTS_LIB } = require('../helpers/paths');
 
-const instinct = require(join(SCRIPTS_LIB, 'instinct'));
+const instinct = require(join(SCRIPTS_LIB, 'knowledge/instinct'));
 const paths = require(join(SCRIPTS_LIB, 'paths'));
 
 // 每個 describe 使用獨立 session，避免測試間污染

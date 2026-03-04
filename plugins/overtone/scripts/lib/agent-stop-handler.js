@@ -20,14 +20,14 @@ const {
 } = require('./state');
 const { syncFeatureName } = require('./feature-sync');
 const timeline = require('./timeline');
-const instinct = require('./instinct');
+const instinct = require('./knowledge/instinct');
 const { stages, parallelGroups, retryDefaults, specsConfig, scoringConfig } = require('./registry');
 const paths = require('./paths');
 const parseResult = require('./parse-result');
 const { shouldSuggestCompact, getStageByAgent } = require('./hook-utils');
 const { atomicWrite } = require('./utils');
 const { buildStopMessages } = require('./stop-message-builder');
-const { archiveKnowledge } = require('./knowledge-archiver');
+const { archiveKnowledge } = require('./knowledge/knowledge-archiver');
 const { createHookTimer } = require('./hook-timing');
 
 /**

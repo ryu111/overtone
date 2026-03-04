@@ -6,7 +6,7 @@
  * 不呼叫 process.exit() 或 process.stdout.write()，回傳結構化結果。
  */
 
-const instinct = require('./instinct');
+const instinct = require('./knowledge/instinct');
 const { getSessionId } = require('./hook-utils');
 const { WORDING_RULES, detectWordingMismatch } = require('./wording');
 const { createHookTimer } = require('./hook-timing');

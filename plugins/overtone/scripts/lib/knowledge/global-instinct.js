@@ -17,9 +17,9 @@
 
 const { readFileSync, appendFileSync, existsSync, mkdirSync } = require('fs');
 const { dirname } = require('path');
-const paths = require('./paths');
-const { globalInstinctDefaults } = require('./registry');
-const { atomicWrite, clamp } = require('./utils');
+const paths = require('../paths');
+const { globalInstinctDefaults } = require('../registry');
+const { atomicWrite, clamp } = require('../utils');
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 const AUTO_DELETE_THRESHOLD = 0.2;

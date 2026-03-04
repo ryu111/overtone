@@ -267,7 +267,7 @@ function handleSessionStart(input, sessionId, hookTimer) {
 
   let globalObservationsMsg = null;
   try {
-    const globalInstinct = require('./global-instinct');
+    const globalInstinct = require('./knowledge/global-instinct');
     const { globalInstinctDefaults } = require('./registry');
     const topObs = globalInstinct.queryGlobal(projectRoot, {
       limit: globalInstinctDefaults.loadTopN,

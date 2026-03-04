@@ -22,7 +22,7 @@ const { SCRIPTS_LIB } = require('../helpers/paths');
 
 const timeline = require(join(SCRIPTS_LIB, 'timeline'));
 const paths = require(join(SCRIPTS_LIB, 'paths'));
-const instinct = require(join(SCRIPTS_LIB, 'instinct'));
+const instinct = require(join(SCRIPTS_LIB, 'knowledge/instinct'));
 
 // ── 工具函式 ──
 

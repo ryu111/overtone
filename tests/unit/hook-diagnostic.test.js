@@ -30,7 +30,7 @@ const {
   checkDependencies,
   checkHooksJsonFormat,
   checkEventCoverage,
-} = require(join(SCRIPTS_LIB, 'hook-diagnostic'));
+} = require(join(SCRIPTS_LIB, 'analyzers/hook-diagnostic'));
 
 // ── 沙盒工具 ──────────────────────────────────────────────────────────────
 

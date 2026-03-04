@@ -34,11 +34,11 @@ function _getDeps(_deps = {}) {
     timeline:       _deps.timeline       || require('./lib/timeline'),
     failureTracker: _deps.failureTracker || require('./lib/failure-tracker'),
     scoreEngine:    _deps.scoreEngine    || require('./lib/score-engine'),
-    globalInstinct: _deps.globalInstinct || require('./lib/global-instinct'),
+    globalInstinct: _deps.globalInstinct || require('./lib/knowledge/global-instinct'),
     baselineTracker:_deps.baselineTracker|| require('./lib/baseline-tracker'),
     sessionCleanup: _deps.sessionCleanup || require('./lib/session-cleanup'),
     paths:          _deps.paths          || require('./lib/paths'),
-    crossAnalyzer:  _deps.crossAnalyzer  || require('./lib/cross-analyzer'),
+    crossAnalyzer:  _deps.crossAnalyzer  || require('./lib/analyzers/cross-analyzer'),
     sessionDigest:  _deps.sessionDigest  || require('./lib/session-digest'),
   };
 }

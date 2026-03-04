@@ -15,7 +15,7 @@ const path = require('path');
 const { join } = require('path');
 const { SCRIPTS_LIB } = require('../helpers/paths');
 
-const globalInstinct = require(join(SCRIPTS_LIB, 'global-instinct'));
+const globalInstinct = require(join(SCRIPTS_LIB, 'knowledge/global-instinct'));
 const paths = require(join(SCRIPTS_LIB, 'paths'));
 
 // ── 輔助工具 ──

@@ -19,7 +19,7 @@ const { stages, parallelGroups, globalInstinctDefaults, scoringConfig } = requir
 const identifyAgent = require('./identify-agent');
 const { buildWorkflowContext, buildSkillContext, getSessionId, getStageByAgent } = require('./hook-utils');
 const { buildTestIndex } = require('../test-index');
-const { detectKnowledgeGaps } = require('./knowledge-gap-detector');
+const { detectKnowledgeGaps } = require('./knowledge/knowledge-gap-detector');
 const { createHookTimer } = require('./hook-timing');
 
 /**
@@ -306,7 +306,7 @@ function handlePreTask(input, sessionIdOverride) {
   // 全域觀察注入 subagent（前 5 條高信心觀察，最多 500 字）
   let globalObsContext = null;
   try {
-    const globalInstinct = require('./global-instinct');
+    const globalInstinct = require('./knowledge/global-instinct');
     const topObs = globalInstinct.queryGlobal(projectRoot, {
       limit: Math.min(globalInstinctDefaults.loadTopN, 5),
     });

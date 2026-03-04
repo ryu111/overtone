@@ -16,7 +16,7 @@ const { describe, test, expect } = require('bun:test');
 const { join } = require('path');
 const { SCRIPTS_LIB } = require('../helpers/paths');
 
-const GUARD_SYSTEM = join(SCRIPTS_LIB, 'guard-system.js');
+const GUARD_SYSTEM = join(SCRIPTS_LIB, 'analyzers/guard-system.js');
 
 const {
   evalDocsSyncStatus,

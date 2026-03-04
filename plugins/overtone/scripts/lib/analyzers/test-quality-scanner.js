@@ -15,8 +15,8 @@ const { join } = require('path');
 
 // ── 路徑常數 ──────────────────────────────────────────────────────────────
 
-// 此檔位於 plugins/overtone/scripts/lib/test-quality-scanner.js
-const PROJECT_ROOT = join(__dirname, '..', '..', '..', '..');
+// 此檔位於 plugins/overtone/scripts/lib/analyzers/test-quality-scanner.js
+const PROJECT_ROOT = join(__dirname, '..', '..', '..', '..', '..');
 const DEFAULT_TESTS_DIR = join(PROJECT_ROOT, 'tests');
 
 // ── 偵測規則 ──────────────────────────────────────────────────────────────

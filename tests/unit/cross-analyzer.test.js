@@ -12,7 +12,7 @@ const { test, expect, describe } = require('bun:test');
 const { join } = require('path');
 const { SCRIPTS_DIR } = require('../helpers/paths');
 
-const crossAnalyzer = require(join(SCRIPTS_DIR, 'lib', 'cross-analyzer.js'));
+const crossAnalyzer = require(join(SCRIPTS_DIR, 'lib', 'analyzers', 'cross-analyzer.js'));
 
 const MOCK_PROJECT_ROOT = '/tmp/test-cross-analyzer';
 

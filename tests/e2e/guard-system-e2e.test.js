@@ -64,13 +64,13 @@ describe('Scenario 1：三層觸發完整性', () => {
 
   describe('Layer B（Stage 級）：docs-sync-engine', () => {
     test('docs-sync-engine 模組可 require', () => {
-      const engine = require(join(SCRIPTS_LIB, 'docs-sync-engine'));
+      const engine = require(join(SCRIPTS_LIB, 'analyzers/docs-sync-engine'));
       expect(typeof engine.scanDrift).toBe('function');
       expect(typeof engine.runDocsSyncCheck).toBe('function');
     });
 
     test('scanDrift() 在真實 codebase 回傳有效掃描報告', () => {
-      const { scanDrift } = require(join(SCRIPTS_LIB, 'docs-sync-engine'));
+      const { scanDrift } = require(join(SCRIPTS_LIB, 'analyzers/docs-sync-engine'));
       const result = scanDrift();
       expect(result).toBeDefined();
       expect(typeof result.isClean).toBe('boolean');
@@ -80,12 +80,12 @@ describe('Scenario 1：三層觸發完整性', () => {
 
   describe('Layer B（Stage 級）：dead-code-scanner', () => {
     test('dead-code-scanner 模組可 require', () => {
-      const scanner = require(join(SCRIPTS_LIB, 'dead-code-scanner'));
+      const scanner = require(join(SCRIPTS_LIB, 'analyzers/dead-code-scanner'));
       expect(typeof scanner.runDeadCodeScan).toBe('function');
     });
 
     test('runDeadCodeScan() 在真實 codebase 回傳有效掃描報告', () => {
-      const { runDeadCodeScan } = require(join(SCRIPTS_LIB, 'dead-code-scanner'));
+      const { runDeadCodeScan } = require(join(SCRIPTS_LIB, 'analyzers/dead-code-scanner'));
       const result = runDeadCodeScan();
       expect(result).toBeDefined();
       expect(Array.isArray(result.unusedExports)).toBe(true);
@@ -124,7 +124,7 @@ describe('Scenario 2：統一入口 E2E — runFullGuardCheck()', () => {
 
   // 執行一次，在所有 test 中共用
   guardResult = (() => {
-    const { runFullGuardCheck } = require(join(SCRIPTS_LIB, 'guard-system'));
+    const { runFullGuardCheck } = require(join(SCRIPTS_LIB, 'analyzers/guard-system'));
     return runFullGuardCheck();
   })();
 
@@ -163,7 +163,7 @@ describe('Scenario 2：統一入口 E2E — runFullGuardCheck()', () => {
     if (guardResult.summary.fail > 0) {
       // 輸出失敗原因幫助診斷
       const failedSystems = [];
-      const { evalDocsSyncStatus, evalTestQualityStatus, evalDeadCodeStatus, evalComponentRepairStatus, evalHookDiagnosticStatus } = require(join(SCRIPTS_LIB, 'guard-system'));
+      const { evalDocsSyncStatus, evalTestQualityStatus, evalDeadCodeStatus, evalComponentRepairStatus, evalHookDiagnosticStatus } = require(join(SCRIPTS_LIB, 'analyzers/guard-system'));
       if (evalDocsSyncStatus(guardResult.docsSync) === 'fail') failedSystems.push('docsSync');
       if (evalTestQualityStatus(guardResult.testQuality) === 'fail') failedSystems.push('testQuality');
       if (evalDeadCodeStatus(guardResult.deadCode) === 'fail') failedSystems.push('deadCode');
@@ -194,7 +194,7 @@ describe('Scenario 3：守衛模組清單完整性', () => {
 
   const GUARD_MODULES = [
     {
-      name: 'docs-sync-engine',
+      name: 'analyzers/docs-sync-engine',
       coreApis: ['scanDrift', 'runDocsSyncCheck'],
     },
     {
@@ -202,19 +202,19 @@ describe('Scenario 3：守衛模組清單完整性', () => {
       coreApis: ['runCleanup', 'cleanupStaleSessions', 'cleanupOrphanFiles'],
     },
     {
-      name: 'test-quality-scanner',
+      name: 'analyzers/test-quality-scanner',
       coreApis: ['scanTestQuality', 'scanFile'],
     },
     {
-      name: 'dead-code-scanner',
+      name: 'analyzers/dead-code-scanner',
       coreApis: ['runDeadCodeScan', 'scanUnusedExports', 'scanOrphanFiles'],
     },
     {
-      name: 'component-repair',
+      name: 'analyzers/component-repair',
       coreApis: ['scanInconsistencies', 'runComponentRepair'],
     },
     {
-      name: 'hook-diagnostic',
+      name: 'analyzers/hook-diagnostic',
       coreApis: ['runDiagnostic'],
     },
   ];
@@ -236,12 +236,12 @@ describe('Scenario 3：守衛模組清單完整性', () => {
   }
 
   test('guard-system.js 本身可 require', () => {
-    const guardSystem = require(join(SCRIPTS_LIB, 'guard-system'));
+    const guardSystem = require(join(SCRIPTS_LIB, 'analyzers/guard-system'));
     expect(typeof guardSystem.runFullGuardCheck).toBe('function');
   });
 
   test('guard-system.js 匯出 eval 函式供狀態判斷', () => {
-    const guardSystem = require(join(SCRIPTS_LIB, 'guard-system'));
+    const guardSystem = require(join(SCRIPTS_LIB, 'analyzers/guard-system'));
     expect(typeof guardSystem.evalDocsSyncStatus).toBe('function');
     expect(typeof guardSystem.evalTestQualityStatus).toBe('function');
     expect(typeof guardSystem.evalDeadCodeStatus).toBe('function');

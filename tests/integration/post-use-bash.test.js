@@ -25,7 +25,7 @@ const SESSION_8 = `test_post_bash_s8_${Date.now()}`;
 
 const ALL_SESSIONS = [SESSION_1, SESSION_2, SESSION_3, SESSION_4, SESSION_5, SESSION_6, SESSION_7, SESSION_8];
 
-const instinct = require(join(SCRIPTS_LIB, 'instinct'));
+const instinct = require(join(SCRIPTS_LIB, 'knowledge/instinct'));
 
 beforeAll(() => {
   // 建立所有 session，確保 instinct.emit 有有效的 session 存在

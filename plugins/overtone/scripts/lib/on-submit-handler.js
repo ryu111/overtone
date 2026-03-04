@@ -7,7 +7,7 @@
  */
 
 const state = require('./state');
-const instinct = require('./instinct');
+const instinct = require('./knowledge/instinct');
 const { workflows } = require('./registry');
 const { getSessionId } = require('./hook-utils');
 

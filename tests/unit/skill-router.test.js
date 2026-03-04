@@ -9,7 +9,7 @@ const { join } = require('path');
 const { mkdirSync, writeFileSync, rmSync, existsSync, readFileSync, statSync } = require('fs');
 const { SCRIPTS_LIB } = require('../helpers/paths');
 
-const { routeKnowledge, writeKnowledge } = require(join(SCRIPTS_LIB, 'skill-router'));
+const { routeKnowledge, writeKnowledge } = require(join(SCRIPTS_LIB, 'knowledge/skill-router'));
 
 // ── 測試用臨時目錄 ──
 

@@ -16,10 +16,10 @@ const { join, basename, relative } = require('path');
 
 // ── 路徑常數 ──────────────────────────────────────────────────────────────
 
-// 此檔位於 plugins/overtone/scripts/lib/dead-code-scanner.js
-// __dirname = /path/to/overtone/plugins/overtone/scripts/lib
-const OVERTONE_PLUGIN = join(__dirname, '..', '..');  // plugins/overtone/
-const PROJECT_ROOT = join(__dirname, '..', '..', '..', '..'); // 專案根目錄（overtone/）
+// 此檔位於 plugins/overtone/scripts/lib/analyzers/dead-code-scanner.js
+// __dirname = /path/to/overtone/plugins/overtone/scripts/lib/analyzers
+const OVERTONE_PLUGIN = join(__dirname, '..', '..', '..');  // plugins/overtone/
+const PROJECT_ROOT = join(__dirname, '..', '..', '..', '..', '..'); // 專案根目錄（overtone/）
 
 const DEFAULT_LIB_DIR = join(OVERTONE_PLUGIN, 'scripts', 'lib');
 const DEFAULT_SEARCH_DIRS = [

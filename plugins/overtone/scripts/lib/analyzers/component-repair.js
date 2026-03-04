@@ -28,7 +28,7 @@
 
 const { existsSync, readFileSync, readdirSync } = require('fs');
 const { join, basename } = require('path');
-const { atomicWrite } = require('./utils');
+const { atomicWrite } = require('../utils');
 
 // ── 預設路徑解析 ──────────────────────────────────────────────────────────
 
@@ -38,12 +38,12 @@ const { atomicWrite } = require('./utils');
  * @returns {object} 完整路徑集合
  */
 function resolvePaths(injected = {}) {
-  const pluginRoot = injected.pluginRoot || join(__dirname, '..', '..');
+  const pluginRoot = injected.pluginRoot || join(__dirname, '..', '..', '..');
   return {
     pluginRoot,
     agentsDir:       injected.agentsDir       || join(pluginRoot, 'agents'),
     pluginJsonPath:  injected.pluginJsonPath   || join(pluginRoot, '.claude-plugin', 'plugin.json'),
-    registryDataPath:injected.registryDataPath || join(__dirname, 'registry-data.json'),
+    registryDataPath:injected.registryDataPath || join(__dirname, '..', 'registry-data.json'),
     hooksJsonPath:   injected.hooksJsonPath    || join(pluginRoot, 'hooks', 'hooks.json'),
     hookEventsRef:   injected.hookEventsRef    || null, // null → 從 registry.js 載入
   };
@@ -57,7 +57,7 @@ function resolvePaths(injected = {}) {
 function getHookEvents(paths) {
   if (paths.hookEventsRef) return paths.hookEventsRef;
   try {
-    const { hookEvents } = require('./registry');
+    const { hookEvents } = require('../registry');
     return hookEvents;
   } catch (_) {
     return [];

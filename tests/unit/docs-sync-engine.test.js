@@ -18,7 +18,7 @@ const os = require('os');
 // ── 模組路徑 ──────────────────────────────────────────────────────────────
 
 const { PROJECT_ROOT, SCRIPTS_LIB } = require('../helpers/paths');
-const ENGINE_PATH = join(SCRIPTS_LIB, 'docs-sync-engine.js');
+const ENGINE_PATH = join(SCRIPTS_LIB, 'analyzers/docs-sync-engine.js');
 
 // ── 測試用檔案系統沙盒 ────────────────────────────────────────────────────
 

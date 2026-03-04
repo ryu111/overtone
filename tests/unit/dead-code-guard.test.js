@@ -15,7 +15,7 @@ const { describe, test, expect } = require('bun:test');
 const { join } = require('path');
 const { SCRIPTS_LIB, PROJECT_ROOT } = require('../helpers/paths');
 
-const { runDeadCodeScan } = require(join(SCRIPTS_LIB, 'dead-code-scanner.js'));
+const { runDeadCodeScan } = require(join(SCRIPTS_LIB, 'analyzers/dead-code-scanner.js'));
 
 // 孤立檔案允許上限（新開發中的模組暫時未被整合是合理的）
 const ORPHAN_FILE_LIMIT = 3;

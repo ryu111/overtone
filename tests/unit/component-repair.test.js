@@ -30,7 +30,7 @@ const {
   listAgentFiles,
   extractAgentFilenames,
   parseFrontmatterContent,
-} = require('../../plugins/overtone/scripts/lib/component-repair');
+} = require('../../plugins/overtone/scripts/lib/analyzers/component-repair');
 
 // ── 沙盒工具 ──────────────────────────────────────────────────────────────
 

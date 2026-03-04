@@ -266,7 +266,7 @@ describe('Timeline JSONL 效能 — 100 筆 emit < 500ms', () => {
 // ────────────────────────────────────────────────────────────────────────────
 
 describe('Instinct Auto-Apply 閾值 — autoApplyThreshold = 0.7', () => {
-  const instinct = require(join(SCRIPTS_LIB, 'instinct'));
+  const instinct = require(join(SCRIPTS_LIB, 'knowledge/instinct'));
   const paths    = require(join(SCRIPTS_LIB, 'paths'));
   const { instinctDefaults } = require(join(SCRIPTS_LIB, 'registry'));
 

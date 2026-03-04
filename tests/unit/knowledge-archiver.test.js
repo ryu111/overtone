@@ -14,7 +14,7 @@ const { test, expect, describe } = require('bun:test');
 const { join } = require('path');
 const { SCRIPTS_LIB } = require('../helpers/paths');
 
-const { archiveKnowledge } = require(join(SCRIPTS_LIB, 'knowledge-archiver'));
+const { archiveKnowledge } = require(join(SCRIPTS_LIB, 'knowledge/knowledge-archiver'));
 
 // 取得專案根目錄（tests/unit/ 上兩層）
 const PROJECT_ROOT = join(__dirname, '..', '..');

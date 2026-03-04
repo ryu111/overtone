@@ -8,7 +8,7 @@ const { SCRIPTS_LIB } = require('../helpers/paths');
 const TEST_SESSION = `test_instinct_${Date.now()}`;
 const SESSION_DIR = join(homedir(), '.overtone', 'sessions', TEST_SESSION);
 
-const instinct = require(join(SCRIPTS_LIB, 'instinct'));
+const instinct = require(join(SCRIPTS_LIB, 'knowledge/instinct'));
 const paths = require(join(SCRIPTS_LIB, 'paths'));
 
 beforeEach(() => {

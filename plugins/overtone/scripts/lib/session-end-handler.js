@@ -79,7 +79,7 @@ function handleSessionEnd(input, sessionId) {
   const projectRoot = process.env.CLAUDE_PROJECT_ROOT || process.cwd();
 
   try {
-    const globalInstinct = require('./global-instinct');
+    const globalInstinct = require('./knowledge/global-instinct');
     const result = globalInstinct.graduate(sessionId, projectRoot);
     if (result.graduated > 0 || result.merged > 0) {
       process.stderr.write(
@@ -94,7 +94,7 @@ function handleSessionEnd(input, sessionId) {
   // 對超過 7 天未更新的 session 觀察降低信心值
 
   try {
-    const instinct = require('./instinct');
+    const instinct = require('./knowledge/instinct');
     const { decayed, pruned } = instinct.decay(sessionId);
     if (decayed > 0 || pruned > 0) {
       process.stderr.write(
@@ -132,7 +132,7 @@ function handleSessionEnd(input, sessionId) {
       const isDegrading = (bTrend?.direction === 'degrading') && (sTrend?.direction === 'degrading');
 
       if (isImproving || isDegrading) {
-        const globalInstinct = require('./global-instinct');
+        const globalInstinct = require('./knowledge/global-instinct');
         const delta = isImproving ? gid.feedbackBoost : gid.feedbackPenalty;
         const updated = globalInstinct.adjustConfidenceByIds(projectRoot, appliedIds, delta);
         if (updated > 0) {

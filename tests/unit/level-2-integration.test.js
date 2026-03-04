@@ -179,7 +179,7 @@ describe('Feature 3：PreToolUse(Task) 整合點', () => {
 
 describe('Feature 4：模組可載入性', () => {
   test('4-1 global-instinct.js 匯出 graduate + decayGlobal + queryGlobal + adjustConfidenceByIds', () => {
-    const mod = require(join(SCRIPTS_LIB, 'global-instinct'));
+    const mod = require(join(SCRIPTS_LIB, 'knowledge/global-instinct'));
     expect(typeof mod.graduate).toBe('function');
     expect(typeof mod.decayGlobal).toBe('function');
     expect(typeof mod.queryGlobal).toBe('function');
@@ -202,7 +202,7 @@ describe('Feature 4：模組可載入性', () => {
   });
 
   test('4-4 instinct.js 匯出 decay', () => {
-    const mod = require(join(SCRIPTS_LIB, 'instinct'));
+    const mod = require(join(SCRIPTS_LIB, 'knowledge/instinct'));
     expect(typeof mod.decay).toBe('function');
   });
 

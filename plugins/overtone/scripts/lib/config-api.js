@@ -1,150 +1,40 @@
 'use strict';
 /**
- * config-api.js — Overtone Config API
+ * config-api.js — Overtone Config API（L2 CRUD 層）
  *
- * 統一管理 agent/hook/skill 三大元件的驗證與 CRUD。
+ * 統一管理 agent/hook/skill 三大元件的 CRUD 操作。
+ * L1 驗證層已提取至 config-validator.js。
+ * IO 輔助已提取至 config-io.js。
  *
- * L1 驗證層：validateAgent, validateHook, validateSkill, validateAll
- * L2 結構化 API：createAgent, updateAgent, createHook, updateHook, createSkill, updateSkill
+ * L2 結構化 API：createAgent, updateAgent, createHook, updateHook, createSkill, updateSkill, bumpVersion
+ *
+ * 向後相容：validateAgent, validateHook, validateSkill, validateAll 仍從此模組 re-export。
  */
 
-const { existsSync, readFileSync, mkdirSync, chmodSync } = require('fs');
+const { existsSync, chmodSync } = require('fs');
 const { join } = require('path');
-const matter = require('gray-matter');
 const { atomicWrite } = require('./utils');
-const { knownTools, hookEvents } = require('./registry');
+const { hookEvents } = require('./registry');
+const {
+  resolveCommand,
+  readAgentFile,
+  readSkillFile,
+  readHooksJson,
+  readRegistryData,
+  writeRegistryData,
+  readPluginJson,
+  writePluginJson,
+} = require('./config-io');
+const {
+  validateAgent,
+  validateHook,
+  validateSkill,
+  validateAll,
+  validateAgentFrontmatter,
+  validateSkillFrontmatter,
+} = require('./config-validator');
 
-// ── 內部常數 ──
-
-const VALID_MODELS = ['opus', 'opusplan', 'sonnet', 'haiku'];
-
-// ── 內部輔助函式 ──
-
-/**
- * 建立空的 ValidationResult
- * @returns {{ valid: boolean, errors: string[], warnings: string[] }}
- */
-function makeResult() {
-  return { valid: true, errors: [], warnings: [] };
-}
-
-/**
- * 加入錯誤，並將 valid 設為 false
- * @param {object} result
- * @param {string} msg
- */
-function addError(result, msg) {
-  result.errors.push(msg);
-  result.valid = false;
-}
-
-/**
- * 加入警告（不影響 valid）
- * @param {object} result
- * @param {string} msg
- */
-function addWarning(result, msg) {
-  result.warnings.push(msg);
-}
-
-/**
- * 解析 ${CLAUDE_PLUGIN_ROOT} 占位符，替換為實際 pluginRoot
- * @param {string} command
- * @param {string} pluginRoot
- * @returns {string}
- */
-function resolveCommand(command, pluginRoot) {
-  return command.replace(/\$\{CLAUDE_PLUGIN_ROOT\}/g, pluginRoot);
-}
-
-/**
- * 讀取並解析 agent .md frontmatter（用 gray-matter 預設 engine）
- * @param {string} agentPath
- * @returns {{ frontmatter: object, content: string, rawContent: string }}
- */
-function readAgentFile(agentPath) {
-  const rawContent = readFileSync(agentPath, 'utf8');
-  const parsed = matter(rawContent);
-  return { frontmatter: parsed.data, content: parsed.content, rawContent };
-}
-
-/**
- * 讀取並解析 skill SKILL.md frontmatter
- * @param {string} skillPath
- * @returns {{ frontmatter: object, content: string, rawContent: string }}
- */
-function readSkillFile(skillPath) {
-  const rawContent = readFileSync(skillPath, 'utf8');
-  const parsed = matter(rawContent);
-  return { frontmatter: parsed.data, content: parsed.content, rawContent };
-}
-
-/**
- * 讀取 hooks.json（官方三層嵌套格式）
- * @param {string} pluginRoot
- * @returns {{ hooks: object }} hooks 物件以事件名為 key
- */
-function readHooksJson(pluginRoot) {
-  const hooksPath = join(pluginRoot, 'hooks', 'hooks.json');
-  if (!existsSync(hooksPath)) return { hooks: {} };
-  return JSON.parse(readFileSync(hooksPath, 'utf8'));
-}
-
-/**
- * 從 hooks.json 取得指定事件的第一個 handler（扁平化）
- * @param {object} hooksData - readHooksJson() 回傳值
- * @param {string} event - 事件名稱
- * @returns {{ type: string, command: string, matcher?: string, timeout?: number } | null}
- */
-function getHookHandler(hooksData, event) {
-  const matcherGroups = hooksData.hooks?.[event];
-  if (!matcherGroups || !Array.isArray(matcherGroups) || matcherGroups.length === 0) return null;
-  const group = matcherGroups[0];
-  if (!group.hooks || group.hooks.length === 0) return null;
-  const handler = { ...group.hooks[0] };
-  if (group.matcher) handler.matcher = group.matcher;
-  return handler;
-}
-
-/**
- * 讀取 registry-data.json
- * @param {string} pluginRoot
- * @returns {{ stages: object, agentModels: object }}
- */
-function readRegistryData(pluginRoot) {
-  const dataPath = join(pluginRoot, 'scripts', 'lib', 'registry-data.json');
-  return JSON.parse(readFileSync(dataPath, 'utf8'));
-}
-
-/**
- * 寫入 registry-data.json（atomicWrite）
- * @param {string} pluginRoot
- * @param {object} data
- */
-function writeRegistryData(pluginRoot, data) {
-  const dataPath = join(pluginRoot, 'scripts', 'lib', 'registry-data.json');
-  atomicWrite(dataPath, data);
-}
-
-/**
- * 讀取 plugin.json
- * @param {string} pluginRoot
- * @returns {object}
- */
-function readPluginJson(pluginRoot) {
-  const pluginPath = join(pluginRoot, '.claude-plugin', 'plugin.json');
-  return JSON.parse(readFileSync(pluginPath, 'utf8'));
-}
-
-/**
- * 寫入 plugin.json（atomicWrite）
- * @param {string} pluginRoot
- * @param {object} data
- */
-function writePluginJson(pluginRoot, data) {
-  const pluginPath = join(pluginRoot, '.claude-plugin', 'plugin.json');
-  atomicWrite(pluginPath, data);
-}
+// ── 生成 frontmatter 輔助函式 ──
 
 /**
  * 生成 agent .md 的 frontmatter 字串（YAML block sequence 格式）
@@ -209,308 +99,6 @@ function buildSkillFrontmatter(fm) {
 
   lines.push('---');
   return lines.join('\n');
-}
-
-// ── L1 驗證層 ──
-
-/**
- * 驗證 agent frontmatter 欄位（內部，可傳入已解析的 frontmatter）
- * @param {object} frontmatter
- * @param {string} pluginRoot
- * @returns {object} ValidationResult
- */
-function validateAgentFrontmatter(frontmatter, pluginRoot) {
-  const result = makeResult();
-
-  // 必填欄位檢查
-  const requiredFields = ['name', 'description', 'model', 'permissionMode', 'color', 'maxTurns'];
-  for (const field of requiredFields) {
-    if (frontmatter[field] === undefined || frontmatter[field] === null || frontmatter[field] === '') {
-      addError(result, `缺少必填欄位：${field}`);
-    }
-  }
-
-  if (!result.valid) return result;
-
-  // model 值域檢查
-  if (!VALID_MODELS.includes(frontmatter.model)) {
-    addError(result, `model 值不合法：${frontmatter.model}（合法值：${VALID_MODELS.join(', ')}）`);
-  }
-
-  // permissionMode 固定值檢查
-  if (frontmatter.permissionMode !== 'bypassPermissions') {
-    addError(result, `permissionMode 必須為 bypassPermissions（實際值：${frontmatter.permissionMode}）`);
-  }
-
-  // maxTurns 必須是正整數
-  const maxTurns = frontmatter.maxTurns;
-  if (typeof maxTurns !== 'number' || !Number.isInteger(maxTurns) || maxTurns <= 0) {
-    addError(result, `maxTurns 必須是正整數（實際值：${maxTurns}）`);
-  }
-
-  // disallowedTools 和 tools 互斥檢查 + 工具名稱值域
-  if (frontmatter.disallowedTools && frontmatter.tools) {
-    addError(result, 'disallowedTools 和 tools 不可同時設定（互斥）');
-  }
-
-  const toolsToCheck = frontmatter.disallowedTools || frontmatter.tools || [];
-  for (const tool of toolsToCheck) {
-    if (!knownTools.includes(tool)) {
-      addWarning(result, `未知的工具名稱：${tool}`);
-    }
-  }
-
-  // skills 引用存在性檢查
-  if (frontmatter.skills && frontmatter.skills.length > 0) {
-    for (const skill of frontmatter.skills) {
-      const skillPath = join(pluginRoot, 'skills', skill, 'SKILL.md');
-      if (!existsSync(skillPath)) {
-        addError(result, `引用的 skill 不存在：${skill}`);
-      }
-    }
-  }
-
-  return result;
-}
-
-/**
- * 驗證單一 agent 設定的正確性
- * @param {string} name - agent 名稱（如 'developer'）
- * @param {string} pluginRoot - plugin 根目錄路徑
- * @returns {{ valid: boolean, errors: string[], warnings: string[] }}
- */
-function validateAgent(name, pluginRoot) {
-  const result = makeResult();
-  const agentPath = join(pluginRoot, 'agents', `${name}.md`);
-
-  if (!existsSync(agentPath)) {
-    addError(result, `Agent "${name}" 的 .md 檔案不存在：${agentPath}`);
-    return result;
-  }
-
-  let frontmatter;
-  try {
-    ({ frontmatter } = readAgentFile(agentPath));
-  } catch (e) {
-    addError(result, `無法讀取 agent 檔案：${e.message}`);
-    return result;
-  }
-
-  const fmResult = validateAgentFrontmatter(frontmatter, pluginRoot);
-  result.errors.push(...fmResult.errors);
-  result.warnings.push(...fmResult.warnings);
-  if (!fmResult.valid) result.valid = false;
-
-  return result;
-}
-
-/**
- * 驗證 skill frontmatter 欄位（內部）
- * @param {object} frontmatter
- * @returns {object} ValidationResult
- */
-function validateSkillFrontmatter(frontmatter) {
-  const result = makeResult();
-
-  // 必填欄位
-  if (!frontmatter.name) {
-    addError(result, '缺少必填欄位：name');
-  }
-  if (!frontmatter.description) {
-    addError(result, '缺少必填欄位：description');
-  }
-
-  // disable-model-invocation 必須是 boolean
-  if (frontmatter['disable-model-invocation'] !== undefined) {
-    if (typeof frontmatter['disable-model-invocation'] !== 'boolean') {
-      addError(result, `disable-model-invocation 必須是 boolean（實際值：${frontmatter['disable-model-invocation']}）`);
-    }
-  }
-
-  // user-invocable 必須是 boolean
-  if (frontmatter['user-invocable'] !== undefined) {
-    if (typeof frontmatter['user-invocable'] !== 'boolean') {
-      addError(result, `user-invocable 必須是 boolean（實際值：${frontmatter['user-invocable']}）`);
-    }
-  }
-
-  return result;
-}
-
-/**
- * 驗證單一 skill 設定的正確性
- * @param {string} name - skill 名稱（如 'auto'）
- * @param {string} pluginRoot - plugin 根目錄路徑
- * @returns {{ valid: boolean, errors: string[], warnings: string[] }}
- */
-function validateSkill(name, pluginRoot) {
-  const result = makeResult();
-  const skillPath = join(pluginRoot, 'skills', name, 'SKILL.md');
-
-  if (!existsSync(skillPath)) {
-    addError(result, `Skill "${name}" 的 SKILL.md 不存在：${skillPath}`);
-    return result;
-  }
-
-  let frontmatter;
-  try {
-    ({ frontmatter } = readSkillFile(skillPath));
-  } catch (e) {
-    addError(result, `無法讀取 skill 檔案：${e.message}`);
-    return result;
-  }
-
-  const fmResult = validateSkillFrontmatter(frontmatter);
-  result.errors.push(...fmResult.errors);
-  result.warnings.push(...fmResult.warnings);
-  if (!fmResult.valid) result.valid = false;
-
-  return result;
-}
-
-/**
- * 驗證單一 hook event 設定的正確性
- * @param {string} event - hook event 名稱（如 'SessionStart'）
- * @param {string} pluginRoot - plugin 根目錄路徑
- * @returns {{ valid: boolean, errors: string[], warnings: string[] }}
- */
-function validateHook(event, pluginRoot) {
-  const result = makeResult();
-
-  // event 必須在合法列表中
-  if (!hookEvents.includes(event)) {
-    addError(result, `hook event "${event}" 不在合法列表中（合法值：${hookEvents.join(', ')}）`);
-    return result;
-  }
-
-  let hooksData;
-  try {
-    hooksData = readHooksJson(pluginRoot);
-  } catch (e) {
-    addError(result, `無法讀取 hooks.json：${e.message}`);
-    return result;
-  }
-
-  const handler = getHookHandler(hooksData, event);
-  if (!handler) {
-    addError(result, `hooks.json 中不存在 "${event}" 的條目`);
-    return result;
-  }
-
-  // type 必須是 'command'
-  if (handler.type !== 'command') {
-    addError(result, `hook type 必須是 command（實際值：${handler.type}）`);
-  }
-
-  // command 腳本必須存在
-  if (!handler.command) {
-    addError(result, '缺少必填欄位：command');
-  } else {
-    const resolvedCmd = resolveCommand(handler.command, pluginRoot);
-    if (!existsSync(resolvedCmd)) {
-      addError(result, `command 指向的腳本不存在：${handler.command}`);
-    }
-  }
-
-  return result;
-}
-
-/**
- * 跨元件交叉一致性驗證
- * @param {string} pluginRoot - plugin 根目錄路徑
- * @returns {{ valid: boolean, agents: object, hooks: object, skills: object, cross: object }}
- */
-function validateAll(pluginRoot) {
-  const agentsDir = join(pluginRoot, 'agents');
-  const skillsDir = join(pluginRoot, 'skills');
-
-  const agentResults = {};
-  const hookResults = {};
-  const skillResults = {};
-  const crossResult = makeResult();
-
-  let allValid = true;
-
-  // 掃描所有 agent .md 檔案
-  let agentFiles = [];
-  try {
-    const { readdirSync } = require('fs');
-    agentFiles = readdirSync(agentsDir).filter((f) => f.endsWith('.md'));
-  } catch (e) {
-    addError(crossResult, `無法讀取 agents 目錄：${e.message}`);
-    allValid = false;
-  }
-
-  for (const file of agentFiles) {
-    const name = file.replace(/\.md$/, '');
-    const r = validateAgent(name, pluginRoot);
-    agentResults[name] = r;
-    if (!r.valid) allValid = false;
-  }
-
-  // 掃描所有 hook events
-  let hooksData = { hooks: {} };
-  try {
-    hooksData = readHooksJson(pluginRoot);
-  } catch (e) {
-    addError(crossResult, `無法讀取 hooks.json：${e.message}`);
-    allValid = false;
-  }
-
-  for (const event of Object.keys(hooksData.hooks)) {
-    const r = validateHook(event, pluginRoot);
-    hookResults[event] = r;
-    if (!r.valid) allValid = false;
-  }
-
-  // 掃描所有 skill 目錄
-  let skillDirs = [];
-  try {
-    const { readdirSync } = require('fs');
-    skillDirs = readdirSync(skillsDir).filter((name) => {
-      const skillPath = join(skillsDir, name, 'SKILL.md');
-      return existsSync(skillPath);
-    });
-  } catch (e) {
-    addError(crossResult, `無法讀取 skills 目錄：${e.message}`);
-    allValid = false;
-  }
-
-  for (const skillName of skillDirs) {
-    const r = validateSkill(skillName, pluginRoot);
-    skillResults[skillName] = r;
-    if (!r.valid) allValid = false;
-  }
-
-  // 交叉驗證：registry-data.json 中的 stage agent 必須有對應的 .md 檔案
-  // grader 是特例，不在 stages 中，不應產生錯誤
-  let registryData;
-  try {
-    registryData = readRegistryData(pluginRoot);
-  } catch (e) {
-    addError(crossResult, `無法讀取 registry-data.json：${e.message}`);
-    allValid = false;
-    registryData = null;
-  }
-
-  if (registryData) {
-    for (const [stageKey, stageDef] of Object.entries(registryData.stages)) {
-      const agentName = stageDef.agent;
-      const agentPath = join(pluginRoot, 'agents', `${agentName}.md`);
-      if (!existsSync(agentPath)) {
-        addError(crossResult, `Stage "${stageKey}" 的 agent "${agentName}" 不存在（缺少 agents/${agentName}.md）`);
-        allValid = false;
-      }
-    }
-  }
-
-  return {
-    valid: allValid,
-    agents: agentResults,
-    hooks: hookResults,
-    skills: skillResults,
-    cross: crossResult,
-  };
 }
 
 // ── L2 結構化 API ──
@@ -899,7 +487,7 @@ function bumpVersion(version, pluginRoot) {
 // ── 模組匯出 ──
 
 module.exports = {
-  // L1 驗證層
+  // L1 驗證層（re-export from config-validator.js，向後相容）
   validateAgent,
   validateHook,
   validateSkill,
@@ -915,5 +503,4 @@ module.exports = {
 
   // 版本管理
   bumpVersion,
-
 };

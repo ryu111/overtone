@@ -25,7 +25,7 @@ const {
   scanOrphanFiles,
   runDeadCodeScan,
   collectJsFiles,
-} = require('../../plugins/overtone/scripts/lib/dead-code-scanner');
+} = require('../../plugins/overtone/scripts/lib/analyzers/dead-code-scanner');
 
 // ── 沙盒工具 ──────────────────────────────────────────────────────────────
 

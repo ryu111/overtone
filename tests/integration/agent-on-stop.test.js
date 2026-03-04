@@ -888,7 +888,7 @@ describe('場景 13：D3 — 雙重失敗協調提示', () => {
 // ────────────────────────────────────────────────────────────────────────────
 
 describe('場景 14：agent_performance Instinct 觀察', () => {
-  const instinct = require(join(SCRIPTS_LIB, 'instinct'));
+  const instinct = require(join(SCRIPTS_LIB, 'knowledge/instinct'));
 
   test('developer PASS → observations.jsonl 新增 agent_performance 記錄', async () => {
     const sessionId = newSessionId();

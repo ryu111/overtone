@@ -14,7 +14,7 @@ const { describe, test, expect } = require('bun:test');
 const { join, basename } = require('path');
 const { SCRIPTS_LIB, PROJECT_ROOT } = require('../helpers/paths');
 
-const { scanTestQuality } = require(join(SCRIPTS_LIB, 'test-quality-scanner.js'));
+const { scanTestQuality } = require(join(SCRIPTS_LIB, 'analyzers/test-quality-scanner.js'));
 
 // 豁免清單：這些測試檔包含掃描器測試資料，不計入 guard 掃描
 const EXEMPTED_FILES = new Set([

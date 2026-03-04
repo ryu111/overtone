@@ -12,7 +12,7 @@
 
 const { readFileSync, existsSync } = require('fs');
 const path = require('path');
-const { atomicWrite } = require('./utils');
+const { atomicWrite } = require('../utils');
 const { DOMAIN_KEYWORDS } = require('./knowledge-gap-detector');
 
 // auto-discovered.md 的大小上限（5KB）

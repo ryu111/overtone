@@ -31,3 +31,40 @@ Keywords: passed, failed, tests, unit, session, cleanup, test, cleanupstalegloba
 
 然而，在跨模組整合層發現一個遺漏。
 Keywords: cleanupstaleglobaldirs, runcleanup, global, instinct, test, aftereach, failure, tracker, afterall, hash
+---
+## 2026-03-04 | refactor-cleaner:REFACTOR Findings
+**清理報告**：
+
+- 未使用依賴：0 個（`gray-matter` 正常被 7 個模組使用）
+- 未使用 exports：0 個（所有疑似死碼 exports 均有測試覆蓋，依規則保留）
+- 未使用檔案：0 個
+
+**工具輸出**：
+
+- depcheck：因 npm cache 權限問題（`EACCES`）無法執行，改用手動 grep 分析
+- health-check.js `dead-exports`：0 個問題
+- bun test：3366 pass / 0 fail（151 files）
+
+**掃描結果摘要**：
+
+所有業務程式碼未使用的 exports 均有完整測試覆蓋（unit test），依照規則「不可刪除有 test 覆蓋但未被應用碼引用的 utility」，全數保留：
+
+| 模組 | 業務0的 exports | 規則判定 |
+|------|----------------|----------|
+| `component-repair` | scanInconsistencies, autoRepair, 等 9 個 | 有測試，保留 |
+| `docs-sync-engine` | scanDrift, fixDrift, 等 6 個 | 有測試，保留 |
+| `hook-diagnostic` | extractScriptPaths 等 7 個 | 有測試，保留 |
+| `guard-system` | runFullGuardCheck 等 6 個 | 有測試，保留 |
+| `config-api` | validateAgent, validateHook, validateSkill | 有測試，保留 |
+| `dead-code-scanner` | scanUnusedExports 等 5 個 | 有測試，保留 |
+| `test-quality-scanner` | scanFile, detectEmptyTests 等 6 個 | 有測試，保留 |
+| `baseline-tracker` | compareToBaseline | 有測試，保留 |
+| `global-instinct` | decayGlobal, pruneGlobal | 有測試，保留 |
+| `score-engine` | saveScore | 有測試，保留 |
+| `session-cleanup` | cleanupStaleSessions, cleanupOrphanFiles | 有測試，保留 |
+
+**驗證結果**：
+
+- build: 不適用（此專案無 build 步驟）
+- test: 3366 pass / 0 fail
+Keywords: gray, matter, exports, depcheck, cache, eacces, grep, health, check, dead
