@@ -431,6 +431,7 @@ function cmdDaemon(projectRoot, _deps = {}) {
   if (telegramToken) {
     telegram = new TelegramAdapterClass(telegramToken, null, {
       chatId: telegramChatId || null,
+      projectRoot,
     });
   }
 

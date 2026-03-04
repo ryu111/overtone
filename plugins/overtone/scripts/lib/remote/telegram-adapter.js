@@ -10,7 +10,7 @@
  *   TELEGRAM_BOT_TOKEN — Bot token（必須）
  *   TELEGRAM_CHAT_ID — 目標 chat ID（可選，/start 自動學習）
  *
- * 支援命令：/start, /status, /stop, /sessions, /help
+ * 支援命令：/start, /status, /stop, /run, /sessions, /help
  */
 
 const Adapter = require('./adapter');
@@ -39,6 +39,7 @@ class TelegramAdapter extends Adapter {
    * @param {object} [options={}]
    * @param {string} [options.chatId] - 目標 chat ID
    * @param {string[]} [options.pushEvents] - 要推送的事件類型
+   * @param {string} [options.projectRoot] - 專案根目錄（/run 寫入佇列用）
    */
   constructor(token, eventBus, options = {}) {
     super('telegram', eventBus);
@@ -47,6 +48,7 @@ class TelegramAdapter extends Adapter {
     this.chatId = options.chatId || null;
     this._authorizedChatId = options.chatId || null; // 白名單 ID（M-10）
     this.pushEvents = options.pushEvents || DEFAULT_PUSH_EVENTS;
+    this.projectRoot = options.projectRoot || null;
     this.lastUpdateId = 0;
     this._polling = false;
     this._abortController = null;
@@ -156,6 +158,9 @@ class TelegramAdapter extends Adapter {
     } else if (text.startsWith('/stop')) {
       const args = text.split(/\s+/).slice(1);
       this._handleStop(chatId, args[0]);
+    } else if (text.startsWith('/run')) {
+      const args = text.split(/\s+/).slice(1);
+      this._handleRun(chatId, args[0], args[1]);
     } else if (text.startsWith('/sessions')) {
       this._handleSessions(chatId);
     } else if (text.startsWith('/help')) {
@@ -177,6 +182,7 @@ class TelegramAdapter extends Adapter {
       '📋 可用命令：',
       '/status [id] — 查看工作流狀態',
       '/stop [id] — 停止 Loop',
+      '/run &lt;name&gt; [workflow] — 觸發工作流',
       '/sessions — 列出所有工作階段',
       '/help — 顯示此說明',
     ].join('\n'));
@@ -253,6 +259,44 @@ class TelegramAdapter extends Adapter {
     }
   }
 
+  /** /run <featureName> [workflow] — 寫入執行佇列，由 heartbeat 啟動 */
+  _handleRun(chatId, featureName, workflowType) {
+    if (!featureName) {
+      this._sendMessage(chatId, [
+        '⚠️ 用法：<code>/run &lt;featureName&gt; [workflow]</code>',
+        '',
+        '範例：<code>/run fix-auth quick</code>',
+        `可用 workflow：${Object.keys(workflows).join(', ')}`,
+      ].join('\n'));
+      return;
+    }
+
+    if (!this.projectRoot) {
+      this._sendMessage(chatId, '❌ projectRoot 未設定，無法寫入佇列。');
+      return;
+    }
+
+    // 預設 workflow 為 standard
+    const wf = workflowType || 'standard';
+    if (!workflows[wf]) {
+      this._sendMessage(chatId, `❌ 未知的 workflow：<code>${wf}</code>\n可用：${Object.keys(workflows).join(', ')}`);
+      return;
+    }
+
+    try {
+      const executionQueue = require('../execution-queue');
+      executionQueue.writeQueue(this.projectRoot, [{ name: featureName, workflow: wf }], `Telegram /run ${new Date().toISOString().slice(0, 10)}`);
+      this._sendMessage(chatId, [
+        `✅ 已加入佇列`,
+        '',
+        `📋 ${featureName} → <code>${wf}</code>`,
+        '⏳ 等待 heartbeat 自動啟動...',
+      ].join('\n'));
+    } catch (err) {
+      this._sendMessage(chatId, `❌ 佇列寫入失敗：${err.message}`);
+    }
+  }
+
   /** /sessions — 列出工作階段 */
   _handleSessions(chatId) {
     const result = this.eventBus.handleControl(null, 'sessions');
@@ -288,6 +332,7 @@ class TelegramAdapter extends Adapter {
       '',
       '/status [id] — 查看工作流狀態',
       '/stop [id] — 停止 Loop',
+      '/run &lt;name&gt; [workflow] — 觸發工作流',
       '/sessions — 列出所有工作階段',
       '/help — 顯示此說明',
       '',
