@@ -85,7 +85,7 @@ plugins/overtone/   # Plugin 根目錄
 | PreToolUse(Write/Edit) | 元件檔案保護 — 阻擋直接編輯 agents/*.md、hooks.json、skills/*/SKILL.md、registry-data.json、plugin.json，強制使用 manage-component.js |
 | SubagentStop | 記錄結果 + 提示下一步 + 寫 state + emit timeline + featureName auto-sync + tasks.md 勾選 + 知識歸檔（PASS 時） |
 | PostToolUse | Instinct 觀察收集 + .md 措詞偵測（emoji-關鍵詞不匹配警告） |
-| TaskCompleted | Task 完成前品質門檻硬阻擋（test pass + lint clean） |
+| TaskCompleted | Task 完成事件處理 + hook:timing 計時（bun test 已移至 DEV agent 停止條件） |
 | PostToolUseFailure | Tool 執行失敗事件處理 |
 | Stop | Loop 迴圈 + 完成度 + Dashboard 通知 |
 | Notification | 音效通知（AskUserQuestion → Glass 提示音） |

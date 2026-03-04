@@ -44,7 +44,7 @@ Layer 2: Hook 守衛（底層）
 | **PostToolUse** | Instinct 觀察收集 + .md 措詞偵測 | ~193 |
 | **PostToolUseFailure** | Tool 執行失敗事件處理 | ~108 |
 | **Stop** | Loop 迴圈 + 完成度檢查 + Dashboard 通知 | ~186 |
-| **TaskCompleted** | Task 完成前品質門檻硬阻擋（test pass + lint clean） | ~88 |
+| **TaskCompleted** | Task 完成事件處理 + hook:timing 計時（bun test 已移至 DEV agent 停止條件） | ~45 |
 | **Notification** | 音效通知（AskUserQuestion、權限要求 → Glass 提示音） | ~30 |
 
 **總計：~2301 行**（包含 v0.28.37 SessionStart self-healing + 各版本累積增強）
