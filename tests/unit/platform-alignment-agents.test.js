@@ -53,11 +53,11 @@ describe('Feature 1a: disallowedTools 遷移', () => {
     test('所有唯讀 agent 的 disallowedTools 包含 Write、Edit、Task、NotebookEdit', () => {
       for (const agentName of readonlyAgents) {
         const fm = agentFrontmatters[agentName];
-        expect(fm.disallowedTools).toBeDefined();
-        expect(fm.disallowedTools).toContain('Write');
-        expect(fm.disallowedTools).toContain('Edit');
-        expect(fm.disallowedTools).toContain('Task');
-        expect(fm.disallowedTools).toContain('NotebookEdit');
+        expect(fm.disallowedTools, `${agentName}: disallowedTools should be defined`).toBeDefined();
+        expect(fm.disallowedTools, `${agentName}: should contain Write`).toContain('Write');
+        expect(fm.disallowedTools, `${agentName}: should contain Edit`).toContain('Edit');
+        expect(fm.disallowedTools, `${agentName}: should contain Task`).toContain('Task');
+        expect(fm.disallowedTools, `${agentName}: should contain NotebookEdit`).toContain('NotebookEdit');
       }
     });
   });
@@ -103,11 +103,11 @@ describe('Feature 1a: disallowedTools 遷移', () => {
     test('product-manager 和 designer 的 disallowedTools 包含 Task 和 NotebookEdit，不包含 Write 和 Edit', () => {
       for (const agentName of ['product-manager', 'designer']) {
         const fm = agentFrontmatters[agentName];
-        expect(fm.disallowedTools).toBeDefined();
-        expect(fm.disallowedTools).toContain('Task');
-        expect(fm.disallowedTools).toContain('NotebookEdit');
-        expect(fm.disallowedTools).not.toContain('Write');
-        expect(fm.disallowedTools).not.toContain('Edit');
+        expect(fm.disallowedTools, `${agentName}: disallowedTools should be defined`).toBeDefined();
+        expect(fm.disallowedTools, `${agentName}: should contain Task`).toContain('Task');
+        expect(fm.disallowedTools, `${agentName}: should contain NotebookEdit`).toContain('NotebookEdit');
+        expect(fm.disallowedTools, `${agentName}: should not contain Write`).not.toContain('Write');
+        expect(fm.disallowedTools, `${agentName}: should not contain Edit`).not.toContain('Edit');
       }
     });
   });
@@ -129,8 +129,8 @@ describe('Feature 1a: disallowedTools 遷移', () => {
     test('所有無限制 agent 不含 tools 白名單欄位和 disallowedTools 欄位', () => {
       for (const agentName of unrestrictedAgents) {
         const fm = agentFrontmatters[agentName];
-        expect(fm.tools).toBeUndefined();
-        expect(fm.disallowedTools).toBeUndefined();
+        expect(fm.tools, `${agentName}: should not have tools whitelist`).toBeUndefined();
+        expect(fm.disallowedTools, `${agentName}: should not have disallowedTools`).toBeUndefined();
       }
     });
   });
@@ -145,7 +145,7 @@ describe('Feature 1a: disallowedTools 遷移', () => {
     test('所有遷移 agent 不含 tools 白名單欄位（已遷移至 disallowedTools）', () => {
       for (const agentName of migratedAgents) {
         const fm = agentFrontmatters[agentName];
-        expect(fm.tools).toBeUndefined();
+        expect(fm.tools, `${agentName}: should not have tools whitelist after migration`).toBeUndefined();
       }
     });
   });
@@ -213,7 +213,7 @@ describe('Feature 1b: Agent skills 預載（agent frontmatter）', () => {
     test('designer 不含 skills 欄位', () => {
       for (const agentName of noSkillsAgents) {
         const fm = agentFrontmatters[agentName];
-        expect(fm.skills).toBeUndefined();
+        expect(fm.skills, `${agentName}: should not have skills`).toBeUndefined();
       }
     });
   });
@@ -223,9 +223,9 @@ describe('Feature 1b: Agent skills 預載（agent frontmatter）', () => {
     test('architect 和 planner 的 skills 包含 wording', () => {
       for (const agentName of ['architect', 'planner']) {
         const fm = agentFrontmatters[agentName];
-        expect(fm.skills).toBeDefined();
+        expect(fm.skills, `${agentName}: skills should be defined`).toBeDefined();
         const skills = Array.isArray(fm.skills) ? fm.skills : [fm.skills];
-        expect(skills).toContain('wording');
+        expect(skills, `${agentName}: should contain wording`).toContain('wording');
       }
     });
   });
@@ -275,7 +275,7 @@ describe('Feature S10: Agent Memory', () => {
     test('所有啟用 memory 的 agent frontmatter 包含 memory: local', () => {
       for (const agentName of memoryAgents) {
         const fm = agentFrontmatters[agentName];
-        expect(fm.memory).toBe('local');
+        expect(fm.memory, `${agentName}: memory should be local`).toBe('local');
       }
     });
   });
@@ -286,7 +286,7 @@ describe('Feature S10: Agent Memory', () => {
     test('所有未啟用 memory 的 agent 不含 memory 欄位', () => {
       for (const agentName of noMemoryAgents) {
         const fm = agentFrontmatters[agentName];
-        expect(fm.memory).toBeUndefined();
+        expect(fm.memory, `${agentName}: should not have memory`).toBeUndefined();
       }
     });
   });
