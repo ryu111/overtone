@@ -37,12 +37,18 @@ function computeSessionMetrics(sessionId) {
 
   const workflowType = currentState.workflowType;
 
-  // 工作流耗時：workflow:start → workflow:complete
+  // 工作流耗時：workflow:start → workflow:complete（同一次 workflow 的配對）
+  // 多次 workflow 的 session 中，latest() 可能拿到不同次的 start/complete，
+  // 所以必須確保 complete.ts >= start.ts 才是有效配對
   const wfStart = timeline.latest(sessionId, 'workflow:start');
   const wfComplete = timeline.latest(sessionId, 'workflow:complete');
   let duration = null;
   if (wfStart && wfComplete) {
-    duration = new Date(wfComplete.ts).getTime() - new Date(wfStart.ts).getTime();
+    const startMs = new Date(wfStart.ts).getTime();
+    const completeMs = new Date(wfComplete.ts).getTime();
+    if (completeMs >= startMs) {
+      duration = completeMs - startMs;
+    }
   }
 
   // 重試次數
@@ -62,10 +68,13 @@ function computeSessionMetrics(sessionId) {
 
   for (const complete of stageCompletes) {
     if (!complete.stage) continue;
-    // 找對應的 stage:start（同 stage key，最早的）
-    const start = stageStarts.find(s => s.stage === complete.stage);
+    // 找對應的 stage:start（同 stage key，最近且在 complete 之前的）
+    const completeMs = new Date(complete.ts).getTime();
+    const matchingStarts = stageStarts
+      .filter(s => s.stage === complete.stage && new Date(s.ts).getTime() <= completeMs);
+    const start = matchingStarts[matchingStarts.length - 1]; // 最近的配對
     if (start) {
-      stageDurations[complete.stage] = new Date(complete.ts).getTime() - new Date(start.ts).getTime();
+      stageDurations[complete.stage] = completeMs - new Date(start.ts).getTime();
     }
   }
 
@@ -369,7 +378,12 @@ function _readAll(projectRoot) {
 
   return content.split('\n')
     .map(line => { try { return JSON.parse(line); } catch { return null; } })
-    .filter(Boolean);
+    .filter(Boolean)
+    .map(r => {
+      // 修正歷史資料：負數 duration 是 start/complete 配對錯誤，視為 null
+      if (r.duration != null && r.duration < 0) r.duration = null;
+      return r;
+    });
 }
 
 /**

@@ -155,6 +155,37 @@ describe('computeSessionMetrics', () => {
     expect(metrics).not.toBeNull();
     expect(metrics.duration).toBeNull();
   });
+
+  test('多次 workflow 的 session 中，start 比最新 complete 晚時 duration 為 null', () => {
+    // 模擬：第 1 次 workflow 完成後，第 2 次 workflow 已 start 但未 complete
+    const session = makeSession('multi-wf');
+    const ws = {
+      sessionId: session.id,
+      workflowType: 'quick',
+      createdAt: new Date().toISOString(),
+      currentStage: 'DEV',
+      stages: { DEV: { status: 'active', result: null } },
+      activeAgents: {},
+      failCount: 0,
+      rejectCount: 0,
+    };
+    writeFileSync(join(session.dir, 'workflow.json'), JSON.stringify(ws), 'utf8');
+
+    const baseTime = Date.now();
+    const events = [
+      { ts: new Date(baseTime - 60000).toISOString(), type: 'workflow:start', category: 'workflow', label: '第 1 次' },
+      { ts: new Date(baseTime - 30000).toISOString(), type: 'workflow:complete', category: 'workflow', label: '第 1 次完成' },
+      { ts: new Date(baseTime - 10000).toISOString(), type: 'workflow:start', category: 'workflow', label: '第 2 次' },
+      // 第 2 次沒有 workflow:complete
+    ];
+    writeFileSync(join(session.dir, 'timeline.jsonl'), events.map(e => JSON.stringify(e)).join('\n') + '\n', 'utf8');
+
+    const metrics = baselineTracker.computeSessionMetrics(session.id);
+    // latest('workflow:start') = 第 2 次 (baseTime-10000)
+    // latest('workflow:complete') = 第 1 次 (baseTime-30000)
+    // complete < start → duration 應為 null
+    expect(metrics.duration).toBeNull();
+  });
 });
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -208,6 +239,27 @@ describe('saveBaseline + getBaseline', () => {
     expect(baseline.avgDuration).toBe(20000); // (10000+20000+30000)/3
     expect(baseline.avgRetries).toBe(1); // (0+2+1)/3 = 1
     expect(baseline.avgPass1Rate).toBe(0.8); // (1.0+0.6+0.8)/3 = 0.8
+  });
+
+  test('getBaseline 將歷史負數 duration 視為 null（不計入平均）', () => {
+    const blPath = paths.global.baselines(TEST_PROJECT_ROOT);
+    if (existsSync(blPath)) rmSync(blPath);
+
+    const records = [
+      { ts: '2026-03-01T00:00:00Z', sessionId: 'neg1', workflowType: 'quick', duration: -60000, retryCount: 0, pass1Rate: 0.8, stageCount: 5 },
+      { ts: '2026-03-02T00:00:00Z', sessionId: 'neg2', workflowType: 'quick', duration: 20000, retryCount: 0, pass1Rate: 1.0, stageCount: 5 },
+      { ts: '2026-03-03T00:00:00Z', sessionId: 'neg3', workflowType: 'quick', duration: -30000, retryCount: 1, pass1Rate: 0.6, stageCount: 5 },
+    ];
+    mkdirSync(require('path').dirname(blPath), { recursive: true });
+    writeFileSync(blPath, records.map(r => JSON.stringify(r)).join('\n') + '\n', 'utf8');
+
+    const baseline = baselineTracker.getBaseline(TEST_PROJECT_ROOT, 'quick');
+    expect(baseline.sessionCount).toBe(3);
+    // 負數 duration 被過濾為 null，只有 20000 一筆有效
+    expect(baseline.avgDuration).toBe(20000);
+    // retryCount 和 pass1Rate 仍正常計算（不受 duration 影響）
+    expect(baseline.avgRetries).toBeCloseTo(0.33, 1);
+    expect(baseline.avgPass1Rate).toBe(0.8);
   });
 
   test('getBaseline 空 store 回傳預設值', () => {
