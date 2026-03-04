@@ -1,13 +1,4 @@
 ---
-## 2026-03-04 | code-reviewer:REVIEW Findings
-審查了 `plugins/overtone/scripts/lib/state.js` 的 enforceInvariants 規則 4 和 sanitize 規則 3 新增邏輯，以及 `tests/unit/state-invariants.test.js`（5 個測試）和 `tests/unit/state-sanitize.test.js`（4 個測試）。
-
-檢查面向：邏輯正確性、規則執行順序（規則 2 與規則 4 的重疊安全性）、stageBase 比對一致性、error handling 完整性、getNextStageHint 連動正確性、測試覆蓋度、安全性。
-
-沒有發現高信心問題。所有 35 個測試（含新增 9 個）通過。
-Keywords: plugins, overtone, scripts, state, enforceinvariants, sanitize, tests, unit, invariants, test
-
----
 ## 2026-03-04 | tester:TEST Findings
 測試結果摘要：**35 passed, 0 failed**（目標測試檔案）；**3113 passed, 0 failed**（全量）
 
@@ -684,4 +675,37 @@ Keywords: claude, skill, feature, knowledge, domain, spec, chars, scenario, refe
 
 ---
 Keywords: iteration, single, source, truth, claude, hooks, json, cross, reference, agent
+
+---
+## 2026-03-04 | doc-updater:DOCS Findings
+所有受影響的文件已檢查並更新一致：
+
+**變更統計：**
+- 測試通過：3344 → 3360（+16 tests）
+- 測試檔案：150 → 151（+1 file）
+- 版本號：plugin.json v0.28.49（已正確）
+- Telegram 命令：新增 `/run` 命令（共 6 個）
+
+**更新的文件：**
+
+1. **docs/status.md** — 版本狀態與核心指標同步
+   - 版本說明補充：Telegram /run 命令 + PM 佇列自動寫入 + CLAUDECODE env filter
+   - 測試通過：3344 → 3360 pass，150 → 151 files
+   - 核心指標表格新增：Telegram 命令數量（6 個）
+   - 近期變更第 1 項完整補齊：Telegram、PM 佇列、env filter、測試增量
+
+2. **README.md** — 核心指標與技術資訊更新
+   - 核心指標更新：3344 → 3360 pass，150 → 151 tests
+   - Plugin 版本：0.28.48 → 0.28.49
+   - 測試覆蓋：3238 → 3360 pass（140 → 151 files）
+   - Command 分類修正：14 stage shortcut + 7 workflow pipeline + 7 utility
+
+3. **CHANGELOG.md** — 版本日誌完整記錄
+   - v0.28.49 詳細記錄四項變更：
+     - Hook 薄殼化重構（9 個 hook，~250 行 → ~29 行）
+     - Telegram /run 命令新增（6 個命令：/start、/status、/stop、/run、/sessions、/help）
+     - PM 佇列自動寫入（agent-stop-handler.js _parseQueueTable）
+     - CLAUDECODE env filter（session-spawner.js 防嵌套偵測）
+   - 測試統計更新：+16 tests（3344 → 3360），+1 file（150 → 151）
+Keywords: tests, file, plugin, json, telegram, docs, status, claudecode, filter, pass
 
