@@ -1,29 +1,4 @@
 ---
-## 2026-03-03 | doc-updater:DOCS Findings
-已更新的文件清單及變更摘要：
-
-1. **README.md**
-   - 更新測試覆蓋數：3030 pass → 3037 pass（129 個測試檔）
-
-2. **CHANGELOG.md**
-   - 新增 [0.28.34] 版本條目
-   - 詳細記錄 4 大修復點：gradedStages 擴展、失敗原因記錄、失敗原因展示、全域觀察注入
-   - 測試統計：105 + 88 新測試 → 3037 pass / 129 files
-
-3. **docs/status.md**
-   - 版本狀態表：3030 → 3037 pass，標記「Level 2→1 整合修復」
-   - 近期變更（最近 3 筆）：新增 [0.28.34] 條目為首條，移除最舊條目 [0.28.31]
-   - 版本描述加入新功能摘要
-
-4. **docs/spec/overtone.md**
-   - 主規格版本號：v0.28.33 → v0.28.34
-
-5. **docs/spec/overtone-子系統.md**
-   - 自動同步：gradedStages 定義從 3 個更新至 7 個
-   - 新增 PLAN/ARCH/DEBUG/RETRO 的評分維度說明
-Keywords: readme, pass, changelog, gradedstages, files, docs, status, level, spec, overtone
-
----
 ## 2026-03-03 | planner:PLAN Findings
 **需求分解**：
 
@@ -735,4 +710,9 @@ Keywords: registry, quick, skill, workflow, claude
 
 然而 `docs/spec/` 目錄下有兩個規格文件仍保有舊定義，屬於跨 commit 的累積遺漏，單一階段 reviewer 難以全面掃描。
 Keywords: registry, quick, stages, test, parallelgroups, pass, fail, claude, readme, skill
+
+---
+## 2026-03-04 | developer:DEV Context
+移除 `on-task-completed.js` 中的 `bun test` 執行邏輯。問題根因：全量 bun test 需要 58s，超過 hook 設定的 45s timeout，導致 DEV task 完成時 100% 假失敗，且每次都浪費 45s 等待。DEV agent 自身停止條件已包含測試通過，hook 執行 bun test 是冗餘且失效的第二道防線。
+Keywords: task, completed, test, hook, timeout, agent
 
