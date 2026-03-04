@@ -1,6 +1,6 @@
 # Overtone 現況
 
-> 最後更新：2026-03-04 | Plugin 版本：0.28.44（claude-dev knowledge domain — hooks API + agent API）
+> 最後更新：2026-03-04 | Plugin 版本：0.28.45（claude-developer agent — Plugin 元件開發專家）
 
 ## 版本狀態
 
@@ -13,7 +13,7 @@
 
 | 指標 | 數值 |
 |------|------|
-| Agent 數量 | 17（含 grader） |
+| Agent 數量 | 18（含 grader） |
 | Stage 數量 | 16 |
 | Workflow 模板 | 18 |
 | 測試通過 | 3141 pass / 0 fail（137 個測試檔） |
@@ -26,6 +26,7 @@
 
 ## 近期變更（最近 3 筆）
 
+- **[0.28.45] 2026-03-04**：claude-developer agent — (1) 新增第 18 個 agent（Plugin 元件開發專家）；(2) 不對應 workflow stage，直接委派；(3) skills: claude-dev + commit-convention + wording；(4) 更新 registry-data.json（agentModels + agentMemory）+ plugin.json → 18 agents
 - **[0.28.44] 2026-03-04**：claude-dev knowledge domain — (1) 新增第 15 個 knowledge domain skill（hooks-api.md + agent-api.md）；(2) developer + architect frontmatter 加入 claude-dev skill；(3) knowledge-gap-detector.js 新增 claude-dev domain（16 關鍵詞）→ 23 skills / 15 knowledge domains
 - **[0.28.43] 2026-03-04**：全 Skill 知識補全 — (1) 新增 craft knowledge domain（clean code + SOLID + refactoring + design patterns + FP，5 references）；(2) 全 22 個 Skill 補齊 references/examples（新增 15 個 .md 檔案）；(3) code-review 回饋框架合併至 code-reviewer agent prompt；(4) architecture design-patterns.md 更名為 architectural-patterns.md 消歧義；(5) developer、code-reviewer、architect 預載 craft skill → 3141 pass / 137 files
 - **[0.28.42] 2026-03-04**：測試套件瘦身 + Hook 優化 — (16) data-auto-digest SessionEnd 自動摘要；(17) quick workflow 移除 TEST stage；(18) TaskCompleted hook 移除 bun test（消除 45s 假等待）；(19) test-suite-slimdown 刪除低價值測試（3235→3114，-121 tests）；(20) test-growth-monitor health-check 第 12 項偵測（20% 增長率閾值）→ 3127 pass / 137 files
@@ -65,7 +66,7 @@ Phase 3 目標：Layer 2 完整 OS 能力，達到 Phase 4 Ready。
 | 主規格 | docs/spec/overtone.md | 設計索引 |
 | 架構 | docs/spec/overtone-架構.md | 三層架構、Hook |
 | 工作流 | docs/spec/overtone-工作流.md | 18 個 workflow 模板 |
-| Agents | docs/spec/overtone-agents.md | 17 個 agent（含 grader） |
+| Agents | docs/spec/overtone-agents.md | 18 個 agent（含 grader + claude-developer） |
 | 並行 | docs/spec/overtone-並行.md | Loop、Mul-Agent、D1-D4 |
 | 子系統 | docs/spec/overtone-子系統.md | Specs、Dashboard |
 | 驗證品質 | docs/spec/overtone-驗證品質.md | 三信號、pass@k |

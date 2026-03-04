@@ -1,12 +1,12 @@
 # Overtone Agent 系統
 
 > 本文件是 [Overtone 規格文件](overtone.md) 的子文件。
-> 主題：17 個 agent 職責、Handoff 協定、BDD 整合
+> 主題：18 個 agent 職責、Handoff 協定、BDD 整合
 > 版本：v0.17.7
 
 ---
 
-## Agent 系統（17 個）
+## Agent 系統（18 個）
 
 ### Agent 清單
 
@@ -29,19 +29,21 @@
 | 15 | retrospective | sonnet | purple | 迭代回顧 | bypassPermissions |
 | 16 | doc-updater | haiku | purple | 文件 | bypassPermissions |
 | 17 | grader | haiku | purple | 品質評分（可選，非 workflow stage） | bypassPermissions |
+| 18 | claude-developer | sonnet | #7B68EE | Plugin 元件開發（可選，非 workflow stage） | bypassPermissions |
 
 > **grader** 非 workflow 必要階段，由 Main Agent 在 SubagentStop 後視需要委派。
+> **claude-developer** 非 workflow 必要階段，用於建立/修改 Claude Code plugin 元件（agents、hooks、skills、commands）。
 
 ### Model 分級
 
 - **Opus**（3 個決策型）：product-manager、code-reviewer、security-reviewer
 - **Opusplan**（1 個混合型）：planner
-- **Sonnet**（11 個執行型）：architect、designer、developer、debugger、database-reviewer、tester、qa、e2e-runner、build-error-resolver、refactor-cleaner、retrospective
+- **Sonnet**（12 個執行型）：architect、designer、developer、claude-developer、debugger、database-reviewer、tester、qa、e2e-runner、build-error-resolver、refactor-cleaner、retrospective
 - **Haiku**（2 個輕量型）：doc-updater、grader
 
 ### Agent 記憶配置（memory: local）
 
-8 個 agent 啟用跨 session 個體學習記憶（v0.28.35）：
+9 個 agent 啟用跨 session 個體學習記憶（v0.28.35）：
 
 | Agent | Model | 用途 | 記憶焦點 |
 |-------|:-----:|------|---------|
@@ -51,6 +53,7 @@
 | planner | opusplan | 規劃 | 任務分解方式、優先順序判斷 |
 | architect | sonnet | 架構 | 系統設計決策、技術選型 |
 | developer | sonnet | 開發 | 實作模式、代碼風格、常見坑 |
+| claude-developer | sonnet | Plugin 元件開發 | 元件建立模式、hooks.json 格式、元件閉環策略 |
 | tester | sonnet | 測試 | 測試場景識別、邊界情況 |
 | debugger | sonnet | 診斷 | 根因分析模式、常見問題症狀 |
 
@@ -106,7 +109,7 @@
 
 ### 擴充機制
 
-V1 固定 17 個 agent（含 grader）。V2 再考慮使用者自定義擴充。
+V1 固定 18 個 agent（含 grader + claude-developer）。V2 再考慮使用者自定義擴充。
 
 ---
 

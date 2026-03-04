@@ -113,7 +113,8 @@
     "e2e-runner": "sonnet",
     "build-error-resolver": "sonnet",
     "refactor-cleaner": "sonnet",
-    "doc-updater": "haiku"
+    "doc-updater": "haiku",
+    "claude-developer": "sonnet"
   },
   "effortLevels": {
     "opus": "high",
@@ -129,6 +130,7 @@
     "tester": "local",
     "debugger": "local",
     "planner": "local",
-    "architect": "local"
+    "architect": "local",
+    "claude-developer": "local"
   }
 }

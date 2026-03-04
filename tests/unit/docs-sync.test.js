@@ -139,9 +139,9 @@ describe('1. docs/status.md 核心指標數字', () => {
   const metrics = extractStatusMetrics(statusContent);
   const actual = getActualCounts();
 
-  test('Agent 數量：status.md 與 agents/ 目錄一致（應為 17）', () => {
+  test('Agent 數量：status.md 與 agents/ 目錄一致（應為 18）', () => {
     expect(metrics['Agent 數量']).toBe(actual.agentCount);
-    expect(actual.agentCount).toBe(17);
+    expect(actual.agentCount).toBe(18);
   });
 
   test('Stage 數量：status.md 與 registry-data.json stages 一致（應為 16）', () => {
@@ -178,7 +178,7 @@ describe('2. CLAUDE.md 專案指令數量', () => {
   const claudeContent = fs.readFileSync(CLAUDE_MD, 'utf8');
   const actual = getActualCounts();
 
-  test('CLAUDE.md 提到 agent 數量（17）與實際一致', () => {
+  test('CLAUDE.md 提到 agent 數量（18）與實際一致', () => {
     // 比對「17 個 agent」或「agents/ # 17 個 agent .md」等格式
     const count1 = extractNumber(claudeContent, /(\d+)\s+個\s*agent/);
     const count2 = extractNumber(claudeContent, /agents\/\s*#\s*(\d+)\s+個/);

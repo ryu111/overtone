@@ -32,6 +32,7 @@ const HOOKS_SCRIPTS = path.join(PLUGIN_ROOT, 'hooks', 'scripts');
 const PLUGIN_JSON = path.join(PLUGIN_ROOT, '.claude-plugin', 'plugin.json');
 const HOOKS_JSON = path.join(PLUGIN_ROOT, 'hooks', 'hooks.json');
 const SKILLS_DIR = path.join(PLUGIN_ROOT, 'skills');
+const AGENTS_DIR = path.join(PLUGIN_ROOT, 'agents');
 const PROJECT_ROOT = findProjectRoot();
 const DOCS_DIR = path.join(PROJECT_ROOT, 'docs');
 const TESTS_DIR = path.join(PROJECT_ROOT, 'tests');
@@ -375,7 +376,11 @@ function checkDocCodeDrift() {
   const { stages, workflows, timelineEvents } = require('./lib/registry');
 
   // 計算程式碼真值
-  const agentCount = Object.keys(stages).length;     // 16 個 stage（各對應 1 agent）
+  // agentCount 用 agents/ 目錄的 .md 檔案數（含非 workflow stage 的 agent，如 grader、claude-developer）
+  let agentCount = 0;
+  try {
+    agentCount = readdirSync(AGENTS_DIR).filter((f) => f.endsWith('.md')).length;
+  } catch { /* ignore */ }
   const workflowCount = Object.keys(workflows).length;
   const eventCount = Object.keys(timelineEvents).length;
   const stageCount = Object.keys(stages).length;

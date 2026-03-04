@@ -67,25 +67,30 @@ describe('1. Registry Stages ↔ Agent 檔案交叉驗證', () => {
     }
   });
 
-  test('agentModels 中沒有多餘的 agent（不在 stages 的 agent，grader 除外）', () => {
+  test('agentModels 中沒有多餘的 agent（不在 stages 的 agent，非 workflow stage agent 除外）', () => {
+    // 非 workflow stage agent：grader（品質評分）、claude-developer（Plugin 元件開發）
+    const NON_WORKFLOW_AGENTS = new Set(['grader', 'claude-developer']);
     const stageAgents = new Set(Object.values(stages).map(s => s.agent));
     const extraAgents = Object.keys(agentModels).filter(
-      a => !stageAgents.has(a) && a !== 'grader'
+      a => !stageAgents.has(a) && !NON_WORKFLOW_AGENTS.has(a)
     );
     expect(extraAgents).toEqual([]);
   });
 
-  test('agents/*.md 中每個非 grader 的 agent 都對應到某個 stage', () => {
+  test('agents/*.md 中每個非 workflow-stage agent 都對應到 stages 或豁免清單', () => {
+    // 非 workflow stage agent：grader（品質評分）、claude-developer（Plugin 元件開發）
+    const NON_WORKFLOW_AGENTS = new Set(['grader', 'claude-developer']);
     const stageAgents = new Set(Object.values(stages).map(s => s.agent));
-    const nonGraderFiles = readdirSync(AGENTS_DIR)
+    const allAgentFiles = readdirSync(AGENTS_DIR)
       .filter(f => f.endsWith('.md'))
-      .map(f => f.replace(/\.md$/, ''))
-      .filter(name => name !== 'grader');
+      .map(f => f.replace(/\.md$/, ''));
 
-    for (const agentFileName of nonGraderFiles) {
+    for (const agentFileName of allAgentFiles) {
+      const hasStage = stageAgents.has(agentFileName);
+      const isNonWorkflow = NON_WORKFLOW_AGENTS.has(agentFileName);
       expect(
-        stageAgents.has(agentFileName),
-        `agents/${agentFileName}.md 沒有對應的 stage 定義`
+        hasStage || isNonWorkflow,
+        `agents/${agentFileName}.md 沒有對應的 stage 定義，且不在非 workflow stage 豁免清單中`
       ).toBe(true);
     }
   });
