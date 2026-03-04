@@ -1,6 +1,6 @@
 # Overtone 現況
 
-> 最後更新：2026-03-04 | Plugin 版本：0.28.37（Hook Contract 自我修復）
+> 最後更新：2026-03-04 | Plugin 版本：0.28.38（主動偵測）
 
 ## 版本狀態
 
@@ -16,8 +16,8 @@
 | Agent 數量 | 17（含 grader） |
 | Stage 數量 | 16 |
 | Workflow 模板 | 18 |
-| 測試通過 | 3083 pass / 0 fail（132 個測試檔） |
-| 測試檔案 | 132 個 |
+| 測試通過 | 3104 pass / 0 fail（133 個測試檔） |
+| 測試檔案 | 133 個 |
 | Hook 數量 | 11 個 |
 | Skill 數量 | 21（13 knowledge domain + orchestrator + pm + specs + 5 utility-with-refs） |
 | Knowledge Domain 數 | 13（testing、workflow-core、security-kb、database、dead-code、commit-convention、code-review、wording、debugging、architecture、build-system、os-control、autonomous-control） |
@@ -26,7 +26,8 @@
 
 ## 近期變更（最近 3 筆）
 
-- **[0.28.37] 2026-03-04**：Hook Contract 自我修復 — (1) state.sanitize() 新函式在 SessionStart 自動清理孤兒 activeAgent + status 不一致；(2) 與 enforceInvariants() 互補（sanitize 做啟動一次性清理，enforceInvariants 做每次 atomic write 守衛）；(3) 8 個 hook 合約整合測試 + 11 個 sanitize 單元測試 + 3 個 session-start 整合測試 → 3083 pass / 132 files（+22 tests）
+- **[0.28.38] 2026-03-04**：主動偵測 — health-check 新增 3 項偵測：(1) component-chain 元件依賴鏈驗證；(2) data-quality JSONL 格式審計；(3) quality-trends 失敗模式/分數趨勢/低分警告 → 3104 pass / 133 files（+21 tests）
+- **[0.28.37] 2026-03-04**：Hook Contract 自我修復 — (1) state.sanitize() 在 SessionStart 清理孤兒 activeAgent + status 不一致；(2) 8 個 hook 合約整合測試 + 11 個 sanitize 單元測試 → 3083 pass / 132 files
 - **[0.28.36] 2026-03-04**：核心簡化與不變量守衛 — (1) A 組：並行提示修復（Stop/PreCompact hook 改用 getNextStageHint()）；(2) B 組：信號源簡化（移除 active-agent.json，statusline.js 只讀 workflow.json，PreCompact 壓縮後清空 activeAgents）；(3) C 組：不變量守衛（enforceInvariants() 保證孤兒清除/status 逆轉修正/parallelDone 截斷，移除 3 處 TTL workaround）；(4) 狀態一致性保證 → 3061 pass / 129 files
 - **[0.28.35] 2026-03-04**：Level 2 → Level 1 Agent 個體學習升級 — (1) Agent Memory 從 3 個 opus 擴大至 8 個跨層級 agent；(2) Score Context 個人化；(3) Grader 強制化；(4) 配置層次升級，測試無新增 → 3047 pass / 129 files
 

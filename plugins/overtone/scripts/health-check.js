@@ -913,9 +913,10 @@ function checkComponentChain(pluginRootOverride) {
  *
  * @returns {Finding[]}
  */
-function checkDataQuality() {
+function checkDataQuality(globalDirOverride) {
   const { existsSync, readdirSync: readdir } = require('fs');
   const { GLOBAL_DIR } = require('./lib/paths');
+  const targetDir = globalDirOverride || GLOBAL_DIR;
 
   // 各 JSONL 類型的驗證規則
   const fileRules = {
@@ -965,8 +966,8 @@ function checkDataQuality() {
 
   const findings = [];
 
-  // 確認 GLOBAL_DIR 存在
-  if (!existsSync(GLOBAL_DIR)) {
+  // 確認目錄存在
+  if (!existsSync(targetDir)) {
     return [{
       check: 'data-quality',
       severity: 'info',
@@ -978,9 +979,9 @@ function checkDataQuality() {
   // 列出所有專案 hash 子目錄
   let projectDirs = [];
   try {
-    projectDirs = readdir(GLOBAL_DIR, { withFileTypes: true })
+    projectDirs = readdir(targetDir, { withFileTypes: true })
       .filter((e) => e.isDirectory())
-      .map((e) => path.join(GLOBAL_DIR, e.name));
+      .map((e) => path.join(targetDir, e.name));
   } catch {
     return [];
   }

@@ -1,13 +1,4 @@
 ---
-## 2026-03-03 | retrospective:RETRO Findings
-**回顧摘要**：
-
-整體實作品質良好。`buildAgentDisplay` 主信號分支的修復邏輯正確，optional chaining 防護完整（`workflow?.stages || {}`），manage-component.js 的 stderr 輸出方式合適。測試套件覆蓋了並行場景的核心路徑，2759 pass 全通過。
-
-然而回顧中發現一個測試隔離問題，導致一個真實 bug 未被偵測到：
-Keywords: buildagentdisplay, optional, chaining, workflow, stages, manage, component, stderr, pass
-
----
 ## 2026-03-03 | product-manager:PM Findings
 **目標用戶**：Overtone agent 群（developer、architect、tester、debugger、qa -- 已在 P3.0 加入 `skills: [os-control]` frontmatter），透過 Bash tool 呼叫 `scripts/os/*.js` 腳本。
 
@@ -761,4 +752,27 @@ Keywords: sanitize, sessionstart, enforceinvariants, review, originalstatus, sta
 - **測試全過**：3083 pass / 0 fail / 132 個測試檔
 - **文檔同步**：CHANGELOG、status.md、plugin.json、3 個 spec 檔案版本號更新至 0.28.37
 Keywords: state, sanitize, sessionstart, activeagent, status, hook, contract, test, session, start
+
+---
+## 2026-03-04 | developer:DEV Findings
+**F1 `checkComponentChain`（check #9）**
+- 從 `registry.stages` 取所有 stage-agent 對，逐一檢查 `agents/{agent}.md` 是否存在
+- 若 agent .md 存在，進一步用 gray-matter 解析 frontmatter 的 `skills` 陣列，檢查每個 `skills/{name}/SKILL.md` 是否存在
+- agent .md 缺失 → `error`；skill 缺失 → `warning`
+- 接受 `pluginRootOverride` 參數供測試使用
+
+**F2 `checkDataQuality`（check #10）**
+- 直接 require `paths.js` 取 `GLOBAL_DIR`（`~/.overtone/global/`）
+- 掃描所有專案 hash 子目錄的 4 種 JSONL 檔案
+- 損壞比例 > 10% → `warning`；有損壞但 <= 10% → `info`
+- 目錄不存在或為空 → `info`（非錯誤）
+
+**F3 `checkQualityTrends`（check #11）**
+- 使用 `process.env.CLAUDE_PROJECT_ROOT || process.cwd()` 作為 projectRoot
+- 整合三個偵測：`getFailurePatterns`（stage 失敗 >= 3）、`computeScoreTrend`（degrading）、`getScoreSummary`（avgOverall < 3.0 且 count >= 3）
+- 全部 finding 為 `warning` severity
+- 每個偵測各自 try-catch，單項失敗不影響其他
+
+**測試設計決策**：由於 `checkComponentChain` 依賴真實的 `registry.stages`（無 mock 機制），F1 的部分場景（agent 缺失）改為格式驗證而非行為驗證。F3 的「不存在 projectRoot」場景驗證回傳空陣列（無學習資料時正確行為）。
+Keywords: checkcomponentchain, check, registry, stages, stage, agent, agents, gray, matter, frontmatter
 

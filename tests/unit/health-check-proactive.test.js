@@ -148,65 +148,89 @@ describe('checkComponentChain', () => {
 // ══════════════════════════════════════════════════════════════════
 
 describe('checkDataQuality', () => {
-  // Scenario F2-1: 正常資料（全部合法）→ 無 warning finding
-  test('Scenario F2-1: 回傳陣列且 check 欄位正確', () => {
-    const findings = checkDataQuality();
-    expect(Array.isArray(findings)).toBe(true);
-    for (const f of findings) {
-      expect(f.check).toBe('data-quality');
-      expect(typeof f.severity).toBe('string');
-      expect(typeof f.file).toBe('string');
-      expect(typeof f.message).toBe('string');
-    }
+  let tmpGlobalDir;
+
+  beforeEach(() => {
+    tmpGlobalDir = path.join(os.tmpdir(), `ot-hc-dq-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`);
   });
 
-  // Scenario F2-2: 損壞 JSON 行（比例 > 10%）→ warning finding
-  test('Scenario F2-2: 損壞 JSON 行超過 10% 時產生 warning', () => {
-    // 使用真實 GLOBAL_DIR，若有實際資料則驗證格式
-    // 若無資料，驗證 info finding 的格式
-    const findings = checkDataQuality();
-    for (const f of findings) {
-      if (f.severity === 'warning') {
-        // warning finding 的 message 應說明損壞比例
-        expect(f.message).toMatch(/損壞/);
-        expect(typeof f.detail).toBe('string');
-        expect(f.detail).toMatch(/損壞行數/);
-      }
-    }
+  afterEach(() => {
+    rmSync(tmpGlobalDir, { recursive: true, force: true });
   });
 
-  // Scenario F2-3: 欄位缺失 → 計入損壞計數
-  test('Scenario F2-3: severity 只能是 warning 或 info', () => {
-    const findings = checkDataQuality();
-    const validSeverities = new Set(['warning', 'info']);
-    for (const f of findings) {
-      expect(validSeverities.has(f.severity)).toBe(true);
-    }
+  // Scenario F2-1: 目錄不存在 → info finding
+  test('Scenario F2-1: 目錄不存在時回傳 info finding', () => {
+    const findings = checkDataQuality(tmpGlobalDir);
+    expect(findings.length).toBe(1);
+    expect(findings[0].check).toBe('data-quality');
+    expect(findings[0].severity).toBe('info');
+    expect(findings[0].message).toContain('不存在');
   });
 
-  // Scenario F2-4: 全域目錄為空或不存在 → info finding
-  test('Scenario F2-4: 全域目錄不存在或空時回傳 info finding 或空陣列', () => {
-    const findings = checkDataQuality();
-    // 結果可能是空陣列（有正常資料）或含 info finding（無資料目錄）
-    expect(Array.isArray(findings)).toBe(true);
-    const infoFindings = findings.filter((f) => f.severity === 'info');
-    // info finding 應有 message
-    for (const f of infoFindings) {
-      expect(typeof f.message).toBe('string');
-      expect(f.message.length).toBeGreaterThan(0);
-    }
+  // Scenario F2-2: 正常資料 → 無 warning
+  test('Scenario F2-2: 正常 JSONL 資料不產生 warning', () => {
+    const projDir = path.join(tmpGlobalDir, 'abcd1234');
+    mkdirSync(projDir, { recursive: true });
+    const validScore = JSON.stringify({ ts: '2026-01-01', stage: 'DEV', agent: 'developer', scores: { clarity: 4, completeness: 4, actionability: 4 }, overall: 4.0 });
+    writeFileSync(path.join(projDir, 'scores.jsonl'), validScore + '\n');
+
+    const findings = checkDataQuality(tmpGlobalDir);
+    const warnings = findings.filter((f) => f.severity === 'warning');
+    expect(warnings.length).toBe(0);
   });
 
-  // Scenario F2-5: finding 包含必要欄位
-  test('Scenario F2-5: 每個 finding 包含必要欄位', () => {
-    const findings = checkDataQuality();
-    for (const f of findings) {
-      expect(typeof f.check).toBe('string');
-      expect(f.check).toBe('data-quality');
-      expect(typeof f.severity).toBe('string');
-      expect(typeof f.file).toBe('string');
-      expect(typeof f.message).toBe('string');
-    }
+  // Scenario F2-3: 損壞 JSON 行超過 10% → warning
+  test('Scenario F2-3: 損壞比例超過 10% 時產生 warning', () => {
+    const projDir = path.join(tmpGlobalDir, 'abcd1234');
+    mkdirSync(projDir, { recursive: true });
+    const validLine = JSON.stringify({ ts: '2026-01-01', stage: 'DEV', agent: 'developer', scores: { clarity: 4, completeness: 4, actionability: 4 }, overall: 4.0 });
+    // 2 行正常，8 行損壞 = 80% 損壞
+    const lines = [validLine, validLine, '{bad', '{bad', '{bad', '{bad', '{bad', '{bad', '{bad', '{bad'];
+    writeFileSync(path.join(projDir, 'scores.jsonl'), lines.join('\n') + '\n');
+
+    const findings = checkDataQuality(tmpGlobalDir);
+    const warnings = findings.filter((f) => f.severity === 'warning');
+    expect(warnings.length).toBeGreaterThanOrEqual(1);
+    expect(warnings[0].message).toContain('損壞');
+  });
+
+  // Scenario F2-4: 欄位缺失 → 計入損壞
+  test('Scenario F2-4: 缺必要欄位的記錄計入損壞', () => {
+    const projDir = path.join(tmpGlobalDir, 'abcd1234');
+    mkdirSync(projDir, { recursive: true });
+    // 1 行正常，9 行缺 stage 欄位 → 90% 損壞
+    const validLine = JSON.stringify({ ts: '2026-01-01', stage: 'DEV', agent: 'developer', verdict: 'fail' });
+    const invalidLine = JSON.stringify({ ts: '2026-01-01', agent: 'developer', verdict: 'fail' }); // 缺 stage
+    const lines = [validLine, ...Array(9).fill(invalidLine)];
+    writeFileSync(path.join(projDir, 'failures.jsonl'), lines.join('\n') + '\n');
+
+    const findings = checkDataQuality(tmpGlobalDir);
+    const warnings = findings.filter((f) => f.severity === 'warning');
+    expect(warnings.length).toBeGreaterThanOrEqual(1);
+  });
+
+  // Scenario F2-5: 空子目錄 → info
+  test('Scenario F2-5: 空子目錄回傳 info finding', () => {
+    mkdirSync(tmpGlobalDir, { recursive: true });
+    const findings = checkDataQuality(tmpGlobalDir);
+    expect(findings.length).toBe(1);
+    expect(findings[0].severity).toBe('info');
+    expect(findings[0].message).toContain('為空');
+  });
+
+  // Scenario F2-6: observation confidence 超出範圍 → 計入損壞
+  test('Scenario F2-6: confidence 超出 0-1 範圍計入損壞', () => {
+    const projDir = path.join(tmpGlobalDir, 'abcd1234');
+    mkdirSync(projDir, { recursive: true });
+    const validObs = JSON.stringify({ id: 'obs1', ts: '2026-01-01', type: 'test', confidence: 0.5 });
+    const invalidObs = JSON.stringify({ id: 'obs2', ts: '2026-01-01', type: 'test', confidence: 1.5 }); // 超出
+    // 1 正常 + 9 超出 → 90% 損壞
+    const lines = [validObs, ...Array(9).fill(invalidObs)];
+    writeFileSync(path.join(projDir, 'observations.jsonl'), lines.join('\n') + '\n');
+
+    const findings = checkDataQuality(tmpGlobalDir);
+    const warnings = findings.filter((f) => f.severity === 'warning');
+    expect(warnings.length).toBeGreaterThanOrEqual(1);
   });
 });
 
