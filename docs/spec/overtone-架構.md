@@ -2,7 +2,7 @@
 
 > 本文件是 [Overtone 規格文件](overtone.md) 的子文件。
 > 主題：三層架構、Hook 系統、Context 管理、State 設計
-> 版本：v0.28.36
+> 版本：v0.28.37
 
 ---
 
@@ -35,7 +35,7 @@ Layer 2: Hook 守衛（底層）
 
 | 事件 | 職責 | 行數預估 |
 |------|------|:-------:|
-| **SessionStart** | 顯示 banner + 初始化狀態 + 啟動 Dashboard | ~130 |
+| **SessionStart** | 顯示 banner + 初始化狀態 + self-healing 清理異常狀態 + 啟動 Dashboard | ~160 |
 | **SessionEnd** | Session 結束收尾 + 狀態清理 | ~80 |
 | **PreCompact** | context 壓縮前注入工作流狀態恢復訊息 + compact 計數追蹤 | ~132 |
 | **UserPromptSubmit** | 注入 systemMessage 指向 /ot:auto | ~131 |
@@ -47,7 +47,7 @@ Layer 2: Hook 守衛（底層）
 | **TaskCompleted** | Task 完成前品質門檻硬阻擋（test pass + lint clean） | ~88 |
 | **Notification** | 音效通知（AskUserQuestion、權限要求 → Glass 提示音） | ~30 |
 
-**總計：~1761 行**（v0.26.0 SubagentStop 新增 Strategic Compact）
+**總計：~2301 行**（包含 v0.28.37 SessionStart self-healing + 各版本累積增強）
 
 ### Hook 統一錯誤處理（v0.17.7）+ 狀態恢復（v0.18.0）+ Workflow Context 注入（v0.20.0）
 

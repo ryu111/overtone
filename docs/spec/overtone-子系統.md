@@ -2,7 +2,7 @@
 
 > 本文件是 [Overtone 規格文件](overtone.md) 的子文件。
 > 主題：Specs 系統、Dashboard 監控、Remote 控制、Timeline 事件記錄、Config API、持久化系統
-> 版本：v0.28.36
+> 版本：v0.28.37
 
 ---
 

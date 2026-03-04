@@ -1,12 +1,12 @@
 # Overtone 現況
 
-> 最後更新：2026-03-04 | Plugin 版本：0.28.36（核心簡化：移除雙信號源 + 不變量守衛）
+> 最後更新：2026-03-04 | Plugin 版本：0.28.37（Hook Contract 自我修復）
 
 ## 版本狀態
 
 | 版本 | 狀態 | 說明 |
 |------|------|------|
-| V1 | 進行中 | 3061 pass，0 fail，核心功能完整 + 守衛強化 11/11 + Knowledge Engine + 跨 Session 長期記憶 + 效能基線追蹤 + 數值評分引擎 + 趨勢分析 + 回饋閉環 + 卡點識別 + 時間序列學習（Level 2 完成）+ 核心穩固清理 + mul-agent 泛化 + P3.0 閉環基礎 + P3.1 感知層（screenshot.js + window.js + perception.md）+ P3.2 心跳引擎（heartbeat.js + session-spawner.js）+ P3.3 系統層（process.js + clipboard.js + system-info.js + notification.js + fswatch.js）+ 並行收斂門 + Status Line TTL 防護 + Specs checkbox fallback 修復 + Level 2→1 整合修復（gradedStages 擴大 + 失敗原因記錄 + 全域觀察注入）+ Agent Memory 升級（8 個跨層級 agent + Score Context 個人化 + Grader 強制化）+ 核心簡化（移除 active-agent.json + 並行提示修復 + 不變量守衛）|
+| V1 | 進行中 | 3083 pass，0 fail，核心功能完整 + 守衛強化 11/11 + Knowledge Engine + 跨 Session 長期記憶 + 效能基線追蹤 + 數值評分引擎 + 趨勢分析 + 回饋閉環 + 卡點識別 + 時間序列學習（Level 2 完成）+ 核心穩固清理 + mul-agent 泛化 + P3.0 閉環基礎 + P3.1 感知層（screenshot.js + window.js + perception.md）+ P3.2 心跳引擎（heartbeat.js + session-spawner.js）+ P3.3 系統層（process.js + clipboard.js + system-info.js + notification.js + fswatch.js）+ 並行收斂門 + Status Line TTL 防護 + Specs checkbox fallback 修復 + Level 2→1 整合修復（gradedStages 擴大 + 失敗原因記錄 + 全域觀察注入）+ Agent Memory 升級（8 個跨層級 agent + Score Context 個人化 + Grader 強制化）+ 核心簡化（移除 active-agent.json + 並行提示修復 + 不變量守衛）+ Hook Contract 自我修復（state.sanitize() + 8 個 hook 合約測試）|
 | V2 | 規劃中 | 延後 |
 
 ## 核心指標
@@ -16,8 +16,8 @@
 | Agent 數量 | 17（含 grader） |
 | Stage 數量 | 16 |
 | Workflow 模板 | 18 |
-| 測試通過 | 3061 pass / 0 fail（129 個測試檔） |
-| 測試檔案 | 129 個 |
+| 測試通過 | 3083 pass / 0 fail（132 個測試檔） |
+| 測試檔案 | 132 個 |
 | Hook 數量 | 11 個 |
 | Skill 數量 | 21（13 knowledge domain + orchestrator + pm + specs + 5 utility-with-refs） |
 | Knowledge Domain 數 | 13（testing、workflow-core、security-kb、database、dead-code、commit-convention、code-review、wording、debugging、architecture、build-system、os-control、autonomous-control） |
@@ -26,9 +26,9 @@
 
 ## 近期變更（最近 3 筆）
 
+- **[0.28.37] 2026-03-04**：Hook Contract 自我修復 — (1) state.sanitize() 新函式在 SessionStart 自動清理孤兒 activeAgent + status 不一致；(2) 與 enforceInvariants() 互補（sanitize 做啟動一次性清理，enforceInvariants 做每次 atomic write 守衛）；(3) 8 個 hook 合約整合測試 + 11 個 sanitize 單元測試 + 3 個 session-start 整合測試 → 3083 pass / 132 files（+22 tests）
 - **[0.28.36] 2026-03-04**：核心簡化與不變量守衛 — (1) A 組：並行提示修復（Stop/PreCompact hook 改用 getNextStageHint()）；(2) B 組：信號源簡化（移除 active-agent.json，statusline.js 只讀 workflow.json，PreCompact 壓縮後清空 activeAgents）；(3) C 組：不變量守衛（enforceInvariants() 保證孤兒清除/status 逆轉修正/parallelDone 截斷，移除 3 處 TTL workaround）；(4) 狀態一致性保證 → 3061 pass / 129 files
-- **[0.28.35] 2026-03-04**：Level 2 → Level 1 Agent 個體學習升級 — (1) Agent Memory 從 3 個 opus 擴大至 8 個跨層級 agent（新增 developer/tester/debugger/planner/architect）；(2) Score Context 個人化（pre-task.js 標題加入 agentName）；(3) Grader 強制化（stop-message-builder.js 依 workflowType 決定用詞）；(4) 配置層次升級，測試無新增 → 3047 pass / 129 files
-- **[0.28.34] 2026-03-04**：Level 2 → Level 1 整合修復 — (1) gradedStages 從 3 個擴大至 7 個（+PLAN/ARCH/DEBUG/RETRO），覆蓋完整決策鏈；(2) on-stop.js 加入 failure reason 記錄；(3) failure-tracker 在有根因時展示常見失敗原因；(4) pre-task.js 注入前 5 條高信心觀察（歷史記憶）；(5) 193 新測試 → 3037 pass / 129 files
+- **[0.28.35] 2026-03-04**：Level 2 → Level 1 Agent 個體學習升級 — (1) Agent Memory 從 3 個 opus 擴大至 8 個跨層級 agent；(2) Score Context 個人化；(3) Grader 強制化；(4) 配置層次升級，測試無新增 → 3047 pass / 129 files
 
 ## Phase 3 規劃狀態
 

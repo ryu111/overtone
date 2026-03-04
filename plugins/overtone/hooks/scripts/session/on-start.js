@@ -80,6 +80,14 @@ safeRun(() => {
   if (sessionId) {
     mkdirSync(paths.sessionDir(sessionId), { recursive: true });
 
+    // 清理上一個 session 可能遺留的不一致狀態
+    try {
+      const sanitizeResult = state.sanitize(sessionId);
+      if (sanitizeResult && sanitizeResult.fixed.length > 0) {
+        hookError('on-session-start', `自動修復 ${sanitizeResult.fixed.length} 項狀態不一致`);
+      }
+    } catch { /* 靜默，不阻擋 session 啟動 */ }
+
     // 記錄 session 啟動
     timeline.emit(sessionId, 'session:start', {
       version: pkg.version,

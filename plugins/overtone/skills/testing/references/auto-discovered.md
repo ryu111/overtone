@@ -295,3 +295,15 @@ Keywords: verify, readtaskscheckboxes, fallback, tests, integration, specs, test
 所有 BDD Scenario 均有對應的測試並全部通過，無回歸。
 Keywords: tests, unit, stop, message, builder, test, pass, fail, feature, grader
 
+---
+## 2026-03-04 | tester:TEST Findings
+測試結果：**3083 passed, 0 failed**（全套 132 個測試檔）
+
+本次 feature 新增的測試檔案：
+- `tests/unit/state-sanitize.test.js`：11 個測試，涵蓋 sanitize() 函式的 7 個 Scenario
+- `tests/integration/hook-contract.test.js`：8 個測試，涵蓋 pre-task → on-stop 全鏈路和 PreCompact 恢復鏈路
+- `tests/integration/session-start.test.js` 場景 8：3 個測試，涵蓋 on-start.js 呼叫 sanitize() 的端對端行為
+
+所有 Scenario 均有測試覆蓋，測試品質良好（包含 happy path、邊界條件、複合情況、錯誤路徑）。
+Keywords: passed, failed, feature, tests, unit, state, sanitize, test, scenario, integration
+

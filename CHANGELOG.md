@@ -2,6 +2,39 @@
 
 所有重要變更記錄於此文件。
 
+## [0.28.37] - 2026-03-04
+
+### Hook Contract 自我修復——SessionStart 清理異常狀態
+
+- **state.sanitize(sessionId)**（新函式）：
+  - 規則 1：清除孤兒 activeAgent（stage key 不在 stages 中）
+  - 規則 2：修復 status 不一致（有 completedAt 但 status 非 completed）
+  - SessionStart hook 自動呼叫，靜默處理異常狀態
+  - 與 enforceInvariants() 互補：sanitize 做啟動一次性清理，enforceInvariants 做每次 atomic write 守衛
+
+- **Hook Contract 整合測試**（新增）：
+  - `tests/integration/hook-contract.test.js`：8 個 hook 合約整合測試
+  - 驗證 pre-task.js → on-stop.js 全鏈路 + PreCompact 恢復鏈路
+
+- **State Sanitize 單元測試**（新增）：
+  - `tests/unit/state-sanitize.test.js`：11 個 scenario
+  - 涵蓋空 session / 無不一致狀態 / 孤兒清除 / status 修復 / 複合情況
+
+- **Session Start 整合測試擴展**（新增）：
+  - `tests/integration/session-start.test.js` Scenario 8：3 個 sanitize 整合測試
+  - 驗證 SessionStart 自動修復的完整鏈路
+
+- **改進**：
+  - `plugins/overtone/hooks/scripts/session/on-start.js`：加入 state.sanitize() 呼叫
+  - `plugins/overtone/scripts/lib/state.js`：新增 sanitize() 和 enforceInvariants() 互補機制
+
+- **清理**：
+  - `plugins/overtone/scripts/lib/paths.js`：移除死碼 `paths.session.activeAgent`（[刪除未使用]）
+
+- **測試**：3083 pass / 0 fail（132 個測試檔）（+22 tests）
+
+---
+
 ## [0.28.36] - 2026-03-04
 
 ### 核心簡化與不變量守衛——Layer 2 狀態穩固

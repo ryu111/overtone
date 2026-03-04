@@ -25,6 +25,7 @@ const TIMESTAMP = Date.now();
 const SESSION_1 = `test-start-001-${TIMESTAMP}`;
 const SESSION_2 = `test-start-002-${TIMESTAMP}`;
 const SESSION_5 = `test-start-005-${TIMESTAMP}`;
+const SESSION_8 = `test-start-008-${TIMESTAMP}`;
 
 // 用於場景 4 的暫存 feature 目錄（建在隔離的 tmp projectRoot 下）
 const TMP_PROJECT_ROOT = join(homedir(), '.overtone', 'test-tmp', `session-start-${TIMESTAMP}`);
@@ -77,6 +78,9 @@ afterAll(() => {
   const stateLib = require(join(SCRIPTS_LIB, 'state'));
   const dir5 = paths.sessionDir(SESSION_5);
   rmSync(dir5, { recursive: true, force: true });
+  // 清理場景 8 的 session
+  const dir8 = paths.sessionDir(SESSION_8);
+  rmSync(dir8, { recursive: true, force: true });
 });
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -423,5 +427,50 @@ describe('場景 6：OVERTONE_NO_DASHBOARD=1 — 跳過 Dashboard spawn', () => 
       stderr: 'pipe',
     });
     expect(proc.exitCode).toBe(0);
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// 場景 8：on-start.js 呼叫 sanitize() 修復殘留不一致狀態
+// ────────────────────────────────────────────────────────────────────────────
+
+describe('場景 8：on-start.js 呼叫 sanitize() 修復殘留不一致狀態', () => {
+  const stateLib = require(join(SCRIPTS_LIB, 'state'));
+
+  test('setup: 初始化 workflow.json 並注入孤兒 activeAgent', () => {
+    stateLib.initState(SESSION_8, 'quick', ['DEV', 'REVIEW']);
+    // 注入孤兒 activeAgent（TEST 不在 stages 中）
+    stateLib.writeState(SESSION_8, {
+      ...stateLib.readState(SESSION_8),
+      activeAgents: {
+        'tester:orphan999': {
+          agentName: 'tester',
+          stage: 'TEST',
+          startedAt: new Date().toISOString(),
+        },
+      },
+    });
+    const ws = stateLib.readState(SESSION_8);
+    expect(ws.activeAgents['tester:orphan999']).toBeDefined();
+  });
+
+  test('hook 執行後孤兒 activeAgent 被清除', () => {
+    const result = runHook({ session_id: SESSION_8 });
+    expect(result.exitCode).toBe(0);
+
+    const ws = stateLib.readState(SESSION_8);
+    // sanitize() 應在 SessionStart 時清除孤兒 entry
+    expect(ws.activeAgents['tester:orphan999']).toBeUndefined();
+    expect(Object.keys(ws.activeAgents)).toHaveLength(0);
+  });
+
+  test('無 workflow state 時 hook 仍正常 exit 0（sanitize 對無 state 靜默）', () => {
+    const SESSION_NO_WF_8 = `test-start-no-wf-8-${TIMESTAMP}`;
+    // 不初始化 workflow.json
+    const result = runHook({ session_id: SESSION_NO_WF_8 });
+    expect(result.exitCode).toBe(0);
+    // 清理
+    const { rmSync: rm } = require('fs');
+    rm(paths.sessionDir(SESSION_NO_WF_8), { recursive: true, force: true });
   });
 });

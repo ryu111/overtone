@@ -314,6 +314,50 @@ function checkParallelConvergence(currentState, parallelGroups) {
 }
 
 /**
+ * 清理 session 狀態中的不一致項目（session 啟動時呼叫）
+ *
+ * 規則 1：清除無對應 stage 的 activeAgents entry（孤兒）
+ * 規則 2：修復有 completedAt 但 status 非 completed 的 stage
+ *
+ * 此函式直接操作檔案（writeState），適合在 SessionStart 時呼叫清理上一個
+ * session 可能遺留的不一致狀態。
+ *
+ * @param {string} sessionId
+ * @returns {{ fixed: string[], state: object } | null} null 表示無 workflow 狀態
+ */
+function sanitize(sessionId) {
+  const s = readState(sessionId);
+  if (!s) return null;
+
+  const fixed = [];
+
+  // 規則 1：清除無對應 stage 的 activeAgents entry
+  for (const [id, info] of Object.entries(s.activeAgents || {})) {
+    const stageBase = (info.stage || '').split(':')[0];
+    const hasStage = Object.keys(s.stages || {}).some((k) => k.split(':')[0] === stageBase);
+    if (!hasStage) {
+      delete s.activeAgents[id];
+      fixed.push(`移除孤兒 activeAgent: ${id}`);
+    }
+  }
+
+  // 規則 2：修復 status 不一致（有 completedAt 但 status 不是 completed）
+  for (const [key, entry] of Object.entries(s.stages || {})) {
+    if (entry.completedAt && entry.status !== 'completed') {
+      const originalStatus = entry.status;
+      entry.status = 'completed';
+      fixed.push(`修復 ${key} status: ${originalStatus} → completed`);
+    }
+  }
+
+  if (fixed.length > 0) {
+    writeState(sessionId, s);
+  }
+
+  return { fixed, state: s };
+}
+
+/**
  * 根據當前狀態提示下一步
  *
  * 只有 currentStage 所在的並行群組才會觸發並行提示。
@@ -388,6 +432,7 @@ module.exports = {
   initState,
   updateStage,
   setFeatureName,
+  sanitize,
   updateStateAtomic,
   findActualStageKey,
   checkSameStageConvergence,
