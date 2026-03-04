@@ -14,6 +14,8 @@ const instinct = require('../../../scripts/lib/instinct');
 const { workflows } = require('../../../scripts/lib/registry');
 const { safeReadStdin, safeRun, getSessionId } = require('../../../scripts/lib/hook-utils');
 
+// ── 入口守衛 ──
+if (require.main === module) {
 safeRun(() => {
   // 從 stdin 讀取 hook input
   const input = safeReadStdin();
@@ -87,37 +89,64 @@ safeRun(() => {
     }
   }
 
-  let systemMessage;
+  const systemMessage = buildSystemMessage({
+    validWorkflowOverride,
+    currentState,
+    activeFeatureContext,
+    workflows,
+  });
+
+  process.stdout.write(JSON.stringify({ systemMessage, result: '' }));
+  process.exit(0);
+}, { result: '' });
+}
+
+/**
+ * 組裝 UserPromptSubmit 的 systemMessage
+ * @param {object} opts
+ * @param {string|null} opts.validWorkflowOverride - 已驗證的 workflow 覆寫鍵值（null 表示無覆寫）
+ * @param {object|null} opts.currentState - 當前 workflow 狀態物件（null 表示無進行中 workflow）
+ * @param {string} opts.activeFeatureContext - 活躍 feature 上下文字串（空字串表示無）
+ * @param {object} opts.workflows - workflows 定義物件（registry）
+ * @returns {string|null} systemMessage 字串，無適用情境時回傳 null
+ */
+function buildSystemMessage(opts) {
+  const {
+    validWorkflowOverride = null,
+    currentState = null,
+    activeFeatureContext = '',
+    workflows: workflowDefs = {},
+  } = opts || {};
 
   if (validWorkflowOverride) {
-    // 使用者指定了 workflow 覆寫 → 直接告知使用指定 workflow
-    const workflowDef = workflows[validWorkflowOverride];
-    systemMessage = [
-      `[Overtone] 使用者指定了 workflow：${validWorkflowOverride}（${workflowDef.label}）。`,
+    const workflowDef = workflowDefs[validWorkflowOverride] || {};
+    return [
+      `[Overtone] 使用者指定了 workflow：${validWorkflowOverride}（${workflowDef.label || validWorkflowOverride}）。`,
       `請直接執行此 workflow，不需要執行 /ot:auto 判斷。`,
       `讀取對應的 workflow command：/ot:${validWorkflowOverride} 取得完整執行指引。`,
       `⛔ MUST 依照 workflow command 指引委派 agent，不要自己寫碼。`,
       `📊 初始化後、委派第一個 agent 前，MUST 使用 TaskCreate 建立 pipeline 進度追蹤。`,
     ].join('\n');
-  } else if (currentState && currentState.currentStage) {
-    const { currentStage, workflowType } = currentState;
+  }
 
-    systemMessage = [
+  if (currentState && currentState.currentStage) {
+    const { currentStage, workflowType } = currentState;
+    return [
       `[Overtone] 工作流進行中：${workflowType}（${currentStage}）`,
       activeFeatureContext || '',
       '查看 /ot:auto 取得完整狀態和執行指引。',
     ].filter(Boolean).join('\n');
-  } else {
-    // 無進行中 workflow → 注入 /ot:auto 指引
-    systemMessage = [
-      '[Overtone] 請先閱讀 /ot:auto 工作流選擇器來決定最適合的工作流。',
-      '根據使用者需求自動選擇：dev/quick/standard/full/secure/tdd/debug/refactor 等 18 個 workflow 模板。',
-      '⛔ 選好工作流後，MUST 依照 workflow command 指引委派 agent，不要自己寫碼。',
-      '📊 初始化後、委派第一個 agent 前，MUST 使用 TaskCreate 建立 pipeline 進度追蹤。',
-      activeFeatureContext || '',
-    ].filter(Boolean).join('\n');
   }
 
-  process.stdout.write(JSON.stringify({ systemMessage, result: '' }));
-  process.exit(0);
-}, { result: '' });
+  // 無進行中 workflow → 注入 /ot:auto 指引
+  return [
+    '[Overtone] 請先閱讀 /ot:auto 工作流選擇器來決定最適合的工作流。',
+    '根據使用者需求自動選擇：dev/quick/standard/full/secure/tdd/debug/refactor 等 18 個 workflow 模板。',
+    '⛔ 選好工作流後，MUST 依照 workflow command 指引委派 agent，不要自己寫碼。',
+    '📊 初始化後、委派第一個 agent 前，MUST 使用 TaskCreate 建立 pipeline 進度追蹤。',
+    activeFeatureContext || '',
+  ].filter(Boolean).join('\n');
+}
+
+// ── 純函數匯出 ──
+module.exports = { buildSystemMessage };

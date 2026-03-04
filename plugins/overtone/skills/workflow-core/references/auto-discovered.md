@@ -1,33 +1,4 @@
 ---
-## 2026-03-03 | planner:PLAN Findings
-**需求分解**：
-
-1. 為 5 個 agent 加入 `memory: local` + 內文說明段落 | agent: developer | files: `plugins/overtone/agents/developer.md`、`plugins/overtone/agents/tester.md`、`plugins/overtone/agents/debugger.md`、`plugins/overtone/agents/planner.md`、`plugins/overtone/agents/architect.md`
-
-2. 更新 registry-data.json agentMemory 欄位（新增 5 個條目）(parallel) | agent: developer | files: `plugins/overtone/scripts/lib/registry-data.json`
-
-3. pre-task.js score context 標題加入 agentName 標註（`agentName@stageKey`） | agent: developer | files: `plugins/overtone/hooks/scripts/tool/pre-task.js`
-
-4. stop-message-builder.js grader 用語強制化（standard/full/secure/product/product-full → `📋 MUST`，其他維持「建議」） | agent: developer | files: `plugins/overtone/scripts/lib/stop-message-builder.js`
-
-**優先順序**：
-
-- 任務 1、2 操作不同檔案，無邏輯依賴，可並行
-- 任務 3、4 操作不同檔案，無邏輯依賴，可並行
-- 任務 1、2 和 3、4 之間亦無邏輯依賴（4 個任務可全部並行）
-- 唯一需要 architect 先確認的是：registry-data.json 修改路徑（是否有 guard 限制）
-
-**範圍邊界**：
-
-- 不在此次範圍：scores.jsonl 改為 agent-level 儲存、grader 強制的 hook 層阻擋（PreToolUse）、agent 記憶初始內容、向後相容性保護
-Keywords: agent, memory, local, developer, files, plugins, overtone, agents, tester, debugger
-
----
-## 2026-03-03 | planner:PLAN Context
-Phase 2 的目標是讓 Level 1 agent 個體真正消費 Level 2 建立的學習數據，實現跨 session 記憶與品質強化迴路閉合。Phase 1 已完成最小閉環（全域觀察注入、failure 根因記錄），Phase 2 聚焦三個具體改善：(1) 擴大 `memory: local` 到 5 個核心 agent、(2) score context 加入 agent 名稱標註讓 agent 知道數據是「自己的」、(3) grader 評分在 standard/full/secure workflow 中改為強制用語。
-Keywords: phase, level, agent, session, failure, memory, local, score, context, grader
-
----
 ## 2026-03-03 | architect:ARCH Findings
 **技術方案**：
 
@@ -715,4 +686,82 @@ Keywords: registry, quick, stages, test, parallelgroups, pass, fail, claude, rea
 ## 2026-03-04 | developer:DEV Context
 移除 `on-task-completed.js` 中的 `bun test` 執行邏輯。問題根因：全量 bun test 需要 58s，超過 hook 設定的 45s timeout，導致 DEV task 完成時 100% 假失敗，且每次都浪費 45s 等待。DEV agent 自身停止條件已包含測試通過，hook 執行 bun test 是冗餘且失效的第二道防線。
 Keywords: task, completed, test, hook, timeout, agent
+
+---
+## 2026-03-04 | architect:ARCH Findings
+**技術方案**：
+- 採用就地匯出策略：在 hook 檔案底部加 `module.exports = { pureFn }` + `if (require.main === module) { safeRun(...) }` 守衛
+- 不建 `hooks/scripts/lib/` 子目錄（避免過度設計，函數太小不值得獨立模組）
+- 混合測試策略：spawn 測試保留做端到端驗証（外部行為不變），新增 require 測試做純函數業務邏輯
+
+**現況**：13 個 hook 中已有 3 個完成（`agent/on-stop.js`、`tool/post-use.js`、`tool/post-use-failure.js`），需重構 10 個
+
+**API 介面**（匯出的純函數）：
+
+| Hook | 匯出函數 | 測試核心 |
+|------|---------|---------|
+| `session/on-start.js` | `buildBanner(version, sessionId, port, deps)` | banner 字串包含版本/session 資訊 |
+| `session/on-start.js` | `buildStartOutput(input, msgs)` | systemMessage 組裝邏輯 |
+| `session/on-stop.js` | `buildCompletionSummary(ws, stages)` | 完成摘要格式（已存在，加匯出） |
+| `session/on-stop.js` | `calcDuration(startIso)` | 時間格式化（已存在，加匯出） |
+| `session/on-stop.js` | `buildContinueMessage(ctx)` | loop 繼續訊息組裝 |
+| `session/pre-compact.js` | `buildCompactMessage(ctx)` | 壓縮恢復訊息含截斷邏輯 |
+| `prompt/on-submit.js` | `buildSystemMessage(ctx)` | 三種分支：override/進行中/無 workflow |
+| `tool/pre-task.js` | `checkSkippedStages(state, targetStage, stages)` | 返回被跳過 stage 清單 |
+| `tool/pre-edit-guard.js` | `checkProtected(filePath, pluginRoot)` | 返回 `{label, api}` 或 null |
+| `tool/pre-edit-guard.js` | `checkMemoryLineLimit(filePath, toolName, toolInput, limit)` | 返回 `{exceeded, estimatedLines}` |
+| `tool/pre-bash-guard.js` | `checkDangerousCommand(command)` | 返回 label 或 null |
+| `notification/on-notification.js` | `shouldPlaySound(notificationType, soundTypes)` | 返回 boolean |
+| `session/on-session-end.js` | 無（僅加守衛） | — |
+| `task/on-task-completed.js` | 無（僅加守衛） | — |
+
+**資料模型**：無新增。stdin/stdout JSON 協定不變。
+
+**檔案結構**：
+
+```
+修改（加守衛 + 匯出）：
+  plugins/overtone/hooks/scripts/session/on-start.js
+  plugins/overtone/hooks/scripts/session/on-stop.js
+  plugins/overtone/hooks/scripts/session/pre-compact.js
+  plugins/overtone/hooks/scripts/session/on-session-end.js   ← 僅加守衛
+  plugins/overtone/hooks/scripts/prompt/on-submit.js
+  plugins/overtone/hooks/scripts/tool/pre-task.js
+  plugins/overtone/hooks/scripts/tool/pre-edit-guard.js
+  plugins/overtone/hooks/scripts/tool/pre-bash-guard.js
+  plugins/overtone/hooks/scripts/task/on-task-completed.js   ← 僅加守衛
+  plugins/overtone/hooks/scripts/notification/on-notification.js
+
+新增：
+  tests/unit/hook-pure-fns.test.js
+
+修改（新增純函數測試 cases）：
+  tests/integration/session-start.test.js
+  tests/integration/pre-compact.test.js
+  tests/integration/on-submit.test.js
+  tests/integration/pre-task.test.js
+```
+
+**Dev Phases**：
+Keywords: hook, module, exports, purefn, require, main, saferun, hooks, scripts, spawn
+
+---
+## 2026-03-04 | tester:TEST Findings
+共定義 **10 個 Feature**、**44 個 Scenario**：
+
+| Feature | Scenario 數 |
+|---------|------------|
+| Hook 純函數匯出契約（session/on-start.js — buildBanner/buildStartOutput） | 5 |
+| session/on-stop.js 純函數匯出契約（calcDuration/buildCompletionSummary/buildContinueMessage） | 6 |
+| session/pre-compact.js 純函數匯出契約（buildCompactMessage） | 3 |
+| prompt/on-submit.js 純函數匯出契約（buildSystemMessage） | 4 |
+| tool/pre-task.js 純函數匯出契約（checkSkippedStages） | 4 |
+| tool/pre-edit-guard.js 純函數匯出契約（checkProtected/checkMemoryLineLimit） | 6 |
+| tool/pre-bash-guard.js 純函數匯出契約（checkDangerousCommand） | 4 |
+| notification/on-notification.js 純函數匯出契約（shouldPlaySound） | 3 |
+| require.main 守衛 | 4 |
+| Hook CLI 行為不變（stdin/stdout 協定） | 5 |
+
+每個 Feature 均涵蓋：happy path + 邊界條件（空值/空陣列/null）+ 型別契約驗證。
+Keywords: feature, scenario, hook, session, start, buildbanner, buildstartoutput, stop, calcduration, buildcompletionsummary
 

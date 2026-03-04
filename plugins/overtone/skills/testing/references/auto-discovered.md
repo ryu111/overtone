@@ -562,3 +562,14 @@ Keywords: passed, failed, expect, calls, scenario, pass, fail, guard, coverage, 
 - D-4（不誤刪高價值測試）：通過
 Keywords: spec, tests, scenario, feature, describe, expect, agent, guard, coverage, test
 
+---
+## 2026-03-04 | tester:TEST:2 Context
+模式：verify（DEV 後）
+
+Hook Humble Object 重構的測試驗證完成。驗證了以下 3 個層面：
+
+1. **純函數測試**：`tests/unit/hook-pure-fns.test.js` — 61 個測試全部通過
+2. **全套回歸測試**：3202 pass / 0 fail（138 個測試檔案）
+3. **CLI 行為不變**：5 個 hook 子進程 stdin/stdout 協定驗證通過
+Keywords: verify, hook, humble, object, tests, unit, pure, test, pass, fail
+

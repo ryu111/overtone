@@ -20,6 +20,8 @@ const { safeReadStdin, safeRun, getSessionId, buildWorkflowContext, buildSkillCo
 const { buildTestIndex } = require('../../../scripts/test-index');
 const { detectKnowledgeGaps } = require('../../../scripts/lib/knowledge-gap-detector');
 
+// ── 入口守衛 ──
+if (require.main === module) {
 safeRun(() => {
   // ── 從 stdin 讀取 hook input ──
 
@@ -99,30 +101,7 @@ safeRun(() => {
   // ── 檢查是否跳過必要前置階段 ──
 
   const stageKeys = Object.keys(currentState.stages);
-  const targetIdx = stageKeys.findIndex((k) => {
-    const base = k.split(':')[0];
-    return base === targetStage;
-  });
-
-  // 檢查目標 stage 之前是否有未完成的必要階段
-  // targetIdx <= 0 時（第一個 stage 或找不到），for loop 自然不執行
-  const skippedStages = [];
-  for (let i = 0; i < targetIdx; i++) {
-    const key = stageKeys[i];
-    const stageState = currentState.stages[key];
-
-    // 已完成或已在執行中的不算跳過
-    if (stageState.status === 'completed' || stageState.status === 'active') {
-      continue;
-    }
-
-    // pending 的前置階段 = 被跳過
-    const base = key.split(':')[0];
-    const def = stages[base];
-    if (def) {
-      skippedStages.push(`${def.emoji} ${def.label}（${key}）`);
-    }
-  }
+  const skippedStages = checkSkippedStages(currentState, targetStage, stages);
 
   // 輔助：emit hook:timing（只在有 sessionId 時才寫入，失敗不影響 hook 功能）
   const emitPreTaskTiming = (extra = {}) => {
@@ -409,3 +388,48 @@ safeRun(() => {
   process.stdout.write(JSON.stringify({ result: '' }));
   process.exit(0);
 }, { result: '' });
+}
+
+/**
+ * 檢查目標 stage 之前是否有未完成的必要前置階段
+ * @param {object|null} currentState - workflow 狀態物件（含 stages 屬性）
+ * @param {string} targetStage - 目標 stage 名稱（如 "DEV"）
+ * @param {object} stagesDef - stages 定義物件（registry 的 stages）
+ * @returns {string[]} 被跳過的 stage 描述字串陣列（空陣列表示無跳過）
+ */
+function checkSkippedStages(currentState, targetStage, stagesDef) {
+  if (!currentState || !currentState.stages) return [];
+  if (!targetStage) return [];
+
+  const stageKeys = Object.keys(currentState.stages);
+  const targetIdx = stageKeys.findIndex((k) => {
+    const base = k.split(':')[0];
+    return base === targetStage;
+  });
+
+  // targetIdx <= 0 時（第一個 stage 或找不到），回傳空陣列
+  if (targetIdx <= 0) return [];
+
+  const skippedStages = [];
+  for (let i = 0; i < targetIdx; i++) {
+    const key = stageKeys[i];
+    const stageState = currentState.stages[key];
+
+    // 已完成或已在執行中的不算跳過
+    if (stageState.status === 'completed' || stageState.status === 'active') {
+      continue;
+    }
+
+    // pending 的前置階段 = 被跳過
+    const base = key.split(':')[0];
+    const def = stagesDef[base];
+    if (def) {
+      skippedStages.push(`${def.emoji} ${def.label}（${key}）`);
+    }
+  }
+
+  return skippedStages;
+}
+
+// ── 純函數匯出 ──
+module.exports = { checkSkippedStages };

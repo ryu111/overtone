@@ -20,6 +20,8 @@ const { stages, parallelGroups, loopDefaults, specsConfig } = require('../../../
 const { safeReadStdin, safeRun, hookError, buildProgressBar, getSessionId } = require('../../../scripts/lib/hook-utils');
 const { playSound, SOUNDS } = require('../../../scripts/lib/sound'); // 只用 HERO
 
+// ── 入口守衛 ──
+if (require.main === module) {
 safeRun(() => {
   // ── 從 stdin 讀取 hook input ──
 
@@ -223,21 +225,17 @@ safeRun(() => {
 
   // 產生繼續 prompt（nextStage 已在上方 PM 互動模式檢查時定義）
   const progressBar = buildProgressBar(stageStatuses, stages);
-
-  const tasksLine = tasksStatus
-    ? `📋 Tasks：${tasksStatus.checked}/${tasksStatus.total} 完成`
-    : null;
-
   const hint = state.getNextStageHint(currentState, { stages, parallelGroups });
-  const hintLine = hint ? `⏭️ 繼續：${hint}` : '⏭️ 繼續執行下一步';
 
-  const continueMessage = [
-    `[Overtone Loop ${loopState.iteration}/${loopDefaults.maxIterations}]`,
-    `進度：${progressBar} (${completedStages}/${totalStages})`,
-    tasksLine,
-    hintLine,
-    '⛔ 禁止詢問使用者，直接繼續執行。',
-  ].filter(Boolean).join('\n');
+  const continueMessage = buildContinueMessage({
+    iteration: loopState.iteration,
+    maxIterations: loopDefaults.maxIterations,
+    progressBar,
+    completedStages,
+    totalStages,
+    tasksStatus,
+    hint,
+  });
 
   process.stdout.write(JSON.stringify({
     decision: 'block',
@@ -245,6 +243,7 @@ safeRun(() => {
   }));
   process.exit(0);
 }, { result: '' });
+}
 
 /**
  * 產生完成摘要
@@ -278,3 +277,43 @@ function calcDuration(startIso) {
   if (mins > 0) return `${mins}m ${secs}s`;
   return `${secs}s`;
 }
+
+/**
+ * 組裝 loop 繼續訊息
+ * @param {object} ctx
+ * @param {number} ctx.iteration - 當前迭代次數
+ * @param {number} ctx.maxIterations - 最大迭代次數
+ * @param {string} ctx.progressBar - 進度條字串
+ * @param {number} ctx.completedStages - 已完成 stage 數
+ * @param {number} ctx.totalStages - 總 stage 數
+ * @param {object|null} ctx.tasksStatus - tasks 狀態物件（含 checked/total）
+ * @param {string|null} ctx.hint - 下一步提示字串
+ * @returns {string} 繼續訊息字串
+ */
+function buildContinueMessage(ctx) {
+  const {
+    iteration = 0,
+    maxIterations = 0,
+    progressBar = '',
+    completedStages = 0,
+    totalStages = 0,
+    tasksStatus = null,
+    hint = null,
+  } = ctx || {};
+
+  const tasksLine = tasksStatus
+    ? `📋 Tasks：${tasksStatus.checked}/${tasksStatus.total} 完成`
+    : null;
+  const hintLine = hint ? `⏭️ 繼續：${hint}` : '⏭️ 繼續執行下一步';
+
+  return [
+    `[Overtone Loop ${iteration}/${maxIterations}]`,
+    `進度：${progressBar} (${completedStages}/${totalStages})`,
+    tasksLine,
+    hintLine,
+    '⛔ 禁止詢問使用者，直接繼續執行。',
+  ].filter(Boolean).join('\n');
+}
+
+// ── 純函數匯出 ──
+module.exports = { buildCompletionSummary, calcDuration, buildContinueMessage };

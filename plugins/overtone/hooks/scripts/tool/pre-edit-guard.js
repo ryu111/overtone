@@ -58,6 +58,8 @@ const PROTECTED_PATTERNS = [
   },
 ];
 
+// ── 入口守衛 ──
+if (require.main === module) {
 safeRun(() => {
   const input = safeReadStdin();
   const toolInput = input.tool_input || {};
@@ -77,30 +79,11 @@ safeRun(() => {
   // 不論是否在 plugin root 內，只要是 MEMORY.md 就檢查行數
   if (absPath.endsWith('/memory/MEMORY.md') && absPath.includes('/.claude/projects/')) {
     const toolName = input.tool_name || '';
-    let estimatedLines = 0;
+    const limitResult = checkMemoryLineLimit(filePath, toolName, toolInput, MEMORY_LINE_LIMIT);
 
-    if (toolName === 'Write') {
-      // Write 工具：直接計算 content 行數
-      const content = toolInput.content || '';
-      estimatedLines = content.split('\n').length;
-    } else if (toolName === 'Edit') {
-      // Edit 工具：讀取現有檔案 + 估算行數變化
-      const oldStr = toolInput.old_string || '';
-      const newStr = toolInput.new_string || '';
-      let currentLines = 0;
-      if (existsSync(absPath)) {
-        try {
-          currentLines = readFileSync(absPath, 'utf8').split('\n').length;
-        } catch { currentLines = 0; }
-      }
-      const oldLines = oldStr.split('\n').length;
-      const newLines = newStr.split('\n').length;
-      estimatedLines = currentLines - oldLines + newLines;
-    }
-
-    if (estimatedLines > MEMORY_LINE_LIMIT) {
+    if (limitResult.exceeded) {
       const message = [
-        `⛔ MEMORY.md 超過 ${MEMORY_LINE_LIMIT} 行上限！（預估 ${estimatedLines} 行）`,
+        `⛔ MEMORY.md 超過 ${MEMORY_LINE_LIMIT} 行上限！（預估 ${limitResult.estimatedLines} 行）`,
         ``,
         `MEMORY.md 定位：導航索引 + 活躍決策 + 地雷避免`,
         ``,
@@ -133,33 +116,89 @@ safeRun(() => {
   }
 
   // 檢查是否匹配受保護模式
-  for (const { pattern, label, api } of PROTECTED_PATTERNS) {
-    if (pattern.test(relPath)) {
-      const message = [
-        `⛔ 不可直接編輯${label}檔案！`,
-        ``,
-        `檔案：${relPath}`,
-        `原因：直接編輯會繞過驗證，可能造成元件不一致。`,
-        ``,
-        `正確做法：透過 Bash 工具呼叫 manage-component.js 腳本：`,
-        `  bun plugins/overtone/scripts/manage-component.js <create|update> <agent|hook|skill> [name] '<json>'`,
-        ``,
-        `對應 API：${api}`,
-        `詳見：plugins/overtone/scripts/manage-component.js --help`,
-      ].join('\n');
+  const protectedInfo = checkProtected(relPath, PLUGIN_ROOT);
+  if (protectedInfo) {
+    const message = [
+      `⛔ 不可直接編輯${protectedInfo.label}檔案！`,
+      ``,
+      `檔案：${relPath}`,
+      `原因：直接編輯會繞過驗證，可能造成元件不一致。`,
+      ``,
+      `正確做法：透過 Bash 工具呼叫 manage-component.js 腳本：`,
+      `  bun plugins/overtone/scripts/manage-component.js <create|update> <agent|hook|skill> [name] '<json>'`,
+      ``,
+      `對應 API：${protectedInfo.api}`,
+      `詳見：plugins/overtone/scripts/manage-component.js --help`,
+    ].join('\n');
 
-      process.stdout.write(JSON.stringify({
-        hookSpecificOutput: {
-          hookEventName: 'PreToolUse',
-          permissionDecision: 'deny',
-          permissionDecisionReason: message,
-        },
-      }));
-      process.exit(0);
-    }
+    process.stdout.write(JSON.stringify({
+      hookSpecificOutput: {
+        hookEventName: 'PreToolUse',
+        permissionDecision: 'deny',
+        permissionDecisionReason: message,
+      },
+    }));
+    process.exit(0);
   }
 
   // 不在受保護範圍 → 放行
   process.stdout.write(JSON.stringify({ result: '' }));
   process.exit(0);
 }, { result: '' });
+}
+
+/**
+ * 檢查檔案路徑是否為受保護的元件檔案
+ * 注意：filePath 應為相對於 pluginRoot 的路徑（已做 relative 轉換）
+ * @param {string} relPath - 相對於 plugin root 的路徑
+ * @param {string} _pluginRoot - plugin root 路徑（保留相容性，目前未使用）
+ * @returns {{ label: string, api: string }|null} 受保護時回傳物件，否則回傳 null
+ */
+function checkProtected(relPath, _pluginRoot) {
+  if (!relPath) return null;
+  for (const { pattern, label, api } of PROTECTED_PATTERNS) {
+    if (pattern.test(relPath)) {
+      return { label, api };
+    }
+  }
+  return null;
+}
+
+/**
+ * 檢查 MEMORY.md 寫入後的預估行數是否超出限制
+ * @param {string} filePath - 檔案絕對路徑（用於判斷是否為 MEMORY.md）
+ * @param {string} toolName - 工具名稱（"Write" 或 "Edit"）
+ * @param {object} toolInput - 工具輸入參數
+ * @param {number} limit - 行數上限
+ * @returns {{ exceeded: boolean, estimatedLines: number }}
+ */
+function checkMemoryLineLimit(filePath, toolName, toolInput, limit) {
+  const absPath = resolve(filePath);
+  // 只檢查 MEMORY.md
+  if (!absPath.endsWith('/memory/MEMORY.md') || !absPath.includes('/.claude/projects/')) {
+    return { exceeded: false, estimatedLines: 0 };
+  }
+
+  let estimatedLines = 0;
+  if (toolName === 'Write') {
+    const content = (toolInput && toolInput.content) || '';
+    estimatedLines = content.split('\n').length;
+  } else if (toolName === 'Edit') {
+    const oldStr = (toolInput && toolInput.old_string) || '';
+    const newStr = (toolInput && toolInput.new_string) || '';
+    let currentLines = 0;
+    if (existsSync(absPath)) {
+      try {
+        currentLines = readFileSync(absPath, 'utf8').split('\n').length;
+      } catch { currentLines = 0; }
+    }
+    const oldLines = oldStr.split('\n').length;
+    const newLines = newStr.split('\n').length;
+    estimatedLines = currentLines - oldLines + newLines;
+  }
+
+  return { exceeded: estimatedLines > limit, estimatedLines };
+}
+
+// ── 純函數匯出 ──
+module.exports = { checkProtected, checkMemoryLineLimit };

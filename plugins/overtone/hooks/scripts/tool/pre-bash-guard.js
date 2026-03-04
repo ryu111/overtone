@@ -47,6 +47,8 @@ const BLACKLIST = [
   { pattern: /\bkill\s+-9\s+\d+\s+\d+/, label: '批量 kill -9 多個 PID' },
 ];
 
+// ── 入口守衛 ──
+if (require.main === module) {
 safeRun(() => {
   const input = safeReadStdin();
   const toolInput = input.tool_input || {};
@@ -58,29 +60,46 @@ safeRun(() => {
     process.exit(0);
   }
 
-  // 檢查是否匹配黑名單
-  for (const { pattern, label } of BLACKLIST) {
-    if (pattern.test(command)) {
-      process.stdout.write(JSON.stringify({
-        hookSpecificOutput: {
-          hookEventName: 'PreToolUse',
-          permissionDecision: 'deny',
-          permissionDecisionReason: [
-            '⛔ 危險 OS 命令已攔截！',
-            '',
-            `命令：${command}`,
-            `類別：${label}`,
-            '',
-            '此操作可能造成不可逆的系統損害。',
-            '如確實需要執行，請在 CLI 中手動操作。',
-          ].join('\n'),
-        },
-      }));
-      process.exit(0);
-    }
+  const dangerLabel = checkDangerousCommand(command);
+  if (dangerLabel) {
+    process.stdout.write(JSON.stringify({
+      hookSpecificOutput: {
+        hookEventName: 'PreToolUse',
+        permissionDecision: 'deny',
+        permissionDecisionReason: [
+          '⛔ 危險 OS 命令已攔截！',
+          '',
+          `命令：${command}`,
+          `類別：${dangerLabel}`,
+          '',
+          '此操作可能造成不可逆的系統損害。',
+          '如確實需要執行，請在 CLI 中手動操作。',
+        ].join('\n'),
+      },
+    }));
+    process.exit(0);
   }
 
   // 不在黑名單 → 放行
   process.stdout.write(JSON.stringify({ result: '' }));
   process.exit(0);
 }, { result: '' });
+}
+
+/**
+ * 檢查命令是否為危險命令
+ * @param {string} command - 要檢查的 shell 命令
+ * @returns {string|null} 危險類別字串（如 "刪除根目錄"），安全命令回傳 null
+ */
+function checkDangerousCommand(command) {
+  if (!command) return null;
+  for (const { pattern, label } of BLACKLIST) {
+    if (pattern.test(command)) {
+      return label;
+    }
+  }
+  return null;
+}
+
+// ── 純函數匯出 ──
+module.exports = { checkDangerousCommand };

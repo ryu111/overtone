@@ -19,6 +19,8 @@
 
 const { safeReadStdin, safeRun, getSessionId } = require('../../../scripts/lib/hook-utils');
 
+// ── 入口守衛 ──
+if (require.main === module) {
 const input = safeReadStdin();
 
 safeRun(() => {
@@ -43,3 +45,7 @@ safeRun(() => {
   emitTiming();
   process.exit(0);
 }, {});
+}
+
+// ── 純函數匯出（Phase 2 會填入）──
+module.exports = {};

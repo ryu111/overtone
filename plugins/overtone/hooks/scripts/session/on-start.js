@@ -21,6 +21,8 @@ const state = require('../../../scripts/lib/state');
 const { safeReadStdin, safeRun, hookError, buildPendingTasksMessage, getSessionId } = require('../../../scripts/lib/hook-utils');
 const { effortLevels } = require('../../../scripts/lib/registry');
 
+// ── 入口守衛 ──
+if (require.main === module) {
 // session ID 優先從 hook stdin JSON 讀取，環境變數作為 fallback
 const input = safeReadStdin();
 const sessionId = getSessionId(input);
@@ -187,22 +189,11 @@ safeRun(() => {
 
   // ── Banner ──
 
-  const dashboardUrl = `http://localhost:${port}/`;
-  const banner = [
-    '',
-    `  🎵 Overtone v${pkg.version}`,
-    '  ─────────────────────',
-    '  裝上 Claude Code，就像有了一個開發團隊。',
-    '',
-    '  💡 直接輸入你的需求 — 系統自動選擇工作流，委派專職 agent 完成。',
-    '',
-    sessionId ? `  📂 Session: ${sessionId.slice(0, 8)}...` : null,
-    dashboardUrl ? `  🖥️ Dashboard: ${dashboardUrl}` : null,
+  const banner = buildBanner(pkg.version, sessionId, port, {
     agentBrowserStatus,
     ghStatus,
     grayMatterStatus,
-    '',
-  ].filter(line => line != null).join('\n');
+  });
 
   // ── 未完成任務注入（disk-based TaskList 恢復）──
   // context compact 後 in-memory TaskList 歸零，此處讀取 specs/features/in-progress 的 tasks.md
@@ -324,45 +315,10 @@ safeRun(() => {
     // 佇列載入失敗不阻擋 session 啟動
   }
 
-  const output = { result: banner };
-  if (pendingTasksMsg) {
-    output.systemMessage = pendingTasksMsg;
-  }
-  if (globalObservationsMsg) {
-    if (output.systemMessage) {
-      output.systemMessage += '\n\n' + globalObservationsMsg;
-    } else {
-      output.systemMessage = globalObservationsMsg;
-    }
-  }
-  if (baselineSummaryMsg) {
-    if (output.systemMessage) {
-      output.systemMessage += '\n\n' + baselineSummaryMsg;
-    } else {
-      output.systemMessage = baselineSummaryMsg;
-    }
-  }
-  if (scoreSummaryMsg) {
-    if (output.systemMessage) {
-      output.systemMessage += '\n\n' + scoreSummaryMsg;
-    } else {
-      output.systemMessage = scoreSummaryMsg;
-    }
-  }
-  if (failureSummaryMsg) {
-    if (output.systemMessage) {
-      output.systemMessage += '\n\n' + failureSummaryMsg;
-    } else {
-      output.systemMessage = failureSummaryMsg;
-    }
-  }
-  if (queueMsg) {
-    if (output.systemMessage) {
-      output.systemMessage += '\n\n' + queueMsg;
-    } else {
-      output.systemMessage = queueMsg;
-    }
-  }
+  const output = buildStartOutput(input, {
+    banner,
+    msgs: [pendingTasksMsg, globalObservationsMsg, baselineSummaryMsg, scoreSummaryMsg, failureSummaryMsg, queueMsg].filter(Boolean),
+  });
 
   // hook:timing — 記錄 SessionStart 執行耗時（try/catch 不影響主流程）
   if (sessionId) {
@@ -378,3 +334,53 @@ safeRun(() => {
   process.stdout.write(JSON.stringify(output));
   process.exit(0);
 }, { result: '' });
+}
+
+/**
+ * 組裝 banner 字串
+ * @param {string} version - 版本號
+ * @param {string} sessionId - session ID
+ * @param {number|null} port - Dashboard port（null 時不顯示）
+ * @param {object} deps - 依賴狀態 { agentBrowserStatus, ghStatus, grayMatterStatus }
+ * @returns {string} banner 字串
+ */
+function buildBanner(version, sessionId, port, deps) {
+  const { agentBrowserStatus = null, ghStatus = null, grayMatterStatus = null } = deps || {};
+  const dashboardUrl = port ? `http://localhost:${port}/` : null;
+  return [
+    '',
+    `  🎵 Overtone v${version}`,
+    '  ─────────────────────',
+    '  裝上 Claude Code，就像有了一個開發團隊。',
+    '',
+    '  💡 直接輸入你的需求 — 系統自動選擇工作流，委派專職 agent 完成。',
+    '',
+    sessionId ? `  📂 Session: ${sessionId.slice(0, 8)}...` : null,
+    dashboardUrl ? `  🖥️ Dashboard: ${dashboardUrl}` : null,
+    agentBrowserStatus || null,
+    ghStatus || null,
+    grayMatterStatus || null,
+    '',
+  ].filter(line => line != null).join('\n');
+}
+
+/**
+ * 組裝 SessionStart hook 的輸出物件（result + 可選 systemMessage）
+ * @param {object} input - stdin 解析後的物件（保留相容性，目前未使用）
+ * @param {object} options - 選項
+ * @param {string} options.banner - result 欄位的 banner 字串
+ * @param {string[]} options.msgs - 需要注入的 systemMessage 字串陣列（falsy 值自動過濾）
+ * @returns {{ result: string, systemMessage?: string }}
+ */
+function buildStartOutput(_input, options) {
+  const { banner = '', msgs = [] } = options || {};
+  const validMsgs = (msgs || []).filter(Boolean);
+  const output = { result: banner };
+  if (validMsgs.length > 0) {
+    output.systemMessage = validMsgs.join('\n\n');
+  }
+  return output;
+}
+
+// ── 純函數匯出 ──
+module.exports = { buildBanner, buildStartOutput };

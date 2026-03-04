@@ -15,15 +15,32 @@ const { playSound, SOUNDS } = require('../../../scripts/lib/sound');
 // 需要播放音效的通知類型（permission_prompt 不播音 — 用戶在螢幕前不需要提醒）
 const SOUND_TYPES = ['elicitation_dialog'];
 
+// ── 入口守衛 ──
+if (require.main === module) {
 safeRun(() => {
   const input = safeReadStdin();
   // 通知類型可能在 type 或 notification_type 欄位
   const notificationType = input.type || input.notification_type || '';
 
-  if (SOUND_TYPES.includes(notificationType)) {
+  if (shouldPlaySound(notificationType, SOUND_TYPES)) {
     playSound(SOUNDS.GLASS);
   }
 
   process.stdout.write(JSON.stringify({ result: '' }));
   process.exit(0);
 }, { result: '' });
+}
+
+/**
+ * 判斷是否應播放音效
+ * @param {string} notificationType - 通知類型字串
+ * @param {string[]} soundTypes - 需要播放音效的通知類型清單
+ * @returns {boolean}
+ */
+function shouldPlaySound(notificationType, soundTypes) {
+  if (!soundTypes || soundTypes.length === 0) return false;
+  return soundTypes.includes(notificationType);
+}
+
+// ── 純函數匯出 ──
+module.exports = { shouldPlaySound };
