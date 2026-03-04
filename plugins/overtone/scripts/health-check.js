@@ -3,7 +3,7 @@
 /**
  * health-check.js — Overtone 系統健康自動化偵測
  *
- * 執行 11 項確定性偵測：
+ * 執行 12 項確定性偵測：
  *   1. phantom-events   — registry 事件 vs 實際 emit 呼叫差異
  *   2. dead-exports     — scripts/lib 模組 export 但從未被 require 使用
  *   3. doc-code-drift   — docs 文件中的數量與程式碼實際值不符
@@ -15,6 +15,7 @@
  *   9. component-chain  — Skill → Agent → Hook 依賴鏈斷裂偵測
  *  10. data-quality     — 全域學習資料（JSONL）格式與欄位正確性審計
  *  11. quality-trends   — 失敗模式 / 分數趨勢 / 低分連續警告
+ *  12. test-growth      — 測試套件增長率監控（超過基線 20% 時警告）
  *
  * 輸出：JSON stdout（HealthCheckOutput schema）
  * Exit code：有 findings → 1；無 findings → 0
@@ -1180,6 +1181,110 @@ function checkQualityTrends(projectRootOverride) {
   return findings;
 }
 
+// ── 12. Test Growth 測試增長率偵測 ──
+
+/**
+ * 測試增長基線快照（硬編碼常數）。
+ * 當測試數量或檔案數量相對基線增長超過 THRESHOLD 時，回報 warning。
+ */
+const TEST_BASELINE = { tests: 3114, files: 137, date: '2026-03-04' };
+const TEST_GROWTH_THRESHOLD = 0.20; // 20%
+
+/**
+ * 取得當前測試計數（預設實作：用 find 和 grep 快速計數，不執行 bun test）
+ * @returns {{ tests: number, files: number }}
+ */
+function _getTestCounts() {
+  const { execSync } = require('child_process');
+
+  // 計算 .test.js 檔案數量
+  let files = 0;
+  try {
+    const result = execSync(`find "${TESTS_DIR}" -name "*.test.js" | wc -l`, {
+      stdio: 'pipe',
+      encoding: 'utf8',
+    });
+    files = parseInt(result.trim(), 10) || 0;
+  } catch { /* 失敗時保持 0 */ }
+
+  // 計算 test( 呼叫次數（估算測試數量）
+  let tests = 0;
+  try {
+    const result = execSync(`grep -r --include="*.test.js" -c "^[[:space:]]*test(" "${TESTS_DIR}" | awk -F: '{sum+=$2} END{print sum}'`, {
+      stdio: 'pipe',
+      encoding: 'utf8',
+    });
+    tests = parseInt(result.trim(), 10) || 0;
+  } catch { /* 失敗時保持 0 */ }
+
+  return { tests, files };
+}
+
+/**
+ * 偵測測試套件增長率是否超過基線閾值（20%）。
+ *
+ * 使用 DI pattern：測試可注入假的計數函式，無需實際執行 bun test。
+ *
+ * @param {function(): {tests: number, files: number}} [getDepsOverride] - 供測試注入假計數
+ * @returns {Finding[]}
+ */
+function checkTestGrowth(getDepsOverride) {
+  const getCounts = getDepsOverride || _getTestCounts;
+
+  let current;
+  try {
+    current = getCounts();
+  } catch (err) {
+    return [{
+      check: 'test-growth',
+      severity: 'warning',
+      file: 'tests/',
+      message: `取得測試計數時發生錯誤：${err.message || String(err)}`,
+    }];
+  }
+
+  const findings = [];
+
+  // 計算測試數量增長率
+  if (current.tests > 0 && TEST_BASELINE.tests > 0) {
+    const growthRate = (current.tests - TEST_BASELINE.tests) / TEST_BASELINE.tests;
+    const growthPct = Math.round(growthRate * 100);
+    const thresholdPct = Math.round(TEST_GROWTH_THRESHOLD * 100);
+
+    if (growthRate > TEST_GROWTH_THRESHOLD) {
+      findings.push({
+        check: 'test-growth',
+        severity: 'warning',
+        file: 'tests/',
+        message: `tests: ${current.tests} (+${growthPct}%, threshold: ${thresholdPct}%)`,
+        detail: `baseline: ${TEST_BASELINE.tests} (${TEST_BASELINE.date})，current: ${current.tests}，growth: +${growthPct}%`,
+      });
+    } else {
+      // pass — 附加 detail 供參考（不加進 findings，不算 finding）
+      // 注意：pass 不會產生 finding，runAllChecks 會把 findingsCount = 0 標記 passed = true
+    }
+  }
+
+  // 計算檔案數量增長率
+  if (current.files > 0 && TEST_BASELINE.files > 0) {
+    const growthRate = (current.files - TEST_BASELINE.files) / TEST_BASELINE.files;
+    const growthPct = Math.round(growthRate * 100);
+    const thresholdPct = Math.round(TEST_GROWTH_THRESHOLD * 100);
+
+    if (growthRate > TEST_GROWTH_THRESHOLD) {
+      findings.push({
+        check: 'test-growth',
+        severity: 'warning',
+        file: 'tests/',
+        message: `files: ${current.files} (+${growthPct}%, threshold: ${thresholdPct}%)`,
+        detail: `baseline: ${TEST_BASELINE.files} (${TEST_BASELINE.date})，current: ${current.files}，growth: +${growthPct}%`,
+      });
+    }
+  }
+
+  return findings;
+}
+
 // ── 主程式 ──
 
 /**
@@ -1208,6 +1313,7 @@ function runAllChecks() {
     { name: 'component-chain',  fn: checkComponentChain },
     { name: 'data-quality',     fn: checkDataQuality },
     { name: 'quality-trends',   fn: checkQualityTrends },
+    { name: 'test-growth',      fn: checkTestGrowth },
   ];
 
   const allFindings = [];
@@ -1294,7 +1400,11 @@ module.exports = {
   checkComponentChain,
   checkDataQuality,
   checkQualityTrends,
+  checkTestGrowth,
   runAllChecks,
+  // 測試 DI 支援
+  TEST_BASELINE,
+  TEST_GROWTH_THRESHOLD,
   // 工具函式
   collectJsFiles,
   collectMdFiles,

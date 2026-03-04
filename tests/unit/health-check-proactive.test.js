@@ -296,9 +296,9 @@ describe('checkQualityTrends', () => {
 // ══════════════════════════════════════════════════════════════════
 
 describe('runAllChecks — 包含 F1/F2/F3 新增 check', () => {
-  test('checks 陣列長度為 11（新增 3 個）', () => {
+  test('checks 陣列長度為 12（新增 3 個）', () => {
     const { checks } = runAllChecks();
-    expect(checks.length).toBe(11);
+    expect(checks.length).toBe(12);
   });
 
   test('checks 包含 component-chain、data-quality、quality-trends', () => {
@@ -314,7 +314,7 @@ describe('runAllChecks — 包含 F1/F2/F3 新增 check', () => {
     const validChecks = new Set([
       'phantom-events', 'dead-exports', 'doc-code-drift', 'unused-paths',
       'duplicate-logic', 'platform-drift', 'doc-staleness', 'os-tools',
-      'component-chain', 'data-quality', 'quality-trends',
+      'component-chain', 'data-quality', 'quality-trends', 'test-growth',
     ]);
     for (const f of findings) {
       expect(validChecks.has(f.check)).toBe(true);

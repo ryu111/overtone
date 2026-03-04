@@ -21,11 +21,14 @@ const {
   checkUnusedPaths,
   checkDuplicateLogic,
   checkDocStaleness,
+  checkTestGrowth,
   runAllChecks,
   collectJsFiles,
   collectMdFiles,
   parseModuleExportKeys,
   parsePathsExports,
+  TEST_BASELINE,
+  TEST_GROWTH_THRESHOLD,
   PLUGIN_ROOT,
   SCRIPTS_LIB,
   DOCS_DIR,
@@ -535,12 +538,12 @@ describe('runAllChecks', () => {
     expect(Array.isArray(result.findings)).toBe(true);
   });
 
-  test('checks 陣列長度至少為 11（含 F1/F2/F3 三個主動偵測）', () => {
+  test('checks 陣列長度至少為 12（含 F1/F2/F3 三個主動偵測）', () => {
     const { checks } = runAllChecks();
-    expect(checks.length).toBeGreaterThanOrEqual(11);
+    expect(checks.length).toBeGreaterThanOrEqual(12);
   });
 
-  test('checks 包含所有 11 個偵測項目名稱', () => {
+  test('checks 包含所有 12 個偵測項目名稱', () => {
     const { checks } = runAllChecks();
     const names = checks.map((c) => c.name);
     expect(names).toContain('phantom-events');
@@ -554,6 +557,7 @@ describe('runAllChecks', () => {
     expect(names).toContain('component-chain');
     expect(names).toContain('data-quality');
     expect(names).toContain('quality-trends');
+    expect(names).toContain('test-growth');
   });
 
   test('每個 check 項目包含 name、passed、findingsCount', () => {
@@ -592,15 +596,135 @@ describe('runAllChecks', () => {
     }
   });
 
-  test('所有 finding 的 check 只能是已知 11 個 check 名稱之一', () => {
+  test('所有 finding 的 check 只能是已知 12 個 check 名稱之一', () => {
     const { findings } = runAllChecks();
     const validChecks = new Set([
       'phantom-events', 'dead-exports', 'doc-code-drift', 'unused-paths',
       'duplicate-logic', 'platform-drift', 'doc-staleness', 'os-tools',
-      'component-chain', 'data-quality', 'quality-trends',
+      'component-chain', 'data-quality', 'quality-trends', 'test-growth',
     ]);
     for (const f of findings) {
       expect(validChecks.has(f.check)).toBe(true);
     }
+  });
+});
+
+// ══════════════════════════════════════════════════════════════════
+// Feature 12: checkTestGrowth 測試增長率偵測
+// ══════════════════════════════════════════════════════════════════
+
+describe('checkTestGrowth', () => {
+  test('回傳陣列', () => {
+    const findings = checkTestGrowth();
+    expect(Array.isArray(findings)).toBe(true);
+  });
+
+  test('所有 finding 的 check 欄位為 "test-growth"', () => {
+    const findings = checkTestGrowth();
+    for (const f of findings) {
+      expect(f.check).toBe('test-growth');
+    }
+  });
+
+  test('finding severity 為 warning', () => {
+    const findings = checkTestGrowth();
+    for (const f of findings) {
+      expect(f.severity).toBe('warning');
+    }
+  });
+
+  test('每個 finding 包含必要欄位', () => {
+    const findings = checkTestGrowth();
+    for (const f of findings) {
+      expect(typeof f.check).toBe('string');
+      expect(typeof f.severity).toBe('string');
+      expect(typeof f.file).toBe('string');
+      expect(typeof f.message).toBe('string');
+    }
+  });
+
+  // ── DI 注入測試 ──
+
+  test('正常情況（未超標）：注入等於基線的計數 → 回傳空陣列（pass）', () => {
+    const fakeDeps = () => ({ tests: TEST_BASELINE.tests, files: TEST_BASELINE.files });
+    const findings = checkTestGrowth(fakeDeps);
+    expect(findings).toEqual([]);
+  });
+
+  test('正常情況（略微增長但未超標）：注入 +10% 計數 → 回傳空陣列', () => {
+    const fakeDeps = () => ({
+      tests: Math.floor(TEST_BASELINE.tests * 1.10),
+      files: Math.floor(TEST_BASELINE.files * 1.10),
+    });
+    const findings = checkTestGrowth(fakeDeps);
+    expect(findings).toEqual([]);
+  });
+
+  test('超標情況（tests 增長 > 20%）：注入 +25% tests 計數 → 回傳 warning', () => {
+    const fakeDeps = () => ({
+      tests: Math.floor(TEST_BASELINE.tests * 1.25),
+      files: TEST_BASELINE.files,
+    });
+    const findings = checkTestGrowth(fakeDeps);
+    const testWarnings = findings.filter((f) => f.message.includes('tests:'));
+    expect(testWarnings.length).toBe(1);
+    expect(testWarnings[0].severity).toBe('warning');
+    expect(testWarnings[0].message).toMatch(/\+\d+%/);
+    expect(testWarnings[0].message).toContain('threshold: 20%');
+  });
+
+  test('超標情況（files 增長 > 20%）：注入 +30% files 計數 → 回傳 warning', () => {
+    const fakeDeps = () => ({
+      tests: TEST_BASELINE.tests,
+      files: Math.floor(TEST_BASELINE.files * 1.30),
+    });
+    const findings = checkTestGrowth(fakeDeps);
+    const fileWarnings = findings.filter((f) => f.message.includes('files:'));
+    expect(fileWarnings.length).toBe(1);
+    expect(fileWarnings[0].severity).toBe('warning');
+    expect(fileWarnings[0].message).toContain('threshold: 20%');
+  });
+
+  test('tests 和 files 同時超標：兩個 warning', () => {
+    const fakeDeps = () => ({
+      tests: Math.floor(TEST_BASELINE.tests * 1.50),
+      files: Math.floor(TEST_BASELINE.files * 1.50),
+    });
+    const findings = checkTestGrowth(fakeDeps);
+    expect(findings.length).toBe(2);
+    const checks = findings.map((f) => f.check);
+    expect(checks.every((c) => c === 'test-growth')).toBe(true);
+  });
+
+  test('finding detail 包含 baseline 值和 current 值', () => {
+    const fakeDeps = () => ({
+      tests: Math.floor(TEST_BASELINE.tests * 1.25),
+      files: TEST_BASELINE.files,
+    });
+    const findings = checkTestGrowth(fakeDeps);
+    const testWarning = findings.find((f) => f.message.includes('tests:'));
+    expect(testWarning).toBeDefined();
+    expect(testWarning.detail).toContain(`baseline: ${TEST_BASELINE.tests}`);
+    expect(testWarning.detail).toContain('current:');
+  });
+
+  test('getDepsOverride 拋出例外時回傳 warning finding', () => {
+    const brokenDeps = () => { throw new Error('計數失敗'); };
+    const findings = checkTestGrowth(brokenDeps);
+    expect(findings.length).toBe(1);
+    expect(findings[0].severity).toBe('warning');
+    expect(findings[0].message).toContain('計數失敗');
+  });
+
+  test('TEST_BASELINE 常數格式正確', () => {
+    expect(typeof TEST_BASELINE.tests).toBe('number');
+    expect(typeof TEST_BASELINE.files).toBe('number');
+    expect(typeof TEST_BASELINE.date).toBe('string');
+    expect(TEST_BASELINE.tests).toBeGreaterThan(0);
+    expect(TEST_BASELINE.files).toBeGreaterThan(0);
+  });
+
+  test('TEST_GROWTH_THRESHOLD 為 0.20', () => {
+    expect(TEST_GROWTH_THRESHOLD).toBe(0.20);
   });
 });

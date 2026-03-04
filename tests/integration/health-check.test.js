@@ -93,12 +93,12 @@ describe('Feature 6：輸出格式驗證', () => {
     expect(output.summary).not.toBeNull();
   });
 
-  test('Scenario checks — checks 陣列長度為 11（含 F1/F2/F3 三個主動偵測）', () => {
+  test('Scenario checks — checks 陣列長度為 12（含 F1/F2/F3 三個主動偵測）', () => {
     const output = getParsed();
-    expect(output.checks.length).toBe(11);
+    expect(output.checks.length).toBe(12);
   });
 
-  test('Scenario checks — 包含所有 11 個偵測項目', () => {
+  test('Scenario checks — 包含所有 12 個偵測項目', () => {
     const output = getParsed();
     const names = output.checks.map((c) => c.name);
     expect(names).toContain('phantom-events');
@@ -112,6 +112,7 @@ describe('Feature 6：輸出格式驗證', () => {
     expect(names).toContain('component-chain');
     expect(names).toContain('data-quality');
     expect(names).toContain('quality-trends');
+    expect(names).toContain('test-growth');
   });
 
   test('Scenario checks — 每個 check 包含 name、passed、findingsCount', () => {
@@ -128,7 +129,7 @@ describe('Feature 6：輸出格式驗證', () => {
     const validChecks = new Set([
       'phantom-events', 'dead-exports', 'doc-code-drift', 'unused-paths',
       'duplicate-logic', 'platform-drift', 'doc-staleness', 'os-tools',
-      'component-chain', 'data-quality', 'quality-trends',
+      'component-chain', 'data-quality', 'quality-trends', 'test-growth',
     ]);
     const validSeverities = new Set(['error', 'warning', 'info']);
     for (const f of output.findings) {
@@ -242,10 +243,10 @@ describe('真實 codebase 執行驗證', () => {
     expect(() => JSON.parse(result.stdout)).not.toThrow();
   });
 
-  test('所有 11 個 check 都成功執行（findingsCount 為數字）', () => {
+  test('所有 12 個 check 都成功執行（findingsCount 為數字）', () => {
     const result = runHealthCheck();
     const output = JSON.parse(result.stdout);
-    expect(output.checks.length).toBe(11);
+    expect(output.checks.length).toBe(12);
     for (const c of output.checks) {
       expect(Number.isInteger(c.findingsCount)).toBe(true);
       expect(c.findingsCount).toBeGreaterThanOrEqual(0);
