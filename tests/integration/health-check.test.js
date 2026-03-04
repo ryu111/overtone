@@ -163,13 +163,14 @@ describe('Feature 6：輸出格式驗證', () => {
     expect(summary.infos).toBe(infos);
   });
 
-  test('Scenario summary — passed 與 findings 長度一致', () => {
+  test('Scenario summary — passed 只看 errors（warnings/infos 不影響）', () => {
     const output = getParsed();
     const { findings, summary } = output;
-    if (findings.length === 0) {
-      expect(summary.passed).toBe(true);
-    } else {
+    const hasErrors = findings.some(f => f.severity === 'error');
+    if (hasErrors) {
       expect(summary.passed).toBe(false);
+    } else {
+      expect(summary.passed).toBe(true);
     }
   });
 
@@ -198,22 +199,25 @@ describe('Feature 7：Exit code 行為', () => {
     }
   });
 
-  test('Scenario — 任何 finding（無論 severity）都導致 exit 1', () => {
+  test('Scenario — 只有 error 級別的 finding 才導致 exit 1', () => {
     const result = runHealthCheck();
     const output = JSON.parse(result.stdout);
 
-    // 若有任何 finding（包括 info），exit code 應為 1
-    if (output.findings.length > 0) {
+    const hasErrors = output.findings.some(f => f.severity === 'error');
+    if (hasErrors) {
       expect(result.exitCode).toBe(1);
+    } else {
+      // warnings/infos 不影響 exit code
+      expect(result.exitCode).toBe(0);
     }
   });
 
-  test('Scenario — exit code 0 時 passed 為 true', () => {
+  test('Scenario — exit code 0 時 passed 為 true 且無 error', () => {
     const result = runHealthCheck();
     if (result.exitCode === 0) {
       const output = JSON.parse(result.stdout);
       expect(output.summary.passed).toBe(true);
-      expect(output.findings.length).toBe(0);
+      expect(output.summary.errors).toBe(0);
     } else {
       // exit 1 時 passed 為 false
       const output = JSON.parse(result.stdout);

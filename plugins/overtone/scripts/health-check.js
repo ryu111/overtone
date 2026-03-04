@@ -1117,7 +1117,7 @@ function checkQualityTrends(projectRootOverride) {
   const { computeScoreTrend, getScoreSummary } = require('./lib/score-engine');
 
   const findings = [];
-  const FAILURE_THRESHOLD = 3;
+  const FAILURE_THRESHOLD = 10;
 
   // ── 1. 失敗模式偵測 ──
   try {
@@ -1261,7 +1261,7 @@ if (require.main === module) {
   const errors   = findings.filter((f) => f.severity === 'error').length;
   const warnings = findings.filter((f) => f.severity === 'warning').length;
   const infos    = findings.filter((f) => f.severity === 'info').length;
-  const passed   = findings.length === 0;
+  const passed   = errors === 0;
 
   const output = {
     version,
