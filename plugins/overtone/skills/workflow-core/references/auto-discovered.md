@@ -1,51 +1,4 @@
 ---
-## 2026-03-03 | product-manager:PM Context
-**問題陳述**：用户质疑 Level 2（持续学习）的 7 个能力建设完成后，Level 1（工作流自动化）的 17 个 agent、18 个 workflow 模板、11 个 hook、21 个 skill 是否真正**消费**了这些学习信号。核心追问是：「系统第 10 次做同类任务是否比第 1 次更好，有量化数据证明？」
-
-这个问题的本质是 **Layer 整合度审计** -- Level 2 的引擎（instinct、score-engine、baseline-tracker、failure-tracker、global-instinct）已经独立建好，但 Level 1 的元件是否已经全面升级来利用这些引擎？
-Keywords: level, agent, workflow, hook, skill, layer, instinct, score, engine, baseline
-
----
-## 2026-03-03 | developer:DEV Findings
-**斷點 1：gradedStages 擴大**
-- `plugins/overtone/scripts/lib/registry.js` 第 218 行：`gradedStages` 從 3 個擴大至 7 個 stage（加入 PLAN、ARCH、DEBUG、RETRO）
-- 下游的 `pre-task.js:299` 和 `on-stop.js:196` 均用 `gradedStages.includes()` 判斷，自動生效
-
-**斷點 2：failure reason 記錄**
-- `on-stop.js` 第 123-131 行：`recordFailure` 呼叫加入 `reason: result.reason || null`
-- `failure-tracker.js` `formatFailureWarnings` 加入根因展示邏輯（去重，最多 3 個）
-
-**斷點 3：全域觀察注入 subagent**
-- `pre-task.js` 在 score context 之前加入全域觀察注入區塊
-- 使用 `globalInstinct.queryGlobal` 取前 5 條高信心觀察，限制 500 字
-- 組裝順序更新：`...gapWarnings → globalObs → scoreContext...`
-
-**斷點 4：** 斷點 1 完成後自動解決（`gradedStages.includes` 邏輯覆蓋新 stage）
-
-**全量測試：3037 pass / 0 fail（bun test 通過）**
-Keywords: gradedstages, plugins, overtone, scripts, registry, stage, plan, arch, debug, retro
-
----
-## 2026-03-03 | retrospective:RETRO Findings
-**回顧摘要**：
-
-本次 quick workflow 回顧範圍為 Level 2 → Level 1 最小閉環修復（Phase 1），涵蓋 4 個 Must 斷點修復。
-
-**整體評估**：
-
-4 個斷點均已正確修復，且修復方式符合「治本不治標」原則：
-
-1. `gradedStages` 擴充（3 → 7）：影響範圍明確，`score-engine.js` 和 `on-stop.js` 透過 `includes()` 自動生效，無需額外改動。
-2. `failure reason` 記錄：`on-stop.js` 正確傳遞 `result.reason || null`，`failure-tracker.js` 的 `formatFailureWarnings` 正確顯示根因，新增測試（4-6、4-7、4-8）覆蓋有無 reason 的情境。
-3. 全域觀察注入：`pre-task.js` 以 `queryGlobal` 取前 5 筆高信心觀察注入，測試（場景 8）驗證有觀察和無觀察兩個路徑。
-4. `score context` 注入：依附在 `gradedStages` 上，測試通過確認完整。
-
-測試數字：3037 pass / 0 fail / 129 檔，全部通過。
-
----
-Keywords: quick, workflow, level, phase, must, gradedstages, score, engine, stop, includes
-
----
 ## 2026-03-03 | doc-updater:DOCS Findings
 已更新的文件清單及變更摘要：
 
@@ -734,4 +687,52 @@ Keywords: session, digest, test, pass, fail, files, handoff, generatedigest, tim
 
 7. **步驟編號說明**：`on-session-end.js` 中步驟編號 `3b/3b2/3b3/3c/3d` 為既有命名慣例（其他 PR 先行加入的步驟），本次新增 `3d` 延續此慣例，無一致性問題。
 Keywords: session, digest, cross, analyzer, dependency, injection, generatedigest, state, readstate, timeline
+
+---
+## 2026-03-04 | developer:DEV Context
+任務 `quick-remove-test-stage` 已在前一個 session 的 commit `48250d2` 中完整實作。本次 developer session 確認實作狀態正確，無需額外程式碼變更。
+
+**已完成的實作（commit 48250d2）：**
+- `plugins/overtone/scripts/lib/registry.js`：quick workflow stages 從 `['DEV', 'REVIEW', 'TEST', 'RETRO', 'DOCS']`（含 parallelGroups: ['quality']）改為 `['DEV', 'REVIEW', 'RETRO', 'DOCS']`（parallelGroups: []）
+- `plugins/overtone/commands/quick.md`：移除 TEST stage 相關說明，REVIEW 改為獨立執行，移除並行規則段落，更新失敗處理和完成條件
+- 13 個測試檔案更新對齊新的 4-stage 結構
+Keywords: quick, remove, test, stage, session, commit, developer, plugins, overtone, scripts
+
+---
+## 2026-03-04 | code-reviewer:REVIEW Findings
+**問題 1：Skill 參考文件未同步更新** (信心 90%)
+
+以下檔案仍描述 quick workflow 含 TEST stage 和並行群組，與 registry.js（SoT）不一致。這些文件會被 Main Agent 在 workflow 選擇和執行時讀取，導致錯誤的委派決策：
+
+- `/Users/sbu/projects/overtone/plugins/overtone/skills/auto/SKILL.md` 第 22 行
+  - 現在：`DEV → [REVIEW + TEST] → RETRO → DOCS`
+  - 應改為：`DEV → REVIEW → RETRO → DOCS`
+
+- `/Users/sbu/projects/overtone/plugins/overtone/skills/auto/examples/workflow-selection.md` 第 22 行
+  - 現在：`→ quick（DEV → [REVIEW + TEST]）`
+  - 應改為：`→ quick（DEV → REVIEW → RETRO → DOCS）`
+
+- `/Users/sbu/projects/overtone/plugins/overtone/skills/workflow-core/references/parallel-groups.md` 第 9 行
+  - 現在：`quality | REVIEW + TEST:verify | quick, standard, refactor`
+  - 應改為移除 `quick`：`quality | REVIEW + TEST:verify | standard, refactor`
+
+**問題 2：專案根文件未同步** (信心 85%)
+
+- `/Users/sbu/projects/overtone/CLAUDE.md` 第 42 行
+  - 現在：`quic
+Keywords: skill, quick, workflow, test, stage, registry, main, agent, users, projects
+
+---
+## 2026-03-04 | code-reviewer:REVIEW Context
+程式碼審查未通過，需要修改。核心程式碼變更（registry.js + quick.md + 13 測試檔案）邏輯正確且測試全過，但多個 skill 參考文件和專案文件仍引用舊的 quick workflow 定義，違反 CLAUDE.md 的「文檔同步」和「副本同步」規則。
+Keywords: registry, quick, skill, workflow, claude
+
+---
+## 2026-03-04 | retrospective:RETRO Findings
+**回顧摘要**：
+
+整體實作品質良好。registry.js 的核心變更正確（quick stages 移除 TEST、parallelGroups 清空），13 個測試檔案同步更新，3236 pass / 0 fail。c2685d7 的文件修復覆蓋了 CLAUDE.md、README.md、SKILL.md、workflow-selection.md、parallel-groups.md 五個檔案。
+
+然而 `docs/spec/` 目錄下有兩個規格文件仍保有舊定義，屬於跨 commit 的累積遺漏，單一階段 reviewer 難以全面掃描。
+Keywords: registry, quick, stages, test, parallelgroups, pass, fail, claude, readme, skill
 
