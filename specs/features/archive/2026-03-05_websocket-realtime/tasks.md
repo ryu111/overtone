@@ -1,10 +1,10 @@
 ---
 feature: websocket-realtime
-status: in-progress
+status: archived
 workflow: standard
 created: 2026-03-05T10:48:02.857Z
+archivedAt: 2026-03-05T11:34:36.381Z
 ---
-
 ## Stages
 
 - [x] PLAN
