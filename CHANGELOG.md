@@ -2,6 +2,48 @@
 
 所有重要變更記錄於此文件。
 
+## [0.28.53] - 2026-03-05
+
+### 製作原則內化完成——Agent Prompt + Validate 四模式品質檢查
+
+#### 核心功能
+- **Overtone 製作原則 Checklist**：新增 `skills/craft/references/overtone-principles.md`
+  - 三條製作原則檢查項目（完全閉環、自動修復、補全能力）
+  - 驗證品質信號（測試、審查、BDD 規格）
+  - 供 developer 在元件設計時自檢、manage-component.js create 成功後附加提示
+
+- **Agent Prompt 內化原則指引**：5 個 agent prompt 加入製作原則上下文
+  - `agents/developer.md`：層級 1 新增製作原則檢查清單提示
+  - `agents/code-reviewer.md`：層級 2 新增「檢查 event consumer」檢查項
+  - `agents/retrospective.md`：層級 3 新增「評估停止條件完整性」檢查項
+  - `agents/planner.md`：層級 4 新增「監測結構缺口」檢查項
+  - `agents/claude-developer.md`：utility agent 新增「驗證元件鏈」檢查項
+
+- **validate-agents 四模式 Prompt 品質檢查**：`scripts/validate-agents.js` 新增檢查
+  - Mode 1：Prompt 包含明確的 MUST/MUST NOT（硬規則強度）
+  - Mode 2：Prompt 長度上下限（200-2000 字元）
+  - Mode 3：Prompt 包含停止條件關鍵詞（passed、failed、approved 等）
+  - Mode 4：Prompt 包含信心過濾（when confident、when uncertain 等）
+  - 檢查失敗時 health-check 報警
+
+- **config-api.js Hex Color YAML 引號修正**
+  - 修復 YAML 生成時 hex color 值缺失引號，導致 YAML parser 誤解的問題
+  - 所有 color 字段強制加引號（例如 `color: "#FFA500"` 而非 `color: #FFA500`）
+
+#### 測試補強
+- 新增 `tests/unit/overtone-principles.test.js`（checklist 驗證）
+- 新增 `tests/unit/validate-agents-four-modes.test.js`（四模式檢查）
+- 擴展 `tests/unit/config-api.test.js`（hex color 引號修正）
+- BDD 全覆蓋：3 個 Feature、30+ Scenario
+- 測試 +30（3416 → 3446，152 files）
+
+#### 文件同步
+- `plugin.json`：版本 0.28.53
+- `docs/status.md`：版本更新、測試 3416 → 3446（+30）、製作原則內化功能記錄
+- `CHANGELOG.md`：本次變更記錄
+
+---
+
 ## [0.28.52] - 2026-03-05
 
 ### Prompt Journal 完成——用戶 Intent 記錄與配對

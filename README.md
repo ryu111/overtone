@@ -71,7 +71,7 @@ Dashboard 在 SessionStart 自動啟動（`http://localhost:7777`），即時顯
 
 **核心指標：**
 
-- 3360 pass / 0 fail（151 個測試）
+- 3446 pass / 0 fail（153 個測試）
 - 18 個 agent + 11 個 hook + 23 個 skill + 28 個 command
 - 18 個 workflow 模板
 - 15 個 knowledge domain
@@ -99,13 +99,13 @@ lint 0 error + test 0 fail + review PASS → 才算完成
 
 | 項目 | 內容 |
 |------|------|
-| Plugin 版本 | 0.28.49 |
+| Plugin 版本 | 0.28.53 |
 | Agent 數量 | 18（含 grader、claude-developer） |
 | Workflow 模板 | 18 |
 | Hook 數量 | 11 |
 | Skill 數量 | 23（15 knowledge domain + orchestrator + pm + specs + 4 utility-with-refs） |
 | Command 數量 | 28（14 stage shortcut + 7 workflow pipeline + 7 utility） |
-| 測試覆蓋 | 3360 pass（151 個測試檔） |
+| 測試覆蓋 | 3446 pass（153 個測試檔） |
 | Runtime | Bun |
 | 前端 | htmx + Alpine.js（SSE 即時推送） |
 | 遠端控制 | EventBus + Adapter（Dashboard + Telegram） |

@@ -1,79 +1,4 @@
 ---
-## 2026-03-04 | tester:TEST Findings
-測試結果摘要：
-- `session-digest.test.js` 27 個測試：**27 pass, 0 fail**
-- 全量測試套件 138 files：**3240 pass, 0 fail**
-- 既有測試無任何破壞
-
-涵蓋範圍（Handoff 中的 5 個測試群組）：
-1. generateDigest — 正常 timeline 場景（5 tests）
-2. generateDigest — 空 timeline 場景（4 tests）
-3. generateDigest — 無 failure 場景（3 tests）
-4. generateDigest — stage 執行結果統計（3 tests）
-5. generateDigest — workflowType 和 featureName（3 tests）
-6. appendDigest — 寫入並可讀取（4 tests）
-7. data.js query digests — 路由測試（5 tests）
-Keywords: session, digest, test, pass, fail, files, handoff, generatedigest, timeline, tests
-
----
-## 2026-03-04 | retrospective:RETRO Findings
-**回顧摘要**：
-
-1. **架構一致性確認**：`session-digest.js` 採用與 `cross-analyzer.js` 相同的 DI（Dependency Injection）模式，`_getDeps()` 接收可覆寫的依賴物件。這是整個 `lib/` 目錄下的統一設計，無偏離。
-
-2. **靜默降級完整性確認**：`generateDigest` 中每個 I/O 操作（`state.readState`、`timeline.query`、`failureTracker.getFailurePatterns`、時間計算）均有獨立的 `try/catch`，且靜默降級為安全預設值（`null` 或空陣列）。`appendDigest` 也有 `if (!projectRoot || !digest) return` 防禦。
-
-3. **整合點正確**：`on-session-end.js` 步驟 3d 正確嵌入，位置在 `saveBaseline`（3c）之後、清理 `.current-session-id` 之前，並使用 `try/catch` 包裹確保非關鍵功能失敗不影響主流程。
-
-4. **測試覆蓋完整性確認**：27 個測試覆蓋 7 個面向（正常 timeline、空 timeline、無 failure、stage 統計、workflowType/featureName 讀取、appendDigest 寫入、data.js CLI 路由），包含靜默降級和邊界情況，pass@1 = 27/27。
-
-5. **paths.js 一致性確認**：`global.digests` 函式簽章（`(projectRoot) => string`）與 `global.observations`、`global.baselines`、`global.scores`、`global.failures` 完全一致，零偏差。
-
-6. **data.js 整合確認**：`cmdQuery` 中的 `digests` case 實作與 `baselines` case 結構對稱，支援 `--workflow` 過濾和 `--limit` 截斷，模式一致。幫助文字（`printHelp`）也已更新加入 `digests` 類型。
-
-7. **步驟編號說明**：`on-session-end.js` 中步驟編號 `3b/3b2/3b3/3c/3d` 為既有命名慣例（其他 PR 先行加入的步驟），本次新增 `3d` 延續此慣例，無一致性問題。
-Keywords: session, digest, cross, analyzer, dependency, injection, generatedigest, state, readstate, timeline
-
----
-## 2026-03-04 | developer:DEV Context
-任務 `quick-remove-test-stage` 已在前一個 session 的 commit `48250d2` 中完整實作。本次 developer session 確認實作狀態正確，無需額外程式碼變更。
-
-**已完成的實作（commit 48250d2）：**
-- `plugins/overtone/scripts/lib/registry.js`：quick workflow stages 從 `['DEV', 'REVIEW', 'TEST', 'RETRO', 'DOCS']`（含 parallelGroups: ['quality']）改為 `['DEV', 'REVIEW', 'RETRO', 'DOCS']`（parallelGroups: []）
-- `plugins/overtone/commands/quick.md`：移除 TEST stage 相關說明，REVIEW 改為獨立執行，移除並行規則段落，更新失敗處理和完成條件
-- 13 個測試檔案更新對齊新的 4-stage 結構
-Keywords: quick, remove, test, stage, session, commit, developer, plugins, overtone, scripts
-
----
-## 2026-03-04 | code-reviewer:REVIEW Findings
-**問題 1：Skill 參考文件未同步更新** (信心 90%)
-
-以下檔案仍描述 quick workflow 含 TEST stage 和並行群組，與 registry.js（SoT）不一致。這些文件會被 Main Agent 在 workflow 選擇和執行時讀取，導致錯誤的委派決策：
-
-- `/Users/sbu/projects/overtone/plugins/overtone/skills/auto/SKILL.md` 第 22 行
-  - 現在：`DEV → [REVIEW + TEST] → RETRO → DOCS`
-  - 應改為：`DEV → REVIEW → RETRO → DOCS`
-
-- `/Users/sbu/projects/overtone/plugins/overtone/skills/auto/examples/workflow-selection.md` 第 22 行
-  - 現在：`→ quick（DEV → [REVIEW + TEST]）`
-  - 應改為：`→ quick（DEV → REVIEW → RETRO → DOCS）`
-
-- `/Users/sbu/projects/overtone/plugins/overtone/skills/workflow-core/references/parallel-groups.md` 第 9 行
-  - 現在：`quality | REVIEW + TEST:verify | quick, standard, refactor`
-  - 應改為移除 `quick`：`quality | REVIEW + TEST:verify | standard, refactor`
-
-**問題 2：專案根文件未同步** (信心 85%)
-
-- `/Users/sbu/projects/overtone/CLAUDE.md` 第 42 行
-  - 現在：`quic
-Keywords: skill, quick, workflow, test, stage, registry, main, agent, users, projects
-
----
-## 2026-03-04 | code-reviewer:REVIEW Context
-程式碼審查未通過，需要修改。核心程式碼變更（registry.js + quick.md + 13 測試檔案）邏輯正確且測試全過，但多個 skill 參考文件和專案文件仍引用舊的 quick workflow 定義，違反 CLAUDE.md 的「文檔同步」和「副本同步」規則。
-Keywords: registry, quick, skill, workflow, claude
-
----
 ## 2026-03-04 | retrospective:RETRO Findings
 **回顧摘要**：
 
@@ -887,4 +812,61 @@ Keywords: overtone, agent, developer, claude, retrospective, code, reviewer, han
 
 影響：新元件可能不符合製作原則但無人發現；retrospective 回顧缺乏結構化 checklist；claude-developer 建立元件時不會自動檢查合規。
 Keywords: docs, plugin, agents, hooks, skills, agent, pass, retrospective, checklist, claude
+
+---
+## 2026-03-05 | developer:DEV Findings
+1. **craft SKILL.md 決策樹更新**：在決策樹末尾加入「Overtone 元件設計/審查/回顧 → overtone-principles.md」路徑，資源索引加入新 reference 說明。
+
+2. **5 個 agent 的 skills 和 body 更新**：
+   - `retrospective`、`planner`：新增掛載 craft skill
+   - `claude-developer`：新增掛載 craft skill
+   - 所有 5 個 agent 在 DO 區塊末尾加入一行精簡指引（各自對應角色的用語）
+
+3. **validate-agents.js 新增四模式 prompt 品質檢查**：掃描 agent .md body 是否包含停止條件/邊界清單/誤判防護/信心過濾四要素，缺少任何要素輸出 warning（不阻擋驗證）。
+
+4. **順帶修正 config-api.js hex color bug**：`buildAgentFrontmatter` 寫入 hex color 時自動加引號（`'#xxx'`），防止 gray-matter 將 `#` 解析為 YAML 注釋導致 color 變 null。claude-developer 原本就有此問題（`color: #7B68EE`），修正後 validate-agents 可正常通過。
+
+5. **測試結果**：3446 pass, 0 fail（較之前增加 64 個，來自 validate-agents 內部的 warnings 統計）。
+Keywords: craft, skill, overtone, principles, reference, agent, skills, body, retrospective, planner
+
+---
+## 2026-03-05 | developer:DEV Context
+實作 `internalize-principles` feature：將 Overtone 製作原則內化到 Plugin 內部，讓 5 個核心 agent 在設計/實作/審查/回顧時都能參考。同時修正了 config-api.js 的 hex color YAML 解析 bug。
+Keywords: internalize, principles, feature, overtone, plugin, agent, config, color, yaml
+
+---
+## 2026-03-05 | code-reviewer:REVIEW Findings
+審查了以下面向，未發現高信心問題：
+- overtone-principles.md checklist 與專案製作規範對齊
+- 5 個 agent prompt 修改精簡、指令強度用詞合適
+- validate-agents 四模式檢查邏輯正確且不阻擋
+- config-api.js hex color 修正邏輯正確
+- auto-discovered.md 知識歸檔正常
+
+[n] `existsSync` import 未使用（`/Users/sbu/projects/overtone/plugins/overtone/scripts/validate-agents.js` 第 34 行）
+Keywords: overtone, principles, checklist, agent, prompt, validate, agents, config, color, auto
+
+---
+## 2026-03-05 | code-reviewer:REVIEW Context
+程式碼審查通過。internalize-principles feature 將 Overtone 製作原則內化到 Plugin 內部，包含新增 checklist 文件、5 個 agent 指引、validate-agents 四模式品質檢查、以及 hex color bug 修正。
+Keywords: internalize, principles, feature, overtone, plugin, checklist, agent, validate, agents, color
+
+---
+## 2026-03-05 | retrospective:RETRO Findings
+**回顧摘要**：
+
+整體實作與目標對齊，三個確認的品質點：
+
+**1. 原則覆蓋範圍有意識地聚焦**
+
+此 feature 選擇 5 個 agent（developer / code-reviewer / retrospective / planner / claude-developer）加掛 craft skill 並加指引行。architect 雖已有 craft skill（commit 前就存在），但其 prompt body 未加入明確的「Overtone 元件設計時參考 overtone-principles.md」指引行。validate-agents.js 的警告輸出（architect: 缺少誤判防護，共 23 個 warning）屬於整體 agent prompt 四模式覆蓋度的現況偵測，**非此次 feature 引入的回歸問題**。warn-only 設計正確，不阻擋 CI。
+
+**2. validate-agents.js 的四模式 pattern match 具備實用價值**
+
+新增的 prompt 品質檢查能主動偵測 agent prompt 缺少停止條件/邊界清單/誤判防護/信心過濾的情況。作為 warning 機制上線，未來可漸進式修復。Pattern 本身對繁中字樣（`DO（`、`信心`）與英文字樣（`false positive`）同時偵測，覆蓋合理。
+
+**3. config-api.js hex color 修正閉環正確**
+
+此修正解決了 YAML 將 `#` 解析為注釋的問題，是一個結構性修復（加引號）而非 workaround，符合「治本不治標」原則。existsSync 的未使用 import（REVIEW 階段的 Nitpick）是唯一已知的小缺陷，code-reviewer 已記錄，此後可作為技術債清理。
+Keywords: feature, agent, developer, code, reviewer, retrospective, planner, claude, craft, skill
 

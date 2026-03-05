@@ -187,6 +187,17 @@ function handleSessionStop(input, sessionId) {
     }
 
     const summary = buildCompletionSummary(currentState) + (queueHint || '');
+
+    // 佇列有下一項 → 用 decision: 'block' 強制 loop 繼續（程式控制，不依賴 Main Agent 自主行動）
+    if (queueHint) {
+      return {
+        output: {
+          decision: 'block',
+          reason: summary,
+        },
+      };
+    }
+
     return { output: { result: summary } };
   }
 
