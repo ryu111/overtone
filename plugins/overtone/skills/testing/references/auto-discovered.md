@@ -704,3 +704,20 @@ Keywords: verify, security, integration, feature, spec, tests, bash, guard, test
 **判斷：PASS**
 Keywords: regression, tests, integration, bash, guard, test, pass, fail, unit, health
 
+---
+## 2026-03-05 | tester:TEST:2 Findings
+測試結果：**52 passed, 0 failed**
+
+- `tests/unit/gap-analyzer.test.js`：涵蓋 BDD spec 中 Feature 1-11，包含 GapReport 結構、GapType 映射、severity 繼承、去重邏輯、summary 統計、checks 過濾、suggestion 格式、pluginRoot 不存在優雅降級、真實 pluginRoot 無缺口驗證
+- `tests/integration/evolution-analyze.test.js`：涵蓋 Evolution CLI 的 6 個 scenario — 純文字輸出、JSON 格式、無缺口 exit 0、JSON 無缺口空陣列、無效子命令、不帶子命令
+
+全域測試：**3632 pass, 0 fail**（160 個測試檔案，未破壞任何既有測試）
+Keywords: passed, failed, tests, unit, analyzer, test, spec, feature, gapreport, gaptype
+
+---
+## 2026-03-05 | code-reviewer:REVIEW Findings
+[m] 整合測試未 commit：`tests/integration/evolution-analyze.test.js` 為 untracked 狀態，雖然 19 個測試全部通過，但未包含在任何 commit 中。Developer 應在後續 commit 中加入此檔案。
+
+[n] design.md Open Questions 第 1 點的去重 key 描述（`${check}:${file}`）與決策 3（`${type}:${file}`）不一致。實作與決策 3 對齊，是正確的，但文件有殘留矛盾。
+Keywords: commit, tests, integration, evolution, analyze, test, untracked, developer, design, open
+
