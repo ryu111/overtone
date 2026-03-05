@@ -1,23 +1,4 @@
 ---
-## 2026-03-05 | retrospective:RETRO Findings
-**回顧摘要**：
-
-整體實作與目標對齊，三個確認的品質點：
-
-**1. 原則覆蓋範圍有意識地聚焦**
-
-此 feature 選擇 5 個 agent（developer / code-reviewer / retrospective / planner / claude-developer）加掛 craft skill 並加指引行。architect 雖已有 craft skill（commit 前就存在），但其 prompt body 未加入明確的「Overtone 元件設計時參考 overtone-principles.md」指引行。validate-agents.js 的警告輸出（architect: 缺少誤判防護，共 23 個 warning）屬於整體 agent prompt 四模式覆蓋度的現況偵測，**非此次 feature 引入的回歸問題**。warn-only 設計正確，不阻擋 CI。
-
-**2. validate-agents.js 的四模式 pattern match 具備實用價值**
-
-新增的 prompt 品質檢查能主動偵測 agent prompt 缺少停止條件/邊界清單/誤判防護/信心過濾的情況。作為 warning 機制上線，未來可漸進式修復。Pattern 本身對繁中字樣（`DO（`、`信心`）與英文字樣（`false positive`）同時偵測，覆蓋合理。
-
-**3. config-api.js hex color 修正閉環正確**
-
-此修正解決了 YAML 將 `#` 解析為注釋的問題，是一個結構性修復（加引號）而非 workaround，符合「治本不治標」原則。existsSync 的未使用 import（REVIEW 階段的 Nitpick）是唯一已知的小缺陷，code-reviewer 已記錄，此後可作為技術債清理。
-Keywords: feature, agent, developer, code, reviewer, retrospective, planner, claude, craft, skill
-
----
 ## 2026-03-05 | product-manager:PM Findings
 **目標用戶**：Overtone 使用者（個人 dogfooding），在需要一次規劃多個功能然後批次執行的場景下使用。
 
@@ -926,4 +907,18 @@ Keywords: skill, internalization, generalizer, skills, instinct, internalized
 - 修復後執行 5 次 `test-parallel.js` 全部 pass
 - `bun test` 3864 pass, 0 fail
 Keywords: overtone, current, session, submit, instinct, test, hook, bridge, init, workflow
+
+---
+## 2026-03-05 | developer:DEV Findings
+1. **health-check doc-code-drift** — 執行前已是 `passed: true`，無 drift 發現（doc-sync-engine 只追蹤 agents/skills/commands/hooks 四項，不含 scripts/lib 計數）
+2. **docs-sync.test.js** — 28 pass，執行前後皆通過
+3. **scripts/lib 實際計數**：
+   - 頂層 `.js`：42 個
+   - `analyzers/`：7 個
+   - `knowledge/`：9 個
+   - `dashboard/`：2 個
+   - `remote/`：4 個
+   - 總計：**64 個**（文件記載 51，差距 13 個）
+4. **其他數字確認**：agents 18、skills 24、hooks 11、commands 28、health-check 17 項 — 均已正確
+Keywords: health, check, code, drift, passed, true, sync, engine, agents, skills
 
