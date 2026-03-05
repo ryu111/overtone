@@ -637,13 +637,51 @@ function init(featureName, outputPath, options) {
 }
 
 /**
+ * 計算 session 中應回答的總題數（required + 已解鎖的 optional）
+ *
+ * @param {object} session
+ * @returns {number}
+ */
+function _calcTotalQuestions(session) {
+  const answers = session && session.answers ? session.answers : {};
+  const skipFacets = (session && session.options && session.options.skipFacets) || [];
+  const available = QUESTION_BANK.filter(q => !skipFacets.includes(q.facet));
+
+  let total = 0;
+  for (const q of available) {
+    if (q.required) {
+      total++;
+    } else {
+      // optional 題：dependsOn 已回答（或無依賴）視為已解鎖
+      const unlocked = !q.dependsOn || Object.prototype.hasOwnProperty.call(answers, q.dependsOn);
+      if (unlocked) total++;
+    }
+  }
+  return total;
+}
+
+/**
+ * 計算 session 中已回答的題數
+ *
+ * @param {object} session
+ * @returns {number}
+ */
+function _calcAnsweredCount(session) {
+  const answers = session && session.answers ? session.answers : {};
+  const skipFacets = (session && session.options && session.options.skipFacets) || [];
+  const available = QUESTION_BANK.filter(q => !skipFacets.includes(q.facet));
+  return available.filter(q => Object.prototype.hasOwnProperty.call(answers, q.id)).length;
+}
+
+/**
  * 取得下一個待回答的問題
  *
  * 順序：按 FACET_ORDER 面向順序，先返回必問題，再返回補充題。
  * dependsOn 前置問題未回答時跳過該問題。
+ * 回傳的 Question 物件附帶 progress 欄位：{ current, total, percentage }
  *
  * @param {object} session
- * @returns {object|null} Question 或 null（全部完成時）
+ * @returns {object|null} Question（含 progress）或 null（全部完成時）
  */
 function nextQuestion(session) {
   // 防禦性：answers 為 null 時當成空物件
@@ -668,29 +706,48 @@ function nextQuestion(session) {
     return Object.prototype.hasOwnProperty.call(answers, question.id);
   }
 
+  let found = null;
+
   // 第一輪：按面向順序，取第一個未回答的必問題
   for (const facet of FACET_ORDER) {
     if (skipFacets.includes(facet)) continue;
     const facetRequired = available.filter(q => q.facet === facet && q.required);
     for (const q of facetRequired) {
       if (!isAnswered(q) && isDependencySatisfied(q)) {
-        return q;
+        found = q;
+        break;
       }
     }
+    if (found) break;
   }
 
   // 第二輪：按面向順序，取第一個未回答的補充題
-  for (const facet of FACET_ORDER) {
-    if (skipFacets.includes(facet)) continue;
-    const facetOptional = available.filter(q => q.facet === facet && !q.required);
-    for (const q of facetOptional) {
-      if (!isAnswered(q) && isDependencySatisfied(q)) {
-        return q;
+  if (!found) {
+    for (const facet of FACET_ORDER) {
+      if (skipFacets.includes(facet)) continue;
+      const facetOptional = available.filter(q => q.facet === facet && !q.required);
+      for (const q of facetOptional) {
+        if (!isAnswered(q) && isDependencySatisfied(q)) {
+          found = q;
+          break;
+        }
       }
+      if (found) break;
     }
   }
 
-  return null;
+  if (!found) return null;
+
+  // 計算進度資訊
+  const answered = _calcAnsweredCount(session);
+  const total = _calcTotalQuestions(session);
+  const current = answered + 1;
+  const percentage = total > 0 ? Math.round(current / total * 100) : 100;
+
+  return {
+    ...found,
+    progress: { current, total, percentage },
+  };
 }
 
 /**
@@ -1173,6 +1230,78 @@ function getResearchQuestions(session) {
   }));
 }
 
+/**
+ * 取得各 facet 的完成度摘要（純函式）
+ *
+ * @param {object} session - InterviewSession
+ * @returns {{
+ *   functional: { answered: number, total: number },
+ *   flow: { answered: number, total: number },
+ *   ui: { answered: number, total: number },
+ *   'edge-cases': { answered: number, total: number },
+ *   acceptance: { answered: number, total: number },
+ *   overall: { answered: number, total: number, percentage: number }
+ * }}
+ */
+function getProgress(session) {
+  const answers = session && session.answers ? session.answers : {};
+  const skipFacets = (session && session.options && session.options.skipFacets) || [];
+
+  const result = {};
+  let overallAnswered = 0;
+  let overallTotal = 0;
+
+  for (const facet of FACET_ORDER) {
+    if (skipFacets.includes(facet)) {
+      result[facet] = { answered: 0, total: 0 };
+      continue;
+    }
+
+    const facetQuestions = QUESTION_BANK.filter(q => q.facet === facet);
+    const facetAnswered = facetQuestions.filter(
+      q => Object.prototype.hasOwnProperty.call(answers, q.id)
+    ).length;
+    const facetTotal = facetQuestions.length;
+
+    result[facet] = { answered: facetAnswered, total: facetTotal };
+    overallAnswered += facetAnswered;
+    overallTotal += facetTotal;
+  }
+
+  const percentage = overallTotal > 0 ? Math.round(overallAnswered / overallTotal * 100) : 0;
+  result.overall = { answered: overallAnswered, total: overallTotal, percentage };
+
+  return result;
+}
+
+/**
+ * 取得已回答問題的精簡列表（純函式）
+ *
+ * @param {object} session - InterviewSession
+ * @returns {Array<{ id: string, facet: string, questionText: string, answerPreview: string }>}
+ *   answerPreview 取答案前 80 字，超過加 '...'
+ */
+function getAnswerSummary(session) {
+  const answers = session && session.answers ? session.answers : {};
+
+  const result = [];
+  for (const q of QUESTION_BANK) {
+    if (!Object.prototype.hasOwnProperty.call(answers, q.id)) continue;
+    const raw = answers[q.id];
+    // null / undefined / 非字串 → 轉成字串再截斷
+    const str = raw == null ? '' : String(raw);
+    const answerPreview = str.length > 80 ? str.slice(0, 80) + '...' : str;
+    result.push({
+      id: q.id,
+      facet: q.facet,
+      questionText: q.text,
+      answerPreview,
+    });
+  }
+
+  return result;
+}
+
 // ── 匯出 ──
 
 module.exports = {
@@ -1188,6 +1317,8 @@ module.exports = {
   extractInsights,
   researchDomain,
   getResearchQuestions,
+  getProgress,
+  getAnswerSummary,
   enrichBDDScenarios,
   // 匯出問題庫供測試直接查詢（Feature 7）
   QUESTION_BANK,
