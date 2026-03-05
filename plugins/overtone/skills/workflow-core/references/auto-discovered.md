@@ -1,33 +1,4 @@
 ---
-## 2026-03-04 | developer:DEV Findings
-**關鍵設計決策**：
-
-1. `analyzeFailureHotspot` 優先使用 `failureTracker._readAll()` 取得原始記錄，以便計算 `lastFailedAt`。若 `_readAll` 不存在（非公開 API），則有降級路徑：以 `topPattern` 建立基本輸出。
-
-2. `analyzeHookOverhead` 處理 `hook:timing` 事件的 hook 名稱欄位時，支援 `hook`、`hookName`、`name` 三種鍵名（防禦未來格式差異），不存在則用 `'unknown'`。
-
-3. `analyzeWorkflowVelocity` 以所有已知 session ID 做聚合。data.js 的 `cmdAnalyze` 負責從 `SESSIONS_DIR` 讀取 sessionIds 清單後傳入。
-
-4. 三個分析函式均 gracefully 處理例外（try/catch），無資料時回傳空結果而非報錯，符合 spec 要求。
-
-5. `--table` 選項時，`failure-hotspot` 輸出 `hotspots` 陣列，`hook-overhead` 輸出 `hooks` 陣列，`workflow-velocity` 輸出 `stages` 陣列（皆是可直接表格化的陣列部分）。
-Keywords: analyzefailurehotspot, failuretracker, lastfailedat, toppattern, analyzehookoverhead, hook, timing, hookname, name, unknown
-
----
-## 2026-03-04 | developer:DEV Findings
-- **DI pattern** 完整實作：`session-digest.js` 使用 `_getDeps()` 同 `cross-analyzer.js` 模式，所有外部依賴均可注入替換
-- **全失敗靜默降級**：所有 timeline/state/failureTracker 讀取都包在 try/catch，session 摘要是非關鍵功能，任何錯誤不影響 SessionEnd 其他邏輯
-- **paths.js 擴充**：在 `global` 物件加入 `digests` 路徑函式，與現有 `baselines`/`scores` 等一致
-- **data.js query digests** 與 `baselines` 實作模式完全對齊（直接讀 JSONL + 支援 `--workflow` 過濾 + `--limit`）
-- **on-session-end 整合位置**：放在 baseline 保存之後、`.current-session-id` 清理之前，編號 `3d` 保持順序合理
-Keywords: pattern, session, digest, cross, analyzer, timeline, state, failuretracker, catch, sessionend
-
----
-## 2026-03-04 | developer:DEV Context
-實作了 `data-auto-digest` — SessionEnd 自動摘要功能。每次 session 結束時自動產生結構化摘要（工作流類型、timeline 事件統計、stage 執行結果、失敗熱點），寫入 `~/.overtone/global/{projectHash}/digests.jsonl`，並提供 `data.js query digests` CLI 查詢。
-Keywords: data, auto, digest, sessionend, session, timeline, stage, overtone, global, projecthash
-
----
 ## 2026-03-04 | tester:TEST Findings
 測試結果摘要：
 - `session-digest.test.js` 27 個測試：**27 pass, 0 fail**
@@ -846,4 +817,74 @@ Keywords: prompt, journal, instinct, emit, options, queryglobal, filter, exclude
 
 5. **feature 已被自動歸檔**：`specs/features/archive/2026-03-05_prompt-journal/` — specs-archive-scanner 在 session start 時已自動執行。
 Keywords: instinct, skipdedup, extrafields, global, excludetypes, registry, journaldefaults, submit, handler, session
+
+---
+## 2026-03-05 | planner:PLAN Findings
+**需求分解**：
+
+1. **checkClosedLoop — 閉環偵測** | agent: developer | files: `plugins/overtone/scripts/health-check.js`
+   - 反向掃描 timeline events：找「有 emit 但無 consumer」的孤立事件流
+   - 掃描策略：讀取 timeline 的 `readTimeline`/`queryTimeline` 呼叫 + 按 `.type` 過濾的程式碼
+   - severity: warning（部分事件只寫不讀是合理的）
+
+2. **checkRecoveryStrategy — 恢復策略偵測** | agent: developer | files: `plugins/overtone/scripts/health-check.js`
+   - 子項 1：9 個 `*-handler.js` 模組，確認主入口函式有頂層 try-catch
+   - 子項 2：`agents/*.md` body，確認含停止條件相關描述
+   - severity: warning
+
+3. **checkCompletionGap — 補全缺口偵測** | agent: developer | files: `plugins/overtone/scripts/health-check.js`
+   - 掃描 `skills/` 目錄，偵測缺少 `references/` 子目錄的 skill（目前 `auto` skill 已確認缺少）
+   - severity: warning
+
+4. **manage-component.js 提示擴展** | agent: developer | files: `plugins/overtone/scripts/manage-component.js`
+   - create agent 成功後 → stderr 提示：加入失敗恢復策略（停止條件 + 誤判防護）
+   - create skill 成功後 → stderr 提示：建立 references/ 目錄（支援 checkCompletionGap）
+
+5. **測試** | agent: developer | files: `tests/unit/health-check.test.js`
+   - 3 個新 describe block，各含 happy/sad path
+   - 需 DI 友好設計（參考 `checkTestGrowth` 的 getDepsOverride 模式）
+
+6. **文件同步**（parallel）| agent: developer | files: `docs/spec/overtone-製作規範.md`, `docs/status.md`
+   - 更新製作規範的「已知缺口」狀態
+   - 更新 status.md 的 health-check 項目數：12 → 15
+
+**優先順序**：
+- 第一批（可並行）：任務 1 + 2 + 3 + 4，全部修改 health-check.js 的不同函式位置 + manage-component.js
+- 第二批（接續）：任務 5（測試），需先有實作
+- 第三批（可並行）：任務 6（文件同步），獨立執行
+
+**範圍邊界**：
+- 不實作 hook-error-tracker、Dashboard 自動重啟、intent_journal 分析回饋
+- 不修改現有 12 項偵測的 Finding schema
+- 不新增 `suggestedAction` 欄位（獨立改進，不在此次範圍）
+- checkWorkflowCoverage、checkHookEventCoverage 留待獨立 feature
+Keywords: checkclosedloop, agent, developer, files, plugins, overtone, scripts, health, check, timeline
+
+---
+## 2026-03-05 | product-manager:PM Findings
+**目標用戶**：Overtone 工作流中的所有 agent（尤其 developer、claude-developer、retrospective、code-reviewer）
+
+**成功指標**：
+- Agent 在執行時能根據製作原則做判斷（可觀察：Handoff 中出現原則相關的 findings）
+- 新元件建立時有合規提示（可觀察：manage-component.js 或 validate-agents.js 輸出）
+- retrospective 回顧能結構化對照原則 checklist
+
+**方案比較**：
+
+| 維度 | 方案 A：擴展 craft skill | 方案 B：Agent prompt 注入 | 方案 C：混合方案（推薦） |
+|------|------------------------|------------------------|------------------------|
+| 概述 | 在 craft skill 新增 `overtone-principles.md` reference，包含三大製作原則的可檢驗標準和新元件合規 checklist | 在 6-8 個關鍵 agent prompt 中直接加入製作原則遵守指引 | craft skill 加 reference（知識源頭）+ 關鍵 agent prompt 加一行原則提示（消費入口）+ validate-agents 加 prompt 品質檢查（守衛） |
+| 優點 | 利用現有 skill 機制，不動 agent prompt；SoT 在一處 | Agent 每次都能直接看到；無需讀取額外 reference | 知識集中在 skill（SoT）；agent 有指引去查；守衛自動偵測 |
+| 缺點 | Agent 不一定會主動讀取 reference；只有 3 個 agent 掛 craft skill | 18 個 agent 都要改；原則更新時要同步 18 處；prompt 膨脹 | 實作量稍多（3 層） |
+| 工作量 | 1-2 人天 | 2-3 人天 | 2-3 人天 |
+| RICE | (10x2x0.8)/1.5 = 10.7 | (10x2x0.8)/2.5 = 6.4 | (10x3x0.8)/2.5 = 9.6 |
+| 證據等級 | codeb
+Keywords: overtone, agent, developer, claude, retrospective, code, reviewer, handoff, findings, manage
+
+---
+## 2026-03-05 | product-manager:PM Context
+用戶指出外層 docs（製作規範/驗證品質）與 Plugin 內部（agents/hooks/skills）之間存在斷層。Agent 在執行時不會參考製作原則，導致三大原則（完全閉環/自動修復/補全能力）和驗證品質標準（三信號/pass@k）停留在「人讀文件」層級，未進入「AI 執行」層級。
+
+影響：新元件可能不符合製作原則但無人發現；retrospective 回顧缺乏結構化 checklist；claude-developer 建立元件時不會自動檢查合規。
+Keywords: docs, plugin, agents, hooks, skills, agent, pass, retrospective, checklist, claude
 

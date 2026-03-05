@@ -1,12 +1,12 @@
 # Overtone 現況
 
-> 最後更新：2026-03-05 | Plugin 版本：0.28.52（Prompt Journal — intent_journal 觀察類型記錄 prompt 原文）
+> 最後更新：2026-03-05 | Plugin 版本：0.28.52（Health-Check 製作原則 3 項偵測完成）
 
 ## 版本狀態
 
 | 版本 | 狀態 | 說明 |
 |------|------|------|
-| V1 | 進行中 | 3416 pass，0 fail，核心功能完整 + 守衛強化 11/11 + Knowledge Engine + 跨 Session 長期記憶 + 效能基線追蹤 + 數值評分引擎 + 趨勢分析 + 回饋閉環 + 卡點識別 + 時間序列學習（Level 2 完成）+ 核心穩固清理 + mul-agent 泛化 + P3.0 閉環基礎 + P3.1 感知層（screenshot.js + window.js + perception.md）+ P3.2 心跳引擎（heartbeat.js + session-spawner.js）+ P3.3 系統層（process.js + clipboard.js + system-info.js + notification.js + fswatch.js）+ 並行收斂門 + Status Line TTL 防護 + Specs checkbox fallback 修復 + Level 2→1 整合修復（gradedStages 擴大 + 失敗原因記錄 + 全域觀察注入）+ Agent Memory 升級（8 個跨層級 agent + Score Context 個人化 + Grader 強制化）+ 核心簡化（移除 active-agent.json + 並行提示修復 + 不變量守衛）+ Hook Contract 自我修復（state.sanitize() + 8 個 hook 合約測試）+ 主動偵測（health-check 15 項，含元件鏈 + 資料品質 + 趨勢分析 + 測試增長率 + 製作原則 3 項）+ Health-Check 精確度提升（假陽性 23→0 error + 孤兒 active stage 守衛）+ Queue CLI + PM 佇列整合 + Spawner 防禦 + Hook 薄殼化（9 handler 模組）+ Telegram /run 命令 + PM 佇列自動寫入 + CLAUDECODE env filter + Main Agent 寫碼偵測守衛 + lib/ 結構重構（config 拆分 + analyzers/ + knowledge/ 子目錄）+ SessionStart systemMessage 動態注入 plugin context + Prompt Journal（intent_journal 記錄 prompt 原文）|
+| V1 | 進行中 | 3446 pass，0 fail，核心功能完整 + 守衛強化 11/11 + Knowledge Engine + 跨 Session 長期記憶 + 效能基線追蹤 + 數值評分引擎 + 趨勢分析 + 回饋閉環 + 卡點識別 + 時間序列學習（Level 2 完成）+ 核心穩固清理 + mul-agent 泛化 + P3.0 閉環基礎 + P3.1 感知層（screenshot.js + window.js + perception.md）+ P3.2 心跳引擎（heartbeat.js + session-spawner.js）+ P3.3 系統層（process.js + clipboard.js + system-info.js + notification.js + fswatch.js）+ 並行收斂門 + Status Line TTL 防護 + Specs checkbox fallback 修復 + Level 2→1 整合修復（gradedStages 擴大 + 失敗原因記錄 + 全域觀察注入）+ Agent Memory 升級（8 個跨層級 agent + Score Context 個人化 + Grader 強制化）+ 核心簡化（移除 active-agent.json + 並行提示修復 + 不變量守衛）+ Hook Contract 自我修復（state.sanitize() + 8 個 hook 合約測試）+ 主動偵測（health-check 15 項，含元件鏈 + 資料品質 + 趨勢分析 + 測試增長率 + 製作原則 3 項）+ Health-Check 精確度提升（假陽性 23→0 error + 孤兒 active stage 守衛）+ Queue CLI + PM 佇列整合 + Spawner 防禦 + Hook 薄殼化（9 handler 模組）+ Telegram /run 命令 + PM 佇列自動寫入 + CLAUDECODE env filter + Main Agent 寫碼偵測守衛 + lib/ 結構重構（config 拆分 + analyzers/ + knowledge/ 子目錄）+ SessionStart systemMessage 動態注入 plugin context + Prompt Journal（intent_journal 記錄 prompt 原文）|
 | V2 | 規劃中 | 延後 |
 
 ## 核心指標
@@ -16,8 +16,8 @@
 | Agent 數量 | 18（含 grader） |
 | Stage 數量 | 16 |
 | Workflow 模板 | 18 |
-| 測試通過 | 3416 pass / 0 fail（152 個測試檔） |
-| 測試檔案 | 152 個 |
+| 測試通過 | 3446 pass / 0 fail（153 個測試檔） |
+| 測試檔案 | 153 個 |
 | Hook 數量 | 11 個 |
 | Skill 數量 | 23（15 knowledge domain + orchestrator + pm + specs + 4 utility-with-refs） |
 | Knowledge Domain 數 | 15（testing、workflow-core、security-kb、database、dead-code、commit-convention、code-review、wording、debugging、architecture、build-system、os-control、autonomous-control、craft、claude-dev） |
@@ -27,9 +27,9 @@
 
 ## 近期變更（最近 3 筆）
 
+- **[health-check] 2026-03-05**：新增製作原則三項偵測 — checkClosedLoop + checkRecoveryStrategy + checkCompletionGap——(1) checkClosedLoop 偵測有 emit 但無 consumer 的孤立 timeline 事件（製作原則 1：完全閉環）；(2) checkRecoveryStrategy 掃描 handler 模組 try-catch + agent 停止條件關鍵詞（製作原則 2：自動修復）；(3) checkCompletionGap 偵測 skill 是否缺少 references/ 目錄（製作原則 3：補全能力）；(4) manage-component.js create agent/skill 成功後附加原則合規提示；(5) 新增 20 個 scenario BDD 測試；(6) 測試 +20（3416→3446，152 files）；(7) health-check 12 項 → 15 項
 - **[spec] 2026-03-05**：新增 Overtone 製作規範（docs/spec/overtone-製作規範.md）——(1) 三條製作原則：完全閉環、自動修復、補全能力；(2) 完整的可檢驗標準和現有實踐對應；(3) 已知缺口清單和對應 health-check 待實作項目；(4) 與設計原則（CLAUDE.md）的平等互補關係；(5) 規格主索引（overtone.md）已納入新文件連結；(6) CLAUDE.md 第 20 行新增「完整製作規範見 docs/spec/overtone-製作規範.md」的引用
 - **[0.28.52] 2026-03-05**：Prompt Journal — intent_journal 觀察類型記錄 prompt 原文——(1) instinct.js emit() 新增 options（skipDedup + extraFields）；(2) registry.js 新增 journalDefaults；(3) on-submit-handler.js 每次用戶 prompt 提交記錄 intent_journal；(4) session-end-handler.js 新增 resolveSessionResult 配對邏輯（用戶 prompt + session 結果）；(5) global-instinct.js queryGlobal 新增 excludeTypes 過濾；(6) session-start-handler.js 注入「最近常做的事」摘要；(7) 新增 7 個 Feature、40+ Scenario BDD 測試；(8) 測試 +38（3378→3416，151→152 files）
-- **[0.28.51] 2026-03-05**：SessionStart systemMessage 動態注入 plugin context——(1) 新增 buildPluginContext() 函數，從 registry.js 動態計算 agent 數、stage 數、workflow 模板清單、hook events、並行群組定義等；(2) 組裝格式化 context 字串，包含版本號、元件概覽、核心規範、目錄結構、常用指令；(3) 注入 sessionMessage 讓 Main Agent 感知當前 plugin 狀態和設計約束；(4) buildPluginContext() 失敗時靜默跳過，不阻擋 session 啟動；(5) 新增 12 個單元測試驗證動態數值計算與 registry 資料一致性；(6) 測試 +12（3366→3378）；(7) roadmap.md init-overtone 項目標記 ✅
 - **[0.28.49] 2026-03-05**：Hook 薄殼化重構完成 + 9 個 Handler 模組 + 遠端控制增強——(1) 9 個 hook 薄殼化（平均 ~250 行 → ~29 行）；(2) 新增 9 個 handler 模組（scripts/lib/）：session-start/stop/end-handler、agent-stop-handler、pre-task-handler、on-submit-handler、post-use/failure-handler、pre-compact-handler；(3) 共用工廠統一使用（specs-archive-scanner + hook-timing + feature-sync）；(4) Telegram /run 命令新增；(5) PM 完成時自動解析佇列表格寫入 execution-queue；(6) CLAUDECODE env 過濾防止嵌套偵測誤觸；(7) 測試 +16（3344→3360，150→151 files）
 - **[0.28.47] 2026-03-04**：statusline 集中式狀態管理 + TTL 機制 + 並行 agent 修復——(1) 新增 statusline-state.js 模組（activeAgents/workflowType/idle 狀態管理）；(2) statusline.js 三態邏輯優化（active agent / Main 控制 / idle 收回）；(3) TTL 機制（idle 10min 自動過期）；(4) 並行 agent statusline 殘留修復；(5) initState 防撞守衛；(6) session ID 隔離強化
 - **[0.28.42] 2026-03-04**：測試套件瘦身 + Hook 優化 — (16) data-auto-digest SessionEnd 自動摘要；(17) quick workflow 移除 TEST stage；(18) TaskCompleted hook 移除 bun test（消除 45s 假等待）；(19) test-suite-slimdown 刪除低價值測試（3235→3114，-121 tests）；(20) test-growth-monitor health-check 第 12 項偵測（20% 增長率閾值）→ 3127 pass / 137 files
