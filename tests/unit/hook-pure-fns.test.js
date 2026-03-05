@@ -11,13 +11,15 @@
  *   - session/pre-compact.js:    buildCompactMessage
  *   - prompt/on-submit.js:       buildSystemMessage
  *   - tool/pre-task.js:          checkSkippedStages
- *   - tool/pre-edit-guard.js:    checkProtected, checkMemoryLineLimit
+ *   - tool/pre-edit-guard.js:    checkProtected, checkClosedLoop, buildClosedLoopMessage, checkMemoryLineLimit
  *   - tool/pre-bash-guard.js:    checkDangerousCommand
  *   - notification/on-notification.js: shouldPlaySound
  */
 
-const { describe, test, expect } = require('bun:test');
+const { describe, test, expect, beforeAll, afterAll } = require('bun:test');
 const path = require('path');
+const { mkdirSync, rmSync, writeFileSync } = require('fs');
+const { tmpdir } = require('os');
 
 const HOOKS_ROOT = path.resolve(__dirname, '../../plugins/overtone/hooks/scripts');
 
@@ -56,6 +58,7 @@ describe('require.main 守衛', () => {
     const mod = require(path.join(HOOKS_ROOT, 'tool/pre-edit-guard'));
     expect(typeof mod.checkProtected).toBe('function');
     expect(typeof mod.checkClosedLoop).toBe('function');
+    expect(typeof mod.buildClosedLoopMessage).toBe('function');
     expect(typeof mod.checkMemoryLineLimit).toBe('function');
     expect(typeof mod.shouldWarnMainAgentCoding).toBe('function');
   });
@@ -684,6 +687,126 @@ describe('pre-bash-guard.js 純函數', () => {
   test('pkill 偵測為危險命令', () => {
     const result = checkDangerousCommand('pkill node');
     expect(result).not.toBeNull();
+  });
+});
+
+// ── tool/pre-edit-guard.js：buildClosedLoopMessage ───────────────────────
+
+describe('buildClosedLoopMessage 純函數', () => {
+  const { buildClosedLoopMessage } = require(path.join(HOOKS_ROOT, 'tool/pre-edit-guard'));
+
+  // fixture 目錄，建立一個最小化 plugin 結構讓 dependency-graph 可正常掃描
+  const FIXTURE_ROOT = path.join(tmpdir(), `ot_guard_clm_${Date.now()}`);
+
+  beforeAll(() => {
+    // 建立 fixture：一個 hook script require 一個 lib module
+    mkdirSync(path.join(FIXTURE_ROOT, 'hooks', 'scripts', 'tool'), { recursive: true });
+    mkdirSync(path.join(FIXTURE_ROOT, 'scripts', 'lib'), { recursive: true });
+    mkdirSync(path.join(FIXTURE_ROOT, 'agents'), { recursive: true });
+    mkdirSync(path.join(FIXTURE_ROOT, 'skills', 'testing', 'references'), { recursive: true });
+    mkdirSync(path.join(FIXTURE_ROOT, 'skills', 'testing'), { recursive: true });
+
+    // hook script 依賴 lib module
+    writeFileSync(
+      path.join(FIXTURE_ROOT, 'hooks', 'scripts', 'tool', 'pre-edit-guard.js'),
+      `'use strict';\nconst h = require('../../../scripts/lib/my-handler');\n`,
+      'utf8'
+    );
+    writeFileSync(
+      path.join(FIXTURE_ROOT, 'scripts', 'lib', 'my-handler.js'),
+      `'use strict';\nmodule.exports = {};\n`,
+      'utf8'
+    );
+
+    // agent 依賴 skill
+    writeFileSync(
+      path.join(FIXTURE_ROOT, 'agents', 'tester.md'),
+      '---\nname: tester\nskills:\n  - testing\n---\n# Tester\n',
+      'utf8'
+    );
+    writeFileSync(
+      path.join(FIXTURE_ROOT, 'skills', 'testing', 'SKILL.md'),
+      `# Testing Skill\n\n## 資源索引\n\n| 檔案 |\n|\${CLAUDE_PLUGIN_ROOT}/skills/testing/references/bdd.md|\n`,
+      'utf8'
+    );
+    writeFileSync(
+      path.join(FIXTURE_ROOT, 'skills', 'testing', 'references', 'bdd.md'),
+      '# BDD Reference\n',
+      'utf8'
+    );
+  });
+
+  afterAll(() => {
+    rmSync(FIXTURE_ROOT, { recursive: true, force: true });
+  });
+
+  test('hook 腳本有依賴時回傳具體受影響元件列表', () => {
+    // hooks/scripts/tool/pre-edit-guard.js require my-handler
+    // 查詢 my-handler 的受影響：pre-edit-guard 依賴它，所以應顯示 pre-edit-guard
+    const result = buildClosedLoopMessage(
+      'scripts/lib/my-handler.js',
+      FIXTURE_ROOT,
+      'Lib 模組',
+      'fallback hint text'
+    );
+    expect(typeof result).toBe('string');
+    expect(result).toContain('閉環提示');
+    // 應包含受影響的 hook script
+    expect(result).toContain('hooks/scripts/tool/pre-edit-guard.js');
+    // 不應包含 fallback hint
+    expect(result).not.toContain('fallback hint text');
+  });
+
+  test('無受影響元件時 fallback 到通用文字提示', () => {
+    // 一個沒有任何元件依賴的路徑
+    const result = buildClosedLoopMessage(
+      'scripts/lib/isolated-module.js',
+      FIXTURE_ROOT,
+      'Lib 模組',
+      'fallback hint text'
+    );
+    expect(typeof result).toBe('string');
+    expect(result).toContain('閉環提示');
+    expect(result).toContain('fallback hint text');
+  });
+
+  test('pluginRoot 不存在時 fallback 到通用文字提示（不拋出例外）', () => {
+    expect(() => buildClosedLoopMessage(
+      'hooks/scripts/tool/some-hook.js',
+      '/nonexistent/path/overtone',
+      'Hook 腳本',
+      'some fallback hint'
+    )).not.toThrow();
+    const result = buildClosedLoopMessage(
+      'hooks/scripts/tool/some-hook.js',
+      '/nonexistent/path/overtone',
+      'Hook 腳本',
+      'some fallback hint'
+    );
+    expect(result).toContain('閉環提示');
+    expect(result).toContain('some fallback hint');
+  });
+
+  test('回傳訊息一律包含依賴鏈尾行', () => {
+    const result = buildClosedLoopMessage(
+      'hooks/scripts/tool/pre-edit-guard.js',
+      FIXTURE_ROOT,
+      'Hook 腳本',
+      'handler 模組'
+    );
+    expect(result).toContain('依賴鏈');
+    expect(result).toContain('Agent prompt');
+  });
+
+  test('relPath 和 label 正確出現在訊息標頭', () => {
+    const result = buildClosedLoopMessage(
+      'scripts/lib/my-handler.js',
+      FIXTURE_ROOT,
+      'Lib 模組',
+      'fallback'
+    );
+    expect(result).toContain('Lib 模組');
+    expect(result).toContain('scripts/lib/my-handler.js');
   });
 });
 

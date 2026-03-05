@@ -177,7 +177,7 @@ safeRun(() => {
   }
 
   // ── 閉環提示（不阻擋，注入 systemMessage）──
-  const closedLoopHint = checkClosedLoop(relPath);
+  const closedLoopHint = checkClosedLoop(relPath, PLUGIN_ROOT);
 
   // ── Workflow 編碼守衛 ──
   // DEV stage 是 pending 且無 activeAgents → Main Agent 在自己寫碼（應委派 developer）
@@ -295,24 +295,67 @@ function shouldWarnMainAgentCoding(state) {
 }
 
 /**
+ * 建立具體的閉環提示訊息，整合 dependency-graph 的受影響元件列表
+ * 如果依賴圖掃描失敗，fallback 到 hint 通用文字
+ * @param {string} relPath - 相對於 plugin root 的路徑
+ * @param {string} pluginRoot - plugin 根目錄絕對路徑
+ * @param {string} label - 元件類型標籤（如「Hook 腳本」）
+ * @param {string} hint - fallback 通用提示文字
+ * @returns {string} 閉環提示訊息
+ */
+function buildClosedLoopMessage(relPath, pluginRoot, label, hint) {
+  const header = `📋 閉環提示：你正在編輯${label}（${relPath}）`;
+  const footer = `   依賴鏈：Agent prompt ↔ Skill SKILL.md ↔ Skill reference ↔ docs/`;
+
+  // 嘗試從依賴圖取得具體受影響元件
+  try {
+    const { buildGraph } = require('../../../scripts/lib/dependency-graph');
+    const graph = buildGraph(pluginRoot);
+    const { impacted } = graph.getImpacted(relPath);
+
+    if (impacted.length > 0) {
+      // 將自身也加入列表（[type] path 格式）
+      const selfType = require('../../../scripts/lib/dependency-graph').inferType
+        ? require('../../../scripts/lib/dependency-graph').inferType(relPath)
+        : 'file';
+      const lines = [
+        header,
+        `   改完後 MUST 檢查以下受影響元件：`,
+        `   → [${selfType}] ${relPath}`,
+        ...impacted.map(({ path: p, type, reason }) => `   → [${type}]  ${p}（${reason}）`),
+        footer,
+      ];
+      return lines.join('\n');
+    }
+  } catch (_) {
+    // 依賴圖掃描失敗，靜默降級到通用提示
+  }
+
+  // Fallback：通用文字提示
+  return [
+    header,
+    `   改完後 MUST 檢查以下是否需要同步：`,
+    `   → ${hint}`,
+    footer,
+  ].join('\n');
+}
+
+/**
  * 檢查檔案是否匹配閉環提示模式
  * @param {string} relPath - 相對於 plugin root 的路徑
+ * @param {string} [pluginRoot] - plugin 根目錄絕對路徑（可選，傳入時啟用依賴圖整合）
  * @returns {string|null} 閉環提示 systemMessage 或 null
  */
-function checkClosedLoop(relPath) {
+function checkClosedLoop(relPath, pluginRoot) {
   if (!relPath) return null;
   for (const { pattern, label, hint } of CLOSEDLOOP_PATTERNS) {
     if (pattern.test(relPath)) {
-      return [
-        `📋 閉環提示：你正在編輯${label}（${relPath}）`,
-        `   改完後 MUST 檢查以下是否需要同步：`,
-        `   → ${hint}`,
-        `   依賴鏈：Agent prompt ↔ Skill SKILL.md ↔ Skill reference ↔ docs/`,
-      ].join('\n');
+      const root = pluginRoot || PLUGIN_ROOT;
+      return buildClosedLoopMessage(relPath, root, label, hint);
     }
   }
   return null;
 }
 
 // ── 純函數匯出 ──
-module.exports = { checkProtected, checkClosedLoop, checkMemoryLineLimit, checkMainAgentCoding, shouldWarnMainAgentCoding };
+module.exports = { checkProtected, checkClosedLoop, buildClosedLoopMessage, checkMemoryLineLimit, checkMainAgentCoding, shouldWarnMainAgentCoding };
