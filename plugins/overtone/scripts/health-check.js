@@ -1348,35 +1348,8 @@ function checkClosedLoop() {
   const { timelineEvents } = require('./lib/registry');
   const { existsSync } = require('fs');
 
-  // A: fire-and-forget 設計決策
-  const EXEMPT_EVENTS = new Set([
-    'session:compact-suggestion',
-    'hook:timing',
-    'queue:auto-write',
-  ]);
-
-  // B: 全量消費者覆蓋的事件（Dashboard SSE allEvents + session-digest 全量讀取 + score-engine）
-  // 這些事件被全量讀取路徑消費，無需專屬 consumer 偵測
-  const BROADCAST_ONLY_EVENTS = new Set([
-    'workflow:abort',
-    'stage:retry',
-    'agent:delegate',
-    'agent:complete',
-    'agent:error',
-    'loop:start',
-    'loop:advance',
-    'loop:complete',
-    'parallel:start',
-    'parallel:converge',
-    'grader:score',
-    'specs:init',
-    'specs:archive',
-    'specs:archive-skipped',
-    'specs:archive-scan',
-    'specs:tasks-missing',
-    'session:start',
-    'session:end',
-  ]);
+  // 從 registry 讀取 consumeMode，只檢查 targeted 事件（需專屬 consumer）
+  // broadcast（全量消費者覆蓋）和 fire-and-forget（純記錄）不需要專屬 consumer
 
   // 收集 plugin 目錄下所有 .js，排除 health-check.js 本身 + node_modules
   const allJs = collectJsFiles(PLUGIN_ROOT).filter((f) => {
@@ -1408,8 +1381,8 @@ function checkClosedLoop() {
   const registryFile = toRelative(require('path').join(SCRIPTS_LIB, 'registry.js'));
 
   for (const eventKey of Object.keys(timelineEvents)) {
-    if (EXEMPT_EVENTS.has(eventKey)) continue;
-    if (BROADCAST_ONLY_EVENTS.has(eventKey)) continue;  // 全量消費者覆蓋，不需要專屬 consumer
+    const mode = timelineEvents[eventKey].consumeMode || 'targeted';
+    if (mode !== 'targeted') continue;  // broadcast / fire-and-forget 不需要專屬 consumer
     if (!consumedEvents.has(eventKey)) {
       findings.push({
         check: 'closed-loop',

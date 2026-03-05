@@ -115,3 +115,27 @@ Keywords: spec, test, agent, prompt, design, tasks, scenario, frontmatter
      * 誤判防護：14 個 agent（architect、debugger、developer、planner、retrospective、tester + 上述 8 個）
      * 停止條件：全部 18 個 agent
 Keywords: plugin, json, bump, manage, component, version, docs, status, header, agent
+---
+## 2026-03-05 | doc-updater:DOCS Findings
+**版本管理：**
+- Plugin 版本 bump：0.28.55 → 0.28.56
+- 使用 manage-component.js bump-version 工具更新（不直接編輯 plugin.json 以保持驗證機制）
+
+**CHANGELOG 新增記錄：**
+- [0.28.56] 版本記錄記錄了本次修復的 6 項重點：
+  - completeCurrent 提前，防止手動停止繞過佇列推進
+  - init-workflow 錯誤處理增強
+  - registry.js 事件加入 consumeMode（30 種事件，13 分類）
+  - checkClosedLoop 改用 registry consumeMode（warnings 27 → 3）
+  - checkCompletionGap 排除 orchestrator skill（warnings 3 → 1）
+  - config-validator 移除 4 個 dead exports
+
+**核心指標驗證：**
+- 測試數量確認：3455 pass / 0 fail（153 個測試檔）
+- 所有版本號保持一致（plugin.json、status.md、spec/overtone.md、spec/overtone-agents.md、README.md）
+
+**Health-Check 驗證：**
+- 通過全部檢查（warnings 4 個，其中 3 個有效 closed-loop 警告 + 1 個歷史資料警告）
+- 精確度提升：warnings 從 27 → 4
+Keywords: plugin, bump, manage, component, version, json, changelog, completecurrent, init, workflow
+

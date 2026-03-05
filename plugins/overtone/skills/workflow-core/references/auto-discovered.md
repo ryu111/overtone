@@ -1,35 +1,4 @@
 ---
-## 2026-03-04 | doc-updater:DOCS Context
-已完成 `claude-dev-skill` 功能的文件同步。Developer 建立了第 15 個 knowledge domain skill，包含 hooks API 和 agent API 知識。
-Keywords: claude, skill, developer, knowledge, domain, hooks, agent
-
----
-## 2026-03-04 | developer:DEV Findings
-1. **技術準確性驗證**：直接讀取 `hook-utils.js` 中的 `buildSkillContext` 實作，確認截斷規則（maxCharsPerSkill=800, maxTotalChars=2400）、格式（`--- skillName ---` 分隔）和行為（總量上限後停止載入）均正確反映在文件中。
-
-2. **目錄現況**：`claude-dev/references/` 已有 `agent-api.md`、`auto-discovered.md`、`hooks-api.md`，新增 `skill-api.md` 形成完整的 claude-dev 知識域。
-
-3. **内容來源**：
-   - plugin-dev skill-development SKILL.md — 提取通用 progressive disclosure 原則和 frontmatter 欄位說明
-   - craft/SKILL.md — 作為 knowledge domain 結構範本
-   - hook-utils.js buildSkillContext — 確認截斷規則的準確數值
-   - manage-component.js — 確認 CLI 用法語法
-
-4. **Overtone 專有規範整合**：
-   - 加入 pre-edit-guard 保護說明（SKILL.md 受保護，references 不受保護）
-   - 加入 `${CLAUDE_PLUGIN_ROOT}` 路徑慣例
-   - 加入 knowledge-gap-detector 的消費者關係說明
-   - 加入 14+1 個 knowledge domain 完整清單
-
-5. **結構設計**：正文前 800 chars 截斷的含義已在文件中明確說明，指導作者將決策樹和資源索引放在最前面。
-Keywords: hook, utils, buildskillcontext, maxcharsperskill, maxtotalchars, skillname, claude, references, agent, auto
-
----
-## 2026-03-04 | developer:DEV Context
-建立了 `/Users/sbu/projects/overtone/plugins/overtone/skills/claude-dev/references/skill-api.md`，提供 Claude Code Skill 開發的完整 API 參考。
-Keywords: users, projects, overtone, plugins, skills, claude, references, skill, code
-
----
 ## 2026-03-04 | retrospective:RETRO Findings
 **回顧摘要**：
 
@@ -811,4 +780,48 @@ Keywords: overtone, agent, prompt
 
 - **overtone-principles checklist 對齊**：各 agent 定義了停止條件和誤判防護（對應「自動修復」原則），新元件通過 validate-agents 檢查（對應「補全能力」原則），整體符合製作規範。
 Keywords: scenario, security, reviewer, grader, must, handoff, agent, code, false, positive
+
+---
+## 2026-03-05 | developer:DEV Findings
+**修復 1 — checkClosedLoop 假陽性（21 個 warnings）**
+
+根因：`checkClosedLoop` 只偵測 `timeline.query()` / `timeline.latest()` 呼叫，忽略了全量消費路徑（Dashboard SSE `allEvents`、`session-digest.js` 全量讀取）。
+
+修復：加入 `BROADCAST_ONLY_EVENTS` Set（18 個事件），迴圈中 `continue` 跳過全量消費者覆蓋的事件。保留 3 個真正需要主動回應的事件（`error:fatal`、`tool:failure`、`system:warning`）。
+
+**修復 2 — dead-exports（4 個 warnings）**
+
+根因：`makeResult`、`addError`、`addWarning`、`VALID_MODELS` 從 `config-validator.js` 匯出，但 `config-api.js`（唯一 require 此模組的呼叫方）從未使用這四個名稱。
+
+修復：從 `module.exports` 移除這四個匯出。內部函式本身保留不動（`validateAgentFrontmatter` 等仍內部使用）。
+
+**修復 3 — completion-gap（1 個 warning）**
+
+根因：`auto` skill 是 workflow 選擇器（orchestrator），本質上不需要知識型 references 目錄，卻被偵測為缺口。
+
+修復：在 `checkCompletionGap` 加入 `ORCHESTRATOR_SKILLS = new Set(['auto', 'workflow-core'])` 白名單，orchestrator 類型 skill 跳過 references 檢查。
+
+**未修復 — quality-trends（1 個 warning）**
+
+TEST stage 重複失敗 14 次是歷史執行資料的統計結果，不是程式碼問題。按 Handoff 說明，不需要修復。
+Keywords: checkclosedloop, warnings, timeline, query, latest, dashboard, allevents, session, digest, continue
+
+---
+## 2026-03-05 | retrospective:RETRO Findings
+**回顧摘要：**
+
+health-check warnings 從 27 降至 4，三個修復均有效：
+- BROADCAST_ONLY_EVENTS Set（18 個事件）正確降低了 closed-loop 誤報
+- config-validator.js 移除 4 個未使用 exports（`validateAgentFrontmatter`、`validateSkillFrontmatter` 仍保留，因為 config-api.js 確實有使用）
+- ORCHESTRATOR_SKILLS 排除（auto、workflow-core）正確處理了 completion-gap 誤報
+- 剩餘 3 個 closed-loop warnings（error:fatal、tool:failure、system:warning）是刻意保留的，符合設計文件說明
+- 1 個 quality-trends warning 屬於資料觀察，不是程式碼問題
+Keywords: health, check, warnings, closed, loop, config, validator, exports, validateagentfrontmatter, validateskillfrontmatter
+
+---
+## 2026-03-05 | doc-updater:DOCS Context
+完成 DOCS 階段文件同步工作。本次迭代包含兩組核心修復：
+1. **佇列推進閉環修復**（session-stop-handler.js + init-workflow.js）
+2. **Health-Check 精確度提升**（health-check.js + registry.js + config-validator.js）
+Keywords: docs, session, stop, handler, init, workflow, health, check, registry, config
 

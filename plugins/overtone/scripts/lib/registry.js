@@ -104,63 +104,63 @@ const retryDefaults = {
   maxRetries: 3,
 };
 
-// Timeline 事件類型（26 種，11 分類）
-// 已移除：handoff:create（Handoff 為虛擬，永遠不會 emit）
+// Timeline 事件類型（30 種，13 分類）
+// consumeMode: 'targeted'（需專屬 consumer）| 'broadcast'（全量消費者覆蓋）| 'fire-and-forget'（純記錄，無需 consumer）
 const timelineEvents = {
   // workflow 類（3）
-  'workflow:start':     { label: '工作流啟動', category: 'workflow' },
-  'workflow:complete':  { label: '工作流完成', category: 'workflow' },
-  'workflow:abort':     { label: '工作流中斷', category: 'workflow' },
+  'workflow:start':     { label: '工作流啟動', category: 'workflow', consumeMode: 'targeted' },
+  'workflow:complete':  { label: '工作流完成', category: 'workflow', consumeMode: 'targeted' },
+  'workflow:abort':     { label: '工作流中斷', category: 'workflow', consumeMode: 'broadcast' },
 
   // stage 類（3）
-  'stage:start':        { label: '階段開始',   category: 'stage' },
-  'stage:complete':     { label: '階段完成',   category: 'stage' },
-  'stage:retry':        { label: '階段重試',   category: 'stage' },
+  'stage:start':        { label: '階段開始',   category: 'stage', consumeMode: 'targeted' },
+  'stage:complete':     { label: '階段完成',   category: 'stage', consumeMode: 'targeted' },
+  'stage:retry':        { label: '階段重試',   category: 'stage', consumeMode: 'broadcast' },
 
   // agent 類（3）
-  'agent:delegate':     { label: '委派代理',   category: 'agent' },
-  'agent:complete':     { label: '代理完成',   category: 'agent' },
-  'agent:error':        { label: '代理錯誤',   category: 'agent' },
+  'agent:delegate':     { label: '委派代理',   category: 'agent', consumeMode: 'broadcast' },
+  'agent:complete':     { label: '代理完成',   category: 'agent', consumeMode: 'broadcast' },
+  'agent:error':        { label: '代理錯誤',   category: 'agent', consumeMode: 'broadcast' },
 
   // loop 類（3）
-  'loop:start':         { label: '循環啟動',   category: 'loop' },
-  'loop:advance':       { label: '下一個任務', category: 'loop' },
-  'loop:complete':      { label: '循環完成',   category: 'loop' },
+  'loop:start':         { label: '循環啟動',   category: 'loop', consumeMode: 'broadcast' },
+  'loop:advance':       { label: '下一個任務', category: 'loop', consumeMode: 'broadcast' },
+  'loop:complete':      { label: '循環完成',   category: 'loop', consumeMode: 'broadcast' },
 
   // parallel 類（2）
-  'parallel:start':     { label: '並行啟動',   category: 'parallel' },
-  'parallel:converge':  { label: '並行收斂',   category: 'parallel' },
+  'parallel:start':     { label: '並行啟動',   category: 'parallel', consumeMode: 'broadcast' },
+  'parallel:converge':  { label: '並行收斂',   category: 'parallel', consumeMode: 'broadcast' },
 
   // grader 類（1）
-  'grader:score':       { label: 'Grader 評分', category: 'grader' },
+  'grader:score':       { label: 'Grader 評分', category: 'grader', consumeMode: 'broadcast' },
 
   // specs 類（5）
-  'specs:init':             { label: 'Specs 初始化',  category: 'specs' },
-  'specs:archive':          { label: 'Specs 歸檔',    category: 'specs' },
-  'specs:archive-skipped':  { label: 'Specs 歸檔略過', category: 'specs' },
-  'specs:archive-scan':     { label: 'Specs 掃描歸檔', category: 'specs' },
-  'specs:tasks-missing':    { label: 'Specs Tasks 遺失', category: 'specs' },
+  'specs:init':             { label: 'Specs 初始化',    category: 'specs', consumeMode: 'broadcast' },
+  'specs:archive':          { label: 'Specs 歸檔',      category: 'specs', consumeMode: 'broadcast' },
+  'specs:archive-skipped':  { label: 'Specs 歸檔略過',  category: 'specs', consumeMode: 'broadcast' },
+  'specs:archive-scan':     { label: 'Specs 掃描歸檔',  category: 'specs', consumeMode: 'broadcast' },
+  'specs:tasks-missing':    { label: 'Specs Tasks 遺失', category: 'specs', consumeMode: 'broadcast' },
 
   // error 類（1）
-  'error:fatal':        { label: '嚴重錯誤',   category: 'error' },
+  'error:fatal':        { label: '嚴重錯誤',   category: 'error', consumeMode: 'targeted' },
 
   // session 類（4）
-  'session:start':              { label: '工作階段開始', category: 'session' },
-  'session:end':                { label: '工作階段結束', category: 'session' },
-  'session:compact':            { label: 'Context 壓縮', category: 'session' },
-  'session:compact-suggestion': { label: '建議壓縮',     category: 'session' },
+  'session:start':              { label: '工作階段開始', category: 'session', consumeMode: 'broadcast' },
+  'session:end':                { label: '工作階段結束', category: 'session', consumeMode: 'broadcast' },
+  'session:compact':            { label: 'Context 壓縮', category: 'session', consumeMode: 'targeted' },
+  'session:compact-suggestion': { label: '建議壓縮',     category: 'session', consumeMode: 'fire-and-forget' },
 
   // tool 類（1）
-  'tool:failure':       { label: '工具失敗',     category: 'tool' },
+  'tool:failure':       { label: '工具失敗',     category: 'tool', consumeMode: 'targeted' },
 
   // system 類（1）
-  'system:warning':     { label: '系統警告',     category: 'system' },
+  'system:warning':     { label: '系統警告',     category: 'system', consumeMode: 'targeted' },
 
   // hook 類（1）
-  'hook:timing':        { label: 'Hook 計時',    category: 'hook' },
+  'hook:timing':        { label: 'Hook 計時',    category: 'hook', consumeMode: 'fire-and-forget' },
 
   // queue 類（1）
-  'queue:auto-write':   { label: '佇列自動寫入', category: 'queue' },
+  'queue:auto-write':   { label: '佇列自動寫入', category: 'queue', consumeMode: 'fire-and-forget' },
 };
 
 // Remote 控制命令

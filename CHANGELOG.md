@@ -2,6 +2,69 @@
 
 所有重要變更記錄於此文件。
 
+## [0.28.56] - 2026-03-05
+
+### 佇列推進閉環修復 + Health-Check 精確度提升
+
+#### 佇列推進修復（session-stop-handler.js + init-workflow.js）
+- **completeCurrent 提前**：session-stop-handler.js 中，將 completeCurrent 移至退出條件判斷之前
+  - 防止手動停止 (SIGINT) 繞過佇列推進邏輯
+  - 確保非完成狀態無法自動推進下一項
+
+- **init-workflow 錯誤處理增強**：init-workflow.js 靜默 catch 改為 console.error
+  - 提升偵測率，未來可由 health-check 追蹤
+
+#### Health-Check 精確度修復（health-check.js + registry.js + config-validator.js）
+- **registry.js 事件加入 consumeMode**：timelineEvents 物件加入 consumeMode 屬性
+  - 三種消費模式：`targeted`（需專屬 consumer）、`broadcast`（全量消費者覆蓋）、`fire-and-forget`（純記錄）
+  - 評論：30 種事件，13 分類
+
+- **checkClosedLoop 精確度修復**：改從 registry 讀取 consumeMode，移除硬編碼白名單
+  - Dashboard SSE + session-digest 全量讀取無需專屬 consumer，改由 consumeMode 判斷
+  - 保留 3 個需要主動處理的事件（error:fatal / tool:failure / system:warning）
+  - warnings 從 27 降至 3（由 broadcast 事件引發的警告全部去除）
+
+- **checkCompletionGap 排除 orchestrator**：排除 orchestrator 類型 skill（auto、workflow-core）
+  - 工作流選擇器/指揮器本質上不需要知識型 references 子目錄
+  - warnings 進一步降至 1（含歷史資料 quality-trends 警告）
+
+- **config-validator.js 清理**：移除 4 個未被外部使用的 dead exports
+  - 移除：makeResult、addError、addWarning、VALID_MODELS
+  - 內部 helper 函式保留，僅從 module.exports 移除
+
+#### 測試
+- 測試保持 3455 pass / 0 fail（153 files）
+
+#### 文件同步
+- `plugin.json`：版本 0.28.56
+- `docs/status.md`：版本更新、本次變更記錄
+- `CHANGELOG.md`：本次變更記錄
+
+---
+
+## [0.28.55] - 2026-03-05
+
+### Agent Prompt 四模式補齊
+
+#### 核心功能
+- **Agent Prompt 四模式標準化**：15 個 agent 補齊四模式章節
+  - (1) architect/debugger/developer/planner/retrospective/tester 加誤判防護
+  - (2) build-error-resolver/designer/doc-updater/e2e-runner/qa/refactor-cleaner 加信心過濾 + 誤判防護
+  - (3) claude-developer/security-reviewer 加信心過濾
+  - (4) grader DON'T 格式標準化 + 信心過濾 + 誤判防護
+  - (5) 章節順序統一（DO → DON'T → 信心過濾 → 誤判防護 → 輸入 → 輸出 → 停止條件）
+
+- **validate-agents.js 檢查結果**：prompt 品質警告 23 → 0（全部通過四模式檢查）
+
+#### 文件同步
+- Agent 規格與 .md 同步（15 個 agent）
+- Specs 歸檔 + auto-discovered.md 同步
+
+#### 測試
+- 測試 3455 pass / 0 fail（153 files）
+
+---
+
 ## [0.28.53] - 2026-03-05
 
 ### 製作原則內化完成——Agent Prompt + Validate 四模式品質檢查

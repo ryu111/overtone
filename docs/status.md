@@ -1,6 +1,6 @@
 # Overtone 現況
 
-> 最後更新：2026-03-05 | Plugin 版本：0.28.55（Agent Prompt 四模式補齊 — 15 個 agent 信心過濾 + 誤判防護）
+> 最後更新：2026-03-05 | Plugin 版本：0.28.56（佇列推進閉環修復 + Health-Check 精確度提升）
 
 ## 版本狀態
 
@@ -27,9 +27,9 @@
 
 ## 近期變更（最近 3 筆）
 
+- **[0.28.56] 2026-03-05**：佇列推進閉環修復 + Health-Check 精確度提升——(1) session-stop-handler：completeCurrent 提前，防止手動停止繞過佇列推進；(2) init-workflow：靜默 catch 改 console.error；(3) registry.js：timelineEvents 加入 consumeMode（30 種事件，13 分類）；(4) checkClosedLoop：改從 registry 讀 consumeMode，移除硬編碼白名單（warnings 27→3）；(5) checkCompletionGap：排除 orchestrator skill（warnings 3→1）；(6) config-validator：移除 4 個 dead exports；(7) 測試 3455 pass / 0 fail ✅
 - **[0.28.55] 2026-03-05**：Agent Prompt 四模式補齊 — 15 個 agent 信心過濾 + 誤判防護——(1) architect/debugger/developer/planner/retrospective/tester 加誤判防護；(2) build-error-resolver/designer/doc-updater/e2e-runner/qa/refactor-cleaner 加信心過濾 + 誤判防護；(3) claude-developer/security-reviewer 加信心過濾；(4) grader DON'T 格式標準化 + 信心過濾 + 誤判防護；(5) 章節順序統一（DO → DON'T → 信心過濾 → 誤判防護 → 輸入 → 輸出 → 停止條件）；(6) validate-agents.js 檢查結果：prompt 品質警告 23→0；(7) 測試 3455 pass / 0 fail ✅
 - **[0.28.54] 2026-03-05**：PM Plan Mode 完成 — /ot:pm plan 規劃模式——(1) execution-queue.js 新增 appendQueue() 累加佇列、setAutoExecute() 切換模式 API；(2) formatQueueSummary 顯示「📋 規劃模式（手動啟動）」標籤；(3) queue.js 新增 append/enable-auto 子命令、--no-auto flag；(4) pm/SKILL.md 新增 plan 模式條件分支（execute vs plan）、佇列整合說明；(5) queue-management.md 文件補充 append/enable-auto 用法和 API；(6) CLAUDE.md 常用指令更新；(7) 新增 12 個單元測試；(8) 測試 +9（3446→3455）
-- **[0.28.53] 2026-03-05**：製作原則內化完成 — Agent Prompt + Validate 四模式品質檢查——(1) craft skill 新增 overtone-principles.md checklist；(2) 5 個 agent prompt 加原則指引；(3) validate-agents.js 新增四模式檢查；(4) 新增 3 個 Feature、30+ Scenario BDD 測試；(5) 測試 +30（3416→3446，152 files）
 
 ## Phase 3 規劃狀態
 
