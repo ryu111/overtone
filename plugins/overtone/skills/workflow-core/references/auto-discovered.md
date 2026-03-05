@@ -1,94 +1,4 @@
 ---
-
-**5. developer（缺：誤判防護）**
-
-現狀：有完整 DO/DON'T、有停止條件，無誤判防護。
-
-誤判防護：
-- 「Handoff 的 Open Questions ≠ 需要立即解決的需求」— Open Questions 是提醒，不阻擋實作
-- 「測試 fail ≠ 一定要修測試」— 先確認是應用程式碼問題還是測試本身問題；不改測試除非 Handoff 明確要求
-- 「bun test 整體 pass ≠ 所有 scenario 都有覆蓋」— 要確認新功能有新測試
-- 「code-reviewer REJECT 含 'REJECT' 文字 ≠ reject 判定」— parseResult 讀 verdict，不是單純字串比對（此點上層已有，可強調）
-
----
-
-**6. doc-updater（缺：誤判防護、信心過濾）**
-
-現狀：有 DO/DON'T、有停止條件，無誤判防護、無信心過濾。
-
-信心過濾（doc-updater 特有）：
-- 快速退出條件已存在（Files Modified 不含相關路徑 → 直接跳過），這本身是信心過濾的一種
-- 補充：只更新有直接對應變更的文件段落，不更新「感覺應該同步」的章節
-- 日期更新：只在有實質內容變更時更新日期，不因為「跑了 DOCS 階段」就更新
-
-誤判防護：
-- 「程式碼有變更 ≠ API 文件需要更新」— 只有 public interface / exported function 改變才需要更新
-- 「status.md 的數字 ≠ 隨意更新」— 測試數量只有在 Handoff 明確提供新數字時才更新
-- 「roadmap.md 的任務定義 ≠ doc-updater 可修改」— 只更新進度狀態，不修改任務描述或範圍
-
----
-
-**7. e2e-runner（缺：誤判防護、信心過濾）**
-
-現狀：有 DO/DON'T、有停止條件，無誤判防護、無信心過濾。
-
-信心過濾：
-- E2E 測試是執行型（確定性），不需要傳統信心過濾
-- 但有「是否要新增 E2E 測試」的判斷：只為 BDD spec 有描述的使用者流程寫 E2E，不自行發明額外場景
-
-誤判防護：
-- 「agent-browser snapshot 的 @ref 編號在每次操作後可能改變」— 每次互動後重新 snapshot 取最新 @ref
-- 「headless 通過 ≠ interactive 也通過」— headless 是預設，但 Handoff 要說明測試環境限制
-- 「DOM element 不可見 ≠ 測試應該跳過」— 可能是條件渲染，要確認狀態條件
-- 「E2E 失敗 ≠ 一定是
-Keywords: agent, architect, pattern, codebase, over, engineering, design, interface, type, phases
-
----
-## 2026-03-05 | planner:PLAN Context
-這個任務是補齊 Overtone 18 個 agent 中 14 個缺失「四模式」元素的 agent prompt。四模式定義為：信心過濾、邊界清單（DO/DON'T）、誤判防護、停止條件。分析完所有 agent 後，發現實際缺失情況比 PM 報告更細緻 — 部分「缺失」是因為 agent 的性質不需要某些模式，需要逐個判斷。
-Keywords: overtone, agent, prompt
-
----
-## 2026-03-05 | retrospective:RETRO Findings
-**回顧摘要**：
-
-- **BDD 對齊完整**：11 個 Scenario 的要求全部在實作中得到滿足或超越。Security-reviewer 雖 BDD 說「不需要誤判防護」但實際加了（超越需求，不違反），grader 的 DON'T 完整包含 `⛔ 不修改任何程式碼` 和 `⛔ MUST NOT 寫 Handoff`，各類型 agent 的章節順序（DO → DON'T → 信心過濾 → 誤判防護 → 輸入 → 輸出 → 停止條件）均符合規範。
-
-- **跨模組一致性良好**：18 個 agent 中 17 個補齊了 `## 誤判防護`，唯一沒有的是 code-reviewer — 這是設計決策，code-reviewer 用原有的「防 false positive」說明替代，且不在 14/15 個目標清單中，屬預期範圍。
-
-- **品質指標達成**：validate-agents.js prompt 品質警告從 23 降至 0，bun test 3455 pass / 0 fail，兩項核心指標均達到 BDD 規格要求。
-
-- **誤判防護格式差異**：類型 A 的 6 個 agent（architect、debugger、developer、planner、retrospective、tester）使用 bullet list 而非 BDD Scenario 2 要求的「表格」格式，但 REVIEW 階段已明確標注為 [m]（minor），11/11 BDD scenario 均通過。此問題已由 code-reviewer 覆蓋，不重複報告。
-
-- **overtone-principles checklist 對齊**：各 agent 定義了停止條件和誤判防護（對應「自動修復」原則），新元件通過 validate-agents 檢查（對應「補全能力」原則），整體符合製作規範。
-Keywords: scenario, security, reviewer, grader, must, handoff, agent, code, false, positive
-
----
-## 2026-03-05 | developer:DEV Findings
-**修復 1 — checkClosedLoop 假陽性（21 個 warnings）**
-
-根因：`checkClosedLoop` 只偵測 `timeline.query()` / `timeline.latest()` 呼叫，忽略了全量消費路徑（Dashboard SSE `allEvents`、`session-digest.js` 全量讀取）。
-
-修復：加入 `BROADCAST_ONLY_EVENTS` Set（18 個事件），迴圈中 `continue` 跳過全量消費者覆蓋的事件。保留 3 個真正需要主動回應的事件（`error:fatal`、`tool:failure`、`system:warning`）。
-
-**修復 2 — dead-exports（4 個 warnings）**
-
-根因：`makeResult`、`addError`、`addWarning`、`VALID_MODELS` 從 `config-validator.js` 匯出，但 `config-api.js`（唯一 require 此模組的呼叫方）從未使用這四個名稱。
-
-修復：從 `module.exports` 移除這四個匯出。內部函式本身保留不動（`validateAgentFrontmatter` 等仍內部使用）。
-
-**修復 3 — completion-gap（1 個 warning）**
-
-根因：`auto` skill 是 workflow 選擇器（orchestrator），本質上不需要知識型 references 目錄，卻被偵測為缺口。
-
-修復：在 `checkCompletionGap` 加入 `ORCHESTRATOR_SKILLS = new Set(['auto', 'workflow-core'])` 白名單，orchestrator 類型 skill 跳過 references 檢查。
-
-**未修復 — quality-trends（1 個 warning）**
-
-TEST stage 重複失敗 14 次是歷史執行資料的統計結果，不是程式碼問題。按 Handoff 說明，不需要修復。
-Keywords: checkclosedloop, warnings, timeline, query, latest, dashboard, allevents, session, digest, continue
-
----
 ## 2026-03-05 | retrospective:RETRO Findings
 **回顧摘要：**
 
@@ -912,4 +822,79 @@ Keywords: commit, domain, research, session, plugins, overtone, scripts, intervi
 ## 2026-03-05 | doc-updater:DOCS Context
 pm-domain-research 功能 + bugfix 提交已完成。涉及 interview.js 核心模組（saveSession/loadSession domainResearch 欄位序列化修復）和測試新增（2 個 roundtrip 測試）。
 Keywords: domain, research, bugfix, interview, savesession, loadsession, domainresearch, roundtrip
+
+---
+## 2026-03-05 | developer:DEV Findings
+**主要實作決策：**
+
+1. `buildBDDScenarios` 改為從三個 facet 衍生場景：
+   - `acceptance` facet → 驗收場景（given 含「功能已啟用」）
+   - `edge-cases` facet → 邊界條件場景（given 含「邊界條件」，title 以「邊界場景：」開頭）
+   - `flow` facet → 流程場景（given 含「操作流程」，title 以「流程場景：」開頭）
+   - 內建 title 去重（Set 追蹤）
+
+2. `enrichBDDScenarios(scenarios, session)` 新增為獨立導出函式：
+   - 先對傳入 base 陣列進行 title 去重（防禦性）
+   - 從 `functional` facet 補充 happy path 場景（title 以「功能場景：」開頭）
+   - 加入三個通用模板（空輸入、權限不足、網路逾時），但透過關鍵詞比對跳過 edgeCases 已涵蓋的議題
+   - Fallback 到 `buildSupplementaryScenarios` 確保到達 10 個
+
+3. `generateSpec` 改為：`enrichBDDScenarios(buildBDDScenarios(session), session)`，雙重保險確保場景數
+
+**函式宣告順序**：`buildBDDScenarios`（330）在 `enrichBDDScenarios`（439）之前，因為兩者均為 `function` 宣告，JavaScript hoisting 正常運作。
+Keywords: buildbddscenarios, facet, acceptance, given, edge, cases, title, flow, enrichbddscenarios, scenarios
+
+---
+## 2026-03-05 | developer:DEV Context
+強化 `interview.js` 的 `buildBDDScenarios()` 函式，新增從多個 facet 自動衍生 BDD 場景的能力，並新增 `enrichBDDScenarios()` 函式確保場景數量達到 PM spec 的最低要求（≥10 個）。
+Keywords: interview, buildbddscenarios, facet, enrichbddscenarios, spec
+
+---
+## 2026-03-05 | retrospective:RETRO Findings
+**回顧摘要**：
+
+1. **架構一致性良好** — `buildBDDScenarios` 內部在場景不足 10 個時呼叫 `enrichBDDScenarios`，`generateSpec` 又以 `enrichBDDScenarios(buildBDDScenarios(session), session)` 組合兩層。表面上看像雙重調用，但邏輯正確：`buildBDDScenarios` 內部的 `enrichBDDScenarios` 呼叫只發生在場景 < 10 時，且 `generateSpec` 的外層 `enrichBDDScenarios` 是幂等的（`seenTitles` 去重保護），不會造成重複或錯誤。
+
+2. **去重邏輯一致** — `buildBDDScenarios` 與 `enrichBDDScenarios` 皆使用 `Set` 追蹤 `seenTitles`，兩個函式邊界清晰，互不破壞對方的不變量。
+
+3. **測試覆蓋結構合理** — 16 個測試橫跨 Feature A（場景衍生）、Feature B（補充邏輯）、Feature C（generateSpec 整合），涵蓋邊界情境（空輸入、極少回答、已滿場景、去重）。
+
+4. **純函式設計確認** — `enrichBDDScenarios` 不修改傳入的 `scenarios` 陣列（Scenario B-4 驗證），符合不可變原則。
+
+5. **Overtone 原則 Checklist 對照**：
+   - 測試通過（DEV Handoff 確認）
+   - 行為符合規格（場景 ≥10、多 facet 衍生、去重）
+   - `generateSpec` 的錯誤路徑有 `try-catch` 保護並拋出帶 code 的 Error
+
+6. **一個觀察（信心 < 70%，不列為 ISSUES）** — `generateSpec` 在 `acceptance` facet 的處理為 `enrichBDDScenarios(buildBDDScenarios(session), session)`，其中 `buildBDDScenarios` 本身在場景不足時已內部呼叫 `enrichBDDScenarios`，外層再包一次雖然幂等但稍顯冗餘。這是設計選擇而非缺陷，且無法量化其對行為的影響，因此不升為 ISSUES。
+Keywords: buildbddscenarios, enrichbddscenarios, generatespec, session, seentitles, feature, scenarios, scenario, overtone, checklist
+
+---
+## 2026-03-05 | code-reviewer:REVIEW Findings
+審查了以下面向，未發現高信心問題：
+- **功能完整性**：buildBDDScenarios 的多 facet 衍生 + enrichBDDScenarios 的三層補充策略 + generateSpec 整合，均符合需求
+- **去重機制**：title-based Set 去重在 buildBDDScenarios 和 enrichBDDScenarios 中各有獨立實作，防禦性足夠
+- **Error handling**：answers[q.id] 為空時 `if (!answer) continue` 正確處理、enrichBDDScenarios 對空陣列輸入有防禦
+- **測試覆蓋**：16 個新測試涵蓋 facet 衍生、補充策略、去重、immutability、通用模板條件判斷、generateSpec 整合
+- **向後相容**：33 個既有 interview.test.js 測試全部通過
+- **安全性**：無硬編碼 secrets、無外部輸入注入風險
+
+[m] 雙重 enrichBDDScenarios 呼叫是有意設計（雙重保險），功能正確但略增認知負擔。
+Keywords: buildbddscenarios, facet, enrichbddscenarios, generatespec, title, based, error, handling, answers, answer
+
+---
+## 2026-03-05 | doc-updater:DOCS Findings
+- ✅ 無新 CLI 指令
+- ✅ 無新 agent/hook/skill 配置
+- ✅ 無公開 API 新增（enrichBDDScenarios 是內部實現）
+- ✅ 無架構決策點變更
+- ✅ README/CHANGELOG 無需同步
+Keywords: agent, hook, skill, enrichbddscenarios, readme, changelog
+
+---
+## 2026-03-05 | doc-updater:DOCS Context
+開發完成 pm-spec-bdd-enrichment feature，變更限於：
+- `plugins/overtone/scripts/lib/interview.js` — 內部函式強化（buildBDDScenarios 多 facet 衍生、enrichBDDScenarios 補充場景）
+- `tests/unit/pm-bdd-enrichment.test.js` — 新增 16 個測試
+Keywords: spec, enrichment, feature, plugins, overtone, scripts, interview, buildbddscenarios, facet, enrichbddscenarios
 
