@@ -2,6 +2,39 @@
 
 所有重要變更記錄於此文件。
 
+## [0.28.61] - 2026-03-05
+
+### P4.2 Auto-Fix——進化引擎自動修復層
+
+#### 核心功能
+- **gap-fixer.js**：根據 gap type 選擇修復策略
+  - 支援四種 gap 型別修復：component-chain、closed-loop、completion-gap、dependency-sync
+  - fixGaps() API 批量修復 + 衝突檢測 + rollback 支援
+
+- **evolution.js fix 子命令**：自動修復可修復的缺口
+  - 語法：`bun scripts/evolution.js fix [--execute] [--type <type>] [--json]`
+  - `--execute` 真實執行修復（預設 dry-run）
+  - `--type` 過濾特定 gap 類型修復
+  - `--json` JSON 格式輸出（供程式消費）
+
+#### 測試補強
+- 新增 50 個測試（gap-fixer.test.js）
+  - (1-7) 修復策略正確性（component-chain/closed-loop/completion-gap/dependency-sync）
+  - (8-28) 邊界情況 + 衝突檢測 + rollback 驗證
+  - (29-43) Integration 測試（fix 子命令端端測試）
+  - (44-50) 邊界與錯誤情況
+
+#### 文件同步
+- `plugin.json`：版本 0.28.60 → 0.28.61
+- `docs/status.md`：版本更新、測試 3632 → 3673（162 個測試檔）、Phase 4 P4.2 標記完成、近期變更
+- `docs/roadmap.md`：P4.2 標記 ✅ 完成、當前 Phase 更新
+- `CLAUDE.md`：evolution.js fix 子命令說明
+
+#### 測試
+- 測試 3673 pass / 0 fail（162 files）
+
+---
+
 ## [0.28.57] - 2026-03-05
 
 ### Failure Tracker 精確度改善——測試隔離 + 解決記錄 + 時間範圍顯示

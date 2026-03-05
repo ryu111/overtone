@@ -1,50 +1,4 @@
 ---
-## 2026-03-04 | developer:DEV Context
-完成 `lib-structure-optimization` 重構 feature（Phase 1 + Phase 2a + Phase 2b 全部實作）：
-
-- **Phase 1**：`config-api.js`（919 行）拆分為三個模組：
-  - `config-io.js`：共用 IO 輔助（readAgentFile、readHooksJson 等 9 個函式）
-  - `config-validator.js`：L1 驗證（validateAgent/validateHook/validateSkill/validateAll）
-  - `config-api.js`：保留 L2 CRUD + re-export validate 函式（向後相容）
-
-- **Phase 2a**：7 個 analyzer 模組移至 `lib/analyzers/` 子目錄（guard-system、dead-code-scanner、docs-sync-engine、test-quality-scanner、component-repair、hook-diagnostic、cross-analyzer）
-
-- **Phase 2b**：6 個 knowledge 模組移至 `lib/knowledge/` 子目錄（instinct、global-instinct、knowledge-archiver、knowledge-gap-detector、knowledge-searcher、skill-router）
-Keywords: structure, optimization, feature, phase, config, readagentfile, readhooksjson, validator, validateagent, validatehook
-
----
-## 2026-03-04 | code-reviewer:REVIEW Findings
-**審查範圍：** 57 個檔案變更（951 行新增 / 558 行刪除），涵蓋三大重構區塊。
-
-**1. config-api.js 拆分 (Phase 1)**
-- config-io.js（IO helpers）和 config-validator.js（L1 驗證）正確從 config-api.js 提取
-- config-api.js 保留 L2 CRUD 函式 + 向後相容 re-exports（validateAgent/validateHook/validateSkill/validateAll）
-- 依賴鏈 `config-io <-> config-validator -> config-api` 無循環依賴
-- `getHookHandler` 內部函式正確從 config-io 匯出並由 config-validator 消費
-- `validateAgentFrontmatter`/`validateSkillFrontmatter` 正確 re-export 供 config-api CRUD 函式使用
-
-**2. analyzers/ 子目錄 (Phase 2a)**
-- 7 個模組移入 `lib/analyzers/`，所有 `__dirname` 路徑計算已更新（多加一層 `..`）
-- `guard-system.js` 內部 require 正確使用 `./` 引用同目錄的 5 個兄弟模組
-- `component-repair.js` 的 `registryDataPath` 使用 `join(__dirname, '..', 'registry-data.json')` 正確指向 `lib/registry-data.json`
-
-**3. knowledge/ 子目錄 (Phase 2b)**
-- 6 個模組移入 `lib/knowledge/`，knowledge 模組之間的 `./` 內部引用正確
-- 對外引用（`../paths`, `../registry`, `../utils`）正確指向 parent `lib/` 目錄
-- 6 個 handler 模組的 require 路徑全部更新（instinct x4, global-instinct x4, knowledge-archiver x1, knowledge-gap-detector x1）
-
-**4. 消費者路徑完整性**
-- `data.js` 的 2 處 require 路徑已更新（cross-analyzer, global-instinct）
-- 全部 28 個測試檔案的 require 路徑已更新，無殘留舊路徑
-- 掃描 `scripts/` 和 `tests/` 目錄確認零殘留舊路徑
-
-**5. 附帶修正**
-- `dashboard-registry.test.js` 計數斷言更新（28->29 events, 12->13 categories, 新增 queue category）與先前 `cb8e1bc` commit 對齊
-
-**BDD Spec 對照：** 268 行 spec 涵蓋 3 Phase + 整合驗證，所有 require 路徑更新、向後相容 re-export、模組功能不變的要求均已實現。
-Keywords: config, phase, helpers, validator, crud, exports, validateagent, validatehook, validateskill, validateall
-
----
 ## 2026-03-05 | product-manager:PM Findings
 **目標用戶**：Overtone plugin 的使用者（目前為個人 dogfooding，未來可能擴展）
 
@@ -935,4 +889,37 @@ Keywords: analyzer, agent, developer, files, plugins, overtone, scripts, health,
 
 5. **BDD 覆蓋**：五種 GapType 映射、三種 severity、去重邏輯、checks 過濾、pluginRoot 不存在優雅降級、CLI 輸出格式均已實作。
 Keywords: health, check, checkcomponentchain, checkclosedloop, checkcompletiongap, checkdependencysync, module, exports, skillsdiroverride, skills
+
+---
+## 2026-03-05 | planner:PLAN Findings
+**需求分解**：
+
+1. 擴展 gap-analyzer.js — 新增 fixable + fixAction 欄位 | agent: developer | files: `plugins/overtone/scripts/lib/gap-analyzer.js`
+
+2. 實作 gap-fixer.js — lib 層修復執行邏輯（新建）| agent: developer | files: `plugins/overtone/scripts/lib/gap-fixer.js` — 可與子任務 1 並行（需等 1 定義完 fixAction 格式）
+
+3. 更新 evolution.js — 新增 fix 子命令 | agent: developer | files: `plugins/overtone/scripts/evolution.js` — 依賴 1、2 完成
+
+4. 新增 unit 測試 — gap-analyzer 新欄位 + gap-fixer | agent: developer | files: `tests/unit/gap-analyzer.test.js`（擴展）、`tests/unit/gap-fixer.test.js`（新建）— 4 可與 2 並行
+
+5. 新增 integration 測試 — evolution.js fix 子命令 | agent: developer | files: `tests/integration/evolution-fix.test.js`（新建）— 依賴 3 完成
+
+**優先順序**：
+
+- 子任務 1 先做（定義 fixable/fixAction 格式，是後續的依據）
+- 子任務 2 和 4 的 unit 測試部分可在 1 完成後並行
+- 子任務 3 依賴 1+2，完成後執行 5
+
+**範圍邊界**：
+
+- missing-skill / broken-chain / missing-consumer 不自動修復，只顯示建議
+- fix-consistency.js 的核心邏輯不修改（只呼叫）
+- manage-component.js 不修改
+- 不做互動式修復模式
+Keywords: analyzer, fixable, fixaction, agent, developer, files, plugins, overtone, scripts, fixer
+
+---
+## 2026-03-05 | planner:PLAN Context
+P4.2 目標是為 gap-analyzer 的偵測結果新增自動執行層。使用者執行 `bun scripts/evolution.js fix` 後，系統自動修復 `sync-mismatch`（SKILL.md 消費者表不一致）和 `no-references`（skill 缺少 references 目錄）兩種可安全修復的缺口，並重新驗證缺口是否消失。安全邊界：預設 dry-run，需明確加旗標才真正執行；不自動建立 agent 或 skill。
+Keywords: analyzer, scripts, evolution, sync, mismatch, skill, references, agent
 

@@ -139,6 +139,10 @@ bun scripts/heartbeat.js status                          # 查看狀態
 # 進化引擎（gap detection 與自動修復）
 bun scripts/evolution.js analyze                     # 執行 gap 分析，輸出純文字報告
 bun scripts/evolution.js analyze --json              # JSON 格式報告（供程式消費）
+bun scripts/evolution.js fix                         # 自動修復可修復缺口（預設 dry-run）
+bun scripts/evolution.js fix --execute               # 執行修復（真實更新檔案）
+bun scripts/evolution.js fix --type <type>           # 只修復特定 gap 類型（component-chain / closed-loop / completion-gap / dependency-sync）
+bun scripts/evolution.js fix --json                  # JSON 格式輸出（供程式消費）
 
 # 依賴圖與一致性
 bun scripts/impact.js <path>                         # 查詢修改此檔案會影響哪些元件

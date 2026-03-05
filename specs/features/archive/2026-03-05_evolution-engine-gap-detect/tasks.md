@@ -1,10 +1,10 @@
 ---
 feature: evolution-engine-gap-detect
-status: in-progress
+status: archived
 workflow: standard
 created: 2026-03-05T11:55:45.036Z
+archivedAt: 2026-03-05T12:29:17.137Z
 ---
-
 ## Stages
 
 - [x] PLAN

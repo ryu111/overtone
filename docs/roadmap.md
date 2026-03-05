@@ -1,6 +1,6 @@
 # Overtone Roadmap
 
-> 最後更新：2026-03-05 | 當前 Phase：Phase 4 開始（P4.1 evolution-engine-gap-detect 完成）
+> 最後更新：2026-03-05 | 當前 Phase：Phase 4 進行中（P4.1 Gap Detection ✅、P4.2 Auto-Fix ✅）
 
 ## Phase 總覽
 
@@ -187,13 +187,13 @@
 | evolution.js CLI | `bun scripts/evolution.js analyze [--json]` 入口 | ✅ |
 | Gap Detection 測試 | 52 個測試（33 unit + 19 integration） | ✅ |
 
-### P4.2 Auto-Fix（進化引擎自動修復層）⏳
+### P4.2 Auto-Fix（進化引擎自動修復層）✅
 
 | 任務 | 說明 | 狀態 |
 |------|------|:----:|
-| gap-fixer.js | 根據 gap type 選擇修復策略（component-chain / closed-loop / completion-gap / dependency-sync） | ⬜ |
-| evolution.js fix 子命令 | `bun scripts/evolution.js fix [--apply]` | ⬜ |
-| Auto-Fix 測試 | 修復正確性 + 邊界情況 | ⬜ |
+| gap-fixer.js | 根據 gap type 選擇修復策略（component-chain / closed-loop / completion-gap / dependency-sync） | ✅ |
+| evolution.js fix 子命令 | `bun scripts/evolution.js fix [--execute] [--type <type>] [--json]` | ✅ |
+| Auto-Fix 測試 | 修復正確性 + 邊界情況 + 50 個測試 | ✅ |
 
 ### P4.3-4.5 垂直切片示範 + 泛化 ⏳
 

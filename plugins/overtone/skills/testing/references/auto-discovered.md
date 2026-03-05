@@ -721,3 +721,18 @@ Keywords: passed, failed, tests, unit, analyzer, test, spec, feature, gapreport,
 [n] design.md Open Questions 第 1 點的去重 key 描述（`${check}:${file}`）與決策 3（`${type}:${file}`）不一致。實作與決策 3 對齊，是正確的，但文件有殘留矛盾。
 Keywords: commit, tests, integration, evolution, analyze, test, untracked, developer, design, open
 
+---
+## 2026-03-05 | tester:TEST Findings
+測試結果摘要：
+
+目標測試（4 個檔案，93 個測試）：
+- `tests/unit/gap-analyzer.test.js` — Feature 1 覆蓋：fixable/fixAction 欄位、5 種缺口類型標記、既有欄位不受影響
+- `tests/unit/gap-fixer.test.js` — Feature 2 覆蓋：dry-run 行為、no-references 修復、sync-mismatch 批次修復、typeFilter 過濾、不可修復類型跳過、失敗記錄
+- `tests/integration/evolution-fix.test.js` — Feature 3/4/5 覆蓋：CLI fix 子命令（純文字 + JSON 輸出）、--execute 旗標、--type 過濾、exit code 語意
+- `tests/integration/evolution-analyze.test.js` — Feature 整合驗證：analyze 子命令行為
+
+結果：93 pass / 0 fail / 510 expect() calls
+
+全域測試：3673 pass / 0 fail（12 workers，18.6s）
+Keywords: tests, unit, analyzer, test, feature, fixable, fixaction, fixer, references, sync
+
