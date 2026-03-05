@@ -324,7 +324,138 @@ describe('workflow type 不匹配時仍可推進佇列', () => {
 });
 
 // ────────────────────────────────────────────────────────────────────────────
-// 8. 完整流程
+// 8. autoExecute: false（規劃模式）
+// ────────────────────────────────────────────────────────────────────────────
+
+describe('writeQueue 支援 autoExecute: false', () => {
+  test('autoExecute: false 時 getNext 回傳 null', () => {
+    executionQueue.writeQueue(TEST_PROJECT, [
+      { name: 'plan-task', workflow: 'quick' },
+    ], 'PM Plan', { autoExecute: false });
+
+    const queue = executionQueue.readQueue(TEST_PROJECT);
+    expect(queue.autoExecute).toBe(false);
+
+    const next = executionQueue.getNext(TEST_PROJECT);
+    expect(next).toBeNull();
+  });
+
+  test('autoExecute: false 時 advanceToNext 回傳 null', () => {
+    executionQueue.writeQueue(TEST_PROJECT, [
+      { name: 'plan-task-2', workflow: 'standard' },
+    ], 'PM Plan', { autoExecute: false });
+
+    const result = executionQueue.advanceToNext(TEST_PROJECT);
+    expect(result).toBeNull();
+
+    // 項目仍為 pending
+    const queue = executionQueue.readQueue(TEST_PROJECT);
+    expect(queue.items[0].status).toBe('pending');
+  });
+
+  test('autoExecute 預設為 true（向後相容）', () => {
+    executionQueue.writeQueue(TEST_PROJECT, [
+      { name: 'normal-task', workflow: 'quick' },
+    ], 'PM Discovery');
+
+    const queue = executionQueue.readQueue(TEST_PROJECT);
+    expect(queue.autoExecute).toBe(true);
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// 9. appendQueue
+// ────────────────────────────────────────────────────────────────────────────
+
+describe('appendQueue 累加到既有佇列', () => {
+  test('累加到現有佇列（保留原有項目）', () => {
+    executionQueue.writeQueue(TEST_PROJECT, [
+      { name: 'first', workflow: 'quick' },
+    ], 'PM Discovery');
+
+    executionQueue.appendQueue(TEST_PROJECT, [
+      { name: 'second', workflow: 'standard' },
+      { name: 'third', workflow: 'quick' },
+    ], 'PM Plan');
+
+    const queue = executionQueue.readQueue(TEST_PROJECT);
+    expect(queue.items.length).toBe(3);
+    expect(queue.items[0].name).toBe('first');
+    expect(queue.items[1].name).toBe('second');
+    expect(queue.items[2].name).toBe('third');
+  });
+
+  test('appendQueue 保留已完成項目', () => {
+    executionQueue.writeQueue(TEST_PROJECT, [
+      { name: 'done-task', workflow: 'quick' },
+    ], 'PM Discovery');
+    executionQueue.advanceToNext(TEST_PROJECT);
+    executionQueue.completeCurrent(TEST_PROJECT);
+
+    executionQueue.appendQueue(TEST_PROJECT, [
+      { name: 'new-task', workflow: 'standard' },
+    ], 'PM Plan');
+
+    const queue = executionQueue.readQueue(TEST_PROJECT);
+    expect(queue.items.length).toBe(2);
+    expect(queue.items[0].status).toBe('completed');
+    expect(queue.items[1].status).toBe('pending');
+  });
+
+  test('appendQueue 不存在時等同 writeQueue', () => {
+    executionQueue.clearQueue(TEST_PROJECT);
+
+    executionQueue.appendQueue(TEST_PROJECT, [
+      { name: 'only-task', workflow: 'quick' },
+    ], 'PM Plan');
+
+    const queue = executionQueue.readQueue(TEST_PROJECT);
+    expect(queue).not.toBeNull();
+    expect(queue.items.length).toBe(1);
+    expect(queue.items[0].name).toBe('only-task');
+  });
+
+  test('appendQueue 支援 autoExecute: false', () => {
+    executionQueue.writeQueue(TEST_PROJECT, [
+      { name: 'existing', workflow: 'quick' },
+    ], 'PM Discovery');
+
+    executionQueue.appendQueue(TEST_PROJECT, [
+      { name: 'plan-task', workflow: 'standard' },
+    ], 'PM Plan', { autoExecute: false });
+
+    const queue = executionQueue.readQueue(TEST_PROJECT);
+    expect(queue.autoExecute).toBe(false);
+    expect(queue.items.length).toBe(2);
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// 10. formatQueueSummary 規劃模式標注
+// ────────────────────────────────────────────────────────────────────────────
+
+describe('formatQueueSummary 規劃模式標注', () => {
+  test('autoExecute: false 時顯示規劃模式標注', () => {
+    executionQueue.writeQueue(TEST_PROJECT, [
+      { name: '規劃任務', workflow: 'standard' },
+    ], 'PM Plan', { autoExecute: false });
+
+    const summary = executionQueue.formatQueueSummary(TEST_PROJECT);
+    expect(summary).toContain('📋 規劃模式（手動啟動）');
+  });
+
+  test('autoExecute: true 時不顯示規劃模式標注', () => {
+    executionQueue.writeQueue(TEST_PROJECT, [
+      { name: '執行任務', workflow: 'quick' },
+    ], 'PM Discovery');
+
+    const summary = executionQueue.formatQueueSummary(TEST_PROJECT);
+    expect(summary).not.toContain('規劃模式');
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// 11. 完整流程
 // ────────────────────────────────────────────────────────────────────────────
 
 describe('完整流程（8）', () => {

@@ -1,18 +1,4 @@
 ---
-## 2026-03-04 | retrospective:RETRO Findings
-**回顧摘要**：
-
-整體實作品質良好。registry.js 的核心變更正確（quick stages 移除 TEST、parallelGroups 清空），13 個測試檔案同步更新，3236 pass / 0 fail。c2685d7 的文件修復覆蓋了 CLAUDE.md、README.md、SKILL.md、workflow-selection.md、parallel-groups.md 五個檔案。
-
-然而 `docs/spec/` 目錄下有兩個規格文件仍保有舊定義，屬於跨 commit 的累積遺漏，單一階段 reviewer 難以全面掃描。
-Keywords: registry, quick, stages, test, parallelgroups, pass, fail, claude, readme, skill
-
----
-## 2026-03-04 | developer:DEV Context
-移除 `on-task-completed.js` 中的 `bun test` 執行邏輯。問題根因：全量 bun test 需要 58s，超過 hook 設定的 45s timeout，導致 DEV task 完成時 100% 假失敗，且每次都浪費 45s 等待。DEV agent 自身停止條件已包含測試通過，hook 執行 bun test 是冗餘且失效的第二道防線。
-Keywords: task, completed, test, hook, timeout, agent
-
----
 ## 2026-03-04 | architect:ARCH Findings
 **技術方案**：
 - 採用就地匯出策略：在 hook 檔案底部加 `module.exports = { pureFn }` + `if (require.main === module) { safeRun(...) }` 守衛
@@ -869,4 +855,53 @@ Keywords: internalize, principles, feature, overtone, plugin, checklist, agent, 
 
 此修正解決了 YAML 將 `#` 解析為注釋的問題，是一個結構性修復（加引號）而非 workaround，符合「治本不治標」原則。existsSync 的未使用 import（REVIEW 階段的 Nitpick）是唯一已知的小缺陷，code-reviewer 已記錄，此後可作為技術債清理。
 Keywords: feature, agent, developer, code, reviewer, retrospective, planner, claude, craft, skill
+
+---
+## 2026-03-05 | product-manager:PM Findings
+**目標用戶**：Overtone 使用者（個人 dogfooding），在需要一次規劃多個功能然後批次執行的場景下使用。
+
+**成功指標**：
+- `/ot:pm plan <需求>` 完成後寫入佇列即停止，不啟動 workflow
+- `/ot:pm <需求>`（無 plan 參數）行為不變，分析後立即啟動 workflow
+- plan 模式佇列可被 heartbeat daemon 接續執行
+
+**方案比較**：
+
+| 維度 | 方案 A：純 SKILL.md 條件分支 | 方案 B：autoExecute 聯動 | 方案 C：獨立 plan command |
+|------|-----|-----|-----|
+| 概述 | SKILL.md 加 plan 模式條件判斷，PM 完成後根據模式決定是否啟動 workflow | 方案 A + writeQueue 支援 autoExecute: false，plan 模式寫入時設為 false | 新建 `/ot:pm-plan` command，與 `/ot:pm` 分離 |
+| 優點 | 最小改動（僅 SKILL.md），邏輯集中 | 語意完整，佇列層級也知道「不要自動執行」 | 完全隔離，不影響現有 PM 流程 |
+| 缺點 | autoExecute 永遠為 true，佇列語意不精確 | 多改一個檔案（execution-queue.js 或 queue.js），但改動極小 | 多一個 command 維護成本，兩個 command 共用同一 agent，容易不同步 |
+| 工作量 | 0.5 人天 | 1 人天 | 1.5 人天 |
+| RICE | (8x3x100%)/0.5 = 48 | (8x3x100%)/1 = 24 | (8x3x80%)/1.5 = 12.8 |
+| 證據等級 | codebase 佐證 | codebase 佐證（autoExecute 守衛已存在） | 推測 |
+
+**推薦方案**：方案 B（autoExecute 聯動），理由：
+- RICE 雖低於方案 A，但語意完整性更高 — `autoExecute: false` 讓 `getNext` / `advanceToNext` 回傳 null，佇列層級天然阻擋自動推進（codebase 佐證：第 74、104 行已有守衛）
+- 額外工作量極小（writeQueue 加一個 options 參數，queue.js CLI 加 `--no-auto` flag）
+- 方案 A 的風險：佇列寫了 `autoExecute: true` 但實際不執行，語意矛盾，若 heartbeat 讀佇列會誤啟動
+
+**MVP 範圍（MoSCoW）**：
+
+- **Must**:
+  - SKILL.md 新增 plan 模式條件分支（PM 完成後：plan 模式 -> 寫佇列 + 停止，execute 模式 -> 現有行為）
+  - `writeQueue` 支援 `autoExecute` 參數（預設 true，plan 模式傳 false）
+  - Plan 模式完成訊息（「已加入佇列，使用 /ot:queue 查看」）
+
+- **Should**:
+  - queue.js CLI 新增 `--no-auto` flag（讓手動寫佇列也能設 `autoExecute: false`）
+  - Plan 模式佇列可用 `queue.js` 手動切換為 autoExecute: true 以啟動執行
+
+- **Could**:
+  - 多次 `/ot:pm plan` 累加佇列（現有 writeQueue 是覆寫，可能需要 appendQueue）
+
+- **Won't**:
+  - 修改 product-manager agent prompt（agent 不需要感知模式，它只產 Brief）
+  - 修改 session
+Keywords: overtone, dogfooding, plan, workflow, heartbeat, daemon, skill, autoexecute, command, writequeue
+
+---
+## 2026-03-05 | product-manager:PM Context
+使用者需要 PM skill 支援兩種模式：立即執行（現有預設）和規劃模式（plan）。核心問題是 PM 的 SKILL.md 強制 MUST 立即啟動 workflow，沒有「只規劃」的選項。這阻礙了「批次規劃、延遲執行」的工作流。
+Keywords: skill, plan, must, workflow
 

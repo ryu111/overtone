@@ -43,19 +43,62 @@ function readQueue(projectRoot) {
  * @param {string} projectRoot
  * @param {object[]} items - [{ name, workflow }]
  * @param {string} source - 來源描述（如 "PM Discovery 2026-03-03"）
+ * @param {object} [options] - 選項
+ * @param {boolean} [options.autoExecute=true] - 是否自動執行
  * @returns {object} 寫入的佇列
  */
-function writeQueue(projectRoot, items, source) {
+function writeQueue(projectRoot, items, source, options) {
+  const autoExecute = options && options.autoExecute === false ? false : true;
   const queue = {
     items: items.map(item => ({
       name: item.name,
       workflow: item.workflow,
       status: 'pending',
     })),
-    autoExecute: true,
+    autoExecute,
     source,
     createdAt: new Date().toISOString(),
   };
+
+  const filePath = _queuePath(projectRoot);
+  mkdirSync(dirname(filePath), { recursive: true });
+  atomicWrite(filePath, queue);
+
+  return queue;
+}
+
+/**
+ * 累加到現有執行佇列（保留已完成/進行中的項目）
+ * @param {string} projectRoot
+ * @param {object[]} items - [{ name, workflow }]
+ * @param {string} source - 來源描述
+ * @param {object} [options] - 選項
+ * @param {boolean} [options.autoExecute=true] - 是否自動執行
+ * @returns {object} 寫入的佇列
+ */
+function appendQueue(projectRoot, items, source, options) {
+  const existing = readQueue(projectRoot);
+  const autoExecute = options && options.autoExecute === false ? false : true;
+
+  const newItems = items.map(item => ({
+    name: item.name,
+    workflow: item.workflow,
+    status: 'pending',
+  }));
+
+  const queue = existing
+    ? {
+        ...existing,
+        items: [...existing.items, ...newItems],
+        autoExecute,
+        source,
+      }
+    : {
+        items: newItems,
+        autoExecute,
+        source,
+        createdAt: new Date().toISOString(),
+      };
 
   const filePath = _queuePath(projectRoot);
   mkdirSync(dirname(filePath), { recursive: true });
@@ -175,7 +218,13 @@ function formatQueueSummary(projectRoot) {
   const current = queue.items.find(i => i.status === 'in_progress');
   const next = queue.items.find(i => i.status === 'pending');
 
+  const planMode = queue.autoExecute === false ? '📋 規劃模式（手動啟動）' : null;
   const lines = [`## 執行佇列（${queue.source}）`, ''];
+
+  if (planMode) {
+    lines.push(planMode);
+    lines.push('');
+  }
 
   for (const item of queue.items) {
     const icon = item.status === 'completed' ? '✅' : item.status === 'in_progress' ? '🔄' : '⬜';
@@ -224,6 +273,7 @@ function _queuePath(projectRoot) {
 module.exports = {
   readQueue,
   writeQueue,
+  appendQueue,
   getNext,
   getCurrent,
   advanceToNext,
