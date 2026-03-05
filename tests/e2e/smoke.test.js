@@ -12,10 +12,15 @@
  *
  * Scenario 3：元件一致性
  *   - validate-agents 通過 / health-check 無 error
+ *
+ * Scenario 4：Workflow 模板初始化
+ *   - 全 18 個 workflow 模板可透過 init-workflow.js 初始化
+ *   - workflow.json 正確建立，包含 workflowType / stages
  */
 
-const { test, expect, describe } = require('bun:test');
+const { test, expect, describe, beforeAll, afterAll } = require('bun:test');
 const { join } = require('path');
+const { existsSync, readFileSync, rmSync } = require('fs');
 const { PROJECT_ROOT, PLUGIN_ROOT, SCRIPTS_LIB, SCRIPTS_DIR } = require('../helpers/paths');
 
 const SPAWN_TIMEOUT = 30_000;
@@ -159,4 +164,62 @@ describe('Scenario 3：元件一致性', () => {
     expect(result.exitCode).toBe(0);
   }, SPAWN_TIMEOUT);
 
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// Scenario 4：Workflow 模板初始化
+// ────────────────────────────────────────────────────────────────────────────
+
+describe('Scenario 4：Workflow 模板初始化', () => {
+  const { homedir } = require('os');
+  const { workflows } = require(join(SCRIPTS_LIB, 'registry'));
+  const SESSIONS_DIR = join(homedir(), '.overtone', 'sessions');
+  const INIT_WORKFLOW = join(SCRIPTS_DIR, 'init-workflow.js');
+
+  // 為每個 workflow 模板產生獨立的臨時 sessionId
+  const sessionIds = {};
+  const workflowNames = Object.keys(workflows);
+
+  beforeAll(() => {
+    // 預先計算每個 workflow 使用的 sessionId（無需建立目錄，init-workflow.js 會自動建立）
+    for (const name of workflowNames) {
+      sessionIds[name] = `smoke-test-wf-${name}-${Date.now().toString(36)}`;
+    }
+  });
+
+  afterAll(() => {
+    // 清理所有測試產生的 session 目錄
+    for (const sid of Object.values(sessionIds)) {
+      const dir = join(SESSIONS_DIR, sid);
+      try {
+        if (existsSync(dir)) rmSync(dir, { recursive: true, force: true });
+      } catch {
+        // 清理失敗不影響測試結果
+      }
+    }
+  });
+
+  for (const name of workflowNames) {
+    test(`workflow「${name}」可初始化（workflow.json 正確建立）`, () => {
+      const sid = sessionIds[name];
+      const result = spawnSync(['bun', INIT_WORKFLOW, name, sid]);
+
+      if (result.exitCode !== 0) {
+        throw new Error(
+          `init-workflow.js 初始化「${name}」失敗（exit ${result.exitCode}）：\n${result.stdout}\n${result.stderr}`
+        );
+      }
+      expect(result.exitCode).toBe(0);
+
+      // 讀取並驗證 workflow.json
+      const workflowPath = join(SESSIONS_DIR, sid, 'workflow.json');
+      expect(existsSync(workflowPath)).toBe(true);
+
+      const state = JSON.parse(readFileSync(workflowPath, 'utf8'));
+      expect(state.workflowType).toBe(name);
+      expect(typeof state.stages).toBe('object');
+      expect(Object.keys(state.stages).length).toBeGreaterThan(0);
+      expect(state.sessionId).toBe(sid);
+    }, SPAWN_TIMEOUT);
+  }
 });
