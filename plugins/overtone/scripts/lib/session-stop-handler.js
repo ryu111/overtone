@@ -168,6 +168,15 @@ function handleSessionStop(input, sessionId) {
           executionQueue.advanceToNext(projectRoot);
           executionQueue.completeCurrent(projectRoot);
         }
+        // 若一個 workflow 涵蓋多個佇列項目（如同 feature 的多個子任務），連續完成相關 pending 項目
+        if (featureName) {
+          let relatedNext = executionQueue.getNext(projectRoot);
+          while (relatedNext && _isRelatedQueueItem(relatedNext.item.name, featureName)) {
+            executionQueue.advanceToNext(projectRoot);
+            executionQueue.completeCurrent(projectRoot);
+            relatedNext = executionQueue.getNext(projectRoot);
+          }
+        }
         const next = executionQueue.getNext(projectRoot);
         if (next) {
           queueHint = `\n\n⏭️ 佇列下一項：${next.item.name}（${next.item.workflow}）\n⛔ 直接開始，不要詢問使用者。`;
@@ -307,4 +316,18 @@ function buildContinueMessage(ctx) {
   ].filter(Boolean).join('\n');
 }
 
-module.exports = { handleSessionStop, buildCompletionSummary, calcDuration, buildContinueMessage };
+/**
+ * 判斷佇列項目是否與目前 featureName 相關
+ * 匹配邏輯：itemName 包含 featureName，或 featureName 包含 itemName 的前綴（去除 -core/-graduation 等後綴）
+ * @param {string} itemName - 佇列項目名稱
+ * @param {string} featureName - 目前 workflow 的 feature 名稱
+ * @returns {boolean}
+ */
+function _isRelatedQueueItem(itemName, featureName) {
+  if (!itemName || !featureName) return false;
+  const normalizedItem = itemName.toLowerCase().replace(/[-_\s]/g, '');
+  const normalizedFeature = featureName.toLowerCase().replace(/[-_\s]/g, '');
+  return normalizedItem.includes(normalizedFeature) || normalizedFeature.includes(normalizedItem);
+}
+
+module.exports = { handleSessionStop, buildCompletionSummary, calcDuration, buildContinueMessage, _isRelatedQueueItem };

@@ -276,10 +276,58 @@ describe('防禦性推進：completeCurrent fallback', () => {
 });
 
 // ────────────────────────────────────────────────────────────────────────────
-// 7. 完整流程
+// 7. workflow type 不匹配時仍可推進佇列（修復 init-workflow 無條件推進）
 // ────────────────────────────────────────────────────────────────────────────
 
-describe('完整流程', () => {
+describe('workflow type 不匹配時仍可推進佇列', () => {
+  test('佇列項目為 quick，啟動 standard workflow 時仍可推進', () => {
+    executionQueue.writeQueue(TEST_PROJECT, [
+      { name: 'prompt-journal', workflow: 'quick' },
+    ], 'PM Discovery');
+
+    // 模擬 init-workflow 新邏輯：無條件推進
+    const next = executionQueue.getNext(TEST_PROJECT);
+    if (next) {
+      executionQueue.advanceToNext(TEST_PROJECT);
+    }
+
+    const queue = executionQueue.readQueue(TEST_PROJECT);
+    expect(queue.items[0].status).toBe('in_progress');
+  });
+
+  test('佇列項目為 standard，啟動 quick workflow 時仍可推進', () => {
+    executionQueue.writeQueue(TEST_PROJECT, [
+      { name: 'exec-queue-fix', workflow: 'standard' },
+    ], 'PM Discovery');
+
+    // 無條件推進（不檢查 workflow type）
+    const next = executionQueue.getNext(TEST_PROJECT);
+    if (next) {
+      executionQueue.advanceToNext(TEST_PROJECT);
+    }
+
+    const queue = executionQueue.readQueue(TEST_PROJECT);
+    expect(queue.items[0].status).toBe('in_progress');
+  });
+
+  test('無 pending 項目時不崩潰', () => {
+    executionQueue.writeQueue(TEST_PROJECT, [
+      { name: 'already-done', workflow: 'quick' },
+    ], 'test');
+    executionQueue.advanceToNext(TEST_PROJECT);
+    executionQueue.completeCurrent(TEST_PROJECT);
+
+    // 所有項目已完成，推進應靜默不崩潰
+    const next = executionQueue.getNext(TEST_PROJECT);
+    expect(next).toBeNull();
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// 8. 完整流程
+// ────────────────────────────────────────────────────────────────────────────
+
+describe('完整流程（8）', () => {
   test('3 項佇列完整推進', () => {
     executionQueue.writeQueue(TEST_PROJECT, [
       { name: 'A', workflow: 'quick' },

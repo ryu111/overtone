@@ -13,6 +13,7 @@ const {
   calcDuration,
   buildCompletionSummary,
   buildContinueMessage,
+  _isRelatedQueueItem,
 } = require('../../plugins/overtone/scripts/lib/session-stop-handler');
 
 // ── calcDuration ────────────────────────────────────────────────────────────
@@ -206,5 +207,41 @@ describe('buildContinueMessage', () => {
     });
     expect(typeof result).toBe('string');
     expect(result.length).toBeGreaterThan(0);
+  });
+});
+
+// ── _isRelatedQueueItem ──────────────────────────────────────────────────────
+
+describe('_isRelatedQueueItem', () => {
+  test('itemName 包含 featureName 時回傳 true', () => {
+    expect(_isRelatedQueueItem('prompt-journal-core', 'prompt-journal')).toBe(true);
+  });
+
+  test('itemName 完全等於 featureName 時回傳 true', () => {
+    expect(_isRelatedQueueItem('prompt-journal', 'prompt-journal')).toBe(true);
+  });
+
+  test('featureName 包含 itemName 時回傳 true（子任務比主任務長）', () => {
+    // featureName = 'prompt-journal-graduation'，itemName = 'promptjournal'
+    expect(_isRelatedQueueItem('promptjournal', 'prompt-journal-graduation')).toBe(true);
+  });
+
+  test('不相關的項目回傳 false', () => {
+    expect(_isRelatedQueueItem('exec-queue-fix', 'prompt-journal')).toBe(false);
+  });
+
+  test('空值回傳 false', () => {
+    expect(_isRelatedQueueItem('', 'prompt-journal')).toBe(false);
+    expect(_isRelatedQueueItem('prompt-journal', '')).toBe(false);
+    expect(_isRelatedQueueItem(null, 'prompt-journal')).toBe(false);
+    expect(_isRelatedQueueItem('prompt-journal', null)).toBe(false);
+  });
+
+  test('大小寫不敏感匹配', () => {
+    expect(_isRelatedQueueItem('Prompt-Journal-Core', 'prompt-journal')).toBe(true);
+  });
+
+  test('底線和空白與連字號等效', () => {
+    expect(_isRelatedQueueItem('prompt_journal_core', 'prompt-journal')).toBe(true);
   });
 });

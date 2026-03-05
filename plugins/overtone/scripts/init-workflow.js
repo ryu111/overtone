@@ -110,11 +110,11 @@ if (featureName && specsFeaturePath) {
 }
 
 // ── 執行佇列推進（pending → in_progress）──
-// 如果佇列中有匹配的 pending 項目，標記為 in_progress
+// 啟動 workflow 時直接推進下一個 pending 項目（佇列有序，無需比對 workflow type）
 try {
   const executionQueue = require('./lib/execution-queue');
   const next = executionQueue.getNext(process.cwd());
-  if (next && next.item.workflow === workflowType) {
+  if (next) {
     executionQueue.advanceToNext(process.cwd());
   }
 } catch { /* 佇列操作失敗不影響主流程 */ }
