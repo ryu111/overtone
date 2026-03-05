@@ -1,3 +1,7 @@
+---
+status: archived
+archivedAt: 2026-03-05T05:27:21.576Z
+---
 # Agent Prompt 四模式補齊 — 任務清單
 
 ## 驗收標準

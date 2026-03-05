@@ -96,3 +96,22 @@ Keywords: agent, prompt, manage, component, update, name, body, agents, edit, gu
 
 為「Agent Prompt 四模式補齊」功能撰寫完整的 BDD 行為規格。根據 design.md 和 tasks.md 的設計，定義了 10 個 Scenario 涵蓋：結構驗證、內容驗證、章節順序、frontmatter 不變性、回歸驗證等面向。
 Keywords: spec, test, agent, prompt, design, tasks, scenario, frontmatter
+---
+## 2026-03-05 | doc-updater:DOCS Findings
+**更新的文件：**
+
+1. **plugin.json** — 版本 bump：0.28.54 → 0.28.55（使用 manage-component.js bump-version）
+
+2. **docs/status.md** — 三部分更新：
+   - Header（第 3 行）：版本號更新、功能描述改為「Agent Prompt 四模式補齊」
+   - 版本狀態欄位（第 9 行）：V1 說明末尾加入「Agent Prompt 四模式補齊（15 個 agent 信心過濾 + 誤判防護 + 標準化章節排列）」
+   - 近期變更（第 30-32 行）：插入新版本 [0.28.55] 摘要為第一筆，內容包括 7 項重點變更
+
+3. **docs/spec/overtone-agents.md** — Agent 設計模式表格更新（第 76-83 行）：
+   - 標題改為「Agent 設計模式（ECC 全套，v0.28.55 全覆蓋）」
+   - 四模式覆蓋範圍更新：
+     * DO/DON'T：全部 18 個 agent
+     * 信心過濾：10 個 agent（code-reviewer、security-reviewer、claude-developer、build-error-resolver、designer、doc-updater、e2e-runner、qa、refactor-cleaner、grader）
+     * 誤判防護：14 個 agent（architect、debugger、developer、planner、retrospective、tester + 上述 8 個）
+     * 停止條件：全部 18 個 agent
+Keywords: plugin, json, bump, manage, component, version, docs, status, header, agent
