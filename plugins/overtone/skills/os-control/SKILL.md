@@ -1,6 +1,6 @@
 ---
 name: os-control
-description: OS 操控知識域。桌面自動化、系統管理、螢幕截圖、音訊控制等 OS 能力的 reference 索引。供 developer、architect、tester、debugger、qa 消費。
+description: OS 操控知識域。桌面自動化、系統管理、螢幕截圖、音訊控制、WebSocket 即時通訊等 OS 能力的 reference 索引。供 developer、architect、tester、debugger、qa 消費。
 disable-model-invocation: true
 user-invocable: false
 ---
