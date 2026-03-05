@@ -69,7 +69,7 @@ Overtone 不是一個開發工具，而是 **AI 的作業系統核心**（kernel
 | 系統資訊 | CPU/記憶體/磁碟/網路 | `sysctl`/`vm_stat` | ✅ |
 | macOS 通知 | 系統通知推送 | `osascript` display notification | ✅ |
 | 檔案監控 | 檔案系統變更偵測 | `fswatch` | ✅ |
-| WebSocket | 即時雙向通訊 | Bun 原生 WebSocket API | ⬜ |
+| WebSocket | 即時雙向通訊 | Bun 原生 WebSocket API | ✅ |
 | 文字轉語音 | TTS | macOS `say` | ⬜ |
 | 語音轉文字 | STT | macOS Dictation / Whisper | ⬜ |
 | OS Guard | OS 操作安全邊界 | guard-system 擴展 | ⬜ |

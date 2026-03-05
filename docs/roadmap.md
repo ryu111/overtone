@@ -1,6 +1,6 @@
 # Overtone Roadmap
 
-> 最後更新：2026-03-05 | 當前 Phase：Phase 3 進行中（P3.3 系統層完成 + 整合層完成）
+> 最後更新：2026-03-05 | 當前 Phase：Phase 3 進行中（P3.3 系統層完成 + P3.5 WebSocket 完成）
 
 ## Phase 總覽
 
@@ -149,10 +149,10 @@
 
 | 任務 | 說明 | 狀態 |
 |------|------|:----:|
-| websocket.js | WebSocket client（Bun 原生 WebSocket API） | ⬜ |
+| websocket.js | WebSocket client（Bun 原生 WebSocket API） | ✅ |
 | tts.js | 文字轉語音（macOS `say` command） | ⬜ |
 | stt.js | 語音轉文字（macOS Dictation / Whisper） | ⬜ |
-| Skill: realtime ref | `skills/os-control/references/realtime.md` | ⬜ |
+| Skill: realtime ref | `skills/os-control/references/realtime.md` | ✅ |
 
 ### P3.6 安全整合（守衛層）← 原 P3.5
 

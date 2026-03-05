@@ -119,6 +119,25 @@ function generateDigest(sessionId, projectRoot, _deps = {}) {
     else if (result === 'reject') stages.reject++;
   }
 
+  // ── 統計異常事件（error:fatal / tool:failure / system:warning）──
+
+  let fatalErrors = [];
+  let toolFailures = [];
+  let systemWarnings = [];
+  try {
+    fatalErrors = deps.timeline.query(sessionId, { type: 'error:fatal' });
+    toolFailures = deps.timeline.query(sessionId, { type: 'tool:failure' });
+    systemWarnings = deps.timeline.query(sessionId, { type: 'system:warning' });
+  } catch {
+    // 異常事件查詢失敗靜默降級
+  }
+
+  const incidents = {
+    fatalErrors: fatalErrors.length,
+    toolFailures: toolFailures.length,
+    systemWarnings: systemWarnings.length,
+  };
+
   // ── 失敗熱點（若有 failure 記錄）──
 
   let failureHotspot = null;
@@ -140,6 +159,7 @@ function generateDigest(sessionId, projectRoot, _deps = {}) {
     totalEvents,
     byCategory,
     stages,
+    incidents,
     failureHotspot,
   };
 }

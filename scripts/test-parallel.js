@@ -4,7 +4,7 @@
  * test-parallel.js — 多進程並行測試執行器
  *
  * 策略：
- *   1. 偵測 CPU 核心數，worker 數 = floor(cpus * 2/3)
+ *   1. 偵測 CPU 核心數，worker 數 = floor(cpus * 3/4)
  *   2. 掃描所有測試檔案
  *   3. 已知重量級檔案（歷史計時）優先分配到獨立 worker
  *   4. 輕量級檔案用 greedy bin-packing 均分
@@ -24,15 +24,20 @@ const TEST_DIRS = ['tests/unit', 'tests/integration', 'tests/e2e'];
 
 // 已知重量級檔案（ms，來自實測）——定期用 --calibrate 更新
 const KNOWN_WEIGHTS = {
-  'tests/integration/health-check.test.js': 8200,
-  'tests/unit/health-check.test.js': 6400,
-  'tests/integration/session-start.test.js': 6200,
-  'tests/integration/platform-alignment-session-end.test.js': 3400,
-  'tests/unit/health-check-proactive.test.js': 2500,
-  'tests/integration/pre-compact.test.js': 2200,
-  'tests/e2e/full-workflow.test.js': 1300,
-  'tests/e2e/workflow-lifecycle.test.js': 1200,
-  'tests/integration/agent-on-stop.test.js': 1200,
+  'tests/integration/health-check.test.js': 11293,
+  'tests/unit/health-check.test.js': 8808,
+  'tests/integration/session-start.test.js': 6609,
+  'tests/integration/platform-alignment-session-end.test.js': 4685,
+  'tests/unit/session-start-handler.test.js': 4446,
+  'tests/unit/health-check-proactive.test.js': 3399,
+  'tests/integration/pre-compact.test.js': 2461,
+  'tests/integration/agent-on-stop.test.js': 1335,
+  'tests/e2e/full-workflow.test.js': 1291,
+  'tests/e2e/standard-workflow.test.js': 1144,
+  'tests/unit/guard-system.test.js': 1129,
+  'tests/e2e/secure-workflow.test.js': 1092,
+  'tests/integration/feedback-loop.test.js': 1076,
+  'tests/e2e/workflow-lifecycle.test.js': 1027,
 };
 
 // 預設權重（未知檔案）
@@ -47,7 +52,7 @@ const workerOverride = args.find(a => a.startsWith('--workers='));
 const cpuCount = cpus().length;
 const workerCount = workerOverride
   ? parseInt(workerOverride.split('=')[1], 10)
-  : Math.max(2, Math.floor(cpuCount * 2 / 3));
+  : Math.max(2, Math.floor(cpuCount * 3 / 4));
 
 // ── 收集測試檔案 ──
 
