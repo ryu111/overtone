@@ -1,6 +1,6 @@
 # Overtone Roadmap
 
-> 最後更新：2026-03-05 | 當前進度：L3.3 Skill Forge 待開始
+> 最後更新：2026-03-06 | 當前進度：L3.4 深度 PM 多輪訪談完成，L3.3 Skill Forge 待開始
 
 ## Layer 總覽
 
@@ -188,16 +188,16 @@
 | 結構驗證 | health-check + validate-agents 通過（0 error） | ⬜ |
 | 安全邊界 | 不覆蓋既有 skill、dry-run 預設、連續失敗暫停 | ⬜ |
 
-### L3.4 深度 PM（精準需求收集）⬜
+### L3.4 深度 PM（精準需求收集）🟡 部分完成
 
 > PM 從 advisory（一次分析）升級為 multi-round interrogator（多輪深度訪談）。
 > 關鍵：無人值守的長期迭代，開頭沒問清楚就做偏。
 
 | 任務 | 說明 | 狀態 |
 |------|------|:----:|
-| 多輪訪談能力 | PM agent 升級：五面向結構化收集（功能/操作流程/UI 設計/邊界條件/驗收標準） | ⬜ |
-| 領域研究整合 | PM 進入新領域時先自主研究基本概念，問出有深度的問題 | ⬜ |
-| Project Spec 產出 | 訪談結果 → 完整 Project Spec（含 ≥10 個 BDD 驗收場景） | ⬜ |
+| 多輪訪談能力 | PM agent 升級：五面向結構化收集（功能/操作流程/UI 設計/邊界條件/驗收標準）+ interview.js（7 API + 24 題靜態問題庫）+ session 持久化 | ✅ |
+| 領域研究整合 | PM 進入新領域時先自主研究基本概念，問出有深度的問題（保留待後續實現） | ⬜ |
+| Project Spec 產出 | 訪談結果 → 完整 Project Spec（含 ≥10 個 BDD 驗收場景）（保留待後續實現） | ⬜ |
 
 ### L3.5 Project Orchestrator（自主建構引擎）⬜
 

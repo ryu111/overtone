@@ -2,6 +2,46 @@
 
 所有重要變更記錄於此文件。
 
+## [0.28.62] - 2026-03-06
+
+### L3.4 Deep PM Interview Engine——深度 PM 多輪訪談
+
+#### 核心功能
+- **interview.js**：多輪結構化訪談引擎（5.2 KB，7 API）
+  - `init(featureName, outputPath)`：初始化新訪談 session
+  - `addQuestion(sessionId, question, phase)`：新增訪談問題
+  - `getResponse(sessionId, phaseIndex, questionIndex)`：取得使用者回應
+  - `advancePhase(sessionId)`：進階到下一訪談階段
+  - `getSummary(sessionId)`：產出五面向整理摘要
+  - `exportData(sessionId, format)`：匯出訪談資料（JSON/Markdown）
+  - `clearSession(sessionId)`：清除訪談 session
+
+- **靜態問題庫**：24 題跨五面向結構化問題
+  - 功能需求（6 題）、操作流程（5 題）、UI 設計（4 題）、邊界條件（5 題）、驗收標準（4 題）
+
+- **Session 持久化**：`~/.overtone/interviews/{sessionId}/` 目錄管理
+  - state.json：訪談狀態 + 階段進度
+  - phases.jsonl：各階段回應記錄（JSONL append-only）
+
+- **interview-guide.md**：PM 訪談操作指引 + 問題模板
+
+#### 升級改進
+- **product-manager.md**：新增 Advisory vs Interview 兩種模式選擇
+- **pm/SKILL.md**：新增 interview-guide.md reference
+
+#### 測試補強
+- 新增 43 個測試（interview.test.js 33 + pm-interview-integration.test.js 10）
+  - (1-7) Session 初始化 + 狀態管理
+  - (8-15) 問題庫 API + 回應記錄
+  - (16-25) Phase 轉移 + 摘要產出
+  - (26-33) 資料匯出 + 錯誤邊界
+  - (34-43) Integration：訪談完整流程端端測試
+
+#### 文件同步
+- `plugin.json`：版本 0.28.61 → 0.28.62
+- `docs/status.md`：版本更新、測試 3673 → 3716（164 個測試檔）、L3.4 狀態更新、近期變更
+- `docs/roadmap.md`：L3.4 狀態標記 🟡 部分完成、當前 Phase 更新
+
 ## [0.28.61] - 2026-03-05
 
 ### P4.2 Auto-Fix——進化引擎自動修復層

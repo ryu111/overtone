@@ -1,171 +1,4 @@
 ---
-## 2026-03-05 | planner:PLAN Context
-**需求**：在 Overtone Instinct 系統上擴展，新增 `intent_journal` 觀察類型，記錄使用者每次 prompt 的完整原文。核心新增機制是 `skipDedup` flag，讓 intent_journal 繞過現有的 `tag+type` 去重邏輯，每次 prompt 都產生獨立記錄。Session 結束時配對 workflow 結果，高信心意圖模式畢業到全域 store，SessionStart 注入「最近常做的事」摘要。
-
-**為什麼現在做**：這是 Level 2.5 能力橋接（持續學習 → 自我進化）。使用者特別強調「架構要寫好」。
-Keywords: overtone, instinct, prompt, skipdedup, flag, type, session, workflow, store, sessionstart
-
----
-## 2026-03-05 | architect:ARCH Findings
-**技術方案**：
-- 沿用現有 Instinct JSONL append-only 架構，不引入新儲存機制
-- `skipDedup: true` 讓每次 prompt 產生獨立記錄（tag 用 timestamp 確保唯一性）
-- intent_journal 不畢業 → 全域（透過 queryGlobal excludeTypes 過濾）但可選擇畢業（design.md 決策 Q1 選方案 C：畢業但過濾顯示）
-- sessionResult 從 `completedStages` 判定：有完成 stage → pass，workflow 存在但無完成 → fail，無 workflow → abort
-
-**關鍵技術決策**：
-- Q4（decay 行為）：intent_journal 參與現有週衰減（不排除），7 天 -0.02 自然清理，sessionResult=pass 的記錄可透過 confirm 存活更久
-- `_readAll` / `_writeAll` 是 class instance methods，session-end-handler 可直接呼叫（module.exports = instinct 實例）
-- `extraFields` 在 `emit()` 時附加到新記錄，不需要獨立的 `_append` 呼叫序列
-
-**API 介面**：
-
-```javascript
-// instinct.emit() 擴展
-emit(sessionId, type, trigger, action, tag, options = {})
-// options: { skipDedup?: boolean, extraFields?: object }
-// skipDedup=true 時跳過 tag+type 去重，直接建立新記錄（extraFields 合併到新記錄）
-
-// global-instinct.queryGlobal() 擴展
-queryGlobal(projectRoot, filter = {})
-// filter 新增：excludeTypes?: string[]
-
-// session-end-handler 新增私有函式
-resolveSessionResult(currentState)
-// returns: 'pass' | 'fail' | 'abort'
-// 邏輯：!workflowType → 'abort'；completedStages.length > 0 → 'pass'；否則 'fail'
-```
-
-**資料模型**：
-
-```json
-// intent_journal 記錄（observations.jsonl）
-{
-  "id": "inst_lx4abc_def1",
-  "ts": "...",
-  "lastSeen": "...",
-  "type": "intent_journal",
-  "trigger": "<prompt 原文，最多 500 字>",
-  "action": "工作流：standard",
-  "tag": "journal-lx4abc",
-  "confidence": 0.3,
-  "count": 1,
-  "sessionResult": "pending | pass | fail | abort",
-  "workflowType": "standard | null"
-}
-```
-
-```javascript
-// registry.js 新增
-const journalDefaults = {
-  maxPromptLength: 500,
-  loadTopN: 10,
-  minResultForGlobal: 'pass',
-};
-```
-
-**檔案結構**：
-
-| 檔案 | 變更 |
-|------|------|
-| `plugins/overtone/scripts/lib/knowledge/instinct.js` | emit() 第 6 參數 opt
-Keywords: instinct, jsonl, append, only, skipdedup, true, prompt, timestamp, queryglobal, excludetypes
-
----
-## 2026-03-05 | architect:ARCH Context
-Prompt Journal 功能擴展 Instinct 系統，新增 `intent_journal` 觀察類型。核心改動集中在 6 個現有模組的小幅擴展，無新模組、無新抽象層。設計遵循「最小改動」原則：
-
-1. `emit()` 第 6 參數 options（向後相容，不破壞現有呼叫）
-2. `queryGlobal()` filter.excludeTypes（通用能力，可複用）
-3. session-end-handler 新增配對邏輯（~20 行）
-4. session-start-handler 新增「最近常做的事」注入區塊（~20 行）
-
-架構設計已完整寫入 `specs/features/in-progress/prompt-journal/design.md`。
-Keywords: prompt, journal, instinct, emit, options, queryglobal, filter, excludetypes, session, handler
-
----
-## 2026-03-05 | developer:DEV Findings
-1. **代碼已完整實作**：instinct.js skipDedup/extraFields、global-instinct.js excludeTypes、registry.js journalDefaults、on-submit-handler.js intent_journal 記錄、session-end-handler.js resolveSessionResult + 配對邏輯、session-start-handler.js 最近常做的事摘要 — 全部已在。
-
-2. **測試補齊策略**：
-   - 新建 `tests/unit/instinct-skip-dedup.test.js`（BDD Feature 1 + 2，7 個 scenarios）
-   - 擴展 `on-submit-handler.test.js`（BDD Feature 4，6 個 scenarios）
-   - 擴展 `session-end-handler.test.js`（BDD Feature 5，resolveSessionResult 5個 + 配對邏輯 2個）
-   - 擴展 `global-instinct.test.js`（BDD Feature 6，excludeTypes 5個 scenarios）
-   - 擴展 `session-start-handler.test.js`（BDD Feature 7，最近常做的事 5個 scenarios）
-   - 擴展 `registry.test.js`（BDD Feature 3，journalDefaults 4個 assertions）
-
-3. **skipDedup 測試陷阱**：兩次快速呼叫可能產生相同 `journal-${Date.now().toString(36)}` tag，改為驗證 id 不同（並加 2ms delay），避免 race condition。
-
-4. **docs/status.md 既有版本不一致**：plugin.json 是 0.28.52，status.md 是 0.28.51，已同步修正。
-
-5. **feature 已被自動歸檔**：`specs/features/archive/2026-03-05_prompt-journal/` — specs-archive-scanner 在 session start 時已自動執行。
-Keywords: instinct, skipdedup, extrafields, global, excludetypes, registry, journaldefaults, submit, handler, session
-
----
-## 2026-03-05 | planner:PLAN Findings
-**需求分解**：
-
-1. **checkClosedLoop — 閉環偵測** | agent: developer | files: `plugins/overtone/scripts/health-check.js`
-   - 反向掃描 timeline events：找「有 emit 但無 consumer」的孤立事件流
-   - 掃描策略：讀取 timeline 的 `readTimeline`/`queryTimeline` 呼叫 + 按 `.type` 過濾的程式碼
-   - severity: warning（部分事件只寫不讀是合理的）
-
-2. **checkRecoveryStrategy — 恢復策略偵測** | agent: developer | files: `plugins/overtone/scripts/health-check.js`
-   - 子項 1：9 個 `*-handler.js` 模組，確認主入口函式有頂層 try-catch
-   - 子項 2：`agents/*.md` body，確認含停止條件相關描述
-   - severity: warning
-
-3. **checkCompletionGap — 補全缺口偵測** | agent: developer | files: `plugins/overtone/scripts/health-check.js`
-   - 掃描 `skills/` 目錄，偵測缺少 `references/` 子目錄的 skill（目前 `auto` skill 已確認缺少）
-   - severity: warning
-
-4. **manage-component.js 提示擴展** | agent: developer | files: `plugins/overtone/scripts/manage-component.js`
-   - create agent 成功後 → stderr 提示：加入失敗恢復策略（停止條件 + 誤判防護）
-   - create skill 成功後 → stderr 提示：建立 references/ 目錄（支援 checkCompletionGap）
-
-5. **測試** | agent: developer | files: `tests/unit/health-check.test.js`
-   - 3 個新 describe block，各含 happy/sad path
-   - 需 DI 友好設計（參考 `checkTestGrowth` 的 getDepsOverride 模式）
-
-6. **文件同步**（parallel）| agent: developer | files: `docs/spec/overtone-製作規範.md`, `docs/status.md`
-   - 更新製作規範的「已知缺口」狀態
-   - 更新 status.md 的 health-check 項目數：12 → 15
-
-**優先順序**：
-- 第一批（可並行）：任務 1 + 2 + 3 + 4，全部修改 health-check.js 的不同函式位置 + manage-component.js
-- 第二批（接續）：任務 5（測試），需先有實作
-- 第三批（可並行）：任務 6（文件同步），獨立執行
-
-**範圍邊界**：
-- 不實作 hook-error-tracker、Dashboard 自動重啟、intent_journal 分析回饋
-- 不修改現有 12 項偵測的 Finding schema
-- 不新增 `suggestedAction` 欄位（獨立改進，不在此次範圍）
-- checkWorkflowCoverage、checkHookEventCoverage 留待獨立 feature
-Keywords: checkclosedloop, agent, developer, files, plugins, overtone, scripts, health, check, timeline
-
----
-## 2026-03-05 | product-manager:PM Findings
-**目標用戶**：Overtone 工作流中的所有 agent（尤其 developer、claude-developer、retrospective、code-reviewer）
-
-**成功指標**：
-- Agent 在執行時能根據製作原則做判斷（可觀察：Handoff 中出現原則相關的 findings）
-- 新元件建立時有合規提示（可觀察：manage-component.js 或 validate-agents.js 輸出）
-- retrospective 回顧能結構化對照原則 checklist
-
-**方案比較**：
-
-| 維度 | 方案 A：擴展 craft skill | 方案 B：Agent prompt 注入 | 方案 C：混合方案（推薦） |
-|------|------------------------|------------------------|------------------------|
-| 概述 | 在 craft skill 新增 `overtone-principles.md` reference，包含三大製作原則的可檢驗標準和新元件合規 checklist | 在 6-8 個關鍵 agent prompt 中直接加入製作原則遵守指引 | craft skill 加 reference（知識源頭）+ 關鍵 agent prompt 加一行原則提示（消費入口）+ validate-agents 加 prompt 品質檢查（守衛） |
-| 優點 | 利用現有 skill 機制，不動 agent prompt；SoT 在一處 | Agent 每次都能直接看到；無需讀取額外 reference | 知識集中在 skill（SoT）；agent 有指引去查；守衛自動偵測 |
-| 缺點 | Agent 不一定會主動讀取 reference；只有 3 個 agent 掛 craft skill | 18 個 agent 都要改；原則更新時要同步 18 處；prompt 膨脹 | 實作量稍多（3 層） |
-| 工作量 | 1-2 人天 | 2-3 人天 | 2-3 人天 |
-| RICE | (10x2x0.8)/1.5 = 10.7 | (10x2x0.8)/2.5 = 6.4 | (10x3x0.8)/2.5 = 9.6 |
-| 證據等級 | codeb
-Keywords: overtone, agent, developer, claude, retrospective, code, reviewer, handoff, findings, manage
-
----
 ## 2026-03-05 | product-manager:PM Context
 用戶指出外層 docs（製作規範/驗證品質）與 Plugin 內部（agents/hooks/skills）之間存在斷層。Agent 在執行時不會參考製作原則，導致三大原則（完全閉環/自動修復/補全能力）和驗證品質標準（三信號/pass@k）停留在「人讀文件」層級，未進入「AI 執行」層級。
 
@@ -934,4 +767,134 @@ Keywords: workflow, stages, parallelgroups, users, projects, overtone, plugins, 
    - 新增決策點索引行：「控制流決策點快查（30 秒找到任意決策點）」
    - 置於 overtone.md 之後、status.md 之前（邏輯順序：規格 → 決策點查詢 → 現況 → SoT）
 Keywords: docs, spec, overtone, decision, points, user, gate, stage, standard, workflow
+
+---
+## 2026-03-05 | product-manager:PM Findings
+**目標用戶**：Overtone 開發者（個人 dogfooding），在面對新領域時需要系統自主建構能力堆疊。
+
+**成功指標**：
+- L3.3：score < 0.2 的 prompt 自動觸發 Skill Forge，成功率 >= 80%
+- L3.4：PM 訪談產出的 Project Spec 包含 >= 10 個 BDD 場景
+- L3.5：收到高層目標後，系統自主完成能力盤點 + 排程 + 迭代，人工介入 <= 2 次
+- L3.7：專案完成後 skill 通用化 + 納入永久庫的自動化率 >= 90%
+- 10 次迭代後，系統指標可量化改善（測試覆蓋率、health-check 通過項、skill 完整度）
+
+**方案比較**：
+
+| 維度 | 方案 A：按 Roadmap 順序 | 方案 B：依賴優化順序 | 方案 C：先清理再建新 |
+|------|------------------------|---------------------|---------------------|
+| 概述 | L3.3 -> L3.4 -> L3.5 -> L3.7 -> 10x 優化 | L3.4 -> L3.3 -> L3.5 -> L3.7 -> 10x 優化（PM 先行） | 5x 清理/重構 -> L3
+Keywords: overtone, dogfooding, score, prompt, skill, forge, project, spec, health, check
+
+---
+## 2026-03-05 | product-manager:PM Context
+Overtone 已完成 L1（核心大腦）和 L2（感知操控），目前在 L3（自我進化）。L3.1-3.2（Gap Detection + Auto-Fix）已完成。使用者需要完成 L3 剩餘能力（L3.3 Skill Forge、L3.4 深度 PM、L3.5 Project Orchestrator、L3.7 Skill Internalization），加上 10 次自我優化迭代和技術棧清理。
+
+核心問題不是「能不能做」而是「用什麼順序做最高效」。Codebase 分析顯示基礎設施覆蓋率高，許多模組只需串接而非重寫。
+Keywords: overtone, detection, auto, skill, forge, project, orchestrator, internalization, codebase
+
+---
+## 2026-03-05 | planner:PLAN Findings
+**需求分解**：
+
+1. **interview.js 引擎核心**（新建）
+   | agent: developer | files: `plugins/overtone/scripts/lib/interview.js`
+   建立訪談狀態機，純函式模組，API：`init` / `nextQuestion` / `recordAnswer` / `isComplete` / `generateSpec`
+
+2. **Project Spec 模板**（新建）— 可與任務 1 並行
+   | agent: developer | files: `plugins/overtone/skills/pm/references/project-spec-template.md`
+   定義含 ≥10 個 BDD 場景骨架的標準格式，供 `generateSpec()` 組裝使用
+
+3. **PM agent prompt 升級**（修改）— 依賴任務 1, 2
+   | agent: developer | files: `plugins/overtone/agents/product-manager.md`
+   加入訪談模式章節，透過 manage-component.js 更新（受 pre-edit-guard 保護）
+
+4. **PM skill 更新**（修改）— 依賴任務 2
+   | agent: developer | files: `plugins/overtone/skills/pm/SKILL.md`
+   新增 project-spec-template.md 索引和 interview.js API 摘要，透過 manage-component.js 更新
+
+5. **interview.js 單元測試**（新建）— 依賴任務 1 (parallel with 3, 4)
+   | agent: developer | files: `tests/unit/interview.test.js`
+   五個核心函式的完整測試（含邊界條件）
+
+6. **整合測試**（新建）— 依賴所有前置任務
+   | agent: developer | files: `tests/integration/interview.test.js`
+   端到端驗證 10 輪問答流程、五面向覆蓋、Spec 格式正確性
+
+**優先順序**：
+- 第一批並行：任務 1 + 任務 2
+- 第二批並行（第一批完成後）：任務 3 + 任務 4 + 任務 5
+- 最後執行：任務 6
+
+**範圍邊界**：明確不在此次範圍內：
+- L3.5 Project Orchestrator 整合（訪談自動觸發）
+- 訪談回答的跨 session 持久化
+- Dashboard 訪談進度可視化
+- 多語言支援
+Keywords: interview, agent, developer, files, plugins, overtone, scripts, init, nextquestion, recordanswer
+
+---
+## 2026-03-05 | architect:ARCH Findings
+**技術方案**：
+- 新建 `interview.js`：純 CJS module（符合現有 lib 慣例），提供 `init/nextQuestion/recordAnswer/isComplete/generateSpec/loadSession/saveSession` 七個 API
+- 靜態問題庫（五面向：functional/flow/ui/edge-cases/acceptance），每面向必問題 + 補充題，完成門檻可透過 options 覆蓋（預設 minAnswersPerFacet = 2）
+- session 狀態存 `~/.overtone/sessions/{sessionId}/interview-state.json`，支援中斷恢復，使用 `utils.atomicWrite` 原子寫入
+- Project Spec 直接寫檔到 `specs/features/in-progress/{featureName}/project-spec.md`（非 Handoff 輸出），確保無人值守場景下資料不丟失
+- PM agent prompt 和 SKILL.md 透過 `manage-component.js` 更新（pre-edit guard 保護）
+
+**關鍵技術決策和理由**：
+- 靜態問題庫 vs LLM 生成 → 靜態：一致性高、可測試、0 latency
+- CLI 入口 vs inline → inline（`node -e`）：與 knowledge-gap-detector.js、execution-queue.js 現有模式一致
+- 寫檔 vs Handoff → 寫檔：Handoff 在 context compact 後消失，無人值守不可靠
+- 無需更新 pre-task-handler.js：interview.js 是 PM agent 主動呼叫的工具，不是 Hook 注入 context
+
+**API 介面**：
+
+```javascript
+// 七個核心函式（module.exports）
+init(featureName, outputPath, options?)  → InterviewSession
+nextQuestion(session)                    → Question | null
+recordAnswer(session, questionId, answer) → InterviewSession
+isComplete(session)                      → boolean
+generateSpec(session)                    → ProjectSpec（並寫入 outputPath）
+loadSession(statePath)                   → InterviewSession | null
+saveSession(session, statePath)          → void
+```
+
+**資料模型**：
+- `InterviewSession`：featureName, outputPath, answers(Record), startedAt, completedAt?, options
+- `Question`：id（格式 `func-1`）, facet, text, required, dependsOn?
+- `ProjectSpec`：feature, generatedAt, facets（functional/flow/ui?/edgeCases/acceptance>=10個BDD）
+- `InterviewStateFile`：version:1, featureName, outputPath, answers, startedAt, completedAt?, options
+
+**檔案結構**：
+
+| 檔案 | 操作 | 用途 |
+|------|------|------|
+| `plugins/overtone/scripts/lib/interview.js` | 新增 | 引擎核心 |
+| `plugins/overtone/skills/pm/references/interview-guide.md` | 新增 | PM agent 訪談指引 |
+| `plugins/overtone/agents/product-manager.md` | 修改 | 新增多輪訪談模式章節 |
+| `plugins/overtone/skills/pm/SKILL.md` | 修改 | 新增 interview-guide.md reference |
+| `tests/unit/interview.test.js` | 新增 | 單元測試 |
+| `tests/integration/pm-interview-integration.test.js` | 新增 | 整合測試 |
+
+**Dev Phases**：
+Keywords: interview, module, init, nextquestion, recordanswer, iscomplete, generatespec, loadsession, savesession, functional
+
+---
+## 2026-03-05 | architect:ARCH Context
+PM agent 從「單輪分析」升級為「多輪結構化訪談」引擎。核心方案是新建 `interview.js` 引擎模組，提供靜態問題庫（五面向 20 題）+ session 狀態持久化 + BDD Project Spec 產生能力，再升級 PM agent prompt 和 PM SKILL.md 讓 PM agent 主動呼叫。
+Keywords: agent, interview, session, project, spec, prompt, skill
+
+---
+## 2026-03-05 | doc-updater:DOCS Context
+L3.4 深度 PM 多輪訪談引擎已完成開發、測試與代碼審查，進入文件同步階段。主要變更包括：
+
+- **新增核心模組**：interview.js（多輪結構化訪談引擎，7 API，24 題問題庫）
+- **新增操作指引**：interview-guide.md（PM 訪談操作指南）
+- **升級 Agent**：product-manager.md（新增 Advisory vs Interview 模式）
+- **升級 Skill**：pm/SKILL.md（新增 interview-guide.md reference）
+- **測試補強**：43 個新增測試（33 unit + 10 integration）
+- **版本更新**：0.28.61 → 0.28.62
+Keywords: interview, guide, agent, product, manager, advisory, skill, reference, unit, integration
 
