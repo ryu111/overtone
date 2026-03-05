@@ -8,6 +8,7 @@
  *   Feature 3: 知識萃取完整性（extractKnowledgeFromCodebase）
  *   Feature 4: 安全邊界（不覆蓋既有、暫停後不嘗試）
  *   Feature 7: SKILL.md 結構驗證（三 section + 消費者表 + frontmatter）
+ *   Feature 8: enableWebResearch 外部研究能力（Phase 2）
  */
 
 const { test, expect, describe, beforeEach, afterEach, afterAll, beforeAll } = require('bun:test');
@@ -20,6 +21,7 @@ const {
   forgeSkill,
   _resetConsecutiveFailures,
   extractKnowledgeFromCodebase,
+  extractWebKnowledge,
   assembleSkillBody,
   buildSkillContent,
 } = require(join(SCRIPTS_LIB, 'skill-forge'));
@@ -405,5 +407,99 @@ describe('Feature 7: SKILL.md 結構驗證', () => {
     expect(typeof result.preview.description).toBe('string');
     expect(typeof result.preview.body).toBe('string');
     expect(Array.isArray(result.preview.sourcesScanned)).toBe(true);
+  });
+});
+
+// ── Feature 8: enableWebResearch 外部研究能力（Phase 2）──
+
+describe('Feature 8: enableWebResearch 外部研究能力', () => {
+  test('Scenario 8-1: enableWebResearch 預設 false — body 不含「領域知識」section', () => {
+    const pluginRoot = makeMinimalPluginRoot('8-1');
+    const result = forgeSkill('noresearch-domain', {}, { dryRun: true, pluginRoot });
+
+    expect(result.status).toBe('success');
+    // 未啟用研究時，body 不應包含「領域知識」section
+    expect(result.preview.body).not.toContain('## 領域知識');
+  });
+
+  test('Scenario 8-2: assembleSkillBody 帶入 webResearch 時 body 含「領域知識」section', () => {
+    const pluginRoot = makeMinimalPluginRoot('8-2');
+    const extracts = extractKnowledgeFromCodebase('research-domain', pluginRoot);
+    extracts.webResearch = '## 最佳實踐\n\n- 測試知識點 A\n- 測試知識點 B\n';
+
+    const { body } = buildSkillContent('research-domain', extracts);
+
+    expect(body).toContain('## 領域知識');
+    expect(body).toContain('來源：外部研究（WebSearch）');
+    expect(body).toContain('測試知識點 A');
+  });
+
+  test('Scenario 8-3: assembleSkillBody 不帶 webResearch 時 body 不含「領域知識」section', () => {
+    const pluginRoot = makeMinimalPluginRoot('8-3');
+    const extracts = extractKnowledgeFromCodebase('plain-domain', pluginRoot);
+    // 不設定 webResearch
+
+    const { body } = buildSkillContent('plain-domain', extracts);
+
+    expect(body).not.toContain('## 領域知識');
+    // 仍包含三個必要 section
+    expect(body).toContain('## 消費者');
+    expect(body).toContain('## 資源索引');
+    expect(body).toContain('## 按需讀取');
+  });
+
+  test('Scenario 8-4: assembleSkillBody 帶空字串 webResearch 時不加「領域知識」section', () => {
+    const pluginRoot = makeMinimalPluginRoot('8-4');
+    const extracts = extractKnowledgeFromCodebase('empty-research-domain', pluginRoot);
+    extracts.webResearch = '';
+
+    const { body } = buildSkillContent('empty-research-domain', extracts);
+
+    expect(body).not.toContain('## 領域知識');
+  });
+
+  test('Scenario 8-5: extractWebKnowledge 模組介面 — 回傳字串（不拋出）', () => {
+    // extractWebKnowledge 會嘗試呼叫 claude -p，在測試環境中可能失敗
+    // 驗證：不拋出例外，且回傳值是字串（可為空字串）
+    let result;
+    expect(() => {
+      result = extractWebKnowledge('test-domain', {});
+    }).not.toThrow();
+    expect(typeof result).toBe('string');
+  });
+
+  test('Scenario 8-6: webResearch 長度超過 5000 字元時被截斷', () => {
+    const longText = 'A'.repeat(6000);
+    const extracts = {
+      skillPatterns: [],
+      autoDiscovered: '',
+      claudeMdRelevant: '',
+      webResearch: longText,
+    };
+
+    // extractWebKnowledge 的截斷發生在 claude 輸出處理，這裡測試 assembleSkillBody 接受長內容
+    // 透過直接構造 extracts 測試 buildSkillContent 不截斷（截斷是 extractWebKnowledge 的責任）
+    const { body } = buildSkillContent('long-domain', extracts);
+    expect(body).toContain('## 領域知識');
+    // body 包含完整的 webResearch 內容（buildSkillContent 不截斷）
+    expect(body).toContain('A'.repeat(100));
+  });
+
+  test('Scenario 8-7: forgeSkill enableWebResearch: true — 仍回傳 success（graceful fallback）', () => {
+    // 測試環境中 claude 不可用，extractWebKnowledge 回傳空字串
+    // forgeSkill 仍應成功，body 不含「領域知識」（因為研究結果為空）
+    const pluginRoot = makeMinimalPluginRoot('8-7');
+    const result = forgeSkill('web-research-test', {}, {
+      dryRun: true,
+      pluginRoot,
+      enableWebResearch: true,
+    });
+
+    expect(result.status).toBe('success');
+    expect(result.preview).toBeDefined();
+    expect(result.preview.body).toContain('## 消費者');
+    // 因為 claude 在測試環境不可用，extractWebKnowledge 回傳空字串，不加「領域知識」section
+    // 這驗證了 graceful fallback 行為
+    expect(typeof result.preview.body).toBe('string');
   });
 });

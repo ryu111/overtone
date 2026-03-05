@@ -35,6 +35,7 @@ function printUsage() {
   process.stdout.write('  forge <domain>       預覽 forge 結果（dry-run，不建立任何檔案）\n');
   process.stdout.write('  forge <domain> --execute  實際執行 forge，建立 skill\n');
   process.stdout.write('  forge <domain> --json     以 JSON 格式輸出 forge 結果\n');
+  process.stdout.write('  forge <domain> --research 啟用外部 WebSearch 研究補充知識\n');
   process.stdout.write('\n');
   process.stdout.write('選項：\n');
   process.stdout.write('  --json      以 JSON 格式輸出\n');
@@ -291,18 +292,21 @@ function main() {
     const execute = flags.includes('--execute');
 
     // 缺少 domain 參數
+    const enableWebResearch = flags.includes('--research');
+
     if (!domainName) {
-      process.stdout.write('forge 子命令用法：bun scripts/evolution.js forge <domain> [--execute] [--json]\n');
+      process.stdout.write('forge 子命令用法：bun scripts/evolution.js forge <domain> [--execute] [--json] [--research]\n');
       process.stdout.write('\n');
       process.stdout.write('  forge <domain>              預覽 forge 結果（dry-run，不建立任何檔案）\n');
       process.stdout.write('  forge <domain> --execute    實際執行 forge，建立 skill\n');
       process.stdout.write('  forge <domain> --json       以 JSON 格式輸出結果\n');
+      process.stdout.write('  forge <domain> --research   啟用外部 WebSearch 研究補充知識\n');
       process.exit(1);
     }
 
     let result;
     try {
-      result = forgeSkill(domainName, {}, { dryRun: !execute });
+      result = forgeSkill(domainName, {}, { dryRun: !execute, enableWebResearch });
     } catch (err) {
       process.stderr.write(`forge 執行錯誤：${err.message}\n`);
       process.exit(1);

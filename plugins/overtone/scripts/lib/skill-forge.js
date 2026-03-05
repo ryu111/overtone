@@ -124,12 +124,61 @@ function extractKnowledgeFromCodebase(domainName, pluginRoot) {
   return { skillPatterns, autoDiscovered, claudeMdRelevant, sourcesScanned };
 }
 
+// ── Web 研究 ──
+
+/** Web 研究結果長度上限（字元） */
+const WEB_RESEARCH_MAX_LENGTH = 5000;
+
+/** Web 研究 timeout（毫秒） */
+const WEB_RESEARCH_TIMEOUT_MS = 30000;
+
+/**
+ * 使用 claude -p headless 模式研究外部知識
+ * @param {string} domainName
+ * @param {object} context - forge 上下文
+ * @returns {string} 研究結果文字（失敗時回傳空字串）
+ */
+function extractWebKnowledge(domainName, context) {
+  const prompt = `研究 ${domainName} 領域的最佳實踐、常見模式、關鍵概念，產出結構化知識摘要（繁體中文，使用 Markdown 格式，含小標題和要點）`;
+
+  try {
+    const result = Bun.spawnSync(
+      ['claude', '-p', '--output-format', 'text', prompt],
+      {
+        timeout: WEB_RESEARCH_TIMEOUT_MS,
+        stderr: 'pipe',
+        stdout: 'pipe',
+        env: {
+          ...process.env,
+          OVERTONE_SPAWNED: '1',
+          OVERTONE_NO_DASHBOARD: '1',
+        },
+      }
+    );
+
+    if (result.exitCode !== 0) {
+      return '';
+    }
+
+    const output = result.stdout ? Buffer.from(result.stdout).toString().trim() : '';
+    if (!output) return '';
+
+    // 截斷到長度上限
+    return output.length > WEB_RESEARCH_MAX_LENGTH
+      ? output.slice(0, WEB_RESEARCH_MAX_LENGTH) + '\n...(截斷)'
+      : output;
+  } catch {
+    // 任何錯誤（timeout、spawn 失敗等）靜默回傳空字串
+    return '';
+  }
+}
+
 // ── SKILL.md 組裝 ──
 
 /**
  * 組裝 SKILL.md 的 body（不含 frontmatter）
  * @param {string} domainName
- * @param {{ skillPatterns: string[], autoDiscovered: string, claudeMdRelevant: string }} extracts
+ * @param {{ skillPatterns: string[], autoDiscovered: string, claudeMdRelevant: string, webResearch?: string }} extracts
  * @returns {string}
  */
 function assembleSkillBody(domainName, extracts) {
@@ -142,6 +191,12 @@ function assembleSkillBody(domainName, extracts) {
   } else if (autoDiscovered) {
     contextNote = `\n> 相關內容（來自 auto-discovered.md）：\n>\n> ${autoDiscovered.replace(/\n/g, '\n> ').trim()}\n`;
   }
+
+  // web 研究 section（若有）
+  const webResearch = extracts.webResearch || '';
+  const webResearchSection = webResearch
+    ? `\n## 領域知識\n\n> 來源：外部研究（WebSearch）\n\n${webResearch}\n`
+    : '';
 
   const body = `# ${domainName} 知識域
 ${contextNote}
@@ -160,7 +215,7 @@ ${contextNote}
 ## 按需讀取
 
 此 skill 提供 ${domainName} 領域的知識。需要該領域知識時查閱 references/ 目錄中的對應參考文件。
-`;
+${webResearchSection}`;
 
   return body;
 }
@@ -168,8 +223,8 @@ ${contextNote}
 /**
  * 組裝完整的 SKILL.md 文字（含 frontmatter）
  * @param {string} domainName
- * @param {{ skillPatterns: string[], autoDiscovered: string, claudeMdRelevant: string }} extracts
- * @returns {{ description: string, body: string, fullContent: string }}
+ * @param {{ skillPatterns: string[], autoDiscovered: string, claudeMdRelevant: string, webResearch?: string }} extracts
+ * @returns {{ description: string, body: string }}
  */
 function buildSkillContent(domainName, extracts) {
   const description = `${domainName} 知識域。提供 ${domainName} 相關的知識和參考資料。`;
@@ -230,6 +285,7 @@ function rollback(skillDir) {
  * @param {number} [options.maxConsecutiveFailures=3] - 連續失敗暫停門檻
  * @param {string} [options.pluginRoot] - plugin 根目錄路徑覆寫
  * @param {number} [options.initialFailures] - 注入初始計數（Phase 2 多 domain 場景，不影響模組層級計數）
+ * @param {boolean} [options.enableWebResearch=false] - 啟用外部 WebSearch 研究（false: 僅 codebase 內知識）
  * @returns {ForgeResult}
  */
 function forgeSkill(domainName, context, options = {}) {
@@ -238,6 +294,7 @@ function forgeSkill(domainName, context, options = {}) {
     maxConsecutiveFailures = 3,
     pluginRoot: pluginRootOverride,
     initialFailures,
+    enableWebResearch = false,
   } = options;
 
   // 決定本次呼叫使用的計數器：
@@ -272,6 +329,11 @@ function forgeSkill(domainName, context, options = {}) {
 
   // 3. 知識萃取
   const extracts = extractKnowledgeFromCodebase(domainName, pluginRoot);
+
+  // 3a. 外部研究（選用）
+  if (enableWebResearch) {
+    extracts.webResearch = extractWebKnowledge(domainName, context);
+  }
 
   // 4. SKILL.md 組裝
   const { description, body } = buildSkillContent(domainName, extracts);
@@ -371,6 +433,7 @@ module.exports = {
   _resetConsecutiveFailures,
   // 內部函式導出供測試
   extractKnowledgeFromCodebase,
+  extractWebKnowledge,
   assembleSkillBody,
   buildSkillContent,
   validateStructure,
