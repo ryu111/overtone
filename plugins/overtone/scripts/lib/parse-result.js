@@ -50,7 +50,7 @@ function parseResult(output, stageKey) {
 
   // REVIEWER → PASS / REJECT
   if (stageKey === 'REVIEW' || stageKey === 'SECURITY' || stageKey === 'DB-REVIEW') {
-    if (matchesWithExclusions(lower, ['reject', '拒絕'], REJECT_EXCLUDES)) {
+    if (matchesWithExclusions(lower, ['reject', '拒絕', 'request changes'], REJECT_EXCLUDES)) {
       return { verdict: 'reject' };
     }
     return { verdict: 'pass' };

@@ -49,6 +49,14 @@ describe('parseResult — REVIEW stages', () => {
     expect(parseResult('All changes look good. Approved.', 'REVIEW')).toEqual({ verdict: 'pass' });
   });
 
+  test('REQUEST CHANGES → reject', () => {
+    expect(parseResult('根據決策樹：有 Major 等級問題 -> REQUEST CHANGES', 'REVIEW')).toEqual({ verdict: 'reject' });
+  });
+
+  test('request changes（小寫）→ reject', () => {
+    expect(parseResult('Decision: request changes for these issues', 'REVIEW')).toEqual({ verdict: 'reject' });
+  });
+
   test('DB-REVIEW 同樣適用', () => {
     expect(parseResult('拒絕此 migration', 'DB-REVIEW')).toEqual({ verdict: 'reject' });
   });
