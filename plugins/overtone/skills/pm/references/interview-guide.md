@@ -25,6 +25,8 @@ PM agent 執行多輪結構化訪談的完整操作手冊。
 require('./scripts/lib/interview')
 ```
 
+### 核心 API（訪談引擎）
+
 | 函式 | 簽名 | 說明 |
 |------|------|------|
 | `init` | `(featureName, outputPath, options?)` | 建立新訪談 session |
@@ -34,6 +36,14 @@ require('./scripts/lib/interview')
 | `generateSpec` | `(session)` | 從回答產生 project-spec.md 並寫入 outputPath |
 | `loadSession` | `(statePath)` | 從 interview-state.json 還原 session，不存在時回傳 null |
 | `saveSession` | `(session, statePath)` | 將 session 持久化到 statePath |
+
+### 領域研究 API（新增）
+
+| 函式 | 簽名 | 說明 |
+|------|------|------|
+| `researchDomain` | `(topic, language?)` | 執行領域基本概念研究（WebSearch + WebFetch），回傳 `{ summary, concepts, questions }` |
+| `startInterview` | `(session, domainResearch)` | 將領域研究結果注入現有 session，回傳更新後的 session（含 `domainResearch` 欄位） |
+| `getResearchQuestions` | `(session)` | 根據領域研究自動生成 3-5 個深度訪談問題，加入現有問題庫 |
 
 **資料模型**：
 
@@ -178,26 +188,70 @@ if (session) {
 
 研究目標：理解基本術語、常見流程、業界標準，避免向使用者問出外行問題。
 
-```
-# 研究步驟（新領域時）
-1. WebSearch 搜尋「{領域} 核心概念」「{功能類型} 設計模式」
-2. WebFetch 讀取 2-3 篇高品質文章（官方文件、知名 SaaS 的功能說明）
-3. 整理出：常見術語、標準流程、已知最佳實踐
-4. 帶著這些背景知識開始訪談，提更精準的問題
+### 研究流程
+
+```javascript
+// 1. 自主研究領域（新領域時）
+const research = await researchDomain('電商結帳流程');
+// 回傳：{ summary: '...', concepts: ['購物車', '支付閘道'], questions: ['如何處理...?'] }
+
+// 2. 建立訪談 session
+let session = init(featureName, outputPath);
+
+// 3. 注入研究結果
+session = startInterview(session, research);
+// 現在 session.domainResearch 包含研究結果
+
+// 4. 注入深度問題
+const deepQuestions = getResearchQuestions(session);
+// 根據領域研究自動生成 3-5 個深度問題，加入問題庫
+
+// 5. 開始訪談
+// 訪談引擎會優先提出深度問題，最大化資訊蒐集效率
 ```
 
-研究完成後才 `init` session，不要先 `init` 再研究。
+### 重點
+
+- **先研究後訪談**：`researchDomain` → `startInterview` → `getResearchQuestions` → 開始訪談
+- **不要顛倒順序**：先 `init` session 再研究會導致深度問題無法注入
+- **Session 持久化包含研究結果**：`saveSession` / `loadSession` 自動保存與還原 `domainResearch` 欄位
+- **語言支援**：`researchDomain(topic, 'zh-TW')` 指定繁體中文研究
 
 ---
 
 ## 呼叫範例
 
-### 完整訪談流程
+### 帶領域研究的完整訪談流程
 
 ```bash
 node -e "
 const interview = require('./plugins/overtone/scripts/lib/interview');
 const path = require('path');
+
+// 1. 研究領域（新領域時）
+const research = interview.researchDomain('支付閘道整合');
+
+// 2. 初始化訪談 session
+let session = interview.init('payment-checkout', '/tmp/checkout-spec');
+
+// 3. 注入領域研究結果
+session = interview.startInterview(session, research);
+
+// 4. 自動生成深度問題
+const deepQs = interview.getResearchQuestions(session);
+console.log('深度問題：', deepQs);
+
+// 5. 開始訪談
+console.log('訪談開始，featureName:', session.featureName);
+console.log('第一個問題:', interview.nextQuestion(session));
+"
+```
+
+### 標準訪談流程（不需領域研究）
+
+```bash
+node -e "
+const interview = require('./plugins/overtone/scripts/lib/interview');
 
 // 初始化（有 UI 需求時不跳過 ui 面向）
 let session = interview.init('payment-checkout', '/tmp/checkout-spec');

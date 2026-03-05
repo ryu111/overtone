@@ -1,33 +1,5 @@
 ---
 
-**3. debugger（缺：誤判防護）**
-
-現狀：有 DO/DON'T、有停止條件，無誤判防護，無明確信心過濾（但有「需要程式碼證據」的要求）。
-
-誤判防護：
-- 「第一個看起來符合的假設 ≠ 根因」— 必須形成至少 2 個假設才能排除
-- 「stack trace 最頂層 ≠ 根因所在位置」— 要追蹤到是哪個上游呼叫造成的
-- 「測試 mock 導致的失敗 ≠ 應用程式碼 bug」— 先確認 mock 設定正確
-- 「間歇性失敗（flaky test）≠ 可確定性 bug」— 需跑多次確認是否穩定重現
-
----
-
-**4. designer（缺：誤判防護、信心過濾、停止條件需補充）**
-
-現狀：有 DON'T，有停止條件，但缺誤判防護與信心過濾。designer 的結構較特殊（以 pipeline 流程為主體），不是標準四模式格式。
-
-信心過濾（designer 特有）：
-- search.py 找到路徑 → 使用 search.py 生成（高信心）
-- search.py NOT_FOUND → 使用降級方案（已有說明）
-- 不對 UI 偏好做「更好的設計」主張 — 只實現 handoff 指定的需求
-
-誤判防護：
-- 「新色彩方案 ≠ 改變 agent 顏色語義映射」— registry.js 顏色映射不能動
-- 「設計規格 ≠ 前端程式碼」— 不寫 JS/CSS 實作，只寫設計規格和 HTML Mockup
-- 「獨立模式 ≠ Pipeline 模式」— 判斷模式要看 prompt 是否含 specs feature 路徑
-
----
-
 **5. developer（缺：誤判防護）**
 
 現狀：有完整 DO/DON'T、有停止條件，無誤判防護。
@@ -895,4 +867,49 @@ Keywords: registry, workflows, timeline, emit, appendevent, evolution, status, e
 
 6. **一個觀察（信心不足 70%，不列為 ISSUES）**：`isQualityResearch` 的截斷發生在 `extractWebKnowledge` 之後（先截斷後判斷品質），若截斷恰好切到最後一個 section header 之前理論上可能誤判為低品質。但 5000 字元的截斷上限實際上遠大於任何合法的 section header，此情況在實際執行中概率極低，不構成可報告問題。
 Keywords: extractwebknowledge, overtone, graceful, fallback, trywithtools, trywithouttools, skills, domain, references, research
+
+---
+## 2026-03-05 | doc-updater:DOCS Findings
+本次 commit (507a401) 修復了 PM domain research session 持久化的問題：
+
+**實作變更**：
+- `plugins/overtone/scripts/lib/interview.js`：
+  - `saveSession()` 新增 `domainResearch: session.domainResearch || null` 序列化
+  - `loadSession()` 新增 `domainResearch: data.domainResearch || undefined` 還原
+  - 確保含領域研究的 session 在中斷恢復時研究資料完整性
+
+**測試補強**：
+- `tests/unit/pm-domain-research.test.js`：新增 2 個 roundtrip 測試
+  - Scenario 4-1：含 domainResearch 的 session 存取後完整保留
+  - Scenario 4-2：無 domainResearch 的 session 存取後 domainResearch 為 undefined
+
+**更新的文件**：
+
+1. **CHANGELOG.md**：
+   - 新增 [0.28.64] bugfix 條目（修復 domainResearch 序列化）
+   - 補充 [0.28.63+feature] 說明（pm-domain-research 功能，3 個新 API：researchDomain/startInterview/getResearchQuestions）
+   - 測試統計更新（4054 → 4086 → 4088）
+
+2. **docs/status.md**：
+   - 更新「最後更新」版本描述（含 pm-domain-research + bugfix）
+   - 更新「測試通過」：4054 → 4088 pass（+34 個測試）
+   - 更新「近期變更」（3 筆最新）：0.28.64 pm-domain-research + 0.28.63+feature auto-forge-trigger/queue-cli-enhancement + 0.28.62 internalization
+
+3. **docs/roadmap.md**：
+   - L3.4 深度 PM 狀態：🟡 部分完成 → ✅ 完成
+   - L3.4 子項「領域研究整合」：⬜ → ✅（新增 researchDomain/startInterview/getResearchQuestions 三個 API）
+
+4. **plugins/overtone/skills/pm/references/interview-guide.md**（技術同步）：
+   - 新增「領域研究 API」表格（researchDomain/startInterview/getResearchQuestions）
+   - 更新「領域研究整合」章節，加入新 API 使用說明與流程
+   - 補充呼叫範例：「帶領域研究的完整訪談流程」
+
+5. **plugins/overtone/skills/claude-dev/references/auto-discovered.md**（自動知識記錄）：
+   - Hook 自動記錄 pm-domain-research feature 實作訊息
+Keywords: commit, domain, research, session, plugins, overtone, scripts, interview, savesession, domainresearch
+
+---
+## 2026-03-05 | doc-updater:DOCS Context
+pm-domain-research 功能 + bugfix 提交已完成。涉及 interview.js 核心模組（saveSession/loadSession domainResearch 欄位序列化修復）和測試新增（2 個 roundtrip 測試）。
+Keywords: domain, research, bugfix, interview, savesession, loadsession, domainresearch, roundtrip
 

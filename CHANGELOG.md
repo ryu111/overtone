@@ -2,6 +2,67 @@
 
 所有重要變更記錄於此文件。
 
+## [0.28.64] - 2026-03-06
+
+### PM Domain Research Session 持久化修復
+
+#### 核心修復
+- **interview.js saveSession/loadSession**：修復 domainResearch 欄位序列化遺漏
+  - `saveSession()` 新增 `domainResearch: session.domainResearch || null`
+  - `loadSession()` 新增 `domainResearch: data.domainResearch || undefined` 還原
+  - 影響範圍：含領域研究的 PM 訪談 session 在中斷恢復時，研究資料完整性
+
+#### 測試補強
+- 新增 2 個 roundtrip 測試（pm-domain-research.test.js）
+  - Scenario 4-1：含 domainResearch 的 session 存取後完整保留
+  - Scenario 4-2：無 domainResearch 的 session 存取後 domainResearch 為 undefined
+
+#### 文件同步
+- `plugin.json`：版本維持 0.28.64（同 1eed69b）
+- `docs/status.md`：測試 4086 → 4088（2 個新測試）、近期變更更新
+- `CHANGELOG.md`：新增本條目
+
+#### 測試
+- 測試 4088 pass / 0 fail（180+ files）
+
+---
+
+## [0.28.63+feature] - 2026-03-06
+
+### PM Domain Research 領域研究能力
+
+#### 核心功能
+- **interview.js 領域研究 API**：新增 3 個 API 支援 PM 訪談前自主研究領域
+  - `researchDomain(topic, language)`：執行領域基本概念研究
+  - `startInterview(session, domainResearch)`：將研究結果注入 interview session
+  - `getResearchQuestions(session)`：根據領域研究自動生成深度問題
+
+- **Session 持久化**：domainResearch 物件結構
+  - `{ summary, concepts, questions }` — 領域摘要、核心概念、衍生提問
+  - 與 interview.js 核心訪談流程統整為單一 session（version 2）
+
+#### 升級改進
+- **product-manager.md**：新增領域研究起點選擇邏輯
+  - 新領域需先 research + start interview → 提高問題品質
+  - 熟悉領域可直接 interview
+
+#### 測試補強
+- 新增 21 個測試（pm-domain-research.test.js）
+  - (1-7) researchDomain 多語言支援 + 品質驗證
+  - (8-17) startInterview + domainResearch 注入驗證
+  - (18-21) getResearchQuestions 自動深度問題生成
+
+#### 文件同步
+- `plugin.json`：版本 0.28.63 → 0.28.64
+- `docs/status.md`：版本更新、測試 4054 → 4086（32 個新測試）、L3.4 領域研究整合標記 ✅
+- `docs/roadmap.md`：L3.4 子項「領域研究整合」標記 ✅、整體 L3.4 標記 ✅（所有子項完成）
+- `CLAUDE.md`：evolution.js forge --auto 子命令說明（已包含於前一版本）
+
+#### 測試
+- 測試 4086 pass / 0 fail（180+ files）
+
+---
+
 ## [0.28.62] - 2026-03-06
 
 ### L3.4 Deep PM Interview Engine——深度 PM 多輪訪談

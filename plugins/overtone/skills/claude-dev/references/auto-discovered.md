@@ -248,3 +248,8 @@ Keywords: skill, forge, public, claude, roadmap, status, plugin, json
 檢視最近 DEV 階段提交（e8e833c），skill-forge.js 升級了 extractWebKnowledge 函式的內部實現（prompt 結構、timeout、--allowedTools flag、品質驗證、快取機制）。核心邏輯優化無涉及 public interface 或文件內容的變更。前序提交（61337d3、01904a9）已完成 CLAUDE.md 和相關文件同步。
 Keywords: skill, forge, extractwebknowledge, prompt, timeout, allowedtools, flag, public, interface, claude
 
+---
+## 2026-03-05 | developer:DEV Context
+實作了 PM 訪談前領域自主研究能力（pm-domain-research feature），讓 PM agent 在進入陌生領域時，可以先用 `claude -p` 自主研究基本概念，再進行深度訪談。
+Keywords: domain, research, feature, agent, claude
+
