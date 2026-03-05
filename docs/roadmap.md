@@ -186,7 +186,7 @@
 | Phase 2：WebFetch 領域研究 | spawn 研究 session（WebFetch 搜集領域知識 → 結構化整理） | ⬜ |
 | 能力缺口偵測 | knowledge-gap-detector 升級：無法路由到任何 domain（score < 0.2）→ 觸發 forge | ⬜ |
 | Skill CLI 整合 | evolution.js forge 子命令（`bun scripts/evolution.js forge <domain> [--execute] [--json]`） | ✅ |
-| 安全邊界 | 不覆蓋既有 skill、dry-run 預設、連續失敗暫停 | ⬜ |
+| 安全邊界 | 不覆蓋既有 skill、dry-run 預設、連續失敗暫停 | ✅ |
 
 ### L3.4 深度 PM（精準需求收集）🟡 部分完成
 
@@ -197,7 +197,7 @@
 |------|------|:----:|
 | 多輪訪談能力 | PM agent 升級：五面向結構化收集（功能/操作流程/UI 設計/邊界條件/驗收標準）+ interview.js（7 API + 24 題靜態問題庫）+ session 持久化 | ✅ |
 | 領域研究整合 | PM 進入新領域時先自主研究基本概念，問出有深度的問題（保留待後續實現） | ⬜ |
-| Project Spec 產出 | 訪談結果 → 完整 Project Spec（含 ≥10 個 BDD 驗收場景）（保留待後續實現） | ⬜ |
+| Project Spec 產出 | 訪談結果 → 完整 Project Spec（含 ≥10 個 BDD 驗收場景） | ✅ |
 
 ### L3.5 Project Orchestrator（自主建構引擎）✅
 
