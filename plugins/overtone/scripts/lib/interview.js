@@ -323,21 +323,31 @@ function collectFacetAnswers(session, facet) {
 }
 
 /**
- * 從 acceptance 面向的回答建立 BDD 場景
+ * 從 acceptance 面向的回答建立 BDD 場景，並自動從各 facet 衍生額外場景
  * @param {object} session
- * @returns {object[]} BDDScenario 陣列
+ * @returns {object[]} BDDScenario 陣列（去重後）
  */
 function buildBDDScenarios(session) {
   const answers = session.answers || {};
   const scenarios = [];
+  const seenTitles = new Set();
 
-  // 從 acceptance 問題的回答提取場景
+  /**
+   * 安全推入場景（title 去重）
+   */
+  function pushScenario(s) {
+    if (!seenTitles.has(s.title)) {
+      seenTitles.add(s.title);
+      scenarios.push(s);
+    }
+  }
+
+  // ── 1. 從 acceptance 問題的回答提取場景 ──
   const accQuestions = QUESTION_BANK.filter(q => q.facet === 'acceptance');
   for (const q of accQuestions) {
     const answer = answers[q.id];
     if (!answer) continue;
 
-    // 拆分多個場景（按換行或句號分割）
     const parts = answer
       .split(/[。\n.]+/)
       .map(s => s.trim())
@@ -348,7 +358,7 @@ function buildBDDScenarios(session) {
     }
 
     for (const part of parts) {
-      scenarios.push({
+      pushScenario({
         title: `${q.text.slice(0, 30)}：${part.slice(0, 40)}`,
         given: `${session.featureName} 功能已啟用`,
         when: part,
@@ -357,11 +367,99 @@ function buildBDDScenarios(session) {
     }
   }
 
-  // 若場景不足 10 個，從 edge-cases 補充
+  // ── 2. 從 edgeCases facet 衍生邊界條件場景 ──
+  const edgeQuestions = QUESTION_BANK.filter(q => q.facet === 'edge-cases');
+  for (const q of edgeQuestions) {
+    const answer = answers[q.id];
+    if (!answer) continue;
+
+    const parts = answer
+      .split(/[。\n.]+/)
+      .map(s => s.trim())
+      .filter(s => s.length > 5);
+
+    for (const part of parts) {
+      pushScenario({
+        title: `邊界場景：${part.slice(0, 50)}`,
+        given: `${session.featureName} 功能面對邊界條件`,
+        when: part,
+        then: '系統應妥善處理邊界情況，不崩潰並給予明確提示',
+      });
+    }
+  }
+
+  // ── 3. 從 flow facet 衍生流程場景 ──
+  const flowQuestions = QUESTION_BANK.filter(q => q.facet === 'flow');
+  for (const q of flowQuestions) {
+    const answer = answers[q.id];
+    if (!answer) continue;
+
+    const parts = answer
+      .split(/[。\n.]+/)
+      .map(s => s.trim())
+      .filter(s => s.length > 5);
+
+    for (const part of parts) {
+      pushScenario({
+        title: `流程場景：${part.slice(0, 50)}`,
+        given: `使用者在 ${session.featureName} 操作流程中`,
+        when: part,
+        then: '系統應正確轉換至下一狀態並通知使用者',
+      });
+    }
+  }
+
+  // ── 4. 若場景仍不足 10 個，呼叫 enrichBDDScenarios 補充 ──
   if (scenarios.length < 10) {
-    const edgeQuestions = QUESTION_BANK.filter(q => q.facet === 'edge-cases');
-    for (const q of edgeQuestions) {
-      if (scenarios.length >= 10) break;
+    const enriched = enrichBDDScenarios(scenarios, session);
+    // enriched 已去重並包含原始場景，直接取差集新增
+    for (const s of enriched) {
+      if (!seenTitles.has(s.title)) {
+        seenTitles.add(s.title);
+        scenarios.push(s);
+      }
+    }
+  }
+
+  return scenarios;
+}
+
+/**
+ * 為 BDD 場景陣列補充場景，確保達到 ≥10 個
+ *
+ * 策略：
+ *   1. 若場景數 < 10，從 functional facet 的每條回答衍生 happy path 場景
+ *   2. 若仍不足，加入通用模板（空輸入、權限不足、網路逾時），但跳過 edgeCases 中已涵蓋的
+ *   3. 最後 fallback 到 buildSupplementaryScenarios
+ *
+ * @param {object[]} scenarios - 現有場景陣列（不會被修改）
+ * @param {object} session - InterviewSession
+ * @returns {object[]} enriched 場景陣列（包含原始 + 補充，已去重）
+ */
+function enrichBDDScenarios(scenarios, session) {
+  const answers = session.answers || {};
+  // 先對傳入的 base 陣列進行去重，確保 result 不含重複 title
+  const seenTitles = new Set();
+  const result = [];
+  for (const s of scenarios) {
+    if (!seenTitles.has(s.title)) {
+      seenTitles.add(s.title);
+      result.push(s);
+    }
+  }
+
+  function pushScenario(s) {
+    if (!seenTitles.has(s.title)) {
+      seenTitles.add(s.title);
+      result.push(s);
+    }
+  }
+
+  // ── 1. 從 functional facet 衍生 happy path 場景 ──
+  if (result.length < 10) {
+    const funcQuestions = QUESTION_BANK.filter(q => q.facet === 'functional');
+    for (const q of funcQuestions) {
+      if (result.length >= 10) break;
       const answer = answers[q.id];
       if (!answer) continue;
 
@@ -371,24 +469,72 @@ function buildBDDScenarios(session) {
         .filter(s => s.length > 5);
 
       for (const part of parts) {
-        if (scenarios.length >= 10) break;
-        scenarios.push({
-          title: `邊界場景：${part.slice(0, 50)}`,
-          given: `${session.featureName} 功能面對邊界條件`,
-          when: part,
-          then: '系統應妥善處理邊界情況，不崩潰並給予明確提示',
+        if (result.length >= 10) break;
+        pushScenario({
+          title: `功能場景：${part.slice(0, 50)}`,
+          given: `${session.featureName} 功能已就緒`,
+          when: `使用者執行：${part.slice(0, 60)}`,
+          then: '系統應依功能定義完成操作並回傳成功結果',
         });
       }
     }
   }
 
-  // 若仍不足 10 個，用補充場景填充
-  if (scenarios.length < 10) {
-    const supplementary = buildSupplementaryScenarios(session, 10 - scenarios.length);
-    scenarios.push(...supplementary);
+  // ── 2. 通用場景模板（若 edgeCases 未涵蓋） ──
+  const edgeAnswers = QUESTION_BANK
+    .filter(q => q.facet === 'edge-cases')
+    .map(q => answers[q.id] || '')
+    .join(' ')
+    .toLowerCase();
+
+  const genericTemplates = [
+    {
+      keywords: ['空', '空白', 'empty', '空值', '空輸入'],
+      scenario: {
+        title: '通用場景：空輸入處理',
+        given: `${session.featureName} 功能的輸入表單已開啟`,
+        when: '使用者未填寫任何內容直接送出',
+        then: '系統應顯示驗證錯誤提示，且不送出請求',
+      },
+    },
+    {
+      keywords: ['權限', '認證', 'auth', '未登入', '未授權'],
+      scenario: {
+        title: '通用場景：權限不足',
+        given: `使用者未具備 ${session.featureName} 功能所需的操作權限`,
+        when: '使用者嘗試執行需要權限的操作',
+        then: '系統應拒絕操作並顯示權限不足的明確提示',
+      },
+    },
+    {
+      keywords: ['網路', 'timeout', '逾時', '中斷', '連線'],
+      scenario: {
+        title: '通用場景：網路逾時',
+        given: `使用者正在使用 ${session.featureName} 功能`,
+        when: '網路連線中斷或請求逾時',
+        then: '系統應顯示友善錯誤訊息，並提供重試或恢復選項',
+      },
+    },
+  ];
+
+  for (const { keywords, scenario } of genericTemplates) {
+    if (result.length >= 10) break;
+    // 若 edge cases 回答中已提及此議題，跳過（避免重複）
+    const alreadyCovered = keywords.some(kw => edgeAnswers.includes(kw));
+    if (!alreadyCovered) {
+      pushScenario(scenario);
+    }
   }
 
-  return scenarios;
+  // ── 3. Fallback：若仍不足 10 個，用補充場景填充 ──
+  if (result.length < 10) {
+    const supplementary = buildSupplementaryScenarios(session, 10 - result.length);
+    for (const s of supplementary) {
+      pushScenario(s);
+    }
+  }
+
+  return result;
 }
 
 /**
@@ -605,7 +751,7 @@ function generateSpec(session) {
       flow: collectFacetAnswers(session, 'flow'),
       ui: collectFacetAnswers(session, 'ui'),
       edgeCases: collectFacetAnswers(session, 'edge-cases'),
-      acceptance: buildBDDScenarios(session),
+      acceptance: enrichBDDScenarios(buildBDDScenarios(session), session),
     },
     rawAnswers: { ...session.answers },
   };
@@ -1042,6 +1188,7 @@ module.exports = {
   extractInsights,
   researchDomain,
   getResearchQuestions,
+  enrichBDDScenarios,
   // 匯出問題庫供測試直接查詢（Feature 7）
   QUESTION_BANK,
 };
