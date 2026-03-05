@@ -17,12 +17,18 @@
  *   orchestrate <specPath> --json      JSON 輸出
  *   orchestrate <specPath> --overwrite 覆蓋現有佇列
  *   orchestrate <specPath> --workflow <template>  指定 workflow 類型
+ *   internalize          評估 auto-discovered.md 並生成 internalized.md（dry-run）
+ *   internalize --execute  實際寫入 internalized.md + 更新 experience-index
+ *   internalize --json   JSON 格式輸出
  */
 
 const { analyzeGaps } = require('./lib/gap-analyzer');
 const { fixGaps } = require('./lib/gap-fixer');
 const { forgeSkill } = require('./lib/skill-forge');
 const { orchestrate } = require('./lib/project-orchestrator');
+const { evaluateEntries } = require('./lib/knowledge/skill-evaluator');
+const { generalizeEntries } = require('./lib/knowledge/skill-generalizer');
+const { buildIndex } = require('./lib/knowledge/experience-index');
 
 // ── 工具函式 ──
 
@@ -47,10 +53,13 @@ function printUsage() {
   process.stdout.write('  orchestrate <specPath> --json       JSON 格式輸出\n');
   process.stdout.write('  orchestrate <specPath> --overwrite  覆蓋現有佇列（預設 append）\n');
   process.stdout.write('  orchestrate <specPath> --workflow <template>  指定 workflow 類型（預設 standard）\n');
+  process.stdout.write('  internalize          評估 auto-discovered 條目並預覽內化結果（dry-run）\n');
+  process.stdout.write('  internalize --execute  實際寫入 internalized.md + 更新 experience-index\n');
+  process.stdout.write('  internalize --json   以 JSON 格式輸出內化結果\n');
   process.stdout.write('\n');
   process.stdout.write('選項：\n');
   process.stdout.write('  --json      以 JSON 格式輸出\n');
-  process.stdout.write('  --execute   實際執行（fix/forge/orchestrate 子命令預設為 dry-run）\n');
+  process.stdout.write('  --execute   實際執行（fix/forge/orchestrate/internalize 子命令預設為 dry-run）\n');
   process.stdout.write('  --type <t>  限制修復類型（sync-mismatch / no-references）\n');
 }
 
@@ -162,6 +171,149 @@ function formatFixResult(fixResult, remainingGaps, typeFilter) {
   }
 
   return lines.join('\n');
+}
+
+/**
+ * 格式化內化預覽（human-readable）
+ * @param {object} result - runInternalize() 回傳值
+ * @param {boolean} dryRun
+ * @returns {string}
+ */
+function formatInternalizeOutput(result, dryRun) {
+  const lines = [];
+  lines.push('=== Skill Internalization ===');
+  lines.push(`評估條目：${result.evaluated}`);
+  lines.push(`通過門檻：${result.retained}`);
+  lines.push(`通用化後保留：${result.generalized}`);
+  lines.push(`跳過（太短）：${result.skipped}`);
+
+  if (dryRun) {
+    lines.push('');
+    lines.push('[dry-run] 以上為預覽，加 --execute 執行');
+  } else {
+    lines.push('');
+    lines.push(`已寫入：${result.outputPath}`);
+    lines.push('experience-index 已更新');
+  }
+
+  return lines.join('\n');
+}
+
+/**
+ * 執行內化流程（可測試的純邏輯函式，不直接呼叫 process.exit）
+ *
+ * @param {object} options
+ * @param {boolean} options.execute - 是否實際寫入
+ * @param {string} options.pluginRoot - plugin 根目錄路徑
+ * @param {string} options.projectRoot - 專案根目錄路徑
+ * @returns {{ evaluated: number, retained: number, generalized: number, skipped: number, outputPath: string, entries: object[] }}
+ */
+function runInternalize(options = {}) {
+  const { join } = require('path');
+  const { mkdirSync, writeFileSync } = require('fs');
+
+  const pluginRoot = options.pluginRoot || _resolvePluginRoot();
+  const projectRoot = options.projectRoot || process.cwd();
+  const execute = options.execute || false;
+
+  // 步驟 1：找到 auto-discovered.md 路徑
+  const autoDiscoveredPath = join(pluginRoot, 'skills', 'instinct', 'auto-discovered.md');
+
+  // 步驟 2：評估所有條目
+  const evaluated = evaluateEntries(autoDiscoveredPath, projectRoot);
+
+  // 步驟 3：過濾通過門檻的條目（qualified=true）
+  const qualifiedEntries = evaluated.filter(e => e.qualified === true);
+
+  // 步驟 4：通用化（generalizeEntries 只處理 qualified=true 的條目）
+  const generalizedResults = generalizeEntries(evaluated);
+
+  // 步驟 5：過濾掉 isEmpty 的條目
+  const nonEmptyResults = generalizedResults.filter(r => !r.isEmpty);
+  const skipped = generalizedResults.length - nonEmptyResults.length;
+
+  // 組裝輸出路徑
+  const outputPath = join(pluginRoot, 'skills', 'instinct', 'internalized.md');
+
+  if (execute) {
+    // 步驟 7：寫入 internalized.md
+    const content = _buildInternalizedContent(nonEmptyResults, evaluated);
+    mkdirSync(join(pluginRoot, 'skills', 'instinct'), { recursive: true });
+    writeFileSync(outputPath, content, 'utf8');
+
+    // 步驟 7b：呼叫 buildIndex() 更新 experience-index
+    const domains = _extractDomains(evaluated);
+    if (domains.length > 0) {
+      buildIndex(projectRoot, domains);
+    }
+  }
+
+  return {
+    evaluated: evaluated.length,
+    retained: qualifiedEntries.length,
+    generalized: nonEmptyResults.length,
+    skipped,
+    outputPath,
+    entries: nonEmptyResults,
+  };
+}
+
+/**
+ * 從評估結果中提取 domain 清單（去重）
+ * @param {object[]} evaluatedEntries
+ * @returns {string[]}
+ */
+function _extractDomains(evaluatedEntries) {
+  const domains = new Set();
+  for (const e of evaluatedEntries) {
+    if (e.domain) domains.add(e.domain);
+  }
+  return Array.from(domains);
+}
+
+/**
+ * 建立 internalized.md 內容
+ * @param {Array<{generalized: string, original: string}>} results
+ * @param {object[]} evaluatedEntries - 用於 domain 資訊
+ * @returns {string}
+ */
+function _buildInternalizedContent(results, evaluatedEntries) {
+  const now = new Date().toISOString();
+  const lines = [];
+
+  // frontmatter
+  lines.push('---');
+  lines.push(`lastUpdated: ${now}`);
+  lines.push('version: 1');
+  lines.push('---');
+  lines.push('');
+  lines.push('# Internalized Knowledge');
+
+  for (const result of results) {
+    // 嘗試找到對應的 domain
+    const matched = evaluatedEntries.find(e => e.entry === result.original);
+    const domain = matched ? (matched.domain || 'general') : 'general';
+
+    lines.push('');
+    lines.push('---');
+    lines.push('');
+    lines.push(`## ${domain}`);
+    lines.push('');
+    lines.push(result.generalized);
+  }
+
+  return lines.join('\n') + '\n';
+}
+
+/**
+ * 解析 plugin 根目錄路徑（從 __dirname 推算）
+ * @returns {string}
+ */
+function _resolvePluginRoot() {
+  const { join } = require('path');
+  // __dirname = plugins/overtone/scripts/
+  // pluginRoot = plugins/overtone/
+  return join(__dirname, '..');
 }
 
 // ── 主流程 ──
@@ -495,6 +647,41 @@ function main() {
     }
 
     process.exit(0);
+  } else if (subcommand === 'internalize') {
+    const execute = flags.includes('--execute');
+
+    // 解析 --plugin-root（測試用，預設自動推算）
+    const pluginRootIdx = args.indexOf('--plugin-root');
+    const pluginRoot = pluginRootIdx >= 0 ? args[pluginRootIdx + 1] : undefined;
+
+    // 解析 --project-root（測試用，預設 cwd）
+    const projectRootIdx = args.indexOf('--project-root');
+    const projectRoot = projectRootIdx >= 0 ? args[projectRootIdx + 1] : process.cwd();
+
+    let result;
+    try {
+      result = runInternalize({ execute, pluginRoot, projectRoot });
+    } catch (err) {
+      process.stderr.write(`internalize 執行錯誤：${err.message}\n`);
+      process.exit(1);
+    }
+
+    if (jsonOutput) {
+      const output = {
+        dryRun: !execute,
+        evaluated: result.evaluated,
+        retained: result.retained,
+        generalized: result.generalized,
+        skipped: result.skipped,
+        outputPath: result.outputPath,
+        entries: result.entries,
+      };
+      process.stdout.write(JSON.stringify(output, null, 2) + '\n');
+    } else {
+      process.stdout.write(formatInternalizeOutput(result, !execute) + '\n');
+    }
+
+    process.exit(0);
   } else {
     process.stderr.write(`未知子命令：${subcommand}\n\n`);
     printUsage();
@@ -506,4 +693,4 @@ if (require.main === module) {
   main();
 }
 
-module.exports = { formatTextReport, formatFixDryRun, formatFixResult, main, VALID_FIX_TYPES, orchestrate };
+module.exports = { formatTextReport, formatFixDryRun, formatFixResult, formatInternalizeOutput, runInternalize, main, VALID_FIX_TYPES, orchestrate };
