@@ -1,33 +1,4 @@
 ---
-## 2026-03-04 | code-reviewer:REVIEW Findings
-1. **`/Users/sbu/projects/overtone/docs/spec/data-policy.md` 第 97-106 行 -- 手動清理指令描述不正確**
-   - **問題描述**：文件聲稱 `bun scripts/data.js gc` 可以 "清理舊 session 和孤兒目錄"，並列出 `--sessions` 和 `--global` 兩個旗標。但 `/Users/sbu/projects/overtone/plugins/overtone/scripts/data.js` 的 `cmdGc` 函式（第 337-364 行）只呼叫 `cleanupStaleGlobalDirs()`，不支援 `--sessions` 或 `--global` 旗標，也不清理 session 目錄。data.js 的 help 文字（第 454-456 行）也只列出 `--dry-run` 和 `--max-age-days`。
-   - **建議修復方式**：
-     - 方案 A：修正 data-policy.md，移除不存在的 `--sessions` / `--global` 旗標，將描述改為只清理 global hash 孤兒目錄（與實際行為一致）。
-     - 方案 B：在 data.js 中實作 `--sessions` 和 `--global` 旗標（但這超出 data-policy 文件本身的範疇）。
-   - **信心等級**：95% -- 文件描述的 CLI 旗標在程式碼中不存在，使用者按文件操作會得到非預期結果。
-Keywords: users, projects, overtone, docs, spec, data, policy, scripts, session, sessions
-
----
-## 2026-03-04 | retrospective:RETRO Findings
-**回顧摘要**：
-
-data-policy 迭代整體品質良好，文件、程式碼、測試三者對齊，無跨階段的結構性問題。
-
-以下為確認的品質點：
-
-1. **文件與程式碼對齊完整** — `docs/spec/data-policy.md` 中的保留期限常數（`DEFAULT_MAX_AGE_DAYS = 7`、`DEFAULT_ORPHAN_MAX_AGE_HOURS = 1`、`DEFAULT_GLOBAL_MAX_AGE_DAYS = 30`）與 `plugins/overtone/scripts/lib/session-cleanup.js` 第 24-26 行的實際定義完全一致，且程式碼中已用「來源：docs/spec/data-policy.md」標注，建立了明確的 Single Source of Truth 關係。
-
-2. **CLI 描述與實作對齊** — REVIEW 階段發現並修正了 CLI 旗標問題。經驗證，`data-policy.md` 第 97-105 行的三條 CLI 指令（`bun scripts/data.js stats --global`、`bun scripts/data.js gc --dry-run`、`bun scripts/data.js gc --max-age-days`）均對應 `data.js` 中實際存在的功能（`cmdStats` 的 `options.global` 分支、`cmdGc` 的 `--dry-run` 和 `--max-age-days` 參數解析）。
-
-3. **測試覆蓋完整** — `tests/unit/session-cleanup.test.js` 對四個函式（`cleanupStaleSessions`、`cleanupOrphanFiles`、`cleanupStaleGlobalDirs`、`runCleanup`）均有充分的邊界測試：包含正常路徑、保護條件（currentSessionId、未超期）、錯誤路徑（目錄不存在）、混合場景、dry-run 模式，共 20 個測試案例。
-
-4. **設計原則貫徹** — 程式碼實作體現了文件中「保守刪除」原則：所有刪除操作均有 `try/catch` 保護、`getLatestMtime()` 以最新子檔案 mtime 為基準（防止目錄本身時間戳誤判）、當前 session 強制保護邏輯清晰。
-
-5. **文件完整性** — `data-policy.md` 涵蓋了所有主要資料源的保留策略（session-scoped、global-scoped、系統層），並列出警示閾值和自動清理機制，方便未來維運。
-Keywords: data, policy, docs, spec, plugins, overtone, scripts, session, cleanup, single
-
----
 ## 2026-03-04 | developer:DEV Findings
 **設計決策：**
 - `registry.js` 的 `timelineEvents` 不接受未知事件類型，必須先新增 `hook:timing` 定義（category: `hook`）才能呼叫 `emit()`
@@ -756,4 +727,39 @@ Keywords: agent, stages, stage, workflow, timeline, events, registry, plugin, js
 
 **[m] 未使用的中間變數**：`/Users/sbu/projects/overtone/plugins/overtone/scripts/lib/session-start-handler.js` 第 91 行 `const workflowEntries = Object.entries(workflows)` 用了 `Object.entries()` 但只取 `.length`，`Object.keys(workflows).length` 即可，不需要建立完整的 entries 陣列。作者自行決定是否修改。
 Keywords: buildplugincontext, registry, agent, stages, stage, workflow, timeline, events, hook, plugin
+
+---
+## 2026-03-05 | doc-updater:DOCS Findings
+**已更新的文件和變更摘要**：
+
+1. **docs/roadmap.md**
+   - init-overtone 項目標記 ✅（完成）
+   - 描述從「plugin 內建 CLAUDE.md.d/ 片段」改為「SessionStart systemMessage 動態注入 plugin context」
+
+2. **docs/status.md**
+   - 版本號：0.28.50 → 0.28.51
+   - 近期變更：新增 #0.28.51 項目，記錄 buildPluginContext() 功能實現（+12 個單元測試，3366→3378 pass）
+   - 核心指標：測試數量更新、版本狀態欄補充「SessionStart systemMessage 動態注入 plugin context」
+
+3. **CLAUDE.md**
+   - SessionStart hook 職責欄位補充「systemMessage 動態注入」詳細說明，列舉 plugin context + 待完成任務 + 跨 session 知識 + 效能基線等注入內容
+
+4. **plugin.json**
+   - 版本號：0.28.50 → 0.28.51（透過 manage-component.js 工具更新）
+
+5. **tests/integration/pre-compact.test.js**
+   - 更新測試期望：無 active feature 時現在會輸出 plugin context systemMessage（而非 undefined）
+   - 驗證項目：systemMessage 應含「Overtone Plugin Context」和「元件概覽」
+
+6. **auto-discovered.md（自動更新）**
+   - plugins/overtone/skills/claude-dev/references/auto-discovered.md：新增 2026-03-05 開發上下文記錄
+   - plugins/overtone/skills/workflow-core/references/auto-discovered.md：系統自動更新
+
+**測試驗證**：3378 pass / 0 fail（151 個測試檔）— 全數通過
+Keywords: docs, roadmap, init, overtone, plugin, claude, sessionstart, systemmessage, context, status
+
+---
+## 2026-03-05 | doc-updater:DOCS Context
+本次 workflow（quick）的 DEV + REVIEW 階段已完成。最新 commit 實作了 `buildPluginContext()` 功能，讓 SessionStart hook 在每個 session 啟動時動態注入 plugin 上下文到 systemMessage，使 Main Agent 感知當前 plugin 版本、元件數量和核心規範。
+Keywords: workflow, quick, review, commit, buildplugincontext, sessionstart, hook, session, plugin, systemmessage
 
