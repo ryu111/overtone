@@ -16,8 +16,8 @@
 | Agent 數量 | 18（含 grader） |
 | Stage 數量 | 16 |
 | Workflow 模板 | 18 |
-| 測試通過 | 3468 pass / 0 fail（153 個測試檔）|
-| 測試檔案 | 153 個 |
+| 測試通過 | 3538 pass / 0 fail（155 個測試檔）|
+| 測試檔案 | 155 個 |
 | Hook 數量 | 11 個 |
 | Skill 數量 | 23（15 knowledge domain + orchestrator + pm + specs + 4 utility-with-refs） |
 | Knowledge Domain 數 | 15（testing、workflow-core、security-kb、database、dead-code、commit-convention、code-review、wording、debugging、architecture、build-system、os-control、autonomous-control、craft、claude-dev） |
@@ -45,8 +45,9 @@ Phase 3 目標：Layer 2 完整 OS 能力，達到 Phase 4 Ready。
 | P3.1 | 看得見 | 截圖（screenshot.js + 4 API）+ 視窗管理（window.js + 5 API）+ 視覺分析模板 | ✅ |
 | P3.2 | 心跳引擎 | Heartbeat daemon（start/stop/status）+ session-spawner.js + autonomous-control Skill | ✅ |
 | P3.3 | 管得住 | Process + 剪貼簿 + 系統資訊 + 通知 + 檔案監控 | ✅ |
-| P3.4 | 聽說能力 | WebSocket + TTS + STT | ⬜ |
-| P3.5 | 安全整合 | Guard 精鍊 + E2E 驗證 + health-check 擴展 | ⬜ |
+| P3.4 | 動得了 | keyboard.js + mouse.js + applescript.js + computer-use.js | ⬜ |
+| P3.5 | 聽說能力 | WebSocket + TTS + STT | ⬜ |
+| P3.6 | 安全整合 | Guard 精鍊 + E2E 驗證 + health-check 擴展 | ⬜ |
 
 > 詳細計劃見 `docs/roadmap.md` Phase 3 章節。
 

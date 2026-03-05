@@ -57,18 +57,18 @@ Overtone 不是一個開發工具，而是 **AI 的作業系統核心**（kernel
 | 終端操控 | 執行命令、讀取輸出 | Claude Code 原生 | ✅ |
 | HTTP/API | 呼叫任意 REST API | Claude Code 原生 | ✅ |
 | 瀏覽器操控 | 自主瀏覽、表單填寫、資料擷取 | Chrome MCP | 🟡 |
-| 截圖 | 全螢幕/視窗/區域截圖 | `screencapture` | ⬜ |
+| 截圖 | 全螢幕/視窗/區域截圖 | `screencapture` | ✅ |
 | 視覺理解 | 螢幕截圖 → 結構化理解 | 截圖 + Claude 多模態 | 🟡 |
 | 鍵盤模擬 | 按鍵/快捷鍵/文字輸入 | `osascript` System Events | ⬜ |
 | 滑鼠模擬 | 點擊/拖曳/滾動 | `cliclick` | ⬜ |
 | AppleScript | macOS app 原生操控 | `osascript -l JavaScript` | ⬜ |
 | Computer Use | 截圖→理解→操作→驗證迴圈 | 組合能力 | ⬜ |
-| 視窗管理 | 列表/聚焦/移動/調整大小 | AppleScript + Accessibility | ⬜ |
-| Process 管理 | 列出/啟動/終止 process | `ps`/`kill`/`open` | ⬜ |
-| 剪貼簿 | 讀/寫剪貼簿 | `pbcopy`/`pbpaste` | ⬜ |
-| 系統資訊 | CPU/記憶體/磁碟/網路 | `sysctl`/`vm_stat` | ⬜ |
-| macOS 通知 | 系統通知推送 | `osascript` display notification | ⬜ |
-| 檔案監控 | 檔案系統變更偵測 | `fswatch` | ⬜ |
+| 視窗管理 | 列表/聚焦/移動/調整大小 | AppleScript + Accessibility | ✅ |
+| Process 管理 | 列出/啟動/終止 process | `ps`/`kill`/`open` | ✅ |
+| 剪貼簿 | 讀/寫剪貼簿 | `pbcopy`/`pbpaste` | ✅ |
+| 系統資訊 | CPU/記憶體/磁碟/網路 | `sysctl`/`vm_stat` | ✅ |
+| macOS 通知 | 系統通知推送 | `osascript` display notification | ✅ |
+| 檔案監控 | 檔案系統變更偵測 | `fswatch` | ✅ |
 | WebSocket | 即時雙向通訊 | Bun 原生 WebSocket API | ⬜ |
 | 文字轉語音 | TTS | macOS `say` | ⬜ |
 | 語音轉文字 | STT | macOS Dictation / Whisper | ⬜ |
@@ -302,5 +302,5 @@ OpenClaw（247K GitHub stars）是 2026 年最大的 AI agent 專案，但暴露
 ---
 
 *建立日期：2026-03-03*
-*最後更新：2026-03-03*
+*最後更新：2026-03-05*
 *基於：PM Discovery Session — 產品終極目標探索（兩次 session）*
