@@ -223,3 +223,15 @@ Keywords: agent, prompt
    - 已確認：queue.js 指令列表已包含五個新子命令（insert、remove、move、info、retry），commit 0a4f24d 時已同步
 Keywords: docs, status, tests, files, queue, enhancement, plugin, json, manage, component
 
+---
+## 2026-03-05 | doc-updater:DOCS Findings
+- **CLAUDE.md**：evolution.js 常用指令區塊已新增 `forge --auto` 三個變體（dry-run / --execute / --json）
+- **docs/status.md**：
+  - 更新版本號至 0.28.64
+  - 近期變更第一筆改為 auto-forge-trigger 功能說明
+  - 核心指標「測試通過」更新為 4054 pass（+19 tests）
+- **docs/roadmap.md**：
+  - L3.3 Skill Forge 的「能力缺口偵測」任務狀態從 ⬜ 改為 ✅
+  - 補充具體實作說明：shouldAutoForge() + autoForge() + forge --auto 機制
+Keywords: claude, evolution, forge, auto, execute, json, docs, status, trigger, pass
+

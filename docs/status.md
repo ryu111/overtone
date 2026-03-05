@@ -1,6 +1,6 @@
 # Overtone 現況
 
-> 最後更新：2026-03-06 | Plugin 版本：0.28.63（queue-cli-enhancement：insert/remove/move/info/retry 細粒度操作 + 64 個測試）
+> 最後更新：2026-03-06 | Plugin 版本：0.28.64（auto-forge-trigger：低分 gap 自動觸發 forge + 15 個測試）
 
 ## 版本狀態
 
@@ -16,8 +16,8 @@
 | Agent 數量 | 18（含 grader） |
 | Stage 數量 | 16 |
 | Workflow 模板 | 18 |
-| 測試通過 | 4035 pass / 0 fail（180 個測試檔）|
-| 測試檔案 | 180 個 |
+| 測試通過 | 4054 pass / 0 fail（180+ 個測試檔）|
+| 測試檔案 | 180+ 個 |
 | Hook 數量 | 11 個 |
 | Skill 數量 | 24（15 knowledge domain + orchestrator + pm + specs + 4 utility-with-refs + instinct） |
 | scripts/lib 模組 | 64（含 analyzers/ 7 + knowledge/ 9 + remote/ 4 + dashboard/ 2 子目錄模組） |
@@ -28,9 +28,9 @@
 
 ## 近期變更（最近 3 筆）
 
+- **[0.28.64] 2026-03-06**：auto-forge-trigger——知識缺口自動觸發 forge——(1) knowledge-gap-detector.js 新增 shouldAutoForge() + autoForge() 偵測低分 gap（score < 0.3）自動觸發 forge；(2) evolution.js forge 子命令新增 `--auto` flag 掃描缺 references 的 skill domain 自動 forge；(3) 新增 15 個單元測試 + 4 個整合測試；(4) 更新 CLAUDE.md evolution.js 指令區塊新增 forge --auto 說明；(5) 版本維持 0.28.64；(6) 測試 +19（4035→4054）✅
 - **[0.28.63] 2026-03-06**：queue-cli-enhancement——細粒度佇列操作——(1) execution-queue.js 新增 insertItem/removeItem/moveItem/getItem/retryItem 五個函式，支援指定位置插入、刪除任意項目、移動位置、查詢詳情、失敗重試；(2) queue.js 新增 insert、remove、move、info、retry 五個 CLI 子命令；(3) 新增 36 個 integration 測試 + 28 個 unit 測試，共 64 個測試；(4) 更新 CLAUDE.md queue.js 指令列表；(5) 版本維持 0.28.63；(6) 測試 +64（3971→4035）✅
 - **[0.28.62] 2026-03-06**：L3.7 skill-internalization——經驗內化飛輪——(1) 新增 skill-evaluator.js（資格評估 4 API）+ skill-generalizer.js（通用化 2 API）+ experience-index.js（索引管理 3 API）；(2) Instinct skill 新增 auto-discovered.md 與 internalized.md 管理；(3) evolution.js internalize 子命令（`bun scripts/evolution.js internalize [--execute] [--json]`）；(4) 新增 6 個測試檔 + 95 個測試；(5) 版本維持 0.28.62；(6) scripts/lib 模組 +3（48→51）；(7) health-check +1 項（checkInternalizationIndex）；(8) 測試 +95（3781→3876）✅
-- **[0.28.62] 2026-03-06**：L3.5 project-orchestrator——自主建構引擎 + Spec 推導——(1) 新增 project-orchestrator.js（6 API：analyzeSpec / deriveSkillDemand / planSkillConstruction / orchestrateProject / validate / exportPlan）；(2) Spec 檔案自動解析 → Skill 需求推導 → 排程規劃；(3) evolution.js orchestrate 子命令（`bun scripts/evolution.js orchestrate <specPath> [--execute] [--json] [--overwrite] [--workflow <template>]`）；(4) 新增 project-orchestrator.test.js（28 unit + integration 測試）；(5) 版本維持 0.28.62；(6) scripts/lib 模組 +1（47→48）；(7) 測試 +28（3753→3781）✅
 
 ## Phase 3 規劃狀態（✅ 完成）
 

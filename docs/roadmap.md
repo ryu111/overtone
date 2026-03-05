@@ -184,8 +184,8 @@
 |------|------|:----:|
 | Phase 1：Codebase 內知識萃取 | skill-forge.js（5 API：forgeSkill / extractKnowledge / assembleSkill / validate / rollback）+ 15 domain 知識庫 + 33 unit tests | ✅ |
 | Phase 2：WebFetch 領域研究 | spawn 研究 session（WebFetch 搜集領域知識 → 結構化整理） | ⬜ |
-| 能力缺口偵測 | knowledge-gap-detector 升級：無法路由到任何 domain（score < 0.2）→ 觸發 forge | ⬜ |
-| Skill CLI 整合 | evolution.js forge 子命令（`bun scripts/evolution.js forge <domain> [--execute] [--json]`） | ✅ |
+| 能力缺口偵測 | knowledge-gap-detector.js shouldAutoForge() + autoForge() 自動偵測低分 gap（score < 0.3）+ evolution.js forge --auto 掃描缺 references 域自動 forge | ✅ |
+| Skill CLI 整合 | evolution.js forge 子命令（`bun scripts/evolution.js forge <domain> [--execute] [--json] [--auto]`） | ✅ |
 | 安全邊界 | 不覆蓋既有 skill、dry-run 預設、連續失敗暫停 | ✅ |
 
 ### L3.4 深度 PM（精準需求收集）🟡 部分完成

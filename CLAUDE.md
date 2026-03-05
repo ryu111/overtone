@@ -150,6 +150,9 @@ bun scripts/evolution.js forge <domain>              # 預覽 Skill Forge 結果
 bun scripts/evolution.js forge <domain> --execute    # 實際執行 forge，建立 skill（包含 SKILL.md + references/）
 bun scripts/evolution.js forge <domain> --json       # JSON 格式輸出 forge 結果
 bun scripts/evolution.js forge <domain> --research   # 啟用外部 WebSearch 研究補充知識
+bun scripts/evolution.js forge --auto                # 自動掃描低分 gap + 缺 references 的 domain 並 forge（dry-run）
+bun scripts/evolution.js forge --auto --execute      # 實際執行自動 forge
+bun scripts/evolution.js forge --auto --json         # JSON 格式輸出自動 forge 結果
 bun scripts/evolution.js orchestrate <specPath>      # 預覽 Project Orchestrator 分析結果（dry-run）
 bun scripts/evolution.js orchestrate <specPath> --execute     # 執行協調，建立排程 + 佇列項目
 bun scripts/evolution.js orchestrate <specPath> --json        # JSON 格式輸出分析結果
