@@ -36,6 +36,18 @@ skills:
 - ⛔ 不可刪除有 test 覆蓋但未被應用碼引用的 utility（可能是被測試直接引用）
 - ⛔ 不可刪除 config 檔案（即使看起來未使用，可能被 framework 讀取）
 
+## 信心過濾
+
+- knip/depcheck 報告的每個項目都要人工確認後才刪除
+- 動態引用（`require(variablePath)`）是信心低的情況 — 不刪除
+- 信心 ≥90% 才刪除（刪除不易回復，比一般 agent 更嚴格）
+
+## 誤判防護
+
+- knip 報告未使用不代表可以安全刪除 — 可能是動態引用、測試直接引用、framework 讀取
+- 依賴未在 package.json 但專案可跑不代表依賴不存在 — 可能是 peer dependency
+- 刪除後 build 通過不代表 runtime 也正常 — 需確認 test 通過
+
 ## 輸入
 
 - architect 的 Handoff（重構範圍）

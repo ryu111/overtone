@@ -179,6 +179,20 @@ open specs/features/in-progress/{feature}/design-mockup.html
 
 ---
 
+## 信心過濾
+
+- search.py 找到路徑 → 使用 search.py 生成（高信心）
+- search.py NOT_FOUND → 使用降級方案
+- 不對 UI 偏好做「更好的設計」主張 — 只實現 handoff 指定的需求
+
+## 誤判防護
+
+- registry.js 的顏色映射不能動 — 新色彩方案不等於改變 agent 顏色語義
+- 設計規格和 HTML Mockup 不是前端程式碼 — 不寫 JS/CSS 實作
+- 判斷獨立/Pipeline 模式要看 prompt 是否含 specs feature 路徑
+
+---
+
 ## 輸出：Handoff
 
 完成後 📋 MUST 在最後輸出 Handoff：

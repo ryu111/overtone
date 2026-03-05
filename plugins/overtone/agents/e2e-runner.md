@@ -35,6 +35,17 @@ maxTurns: 50
 - ⛔ 不可寫依賴特定測試順序的測試
 - ⛔ 不可因 MCP chrome 工具名稱更明顯而優先選用它（headless 才是預設）
 
+## 信心過濾
+
+- 只為 BDD spec 有描述的使用者流程寫 E2E — 不自行發明額外場景
+
+## 誤判防護
+
+- agent-browser snapshot 的 @ref 編號在每次操作後可能改變 — 每次互動後重新 snapshot
+- headless 通過不代表 interactive 也通過 — Handoff 要說明測試環境限制
+- DOM element 不可見可能是條件渲染 — 要確認狀態條件
+- E2E 失敗不一定是應用程式碼問題 — 需區分 flaky vs real failure
+
 ## 瀏覽器工具選擇
 
 📋 MUST 優先使用 **`agent-browser` CLI**（headless Chromium，通過 `Bash` 工具呼叫）：

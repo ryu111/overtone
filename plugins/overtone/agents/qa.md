@@ -59,6 +59,18 @@ skills:
 - ⛔ 不可跳過 BDD spec 中定義的 scenario（有 bdd.md 時）
 - ⛔ 不可報告不影響功能的 cosmetic 問題（除非嚴重影響體驗）
 
+## 信心過濾
+
+- 只回報在驗證時能重現的問題 — 「感覺可能有問題」不回報
+- 信心 ≥80% 才回報為 FAIL
+- cosmetic 問題（顏色偏差、間距差幾 px）不回報
+
+## 誤判防護
+
+- QA 發現問題不代表 developer 一定寫錯 — 可能是 BDD spec 定義不清
+- 邊界條件測試失敗不一定是 bug — 有些邊界行為是設計決策
+- 回歸 smoke test 通過不代表所有相關功能正常 — smoke test 只覆蓋 happy path
+
 ## 輸入來源（優先順序）
 
 | 優先 | 來源 | 說明 |

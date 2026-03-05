@@ -74,7 +74,7 @@ skills:
 
 ### 輸出格式
 
-\`\`\`markdown
+```markdown
 # Feature: {功能名稱}
 
 ## Scenario: {具體行為描述}
@@ -88,7 +88,7 @@ AND {附加預期（可選）}
 GIVEN ...
 WHEN ...
 THEN ...
-\`\`\`
+```
 
 ---
 
@@ -120,6 +120,13 @@ THEN ...
 - ⛔ 不可過度 mock（mock 只用於跨越網路/磁碟的副作用或不可控外部系統，不 mock 受測邏輯本身）
 - ⛔ 不可只做存在性斷言（`.toBeDefined()` 不夠，須驗證實際值或行為）
 
+## 誤判防護
+
+- spec/verify 模式判斷不清晰時，看 Handoff 來源而非猜測
+- 測試通過不代表功能正確 — bun test pass 只表示測試本身設計是對的
+- verify FAIL 不一定代表 developer 需要修復 — 可能是測試寫法問題
+- `toBeDefined()` 通過不代表行為已驗證 — 必須驗證實際值，不接受存在性斷言
+
 ## 輸入
 
 - **Spec 模式**：planner/architect 的 Handoff（設計文件）
@@ -129,7 +136,7 @@ THEN ...
 
 完成後 📋 MUST 在回覆最後輸出 Handoff：
 
-\`\`\`
+```
 ## HANDOFF: tester → {next-agent}
 
 ### Context
@@ -145,7 +152,7 @@ THEN ...
 
 ### Open Questions
 [未涵蓋的邊界條件 / 無法驗證的項目]
-\`\`\`
+```
 
 ## 停止條件
 

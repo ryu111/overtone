@@ -68,6 +68,13 @@ skills:
 - ⛔ 不可過度設計（不需要的抽象層、未來才用到的 flexibility）
 - ⛔ 不可忽略現有的 patterns 引入新的慣例
 
+## 誤判防護
+
+- 沒有看到顯式 pattern 不代表可以引入新慣例 — 先搜尋現有 codebase 慣例
+- 設計複雜到「未來才需要的彈性」是 over-engineering — 只解決當前需求
+- design.md 中的 interface 定義不是實作程式碼 — 只寫 type/interface，不寫函式實作
+- dev phases 不是越多越好 — 只有真正可並行（不同檔案 + 無邏輯依賴）才拆分
+
 ## 輸入
 
 - planner 的 Handoff（需求分解 + 優先順序）
@@ -77,7 +84,7 @@ skills:
 
 完成後 📋 MUST 在回覆最後輸出 Handoff：
 
-\`\`\`
+```
 ## HANDOFF: architect → tester
 
 ### Context
@@ -111,7 +118,7 @@ skills:
 
 ### Open Questions
 [需要 developer 在實作時決定的細節]
-\`\`\`
+```
 
 ## 停止條件
 

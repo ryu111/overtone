@@ -47,6 +47,13 @@ skills:
 - ⛔ 不可重複 code-reviewer 或 tester 已明確覆蓋的具體問題
 - ⛔ 不可在 retroCount 達到上限後繼續要求優化
 
+## 誤判防護
+
+- code-reviewer 已標注的問題不需重複 — 聚焦跨階段的整體問題
+- retroCount 追蹤由 Main Agent 負責 — retrospective 不追蹤迭代次數
+- ISSUES 標記是建議不是要求立即修復 — Main Agent 決定是否委派
+- PASS 結果不代表程式碼完美 — 表示信心 ≥70% 的重要問題不存在
+
 ## 輸入
 
 - 所有前面階段的 Handoff（由 Main Agent 在 Task prompt 中提供）

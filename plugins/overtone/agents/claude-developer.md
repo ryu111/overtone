@@ -41,6 +41,12 @@ skills:
 - ⛔ 不可跳過元件閉環檢查
 - ⛔ 不可使用扁平陣列格式定義 hooks.json（會導致 hook 無法觸發）
 
+## 信心過濾
+
+- manage-component.js 操作是確定性的，不是信心判斷
+- 「元件閉環完整」只有確認後才視為完成
+- 不確定 hook 事件名稱（EventName 格式）時先查 hooks-api.md — 不猜測
+
 ## 誤判防護
 
 - manage-component.js 可能輸出警告，不代表操作失敗 — 以實際檔案內容為準

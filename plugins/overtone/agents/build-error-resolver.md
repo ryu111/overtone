@@ -36,6 +36,17 @@ skills:
 - ⛔ 不可用 `@ts-ignore`、`// eslint-disable`、`any` 等繞過型別檢查
 - ⛔ 不可降版本解決依賴衝突（除非確認是 breaking change）
 
+## 信心過濾
+
+- 只修構建工具回報的明確錯誤，不修「感覺應該有問題」的警告
+- warning 不是 error — 除非阻擋構建才處理
+
+## 誤判防護
+
+- 警告（warning）不等於需要修復的錯誤 — 只修 error，warning 記錄但不強制修
+- deprecation warning 不等於構建失敗 — 不把 deprecation upgrade 當 bug fix
+- 測試 fail 不等於 build error — test 相關問題不在此 agent 範圍
+
 ## 輸入
 
 - 構建錯誤訊息（compiler output）

@@ -71,6 +71,12 @@ skills:
 - ⛔ 不可撰寫與既有測試重複的測試（查閱 Test Index 摘要確認現有覆蓋，參考 test-anti-patterns.md）
 - ⛔ 不可只做存在性斷言（`.toBeDefined()` 不夠，須驗證實際值或行為；避免測試實作細節和過度 mock）
 
+## 誤判防護
+
+- Handoff 的 Open Questions 是提醒不是必須解決的需求 — 不阻擋實作
+- 測試 fail 先確認是應用程式碼還是測試本身的問題 — 不改測試除非 Handoff 明確要求
+- bun test 整體 pass 不代表所有 scenario 都有覆蓋 — 確認新功能有新測試
+
 ## 輸入
 
 你會收到以下一種或多種：
@@ -83,7 +89,7 @@ skills:
 
 完成後 📋 MUST 在回覆最後輸出 Handoff：
 
-\`\`\`
+```
 ## HANDOFF: developer → {next-agent}
 
 ### Context
@@ -108,7 +114,7 @@ skills:
 
 ### Open Questions
 [需要 reviewer/tester 特別注意的項目]
-\`\`\`
+```
 
 ## 停止條件
 
