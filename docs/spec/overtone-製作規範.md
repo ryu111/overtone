@@ -37,7 +37,7 @@
 - Dashboard / Telegram 目前為單向展示，遠端指令尚未回傳結果確認
 - `intent_journal`（觀察資料）收集後無主動分析回饋，只被動查詢
 
-**對應 health-check**：`checkClosedLoop`（待實作）
+**對應 health-check**：`checkClosedLoop`（已實作）
 
 ---
 
@@ -64,7 +64,7 @@
 - Heartbeat daemon（`scripts/heartbeat.js`）crash 需手動 `bun scripts/heartbeat.js start` 重啟
 - JSONL 損壞行目前只跳過，無修復嘗試（損壞記錄永久丟失）
 
-**對應 health-check**：`checkRecoveryStrategy`（待實作）
+**對應 health-check**：`checkRecoveryStrategy`（已實作）
 
 ---
 
@@ -90,7 +90,7 @@
 - Agent prompt 品質未偵測（prompt 是否包含四模式：信心過濾 + 邊界清單 + 誤判防護 + 停止條件）
 - Hook event 覆蓋度未偵測（新增 hook event 後對應 consumer 是否存在）
 
-**對應 health-check**：`checkCompletionGap`（待實作）
+**對應 health-check**：`checkCompletionGap`（已實作）
 
 ---
 

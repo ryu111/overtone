@@ -3,19 +3,22 @@
 /**
  * health-check.js — Overtone 系統健康自動化偵測
  *
- * 執行 12 項確定性偵測：
- *   1. phantom-events   — registry 事件 vs 實際 emit 呼叫差異
- *   2. dead-exports     — scripts/lib 模組 export 但從未被 require 使用
- *   3. doc-code-drift   — docs 文件中的數量與程式碼實際值不符
- *   4. unused-paths     — paths.js export 但從未被使用
- *   5. duplicate-logic  — hooks/scripts 中已知的重複邏輯 pattern
- *   6. platform-drift   — config-api 驗證 + 棄用 tools 白名單偵測
- *   7. doc-staleness    — docs/reference 無引用且超過 90 天未更新的過時文件
- *   8. os-tools         — P3.3 系統層依賴的 macOS 工具可用性（pbcopy/pbpaste/osascript）
- *   9. component-chain  — Skill → Agent → Hook 依賴鏈斷裂偵測
- *  10. data-quality     — 全域學習資料（JSONL）格式與欄位正確性審計
- *  11. quality-trends   — 失敗模式 / 分數趨勢 / 低分連續警告
- *  12. test-growth      — 測試套件增長率監控（超過基線 20% 時警告）
+ * 執行 15 項確定性偵測：
+ *   1. phantom-events      — registry 事件 vs 實際 emit 呼叫差異
+ *   2. dead-exports        — scripts/lib 模組 export 但從未被 require 使用
+ *   3. doc-code-drift      — docs 文件中的數量與程式碼實際值不符
+ *   4. unused-paths        — paths.js export 但從未被使用
+ *   5. duplicate-logic     — hooks/scripts 中已知的重複邏輯 pattern
+ *   6. platform-drift      — config-api 驗證 + 棄用 tools 白名單偵測
+ *   7. doc-staleness       — docs/reference 無引用且超過 90 天未更新的過時文件
+ *   8. os-tools            — P3.3 系統層依賴的 macOS 工具可用性（pbcopy/pbpaste/osascript）
+ *   9. component-chain     — Skill → Agent → Hook 依賴鏈斷裂偵測
+ *  10. data-quality        — 全域學習資料（JSONL）格式與欄位正確性審計
+ *  11. quality-trends      — 失敗模式 / 分數趨勢 / 低分連續警告
+ *  12. test-growth         — 測試套件增長率監控（超過基線 20% 時警告）
+ *  13. closed-loop         — 有 emit 但無 consumer 的孤立 timeline 事件偵測（製作原則 1）
+ *  14. recovery-strategy   — handler 模組 + agent 是否定義失敗恢復行為（製作原則 2）
+ *  15. completion-gap      — skill 是否缺少 references/ 子目錄（製作原則 3）
  *
  * 輸出：JSON stdout（HealthCheckOutput schema）
  * Exit code：有 findings → 1；無 findings → 0
@@ -1324,6 +1327,213 @@ function checkTestGrowth(getDepsOverride) {
   return findings;
 }
 
+// ── 13. Closed Loop 孤立事件流偵測（製作原則 1）──
+
+/**
+ * 偵測有 emit 但無任何 consumer 的孤立 timeline 事件。
+ *
+ * Consumer 定義：codebase 中有 timeline.query(sid, { type: 'event:name' })、
+ * timeline.latest(sid, 'event:name') 或 .type === 'event:name' 呼叫。
+ *
+ * exempt 清單（fire-and-forget 設計決策，無 consumer 是合理的）：
+ *   session:compact-suggestion、hook:timing、queue:auto-write
+ *
+ * @returns {Finding[]}
+ */
+function checkClosedLoop() {
+  const { timelineEvents } = require('./lib/registry');
+  const { existsSync } = require('fs');
+
+  const EXEMPT_EVENTS = new Set([
+    'session:compact-suggestion',
+    'hook:timing',
+    'queue:auto-write',
+  ]);
+
+  // 收集 plugin 目錄下所有 .js，排除 health-check.js 本身 + node_modules
+  const allJs = collectJsFiles(PLUGIN_ROOT).filter((f) => {
+    return (
+      f !== __filename &&
+      !f.includes('/node_modules/') &&
+      !f.includes('health-check.js')
+    );
+  });
+
+  // Consumer regex（精確匹配 type 字串）
+  // timeline.query(sid, { type: 'event:name' }) 或含 type: 的物件字面量位置
+  const queryTypeRe  = /timeline\.query\s*\([^,]+,\s*\{[^}]*type\s*:\s*['"]([a-z]+:[a-z][a-z-]*)['"][^}]*\}/g;
+  // timeline.latest(sid, 'event:name')
+  const latestTypeRe = /timeline\.latest\s*\([^,]+,\s*['"]([a-z]+:[a-z][a-z-]*)['"]/g;
+  // filter.type === 'event:name' 或 .type === 'event:name'（timeline.js 內部）
+  const filterTypeRe = /\.type\s*[=!]=\s*['"]([a-z]+:[a-z][a-z-]*)['"]/g;
+
+  const consumedEvents = new Set();
+
+  for (const f of allJs) {
+    const content = safeRead(f);
+    for (const m of content.matchAll(queryTypeRe))  consumedEvents.add(m[1]);
+    for (const m of content.matchAll(latestTypeRe)) consumedEvents.add(m[1]);
+    for (const m of content.matchAll(filterTypeRe)) consumedEvents.add(m[1]);
+  }
+
+  const findings = [];
+  const registryFile = toRelative(require('path').join(SCRIPTS_LIB, 'registry.js'));
+
+  for (const eventKey of Object.keys(timelineEvents)) {
+    if (EXEMPT_EVENTS.has(eventKey)) continue;
+    if (!consumedEvents.has(eventKey)) {
+      findings.push({
+        check: 'closed-loop',
+        severity: 'warning',
+        file: registryFile,
+        message: `timeline 事件 "${eventKey}" 有 emit 但無 consumer（製作原則 1：完全閉環）`,
+        detail: `事件未被 timeline.query 或 timeline.latest 消費，可能缺少回饋路徑`,
+      });
+    }
+  }
+
+  return findings;
+}
+
+// ── 14. Recovery Strategy 失敗恢復策略偵測（製作原則 2）──
+
+/**
+ * 偵測 handler 模組和 agent prompt 是否定義失敗恢復行為。
+ *
+ * 子項 1：掃描 scripts/lib/*-handler.js，主入口函式（handle* 或 run）是否含 try {
+ * 子項 2：掃描 agents/*.md，body 是否含停止條件相關關鍵詞
+ *
+ * @param {string} [pluginRootOverride] — 供測試覆蓋 plugin 根目錄
+ * @returns {Finding[]}
+ */
+function checkRecoveryStrategy(pluginRootOverride) {
+  const { existsSync } = require('fs');
+  const matter = require('gray-matter');
+
+  const root = pluginRootOverride || PLUGIN_ROOT;
+  const scriptsLib = require('path').join(root, 'scripts', 'lib');
+  const agentsDir = require('path').join(root, 'agents');
+  const findings = [];
+
+  // ── 子項 1：Handler 模組 try-catch 掃描 ──
+  let handlerFiles = [];
+  try {
+    handlerFiles = readdirSync(scriptsLib).filter((f) => f.endsWith('-handler.js'));
+  } catch { /* 目錄不存在時跳過 */ }
+
+  for (const handlerFile of handlerFiles) {
+    const filePath = require('path').join(scriptsLib, handlerFile);
+    const content = safeRead(filePath);
+    if (!content) continue;
+
+    // 找主入口函式：function handle* 或 function run
+    const mainFnRe = /^function\s+(handle\w+|run)\s*\(/m;
+    const fallbackFnRe = /^function\s+\w+\s*\(/m;
+
+    let fnName = null;
+    let fnMatch = content.match(mainFnRe);
+    if (!fnMatch) {
+      fnMatch = content.match(fallbackFnRe);
+    }
+    if (fnMatch) {
+      fnName = fnMatch[1] || fnMatch[0];
+    }
+
+    // 取得函式 body（從函式名開始到檔案末尾，尋找 try {）
+    // 策略：若主入口函式存在，取其後的內容；否則掃描整個檔案
+    let bodyToCheck = content;
+    if (fnMatch && fnMatch.index !== undefined) {
+      bodyToCheck = content.slice(fnMatch.index);
+    }
+
+    const hasTryCatch = /\btry\s*\{/.test(bodyToCheck);
+    if (!hasTryCatch) {
+      const relPath = require('path').relative(root, filePath);
+      findings.push({
+        check: 'recovery-strategy',
+        severity: 'warning',
+        file: relPath,
+        message: `${handlerFile} 主入口函式缺少頂層 try-catch 保護（製作原則 2：自動修復）`,
+        detail: `建議在主入口函式 body 頂層加入 try { ... } catch(err) { ... } 保護`,
+      });
+    }
+  }
+
+  // ── 子項 2：Agent prompt 停止條件掃描 ──
+  const RECOVERY_KEYWORDS = ['停止條件', 'STOP', '誤判防護', '失敗恢復', 'error recovery', '停止點'];
+
+  let agentFiles = [];
+  try {
+    agentFiles = readdirSync(agentsDir).filter((f) => f.endsWith('.md'));
+  } catch { /* 目錄不存在時跳過 */ }
+
+  for (const agentFile of agentFiles) {
+    const filePath = require('path').join(agentsDir, agentFile);
+    const rawContent = safeRead(filePath);
+    if (!rawContent) continue;
+
+    let parsed;
+    try {
+      parsed = matter(rawContent);
+    } catch { continue; }
+
+    const body = parsed.content || '';
+    const agentName = (parsed.data && parsed.data.name) || agentFile.replace(/\.md$/, '');
+
+    const hasKeyword = RECOVERY_KEYWORDS.some((kw) => body.includes(kw));
+    if (!hasKeyword) {
+      const relPath = require('path').relative(root, filePath);
+      findings.push({
+        check: 'recovery-strategy',
+        severity: 'warning',
+        file: relPath,
+        message: `agent "${agentName}" 缺少停止條件或誤判防護描述（製作原則 2：自動修復）`,
+        detail: `建議在 agent prompt 中加入停止條件、誤判防護或失敗恢復策略描述`,
+      });
+    }
+  }
+
+  return findings;
+}
+
+// ── 15. Completion Gap 補全能力缺口偵測（製作原則 3）──
+
+/**
+ * 偵測 skill 目錄是否缺少 references/ 子目錄。
+ *
+ * @param {string} [skillsDirOverride] — 供測試覆蓋 skills 目錄
+ * @returns {Finding[]}
+ */
+function checkCompletionGap(skillsDirOverride) {
+  const { existsSync } = require('fs');
+  const skillsDir = skillsDirOverride || SKILLS_DIR;
+  const findings = [];
+
+  let skillDirs = [];
+  try {
+    skillDirs = readdirSync(skillsDir, { withFileTypes: true })
+      .filter((e) => e.isDirectory())
+      .map((e) => e.name);
+  } catch {
+    return [];
+  }
+
+  for (const skillName of skillDirs) {
+    const refsDir = require('path').join(skillsDir, skillName, 'references');
+    if (!existsSync(refsDir)) {
+      findings.push({
+        check: 'completion-gap',
+        severity: 'warning',
+        file: `skills/${skillName}/`,
+        message: `skill "${skillName}" 缺少 references/ 目錄，可能影響補全能力偵測（製作原則 3：補全能力）`,
+        detail: `建議在 skills/${skillName}/references/ 下加入 .md 參考文件`,
+      });
+    }
+  }
+
+  return findings;
+}
+
 // ── 主程式 ──
 
 /**
@@ -1349,10 +1559,13 @@ function runAllChecks() {
     { name: 'platform-drift',   fn: checkPlatformDrift },
     { name: 'doc-staleness',    fn: checkDocStaleness },
     { name: 'os-tools',         fn: checkOsTools },
-    { name: 'component-chain',  fn: checkComponentChain },
-    { name: 'data-quality',     fn: checkDataQuality },
-    { name: 'quality-trends',   fn: checkQualityTrends },
-    { name: 'test-growth',      fn: checkTestGrowth },
+    { name: 'component-chain',   fn: checkComponentChain },
+    { name: 'data-quality',      fn: checkDataQuality },
+    { name: 'quality-trends',    fn: checkQualityTrends },
+    { name: 'test-growth',       fn: checkTestGrowth },
+    { name: 'closed-loop',       fn: checkClosedLoop },
+    { name: 'recovery-strategy', fn: checkRecoveryStrategy },
+    { name: 'completion-gap',    fn: checkCompletionGap },
   ];
 
   const allFindings = [];
@@ -1440,6 +1653,9 @@ module.exports = {
   checkDataQuality,
   checkQualityTrends,
   checkTestGrowth,
+  checkClosedLoop,
+  checkRecoveryStrategy,
+  checkCompletionGap,
   runAllChecks,
   // 測試 DI 支援
   TEST_BASELINE,

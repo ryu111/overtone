@@ -296,25 +296,29 @@ describe('checkQualityTrends', () => {
 // ══════════════════════════════════════════════════════════════════
 
 describe('runAllChecks — 包含 F1/F2/F3 新增 check', () => {
-  test('checks 陣列長度為 12（新增 3 個）', () => {
+  test('checks 陣列長度為 15（新增 3 個製作原則偵測）', () => {
     const { checks } = runAllChecks();
-    expect(checks.length).toBe(12);
+    expect(checks.length).toBe(15);
   });
 
-  test('checks 包含 component-chain、data-quality、quality-trends', () => {
+  test('checks 包含所有偵測項目（含 3 個製作原則偵測）', () => {
     const { checks } = runAllChecks();
     const names = checks.map((c) => c.name);
     expect(names).toContain('component-chain');
     expect(names).toContain('data-quality');
     expect(names).toContain('quality-trends');
+    expect(names).toContain('closed-loop');
+    expect(names).toContain('recovery-strategy');
+    expect(names).toContain('completion-gap');
   });
 
-  test('所有 finding 的 check 欄位包含 3 個新 check 名稱', () => {
+  test('所有 finding 的 check 欄位包含所有 check 名稱', () => {
     const { findings } = runAllChecks();
     const validChecks = new Set([
       'phantom-events', 'dead-exports', 'doc-code-drift', 'unused-paths',
       'duplicate-logic', 'platform-drift', 'doc-staleness', 'os-tools',
       'component-chain', 'data-quality', 'quality-trends', 'test-growth',
+      'closed-loop', 'recovery-strategy', 'completion-gap',
     ]);
     for (const f of findings) {
       expect(validChecks.has(f.check)).toBe(true);

@@ -191,8 +191,10 @@ if (result.success) {
   const WARN = '\x1b[33m⚠️\x1b[0m';
   if (action === 'create' && type === 'skill') {
     process.stderr.write(`${WARN} 記得更新消費此 Skill 的 Agent frontmatter（skills 欄位）\n`);
+    process.stderr.write(`${WARN} 製作原則 3（補全能力）：建議在 skills/{name}/references/ 下加入 .md 參考文件，否則 checkCompletionGap 將回報 warning\n`);
   } else if (action === 'create' && type === 'agent') {
     process.stderr.write(`${WARN} 記得確認 agent 的 skills 是否有對應的 SKILL.md，以及是否需要新增 Guard\n`);
+    process.stderr.write(`${WARN} 製作原則 2（自動修復）：建議在 agent prompt 中加入停止條件或誤判防護描述，否則 checkRecoveryStrategy 將回報 warning\n`);
   } else if (action === 'create' && type === 'hook') {
     process.stderr.write(`${WARN} 記得確認 hooks.json 的 matcher 設定是否正確\n`);
   } else if (action === 'update' && type === 'agent' && opts.skills !== undefined) {
