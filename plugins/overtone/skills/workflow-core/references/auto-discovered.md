@@ -1,19 +1,4 @@
 ---
-## 2026-03-05 | retrospective:RETRO Findings
-**回顧摘要**：
-
-整體實作品質良好。三個核心修復方向正確：
-
-1. 測試隔離（OVERTONE_TEST / BUN_TEST 環境變數守衛）防止測試污染生產資料，設計合理。
-2. resolved 過濾邏輯在 `getFailurePatterns` 實作完整，9 個對應測試覆蓋三種邊界情境（跨 session、跨 stage）。
-3. 時間範圍顯示正確套用 resolved 過濾後的資料計算。
-
-測試套件數量（3468 pass / 0 fail）與架構一致性良好。`agent-stop-handler.js` 的 recordFailure / recordResolution 呼叫邏輯正確（fail/reject 時記錄失敗，pass 且曾有失敗時記錄 resolved）。
-
-**跨階段發現的問題**：REVIEW 標注的 `formatFailureWarnings` 子查詢問題，在實際程式碼中確認為資料不一致缺口，且本次實作未修復。
-Keywords: resolved, getfailurepatterns, session, stage, pass, fail, agent, stop, handler, recordfailure
-
----
 ## 2026-03-05 | planner:PLAN Findings
 **需求分解**：
 1. **分析 plugin 結構並輸出 design.md** | agent: architect | files: `agents/*.md`、`skills/*/SKILL.md`、`scripts/lib/registry-data.json`、`hooks/scripts/**/*.js`
@@ -896,4 +881,19 @@ Keywords: config, resolvecommand, readagentfile, readskillfile, readhooksjson, g
 - `exitLoop` 會向 timeline.jsonl emit 兩個事件（`loop:complete` + `session:end`），測試透過真實 session 目錄操作驗證。
 - 全部 41 個新測試通過，整體 4167 pass, 0 fail。
 Keywords: config, validator, validateagent, validatehook, validateskill, validateall, validateagentfrontmatter, validateskillfrontmatter, loop, readloop
+
+---
+## 2026-03-05 | developer:DEV Findings
+**根因分析**：
+- `failure-tracker.js` 的 `recordResolution()` 函數把 `verdict: 'resolved'` 的記錄寫入 `failures.jsonl`，格式為 `{ ts, sessionId, stage, verdict: 'resolved' }`（無 `agent` 欄位），這是設計行為，用於 `_filterResolved()` 的去重機制
+- `health-check.js` 的驗證規則要求 `failures.jsonl` 所有記錄必須含 `agent` 欄位，且 `verdict` 只允許 `'fail'` 或 `'reject'`，未考慮 `resolved` 記錄的存在
+- 受影響資料：`~/.overtone/global/7f2b45a9/failures.jsonl` 中 101 行有 50 行 `resolved` 記錄，損壞率 49.5%（遠超 10% 觸發門檻）
+
+**修復方式**：
+- `required` 欄位從 `['ts', 'stage', 'agent', 'verdict']` 改為 `['ts', 'stage', 'verdict']`（resolved 無需 agent）
+- 合法 `verdict` 值擴充為 `fail` / `reject` / `resolved`
+- 針對 `fail`/`reject` 記錄額外驗證 `agent` 欄位存在
+
+**測試前後**：修改前 test-parallel.js 15 fail，修改後 14 fail（少了 1 個 — data-quality 的 spawn 測試不再失敗，無新增失敗）
+Keywords: failure, tracker, recordresolution, verdict, resolved, failures, jsonl, sessionid, stage, agent
 
