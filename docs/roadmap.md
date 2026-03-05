@@ -1,6 +1,6 @@
 # Overtone Roadmap
 
-> 最後更新：2026-03-06 | 當前進度：L3.7 Skill Internalization 完成
+> 最後更新：2026-03-06 | 當前進度：Layer 3 大部分完成（L3.1-L3.5 + L3.7 ✅，L3.6 場景已設計待執行）
 
 ## Layer 總覽
 
@@ -10,7 +10,7 @@
 |:-----:|------|------|:----:|
 | 1 | 核心大腦 | 工作流引擎 + 持續學習 + 守衛系統 | ✅ 完成 |
 | 2 | 感知操控 | OS 感知 + 心跳引擎 + 系統管理 + 安全守衛 | ✅ 完成 |
-| 3 | 自我進化 | Gap 偵測修復 + Skill Forge + 深度 PM + Project Orchestrator + Acid Test + 飛輪內化 | 🚧 進行中 |
+| 3 | 自我進化 | Gap 偵測修復 + Skill Forge + 深度 PM + Project Orchestrator + Acid Test + 飛輪內化 | 🟡 L3.6 待執行 |
 | 4 | 通用代理人 | 跨領域自主運作 + 場景泛化 + 多專案並行 + 經驗遷移 | ⬜ 待開始 |
 | 5 | 產品 | 使用者面向的最終產品（由 L1-L4 組合而成） | ⬜ 待開始 |
 
@@ -152,7 +152,7 @@
 
 ---
 
-## Layer 3：自我進化（🚧 進行中）
+## Layer 3：自我進化（🟡 大部分完成）
 
 > **定義**：系統面對未知領域，能自主研究 → 建立 skill/agent → 獲得新能力。
 > **關鍵區分**：
@@ -209,7 +209,7 @@
 | Skill 建構排程 | 批次觸發 Skill Forge 建立缺少的 skill → Agent 配置（skill 分配到 agent） | ✅ |
 | 專案級迭代 | 多 feature 排程 → execution-queue → 無限迭代直到完成 | ✅ |
 
-### L3.6 Acid Test ⬜
+### L3.6 Acid Test 🟡
 
 > 用真實場景驗證 L3 端到端：給高層目標 → 深度訪談 → 自主建 skill → 無限迭代 → 產品完成。
 
