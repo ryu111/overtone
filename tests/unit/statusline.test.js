@@ -9,9 +9,10 @@
  *   - 無 workflow 時單行、有 active agent 時雙行
  *   - 中文模式標籤
  *   - transcript_path 檔案大小
+ *   - 佇列進度顯示（Feature 6）
  */
 
-const { describe, it, expect } = require('bun:test');
+const { describe, it, expect, beforeAll, afterAll } = require('bun:test');
 const { join } = require('path');
 const { spawnSync } = require('child_process');
 const { SCRIPTS_DIR } = require('../helpers/paths');
@@ -437,5 +438,124 @@ describe('agent 顯示與中文模式', () => {
   it('清理臨時目錄', () => {
     try { rmSync(tmpHome, { recursive: true, force: true }); } catch { /* 靜默 */ }
     expect(true).toBe(true);
+  });
+});
+
+// ── Feature 6: 佇列進度顯示 ──
+
+describe('佇列進度顯示', () => {
+  const os = require('os');
+  const path = require('path');
+  const crypto = require('crypto');
+  const { mkdirSync, writeFileSync, rmSync } = require('fs');
+
+  const tmpHome = path.join(os.tmpdir(), `home-queue-statusline-test-${Date.now()}`);
+  const sessionId = `queue-statusline-${Date.now()}`;
+  const sessionDir = path.join(tmpHome, '.overtone', 'sessions', sessionId);
+
+  // 計算 execution-queue.json 路徑（與 paths.js projectHash 邏輯一致）
+  function queueDir(projectRoot) {
+    const hash = crypto.createHash('sha256').update(projectRoot).digest('hex').slice(0, 8);
+    return path.join(tmpHome, '.overtone', 'global', hash);
+  }
+
+  function writeWorkflow(data) {
+    mkdirSync(sessionDir, { recursive: true });
+    writeFileSync(path.join(sessionDir, 'workflow.json'), JSON.stringify(data));
+  }
+
+  function writeQueue(projectRoot, queue) {
+    const dir = queueDir(projectRoot);
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(path.join(dir, 'execution-queue.json'), JSON.stringify(queue));
+  }
+
+  function runWithSessionAndCwd(projectRoot, stdinData = {}) {
+    return spawnSync('node', [STATUSLINE_PATH], {
+      input: JSON.stringify({ ...stdinData, session_id: sessionId, cwd: projectRoot }),
+      encoding: 'utf8',
+      timeout: 10000,
+      env: { ...process.env, HOME: tmpHome },
+    });
+  }
+
+  const projectRoot = path.join(tmpHome, 'project');
+
+  beforeAll(() => {
+    // 建立 active workflow
+    writeWorkflow({
+      workflowType: 'quick',
+      stages: { DEV: { status: 'active' } },
+    });
+  });
+
+  afterAll(() => {
+    try { rmSync(tmpHome, { recursive: true, force: true }); } catch { /* 靜默 */ }
+  });
+
+  it('多項佇列有未完成項目時，Line 2 顯示 📦 completed/total', () => {
+    writeQueue(projectRoot, {
+      items: [
+        { name: 'A', workflow: 'quick', status: 'completed' },
+        { name: 'B', workflow: 'quick', status: 'in_progress' },
+        { name: 'C', workflow: 'quick', status: 'pending' },
+      ],
+      autoExecute: true,
+      source: 'test',
+    });
+
+    const result = runWithSessionAndCwd(projectRoot, { context_window: { used_percentage: 20 } });
+    const plain = stripAnsi(result.stdout || '');
+    expect(plain).toContain('📦 1/3');
+  });
+
+  it('佇列全部完成時不顯示 📦', () => {
+    writeQueue(projectRoot, {
+      items: [
+        { name: 'A', workflow: 'quick', status: 'completed' },
+        { name: 'B', workflow: 'quick', status: 'completed' },
+      ],
+      autoExecute: true,
+      source: 'test',
+    });
+
+    const result = runWithSessionAndCwd(projectRoot, { context_window: { used_percentage: 20 } });
+    const plain = stripAnsi(result.stdout || '');
+    expect(plain).not.toContain('📦');
+  });
+
+  it('佇列只有 1 項時不顯示 📦', () => {
+    writeQueue(projectRoot, {
+      items: [
+        { name: 'A', workflow: 'quick', status: 'in_progress' },
+      ],
+      autoExecute: true,
+      source: 'test',
+    });
+
+    const result = runWithSessionAndCwd(projectRoot, { context_window: { used_percentage: 20 } });
+    const plain = stripAnsi(result.stdout || '');
+    expect(plain).not.toContain('📦');
+  });
+
+  it('無佇列時不顯示 📦', () => {
+    // 使用不存在的 projectRoot，不寫 queue 檔案
+    const emptyRoot = path.join(tmpHome, 'empty-project');
+
+    const result = runWithSessionAndCwd(emptyRoot, { context_window: { used_percentage: 20 } });
+    const plain = stripAnsi(result.stdout || '');
+    expect(plain).not.toContain('📦');
+  });
+
+  it('佇列讀取失敗時不 crash（安靜跳過）', () => {
+    // 寫入損壞的 JSON
+    const dir = queueDir(projectRoot);
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(path.join(dir, 'execution-queue.json'), '{invalid json}');
+
+    const result = runWithSessionAndCwd(projectRoot, { context_window: { used_percentage: 20 } });
+    expect(result.status ?? 0).toBe(0);
+    const plain = stripAnsi(result.stdout || '');
+    expect(plain).not.toContain('📦');
   });
 });

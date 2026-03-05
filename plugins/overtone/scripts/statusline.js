@@ -21,6 +21,7 @@ const { readFileSync, statSync } = require('fs');
 const { join } = require('path');
 const { homedir } = require('os');
 const { formatSize } = require('./lib/utils');
+const { readQueue } = require('./lib/execution-queue');
 
 // ── 路徑常數 ──
 
@@ -135,6 +136,24 @@ function loadRegistryStages() {
   }
 }
 
+/**
+ * 讀取佇列進度（用於 Line 2 顯示）
+ * @param {string} projectRoot
+ * @returns {{ completed: number, total: number }|null} 有多項未完成時回傳，否則 null
+ */
+function readQueueProgress(projectRoot) {
+  try {
+    const queue = readQueue(projectRoot);
+    if (!queue || !queue.items || queue.items.length <= 1) return null;
+    const total = queue.items.length;
+    const completed = queue.items.filter(i => i.status === 'completed').length;
+    if (completed >= total) return null; // 全部完成不顯示
+    return { completed, total };
+  } catch {
+    return null;
+  }
+}
+
 // ── Line 1 顯示邏輯 ──
 
 /**
@@ -205,6 +224,7 @@ function main() {
   }
 
   const sessionId = (input.session_id || '').trim();
+  const projectRoot = input.cwd || process.cwd();
 
   // ── 從 stdin 取得資料 ──
 
@@ -219,6 +239,7 @@ function main() {
   const workflow = sessionId ? readWorkflow(sessionId) : null;
   const compactCount = sessionId ? readCompactCount(sessionId) : { auto: 0, manual: 0 };
   const registryStages = loadRegistryStages();
+  const queueProgress = readQueueProgress(projectRoot);
 
   // ── 分隔符 ──
 
@@ -243,7 +264,11 @@ function main() {
     const line1 = `  ${line1Parts.join(SEP)}`;
 
     const compactStr = `${ANSI.cyan}♻️${ANSI.reset} ${compactCount.auto || 0}a ${compactCount.manual || 0}m`;
-    const line2 = `  ${[ctxStr, sizeStr, compactStr].join(SEP)}`;
+    const line2Parts = [ctxStr, sizeStr, compactStr];
+    if (queueProgress) {
+      line2Parts.push(`📦 ${queueProgress.completed}/${queueProgress.total}`);
+    }
+    const line2 = `  ${line2Parts.join(SEP)}`;
 
     process.stdout.write(line1 + '\n' + line2 + '\n');
   } else if (workflow) {
