@@ -1,12 +1,4 @@
 ---
-## 2026-03-04 | developer:DEV Context
-實作 queue-cli 功能，包含：
-1. `plugins/overtone/scripts/queue.js`（新建）— 執行佇列 CLI，包裝 `execution-queue.js`，提供 `add`/`list`/`clear` 三個子命令
-2. `plugins/overtone/scripts/lib/state.js`（修改）— `updateStateAtomic` 中 modifier callback 回傳值加入 `?? current` 防禦，避免 modifier 不回傳值時 `enforceInvariants` 崩潰
-3. `tests/unit/queue-cli.test.js`（新建）— 12 個 CLI 單元測試
-Keywords: queue, plugins, overtone, scripts, execution, list, clear, state, updatestateatomic, modifier
-
----
 ## 2026-03-04 | code-reviewer:REVIEW Findings
 **1. state.js 第 249 行：fallback 路徑缺少 `?? current` 防禦（信心 95%）**
 
@@ -713,4 +705,36 @@ Keywords: feature, scenario, phase, config, validator, validateagent, validatesk
 
 - **Phase 2b**：6 個 knowledge 模組移至 `lib/knowledge/` 子目錄（instinct、global-instinct、knowledge-archiver、knowledge-gap-detector、knowledge-searcher、skill-router）
 Keywords: structure, optimization, feature, phase, config, readagentfile, readhooksjson, validator, validateagent, validatehook
+
+---
+## 2026-03-04 | code-reviewer:REVIEW Findings
+**審查範圍：** 57 個檔案變更（951 行新增 / 558 行刪除），涵蓋三大重構區塊。
+
+**1. config-api.js 拆分 (Phase 1)**
+- config-io.js（IO helpers）和 config-validator.js（L1 驗證）正確從 config-api.js 提取
+- config-api.js 保留 L2 CRUD 函式 + 向後相容 re-exports（validateAgent/validateHook/validateSkill/validateAll）
+- 依賴鏈 `config-io <-> config-validator -> config-api` 無循環依賴
+- `getHookHandler` 內部函式正確從 config-io 匯出並由 config-validator 消費
+- `validateAgentFrontmatter`/`validateSkillFrontmatter` 正確 re-export 供 config-api CRUD 函式使用
+
+**2. analyzers/ 子目錄 (Phase 2a)**
+- 7 個模組移入 `lib/analyzers/`，所有 `__dirname` 路徑計算已更新（多加一層 `..`）
+- `guard-system.js` 內部 require 正確使用 `./` 引用同目錄的 5 個兄弟模組
+- `component-repair.js` 的 `registryDataPath` 使用 `join(__dirname, '..', 'registry-data.json')` 正確指向 `lib/registry-data.json`
+
+**3. knowledge/ 子目錄 (Phase 2b)**
+- 6 個模組移入 `lib/knowledge/`，knowledge 模組之間的 `./` 內部引用正確
+- 對外引用（`../paths`, `../registry`, `../utils`）正確指向 parent `lib/` 目錄
+- 6 個 handler 模組的 require 路徑全部更新（instinct x4, global-instinct x4, knowledge-archiver x1, knowledge-gap-detector x1）
+
+**4. 消費者路徑完整性**
+- `data.js` 的 2 處 require 路徑已更新（cross-analyzer, global-instinct）
+- 全部 28 個測試檔案的 require 路徑已更新，無殘留舊路徑
+- 掃描 `scripts/` 和 `tests/` 目錄確認零殘留舊路徑
+
+**5. 附帶修正**
+- `dashboard-registry.test.js` 計數斷言更新（28->29 events, 12->13 categories, 新增 queue category）與先前 `cb8e1bc` commit 對齊
+
+**BDD Spec 對照：** 268 行 spec 涵蓋 3 Phase + 整合驗證，所有 require 路徑更新、向後相容 re-export、模組功能不變的要求均已實現。
+Keywords: config, phase, helpers, validator, crud, exports, validateagent, validatehook, validateskill, validateall
 
