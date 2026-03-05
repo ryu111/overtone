@@ -1,6 +1,6 @@
 # Overtone Roadmap
 
-> 最後更新：2026-03-05 | 當前 Phase：Phase 3 進行中（P3.3 系統層完成 + P3.5 WebSocket 完成 + P3.6 安全整合完成）
+> 最後更新：2026-03-05 | 當前 Phase：Phase 4 開始（P4.1 evolution-engine-gap-detect 完成）
 
 ## Phase 總覽
 
@@ -11,8 +11,8 @@
 | 0 | 地基穩固 | 核心 pipeline 穩定運作 | ✅ 完成 |
 | 1 | 首次體驗 | 新使用者 5 分鐘上手 | ✅ 完成 |
 | 2 | 核心穩固 | Level 1 完成 + Level 2 持續學習 | ✅ 完成 |
-| 3 | 感知操控 | Layer 2 完整 OS 能力（5 階段：感知→操控→系統→通訊→守衛） | 📋 規劃完成 |
-| 4 | 自我進化 | Level 3 + 第一個垂直切片（交易） | ⚪ 未開始 |
+| 3 | 感知操控 | Layer 2 完整 OS 能力（6 階段：感知→心跳→操控→系統→通訊→守衛） | ✅ 完成 |
+| 4 | 自我進化 | Level 3 + 第一個垂直切片（交易） | 📋 規劃完成 |
 
 ---
 
@@ -173,6 +173,29 @@
 ---
 
 ## Phase 4：自我進化 + 第一個垂直切片
+
+> 目標：Level 3 自我進化能力 + 第一個垂直切片（交易）
+> 架構：Evolution Engine（gap detection + auto-fix + feedback loop）+ 垂直切片示範
+>
+> **閉環交付模型**：每個 P4.x 交付 = gap detection 工具 + 自動修復器 + 測試 + 文件。
+
+### P4.1 Gap Detection（進化引擎偵測層）✅
+
+| 任務 | 說明 | 狀態 |
+|------|------|:----:|
+| gap-analyzer.js | 組合 health-check 四個 check 函式，轉換 findings 為標準化 Gap 物件 | ✅ |
+| evolution.js CLI | `bun scripts/evolution.js analyze [--json]` 入口 | ✅ |
+| Gap Detection 測試 | 52 個測試（33 unit + 19 integration） | ✅ |
+
+### P4.2 Auto-Fix（進化引擎自動修復層）⏳
+
+| 任務 | 說明 | 狀態 |
+|------|------|:----:|
+| gap-fixer.js | 根據 gap type 選擇修復策略（component-chain / closed-loop / completion-gap / dependency-sync） | ⬜ |
+| evolution.js fix 子命令 | `bun scripts/evolution.js fix [--apply]` | ⬜ |
+| Auto-Fix 測試 | 修復正確性 + 邊界情況 | ⬜ |
+
+### P4.3-4.5 垂直切片示範 + 泛化 ⏳
 
 | 任務 | 說明 | 狀態 |
 |------|------|:----:|

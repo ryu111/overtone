@@ -136,6 +136,10 @@ bun scripts/heartbeat.js start [--project-root <path>]  # 啟動常駐 daemon
 bun scripts/heartbeat.js stop                            # 停止 daemon
 bun scripts/heartbeat.js status                          # 查看狀態
 
+# 進化引擎（gap detection 與自動修復）
+bun scripts/evolution.js analyze                     # 執行 gap 分析，輸出純文字報告
+bun scripts/evolution.js analyze --json              # JSON 格式報告（供程式消費）
+
 # 依賴圖與一致性
 bun scripts/impact.js <path>                         # 查詢修改此檔案會影響哪些元件
 bun scripts/impact.js <path> --deps                  # 查詢此檔案依賴哪些元件

@@ -13,7 +13,7 @@ created: 2026-03-05T11:55:45.036Z
 - [x] DEV
 - [x] REVIEW
 - [x] RETRO
-- [ ] DOCS
+- [x] DOCS
 
 ## Tasks
 
