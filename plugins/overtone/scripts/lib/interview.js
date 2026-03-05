@@ -604,6 +604,7 @@ function generateSpec(session) {
       edgeCases: collectFacetAnswers(session, 'edge-cases'),
       acceptance: buildBDDScenarios(session),
     },
+    rawAnswers: { ...session.answers },
   };
 
   // 寫入 Markdown 檔案
