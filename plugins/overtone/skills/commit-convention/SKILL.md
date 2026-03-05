@@ -20,6 +20,6 @@ user-invocable: false
 
 | 檔案 | 說明 |
 |------|------|
-| 💡 \`\${CLAUDE_PLUGIN_ROOT}/skills/commit-convention/references/commit-convention.md\` | Conventional commit 完整規範 |
-| 💡 \`\${CLAUDE_PLUGIN_ROOT}/skills/commit-convention/references/commit-examples.md\` | Overtone 實際 commit 範例（好例/壞例對比） |
-| 💡 \`\${CLAUDE_PLUGIN_ROOT}/skills/commit-convention/examples/good-bad-commits.md\` | 完整好壞 commit 對比範例 |
+| 💡 `${CLAUDE_PLUGIN_ROOT}/skills/commit-convention/references/commit-convention.md` | Conventional commit 完整規範 |
+| 💡 `${CLAUDE_PLUGIN_ROOT}/skills/commit-convention/references/commit-examples.md` | Overtone 實際 commit 範例（好例/壞例對比） |
+| 💡 `${CLAUDE_PLUGIN_ROOT}/skills/commit-convention/examples/good-bad-commits.md` | 完整好壞 commit 對比範例 |
