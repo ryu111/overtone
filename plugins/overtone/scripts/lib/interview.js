@@ -12,6 +12,8 @@
  *   generateSpec(session)                           → ProjectSpec（並寫入 outputPath）
  *   loadSession(statePath)                          → InterviewSession | null
  *   saveSession(session, statePath)                 → void
+ *   queryPastInterviews(projectRoot, options?)      → { sessions, total }
+ *   extractInsights(sessions)                       → { commonRequirements, boundaryConditions, userPreferences }
  *
  * 資料模型：
  *   InterviewSession：{ featureName, outputPath, answers, startedAt, completedAt, options }
@@ -21,6 +23,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 const { atomicWrite } = require('./utils');
 
 // ── 問題庫定義 ──
@@ -681,6 +684,172 @@ function saveSession(session, statePath) {
   atomicWrite(statePath, data);
 }
 
+// ── 跨 Session 記憶 API ──
+
+/**
+ * 查詢過去的訪談記錄
+ *
+ * 從 ~/.overtone/sessions/{sessionId}/interview-state.json 搜尋過去的訪談。
+ *
+ * @param {string} projectRoot - 專案根目錄（保留供未來依專案過濾使用）
+ * @param {object} [options] - 選項
+ * @param {number} [options.limit=10] - 最多回傳幾筆
+ * @param {string} [options.feature] - 只回傳特定 feature 的訪談
+ * @returns {{ sessions: Array<{sessionId, feature, completedAt, questionCount, answerSummary}>, total: number }}
+ */
+function queryPastInterviews(projectRoot, options) {
+  const limit = (options && options.limit) || 10;
+  const filterFeature = options && options.feature;
+
+  const OVERTONE_HOME = path.join(os.homedir(), '.overtone');
+  const SESSIONS_DIR = path.join(OVERTONE_HOME, 'sessions');
+
+  // 讀取 sessions 目錄
+  let sessionDirs = [];
+  try {
+    sessionDirs = fs.readdirSync(SESSIONS_DIR);
+  } catch {
+    // sessions 目錄不存在或無法讀取時回傳空結果
+    return { sessions: [], total: 0 };
+  }
+
+  const results = [];
+
+  for (const sid of sessionDirs) {
+    const statePath = path.join(SESSIONS_DIR, sid, 'interview-state.json');
+
+    let raw;
+    try {
+      raw = fs.readFileSync(statePath, 'utf8');
+    } catch {
+      continue; // 此 session 無訪談記錄，跳過
+    }
+
+    let data;
+    try {
+      data = JSON.parse(raw);
+    } catch {
+      continue; // JSON 損壞，跳過
+    }
+
+    if (!data.featureName) continue;
+
+    // 依 feature 過濾
+    if (filterFeature && data.featureName !== filterFeature) continue;
+
+    const answers = data.answers || {};
+    const questionCount = Object.keys(answers).length;
+
+    // 從 functional 面向回答建立摘要
+    const functionalAnswers = QUESTION_BANK
+      .filter(q => q.facet === 'functional' && Object.prototype.hasOwnProperty.call(answers, q.id))
+      .map(q => answers[q.id])
+      .filter(a => a);
+
+    const answerSummary = functionalAnswers.slice(0, 2).join(' | ') || '';
+
+    results.push({
+      sessionId: sid,
+      feature: data.featureName,
+      completedAt: data.completedAt || null,
+      questionCount,
+      answerSummary,
+    });
+  }
+
+  // 依 completedAt 降冪排序（completed 的優先，然後是較新的）
+  results.sort((a, b) => {
+    if (a.completedAt && !b.completedAt) return -1;
+    if (!a.completedAt && b.completedAt) return 1;
+    if (a.completedAt && b.completedAt) {
+      return new Date(b.completedAt) - new Date(a.completedAt);
+    }
+    return 0;
+  });
+
+  const total = results.length;
+  return { sessions: results.slice(0, limit), total };
+}
+
+/**
+ * 從多個訪談 session 中提取共通洞察（純函式）
+ *
+ * 分析多個訪談記錄，找出共通的功能需求、邊界條件、使用者偏好。
+ *
+ * @param {Array<{sessionId, feature, completedAt, questionCount, answerSummary}>} sessions
+ *   queryPastInterviews 回傳的 sessions 陣列（需包含完整 answers，來自 loadSession）
+ * @returns {{
+ *   commonRequirements: string[],
+ *   boundaryConditions: string[],
+ *   userPreferences: string[]
+ * }}
+ */
+function extractInsights(sessions) {
+  if (!Array.isArray(sessions) || sessions.length === 0) {
+    return { commonRequirements: [], boundaryConditions: [], userPreferences: [] };
+  }
+
+  // 收集各面向的所有回答（用詞頻統計找共通）
+  const allFunctionalAnswers = [];
+  const allEdgeCaseAnswers = [];
+  const allFlowAnswers = [];
+
+  for (const s of sessions) {
+    const answers = s.answers;
+    if (!answers || typeof answers !== 'object') continue;
+
+    // functional → commonRequirements 來源
+    QUESTION_BANK
+      .filter(q => q.facet === 'functional')
+      .forEach(q => {
+        if (Object.prototype.hasOwnProperty.call(answers, q.id) && answers[q.id]) {
+          allFunctionalAnswers.push(answers[q.id]);
+        }
+      });
+
+    // edge-cases → boundaryConditions 來源
+    QUESTION_BANK
+      .filter(q => q.facet === 'edge-cases')
+      .forEach(q => {
+        if (Object.prototype.hasOwnProperty.call(answers, q.id) && answers[q.id]) {
+          allEdgeCaseAnswers.push(answers[q.id]);
+        }
+      });
+
+    // flow + ui → userPreferences 來源
+    QUESTION_BANK
+      .filter(q => q.facet === 'flow' || q.facet === 'ui')
+      .forEach(q => {
+        if (Object.prototype.hasOwnProperty.call(answers, q.id) && answers[q.id]) {
+          allFlowAnswers.push(answers[q.id]);
+        }
+      });
+  }
+
+  /**
+   * 從回答列表提取關鍵詞，依出現頻率排序後取前 N 條
+   * 策略：將每條回答視為一個洞察點（去重後保留）
+   */
+  function deduplicateInsights(answers, maxCount) {
+    const seen = new Set();
+    const result = [];
+    for (const a of answers) {
+      const normalized = a.trim();
+      if (!normalized || seen.has(normalized)) continue;
+      seen.add(normalized);
+      result.push(normalized);
+      if (result.length >= maxCount) break;
+    }
+    return result;
+  }
+
+  return {
+    commonRequirements: deduplicateInsights(allFunctionalAnswers, 5),
+    boundaryConditions: deduplicateInsights(allEdgeCaseAnswers, 5),
+    userPreferences: deduplicateInsights(allFlowAnswers, 5),
+  };
+}
+
 // ── 匯出 ──
 
 module.exports = {
@@ -691,6 +860,8 @@ module.exports = {
   generateSpec,
   loadSession,
   saveSession,
+  queryPastInterviews,
+  extractInsights,
   // 匯出問題庫供測試直接查詢（Feature 7）
   QUESTION_BANK,
 };
