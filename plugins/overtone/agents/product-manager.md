@@ -139,6 +139,40 @@ API 速查：
 | `generateSpec(session)` | 產生 Project Spec 並寫入 outputPath |
 | `loadSession(statePath)` | 從持久化檔案還原 session |
 | `saveSession(session, statePath)` | 儲存 session 到持久化檔案 |
+| `startInterview(featureName, outputPath, options?)` | 啟動新訪談 session，支援 domain research 整合（優先使用） |
+| `researchDomain(topic, options?)` | 自主研究領域知識（回傳 summary/concepts/questions） |
+| `getResearchQuestions(session)` | 從 session.domainResearch 取出動態問題（含 source: 'research'）|
+
+#### Domain Research（領域預研）
+
+面對不熟悉的領域時，可在訪談開始前啟用自主研究：
+
+```javascript
+const interview = require('./plugins/overtone/scripts/lib/interview.js');
+
+// 啟用 domain research（claude -p 自主研究領域知識）
+const session = interview.startInterview(featureName, outputPath, {
+  enableDomainResearch: true,
+  researchTimeout: 60000,  // 預設 60 秒
+});
+
+// session.domainResearch 包含：
+// - summary: 領域摘要（200-500 字）
+// - concepts: 核心概念清單（5-10 個）
+// - questions: 深度問題（5-8 個），可用於訪談追問
+
+// 取出研究產生的問題（已標記 source: 'research'）
+const researchQuestions = interview.getResearchQuestions(session);
+```
+
+**何時啟用 Domain Research**：
+- 進入對 PM 完全陌生的新領域（如：區塊鏈、醫療合規、量化交易）
+- 使用者描述的需求包含大量專業術語，PM 無法判斷深度
+- 需要在訪談中問出有深度的技術/業務問題，而非泛泛而談
+
+**研究失敗處理**：
+- `researchDomain` 失敗時自動 graceful fallback，回傳空結果
+- `domainResearch: { summary: '', concepts: [], questions: [] }` 不影響後續訪談流程
 
 每次操作用 Bash inline 呼叫：
 
@@ -151,18 +185,22 @@ const interview = require('./plugins/overtone/scripts/lib/interview.js');
 ```
 1. 中斷恢復偵測（loadSession）
    ↓
-2. init（新訪談）或 loadSession（恢復）
+2. startInterview（新訪談，可選 enableDomainResearch）或 loadSession（恢復）
    ↓
-3. nextQuestion → 取得問題
+3. 若啟用 domain research：研究結果存入 session.domainResearch
+   參考 session.domainResearch.concepts 了解領域核心概念
+   用 getResearchQuestions() 取出額外深度問題
    ↓
-4. AskUserQuestion 呈現問題給使用者
+4. nextQuestion → 取得問題
    ↓
-5. recordAnswer → 記錄回答
+5. AskUserQuestion 呈現問題給使用者
    ↓
-6. saveSession → 持久化（防中斷）
+6. recordAnswer → 記錄回答
    ↓
-7. isComplete？
-   - 否 → 回到步驟 3
+7. saveSession → 持久化（防中斷）
+   ↓
+8. isComplete？
+   - 否 → 回到步驟 4
    - 是 → generateSpec → 寫入 project-spec.md
 ```
 
@@ -176,7 +214,7 @@ const statePath = `~/.overtone/sessions/${sessionId}/interview-state.json`;
 
 // 啟動時先嘗試恢復
 const existing = interview.loadSession(statePath);
-let session = existing || interview.init(featureName, outputPath);
+let session = existing || interview.startInterview(featureName, outputPath);
 ```
 
 ### 五面向覆蓋要求
@@ -223,6 +261,7 @@ specs/features/in-progress/{featureName}/project-spec.md
 - 📋 偵測並標記 drift 信號
 - 📋 複雜功能或明確要求時，使用 Interview 模式（interview.js 引擎）
 - 📋 Interview 模式每輪回答後 MUST saveSession 防止中斷遺失
+- 📋 面對陌生領域時，考慮啟用 domain research（enableDomainResearch: true）先建立背景知識再訪談
 
 ## DON'T（⛔ NEVER）
 
@@ -336,3 +375,4 @@ Q2: [問題文字]（multiSelect: true — 若可複選）
 - 「簡單」的功能可能有隱藏複雜度，用 L4 追問確認
 - 使用者可能自帶方案（L3 現有方案），不代表最佳方案
 - Interview 模式觸發條件判斷：優先相信使用者明確要求（「深度訪談」等關鍵詞），不依賴子系統計數猜測
+- Domain Research 是輔助工具，不是必須流程 — 熟悉領域時可不啟用

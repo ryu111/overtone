@@ -850,10 +850,186 @@ function extractInsights(sessions) {
   };
 }
 
+// ── Domain Research ──
+
+/** researchDomain 的預設 timeout（毫秒） */
+const DOMAIN_RESEARCH_TIMEOUT_MS = 60000;
+
+/**
+ * 針對指定領域進行自主研究，產出摘要、核心概念和深度問題
+ *
+ * 使用 claude -p headless 模式研究領域知識，失敗時 graceful fallback 回傳空結果。
+ *
+ * @param {string} topic - 使用者描述的領域或需求（字串）
+ * @param {object} [options] - 選項
+ * @param {number} [options.timeout=60000] - 逾時毫秒數
+ * @returns {{ summary: string, concepts: string[], questions: string[] }}
+ */
+function researchDomain(topic, options) {
+  const result = { summary: '', concepts: [], questions: [] };
+
+  if (!topic || typeof topic !== 'string' || topic.trim() === '') {
+    return result;
+  }
+
+  const timeout = (options && options.timeout) || DOMAIN_RESEARCH_TIMEOUT_MS;
+
+  const prompt = [
+    `請研究「${topic.trim()}」領域，以 JSON 格式回傳下列三個欄位（繁體中文）：`,
+    ``,
+    `{`,
+    `  "summary": "200-500 字的領域摘要，說明核心概念、應用情境與重要性",`,
+    `  "concepts": ["核心概念 1", "核心概念 2", "...（5-10 個）"],`,
+    `  "questions": ["深度問題 1", "深度問題 2", "...（5-8 個，PM 可用於訪談中追問）"]`,
+    `}`,
+    ``,
+    `注意：`,
+    `- summary 必須在 200-500 字之間`,
+    `- concepts 必須有 5 到 10 個項目`,
+    `- questions 必須有 5 到 8 個項目，且為有深度的開放式問題`,
+    `- 只回傳 JSON，不要其他說明文字`,
+  ].join('\n');
+
+  /**
+   * 嘗試呼叫 claude -p 取得 JSON 結果
+   * @returns {{ summary: string, concepts: string[], questions: string[] } | null}
+   */
+  function trySpawn() {
+    let spawnResult;
+    try {
+      spawnResult = Bun.spawnSync(
+        ['claude', '-p', '--output-format', 'json', prompt],
+        {
+          timeout,
+          stderr: 'pipe',
+          stdout: 'pipe',
+          env: {
+            ...process.env,
+            OVERTONE_SPAWNED: '1',
+            OVERTONE_NO_DASHBOARD: '1',
+          },
+        }
+      );
+    } catch {
+      return null;
+    }
+
+    if (!spawnResult || spawnResult.exitCode !== 0) return null;
+
+    const raw = spawnResult.stdout ? Buffer.from(spawnResult.stdout).toString().trim() : '';
+    if (!raw) return null;
+
+    // claude -p --output-format json 回傳外層 JSON wrapper，content 在 result 欄位
+    let parsed;
+    try {
+      const wrapper = JSON.parse(raw);
+      // claude 輸出格式：{ result: "...", ... } 或直接是內容 JSON
+      const content = (wrapper && typeof wrapper.result === 'string') ? wrapper.result : raw;
+      // 擷取 JSON 物件（可能被 markdown code block 包裹）
+      const match = content.match(/\{[\s\S]*\}/);
+      if (!match) return null;
+      parsed = JSON.parse(match[0]);
+    } catch {
+      // 直接嘗試解析原始輸出
+      try {
+        const match = raw.match(/\{[\s\S]*\}/);
+        if (!match) return null;
+        parsed = JSON.parse(match[0]);
+      } catch {
+        return null;
+      }
+    }
+
+    if (!parsed || typeof parsed !== 'object') return null;
+
+    // 驗證並正規化結果
+    const normalized = {
+      summary: typeof parsed.summary === 'string' ? parsed.summary.trim() : '',
+      concepts: Array.isArray(parsed.concepts) ? parsed.concepts.filter(c => typeof c === 'string') : [],
+      questions: Array.isArray(parsed.questions) ? parsed.questions.filter(q => typeof q === 'string') : [],
+    };
+
+    // 至少要有摘要或概念才算有效結果
+    if (!normalized.summary && normalized.concepts.length === 0) return null;
+
+    return normalized;
+  }
+
+  const research = trySpawn();
+  if (!research) return result;
+
+  return research;
+}
+
+/**
+ * 啟動訪談 session（支援 domain research 整合）
+ *
+ * 與 init() 相同，但支援 enableDomainResearch 選項：
+ * 若啟用，在訪談開始前呼叫 researchDomain() 研究領域知識，
+ * 並將結果存入 session.domainResearch，研究產出的問題合併到動態問題池。
+ *
+ * @param {string} featureName - 功能名稱（不可為空字串）
+ * @param {string} outputPath - Spec 輸出目錄路徑
+ * @param {object} [options] - 選項覆寫
+ * @param {boolean} [options.enableDomainResearch=false] - 啟用領域研究
+ * @param {number} [options.researchTimeout=60000] - 研究逾時毫秒數
+ * @param {number} [options.minAnswersPerFacet=2] - 每個面向的最低必答數
+ * @param {string[]} [options.skipFacets=[]] - 要跳過的面向清單
+ * @returns {object} InterviewSession（含 domainResearch 欄位，若有啟用研究）
+ * @throws {Error} 若 featureName 為空字串
+ */
+function startInterview(featureName, outputPath, options) {
+  // 先用 init 建立基礎 session
+  const session = init(featureName, outputPath, options);
+
+  const enableDomainResearch = options && options.enableDomainResearch === true;
+
+  if (!enableDomainResearch) {
+    return session;
+  }
+
+  // 執行領域研究
+  const researchTimeout = (options && options.researchTimeout) || DOMAIN_RESEARCH_TIMEOUT_MS;
+  const research = researchDomain(featureName, { timeout: researchTimeout });
+
+  // 將研究結果存入 session
+  const sessionWithResearch = {
+    ...session,
+    domainResearch: research,
+  };
+
+  return sessionWithResearch;
+}
+
+/**
+ * 取得 session 中來自領域研究的動態問題（供訪談引擎使用）
+ *
+ * 將 domainResearch.questions 轉換成帶有 source: 'research' 標記的問題物件，
+ * 可合併到動態問題池中。
+ *
+ * @param {object} session - InterviewSession（含 domainResearch）
+ * @returns {object[]} 問題物件陣列（含 source: 'research' 標記）
+ */
+function getResearchQuestions(session) {
+  if (!session || !session.domainResearch || !Array.isArray(session.domainResearch.questions)) {
+    return [];
+  }
+
+  return session.domainResearch.questions.map((text, index) => ({
+    id: `research-${index + 1}`,
+    facet: 'functional',
+    text,
+    required: false,
+    dependsOn: null,
+    source: 'research',
+  }));
+}
+
 // ── 匯出 ──
 
 module.exports = {
   init,
+  startInterview,
   nextQuestion,
   recordAnswer,
   isComplete,
@@ -862,6 +1038,8 @@ module.exports = {
   saveSession,
   queryPastInterviews,
   extractInsights,
+  researchDomain,
+  getResearchQuestions,
   // 匯出問題庫供測試直接查詢（Feature 7）
   QUESTION_BANK,
 };
