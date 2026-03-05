@@ -24,6 +24,9 @@ const {
   extractWebKnowledge,
   assembleSkillBody,
   buildSkillContent,
+  loadCachedResearch,
+  cacheWebResearch,
+  isQualityResearch,
 } = require(join(SCRIPTS_LIB, 'skill-forge'));
 
 // ── 測試基礎設施 ──
@@ -501,5 +504,84 @@ describe('Feature 8: enableWebResearch 外部研究能力', () => {
     // 因為 claude 在測試環境不可用，extractWebKnowledge 回傳空字串，不加「領域知識」section
     // 這驗證了 graceful fallback 行為
     expect(typeof result.preview.body).toBe('string');
+  });
+});
+
+// ── Feature 9: web 研究快取機制 ──
+
+describe('Feature 9: web 研究快取機制', () => {
+  test('Scenario 9-1: cacheWebResearch 寫入快取檔案', () => {
+    const pluginRoot = makeMinimalPluginRoot('9-1');
+    const content = '## 核心概念\n\n- 測試概念 A\n- 測試概念 B\n';
+
+    cacheWebResearch('my-domain', content, pluginRoot);
+
+    const { join: pjoin } = require('path');
+    const cachePath = pjoin(pluginRoot, 'skills', 'my-domain', 'references', 'web-research.md');
+    expect(existsSync(cachePath)).toBe(true);
+    expect(readFileSync(cachePath, 'utf8')).toBe(content);
+  });
+
+  test('Scenario 9-2: cacheWebResearch 空字串時不寫入', () => {
+    const pluginRoot = makeMinimalPluginRoot('9-2');
+
+    cacheWebResearch('empty-domain', '', pluginRoot);
+
+    const { join: pjoin } = require('path');
+    const cachePath = pjoin(pluginRoot, 'skills', 'empty-domain', 'references', 'web-research.md');
+    expect(existsSync(cachePath)).toBe(false);
+  });
+
+  test('Scenario 9-3: loadCachedResearch 快取存在且未過期時回傳內容', () => {
+    const pluginRoot = makeMinimalPluginRoot('9-3');
+    const content = '## 最佳實踐\n\n- 測試實踐 A\n';
+
+    cacheWebResearch('cached-domain', content, pluginRoot);
+
+    const result = loadCachedResearch('cached-domain', pluginRoot);
+    expect(result).toBe(content);
+  });
+
+  test('Scenario 9-4: loadCachedResearch 快取不存在時回傳 null', () => {
+    const pluginRoot = makeMinimalPluginRoot('9-4');
+
+    const result = loadCachedResearch('nonexistent-domain', pluginRoot);
+    expect(result).toBeNull();
+  });
+
+  test('Scenario 9-5: isQualityResearch 含 section header 回傳 true', () => {
+    const good = '## 核心概念\n\n- 概念 A\n- 概念 B\n\n## 最佳實踐\n\n- 實踐 X\n';
+    expect(isQualityResearch(good)).toBe(true);
+  });
+
+  test('Scenario 9-6: isQualityResearch 無 section header 或太短時回傳 false', () => {
+    expect(isQualityResearch('')).toBe(false);
+    expect(isQualityResearch('短文字')).toBe(false);
+    expect(isQualityResearch('沒有標題的純文字內容，但長度超過一百字元，'.repeat(5))).toBe(false);
+  });
+
+  test('Scenario 9-7: extractWebKnowledge 傳入 pluginRoot — 命中快取時直接回傳（不 spawn）', () => {
+    const pluginRoot = makeMinimalPluginRoot('9-7');
+    const cachedContent = '## 核心概念\n\n- 快取概念 A\n- 快取概念 B\n';
+
+    // 先寫入快取
+    cacheWebResearch('cached-web-domain', cachedContent, pluginRoot);
+
+    // extractWebKnowledge 應命中快取，直接回傳（不需要呼叫 claude）
+    const result = extractWebKnowledge('cached-web-domain', {}, pluginRoot);
+    expect(result).toBe(cachedContent);
+  });
+
+  test('Scenario 9-8: cacheWebResearch 自動建立 references/ 目錄', () => {
+    const pluginRoot = makeMinimalPluginRoot('9-8');
+    const { join: pjoin } = require('path');
+    const refsDir = pjoin(pluginRoot, 'skills', 'new-domain', 'references');
+
+    // 確認目錄不存在
+    expect(existsSync(refsDir)).toBe(false);
+
+    cacheWebResearch('new-domain', '## 測試\n\n- 項目 A\n', pluginRoot);
+
+    expect(existsSync(refsDir)).toBe(true);
   });
 });

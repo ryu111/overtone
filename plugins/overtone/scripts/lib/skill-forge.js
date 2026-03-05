@@ -130,49 +130,166 @@ function extractKnowledgeFromCodebase(domainName, pluginRoot) {
 const WEB_RESEARCH_MAX_LENGTH = 5000;
 
 /** Web 研究 timeout（毫秒） */
-const WEB_RESEARCH_TIMEOUT_MS = 30000;
+const WEB_RESEARCH_TIMEOUT_MS = 60000;
+
+/** Web 研究快取有效期（毫秒，7 天） */
+const WEB_RESEARCH_CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 /**
- * 使用 claude -p headless 模式研究外部知識
+ * 從快取載入 web 研究結果
  * @param {string} domainName
- * @param {object} context - forge 上下文
- * @returns {string} 研究結果文字（失敗時回傳空字串）
+ * @param {string} pluginRoot
+ * @returns {string|null} 快取內容（未過期），否則 null
  */
-function extractWebKnowledge(domainName, context) {
-  const contextStr = typeof context === 'string' ? context : (context ? JSON.stringify(context) : '');
-  const contextHint = contextStr ? `\n觸發語境：${contextStr.slice(0, 200)}` : '';
-  const prompt = `研究 ${domainName} 領域的最佳實踐、常見模式、關鍵概念，產出結構化知識摘要（繁體中文，使用 Markdown 格式，含小標題和要點）${contextHint}`;
+function loadCachedResearch(domainName, pluginRoot) {
+  const cachePath = path.join(pluginRoot, 'skills', domainName, 'references', 'web-research.md');
+  if (!fs.existsSync(cachePath)) return null;
 
   try {
-    const result = Bun.spawnSync(
-      ['claude', '-p', '--output-format', 'text', prompt],
-      {
-        timeout: WEB_RESEARCH_TIMEOUT_MS,
-        stderr: 'pipe',
-        stdout: 'pipe',
-        env: {
-          ...process.env,
-          OVERTONE_SPAWNED: '1',
-          OVERTONE_NO_DASHBOARD: '1',
-        },
-      }
-    );
+    const stat = fs.statSync(cachePath);
+    const age = Date.now() - stat.mtimeMs;
+    if (age > WEB_RESEARCH_CACHE_TTL_MS) return null;
 
-    if (result.exitCode !== 0) {
-      return '';
-    }
-
-    const output = result.stdout ? Buffer.from(result.stdout).toString().trim() : '';
-    if (!output) return '';
-
-    // 截斷到長度上限
-    return output.length > WEB_RESEARCH_MAX_LENGTH
-      ? output.slice(0, WEB_RESEARCH_MAX_LENGTH) + '\n...(截斷)'
-      : output;
+    const content = fs.readFileSync(cachePath, 'utf8');
+    return content || null;
   } catch {
-    // 任何錯誤（timeout、spawn 失敗等）靜默回傳空字串
-    return '';
+    return null;
   }
+}
+
+/**
+ * 將 web 研究結果快取到 skills/{domain}/references/web-research.md
+ * @param {string} domainName
+ * @param {string} content
+ * @param {string} pluginRoot
+ */
+function cacheWebResearch(domainName, content, pluginRoot) {
+  if (!content) return;
+
+  const referencesDir = path.join(pluginRoot, 'skills', domainName, 'references');
+  const cachePath = path.join(referencesDir, 'web-research.md');
+
+  try {
+    fs.mkdirSync(referencesDir, { recursive: true });
+    fs.writeFileSync(cachePath, content, 'utf8');
+  } catch {
+    // 靜默處理快取寫入失敗
+  }
+}
+
+/**
+ * 驗證研究結果是否包含結構化內容（有 section headers）
+ * @param {string} output
+ * @returns {boolean}
+ */
+function isQualityResearch(output) {
+  if (!output || output.length < 20) return false;
+  // 必須含有至少一個 Markdown section header（## 或 ###）
+  return /^#{2,3}\s+.+/m.test(output);
+}
+
+/**
+ * 使用 claude -p headless 模式研究外部知識（帶 WebSearch/WebFetch 工具）
+ * @param {string} domainName
+ * @param {object} context - forge 上下文
+ * @param {string} [pluginRoot] - plugin 根目錄（供快取使用）
+ * @returns {string} 研究結果文字（失敗時回傳空字串）
+ */
+function extractWebKnowledge(domainName, context, pluginRoot) {
+  // 先嘗試讀取快取
+  if (pluginRoot) {
+    const cached = loadCachedResearch(domainName, pluginRoot);
+    if (cached) return cached;
+  }
+
+  const contextStr = typeof context === 'string' ? context : (context ? JSON.stringify(context) : '');
+  const contextHint = contextStr ? `\n觸發語境：${contextStr.slice(0, 200)}` : '';
+
+  const prompt = [
+    `請深入研究「${domainName}」知識領域，並輸出結構化知識摘要（繁體中文，Markdown 格式）。`,
+    ``,
+    `**研究問題清單（每項都需回答）：**`,
+    `1. 核心概念：此領域的基礎概念和術語是什麼？`,
+    `2. 最佳實踐：業界公認的最佳實踐有哪些？`,
+    `3. 常見陷阱：初學者或從業者常犯的錯誤有哪些？`,
+    `4. 工具鏈：常用的工具、框架、函式庫有哪些（含版本建議）？`,
+    `5. 決策框架：面對此領域常見問題時，如何做決策？`,
+    ``,
+    `**輸出格式要求：**`,
+    `- 每個問題對應一個 ## 標題 section`,
+    `- 使用條列式要點，每點簡潔具體`,
+    `- 含有實際範例或代碼片段`,
+    contextHint,
+  ].join('\n');
+
+  // 先嘗試帶 --allowedTools 的呼叫（讓 claude 使用 WebSearch/WebFetch）
+  const tryWithTools = () => {
+    try {
+      const result = Bun.spawnSync(
+        ['claude', '-p', '--output-format', 'text', '--allowedTools', 'WebSearch,WebFetch', prompt],
+        {
+          timeout: WEB_RESEARCH_TIMEOUT_MS,
+          stderr: 'pipe',
+          stdout: 'pipe',
+          env: {
+            ...process.env,
+            OVERTONE_SPAWNED: '1',
+            OVERTONE_NO_DASHBOARD: '1',
+          },
+        }
+      );
+
+      if (result.exitCode !== 0) return null;
+      const output = result.stdout ? Buffer.from(result.stdout).toString().trim() : '';
+      return output || null;
+    } catch {
+      return null;
+    }
+  };
+
+  // fallback：不帶 --allowedTools 的呼叫
+  const tryWithoutTools = () => {
+    try {
+      const result = Bun.spawnSync(
+        ['claude', '-p', '--output-format', 'text', prompt],
+        {
+          timeout: WEB_RESEARCH_TIMEOUT_MS,
+          stderr: 'pipe',
+          stdout: 'pipe',
+          env: {
+            ...process.env,
+            OVERTONE_SPAWNED: '1',
+            OVERTONE_NO_DASHBOARD: '1',
+          },
+        }
+      );
+
+      if (result.exitCode !== 0) return null;
+      const output = result.stdout ? Buffer.from(result.stdout).toString().trim() : '';
+      return output || null;
+    } catch {
+      return null;
+    }
+  };
+
+  let output = tryWithTools();
+  if (!isQualityResearch(output)) {
+    output = tryWithoutTools();
+  }
+
+  if (!output) return '';
+
+  // 截斷到長度上限
+  const result = output.length > WEB_RESEARCH_MAX_LENGTH
+    ? output.slice(0, WEB_RESEARCH_MAX_LENGTH) + '\n...(截斷)'
+    : output;
+
+  // 快取結果
+  if (pluginRoot && isQualityResearch(result)) {
+    cacheWebResearch(domainName, result, pluginRoot);
+  }
+
+  return result;
 }
 
 // ── SKILL.md 組裝 ──
@@ -334,7 +451,7 @@ function forgeSkill(domainName, context, options = {}) {
 
   // 3a. 外部研究（選用）
   if (enableWebResearch) {
-    extracts.webResearch = extractWebKnowledge(domainName, context);
+    extracts.webResearch = extractWebKnowledge(domainName, context, pluginRoot);
   }
 
   // 4. SKILL.md 組裝
@@ -439,4 +556,7 @@ module.exports = {
   assembleSkillBody,
   buildSkillContent,
   validateStructure,
+  loadCachedResearch,
+  cacheWebResearch,
+  isQualityResearch,
 };
