@@ -1,43 +1,4 @@
 ---
-## 2026-03-05 | planner:PLAN Findings
-**需求分解**：
-
-1. 實作 `websocket.js` CLI 腳本 | agent: developer | files: `plugins/overtone/scripts/os/websocket.js`
-   - 三個子命令：`connect`、`send`、`listen [--duration <ms>]`
-   - Bun 原生 WebSocket API + 依賴注入模式（`_deps = { WebSocket }`）
-   - JSON 輸出格式（結構化，agent 可 parse）
-   - 錯誤碼：`INVALID_ARGUMENT` / `CONNECTION_FAILED` / `TIMEOUT` / `SEND_FAILED`
-   - 不 throw，所有錯誤以 `{ ok: false, error, message }` 回傳
-
-2. 撰寫 `realtime.md` 參考文件 | agent: developer | files: `plugins/overtone/skills/os-control/references/realtime.md`
-   - 使用場景說明（何時用 WebSocket vs HTTP）
-   - 三個子命令的 CLI 範例
-   - 輸出格式解析指引（agent 看懂 JSON 欄位意義）
-   - 常見場景：幣安行情、IoT 訊號、即時通知
-
-3. 更新 SKILL.md 索引 | agent: developer | files: `plugins/overtone/skills/os-control/SKILL.md`
-   - `realtime.md` 條目狀態更新（P3.5 ✅）
-   - 確認「按需讀取」章節的 realtime.md 指引完整
-
-4. 撰寫 `websocket.test.js` | agent: tester（TEST 階段）| files: `tests/unit/websocket.test.js`
-   - mock WebSocket 依賴注入
-   - 情境覆蓋：正常連線、訊息接收、逾時、無效 URL、連線失敗
-   - 對齊 bdd.md BDD 情境（由 TEST:spec 階段產出）
-
-**優先順序**：
-
-- 第一優先：子任務 1（websocket.js）— 核心能力，其他均依賴它的 API 設計
-- 子任務 2 和 3 在 websocket.js API 設計確定後可**並行**進行（文件和 SKILL.md 索引互不影響）
-- 子任務 4（測試）依賴 BDD 規格（TEST:spec 階段輸出），在 DEV 後驗證
-
-**範圍邊界**：
-
-- 明確不做：TTS（`tts.js`）、STT（`stt.js`）、Guard 擴充
-- 明確不做：重連邏輯、訊息佇列、Binary frame 支援
-- roadmap.md 中 P3.5 的 `tts.js` 和 `stt.js` 為後續獨立迭代
-Keywords: websocket, agent, developer, files, plugins, overtone, scripts, connect, send, listen
-
----
 ## 2026-03-05 | planner:PLAN Context
 **需求**：實作 Overtone P3.5 WebSocket 能力（websocket-realtime），讓 agent 透過 Bash tool 建立 WebSocket 連線進行即時通訊。
 
@@ -852,4 +813,11 @@ Keywords: markdown, blog, overtone, static, site, generation, skill, forge, deep
 - 整合點有 5 個：health-check（上游資料）/ pre-task-handler（即時警告）/ execution-queue（任務排程）/ instinct + PostToolUse（觀察來源）/ score-engine（評分資料）
 - `overtone.md` 已更新，進化引擎文件加在 decision-points 和 workflow-diagram 之間
 Keywords: analyzer, fixer, skill, forge, knowledge, detector, project, orchestrator, evaluator, generalizer
+
+---
+## 2026-03-05 | developer:DEV Context
+修復 health-check 的 `quality-trends` warning（`warnings: 1` → `warnings: 0`）。
+
+根本原因：整合測試與 e2e 測試透過子進程執行 hook 腳本時，未設定 `OVERTONE_TEST=1` 環境變數，導致子進程內的 `failure-tracker.recordFailure` 直接寫入真實的 `~/.overtone/global/{projectHash}/failures.jsonl`，累積 40 筆測試假資料，使 TEST stage 失敗計數達到 15 次，觸發門檻 10 次的 warning。
+Keywords: health, check, quality, trends, warning, warnings, hook, failure, tracker, recordfailure
 
