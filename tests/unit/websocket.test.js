@@ -271,6 +271,52 @@ describe('listen — 監聽指定時間的訊息', () => {
   });
 });
 
+// --- Feature 4: CLI 入口 ---
+
+describe('CLI 入口 — 參數驗證', () => {
+  const PLUGIN_ROOT = '/Users/sbu/projects/overtone/plugins/overtone';
+  const WS_SCRIPT = `${PLUGIN_ROOT}/scripts/os/websocket.js`;
+
+  it('Scenario: 無效子命令 → stderr 包含錯誤訊息 + exit code 非零', async () => {
+    const proc = Bun.spawn(['bun', WS_SCRIPT, 'invalid-cmd', 'ws://localhost:8080'], {
+      cwd: PLUGIN_ROOT,
+      stderr: 'pipe',
+      stdout: 'pipe',
+    });
+    const exitCode = await proc.exited;
+    const stderr = await new Response(proc.stderr).text();
+
+    expect(exitCode).not.toBe(0);
+    expect(stderr).toContain('無效的子命令');
+  });
+
+  it('Scenario: 缺少 URL 參數 → stderr + exit code 非零', async () => {
+    const proc = Bun.spawn(['bun', WS_SCRIPT, 'connect'], {
+      cwd: PLUGIN_ROOT,
+      stderr: 'pipe',
+      stdout: 'pipe',
+    });
+    const exitCode = await proc.exited;
+    const stderr = await new Response(proc.stderr).text();
+
+    expect(exitCode).not.toBe(0);
+    expect(stderr).toContain('缺少 URL');
+  });
+
+  it('Scenario: send 缺少 message 參數 → stderr + exit code 非零', async () => {
+    const proc = Bun.spawn(['bun', WS_SCRIPT, 'send', 'ws://localhost:8080'], {
+      cwd: PLUGIN_ROOT,
+      stderr: 'pipe',
+      stdout: 'pipe',
+    });
+    const exitCode = await proc.exited;
+    const stderr = await new Response(proc.stderr).text();
+
+    expect(exitCode).not.toBe(0);
+    expect(stderr).toContain('message');
+  });
+});
+
 // --- Feature 5: 依賴注入（Testability）---
 
 describe('依賴注入（Testability）', () => {

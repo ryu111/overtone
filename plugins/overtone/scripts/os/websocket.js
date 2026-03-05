@@ -208,6 +208,7 @@ async function listen(url, opts = {}, _deps = {}) {
   }
 
   const durationMs = opts.duration ?? 5000;
+  const connectionTimeout = opts.timeout ?? 30000;
   const WS = _deps.WebSocket || globalThis.WebSocket;
 
   return new Promise((resolve) => {
@@ -215,6 +216,7 @@ async function listen(url, opts = {}, _deps = {}) {
     let connectedAt = null;
     const messages = [];
     let durationTimerId = null;
+    let connectionTimerId = null;
     let settled = false;
     let startTime = null;
 
@@ -222,6 +224,7 @@ async function listen(url, opts = {}, _deps = {}) {
       if (settled) return;
       settled = true;
       if (durationTimerId) clearTimeout(durationTimerId);
+      if (connectionTimerId) clearTimeout(connectionTimerId);
       try { ws.close(); } catch (_) {}
       resolve(result);
     }
@@ -232,9 +235,21 @@ async function listen(url, opts = {}, _deps = {}) {
       return resolve(fail('CONNECTION_FAILED', `無法建立 WebSocket 連線：${err.message}`));
     }
 
+    // Connection timeout：若 onopen 未在指定時間內觸發則 reject
+    connectionTimerId = setTimeout(() => {
+      if (connectedAt === null) {
+        settle(fail('CONNECTION_FAILED', `連線逾時（${connectionTimeout}ms）：WebSocket handshake 未完成`));
+      }
+    }, connectionTimeout);
+
     ws.onopen = () => {
       connectedAt = new Date().toISOString();
       startTime = Date.now();
+      // 連線已建立，取消 connection timeout
+      if (connectionTimerId) {
+        clearTimeout(connectionTimerId);
+        connectionTimerId = null;
+      }
 
       // 監聽計時器：持續 durationMs 後結束
       durationTimerId = setTimeout(() => {
