@@ -596,13 +596,14 @@ describe('runAllChecks', () => {
     }
   });
 
-  test('所有 finding 的 check 只能是已知 16 個 check 名稱之一', () => {
+  test('所有 finding 的 check 只能是已知 19 個 check 名稱之一', () => {
     const { findings } = runAllChecks();
     const validChecks = new Set([
       'phantom-events', 'dead-exports', 'doc-code-drift', 'unused-paths',
       'duplicate-logic', 'platform-drift', 'doc-staleness', 'os-tools',
       'component-chain', 'data-quality', 'quality-trends', 'test-growth',
       'closed-loop', 'recovery-strategy', 'completion-gap', 'dependency-sync',
+      'internalization-index', 'test-file-alignment', 'skill-reference-integrity',
     ]);
     for (const f of findings) {
       expect(validChecks.has(f.check)).toBe(true);

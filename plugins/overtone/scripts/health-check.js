@@ -3,24 +3,26 @@
 /**
  * health-check.js — Overtone 系統健康自動化偵測
  *
- * 執行 17 項確定性偵測：
- *   1. phantom-events           — registry 事件 vs 實際 emit 呼叫差異
- *   2. dead-exports             — scripts/lib 模組 export 但從未被 require 使用
- *   3. doc-code-drift           — docs 文件中的數量與程式碼實際值不符
- *   4. unused-paths             — paths.js export 但從未被使用
- *   5. duplicate-logic          — hooks/scripts 中已知的重複邏輯 pattern
- *   6. platform-drift           — config-api 驗證 + 棄用 tools 白名單偵測
- *   7. doc-staleness            — docs/reference 無引用且超過 90 天未更新的過時文件
- *   8. os-tools                 — P3.3/P3.6 系統層依賴的 macOS 工具可用性（pbcopy/pbpaste/osascript/screencapture）+ heartbeat daemon 狀態
- *   9. component-chain          — Skill → Agent → Hook 依賴鏈斷裂偵測
- *  10. data-quality             — 全域學習資料（JSONL）格式與欄位正確性審計
- *  11. quality-trends           — 失敗模式 / 分數趨勢 / 低分連續警告
- *  12. test-growth              — 測試套件增長率監控（超過基線 20% 時警告）
- *  13. closed-loop              — 有 emit 但無 consumer 的孤立 timeline 事件偵測（製作原則 1）
- *  14. recovery-strategy        — handler 模組 + agent 是否定義失敗恢復行為（製作原則 2）
- *  15. completion-gap           — skill 是否缺少 references/ 子目錄（製作原則 3）
- *  16. dependency-sync          — SKILL.md 消費者表 vs agent frontmatter skills 一致性偵測
- *  17. internalization-index    — experience-index.json 格式、域完整性與時效性偵測
+ * 執行 19 項確定性偵測：
+ *   1. phantom-events              — registry 事件 vs 實際 emit 呼叫差異
+ *   2. dead-exports                — scripts/lib 模組 export 但從未被 require 使用
+ *   3. doc-code-drift              — docs 文件中的數量與程式碼實際值不符
+ *   4. unused-paths                — paths.js export 但從未被使用
+ *   5. duplicate-logic             — hooks/scripts 中已知的重複邏輯 pattern
+ *   6. platform-drift              — config-api 驗證 + 棄用 tools 白名單偵測
+ *   7. doc-staleness               — docs/reference 無引用且超過 90 天未更新的過時文件
+ *   8. os-tools                    — P3.3/P3.6 系統層依賴的 macOS 工具可用性（pbcopy/pbpaste/osascript/screencapture）+ heartbeat daemon 狀態
+ *   9. component-chain             — Skill → Agent → Hook 依賴鏈斷裂偵測
+ *  10. data-quality                — 全域學習資料（JSONL）格式與欄位正確性審計
+ *  11. quality-trends              — 失敗模式 / 分數趨勢 / 低分連續警告
+ *  12. test-growth                 — 測試套件增長率監控（超過基線 20% 時警告）
+ *  13. closed-loop                 — 有 emit 但無 consumer 的孤立 timeline 事件偵測（製作原則 1）
+ *  14. recovery-strategy           — handler 模組 + agent 是否定義失敗恢復行為（製作原則 2）
+ *  15. completion-gap              — skill 是否缺少 references/ 子目錄（製作原則 3）
+ *  16. dependency-sync             — SKILL.md 消費者表 vs agent frontmatter skills 一致性偵測
+ *  17. internalization-index       — experience-index.json 格式、域完整性與時效性偵測
+ *  18. test-file-alignment         — scripts/lib 模組是否有對應 tests/unit/ 測試檔案
+ *  19. skill-reference-integrity   — SKILL.md 引用的 references/ 檔案是否實際存在
  *
  * 輸出：JSON stdout（HealthCheckOutput schema）
  * Exit code：有 findings → 1；無 findings → 0
@@ -1844,6 +1846,155 @@ function checkInternalizationIndex(globalDirOverride) {
   return findings;
 }
 
+// ── 18. Test File Alignment 測試覆蓋對齊偵測 ──
+
+/**
+ * 確認每個 scripts/lib/*.js 模組都有對應的 tests/unit/ 測試檔案。
+ *
+ * 對應規則（寬鬆）：tests/unit/ 下存在任何以 {moduleName} 為前綴的 .test.js 即視為有覆蓋。
+ * 例如 state.js → state.test.js 或 state-invariants.test.js 皆視為有覆蓋。
+ *
+ * 子目錄（dashboard/、remote/）不在偵測範圍（通常由 integration 測試覆蓋）。
+ *
+ * @param {string} [scriptsLibOverride] — 供測試覆蓋 scripts/lib 目錄
+ * @param {string} [unitTestsDirOverride] — 供測試覆蓋 tests/unit 目錄
+ * @returns {Finding[]}
+ */
+function checkTestFileAlignment(scriptsLibOverride, unitTestsDirOverride) {
+  const { existsSync } = require('fs');
+  const libDir = scriptsLibOverride || SCRIPTS_LIB;
+  const unitDir = unitTestsDirOverride || path.join(PROJECT_ROOT, 'tests', 'unit');
+  const findings = [];
+
+  // 收集 tests/unit/ 下所有 .test.js 的前綴名稱（去掉 .test.js）
+  let testFileNames = [];
+  try {
+    testFileNames = readdirSync(unitDir)
+      .filter((f) => f.endsWith('.test.js'))
+      .map((f) => f.replace(/\.test\.js$/, ''));
+  } catch {
+    return []; // 測試目錄不存在時跳過
+  }
+
+  // 收集 scripts/lib/*.js（只掃頂層，不含子目錄）
+  let libFiles = [];
+  try {
+    libFiles = readdirSync(libDir, { withFileTypes: true })
+      .filter((e) => e.isFile() && e.name.endsWith('.js'))
+      .map((e) => e.name);
+  } catch {
+    return [];
+  }
+
+  for (const libFile of libFiles) {
+    const moduleName = libFile.replace(/\.js$/, '');
+
+    // 寬鬆比對：任何以 moduleName 為前綴的測試檔案均視為有覆蓋
+    // 例如 state.js → state.test.js / state-invariants.test.js / state-helpers.test.js
+    const hasTest = testFileNames.some(
+      (t) => t === moduleName || t.startsWith(moduleName + '-')
+    );
+
+    if (!hasTest) {
+      findings.push({
+        check: 'test-file-alignment',
+        severity: 'warning',
+        file: `plugins/overtone/scripts/lib/${libFile}`,
+        message: `scripts/lib/${libFile} 缺少對應的 tests/unit/ 測試檔案`,
+        detail: `建議新增 tests/unit/${moduleName}.test.js 或含前綴的測試檔案`,
+      });
+    }
+  }
+
+  return findings;
+}
+
+// ── 19. Skill Reference Integrity SKILL.md 引用完整性偵測 ──
+
+/**
+ * 確認 SKILL.md 中引用的 references/ 和 examples/ 檔案實際存在。
+ *
+ * 掃描兩種引用格式：
+ *   1. 表格中的相對路徑：`references/some-file.md` 或 `examples/some-file.md`
+ *   2. 按需讀取行：`${CLAUDE_PLUGIN_ROOT}/skills/{skill}/references/{file}.md`（取 references/ 後的部分）
+ *
+ * @param {string} [skillsDirOverride] — 供測試覆蓋 skills 目錄
+ * @returns {Finding[]}
+ */
+function checkSkillReferenceIntegrity(skillsDirOverride) {
+  const { existsSync } = require('fs');
+  const skillsDir = skillsDirOverride || SKILLS_DIR;
+  const findings = [];
+
+  let skillDirs = [];
+  try {
+    skillDirs = readdirSync(skillsDir, { withFileTypes: true })
+      .filter((e) => e.isDirectory())
+      .map((e) => e.name);
+  } catch {
+    return [];
+  }
+
+  for (const skillName of skillDirs) {
+    const skillMdPath = path.join(skillsDir, skillName, 'SKILL.md');
+    const content = safeRead(skillMdPath);
+    if (!content) continue;
+
+    // 格式 1：表格欄位中的相對路徑 `references/xxx.md` 或 `examples/xxx.md`
+    // 這類路徑相對於當前 skill 目錄
+    // 只在不含 ${CLAUDE_PLUGIN_ROOT} 的行中匹配，避免與格式 2 重疊
+    const relativePathRe = /\b(references|examples)\/([^\s|`'"]+\.md)\b/g;
+    const selfRefs = new Set();
+    for (const line of content.split('\n')) {
+      if (line.includes('${CLAUDE_PLUGIN_ROOT}')) continue; // 由格式 2 處理
+      for (const m of line.matchAll(relativePathRe)) {
+        selfRefs.add(`${m[1]}/${m[2]}`);
+      }
+    }
+
+    for (const refRelPath of selfRefs) {
+      const fullPath = path.join(skillsDir, skillName, refRelPath);
+      if (!existsSync(fullPath)) {
+        findings.push({
+          check: 'skill-reference-integrity',
+          severity: 'error',
+          file: `plugins/overtone/skills/${skillName}/SKILL.md`,
+          message: `skill "${skillName}" 的 SKILL.md 引用了不存在的檔案：${refRelPath}`,
+          detail: `預期路徑：skills/${skillName}/${refRelPath}`,
+        });
+      }
+    }
+
+    // 格式 2：${CLAUDE_PLUGIN_ROOT}/skills/{targetSkill}/{type}/{file}.md
+    // 這類路徑跨 skill 引用，需要驗證目標 skill 目錄中的檔案
+    const pluginRootRe = /\$\{CLAUDE_PLUGIN_ROOT\}\/skills\/([^/\s`'"]+)\/(references|examples)\/([^\s`'"]+\.md)/g;
+    const crossRefKeys = new Set(); // 用字串 key 去重
+    const crossRefs = [];
+    for (const m of content.matchAll(pluginRootRe)) {
+      const key = `${m[1]}/${m[2]}/${m[3]}`;
+      if (!crossRefKeys.has(key)) {
+        crossRefKeys.add(key);
+        crossRefs.push({ targetSkill: m[1], type: m[2], file: m[3] });
+      }
+    }
+
+    for (const ref of crossRefs) {
+      const fullPath = path.join(skillsDir, ref.targetSkill, ref.type, ref.file);
+      if (!existsSync(fullPath)) {
+        findings.push({
+          check: 'skill-reference-integrity',
+          severity: 'error',
+          file: `plugins/overtone/skills/${skillName}/SKILL.md`,
+          message: `skill "${skillName}" 的 SKILL.md 引用了不存在的檔案：${ref.targetSkill}/${ref.type}/${ref.file}`,
+          detail: `預期路徑：skills/${ref.targetSkill}/${ref.type}/${ref.file}`,
+        });
+      }
+    }
+  }
+
+  return findings;
+}
+
 /**
  * 執行所有健康檢查
  * @returns {{ checks: object[], findings: Finding[] }}
@@ -1867,6 +2018,8 @@ function runAllChecks() {
     { name: 'completion-gap',         fn: checkCompletionGap },
     { name: 'dependency-sync',        fn: checkDependencySync },
     { name: 'internalization-index',  fn: checkInternalizationIndex },
+    { name: 'test-file-alignment',    fn: checkTestFileAlignment },
+    { name: 'skill-reference-integrity', fn: checkSkillReferenceIntegrity },
   ];
 
   const allFindings = [];
@@ -1959,6 +2112,8 @@ module.exports = {
   checkCompletionGap,
   checkDependencySync,
   checkInternalizationIndex,
+  checkTestFileAlignment,
+  checkSkillReferenceIntegrity,
   runAllChecks,
   // 測試 DI 支援
   TEST_BASELINE,
