@@ -1,144 +1,4 @@
 ---
-## 2026-03-05 | product-manager:PM Findings
-**目標用戶**：Overtone plugin 的使用者（目前為個人 dogfooding，未來可能擴展）
-
-**平台機制調查**（[codebase 佐証]）：
-
-| 機制 | 說明 | 是否可用 |
-|------|------|:--------:|
-| Plugin 根目錄放 `claude.md` | Claude Code plugin spec **未支援** plugin 目錄自動載入 CLAUDE.md（[官方文件](https://code.claude.com/docs/en/plugins-reference) 未提及此欄位） | 否 |
-| `plugin.json` claudeMd 欄位 | plugin manifest schema 無此欄位（[settings-api.md](settings-api.md) L201-236 完整列舉了所有欄位） | 否 |
-| CLAUDE.md 子目錄懶載入 | Claude Code 進入子目錄時才載入該目錄的 CLAUDE.md，但 plugin 被 cache 到 `~/.claude/plugins/cache/`，路徑不在專案樹下 | 否 |
-| SessionStart hook systemMessage | 已有 `session-start-handler.js` 注入 systemMessage 的能力（[codebase 佐証] L79-87, L364-367） | 可用 |
-| Skill reference 自動注入 | pre-task.js 已有 skill context 注入機制（frontmatter `skills:` 宣告） | 可用 |
-| `--add-dir` + `CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD=1` | 環境變數可讓額外目錄的 CLAUDE.md 生效，但需 CLI 層面設定 | 有限 |
-
-**核心發現**：Claude Code plugin 系統**沒有原生的 plugin-level CLAUDE.md 機制**。Plugin 注入指令的管道是 hook systemMessage 和 skill reference，不是 CLAUDE.md 檔案。
-
-**成功指標**：
-- 安裝 Overtone plugin 後，Main Agent **自動獲得**等同現有 CLAUDE.md 的專案上下文（無需手動複製）
-- Plugin 版本更新時，注入的上下文**自動同步**（數量、結構描述與實際一致）
-- 專案根目錄 CLAUDE.md 保留使用者自訂內容的空間（不被 plugin 覆蓋）
-
-**方案比較**：
-
-| 維度 | 方案 A：SessionStart systemMessage 注入 | 方案 B：自動生成 CLAUDE.md 檔案 | 方案 C：Skill reference 嵌入 |
-|------|------|------|------|
-| 概述 | 在 `session-start-handler.js` 中組裝 plugin context，透過 `systemMessage` 注入。內容從 registry.js + plugin.json **動態計算**（agent 數量、stage 清單等），而非靜態文字 | SessionStart hook 偵測專案根目錄是否有 CLAUDE.md，若無則從模板生成；若有則比對版本，自動更新 plugin 管理區段（用 marker 註解界定） | 建立一個 `plugin-context` skill，在 pre-task.js 中自動注入（類似現有 skill context 注入） |
-| 優點 | (1) 零檔案操作，不觸碰使用者 CLAUDE.md (2) 內容永遠最新（每次 session 動態計算）(3) 現有架構已支援（buildStartOutput msgs 陣列）(4) 與既有 CLAUDE.md 完全不衝突 | (1) 使用者可直接編輯看到完整規則 (2) 符合 Claude Code 原生 CLAUDE.md 載入機制 (3) 其他工具（cursor 等）也能讀取 | (1) 利用既有 skill 注入管道 (2) reference 檔案可靜態維護 |
-| 缺點 | (1) systemMessage 佔用 context window（但現有 CLAUDE.md 也是 ~180 行，差不多）(2) 使用者看不到注入內容（除非看 debug log）(3) 不適用 non-Overtone 專案（systemMessage 只在 Overtone plugin 啟用時注入） | (1) 檔案衝突風險 — 使用者自訂內容可能被覆蓋 (2) marker 機制維護成本高（使用者可能刪除 marker）(3) 需處理首次 vs 更新兩條路徑 (4) 測試複雜度高（需 mock fs 操作） | (1) Skill 注入是 per-subagent，Main Agent 可能不觸發 (2) Skill context 設計目的是知識域，不是專案規則 (3) 現有 pre-task.js 只在 PreToolUse(Task) 觸發，Main Agent 初始 turn 拿不到 |
-| 工作量 | 2-3 人天 | 5-7 人天 | 3-4 人天 |
-| RICE | R=8 I=2 C=100% E=2.5 = **6.4** | R=8 I=2 C=80% E=6 = **2.1** | R=5 I=1 C=80% E=3.5 = **1.1** |
-
-**推薦方案**：方案 A（SessionStart s
-Keywords: overtone, plugin, dogfooding, codebase, claude, code, spec, https, docs, plugins
-
----
-## 2026-03-05 | product-manager:PM Context
-**問题陈述**：Overtone 目前的 CLAUDE.md 是手動維護的，180 行專案規則檔。每次 plugin 更新（新增 agent/hook/skill/command、workflow 變更、hook 架構變化），都需要人工同步 CLAUDE.md 中的對應描述。這造成兩個痛點：
-
-1. **新專案首次安裝**：使用者安裝 Overtone plugin 後，必須手動建立或複製整份 CLAUDE.md，否則 Main Agent 缺乏專案上下文（L3 痛點量化：每個新專案浪費 5-10 分鐘手動設定）
-2. **版本更新同步**：plugin bump version 後，CLAUDE.md 中的數字（agent 數量、hook 數量、skill 數量、workflow 數量）和結構描述經常過時，導致 AI 行為偏移（L4 痛點量化：根據 `docs-sync.test.js` 已有版本一致性測試，但內容層面無自動同步）
-Keywords: overtone, claude, plugin, agent, hook, skill, command, workflow, main, bump
-
----
-## 2026-03-05 | developer:DEV Findings
-- **動態計算**：Agent 清單從 `stages` 的 `agent` 欄位去重取得，Stage 數量、Workflow 數量、Timeline events 數量皆從 registry 直接計算，版本號從 `plugin.json` 讀取 — 版本更新後自動同步
-- **Import 擴充**：原本只 import `effortLevels`，現在同時 import `stages, workflows, hookEvents, timelineEvents, parallelGroupDefs`
-- **注入順序**：`pluginContextMsg` 放在 msgs 陣列首位，讓 Main Agent 最先看到
-- **防禦性設計**：try-catch 包裹，失敗時回傳 null，`filter(Boolean)` 自動過濾，與現有其他段落一致
-- **間歇性失敗**：`tests/unit/post-use-failure-handler.test.js` 在並行模式下偶發 fail，單獨執行通過，為既有問題與本次無關
-Keywords: agent, stages, stage, workflow, timeline, events, registry, plugin, json, import
-
----
-## 2026-03-05 | code-reviewer:REVIEW Findings
-**審查面向與結論**：
-
-1. **功能完整性** -- `buildPluginContext()` 正確從 registry.js 動態計算 Agent（從 stages 去重）、Stage 數量、Workflow 數量、Timeline events 數量、Hook events 清單、並行群組定義。版本號從 `plugin.json` 動態讀取。所有數值皆為即時計算，不會與 registry 脫鉤。符合 Handoff 中「動態計算、版本更新後自動同步」的需求。
-
-2. **整合方式** -- `pluginContextMsg` 正確放在 msgs 陣列首位（`/Users/sbu/projects/overtone/plugins/overtone/scripts/lib/session-start-handler.js` 第 445 行），透過既有的 `buildStartOutput` + `filter(Boolean)` 機制注入 systemMessage。與現有段落（pendingTasks、globalObservations 等）的整合方式完全一致。
-
-3. **防禦性設計** -- try-catch 包裹整個函數，失敗時回傳 null，由 `filter(Boolean)` 自動過濾。與現有其他段落的防禦模式一致（baselineSummaryMsg、scoreSummaryMsg 等皆同）。不會阻擋 session 啟動。
-
-4. **內容精簡度** -- 注入內容約 20 行，涵蓋元件概覽、Agent 清單、常用 Workflow、Hook Events、並行群組、核心規範（6 條）、目錄結構、常用指令。context window 佔用合理。核心規範摘錄了 CLAUDE.md 中最重要的 6 條規則（registry SoT、Handoff 格式、薄殼化、元件閉環、updatedInput REPLACE、不做向後相容），選擇精準且無不必要重複。
-
-5. **測試覆蓋** -- 12 個新測試，涵蓋：回傳型別、版本號、各元件數量（>0 驗證）、Hook events 清單、核心規範文字、並行群組、與 registry 資料一致性（agent 數量吻合、workflow 數量吻合）。覆蓋充分。全部通過（34 tests, 0 fail）。
-
-6. **安全性** -- 無硬編碼 secrets、無使用者輸入處理、無外部網路呼叫。純讀取 registry 資料 + 字串組裝。
-
-7. **docs 變更** -- roadmap.md 和 status.md 的更新為既有文件同步（狀態標記更新、版本數字修正），內容正確。auto-discovered.md 的知識歸檔格式正確。
-
-**[m] 未使用的中間變數**：`/Users/sbu/projects/overtone/plugins/overtone/scripts/lib/session-start-handler.js` 第 91 行 `const workflowEntries = Object.entries(workflows)` 用了 `Object.entries()` 但只取 `.length`，`Object.keys(workflows).length` 即可，不需要建立完整的 entries 陣列。作者自行決定是否修改。
-Keywords: buildplugincontext, registry, agent, stages, stage, workflow, timeline, events, hook, plugin
-
----
-## 2026-03-05 | doc-updater:DOCS Findings
-**已更新的文件和變更摘要**：
-
-1. **docs/roadmap.md**
-   - init-overtone 項目標記 ✅（完成）
-   - 描述從「plugin 內建 CLAUDE.md.d/ 片段」改為「SessionStart systemMessage 動態注入 plugin context」
-
-2. **docs/status.md**
-   - 版本號：0.28.50 → 0.28.51
-   - 近期變更：新增 #0.28.51 項目，記錄 buildPluginContext() 功能實現（+12 個單元測試，3366→3378 pass）
-   - 核心指標：測試數量更新、版本狀態欄補充「SessionStart systemMessage 動態注入 plugin context」
-
-3. **CLAUDE.md**
-   - SessionStart hook 職責欄位補充「systemMessage 動態注入」詳細說明，列舉 plugin context + 待完成任務 + 跨 session 知識 + 效能基線等注入內容
-
-4. **plugin.json**
-   - 版本號：0.28.50 → 0.28.51（透過 manage-component.js 工具更新）
-
-5. **tests/integration/pre-compact.test.js**
-   - 更新測試期望：無 active feature 時現在會輸出 plugin context systemMessage（而非 undefined）
-   - 驗證項目：systemMessage 應含「Overtone Plugin Context」和「元件概覽」
-
-6. **auto-discovered.md（自動更新）**
-   - plugins/overtone/skills/claude-dev/references/auto-discovered.md：新增 2026-03-05 開發上下文記錄
-   - plugins/overtone/skills/workflow-core/references/auto-discovered.md：系統自動更新
-
-**測試驗證**：3378 pass / 0 fail（151 個測試檔）— 全數通過
-Keywords: docs, roadmap, init, overtone, plugin, claude, sessionstart, systemmessage, context, status
-
----
-## 2026-03-05 | doc-updater:DOCS Context
-本次 workflow（quick）的 DEV + REVIEW 階段已完成。最新 commit 實作了 `buildPluginContext()` 功能，讓 SessionStart hook 在每個 session 啟動時動態注入 plugin 上下文到 systemMessage，使 Main Agent 感知當前 plugin 版本、元件數量和核心規範。
-Keywords: workflow, quick, review, commit, buildplugincontext, sessionstart, hook, session, plugin, systemmessage
-
----
-## 2026-03-05 | planner:PLAN Findings
-**現有架構關鍵發現**：
-
-1. **`instinct.js` emit() 的去重邏輯**：`list.find(i => i.tag === tag && i.type === type)` — intent_journal 需要每次建立新記錄，必須引入 skipDedup 選項。
-2. **全域 store 去重鍵是 `tag+type`**（`global-instinct.js`）：intent_journal 如果每筆 tag 唯一，畢業後全域 store 會無限累積。這是架構需要決策的關鍵點。
-3. **session-end-handler.js 的 pass 判定**：現有邏輯讀 `currentState.workflowType`，但無明確的 success 旗標，配對邏輯需要 architect 決定讀取策略。
-4. **observations.jsonl 是 session 層檔案**：intent_journal 和其他類型共用同一 JSONL 檔，prune/decay 時需注意 intent_journal 的特殊生命週期。
-
-**需求分解**：
-
-1. **[T1] skipDedup 機制** | agent: developer | files: `plugins/overtone/scripts/lib/knowledge/instinct.js`
-2. **[T2] journalDefaults 設定** (parallel with T1) | agent: developer | files: `plugins/overtone/scripts/lib/registry.js`
-3. **[T3] on-submit 記錄 intent_journal** (依賴 T1+T2) | agent: developer | files: `plugins/overtone/scripts/lib/on-submit-handler.js`
-4. **[T4] session-end 配對 sessionResult** (parallel with T3, 依賴 T1) | agent: developer | files: `plugins/overtone/scripts/lib/session-end-handler.js`
-5. **[T5] 全域畢業機制調整** (Should, 依賴 T3+T4 + architect 決策) | agent: developer | files: `plugins/overtone/scripts/lib/knowledge/global-instinct.js`
-6. **[T6] session-start 注入摘要** (Should, 依賴 T5) | agent: developer | files: `plugins/overtone/scripts/lib/session-start-handler.js`
-7. **[T7] data.js query journal** (Could, 獨立) | agent: developer | files: `plugins/overtone/scripts/data.js`
-8. **[T8] 測試覆蓋** (Must, 依賴 T1-T4) | agent: tester | files: `tests/unit/instinct-skip-dedup.test.js`（新建），現有 on-submit/session-end 測試擴展
-
-**優先順序**：
-- Phase 1 並行：T1 + T2
-- Phase 2 並行：T3 + T4（依賴 Phase 1）
-- Phase 3 依序：T5 → T6（依賴 Phase 2 + architect 決策）
-- Phase 4 獨立：T7（任意時間點）
-- Phase 5：T8（T1-T4 完成後）
-
-**範圍邊界**：
-
-不做：預測引擎、AskUserQuestion 主動互動、AI 語意分析、跨 project journal 聚合。
-Keywords: instinct, emit, list, find, type, skipdedup, store, global, session, handler
-
----
 ## 2026-03-05 | planner:PLAN Context
 **需求**：在 Overtone Instinct 系統上擴展，新增 `intent_journal` 觀察類型，記錄使用者每次 prompt 的完整原文。核心新增機制是 `skipDedup` flag，讓 intent_journal 繞過現有的 `tag+type` 去重邏輯，每次 prompt 都產生獨立記錄。Session 結束時配對 workflow 結果，高信心意圖模式畢業到全域 store，SessionStart 注入「最近常做的事」摘要。
 
@@ -922,4 +782,156 @@ Keywords: analyzer, fixable, fixaction, agent, developer, files, plugins, overto
 ## 2026-03-05 | planner:PLAN Context
 P4.2 目標是為 gap-analyzer 的偵測結果新增自動執行層。使用者執行 `bun scripts/evolution.js fix` 後，系統自動修復 `sync-mismatch`（SKILL.md 消費者表不一致）和 `no-references`（skill 缺少 references 目錄）兩種可安全修復的缺口，並重新驗證缺口是否消失。安全邊界：預設 dry-run，需明確加旗標才真正執行；不自動建立 agent 或 skill。
 Keywords: analyzer, scripts, evolution, sync, mismatch, skill, references, agent
+
+---
+## 2026-03-05 | planner:PLAN Findings
+**需求分解**：
+
+1. **掃描所有決策點來源，整理原始資料** | agent: developer | files: `plugins/overtone/scripts/lib/registry.js`, `pre-task-handler.js`, `agent-stop-handler.js`, `session-stop-handler.js`, `skills/pm/SKILL.md`, `skills/workflow-core/references/failure-handling.md`, `docs/spec/overtone-工作流.md`
+
+2. **撰寫 `docs/spec/overtone-decision-points.md`**（依賴 1）| agent: developer | files: `docs/spec/overtone-decision-points.md`（新建）
+
+3. **更新 `docs/spec/overtone.md` 規格索引**（依賴 2）| agent: developer | files: `docs/spec/overtone.md`
+
+**優先順序**：1 → 2 → 3 序列執行（各有依賴），整體為單一 DEV 任務，不需拆成多個 subagent。
+
+**範圍邊界**（明確不在此次範圍）：
+- 程式化 Decision Registry（JSON 可查詢結構）
+- health-check 整合 checkDecisionPoints
+- 18 個 workflow 的完整 Mermaid 狀態機（只做 standard）
+- timeline event 發射/消費索引
+Keywords: agent, developer, files, plugins, overtone, scripts, registry, task, handler, stop
+
+---
+## 2026-03-05 | planner:PLAN Context
+**需求**：建立 `docs/spec/overtone-decision-points.md`，將 Overtone 控制流決策點從 6 個散落的層次（registry.js、SKILL.md、pre-task-handler.js、agent-stop-handler.js、session-stop-handler.js、hooks.json）整合成單一可查詢的索引文件。
+
+**為什麼**：設計者目前需要逐一翻讀多個 handler 才能回答「某 stage 結束後系統做什麼」。這份索引的目標是讓任何決策點在 30 秒內可定位，以及讓新功能設計時能快速判斷是否需要新增 user gate。
+
+**PM 已定義的 MVP 範圍（MoSCoW Must）**：
+- User Gate 索引（decision tree 格式）
+- 自動決策索引（表格格式）
+- Stage 轉場摘要（按 workflow 類型）
+- standard workflow Mermaid 狀態圖
+Keywords: docs, spec, overtone, decision, points, registry, skill, task, handler, agent
+
+---
+## 2026-03-05 | architect:ARCH Findings
+**技術方案**：
+
+- 純文件方案，新建 `docs/spec/overtone-decision-points.md`
+- 5 個 Section：User Gate 索引、自動決策索引、Stage 轉場摘要、Standard Workflow 狀態圖、快速查找索引
+- 不引入新的程式模組，不需要測試
+
+**Open Questions 解答**：
+
+- Q1 (entry schema)：統一格式含 Gate ID / 觸發條件 / 觸發時機 / 呈現方式 / Handler 位置 / 選項列表。`呈現方式` 欄位區分「正常互動 gate」（AskUserQuestion）與「異常介入 gate」（停止並等待）。
+- Q2 (Mermaid 粒度)：主幹路徑 + subgraph 包圍 retry loop，圖外文字說明重試上限。使用 `stateDiagram-v2` + `<<fork>>`/`<<join>>` 語法。
+- Q3 (佇列控制流定位)：納入 Section 二「自動決策索引」的獨立子節 2.4，不與 loop 決策混合。
+
+**User Gate 清單（5 個，UG-01 ~ UG-05）**：
+- UG-01：Discovery 模式使用者確認（pm/SKILL.md L84-92）
+- UG-02：規劃模式確認（pm/SKILL.md L109-113）
+- UG-03：TEST FAIL 上限 3 次（failure-handling.md L31-47）
+- UG-04：REVIEW REJECT 上限 3 次（failure-handling.md L61-73）
+- UG-05：RETRO ISSUES 上限 3 次（failure-handling.md L119-125）
+
+**自動決策來源**：
+- PreToolUse 阻擋：`pre-task-handler.js` L142-172（前置 stage 未完成 → deny）
+- SubagentStop 收斂：`agent-stop-handler.js` L100-138（fail/reject 立即標記；全 pass 收斂；PM stage 完成 → 寫佇列）
+- Stop hook 退出（7 級優先順序）：`session-stop-handler.js` L152-270
+- 佇列控制流：`session-stop-handler.js` L119-218（completeCurrent + getNext + decision:block）
+
+**Stop hook 7 級退出優先順序**（Section 2.3 核心內容）：
+1. loopState.stopped → 手動退出
+2. iteration >= 100 → 最大迭代退出
+3. consecutiveErrors >= 3 → 連續錯誤退出
+4. allCompleted + hasFailedStage → workflow abort
+5. allCompleted + !hasFailedStage → workflow complete（→ 觸發佇列邏輯）
+6. nextStage === 'PM' → 不阻擋（PM 互動模式）
+7. 其他 → decision: block（loop 繼續）
+
+**Stage 轉場摘要資料**（來自 registry.js L46-80）：
+- 18 個 workflow，3 個並行群組（quality/verify/secure-quality）
+- 詳見 design.md 中各 Section 格式規範
+
+**API 介面**：無（純文件任務）
+
+**資料模型**：無（純文件任務）
+
+**檔案結構**：
+
+```
+新增：
+  docs/spec/overtone-decision-points.md   <- 控制流決策點索引（主要產出）
+
+修改：
+  docs/spec/overtone.md                   <- 加入 overtone-decision-points.md 引用
+
+Specs：
+  specs/features/in-progress/decision-point-index/design.md   <- 已建立
+  specs/features/in-progress/decision-point-index/tasks.md    <- 已建立
+```
+
+**Dev Phases**：所有子任務線性依賴（撰寫文件 → 更新索引），無並行可能，省略 Dev Phases 區塊。
+Keywords: docs, spec, overtone, decision, points, section, user, gate, stage, standard
+
+---
+## 2026-03-05 | developer:DEV Findings
+1. **實際行號與 BDD spec 記載一致**：session-stop-handler.js 的 7 級退出條件優先順序（L152 手動退出 → L158 最大迭代 → L165 連續錯誤 → L172 allCompleted → L227 PM 特例 → L244 block）與 BDD scenario 描述吻合。
+
+2. **UG-05（RETRO ISSUES）與 UG-03/04 的本質差異**：UG-05 不是 workflow abort，而是「停止迭代、繼續 workflow」— 文件中特別標注此差異避免誤解。
+
+3. **PM Gate 分拆為 UG-01 和 UG-02**：UG-01 是 discovery workflow 的 AskUserQuestion 互動，UG-02 是 `/ot:pm plan` 的「寫佇列後停止」，兩者呈現方式不同（前者 AskUserQuestion，後者靜默停止）。
+
+4. **Mermaid 語法**：使用 `stateDiagram-v2` + `<<fork>>` / `<<join>>` 語法。`retry_test` 用 `state retry_test {}` subgraph 包圍修復迴圈，符合 BDD 要求。
+
+5. **BDD 第 2 個 scenario（PM 佇列控制流與程式碼一致）**：agent-stop-handler.js L178-188 對應 PM stage 完成後解析佇列表格，session-stop-handler.js L196-218 對應 queueCompleted + getNext decision:block — 均已在 2.4 節詳細描述。
+Keywords: spec, session, stop, handler, allcompleted, block, scenario, retro, issues, workflow
+
+---
+## 2026-03-05 | code-reviewer:REVIEW Findings
+審查了 `docs/spec/overtone-decision-points.md`（新建 358 行）和 `docs/spec/overtone.md`（+1 行引用）。主要檢查：
+- 抽查所有標註的 Handler 行號（pm/SKILL.md、session-stop-handler.js、agent-stop-handler.js、pre-task-handler.js、failure-handling.md），全部與實際程式碼一致
+- Stop hook 7 級退出優先順序與 session-stop-handler.js if-else 順序完全吻合
+- 18 個 workflow 定義與 registry.js L46-72 完全對齊
+- 佇列控制流描述（completeCurrent + getNext + decision:block）與實際邏輯一致
+- Mermaid stateDiagram-v2 語法正確
+- overtone.md 引用行格式一致
+
+無高信心問題。
+Keywords: docs, spec, overtone, decision, points, handler, skill, session, stop, agent
+
+---
+## 2026-03-05 | retrospective:RETRO Findings
+**回顧摘要**：
+
+- 文件內容與程式碼原始碼高度一致：所有 18 個 workflow 的 key、中文標籤、stages 序列、parallelGroups 均與 `/Users/sbu/projects/overtone/plugins/overtone/scripts/lib/registry.js` L46-80 對齊
+- User Gate 五個 entry（UG-01 ~ UG-05）的觸發條件、handler 位置（含行號）與實際程式碼路徑一致
+- 自動決策索引（2.1 PreToolUse / 2.2 SubagentStop / 2.3 Stop hook / 2.4 佇列控制流）的決策樹描述與各 handler 程式碼邏輯吻合
+- `overtone.md` 已在 L35 正確加入引用，說明文字包含「控制流決策點」關鍵字
+- 快速查找索引提供 14 個情境，超過 BDD spec 最低要求（7 個），覆蓋範圍完整
+- Mermaid 狀態圖語法有效（`stateDiagram-v2`、`<<fork>>`、`<<join>>`、retry 迴圈 `state retry_test`），結構正確
+- 純文件任務採用 BDD spec 驗證文件結構完整性與程式碼一致性的做法合適，且可重現（tester 18/18 PASS）
+Keywords: workflow, stages, parallelgroups, users, projects, overtone, plugins, scripts, registry, user
+
+---
+## 2026-03-05 | doc-updater:DOCS Findings
+**文件同步完成：**
+
+1. ✅ `docs/spec/overtone-decision-points.md` — DEV 已新建，內容完整（v1.0，293 行）
+   - 五個維度：User Gate × 自動決策 × Stage 轉場 × Standard Workflow 狀態圖 × 快速查找索引
+   - 已對照原始碼驗證（session-stop-handler.js、pre-task-handler.js、agent-stop-handler.js、registry.js）
+
+2. ✅ `docs/spec/overtone.md` — 文檔目錄已正確新增引用（L35）
+   - 無需修改，DEV 已完成
+
+3. ✅ `docs/status.md` — 文檔索引表更新
+   - 新增「決策點」列：`docs/spec/overtone-decision-points.md`
+   - 順帶修正：「願景」說明「四層」→「五層」（對照 vision.md）
+
+4. ✅ `CLAUDE.md` — 關鍵文件表更新
+   - 新增決策點索引行：「控制流決策點快查（30 秒找到任意決策點）」
+   - 置於 overtone.md 之後、status.md 之前（邏輯順序：規格 → 決策點查詢 → 現況 → SoT）
+Keywords: docs, spec, overtone, decision, points, user, gate, stage, standard, workflow
 

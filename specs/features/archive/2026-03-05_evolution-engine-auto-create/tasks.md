@@ -1,10 +1,10 @@
 ---
 feature: evolution-engine-auto-create
-status: in-progress
+status: archived
 workflow: standard
 created: 2026-03-05T12:18:32.892Z
+archivedAt: 2026-03-05T12:39:08.376Z
 ---
-
 ## Stages
 
 - [x] PLAN

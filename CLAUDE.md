@@ -194,6 +194,7 @@ bun scripts/init-workflow.js {workflowType} [{sessionId}]
 | 文件 | 用途 |
 |------|------|
 | `docs/spec/overtone.md` | 完整規格索引（v0.6，55 個決策） |
+| `docs/spec/overtone-decision-points.md` | 控制流決策點快查（30 秒找到任意決策點） |
 | `docs/status.md` | 現況快讀（版本狀態、核心指標、近期變更） |
 | `scripts/lib/registry.js` | SoT — 所有映射定義 |
 | `plugins/overtone/skills/wording/references/wording-guide.md` | 措詞正確性指南（決策樹 + 反模式 + 場景範例） |

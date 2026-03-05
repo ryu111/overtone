@@ -32,6 +32,7 @@
 | [overtone-子系統.md](overtone-子系統.md) | 子系統 | Specs 生命週期、Dashboard 監控、Remote 控制、Timeline 事件、Config API、持久化系統（global-instinct + baseline-tracker + score-engine） |
 | [overtone-驗證品質.md](overtone-驗證品質.md) | 驗證品質 | 三信號驗證、pass@k 指標、Model Grader、Instinct 系統 |
 | [overtone-製作規範.md](overtone-製作規範.md) | 製作規範 | 三條製作原則（完全閉環、自動修復、補全能力）+ 5 條設計原則引用 + 缺口總覽 |
+| [overtone-decision-points.md](overtone-decision-points.md) | 控制流決策點 | 控制流決策點索引（User Gate / 自動決策 / Stage 轉場 / 狀態圖）— 30 秒找到任意決策點 |
 | [workflow-diagram.md](workflow-diagram.md) | 架構圖 | Mermaid 視覺化：三層全覽、執行流程、失敗處理迴圈 |
 
 ---

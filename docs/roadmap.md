@@ -1,185 +1,165 @@
 # Overtone Roadmap
 
-> 最後更新：2026-03-05 | 當前 Phase：Phase 4 進行中（P4.1 Gap Detection ✅、P4.2 Auto-Fix ✅）
+> 最後更新：2026-03-05 | 當前進度：L3.3 Skill Forge 待開始
 
-## Phase 總覽
+## Layer 總覽
 
 > 願景和架構定義見 `docs/vision.md`
 
-| Phase | 名稱 | 目標 | 狀態 |
+| Layer | 名稱 | 目標 | 狀態 |
 |:-----:|------|------|:----:|
-| 0 | 地基穩固 | 核心 pipeline 穩定運作 | ✅ 完成 |
-| 1 | 首次體驗 | 新使用者 5 分鐘上手 | ✅ 完成 |
-| 2 | 核心穩固 | Level 1 完成 + Level 2 持續學習 | ✅ 完成 |
-| 3 | 感知操控 | Layer 2 完整 OS 能力（6 階段：感知→心跳→操控→系統→通訊→守衛） | ✅ 完成 |
-| 4 | 自我進化 | Level 3 + 第一個垂直切片（交易） | 📋 規劃完成 |
+| 1 | 核心大腦 | 工作流引擎 + 持續學習 + 守衛系統 | ✅ 完成 |
+| 2 | 感知操控 | OS 感知 + 心跳引擎 + 系統管理 + 安全守衛 | ✅ 完成 |
+| 3 | 自我進化 | Gap 偵測修復 + Skill Forge + 深度 PM + Project Orchestrator + Acid Test + 飛輪內化 | 🚧 進行中 |
+| 4 | 通用代理人 | 跨領域自主運作 + 場景泛化 + 多專案並行 + 經驗遷移 | ⬜ 待開始 |
+| 5 | 產品 | 使用者面向的最終產品（由 L1-L4 組合而成） | ⬜ 待開始 |
+
+> **質變定義**：
+> - L1 = 穩定自治（工作流 + 守衛 + 學習）
+> - L2 = 感知操控（看得見、管得住、跨 session 自主控制）
+> - L3 = **自我進化**（面對未知領域 → 自主研究 → 建立 skill/agent → 深度 PM → 無限迭代 → 經驗內化）
+> - L4 = **通用代理人**（跨領域自主運作、場景泛化、多專案並行、經驗遷移）
+> - L5 = **產品層**（使用者面向的最終產品，由 L1-L4 能力組合產出）
+>
+> **飛輪效應**：L3 自我進化 → L4 跨領域建構 → 產出專案 skill → 內化為永久能力 → 下次更快
 
 ---
 
-## Phase 2：核心穩固（✅ 完成）
+## Layer 1：核心大腦（✅ 完成）
 
-### Level 1 完成項
+### L1.1 地基穩固
 
-| 任務 | 說明 | 狀態 |
-|------|------|:----:|
-| 外部專案驗證 | 3 個不同類型專案各 5 個任務 | ❌ 取消 |
-| Skill 化重構 | hook 核心邏輯抽出為獨立模組（26 個 lib 模組，P1-P3 完成） | ✅ |
+核心 pipeline 穩定運作。15 次真實任務驗證，100% 完成率，0 次人工介入。
 
-### 系統強化（4-Phase）
+### L1.2 首次體驗
+
+新使用者 5 分鐘上手（README 重寫 + SessionStart banner + plugin.json）。
+
+### L1.3 系統強化
 
 > 基於 PM Discovery（2026-03-03）：Agent 專一化 × Skill 充實 × Hook 純化
 
-| Phase | 名稱 | 說明 | 狀態 |
-|:-----:|------|------|:----:|
-| P1 | Skill 知識充實 | 新建 3 domain（debugging、architecture、build-system）+ 強化 8 既有 domain，共 11 domains + 17 新 reference 檔案 | ✅ |
-| P2 | Agent 進化 | architect + retrospective 降級 opus → sonnet（v0.28.18）；S19 量化分析完成 | ✅ |
-| P3 | Hook 純化 | SubagentStop 核心邏輯遷移到 agent+skill、hook 簡化為守衛（→ S20） | ✅ |
-| P4 | 文件同步 | vision.md + roadmap.md + status.md + CLAUDE.md 全面對齊 | ✅ |
+| # | 名稱 | 說明 | 狀態 |
+|---|------|------|:----:|
+| L1.3.1 | Skill 知識充實 | 新建 3 domain（debugging、architecture、build-system）+ 強化 8 既有 domain，共 11 domains + 17 新 reference 檔案 | ✅ |
+| L1.3.2 | Agent 進化 | architect + retrospective 降級 opus → sonnet（v0.28.18）；S19 量化分析完成 | ✅ |
+| L1.3.3 | Hook 純化 | SubagentStop 核心邏輯遷移到 agent+skill、hook 簡化為守衛（→ S20） | ✅ |
+| L1.3.4 | 文件同步 | vision.md + roadmap.md + status.md + CLAUDE.md 全面對齊 | ✅ |
 
-### Level 2：持續學習
+### L1.4 持續學習
 
 | 任務 | 說明 | 狀態 |
 |------|------|:----:|
 | 跨 session 長期記憶 | global-instinct.js（5 API + projectHash 隔離）| ✅ |
-| 數值評分引擎 | score-engine.js（saveScore/queryScores/getScoreSummary 3 API）+ 趨勢分析（computeScoreTrend/formatScoreSummary）| ✅ v0.28.26 |
-| 即時回饋迴路引擎 | score context 注入 pre-task + session decay on-session-end | ✅ v0.28.25-26 |
-| 時間序列學習 | 觀察效果追蹤 + 品質反饋（adjustConfidenceByIds）| ✅ v0.28.28 |
+| 數值評分引擎 | score-engine.js + 趨勢分析 | ✅ v0.28.26 |
+| 即時回饋迴路引擎 | score context 注入 pre-task + session decay | ✅ v0.28.25-26 |
+| 時間序列學習 | 觀察效果追蹤 + 品質反饋 | ✅ v0.28.28 |
 | 自動識別卡點 | 重複失敗模式辨識 + 改進 | ✅ v0.28.27 |
 | 學習衰減 | 過時知識自動淡化（instinct decay）| ✅ v0.28.25 |
-| 效能基線追蹤 | baseline-tracker.js + execution-queue.js + 趨勢分析（computeBaselineTrend）完成 | ✅ v0.28.26 |
+| 效能基線追蹤 | baseline-tracker.js + 趨勢分析 | ✅ v0.28.26 |
 
 **完成標準**：系統能展示「第 10 次做同類任務比第 1 次更快更好」的量化數據。
 
 ---
 
-## Phase 3：感知操控 + 自主控制（Layer 2 完整能力）
+## Layer 2：感知操控（✅ 完成）
 
-> 目標：讓 agent 擁有 OS 感知操控 + 跨 session 閉環自主控制能力，達到 Phase 4 Ready。
+> 目標：讓 agent 擁有 OS 感知操控 + 跨 session 閉環自主控制能力。
 > 架構：Bun 腳本庫（`scripts/os/` + `scripts/heartbeat.js`）+ `os-control` knowledge domain skill + OS Guard
-> 桌面操控策略：AppleScript/JXA 原生優先 + Computer Use（截圖→理解→操作→驗證）兜底
 > 自主控制策略：`claude -p --plugin-dir` headless session spawn + Heartbeat Daemon 佇列驅動
 >
-> **閉環交付模型**：每個 P3.x 交付 = 腳本（能力）+ Reference（知識）+ SKILL.md 索引更新 + Guard 擴充 + 測試。
-> Agent 透過 frontmatter `skills: [os-control]` 宣告 → pre-task.js 自動注入知識。
+> **閉環交付模型**：每個 L2.x 交付 = 腳本（能力）+ Reference（知識）+ SKILL.md 索引更新 + Guard 擴充 + 測試。
 >
-> **方向重排（2026-03-04 PM Discovery）**：閉環自主控制比 UI 操控更優先 — 終端命令能完成 90% 的任務，但跨 session 接力是 Phase 4 的真正前提。原 P3.2（動得了）降為 P3.4。
+> **方向重排（2026-03-04 PM Discovery）**：閉環自主控制比 UI 操控更優先。原 L2.2（動得了）降為 L2.5。
 
-### P3.0 閉環基礎（骨架層）
-
-| 任務 | 說明 | 狀態 |
-|------|------|:----:|
-| os-control SKILL.md | 建立第 12 個 knowledge domain 骨架（索引 + 各 reference 標記「待建」） | ✅ |
-| Agent frontmatter | 5 個 agent 加入 `skills: [os-control]`：developer, architect, tester, debugger, qa | ✅ |
-| pre-bash-guard.js | PreToolUse(Bash) 黑名單守衛骨架（危險命令攔截） | ✅ |
-| hooks.json | 新增 PreToolUse(Bash) matcher 指向 pre-bash-guard.js | ✅ |
-| Guard 測試 | pre-bash-guard 基礎測試（黑名單命中 deny + 正常命令 allow） | ✅ |
-
-### P3.1 看得見（感知層）
+### L2.1 閉環基礎（骨架層）
 
 | 任務 | 說明 | 狀態 |
 |------|------|:----:|
-| screenshot.js | 全螢幕/視窗/區域截圖（`screencapture` wrapper） | ✅ |
-| visual.js | ~~截圖 → Claude 多模態 → 結構化描述 pipeline~~ → 改為 perception.md 中的分析模板（Read tool 原生多模態） | ✅ |
-| window.js | 視窗列表/聚焦（AppleScript）— P3.1 完成；移動/調整大小留 P3.2 | ✅ |
+| os-control SKILL.md | 建立 knowledge domain 骨架 | ✅ |
+| Agent frontmatter | 5 個 agent 加入 `skills: [os-control]` | ✅ |
+| pre-bash-guard.js | PreToolUse(Bash) 黑名單守衛 | ✅ |
+
+### L2.2 看得見（感知層）
+
+| 任務 | 說明 | 狀態 |
+|------|------|:----:|
+| screenshot.js | 全螢幕/視窗/區域截圖 | ✅ |
+| window.js | 視窗列表/聚焦 | ✅ |
 | Skill: perception ref | `skills/os-control/references/perception.md` | ✅ |
 
-### P3.2 心跳引擎（自主控制層）
+### L2.3 心跳引擎（自主控制層）
 
-> 方向重排：原 P3.2「動得了」降為 P3.4，插入心跳引擎作為閉環自主控制的核心。
-> 技術方案：Heartbeat Daemon（方案 A，RICE 4.8）— Bun 常駐程序 + `claude -p --plugin-dir` spawn session。
-> PoC 已驗證：`claude -p --plugin-dir` 完整載入 22 skills + 17 agents。
+> Heartbeat Daemon — Bun 常駐程序 + `claude -p --plugin-dir` spawn session。
 
 **Core 引擎 ✅**
 
 | 任務 | 說明 | 狀態 |
 |------|------|:----:|
 | heartbeat.js | Bun 常駐 daemon（start/stop/status CLI + PID 檔 + polling loop） | ✅ |
-| session-spawner.js | `claude -p` session spawn 封裝（參數組裝 + stream-json 解析 + timeout） | ✅ |
-| 佇列整合 | execution-queue.json 監聽 + 自動 spawn + 安全邊界（並行鎖 + 連續失敗暫停） | ✅ |
-| Telegram notify | spawn/完成/失敗/暫停事件推送（`TelegramAdapter.notify()`） | ✅ |
-| autonomous-control Skill | 新建第 13 個 knowledge domain（SKILL.md + references/heartbeat.md + Agent frontmatter 注入） | ✅ |
+| session-spawner.js | `claude -p` session spawn 封裝（stream-json 解析 + timeout） | ✅ |
+| 佇列整合 | execution-queue.json 監聽 + 自動 spawn + 安全邊界 | ✅ |
+| Telegram notify | spawn/完成/失敗/暫停事件推送 | ✅ |
+| autonomous-control Skill | knowledge domain（SKILL.md + references/heartbeat.md） | ✅ |
 
-**整合層 ✅ 並行收斂門（2026-03-04 完成）**
-
-> 完成：並行委派時，多個 subagent 在同一 stage 執行 → 同一 Main Agent 不阻擋。
-> 實作：checkSameStageConvergence() 去重、active-agent.json 佇列管理、instanceId 適配。
+**整合層 ✅ 並行收斂門**
 
 | 任務 | 說明 | 狀態 |
 |------|------|:----:|
-| queue CLI | `bun scripts/queue.js add <name> <workflow>` / `list` / `clear` — 手動佇列管理 | ✅ |
-| PM 自動寫入 | PM Discovery 產出多迭代計劃時，agent-stop-handler 自動解析佇列表格調用 `writeQueue()` 寫入佇列 | ✅ |
-| Telegram `/run` | `/run <featureName> [workflow]` 遠端命令，寫入佇列並通知（telegram-adapter.js `_handleRun` 擴充） | ✅ |
-| session-spawner 防禦 | spawn 時移除 `CLAUDECODE` 前綴環境變數（SENSITIVE_PREFIXES 過濾），防止嵌套 session 保護誤觸發 | ✅ |
-| health-check 整合 | heartbeat-daemon 偵測 + OS tools 檢測（第 8 項：pbcopy/pbpaste/osascript） | ✅ |
+| queue CLI | `bun scripts/queue.js add/list/clear` | ✅ |
+| PM 自動寫入 | PM Discovery 產出多迭代計劃時自動寫入佇列 | ✅ |
+| Telegram `/run` | 遠端命令觸發 | ✅ |
+| session-spawner 防禦 | 敏感 env 過濾 + 遞迴防護 | ✅ |
 
-**並行委派 PoC ⏳**
-
-> CLAUDE.md 已加入「並行委派」📋 MUST 規則。下個 standard workflow 驗證 Main Agent 是否自然拆分並行委派。
-> 若成功 → 移除 tasks.md `(parallel)` 標記，並行判斷 100% 由 Main Agent 先天知識驅動。
-> 若失敗 → CLAUDE.md 原則 + tasks.md 標記兩條路並行。
+### L2.4 管得住（系統層）
 
 | 任務 | 說明 | 狀態 |
 |------|------|:----:|
-| CLAUDE.md 規則 | 已寫入「並行委派」區塊（📋 MUST 評估子任務可拆性） | ✅ |
-| PoC 驗證 | 下個 standard workflow 實測觀察 | ⏳ |
-| init-overtone | SessionStart systemMessage 動態注入 plugin context — buildPluginContext() 從 registry.js 計算版本、agent 數、stage 數、workflow 模板等，無需靜態維護 | ✅ |
-
-### P3.3 管得住（系統層）
-
-| 任務 | 說明 | 狀態 |
-|------|------|:----:|
-| process.js | 列出/啟動/終止 process（`ps`/`kill`/`open`） | ✅ |
-| clipboard.js | 讀/寫剪貼簿（`pbcopy`/`pbpaste`） | ✅ |
+| process.js | 列出/啟動/終止 process | ✅ |
+| clipboard.js | 讀/寫剪貼簿 | ✅ |
 | system-info.js | CPU/記憶體/磁碟/網路狀態 | ✅ |
-| notification.js | macOS 通知（`osascript` display notification） | ✅ |
+| notification.js | macOS 通知 | ✅ |
 | fswatch.js | 檔案系統變更監控 | ✅ |
-| Skill: system ref | `skills/os-control/references/system.md` | ✅ |
 
-### P3.4 動得了（操控層）← 原 P3.2，降優先
+### L2.5 動得了（操控層）← 降優先
 
 | 任務 | 說明 | 狀態 |
 |------|------|:----:|
-| keyboard.js | 按鍵/快捷鍵/文字輸入（`osascript` System Events） | ⬜ |
-| mouse.js | 點擊/雙擊/拖曳/滾動（`cliclick`） | ⬜ |
+| keyboard.js | 按鍵/快捷鍵/文字輸入 | ⬜ |
+| mouse.js | 點擊/雙擊/拖曳/滾動 | ⬜ |
 | applescript.js | AppleScript/JXA 執行引擎 | ⬜ |
-| computer-use.js | 截圖→理解→操作→驗證 協調迴圈 | ⬜ |
-| Skill: control ref | `skills/os-control/references/control.md` | ⬜ |
+| computer-use.js | 截圖→理解→操作→驗證 | ⬜ |
 
-### P3.5 聽說能力（通訊層）← 原 P3.4
-
-| 任務 | 說明 | 狀態 |
-|------|------|:----:|
-| websocket.js | WebSocket client（Bun 原生 WebSocket API） | ✅ |
-| tts.js | 文字轉語音（macOS `say` command） | ⬜ |
-| stt.js | 語音轉文字（macOS Dictation / Whisper） | ⬜ |
-| Skill: realtime ref | `skills/os-control/references/realtime.md` | ✅ |
-
-### P3.6 安全整合（守衛層）← 原 P3.5
+### L2.6 聽說能力（通訊層）
 
 | 任務 | 說明 | 狀態 |
 |------|------|:----:|
-| Guard 精鍊 | pre-bash-guard.js 黑名單完善 + 各階段累積的危險模式整合 | ✅ |
-| E2E 驗證 | OS smoke test ✅（完整 UI E2E 驗證待 P3.4 動得了）| ✅ |
-| health-check 擴展 | 偵測 screencapture、heartbeat daemon 狀態 + checkOsTools 擴展（第 8 項內容豐富化） | ✅ |
-| Skill 完善 | os-control SKILL.md 完成度更新 + reference 整合 | ✅ |
+| websocket.js | WebSocket client（Bun 原生） | ✅ |
+| tts.js | 文字轉語音 | ⬜ |
+| stt.js | 語音轉文字 | ⬜ |
 
-### Phase 3 完成標準（Phase 4 Ready）
+### L2.7 安全整合（守衛層）
 
-> **P3.2 里程碑**：(1) `bun scripts/queue.js add feature-a standard && bun scripts/heartbeat.js start` — 手動佇列 + 啟動 daemon。(2) Telegram `/run feature-b quick` — 遠端觸發。(3) 給系統 3 個任務佇列，用戶離開電腦，系統自主循環完成，Telegram 推送進度，連續失敗自動暫停通知。
->
-> **最終標準（P3.6 後）**：給系統指令：「研究幣安 API，建立加密貨幣價格監控系統」
-> 系統必須能自主完成：HTTP 研究 API → WebSocket 接收即時價格 → Process 啟動監控 → 截圖+視覺驗證顯示正確 → 通知價格異常 → 全程 OS Guard 保護
+| 任務 | 說明 | 狀態 |
+|------|------|:----:|
+| Guard 精鍊 | pre-bash-guard.js 黑名單完善 | ✅ |
+| E2E 驗證 | OS smoke test | ✅ |
+| health-check 擴展 | OS tools 檢測 | ✅ |
+
+### Layer 2 完成標準
+
+> 給系統一個需要多種 OS 能力的複合任務，系統能自主完成全流程（HTTP 研究 → 即時通訊 → Process 管理 → 視覺驗證 → 通知 → Guard 保護）。
 
 ---
 
-## Phase 4：自我進化 + 第一個垂直切片
+## Layer 3：自我進化（🚧 進行中）
 
-> 目標：Level 3 自我進化能力 + 第一個垂直切片（交易）
-> 架構：Evolution Engine（gap detection + auto-fix + feedback loop）+ 垂直切片示範
->
-> **閉環交付模型**：每個 P4.x 交付 = gap detection 工具 + 自動修復器 + 測試 + 文件。
+> **定義**：系統面對未知領域，能自主研究 → 建立 skill/agent → 獲得新能力。
+> **關鍵區分**：
+> - L3.1-3.2（已完成）= 修補已知元件的結構缺口（回到設計時的完整狀態）
+> - L3.3+（待做）= 從 0 建立不存在的能力（真質變 — 獲得設計時不存在的新能力）
 
-### P4.1 Gap Detection（進化引擎偵測層）✅
+### L3.1 Gap Detection（進化引擎偵測層）✅
 
 | 任務 | 說明 | 狀態 |
 |------|------|:----:|
@@ -187,29 +167,88 @@
 | evolution.js CLI | `bun scripts/evolution.js analyze [--json]` 入口 | ✅ |
 | Gap Detection 測試 | 52 個測試（33 unit + 19 integration） | ✅ |
 
-### P4.2 Auto-Fix（進化引擎自動修復層）✅
+### L3.2 Auto-Fix（進化引擎自動修復層）✅
 
 | 任務 | 說明 | 狀態 |
 |------|------|:----:|
-| gap-fixer.js | 根據 gap type 選擇修復策略（component-chain / closed-loop / completion-gap / dependency-sync） | ✅ |
+| gap-fixer.js | 根據 gap type 選擇修復策略 | ✅ |
 | evolution.js fix 子命令 | `bun scripts/evolution.js fix [--execute] [--type <type>] [--json]` | ✅ |
 | Auto-Fix 測試 | 修復正確性 + 邊界情況 + 50 個測試 | ✅ |
 
-### P4.3-4.5 垂直切片示範 + 泛化 ⏳
+### L3.3 Skill Forge（自主建立能力）⬜
+
+> 真質變起點：系統面對未知領域，能自主研究 → 建立 skill → 驗證可用。
+> 類比：免疫系統遇到新病毒，自己產生抗體。
 
 | 任務 | 說明 | 狀態 |
 |------|------|:----:|
-| 進化引擎 | 自主建立 skill/agent | ⬜ |
-| Acid Test：自動交易 | 給「做自動交易」目標 → 核心自動建構能力 | ⬜ |
-| 做減法能力 | 移除低效/未使用的能力 | ⬜ |
+| 能力缺口偵測 | knowledge-gap-detector 升級：無法路由到任何 domain（score < 0.2）→ 觸發 forge | ⬜ |
+| 領域研究引擎 | spawn 研究 session（WebFetch 搜集領域知識 → 結構化整理） | ⬜ |
+| Skill 自動建立 | 呼叫 manage-component.js create skill（SKILL.md + references/） | ⬜ |
+| 結構驗證 | health-check + validate-agents 通過（0 error） | ⬜ |
+| 安全邊界 | 不覆蓋既有 skill、dry-run 預設、連續失敗暫停 | ⬜ |
 
-**完成標準**（Acid Test）：系統自主完成 Layer 3 + Layer 4 建構，無需人工編寫交易 skill 或 agent。
+### L3.4 深度 PM（精準需求收集）⬜
+
+> PM 從 advisory（一次分析）升級為 multi-round interrogator（多輪深度訪談）。
+> 關鍵：無人值守的長期迭代，開頭沒問清楚就做偏。
+
+| 任務 | 說明 | 狀態 |
+|------|------|:----:|
+| 多輪訪談能力 | PM agent 升級：五面向結構化收集（功能/操作流程/UI 設計/邊界條件/驗收標準） | ⬜ |
+| 領域研究整合 | PM 進入新領域時先自主研究基本概念，問出有深度的問題 | ⬜ |
+| Project Spec 產出 | 訪談結果 → 完整 Project Spec（含 ≥10 個 BDD 驗收場景） | ⬜ |
+
+### L3.5 Project Orchestrator（自主建構引擎）⬜
+
+> 串聯 Skill Forge + 深度 PM + 無限迭代，完成從需求到產品的完整流程。
+
+| 任務 | 說明 | 狀態 |
+|------|------|:----:|
+| 能力盤點 | 從 Project Spec 推導需要的 skill 清單 → 標記現有 vs 需建立 | ⬜ |
+| Skill 建構排程 | 批次觸發 Skill Forge 建立缺少的 skill → Agent 配置（skill 分配到 agent） | ⬜ |
+| 專案級迭代 | 多 feature 排程 → execution-queue → 無限迭代直到完成 | ⬜ |
+
+### L3.6 Acid Test ⬜
+
+> 用真實場景驗證 L3 端到端：給高層目標 → 深度訪談 → 自主建 skill → 無限迭代 → 產品完成。
+> 場景待定。
+
+**完成標準**：系統自主完成端到端能力建構 + 產品開發，無需人工編寫 skill 或 agent。
+
+### L3.7 Skill Internalization（飛輪 — 專案經驗內化）⬜
+
+> 建產品過程中產出的專案 skill，內化為永久能力。
+> 下次遇到類似專案，skill 已存在，直接使用。
+
+| 任務 | 說明 | 狀態 |
+|------|------|:----:|
+| 專案 skill 評估 | 專案完成後評估哪些 skill 值得永久保留（使用頻率、品質評分） | ⬜ |
+| 內化流程 | 專案 skill → 通用化（移除專案特定內容）→ 納入永久 skill 庫 | ⬜ |
+| 經驗索引 | 記錄「什麼類型的專案需要哪些 skill」，加速未來專案的能力盤點 | ⬜ |
+
+### Layer 3 完成標準
+
+> 系統收到高層目標 → 深度訪談需求 → 自主建構所需 skill → 無限迭代開發 → 產品完成 → 經驗內化。全程無需人工編寫 skill 或 agent。
+
+---
+
+## Layer 4：通用代理人（⬜ 待開始）
+
+> 不限於單一領域的自主代理人。具備 L3 自我進化能力後，能在任意新領域自主建構專業能力並穩定運作。
+> 跨領域場景泛化 + 多專案並行 + 經驗遷移。
+
+## Layer 5：產品（⬜ 待開始）
+
+> 使用者面向的最終產品。由 Layer 1-4 能力組合產出。
+> L4 完成後，每個「專案」就是一次 L5 的應用。
+> 具體產品方向待定。
 
 ---
 
 ## 技術路線（S 系列）
 
-> 與 Phase 平行推進的技術強化項目
+> 與 Layer 平行推進的技術強化項目
 
 | # | 名稱 | 說明 | 狀態 |
 |---|------|------|:----:|
@@ -221,21 +260,21 @@
 | S6 | Skill 動態注入 | `!command` 取代 hook 注入 | ✅ |
 | S7 | TaskCompleted Hook | 品質門檻硬阻擋 | ✅ |
 | S8 | Opusplan 混合模式 | Opus 規劃 + Sonnet 執行 | ✅ |
-| S9a | Worktree Isolation | mul-agent 並行時獨立 worktree 避免衝突 | ⏳ 保留（衝突頻率 0，Phase 4 再評估） |
-| S9b | prompt/agent hook | hook 新增 LLM 判斷類型 | ❌ 關閉（違反「Hook 做確定性守衛」設計哲學） |
-| S9c | 1M Context | Sonnet 1M context window | ⏳ 保留（當前規模不需要，Phase 4 再評估） |
-| S10 | Agent Memory | 8 個跨層級 agent 啟用 memory: local — opus 3 個（product-manager、code-reviewer、security-reviewer）+ sonnet 5 個（developer、tester、debugger、planner、architect）（v0.23 → v0.28.35） | ✅ |
+| S9a | Worktree Isolation | mul-agent 並行時獨立 worktree 避免衝突 | ⏳ 保留 |
+| S9b | prompt/agent hook | hook 新增 LLM 判斷類型 | ❌ 關閉 |
+| S9c | 1M Context | Sonnet 1M context window | ⏳ 保留 |
+| S10 | Agent Memory | 8 個跨層級 agent 啟用 memory: local | ✅ |
 | S11 | CLAUDE.md 精簡 | SoT 引用取代重複（198→121 行）+ argument-hint | ✅ |
 | S12 | 音效通知 | sound.js + Notification hook（v0.24） | ✅ |
 | S13 | Status Line | 雙行即時顯示 + ANSI 變色警告（v0.25） | ✅ |
 | S14 | Strategic Compact | SubagentStop 自動建議壓縮（v0.26） | ✅ |
-| S15 | CBP 最佳實踐對齊 | code-review skill 四維度 + commit-convention skill 已覆蓋 | ✅ 間接完成 |
+| S15 | CBP 最佳實踐對齊 | code-review skill 四維度 + commit-convention skill | ✅ 間接完成 |
 | S15b | 組件正規化 | 38 skills → 16 skills + 27 commands（v0.27.3-0.27.8） | ✅ |
-| S16 | Agent Prompt 強化 | description 已結構化，路由由 PreToolUse hook 確定性保證 | ✅ 間接完成 |
-| S17 | 測試覆蓋率分析 | 驗證完成：`bun test --coverage` 可用（94% Funcs / 89% Lines） | ✅ |
-| S18 | CI 環境感知 | 個人 dogfooding 無 PR 流程，workflow agent 審查已覆蓋 | ❌ 不需要 |
-| S19 | Agent 專一化精鍊 | 評估 agent 拆分機會 + Model 降級空間 + skill 完善度與 model 需求的關係量化 | ✅ |
-| S20 | Hook → Agent 遷移 | SubagentStop 核心邏輯（知識歸檔、docs sync）抽出為專職 agent，hook 純化為守衛 | ✅ v0.28.20 |
+| S16 | Agent Prompt 強化 | description 結構化 + PreToolUse 確定性路由 | ✅ 間接完成 |
+| S17 | 測試覆蓋率分析 | `bun test --coverage`（94% Funcs / 89% Lines） | ✅ |
+| S18 | CI 環境感知 | 個人 dogfooding 無 PR 流程 | ❌ 不需要 |
+| S19 | Agent 專一化精鍊 | agent 拆分機會 + Model 降級空間量化 | ✅ |
+| S20 | Hook → Agent 遷移 | SubagentStop 核心邏輯抽出為專職 agent | ✅ v0.28.20 |
 
 ---
 
@@ -263,9 +302,7 @@
 ## 歷史記錄
 
 <details>
-<summary>Phase 0: Foundation（地基穩固）— ✅ 完成</summary>
-
-**目標**：核心 pipeline 穩定運作。15 次真實任務驗證，100% 完成率，0 次人工介入。
+<summary>Layer 1 驗證記錄（Phase 0 — 15 次真實任務）</summary>
 
 | # | Workflow | 任務 | 結果 |
 |---|----------|------|:----:|
@@ -284,18 +321,6 @@
 | 13 | quick | arch-doc-line-count-fix | ✅ |
 | 14 | standard | readme-rewrite | ✅ |
 | 15 | standard | status-skill | ✅ |
-
-</details>
-
-<details>
-<summary>Phase 1: Onboarding（首次體驗）— ✅ 完成</summary>
-
-**目標**：新使用者 5 分鐘內上手。
-
-- [x] README 重寫（3 分鐘上手）
-- [x] SessionStart banner 優化
-- [x] plugin.json description 更新
-- [x] 規格文件同步
 
 </details>
 
