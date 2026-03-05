@@ -1,42 +1,4 @@
 ---
-## 2026-03-03 | tester:TEST Context
-模式：verify（DEV 後驗證）
-
-BDD spec：`specs/features/in-progress/parallel-convergence-gate/bdd.md`（7 個 Feature，30 個 Scenario）
-
-完成了以下工作：
-
-1. 執行完整測試套件，確認基準線：3002 pass，0 fail
-2. 逐一對照 30 個 BDD Scenario 與現有測試覆蓋，識別 coverage gap
-3. 補寫整合測試 `tests/integration/parallel-convergence-gate.test.js`（15 個新測試）
-4. 修復 2 個失敗的測試（Scenario 2-5 測試設計問題、Scenario 3-4 需改用 TEST stage 才能觸發 fail）
-5. 執行完整套件驗證：3017 pass，0 fail（+15 新增）
-Keywords: verify, spec, specs, features, progress, parallel, convergence, gate, feature, scenario
-
----
-## 2026-03-03 | tester:TEST Findings
-全量測試結果：**3026 pass, 0 fail**（129 files）
-
-重點測試套件個別結果：
-- `tests/unit/statusline-ttl.test.js`：4 pass
-- `tests/integration/on-stop-stale-cleanup.test.js`：7 pass（含 getNextStageHint TTL 3 scenarios）
-- `tests/unit/statusline.test.js`：pass
-- `tests/integration/statusline.test.js`：pass
-- `tests/integration/agent-on-stop.test.js`：pass
-- `tests/integration/parallel-convergence-gate.test.js`：pass
-
-共 109 pass，0 fail（6 個目標測試檔合計）
-
-**覆蓋範圍確認：**
-1. on-stop.js 根因修復（findActualStageKey null 時仍清除）→ SCA-1 驗證
-2. INSTANCE_ID fallback 清除邏輯 → SCA-2 驗證
-3. active-agent.json 生命週期管理 → SCA-3 / SCA-4 驗證
-4. statusline.js TTL 過濾 → TTL-1 / TTL-2 / TTL-3 / TTL-4 驗證
-5. state.js getNextStageHint TTL 過濾 → TTL-GNH-1 / TTL-GNH-2 / TTL-GNH-3 驗證
-6. pre-compact.js TTL 防護 → 確認程式碼實作存在（TTL=30min 一致）
-Keywords: pass, fail, files, tests, unit, statusline, test, integration, stop, stale
-
----
 ## 2026-03-03 | tester:TEST Findings
 測試結果摘要：
 
@@ -656,4 +618,16 @@ Keywords: checktestgrowth, baseline, health, check, test, growth, warning
 - 近期變更更新為最近 3 筆實際 commit（全是 health-check 修復）
 - `bun test tests/unit/docs-sync.test.js` 28 pass，驗證數字一致性通過
 Keywords: level, pass, test, scripts, commit, health, check, tests, unit, docs
+
+---
+## 2026-03-05 | developer:DEV Context
+新增 `tests/unit/interview-edge-cases.test.js`，補充 `interview.js` 缺少的邊界情況測試覆蓋。
+Keywords: tests, unit, interview, edge, cases, test
+
+---
+## 2026-03-05 | code-reviewer:REVIEW Findings
+審查了 `tests/unit/interview-edge-cases.test.js`（24 個測試，7 個 Feature 分組），逐一對照 `plugins/overtone/scripts/lib/interview.js` 源碼驗證測試斷言的正確性。檢查面向包含：測試正確性、測試品質（暫存檔清理、不可變性驗證、測試隔離）、error handling、安全性。未發現高信心問題。
+
+auto-discovered.md 的變更為知識歸檔正常操作，內容正確。
+Keywords: tests, unit, interview, edge, cases, test, feature, plugins, overtone, scripts
 

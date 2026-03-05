@@ -1,34 +1,4 @@
 ---
-## 2026-03-05 | planner:PLAN Findings
-**需求分解**：
-1. **分析 plugin 結構並輸出 design.md** | agent: architect | files: `agents/*.md`、`skills/*/SKILL.md`、`scripts/lib/registry-data.json`、`hooks/scripts/**/*.js`
-2. **實作 `dependency-graph.js` 核心模組** | agent: developer | files: `plugins/overtone/scripts/lib/dependency-graph.js`（新建）
-3. **實作 `impact.js` CLI 入口**（parallel with 2，API 定義清楚後） | agent: developer | files: `plugins/overtone/scripts/impact.js`（新建）
-4. **撰寫 BDD 驗收測試** | agent: tester | files: `tests/unit/dependency-graph.test.js`（新建）
-
-**優先順序**：
-- Phase 1（序列）：architect 完成 design.md — 確認 SKILL.md 格式一致性、require() 路徑正規化策略、API 簽名
-- Phase 2（並行）：developer 實作 dependency-graph.js（核心）+ impact.js（CLI）可並行，因 API 在 design.md 定義清楚後兩者互不依賴
-- Phase 3（序列）：tester 撰寫驗收測試，需要 dependency-graph.js 已存在
-
-**範圍邊界**：
-- 不含：Command → Agent 引用解析（自由文字，v2）
-- 不含：整合進 pre-edit-guard（dependency-graph-core 穩定後下一步）
-- 不含：持久化快取、循環依賴偵測、視覺化輸出
-Keywords: plugin, design, agent, architect, files, agents, skills, skill, scripts, registry
-
----
-## 2026-03-05 | planner:PLAN Context
-**需求分析**：Overtone 的閉環機制目前仰賴人工記憶，`pre-edit-guard` 只能給通用提示。目標是建立 `scripts/lib/dependency-graph.js` 掃描 plugin 結構，產生雙向依賴圖，再透過 `scripts/impact.js` CLI 提供對外查詢介面。這是閉環完整性的自動化升級，不是新功能，是對現有製作規範缺口的補全。
-
-**四類資料來源**（已確認各來源位置）：
-1. `agents/*.md` frontmatter 的 `skills` 欄位（gray-matter 解析）
-2. `skills/*/SKILL.md` 的 Reference 索引表（各 SKILL.md 格式需 architect 確認一致性）
-3. `scripts/lib/registry-data.json` 的 `stages[stage].agent` 欄位（JSON，已確認格式清楚）
-4. `hooks/scripts/**/*.js` 的 `require()` 呼叫（需路徑正規化）
-Keywords: overtone, edit, guard, scripts, dependency, graph, plugin, impact, agents, frontmatter
-
----
 ## 2026-03-05 | architect:ARCH Findings
 **技術方案**：
 - on-demand 掃描（每次呼叫重新掃描所有 plugin 元件），不持久化
@@ -896,4 +866,29 @@ Keywords: config, validator, validateagent, validatehook, validateskill, validat
 
 **測試前後**：修改前 test-parallel.js 15 fail，修改後 14 fail（少了 1 個 — data-quality 的 spawn 測試不再失敗，無新增失敗）
 Keywords: failure, tracker, recordresolution, verdict, resolved, failures, jsonl, sessionid, stage, agent
+
+---
+## 2026-03-05 | developer:DEV Findings
+**設計決策：**
+- `extractWebKnowledge` 回傳格式從 `string` 改為 `{ content, error, duration? }` 物件
+- `assembleSkillBody` 向後相容：`webResearch` 欄位同時接受新格式物件（取 `.content`）或舊格式字串，避免破壞現有直接傳字串的呼叫方
+- `forgeSkill` 從 `webResult.content` 取字串，並額外保存 `extracts.webResearchMeta`（供未來診斷使用）
+- timeout 偵測透過 Bun.spawnSync 的 `signalCode === 'SIGTERM'` 或 `exitCode === null` 判斷
+- spawn 失敗透過 catch 塊捕捉，回傳 `error: 'spawn_failed', detail: err.message`
+
+**Feature 10 測試策略：**
+- Scenario 10-1、10-2：驗證結構化格式的 shape（無法真實觸發 timeout 不讓測試變慢，改用格式驗證）
+- Scenario 10-3：用快取命中路徑驗證成功格式
+- Scenario 10-4：測試環境 claude 不可用時不拋出，回傳含 error 的物件
+- Scenario 10-5、10-6：驗證 `assembleSkillBody` 新格式相容性
+- Scenario 10-7：驗證 `forgeSkill` graceful fallback
+Keywords: extractwebknowledge, string, content, error, duration, assembleskillbody, webresearch, forgeskill, webresult, extracts
+
+---
+## 2026-03-05 | developer:DEV Findings
+- `interview.test.js` 已有 33 個測試，覆蓋了主要功能路徑；邊界情況（null/undefined 答案、roundtrip 欄位完整性、問題池耗盡等）未被覆蓋
+- `enrichBDDScenarios` 已從 `module.exports` 匯出，可直接 require 測試
+- `buildBDDScenarios` 未匯出，透過 `generateSpec` 間接驗證
+- `Scenario D-2`（skipFacets 跳過所有必問面向）：`isComplete` 的邏輯是 `facetsToCheck` 為空陣列時 for loop 不執行，直接返回 true — 行為符合設計
+Keywords: interview, test, null, undefined, roundtrip, enrichbddscenarios, module, exports, require, buildbddscenarios
 
