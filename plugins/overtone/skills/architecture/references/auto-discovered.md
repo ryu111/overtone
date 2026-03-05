@@ -18,3 +18,7 @@
 - 強信號片段（`security xss injection auth`）：新版本 score > 0.4，明確路由
 - API 介面完全不變：`routeKnowledge(fragment, options)` / `writeKnowledge(...)` 簽名不動
 Keywords: domain, keywords, fragment, solid, refactor, design, pattern, content, totalhits, observation
+---
+## 2026-03-05 | developer:DEV Context
+在 `knowledge-gap-detector.js` 的 `detectKnowledgeGaps` 中加入歧義詞處理，對齊 `skill-router.js` v2 的機制，防止通用詞（refactor、solid、design pattern）造成 gap 誤判。
+Keywords: knowledge, detector, detectknowledgegaps, skill, router, refactor, solid, design, pattern

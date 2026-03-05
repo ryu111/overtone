@@ -212,7 +212,20 @@
 ### L3.6 Acid Test ⬜
 
 > 用真實場景驗證 L3 端到端：給高層目標 → 深度訪談 → 自主建 skill → 無限迭代 → 產品完成。
-> 場景待定。
+
+**場景：CLI 工具 — Markdown 部落格生成器（`md-blog`）**
+
+高層目標：「建立一個 CLI 工具，把 Markdown 文件轉成靜態 HTML 部落格。`md-blog build ./posts` 產出 `./dist/`，每篇文章獨立 HTML，首頁有清單，文章間可互連。」
+
+| 觸發能力 | 說明 |
+|---------|------|
+| deep-pm（L3.4）| 釐清模板系統、CSS 框架、Front Matter 格式、路由結構 |
+| Skill Forge（L3.3）| 自主建立 `static-site-generation` + `cli-tooling` 兩個新 skill |
+| Orchestrator（L3.5）| 從 Project Spec 建立 feature 佇列並啟動自動執行 |
+| Internalization（L3.7）| 完成後將兩個新 skill 內化為永久能力 |
+
+驗收：生成的 HTML 可在瀏覽器開啟，連結不 404，Markdown 正確渲染。
+完整場景設計：`specs/features/in-progress/acid-test-scenario-design/proposal.md`
 
 **完成標準**：系統自主完成端到端能力建構 + 產品開發，無需人工編寫 skill 或 agent。
 

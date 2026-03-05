@@ -1,44 +1,4 @@
 ---
-## 2026-03-05 | architect:ARCH Findings
-**技術方案**：
-- on-demand 掃描（每次呼叫重新掃描所有 plugin 元件），不持久化
-- 雙向索引：`dependencies`（X→Y）和 `dependents`（Y→X）同步維護
-- 四類掃描器獨立實作，組合成完整圖
-
-**Open Questions 解答**：
-1. **SKILL.md Reference 表格格式**：有 2 欄和 4 欄兩種，但路徑格式一致（`` `${CLAUDE_PLUGIN_ROOT}/skills/...` ``）。掃描策略：regex 全文掃描，pattern 為 `` /`\${CLAUDE_PLUGIN_ROOT}\/skills\/[^`]+`/g ``
-2. **路徑參數慣例**：相對路徑（相對於 plugin root）。CLI 支援絕對路徑輸入（自動轉換）
-3. **require() 正規化**：`path.resolve(hookDir, relativePath)` → `path.relative(pluginRoot, absPath)` → 加 `.js`，只收錄 plugin root 下的依賴
-4. **Commands 依賴**：不納入 v1（自由文字，複雜度高），列為 v2
-
-**API 介面**：
-- `buildGraph(pluginRoot: string): DependencyGraph`
-- `graph.getImpacted(path: string): ImpactResult`（`{ path, impacted: [{ path, type, reason }] }`）
-- `graph.getDependencies(path: string): string[]`
-- `graph.getRawGraph(): RawGraph`
-- CLI：`bun scripts/impact.js <path> [--deps] [--json]`
-
-**資料模型**：
-- 內部：`Map<string, Set<string>>`（dependencies + dependents 雙向）
-- 對外：plain object（JSON 可序列化）
-- 無持久化，純記憶體
-
-**檔案結構**：
-- 新增：`plugins/overtone/scripts/lib/dependency-graph.js`（核心模組）
-- 新增：`plugins/overtone/scripts/impact.js`（CLI 入口）
-- 新增：`tests/unit/dependency-graph.test.js`（BDD 測試）
-
-**Dev Phases**：
-
-    ### Phase 1: 核心模組 + CLI (parallel)
-    - [ ] 實作 dependency-graph.js（buildGraph + 四類掃描器） | files: plugins/overtone/scripts/lib/dependency-graph.js
-    - [ ] 實作 impact.js CLI（參數解析 + 格式化輸出） | files: plugins/overtone/scripts/impact.js
-
-    ### Phase 2: 測試 (sequential)
-    - [ ] 撰寫 BDD 驗收測試（3 場景） | files: tests/unit/dependency-graph.test.js
-Keywords: demand, plugin, dependencies, dependents, open, questions, skill, reference, skills, regex
-
----
 ## 2026-03-05 | code-reviewer:REVIEW Findings
 **1. [M] 遺漏檔案：impact.js 未被 commit**
 - 檔案：`plugins/overtone/scripts/impact.js`
@@ -891,4 +851,14 @@ Keywords: extractwebknowledge, string, content, error, duration, assembleskillbo
 - `buildBDDScenarios` 未匯出，透過 `generateSpec` 間接驗證
 - `Scenario D-2`（skipFacets 跳過所有必問面向）：`isComplete` 的邏輯是 `facetsToCheck` 為空陣列時 for loop 不執行，直接返回 true — 行為符合設計
 Keywords: interview, test, null, undefined, roundtrip, enrichbddscenarios, module, exports, require, buildbddscenarios
+
+---
+## 2026-03-05 | developer:DEV Findings
+- 選定場景：**Markdown 部落格生成器（`md-blog`）CLI 工具**
+  - 理由：Overtone 完全不熟悉 static-site-generation 領域，確保 Skill Forge 會真實觸發
+  - 涵蓋 L3 全鏈路：deep-pm（L3.4）→ Skill Forge（L3.3）→ Orchestrator（L3.5）→ Internalization（L3.7）
+- proposal.md 結構完整：場景描述 / 系統能力觸發 / BDD 驗收（6 個 Scenario）/ 執行計劃（6 步）/ 風險矩陣 / 成功定義
+- 唯一預期人工介入點：Step 2 PM 訪談問答（其餘全自動）
+- roadmap.md 的 L3.6 從「場景待定」升級為含完整觸發能力表和驗收說明，並連結到 proposal.md
+Keywords: markdown, blog, overtone, static, site, generation, skill, forge, deep, orchestrator
 
