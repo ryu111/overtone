@@ -366,8 +366,4 @@ module.exports = {
   // 供 config-api.js 內部使用的輔助函式
   validateAgentFrontmatter,
   validateSkillFrontmatter,
-  makeResult,
-  addError,
-  addWarning,
-  VALID_MODELS,
 };

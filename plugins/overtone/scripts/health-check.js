@@ -1335,8 +1335,12 @@ function checkTestGrowth(getDepsOverride) {
  * Consumer 定義：codebase 中有 timeline.query(sid, { type: 'event:name' })、
  * timeline.latest(sid, 'event:name') 或 .type === 'event:name' 呼叫。
  *
- * exempt 清單（fire-and-forget 設計決策，無 consumer 是合理的）：
- *   session:compact-suggestion、hook:timing、queue:auto-write
+ * 三類排除：
+ *   A. fire-and-forget — session:compact-suggestion、hook:timing、queue:auto-write
+ *   B. 全量消費者覆蓋（Dashboard SSE + session-digest 全量讀取 / score-engine）——
+ *      這些事件由全量 timeline 讀取消費，不需要專屬 type 過濾呼叫
+ *   C. 主動回應事件（error:fatal, tool:failure, system:warning）——
+ *      保留 warning，這些事件發生時應有主動處理邏輯
  *
  * @returns {Finding[]}
  */
@@ -1344,10 +1348,34 @@ function checkClosedLoop() {
   const { timelineEvents } = require('./lib/registry');
   const { existsSync } = require('fs');
 
+  // A: fire-and-forget 設計決策
   const EXEMPT_EVENTS = new Set([
     'session:compact-suggestion',
     'hook:timing',
     'queue:auto-write',
+  ]);
+
+  // B: 全量消費者覆蓋的事件（Dashboard SSE allEvents + session-digest 全量讀取 + score-engine）
+  // 這些事件被全量讀取路徑消費，無需專屬 consumer 偵測
+  const BROADCAST_ONLY_EVENTS = new Set([
+    'workflow:abort',
+    'stage:retry',
+    'agent:delegate',
+    'agent:complete',
+    'agent:error',
+    'loop:start',
+    'loop:advance',
+    'loop:complete',
+    'parallel:start',
+    'parallel:converge',
+    'grader:score',
+    'specs:init',
+    'specs:archive',
+    'specs:archive-skipped',
+    'specs:archive-scan',
+    'specs:tasks-missing',
+    'session:start',
+    'session:end',
   ]);
 
   // 收集 plugin 目錄下所有 .js，排除 health-check.js 本身 + node_modules
@@ -1381,6 +1409,7 @@ function checkClosedLoop() {
 
   for (const eventKey of Object.keys(timelineEvents)) {
     if (EXEMPT_EVENTS.has(eventKey)) continue;
+    if (BROADCAST_ONLY_EVENTS.has(eventKey)) continue;  // 全量消費者覆蓋，不需要專屬 consumer
     if (!consumedEvents.has(eventKey)) {
       findings.push({
         check: 'closed-loop',
@@ -1501,6 +1530,9 @@ function checkRecoveryStrategy(pluginRootOverride) {
 /**
  * 偵測 skill 目錄是否缺少 references/ 子目錄。
  *
+ * Orchestrator 類型 skill（auto、workflow-core）本質是工作流選擇器/指揮器，
+ * 不需要知識型 references 目錄，故排除在外。
+ *
  * @param {string} [skillsDirOverride] — 供測試覆蓋 skills 目錄
  * @returns {Finding[]}
  */
@@ -1508,6 +1540,9 @@ function checkCompletionGap(skillsDirOverride) {
   const { existsSync } = require('fs');
   const skillsDir = skillsDirOverride || SKILLS_DIR;
   const findings = [];
+
+  // Orchestrator 類型 skill：工作流選擇器/指揮器，不需要 references 子目錄
+  const ORCHESTRATOR_SKILLS = new Set(['auto', 'workflow-core']);
 
   let skillDirs = [];
   try {
@@ -1519,6 +1554,7 @@ function checkCompletionGap(skillsDirOverride) {
   }
 
   for (const skillName of skillDirs) {
+    if (ORCHESTRATOR_SKILLS.has(skillName)) continue;  // orchestrator skill 無需 references
     const refsDir = require('path').join(skillsDir, skillName, 'references');
     if (!existsSync(refsDir)) {
       findings.push({
