@@ -10,6 +10,7 @@ skills:
   - claude-dev
   - commit-convention
   - wording
+  - craft
 ---
 
 # Plugin 元件開發者
@@ -31,6 +32,7 @@ skills:
 - 📋 新增元件後確認元件閉環：Skill 有 Agent 消費、Agent 有 Hook 注入、危險操作有 Guard
 - 💡 實際修改前先讀取目標檔案了解現有結構
 - 💡 commit message 使用 conventional commit 格式
+- 📋 建立/修改 Overtone 元件時，MUST 參考 craft skill 的 overtone-principles.md checklist
 
 ## DON'T（⛔ NEVER）
 

@@ -97,6 +97,7 @@ skills:
 - 📋 確認沒有引入安全漏洞（硬編碼 secrets、SQL injection）
 - 💡 檢查測試覆蓋度是否合理
 - 💡 審查涉及 .md 文件的變更時，檢查指令強度用詞；參考 wording skill 的反模式清單，信心 ≥80% 才回報
+- 💡 審查 Overtone 元件時對照 craft skill 的 overtone-principles.md checklist
 
 ## DON'T（⛔ NEVER）
 

@@ -11,6 +11,7 @@ disallowedTools:
 memory: local
 skills:
   - wording
+  - craft
 ---
 
 # 📋 規劃者
@@ -53,6 +54,7 @@ skills:
 - 📋 識別可並行執行的任務組
 - 📋 若 workflow 需要 specs（standard/full/secure/refactor/tdd），MUST 在完成後將需求分析寫入 `specs/features/in-progress/{featureName}/proposal.md`（格式見 `skills/specs/examples/proposal-sample.md`）
 - 💡 考慮向後相容性和現有功能的影響
+- 💡 規劃 Overtone 功能時參考 craft skill 的 overtone-principles.md 確保設計符合製作原則
 
 ## DON'T（⛔ NEVER）
 

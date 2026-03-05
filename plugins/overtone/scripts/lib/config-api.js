@@ -47,7 +47,11 @@ function buildAgentFrontmatter(fm) {
   lines.push(`description: ${fm.description}`);
   lines.push(`model: ${fm.model}`);
   lines.push(`permissionMode: bypassPermissions`);
-  lines.push(`color: ${fm.color}`);
+  // hex color 需要引號，避免 YAML 將 # 視為注釋
+  const colorVal = typeof fm.color === 'string' && fm.color.startsWith('#')
+    ? `'${fm.color}'`
+    : fm.color;
+  lines.push(`color: ${colorVal}`);
   lines.push(`maxTurns: ${fm.maxTurns}`);
 
   if (fm.disallowedTools && fm.disallowedTools.length > 0) {
