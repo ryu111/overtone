@@ -1286,7 +1286,7 @@ function checkQualityTrends(projectRootOverride) {
  * 測試增長基線快照（硬編碼常數）。
  * 當測試數量或檔案數量相對基線增長超過 THRESHOLD 時，回報 warning。
  */
-const TEST_BASELINE = { tests: 3114, files: 137, date: '2026-03-04' };
+const TEST_BASELINE = { tests: 3023, files: 188, date: '2026-03-06' };
 const TEST_GROWTH_THRESHOLD = 0.20; // 20%
 
 /**
