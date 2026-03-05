@@ -6,15 +6,13 @@
  * 提供 gap 建議讓 pre-task hook 注入警告訊息。
  *
  * 導出：
- *   DOMAIN_KEYWORDS — 12/15 個 knowledge domain 的關鍵詞靜態表
- *                     （os-control、autonomous-control、craft 3 個 domain 尚未加入，留待後續迭代）
+ *   DOMAIN_KEYWORDS — 15/15 knowledge domain 的關鍵詞靜態表（os-control、autonomous-control、craft 已補齊）
  *   detectKnowledgeGaps — 主要偵測函式
  */
 
 /**
- * 12/15 個 knowledge domain 的關鍵詞靜態表。
+ * 15 個 knowledge domain 的關鍵詞靜態表。
  * 每個 domain 約 10-15 個關鍵詞，涵蓋該領域的核心概念。
- * 注意：os-control、autonomous-control、craft 3 個 domain 尚未加入，留待後續迭代。
  */
 const DOMAIN_KEYWORDS = {
   'testing': [
@@ -79,6 +77,23 @@ const DOMAIN_KEYWORDS = {
     'updatedinput', 'hook script', 'agent frontmatter', 'agent.md',
     'bypasspermissions', 'plugin hook', 'claude code plugin',
     'manage-component',
+  ],
+  'os-control': [
+    'process', 'clipboard', 'screenshot', 'window', 'notification',
+    'system-info', 'fswatch', 'keyboard', 'mouse', 'applescript',
+    'screencapture', '截圖', '視窗', '剪貼簿', '通知',
+  ],
+  'autonomous-control': [
+    'heartbeat', 'daemon', 'spawn', 'queue', 'execution-queue',
+    'headless', 'autonomous', '自主', '常駐', '佇列',
+    '排程', 'cron', 'background', 'polling', 'scheduled',
+  ],
+  'craft': [
+    'principle', 'convention', 'invariant', 'guard', 'closed-loop',
+    'recovery', 'completion-gap', 'health-check', 'validate',
+    'clean code', 'solid', 'refactor', 'design pattern', 'dry principle',
+    'srp', 'function composition', 'immutable', 'pure function', 'code smell',
+    '製作規範', '閉環', '守衛', '自癒', '不變量', '品質',
   ],
 };
 

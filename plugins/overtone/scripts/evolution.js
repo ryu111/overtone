@@ -3,14 +3,20 @@
 /**
  * evolution.js — Evolution Engine CLI 入口
  *
- * 用法：bun scripts/evolution.js analyze [--json]
+ * 用法：bun scripts/evolution.js <subcommand> [options]
  *
- *   analyze         執行 gap 分析，輸出純文字報告（有缺口 exit 1，無缺口 exit 0）
- *   analyze --json  輸出 JSON 格式報告
+ *   analyze              執行 gap 分析，輸出純文字報告（有缺口 exit 1，無缺口 exit 0）
+ *   analyze --json       輸出 JSON 格式報告
+ *   fix                  預覽可修復缺口（dry-run）
+ *   fix --execute        實際執行修復
+ *   forge <domain>       預覽 forge 結果（dry-run，不建立任何檔案）
+ *   forge <domain> --execute  實際執行 forge，建立 skill
+ *   forge <domain> --json     以 JSON 格式輸出結果
  */
 
 const { analyzeGaps } = require('./lib/gap-analyzer');
 const { fixGaps } = require('./lib/gap-fixer');
+const { forgeSkill } = require('./lib/skill-forge');
 
 // ── 工具函式 ──
 
@@ -26,10 +32,13 @@ function printUsage() {
   process.stdout.write('  fix --execute        實際執行修復\n');
   process.stdout.write('  fix --type <type>    只修復指定類型（sync-mismatch / no-references）\n');
   process.stdout.write('  fix --json           以 JSON 格式輸出修復結果\n');
+  process.stdout.write('  forge <domain>       預覽 forge 結果（dry-run，不建立任何檔案）\n');
+  process.stdout.write('  forge <domain> --execute  實際執行 forge，建立 skill\n');
+  process.stdout.write('  forge <domain> --json     以 JSON 格式輸出 forge 結果\n');
   process.stdout.write('\n');
   process.stdout.write('選項：\n');
   process.stdout.write('  --json      以 JSON 格式輸出\n');
-  process.stdout.write('  --execute   實際執行修復（fix 子命令預設為 dry-run）\n');
+  process.stdout.write('  --execute   實際執行（fix/forge 子命令預設為 dry-run）\n');
   process.stdout.write('  --type <t>  限制修復類型（sync-mismatch / no-references）\n');
 }
 
@@ -277,6 +286,84 @@ function main() {
       process.exit(1);
     }
     process.exit(0);
+  } else if (subcommand === 'forge') {
+    const domainName = positional[1];
+    const execute = flags.includes('--execute');
+
+    // 缺少 domain 參數
+    if (!domainName) {
+      process.stdout.write('forge 子命令用法：bun scripts/evolution.js forge <domain> [--execute] [--json]\n');
+      process.stdout.write('\n');
+      process.stdout.write('  forge <domain>              預覽 forge 結果（dry-run，不建立任何檔案）\n');
+      process.stdout.write('  forge <domain> --execute    實際執行 forge，建立 skill\n');
+      process.stdout.write('  forge <domain> --json       以 JSON 格式輸出結果\n');
+      process.exit(1);
+    }
+
+    let result;
+    try {
+      result = forgeSkill(domainName, {}, { dryRun: !execute });
+    } catch (err) {
+      process.stderr.write(`forge 執行錯誤：${err.message}\n`);
+      process.exit(1);
+    }
+
+    if (jsonOutput) {
+      process.stdout.write(JSON.stringify(result, null, 2) + '\n');
+      // conflict / paused / error → exit 1
+      if (result.status !== 'success') {
+        process.exit(1);
+      }
+      process.exit(0);
+    }
+
+    // 人類可讀輸出
+    if (result.status === 'success') {
+      if (result.preview) {
+        // dry-run 成功
+        process.stdout.write(`Skill Forge — Dry Run 預覽\n`);
+        process.stdout.write(`==========================\n`);
+        process.stdout.write(`Domain：${result.domainName}\n`);
+        process.stdout.write(`描述：${result.preview.description}\n`);
+        process.stdout.write(`\n已掃描來源（${result.preview.sourcesScanned.length} 個）：\n`);
+        for (const src of result.preview.sourcesScanned.slice(0, 5)) {
+          process.stdout.write(`  ${src}\n`);
+        }
+        if (result.preview.sourcesScanned.length > 5) {
+          process.stdout.write(`  ...（共 ${result.preview.sourcesScanned.length} 個）\n`);
+        }
+        process.stdout.write(`\n--- SKILL.md Body 預覽（前 500 字元）---\n`);
+        process.stdout.write(result.preview.body.slice(0, 500) + '\n');
+        process.stdout.write(`---\n`);
+        process.stdout.write(`\n加 --execute 旗標實際建立此 skill。\n`);
+      } else {
+        // execute 成功
+        process.stdout.write(`Skill Forge — 建立成功\n`);
+        process.stdout.write(`======================\n`);
+        process.stdout.write(`Domain：${result.domainName}\n`);
+        process.stdout.write(`路徑：${result.skillPath}\n`);
+      }
+      process.exit(0);
+    }
+
+    if (result.status === 'conflict') {
+      process.stdout.write(`衝突：skill "${result.domainName}" 已存在於 ${result.conflictPath}\n`);
+      process.exit(1);
+    }
+
+    if (result.status === 'paused') {
+      process.stdout.write(`已暫停：連續失敗 ${result.consecutiveFailures} 次，超過上限\n`);
+      process.exit(1);
+    }
+
+    if (result.status === 'error') {
+      process.stderr.write(`forge 失敗：${result.error}\n`);
+      process.exit(1);
+    }
+
+    // 未預期的 status
+    process.stderr.write(`未預期的 forge 結果：${JSON.stringify(result)}\n`);
+    process.exit(1);
   } else {
     process.stderr.write(`未知子命令：${subcommand}\n\n`);
     printUsage();
