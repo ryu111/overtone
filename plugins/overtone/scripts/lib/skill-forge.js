@@ -9,11 +9,13 @@
  *   dryRun?: boolean              — true 時不執行任何 fs 操作（預設 true）
  *   maxConsecutiveFailures?: number — 連續失敗暫停門檻（預設 3）
  *   pluginRoot?: string           — 覆寫 plugin 根目錄（供測試注入）
+ *   initialFailures?: number      — 注入初始計數（供 Phase 2 多 domain 場景隔離狀態）
  *
  * ForgeResult:
  *   { status: 'success'|'conflict'|'paused'|'error',
  *     domainName, skillPath?, preview?, conflictPath?,
- *     consecutiveFailures?, error? }
+ *     consecutiveFailures, error? }
+ *   注意：consecutiveFailures 在所有 status 下都存在（方便呼叫端跨 domain 追蹤）
  *
  * ForgePreview:
  *   { domainName, description, body, sourcesScanned }
@@ -227,6 +229,7 @@ function rollback(skillDir) {
  * @param {boolean} [options.dryRun=true] - 預設 dry-run
  * @param {number} [options.maxConsecutiveFailures=3] - 連續失敗暫停門檻
  * @param {string} [options.pluginRoot] - plugin 根目錄路徑覆寫
+ * @param {number} [options.initialFailures] - 注入初始計數（Phase 2 多 domain 場景，不影響模組層級計數）
  * @returns {ForgeResult}
  */
 function forgeSkill(domainName, context, options = {}) {
@@ -234,7 +237,14 @@ function forgeSkill(domainName, context, options = {}) {
     dryRun = true,
     maxConsecutiveFailures = 3,
     pluginRoot: pluginRootOverride,
+    initialFailures,
   } = options;
+
+  // 決定本次呼叫使用的計數器：
+  // - 若呼叫端注入 initialFailures（Phase 2 多 domain 場景），使用注入值（不修改模組層級）
+  // - 否則使用模組層級計數（Phase 1 CLI 場景）
+  const useInjected = initialFailures !== undefined;
+  let localFailures = useInjected ? initialFailures : consecutiveFailures;
 
   const pluginRoot = resolvePluginRoot(pluginRootOverride);
 
@@ -247,15 +257,16 @@ function forgeSkill(domainName, context, options = {}) {
       status: 'conflict',
       domainName,
       conflictPath: skillMdPath,
+      consecutiveFailures: localFailures,
     };
   }
 
   // 2. 暫停檢查
-  if (consecutiveFailures >= maxConsecutiveFailures) {
+  if (localFailures >= maxConsecutiveFailures) {
     return {
       status: 'paused',
       domainName,
-      consecutiveFailures,
+      consecutiveFailures: localFailures,
     };
   }
 
@@ -264,6 +275,19 @@ function forgeSkill(domainName, context, options = {}) {
 
   // 4. SKILL.md 組裝
   const { description, body } = buildSkillContent(domainName, extracts);
+
+  // ── 計數器更新輔助函式 ──
+  // 注入模式：只更新 localFailures（不污染模組層級）
+  // CLI 模式：同步更新模組層級計數器
+  function incrementFailures() {
+    localFailures++;
+    if (!useInjected) consecutiveFailures = localFailures;
+  }
+
+  function resetFailures() {
+    localFailures = 0;
+    if (!useInjected) consecutiveFailures = 0;
+  }
 
   // 5. dry-run 模式
   if (dryRun) {
@@ -276,6 +300,7 @@ function forgeSkill(domainName, context, options = {}) {
         body,
         sourcesScanned: extracts.sourcesScanned,
       },
+      consecutiveFailures: localFailures,
     };
   }
 
@@ -303,7 +328,7 @@ function forgeSkill(domainName, context, options = {}) {
   );
 
   if (createResult.exitCode !== 0) {
-    consecutiveFailures++;
+    incrementFailures();
     const errMsg = createResult.stderr
       ? Buffer.from(createResult.stderr).toString()
       : 'manage-component.js create skill 執行失敗';
@@ -311,6 +336,7 @@ function forgeSkill(domainName, context, options = {}) {
       status: 'error',
       domainName,
       error: errMsg,
+      consecutiveFailures: localFailures,
     };
   }
 
@@ -320,21 +346,23 @@ function forgeSkill(domainName, context, options = {}) {
   if (!validation.valid) {
     // 驗證失敗 → 回滾
     rollback(skillDir);
-    consecutiveFailures++;
+    incrementFailures();
     return {
       status: 'error',
       domainName,
       error: validation.errors.join('\n'),
+      consecutiveFailures: localFailures,
     };
   }
 
   // 驗證成功 → 重置計數器
-  consecutiveFailures = 0;
+  resetFailures();
 
   return {
     status: 'success',
     domainName,
     skillPath: skillMdPath,
+    consecutiveFailures: localFailures,
   };
 }
 

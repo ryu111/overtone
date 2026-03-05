@@ -268,6 +268,79 @@ describe('Feature 4: 安全邊界', () => {
   });
 });
 
+// ── Feature 5: initialFailures 注入（Phase 2 多 domain 隔離）──
+
+describe('Feature 5: initialFailures 注入', () => {
+  test('Scenario 5-1: initialFailures 注入時不影響模組層級計數', () => {
+    _resetConsecutiveFailures(); // 模組計數 = 0
+    const pluginRoot = makeMinimalPluginRoot('5-1');
+
+    // 注入 initialFailures: 2，但模組層級計數仍為 0
+    const result = forgeSkill('new-domain-5-1', {}, {
+      dryRun: true,
+      pluginRoot,
+      initialFailures: 2,
+    });
+
+    // dry-run 成功，且回傳注入的計數值
+    expect(result.status).toBe('success');
+    expect(result.consecutiveFailures).toBe(2);
+
+    // 再次呼叫不帶 initialFailures，確認模組計數仍為 0（未被注入值污染）
+    const result2 = forgeSkill('new-domain-5-1b', {}, {
+      dryRun: true,
+      pluginRoot,
+    });
+    expect(result2.consecutiveFailures).toBe(0);
+  });
+
+  test('Scenario 5-2: initialFailures 達門檻時觸發暫停且不污染模組計數', () => {
+    _resetConsecutiveFailures(); // 模組計數 = 0
+    const pluginRoot = makeMinimalPluginRoot('5-2');
+
+    // 注入 initialFailures: 3，門檻預設 3 → 暫停
+    const result = forgeSkill('any-domain-5-2', {}, {
+      dryRun: false,
+      pluginRoot,
+      initialFailures: 3,
+    });
+
+    expect(result.status).toBe('paused');
+    expect(result.consecutiveFailures).toBe(3);
+
+    // 模組層級計數仍為 0
+    const result2 = forgeSkill('other-domain-5-2', {}, {
+      dryRun: true,
+      pluginRoot,
+    });
+    expect(result2.status).toBe('success');
+    expect(result2.consecutiveFailures).toBe(0);
+  });
+
+  test('Scenario 5-3: 不帶 initialFailures 時回傳模組層級計數', () => {
+    _resetConsecutiveFailures(); // 模組計數 = 0
+    const pluginRoot = makeMinimalPluginRoot('5-3');
+
+    const result = forgeSkill('domain-5-3', {}, { dryRun: true, pluginRoot });
+
+    expect(result.consecutiveFailures).toBe(0);
+  });
+
+  test('Scenario 5-4: conflict 路徑也回傳 consecutiveFailures', () => {
+    const pluginRoot = makePluginRootWithSkills('5-4');
+    _resetConsecutiveFailures();
+
+    const result = forgeSkill('existing-domain', {}, {
+      dryRun: true,
+      pluginRoot,
+      initialFailures: 1,
+    });
+
+    expect(result.status).toBe('conflict');
+    expect(result.consecutiveFailures).toBe(1);
+  });
+});
+
 // ── Feature 7: SKILL.md 結構驗證 ──
 
 describe('Feature 7: SKILL.md 結構驗證', () => {
