@@ -1,16 +1,4 @@
 ---
-## 2026-03-03 | tester:TEST Findings
-測試結果摘要：**2695 passed, 0 failed**
-
-- `tests/unit/guard-system.test.js`：**33 pass**，涵蓋 Feature 1-6（evalDocsSyncStatus / evalTestQualityStatus / evalDeadCodeStatus / evalComponentRepairStatus / evalHookDiagnosticStatus / runFullGuardCheck 結構驗證）
-- `tests/unit/health-check.test.js`：**54 pass**，dead-exports 相關測試全部通過
-- 全套 115 個測試檔執行完畢，無任何失敗
-
-警告級問題（不影響測試通過，僅供參考）：
-- 19 個 warning：large-file 和 hardcoded-path，均為既有問題，與本次任務無關
-Keywords: passed, failed, tests, unit, guard, system, test, pass, feature, evaldocssyncstatus
-
----
 ## 2026-03-03 | tester:TEST Context
 模式：verify（DEV 後驗證）
 
@@ -659,4 +647,13 @@ Keywords: verify, queue, enhancement, users, projects, overtone, tests, unit, ex
 ## 2026-03-05 | developer:DEV Context
 重設 `checkTestGrowth` 的 baseline 常數，消除 health-check 報告的 +37% test-growth warning。
 Keywords: checktestgrowth, baseline, health, check, test, growth, warning
+
+---
+## 2026-03-05 | developer:DEV Findings
+- 版本說明欄原本累積了從 Level 2 開始的所有歷史細節（一整段長句），已精簡為 5 個核心能力特徵的摘要
+- 測試數字：4088 → 4222 pass，180+ → 188 個測試檔（實際執行 `bun test` 確認）
+- scripts/lib 模組數維持 64（42 根 + 7 + 9 + 4 + 2 子目錄），不需變更
+- 近期變更更新為最近 3 筆實際 commit（全是 health-check 修復）
+- `bun test tests/unit/docs-sync.test.js` 28 pass，驗證數字一致性通過
+Keywords: level, pass, test, scripts, commit, health, check, tests, unit, docs
 
