@@ -69,12 +69,13 @@ function findingToGap(finding, sourceCheck) {
 
   switch (sourceCheck) {
     case 'component-chain':
-      // agent 相關（agents/*.md 路徑，或 message 含 agent）→ broken-chain
-      // skill 相關（message 含 skill）→ missing-skill
-      if (msg.includes('agent') || (finding.file || '').includes('agents/')) {
-        type = 'broken-chain';
-      } else if (msg.includes('skill') || (finding.file || '').includes('skills/')) {
+      // skill 缺失的 finding：message 含 "skill" 且 message 也含 "agent"（引用關係）
+      // 使用 skill 優先：message 含 "skill" → missing-skill
+      // agent 本身不存在：message 含 "agent" 但不含 "skill" → broken-chain
+      if (msg.includes('skill') || (finding.file || '').includes('skills/')) {
         type = 'missing-skill';
+      } else if (msg.includes('agent') || (finding.file || '').includes('agents/')) {
+        type = 'broken-chain';
       } else {
         type = 'broken-chain'; // 預設映射
       }
