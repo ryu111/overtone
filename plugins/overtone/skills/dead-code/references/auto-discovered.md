@@ -82,3 +82,9 @@ Keywords: gray, matter, exports, depcheck, cache, eacces, grep, health, check, d
    - Session ID pattern（`/\b[0-9a-f]{8,}\b/`）可能誤匹配較長的十六進制字串（如 SHA），這是設計上的合理取捨。
    - `import ... from '...'` 的 pattern 採用 `\s+.*\s+` 避免過度貪婪。
 Keywords: pattern, scenario, isempty, minlength, removedcount, number, generalizeresult, schema, removed, string
+---
+## 2026-03-05 | planner:PLAN Context
+使用者需要擴充 queue.js CLI 的個別項目操作能力。現有 CLI 只有批次操作（add/append/clear）和唯讀查詢（list），缺乏對單一佇列項目的精細控制。核心場景：佇列中某項目失敗，目前只能重建整個佇列，操作成本過高。
+
+新增五個子命令：`insert`（位置插入）、`remove`（by name 刪除）、`move`（移動位置）、`info`（單項詳情）、`retry`（failed 重標 pending）。
+Keywords: queue, append, clear, list, insert, remove, name, move, info, retry

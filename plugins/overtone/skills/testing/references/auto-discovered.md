@@ -1,70 +1,4 @@
 ---
-## 2026-03-03 | tester:TEST Findings
-**針對目標測試（46/46 全部通過）**
-
-```
-tests/unit/failure-tracker.test.js        20 pass
-tests/unit/level-2-integration.test.js    26 pass
-Total                                     46 pass, 0 fail
-```
-
-覆蓋驗證結果：
-
-| Scenario | 結果 |
-|---|---|
-| recordFailure — JSONL append（2 個） | PASS |
-| recordFailure — 欄位驗證（2 個） | PASS |
-| getFailurePatterns — byStage/byAgent/topPattern/空檔案/window（5 個） | PASS |
-| formatFailureWarnings — threshold/無資料/stage 無相關/建議文字（5 個） | PASS |
-| formatFailureSummary — 無資料/有資料/topPattern/null input（4 個） | PASS |
-| _trimIfNeeded — maxRecords 截斷（1 個） | PASS |
-| 損壞 JSON 行靜默跳過（1 個） | PASS |
-| Level 2 整合防護 Feature 1-5（26 個） | PASS |
-
-**完整測試套件：2640 pass, 1 fail**
-
-失敗測試（與本次實作無關）：
-```
-tests/unit/docs-sync.test.js
-  (fail) 5. Plugin 版本一致性 > plugin.json 版本與 docs/status.md 標題版本一致
-  Expected: "0.28.27"
-  Received: "0.28.26"
-```
-
-根因：DEV 階段（commit `887c944`）更新了 `plugin.json` 到版本 0.28.27，但 `docs/status.md` 仍停留在 0.28.26。這是預期中的文件同步問題，不是本次測試引入的 regression。
-Keywords: tests, unit, failure, tracker, test, pass, level, integration, total, fail
-
----
-## 2026-03-03 | tester:TEST Context
-模式：verify
-
-執行對象：failure-tracker（卡點識別）的測試驗證
-
-- 測試檔 1：`tests/unit/failure-tracker.test.js`（20 個測試，7 個 describe）
-- 測試檔 2：`tests/unit/level-2-integration.test.js`（26 個測試，5 個 describe）
-Keywords: verify, failure, tracker, tests, unit, test, describe, level, integration
-
----
-## 2026-03-03 | tester:TEST Findings
-測試結果摘要：
-
-**指定測試（2 個檔案）**
-- `tests/unit/time-series-learning.test.js`：31 pass（Feature 1: adjustConfidenceByIds 7 個 Scenario + Feature 2: 品質反饋邏輯 3 個 Scenario + Feature 3: appliedObservationIds 1 個 Scenario）
-- `tests/unit/level-2-integration.test.js`：10 pass（Feature 1-5，含 SessionEnd/SessionStart/PreToolUse/模組可載入性/SubagentStop 整合點）
-- 合計：**41 pass, 0 fail**
-
-**完整測試套件**
-- **2658 pass, 0 fail**（共 114 個測試檔）
-- 無 regression，warn 項目（large-file、hardcoded-path）均為既有項目，不影響通過
-
-**驗證重點確認**
-1. `adjustConfidenceByIds` 核心邏輯全數通過：clamp（上限 1 / 下限 0）、精度 4 位小數、空輸入回傳 0、delta=0 回傳 0
-2. 品質反饋邏輯：improving/degrading/stagnant 三種條件正確區分，`adjustConfidenceByIds` 僅在 improving 或 degrading 時觸發
-3. `appliedObservationIds` 存入 session state 的靜態分析驗證通過
-4. Level 2 所有整合點（graduate、decay、saveBaseline、formatBaselineSummary、formatScoreSummary、failureWarning）均有防護
-Keywords: tests, unit, time, series, learning, test, pass, feature, adjustconfidencebyids, scenario
-
----
 ## 2026-03-03 | developer:DEV Context
 調查 DEV 任務的實作狀態。兩個子任務均已在先前的 session 中完成：
 - 任務 A（Dead Exports 清理）：目前 dead-exports findingsCount = 0，無需額外動作
@@ -700,4 +634,31 @@ Keywords: session, bridge, test, overtone, current, tests, integration, collectt
 ## 2026-03-05 | developer:DEV Context
 - BDD spec 定義了 10 個 scenario，全部通過 test validation
 Keywords: spec, scenario, test, validation
+
+---
+## 2026-03-05 | developer:DEV Findings
+1. **positional args 過濾修正**：`valueOptions` 陣列（包含 `--before`、`--after`）讓其 value 不被誤計為 positional args，原本的 `optionKeys` 只過濾旗標本身
+2. **move 的實作順序**：設計文件已指明「先移除、再找 anchor index、再插入」，避免 anchor index 因移除前項而偏移 — 完整實作
+3. **retryItem `IN_PROGRESS_CONFLICT` 檢查時機**：先驗 `status === 'failed'`，再檢查 in_progress，與設計一致（避免非 failed 項目觸發 IN_PROGRESS_CONFLICT）
+4. **整合測試 run 函式**：`--project-root` 必須放在子命令 args **之後**，否則 `args[0]`（即 command）會被 `--project-root` 覆蓋，導致走到 default help 分支
+5. **makeQueue 輔助函式**：寫入後再手動設定 status（因為 `writeQueue` 只支援 pending 初始狀態），需要直接 atomicWrite 修改 queue 檔案
+Keywords: positional, args, valueoptions, before, after, value, optionkeys, move, anchor, index
+
+---
+## 2026-03-05 | tester:TEST Context
+模式：verify
+
+兩個測試檔案已執行：
+- `/Users/sbu/projects/overtone/tests/unit/execution-queue-enhancement.test.js`（28 tests）
+- `/Users/sbu/projects/overtone/tests/integration/queue-cli-enhancement.test.js`（36 tests）
+Keywords: verify, users, projects, overtone, tests, unit, execution, queue, enhancement, test
+
+---
+## 2026-03-05 | tester:TEST:2 Context
+模式：verify
+執行 `queue-cli-enhancement` 功能的測試驗證。
+測試檔案：
+- `/Users/sbu/projects/overtone/tests/unit/execution-queue-enhancement.test.js`
+- `/Users/sbu/projects/overtone/tests/integration/queue-cli-enhancement.test.js`
+Keywords: verify, queue, enhancement, users, projects, overtone, tests, unit, execution, test
 

@@ -206,3 +206,20 @@ Keywords: plugin, json, docs, status, phase, detection, roadmap, auto, claude, s
 審計所有 18 個 agent prompt 的品質，確認四模式規範（信心過濾 + 邊界清單 DO/DON'T + 誤判防護 + 停止條件）的符合狀況。
 Keywords: agent, prompt
 
+---
+## 2026-03-05 | doc-updater:DOCS Findings
+已更新文件：
+
+1. **docs/status.md**
+   - 版本號同步至 0.28.63
+   - 測試通過數更新：3753 → 4035（+282 tests）
+   - 測試檔案數更新：166 → 180（+14 files）
+   - 「近期變更」第一項新增 queue-cli-enhancement 記錄
+
+2. **plugin.json**
+   - 版本號更新：0.28.62 → 0.28.63（via manage-component.js）
+
+3. **CLAUDE.md**
+   - 已確認：queue.js 指令列表已包含五個新子命令（insert、remove、move、info、retry），commit 0a4f24d 時已同步
+Keywords: docs, status, tests, files, queue, enhancement, plugin, json, manage, component
+

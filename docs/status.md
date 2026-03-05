@@ -1,6 +1,6 @@
 # Overtone 現況
 
-> 最後更新：2026-03-06 | Plugin 版本：0.28.62（skill-internalization：L3.7 經驗內化飛輪 + 95 個測試）
+> 最後更新：2026-03-06 | Plugin 版本：0.28.63（queue-cli-enhancement：insert/remove/move/info/retry 細粒度操作 + 64 個測試）
 
 ## 版本狀態
 
@@ -16,8 +16,8 @@
 | Agent 數量 | 18（含 grader） |
 | Stage 數量 | 16 |
 | Workflow 模板 | 18 |
-| 測試通過 | 3753 pass / 0 fail（166 個測試檔）|
-| 測試檔案 | 166 個 |
+| 測試通過 | 4035 pass / 0 fail（180 個測試檔）|
+| 測試檔案 | 180 個 |
 | Hook 數量 | 11 個 |
 | Skill 數量 | 24（15 knowledge domain + orchestrator + pm + specs + 4 utility-with-refs + instinct） |
 | scripts/lib 模組 | 64（含 analyzers/ 7 + knowledge/ 9 + remote/ 4 + dashboard/ 2 子目錄模組） |
@@ -28,9 +28,9 @@
 
 ## 近期變更（最近 3 筆）
 
+- **[0.28.63] 2026-03-06**：queue-cli-enhancement——細粒度佇列操作——(1) execution-queue.js 新增 insertItem/removeItem/moveItem/getItem/retryItem 五個函式，支援指定位置插入、刪除任意項目、移動位置、查詢詳情、失敗重試；(2) queue.js 新增 insert、remove、move、info、retry 五個 CLI 子命令；(3) 新增 36 個 integration 測試 + 28 個 unit 測試，共 64 個測試；(4) 更新 CLAUDE.md queue.js 指令列表；(5) 版本維持 0.28.63；(6) 測試 +64（3971→4035）✅
 - **[0.28.62] 2026-03-06**：L3.7 skill-internalization——經驗內化飛輪——(1) 新增 skill-evaluator.js（資格評估 4 API）+ skill-generalizer.js（通用化 2 API）+ experience-index.js（索引管理 3 API）；(2) Instinct skill 新增 auto-discovered.md 與 internalized.md 管理；(3) evolution.js internalize 子命令（`bun scripts/evolution.js internalize [--execute] [--json]`）；(4) 新增 6 個測試檔 + 95 個測試；(5) 版本維持 0.28.62；(6) scripts/lib 模組 +3（48→51）；(7) health-check +1 項（checkInternalizationIndex）；(8) 測試 +95（3781→3876）✅
 - **[0.28.62] 2026-03-06**：L3.5 project-orchestrator——自主建構引擎 + Spec 推導——(1) 新增 project-orchestrator.js（6 API：analyzeSpec / deriveSkillDemand / planSkillConstruction / orchestrateProject / validate / exportPlan）；(2) Spec 檔案自動解析 → Skill 需求推導 → 排程規劃；(3) evolution.js orchestrate 子命令（`bun scripts/evolution.js orchestrate <specPath> [--execute] [--json] [--overwrite] [--workflow <template>]`）；(4) 新增 project-orchestrator.test.js（28 unit + integration 測試）；(5) 版本維持 0.28.62；(6) scripts/lib 模組 +1（47→48）；(7) 測試 +28（3753→3781）✅
-- **[0.28.62] 2026-03-06**：L3.4 deep-pm-interview-engine——多輪結構化訪談 + PM 操作指引——(1) 新增 interview.js（7 API：init session / add question / get response / advance phase / get summary / export data / clear session）；(2) 靜態問題庫：24 題跨五面向（功能需求、操作流程、UI 設計、邊界條件、驗收標準）；(3) Session 持久化：.overtone/interviews/{sessionId}/ 目錄管理；(4) 新增 interview-guide.md（PM 訪談操作指引 + 問題模板）；(5) 更新 product-manager.md 與 pm/SKILL.md；(6) 新增 33 個 unit + 10 個 integration 測試；(7) 版本 0.28.61→0.28.62；(8) 測試 +43（3673→3716）✅
 
 ## Phase 3 規劃狀態（✅ 完成）
 

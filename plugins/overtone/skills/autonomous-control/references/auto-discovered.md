@@ -12,3 +12,101 @@ Keywords: project, orchestrator, knowledge, detector, skill, forge, execution, q
 ## 2026-03-05 | developer:DEV Context
 為執行佇列實作智慧排程功能（queue-smart-schedule），新增 `dedup`（去重）和 `suggest-order`（排序建議）兩個功能，並在 `queue.js` CLI 加入對應子命令。
 Keywords: queue, smart, schedule, dedup, suggest, order
+---
+## 2026-03-05 | architect:ARCH Findings
+**技術方案**：
+- 在 `execution-queue.js` 新增五個核心函式（`insertItem` / `removeItem` / `moveItem` / `getItem` / `retryItem`），統一回傳 `{ ok: boolean, error?: string }` 格式
+- 在 `queue.js` 新增五個 CLI 子命令，`--before`/`--after` 互斥 flag 解析，沿用現有 `optionKeys` 過濾機制
+
+**關鍵技術決策**：
+- `remove` 只允許 `pending` / `failed`，不允許 `completed`（歷史記錄保護）
+- `move` 允許 `pending` 和 `failed`（failed 需要重排），不允許 `in_progress` / `completed`
+- `retry` 在有 `in_progress` 時阻擋，回傳 `IN_PROGRESS_CONFLICT` 錯誤
+- anchor 不存在時明確報錯，不靜默 fallback
+- `retryItem` 清除 `failedAt` / `failReason` / `startedAt` 欄位（destructuring 建立新物件，確保欄位完全移除）
+- `move` 實作：先移除目標，再找 anchor 新 index，再插入（避免 index 偏移）
+
+**API 介面**：
+
+```javascript
+// execution-queue.js 新增
+insertItem(projectRoot, name, workflow, anchor, 'before'|'after')
+  → { ok: true } | { ok: false, error: 'QUEUE_NOT_FOUND'|'ANCHOR_NOT_FOUND' }
+
+removeItem(projectRoot, name)
+  → { ok: true } | { ok: false, error: 'QUEUE_NOT_FOUND'|'ITEM_NOT_FOUND'|'INVALID_STATUS' }
+
+moveItem(projectRoot, name, anchor, 'before'|'after')
+  → { ok: true } | { ok: false, error: 'QUEUE_NOT_FOUND'|'ITEM_NOT_FOUND'|'ANCHOR_NOT_FOUND'|'INVALID_STATUS'|'SELF_ANCHOR' }
+
+getItem(projectRoot, name)
+  → { ok: true, item: {...}, index: number } | { ok: false, error: 'QUEUE_NOT_FOUND'|'ITEM_NOT_FOUND' }
+
+retryItem(projectRoot, name)
+  → { ok: true } | { ok: false, error: 'QUEUE_NOT_FOUND'|'ITEM_NOT_FOUND'|'INVALID_STATUS'|'IN_PROGRESS_CONFLICT', conflictName?: string }
+```
+
+**資料模型**：
+- 佇列格式（execution-queue.json）不變
+- `retryItem` 後項目：status 重設為 `pending`，`failedAt` / `failReason` / `startedAt` 欄位完全移除
+- `insertItem` 新項目：只有 `name` / `workflow` / `status: 'pending'`
+
+**檔案結構**：
+- 修改：`plugins/overtone/scripts/lib/execution-queue.js`（新增五個函式 + exports）
+- 修改：`plugins/overtone/scripts/queue.js`（新增五個 cmd 函式 + switch cases + help + exports）
+- 新增：`tests/unit/execution-queue-enhancement.test.js`（單元測試）
+- 新增：`tests/integration/queue-cli-enhancement.test.js`（整合測試）
+- 修改：`CLAUDE.md`（queue.js 用法說明補充）
+
+**Dev Phases**：
+
+    ### Phase 1: 核心函式 (sequential)
+    - [ ] execution-queue.js 新增五個函式 | files: plugins/overtone/scripts/lib/execution-queue.js
+
+    ### Phase 2: CLI + 測試 (parallel)
+    - [ ] queue.js 新增五個 cmd 函式 | files: plugins/overtone/scripts/queue.js
+    - [ ] 單元測試 | files: tests/unit/execution-queue-enhancement.test.js
+
+    ### Phase 3: 整合測試 + 文件 (parallel)
+    - [ ] 整合測試 | files: tests/integration/queue-cli-enhancement.test.js
+    - [ ] 更新 CLAUDE.md | files: CLAUDE.md
+Keywords: execution, queue, insertitem, removeitem, moveitem, getitem, retryitem, boolean, error, string
+---
+## 2026-03-05 | architect:ARCH Context
+queue-cli-enhancement 的技術設計已完成。選擇沿用現有 execution-queue.js 的 `atomicWrite` + `readQueue` pattern，直接擴充而不引入新抽象。五個 Open Questions 已全部做出明確決策。
+Keywords: queue, enhancement, execution, atomicwrite, readqueue, pattern, open, questions
+---
+## 2026-03-05 | developer:DEV Context
+實作了 `queue-cli-enhancement` feature 的全部三個 Phase：
+
+- **Phase 1**：`execution-queue.js` 新增五個函式（`insertItem`、`removeItem`、`moveItem`、`getItem`、`retryItem`），統一回傳 `{ ok: boolean, error?, ... }` 格式
+- **Phase 2**：`queue.js` 新增五個 CLI 子命令（`insert`、`remove`、`move`、`info`、`retry`），完整的 `--before`/`--after` flag 解析與錯誤碼→中文訊息轉換
+- **Phase 3**：`CLAUDE.md` 更新執行佇列管理區塊，補充七個新用法說明
+Keywords: queue, enhancement, feature, phase, execution, insertitem, removeitem, moveitem, getitem, retryitem
+---
+## 2026-03-05 | code-reviewer:REVIEW Findings
+- 五個函式邏輯正確，包含 moveItem 的 index 偏移處理
+- 狀態守衛完整：completed/in_progress 不可刪除/移動，retryItem 檢查 in_progress 衝突
+- `_formatError` 統一錯誤訊息格式，品質良好
+- 64 個測試全部通過（28 unit + 36 integration）
+- 與既有 execution-queue.js 的設計模式一致（回傳格式、atomicWrite、函式簽名）
+- CLAUDE.md 文件已同步更新
+Keywords: moveitem, index, completed, retryitem, unit, integration, execution, queue, atomicwrite, claude
+---
+## 2026-03-05 | retrospective:RETRO Findings
+**回顧摘要**：
+
+- BDD spec（`specs/features/archive/2026-03-05_queue-cli-enhancement/bdd.md`）與實作完全對齊，所有 scenarios 都有對應測試
+- 跨模組一致性良好：`execution-queue.js` 的錯誤碼設計（6 種錯誤碼）與 `queue.js` CLI 層的 `_formatError` 集中處理一致，無錯誤碼漂移
+- CLAUDE.md 已同步更新全部 5 個新子命令（insert/remove/move/info/retry），文件對齊實作
+- `dedup` 和 `suggest-order` 確認屬於前一個 feature（`queue-smart-schedule`），不在本次範圍內，無遺漏
+- `moveItem` 的 anchor index 偏移問題（移除目標項目後再找 anchor）已在實作中正確處理（`/Users/sbu/projects/overtone/plugins/overtone/scripts/lib/execution-queue.js` 第 447 行）
+- `retryItem` 的 `failed` 欄位清理使用 destructuring 方式完全移除（非設為 undefined），符合 BDD 規格要求
+- 測試隔離良好：各測試使用時間戳記目錄，`afterAll` 清理，`beforeEach` 重設佇列
+Keywords: spec, specs, features, archive, enhancement, scenarios, execution, queue, claude, insert
+
+---
+## 2026-03-05 | doc-updater:DOCS Context
+queue-cli-enhancement feature 文件同步完成。開發階段已新增 execution-queue.js 的五個細粒度操作函式與對應 CLI 子命令。
+Keywords: queue, enhancement, feature, execution
+
