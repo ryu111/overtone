@@ -110,12 +110,15 @@ if (featureName && specsFeaturePath) {
 }
 
 // ── 執行佇列推進（pending → in_progress）──
-// 啟動 workflow 時直接推進下一個 pending 項目（佇列有序，無需比對 workflow type）
+// 只在佇列中沒有 in_progress 項目時才推進（避免重複推進）
 try {
   const executionQueue = require('./lib/execution-queue');
-  const next = executionQueue.getNext(process.cwd());
-  if (next) {
-    executionQueue.advanceToNext(process.cwd());
+  const current = executionQueue.getCurrent(process.cwd());
+  if (!current) {
+    const next = executionQueue.getNext(process.cwd());
+    if (next) {
+      executionQueue.advanceToNext(process.cwd());
+    }
   }
 } catch (err) {
   console.error(`⚠️ 佇列推進失敗：${err.message}`);
