@@ -1,13 +1,4 @@
 ---
-## 2026-03-05 | planner:PLAN Context
-**需求**：實作 Overtone P3.5 WebSocket 能力（websocket-realtime），讓 agent 透過 Bash tool 建立 WebSocket 連線進行即時通訊。
-
-**為什麼**：Phase 4 交易場景驗收條件明確要求「WebSocket 接收即時幣安行情」，本次提前（在 P3.4 操控層之前）交付 WebSocket 能力以鋪路。PM Discovery 認定此為優先子項。
-
-**範圍**：遵循已驗證的 P3.x 閉環交付模型（腳本 + Reference + SKILL.md 索引 + 測試），不做 TTS/STT/Guard 擴充。
-Keywords: overtone, websocket, realtime, agent, bash, tool, phase, discovery, reference, skill
-
----
 ## 2026-03-05 | product-manager:PM Findings
 **目標用戶**：個人 dogfooding（Product Owner 自己），場景為讓 Overtone 自主建構新領域能力（Acid Test：自動交易系統）。
 
@@ -820,4 +811,13 @@ Keywords: analyzer, fixer, skill, forge, knowledge, detector, project, orchestra
 
 根本原因：整合測試與 e2e 測試透過子進程執行 hook 腳本時，未設定 `OVERTONE_TEST=1` 環境變數，導致子進程內的 `failure-tracker.recordFailure` 直接寫入真實的 `~/.overtone/global/{projectHash}/failures.jsonl`，累積 40 筆測試假資料，使 TEST stage 失敗計數達到 15 次，觸發門檻 10 次的 warning。
 Keywords: health, check, quality, trends, warning, warnings, hook, failure, tracker, recordfailure
+
+---
+## 2026-03-05 | developer:DEV Findings
+- `init-workflow.js` 需要 workflowType 和 sessionId 兩個參數，`atomicWrite` 會自動建立目錄。
+- 每個 workflow 用獨立的臨時 sessionId（`smoke-test-wf-{name}-{timestamp}`），`afterAll` 自動清理，不污染真實環境。
+- `beforeAll` 僅計算 sessionId，不預建目錄，由 `init-workflow.js` 的 `initState` 透過 `atomicWrite` 自動建立。
+- 新增 18 個測試後，smoke.test.js 共 36 個測試，全部通過（2.61s）。
+- `init-workflow.js` 執行時還會推進 execution-queue，但在測試環境（`OVERTONE_NO_DASHBOARD=1`, `OVERTONE_TEST=1`）中不會有副作用。
+Keywords: init, workflow, workflowtype, sessionid, atomicwrite, smoke, test, name, timestamp, afterall
 

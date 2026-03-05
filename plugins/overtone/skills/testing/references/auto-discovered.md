@@ -1,23 +1,4 @@
 ---
-## 2026-03-03 | tester:TEST Findings
-測試結果摘要：
-
-| 測試範圍 | 結果 |
-|---------|------|
-| `tests/integration/specs.test.js` | 81 pass, 0 fail |
-| `tests/unit/get-workflow-context.test.js` | 9 pass, 0 fail |
-| 全量 `bun test` | 3030 pass, 0 fail（129 files） |
-
-4 個新增的 fallback scenario 全數通過：
-- `非標準標頭（## 子任務清單）時回傳 null` — PASS
-- `無任何 ## 標頭（純文字加 checkbox）時回傳 null` — PASS
-- `回歸測試：有 ## Stages 的正常檔案仍然正確解析` — PASS
-- `回歸測試：有 ## Tasks 的正常檔案仍然正確解析` — PASS
-
-測試數量符合預期（開發者 Handoff 預期 3030 pass）。
-Keywords: tests, integration, specs, test, pass, fail, unit, workflow, context, files
-
----
 ## 2026-03-03 | tester:TEST Context
 模式：verify
 
@@ -630,4 +611,9 @@ Keywords: tests, unit, interview, edge, cases, test
 
 auto-discovered.md 的變更為知識歸檔正常操作，內容正確。
 Keywords: tests, unit, interview, edge, cases, test, feature, plugins, overtone, scripts
+
+---
+## 2026-03-05 | developer:DEV Context
+為 `smoke-test-all-flows` feature 在 `tests/e2e/smoke.test.js` 新增 Scenario 4，覆蓋全 18 個 workflow 模板的初始化驗證。
+Keywords: smoke, test, flows, feature, tests, scenario, workflow
 
