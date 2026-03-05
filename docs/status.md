@@ -1,12 +1,12 @@
 # Overtone 現況
 
-> 最後更新：2026-03-06 | Plugin 版本：0.28.62（deep-pm-interview-engine：多輪結構化訪談 + PM 操作指引 + 43 個測試）
+> 最後更新：2026-03-06 | Plugin 版本：0.28.62（skill-forge-engine Phase 1 + deep-pm-interview-engine：Codebase 知識萃取 + 多輪訪談 + 80 個測試）
 
 ## 版本狀態
 
 | 版本 | 狀態 | 說明 |
 |------|------|------|
-| V1 | 進行中 | 3716 pass，0 fail，核心功能完整 + 守衛強化 11/11 + Knowledge Engine + 跨 Session 長期記憶 + 效能基線追蹤 + 數值評分引擎 + 趨勢分析 + 回饋閉環 + 卡點識別 + 時間序列學習（Level 2 完成）+ 核心穩固清理 + mul-agent 泛化 + P3.0 閉環基礎 + P3.1 感知層（screenshot.js + window.js + perception.md）+ P3.2 心跳引擎（heartbeat.js + session-spawner.js）+ P3.3 系統層（process.js + clipboard.js + system-info.js + notification.js + fswatch.js）+ 並行收斂門 + Status Line TTL 防護 + Specs checkbox fallback 修復 + Level 2→1 整合修復（gradedStages 擴大 + 失敗原因記錄 + 全域觀察注入）+ Agent Memory 升級（8 個跨層級 agent + Score Context 個人化 + Grader 強制化）+ 核心簡化（移除 active-agent.json + 並行提示修復 + 不變量守衛）+ Hook Contract 自我修復（state.sanitize() + 8 個 hook 合約測試）+ 主動偵測（health-check 15 項，含元件鏈 + 資料品質 + 趨勢分析 + 測試增長率 + 製作原則 3 項）+ Health-Check 精確度提升（假陽性 23→0 error + 孤兒 active stage 守衛）+ Queue CLI + PM 佇列整合 + Spawner 防禦 + Hook 薄殼化（9 handler 模組）+ Telegram /run 命令 + PM 佇列自動寫入 + CLAUDECODE env filter + Main Agent 寫碼偵測守衛 + lib/ 結構重構（config 拆分 + analyzers/ + knowledge/ 子目錄）+ SessionStart systemMessage 動態注入 plugin context + Prompt Journal（intent_journal 記錄 prompt 原文）+ 製作原則內化（agent prompt + validate 四模式品質檢查）+ PM Plan Mode（/ot:pm plan 規劃模式 + appendQueue API + enable-auto 指令）+ Agent Prompt 四模式補齊（15 個 agent 信心過濾 + 誤判防護 + 標準化章節排列）+ P4.1-P4.2 進化引擎（Gap Detection + Auto-Fix）+ L3.4 深度 PM 多輪訪談（interview.js + 7 API + 24 題靜態問題庫 + 五面向結構化訪談 + session 持久化）|
+| V1 | 進行中 | 3753 pass，0 fail，核心功能完整 + 守衛強化 11/11 + Knowledge Engine + 跨 Session 長期記憶 + 效能基線追蹤 + 數值評分引擎 + 趨勢分析 + 回饋閉環 + 卡點識別 + 時間序列學習（Level 2 完成）+ 核心穩固清理 + mul-agent 泛化 + P3.0 閉環基礎 + P3.1 感知層（screenshot.js + window.js + perception.md）+ P3.2 心跳引擎（heartbeat.js + session-spawner.js）+ P3.3 系統層（process.js + clipboard.js + system-info.js + notification.js + fswatch.js）+ 並行收斂門 + Status Line TTL 防護 + Specs checkbox fallback 修復 + Level 2→1 整合修復（gradedStages 擴大 + 失敗原因記錄 + 全域觀察注入）+ Agent Memory 升級（8 個跨層級 agent + Score Context 個人化 + Grader 強制化）+ 核心簡化（移除 active-agent.json + 並行提示修復 + 不變量守衛）+ Hook Contract 自我修復（state.sanitize() + 8 個 hook 合約測試）+ 主動偵測（health-check 15 項，含元件鏈 + 資料品質 + 趨勢分析 + 測試增長率 + 製作原則 3 項）+ Health-Check 精確度提升（假陽性 23→0 error + 孤兒 active stage 守衛）+ Queue CLI + PM 佇列整合 + Spawner 防禦 + Hook 薄殼化（9 handler 模組）+ Telegram /run 命令 + PM 佇列自動寫入 + CLAUDECODE env filter + Main Agent 寫碼偵測守衛 + lib/ 結構重構（config 拆分 + analyzers/ + knowledge/ 子目錄）+ SessionStart systemMessage 動態注入 plugin context + Prompt Journal（intent_journal 記錄 prompt 原文）+ 製作原則內化（agent prompt + validate 四模式品質檢查）+ PM Plan Mode（/ot:pm plan 規劃模式 + appendQueue API + enable-auto 指令）+ Agent Prompt 四模式補齊（15 個 agent 信心過濾 + 誤判防護 + 標準化章節排列）+ P4.1-P4.2 進化引擎（Gap Detection + Auto-Fix）+ L3.3 Skill Forge Phase 1（skill-forge.js + 知識萃取 + evolution.js forge CLI）+ L3.4 深度 PM 多輪訪談（interview.js + 7 API + 24 題靜態問題庫 + 五面向結構化訪談 + session 持久化）|
 | V2 | 規劃中 | 延後 |
 
 ## 核心指標
@@ -16,8 +16,8 @@
 | Agent 數量 | 18（含 grader） |
 | Stage 數量 | 16 |
 | Workflow 模板 | 18 |
-| 測試通過 | 3716 pass / 0 fail（164 個測試檔）|
-| 測試檔案 | 164 個 |
+| 測試通過 | 3753 pass / 0 fail（166 個測試檔）|
+| 測試檔案 | 166 個 |
 | Hook 數量 | 11 個 |
 | Skill 數量 | 23（15 knowledge domain + orchestrator + pm + specs + 4 utility-with-refs） |
 | Knowledge Domain 數 | 15（testing、workflow-core、security-kb、database、dead-code、commit-convention、code-review、wording、debugging、architecture、build-system、os-control、autonomous-control、craft、claude-dev） |
@@ -27,9 +27,9 @@
 
 ## 近期變更（最近 3 筆）
 
+- **[0.28.62] 2026-03-06**：L3.3 skill-forge-engine——Codebase 內知識萃取 + CLI 整合——(1) 新增 skill-forge.js（5 API：forgeSkill / extractKnowledge / assembleSkill / validate / rollback）；(2) 支援 15 個 domain 知識萃取（從 codebase 中自動提取 reference、examples、patterns）；(3) evolution.js forge 子命令（`bun scripts/evolution.js forge <domain> [--execute] [--json]`）；(4) 新增 skill-forge.test.js（23 unit tests）+ evolution-forge.test.js（10 integration tests）；(5) 升級 knowledge-gap-detector：15→18 domain（+os-control、autonomous-control、craft）；(6) 版本維持 0.28.62；(7) 測試 +37（3716→3753）✅
 - **[0.28.62] 2026-03-06**：L3.4 deep-pm-interview-engine——多輪結構化訪談 + PM 操作指引——(1) 新增 interview.js（7 API：init session / add question / get response / advance phase / get summary / export data / clear session）；(2) 靜態問題庫：24 題跨五面向（功能需求、操作流程、UI 設計、邊界條件、驗收標準）；(3) Session 持久化：.overtone/interviews/{sessionId}/ 目錄管理；(4) 新增 interview-guide.md（PM 訪談操作指引 + 問題模板）；(5) 更新 product-manager.md 與 pm/SKILL.md；(6) 新增 33 個 unit + 10 個 integration 測試；(7) 版本 0.28.61→0.28.62；(8) 測試 +43（3673→3716）✅
 - **[0.28.61] 2026-03-05**：P4.2 evolution-engine-auto-create——Auto-Fix 核心模組 + CLI 入口——(1) 新增 gap-fixer.js（根據 gap type 選擇修復策略，支援 component-chain / closed-loop / completion-gap / dependency-sync）；(2) evolution.js fix 子命令（`bun scripts/evolution.js fix [--execute] [--type <type>] [--json]`）；(3) 新增 gap-fixer.test.js（50 個測試：修復策略 + 邊界情況 + integration）；(4) 版本 0.28.60→0.28.61；(5) 測試 +41（3632→3673）✅
-- **[0.28.60] 2026-03-05**：P4.1 evolution-engine-gap-detect——Gap Detection 核心模組 + CLI 入口——(1) 新增 gap-analyzer.js（組合 health-check 四個 check 函式，轉換 findings 為標準化 Gap 物件）；(2) 新增 evolution.js CLI 入口（`bun scripts/evolution.js analyze [--json]`）；(3) 新增 gap-analyzer.test.js + evolution.test.js（33 unit + 19 integration）；(4) 版本 0.28.59→0.28.60；(5) 測試 +52（3580→3632）✅
 
 ## Phase 3 規劃狀態（✅ 完成）
 

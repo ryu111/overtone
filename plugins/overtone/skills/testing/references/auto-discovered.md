@@ -1,9 +1,5 @@
 ---
 ## 2026-03-03 | developer:DEV Findings
-- 使用 describe/it/expect 組織 BDD 測試，test coverage 90%
-Keywords: describe, expect, test, coverage
----
-## 2026-03-03 | developer:DEV Findings
 - 使用 describe/it/expect 組織 BDD 測試，coverage 達標
 Keywords: describe, expect, coverage
 ---
@@ -720,4 +716,14 @@ Keywords: interview, recordanswer, atomicwrite, agent, prompt, askuserquestion, 
 - mock 和 stub 用於隔離外部依賴
 - coverage 指標：statement 90% branch 85%
 Keywords: describe, expect, mock, stub, coverage, statement, branch
+
+---
+## 2026-03-05 | doc-updater:DOCS Context
+根據 skill-forge-engine feature 的開發完成，執行了三個技術文件的同步更新：
+
+**Handoff 摘要**：
+- L3.3 Skill Forge Phase 1 已完成：skill-forge.js（5 API）+ evolution.js forge CLI 子命令
+- 新增 33 個 unit tests + 10 個 integration tests（總計 +37 測試）
+- knowledge-gap-detector 升級至 18 domains（新增 os-control、autonomous-control、craft）
+Keywords: skill, forge, engine, feature, handoff, phase, evolution, unit, tests, integration
 

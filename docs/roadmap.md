@@ -1,6 +1,6 @@
 # Overtone Roadmap
 
-> 最後更新：2026-03-06 | 當前進度：L3.4 深度 PM 多輪訪談完成，L3.3 Skill Forge 待開始
+> 最後更新：2026-03-06 | 當前進度：L3.4 深度 PM 多輪訪談完成，L3.3 Skill Forge Phase 1 完成
 
 ## Layer 總覽
 
@@ -175,17 +175,17 @@
 | evolution.js fix 子命令 | `bun scripts/evolution.js fix [--execute] [--type <type>] [--json]` | ✅ |
 | Auto-Fix 測試 | 修復正確性 + 邊界情況 + 50 個測試 | ✅ |
 
-### L3.3 Skill Forge（自主建立能力）⬜
+### L3.3 Skill Forge（自主建立能力）🟡 部分完成
 
 > 真質變起點：系統面對未知領域，能自主研究 → 建立 skill → 驗證可用。
 > 類比：免疫系統遇到新病毒，自己產生抗體。
 
 | 任務 | 說明 | 狀態 |
 |------|------|:----:|
+| Phase 1：Codebase 內知識萃取 | skill-forge.js（5 API：forgeSkill / extractKnowledge / assembleSkill / validate / rollback）+ 15 domain 知識庫 + 33 unit tests | ✅ |
+| Phase 2：WebFetch 領域研究 | spawn 研究 session（WebFetch 搜集領域知識 → 結構化整理） | ⬜ |
 | 能力缺口偵測 | knowledge-gap-detector 升級：無法路由到任何 domain（score < 0.2）→ 觸發 forge | ⬜ |
-| 領域研究引擎 | spawn 研究 session（WebFetch 搜集領域知識 → 結構化整理） | ⬜ |
-| Skill 自動建立 | 呼叫 manage-component.js create skill（SKILL.md + references/） | ⬜ |
-| 結構驗證 | health-check + validate-agents 通過（0 error） | ⬜ |
+| Skill CLI 整合 | evolution.js forge 子命令（`bun scripts/evolution.js forge <domain> [--execute] [--json]`） | ✅ |
 | 安全邊界 | 不覆蓋既有 skill、dry-run 預設、連續失敗暫停 | ⬜ |
 
 ### L3.4 深度 PM（精準需求收集）🟡 部分完成
