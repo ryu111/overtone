@@ -136,6 +136,60 @@ describe('detectKnowledgeGaps — Scenario 2-7: agentSkills 為 undefined 時不
   });
 });
 
+describe('detectKnowledgeGaps — Scenario 2-8: os-control 關鍵詞且 agent 無對應 skill', () => {
+  it('偵測到 os-control 缺口，score >= 0.2，matchedKeywords 含命中詞', () => {
+    const prompt = 'take screenshot and copy to clipboard, watch window notification';
+    const agentSkills = [];
+
+    const gaps = detectKnowledgeGaps(prompt, agentSkills);
+
+    const osGap = gaps.find(g => g.domain === 'os-control');
+    expect(osGap).toBeDefined();
+    expect(osGap.score).toBeGreaterThanOrEqual(0.2);
+    expect(Array.isArray(osGap.matchedKeywords)).toBe(true);
+    const hasOsKw = osGap.matchedKeywords.some(kw =>
+      ['screenshot', 'clipboard', 'window', 'notification'].some(w => kw.includes(w))
+    );
+    expect(hasOsKw).toBe(true);
+  });
+});
+
+describe('detectKnowledgeGaps — Scenario 2-9: autonomous-control 關鍵詞且 agent 無對應 skill', () => {
+  it('偵測到 autonomous-control 缺口，score >= 0.2，matchedKeywords 含命中詞', () => {
+    const prompt = 'start heartbeat daemon, manage execution queue, spawn background scheduled task';
+    const agentSkills = [];
+
+    const gaps = detectKnowledgeGaps(prompt, agentSkills);
+
+    const autoGap = gaps.find(g => g.domain === 'autonomous-control');
+    expect(autoGap).toBeDefined();
+    expect(autoGap.score).toBeGreaterThanOrEqual(0.2);
+    expect(Array.isArray(autoGap.matchedKeywords)).toBe(true);
+    const hasAutoKw = autoGap.matchedKeywords.some(kw =>
+      ['heartbeat', 'daemon', 'spawn', 'queue', 'background', 'scheduled'].some(w => kw.includes(w))
+    );
+    expect(hasAutoKw).toBe(true);
+  });
+});
+
+describe('detectKnowledgeGaps — Scenario 2-10: craft 關鍵詞且 agent 無對應 skill', () => {
+  it('偵測到 craft 缺口，score >= 0.2，matchedKeywords 含命中詞', () => {
+    const prompt = 'check health-check invariant and closed-loop recovery guard principle validate';
+    const agentSkills = [];
+
+    const gaps = detectKnowledgeGaps(prompt, agentSkills);
+
+    const craftGap = gaps.find(g => g.domain === 'craft');
+    expect(craftGap).toBeDefined();
+    expect(craftGap.score).toBeGreaterThanOrEqual(0.2);
+    expect(Array.isArray(craftGap.matchedKeywords)).toBe(true);
+    const hasCraftKw = craftGap.matchedKeywords.some(kw =>
+      ['principle', 'invariant', 'guard', 'closed-loop', 'health-check', 'validate', 'recovery'].some(w => kw.includes(w))
+    );
+    expect(hasCraftKw).toBe(true);
+  });
+});
+
 describe('detectKnowledgeGaps — 額外邊界情況', () => {
   it('null prompt 回傳空陣列', () => {
     const gaps = detectKnowledgeGaps(null, []);
@@ -146,8 +200,8 @@ describe('detectKnowledgeGaps — 額外邊界情況', () => {
     expect(() => detectKnowledgeGaps('test spec coverage', null)).not.toThrow();
   });
 
-  it('DOMAIN_KEYWORDS 有 12 個 domain', () => {
-    expect(Object.keys(DOMAIN_KEYWORDS).length).toBe(12);
+  it('DOMAIN_KEYWORDS 有 15 個 domain', () => {
+    expect(Object.keys(DOMAIN_KEYWORDS).length).toBe(15);
   });
 
   it('每個 domain 至少有 10 個關鍵詞', () => {
