@@ -30,7 +30,7 @@ const timeline = require('./timeline');
 const { syncFeatureName } = require('./feature-sync');
 const state = require('./state');
 const { hookError, buildPendingTasksMessage } = require('./hook-utils');
-const { effortLevels, stages, workflows, hookEvents, timelineEvents, parallelGroupDefs } = require('./registry');
+const { effortLevels, stages, workflows, hookEvents, timelineEvents, parallelGroupDefs, journalDefaults } = require('./registry');
 
 // ────────────────────────────────────────────────────────────────────────────
 // 純函數：buildBanner
@@ -344,6 +344,7 @@ function handleSessionStart(input, sessionId, hookTimer) {
     const { globalInstinctDefaults } = require('./registry');
     const topObs = globalInstinct.queryGlobal(projectRoot, {
       limit: globalInstinctDefaults.loadTopN,
+      excludeTypes: ['intent_journal'],
     });
 
     if (topObs.length > 0) {
@@ -432,6 +433,31 @@ function handleSessionStart(input, sessionId, hookTimer) {
     // 佇列載入失敗不阻擋 session 啟動
   }
 
+  // ── 最近常做的事（intent_journal 摘要）──
+  // 從全域 store 載入近期成功 prompt，提供使用者意圖模式提示
+
+  let recentIntentsMsg = null;
+  try {
+    const globalInstinct = require('./knowledge/global-instinct');
+    const journals = globalInstinct.queryGlobal(projectRoot, {
+      type: 'intent_journal',
+      limit: journalDefaults.loadTopN,
+    });
+    const passJournals = journals
+      .filter(j => j.sessionResult === journalDefaults.minResultForGlobal)
+      .sort((a, b) => (b.lastSeen || '').localeCompare(a.lastSeen || ''))
+      .slice(0, journalDefaults.loadTopN);
+
+    if (passJournals.length > 0) {
+      const lines = passJournals.map(j =>
+        `- [${j.workflowType || 'unknown'}] ${j.trigger.slice(0, 60)}${j.trigger.length > 60 ? '...' : ''}`
+      );
+      recentIntentsMsg = ['## 最近常做的事', '', ...lines].join('\n');
+    }
+  } catch {
+    // 靜默失敗，不阻擋 session 啟動
+  }
+
   // ── Plugin context 注入 ──
   // 動態計算 plugin 上下文（版本、元件數量、核心規範），讓 Main Agent 感知當前 plugin 狀態
 
@@ -441,7 +467,7 @@ function handleSessionStart(input, sessionId, hookTimer) {
 
   const output = buildStartOutput(input, {
     banner,
-    msgs: [pluginContextMsg, pendingTasksMsg, globalObservationsMsg, baselineSummaryMsg, scoreSummaryMsg, failureSummaryMsg, queueMsg].filter(Boolean),
+    msgs: [pluginContextMsg, pendingTasksMsg, globalObservationsMsg, recentIntentsMsg, baselineSummaryMsg, scoreSummaryMsg, failureSummaryMsg, queueMsg].filter(Boolean),
   });
 
   // ── hook:timing — 記錄 SessionStart 執行耗時 ──

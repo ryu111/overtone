@@ -17,6 +17,18 @@ const { runCleanup } = require('./session-cleanup');
 const { createHookTimer } = require('./hook-timing');
 
 /**
+ * 根據 workflow 狀態判斷 session 結果
+ * @param {object|null} currentState - workflow 狀態（從 state.readState 取得）
+ * @returns {'pass'|'fail'|'abort'}
+ */
+function resolveSessionResult(currentState) {
+  if (!currentState?.workflowType) return 'abort';
+  const completed = currentState.completedStages;
+  if (completed && completed.length > 0) return 'pass';
+  return 'fail';
+}
+
+/**
  * 主入口：處理 session end 事件
  * @param {object} input - hook stdin 輸入（含 reason 等欄位）
  * @param {string|null} sessionId - 當前 session ID
@@ -103,6 +115,28 @@ function handleSessionEnd(input, sessionId) {
     }
   } catch (err) {
     hookError('on-session-end', `instinct.decay 失敗：${err.message || String(err)}`);
+  }
+
+  // ── 3b2a. intent_journal sessionResult 配對 ──
+  // session 結束時將所有 pending 的 intent_journal 記錄更新為實際結果
+
+  try {
+    const instinct = require('./knowledge/instinct');
+    const journalState = require('./state').readState(sessionId);
+    const sessionResult = resolveSessionResult(journalState);
+
+    const allObs = instinct._readAll(sessionId);
+    const pendingJournals = allObs.filter(o => o.type === 'intent_journal' && o.sessionResult === 'pending');
+
+    if (pendingJournals.length > 0) {
+      for (const j of pendingJournals) {
+        j.sessionResult = sessionResult;
+        j.workflowType = journalState?.workflowType || null;
+      }
+      instinct._writeAll(sessionId, allObs);
+    }
+  } catch (err) {
+    hookError('on-session-end', `intent_journal 配對失敗：${err.message || String(err)}`);
   }
 
   // ── 3b3. 觀察效果反饋（時間序列學習）──
@@ -210,4 +244,4 @@ function handleSessionEnd(input, sessionId) {
   return { output: { result: '' } };
 }
 
-module.exports = { handleSessionEnd };
+module.exports = { handleSessionEnd, resolveSessionResult };

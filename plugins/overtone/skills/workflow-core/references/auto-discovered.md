@@ -1,57 +1,5 @@
 ---
 ## 2026-03-04 | developer:DEV Findings
-**設計決策：**
-- `registry.js` 的 `timelineEvents` 不接受未知事件類型，必須先新增 `hook:timing` 定義（category: `hook`）才能呼叫 `emit()`
-- `paths.js` 硬編碼 `homedir()/.overtone`，不支援沙盒覆寫，hook 子進程測試直接寫到真實 `~/.overtone`，測試後由 `afterAll` 精確清理
-- 每個 hook 用 `emitTiming` 輔助函式（或直接 try/catch 包裹），確保計時失敗不影響 hook 本身的功能
-- `on-task-completed.js` 只在有效 `sessionId` 時才 emit（避免 `unknown` 造成路徑建立問題）
-- `pre-task.js` 的 `emitPreTaskTiming` 定義在 `targetAgent` 確認之後，只有主流程出口（deny/allow）有計時；早期 no-session / no-agent 出口未計時（幾乎零開銷，不值得計時）
-- `on-start.js` 使用 `_hookStartTime`（模組層級變數）而非 `safeRun` 內部，因為 `input` 和 `sessionId` 在 `safeRun` 外已取得
-
-**計數測試更新：** 新增 `hook:timing` 讓 `timelineEvents` 從 26 增至 27，需同步更新兩個測試的硬編碼計數斷言（`dashboard-registry.test.js`、`platform-alignment-registry.test.js`）
-Keywords: registry, timelineevents, hook, timing, category, emit, paths, homedir, overtone, afterall
-
----
-## 2026-03-04 | developer:DEV Context
-實作了 `hook-observability` feature 的 DEV 階段：在 6 個主要 hook 腳本加入 `hook:timing` 計時，透過既有的 `timeline.emit()` 記錄每個 hook 的執行耗時。
-Keywords: hook, observability, feature, timing, timeline, emit
-
----
-## 2026-03-04 | code-reviewer:REVIEW Findings
-審查了以下面向，未發現高信心問題：
-
-1. **功能完整性** -- 6 個 hook 腳本（pre-task, on-stop, post-use, on-start, on-session-end, on-task-completed）全部加入 `hook:timing` 計時，registry 新增事件定義，計數測試同步更新。
-2. **Error handling** -- 所有計時 emit 均以 `try/catch` 包裹，空 catch 確保不影響 hook 主流程。早期退出路徑（無 sessionId）正確跳過計時。
-3. **事件 metadata 一致性** -- 所有事件共享 `hook`/`event`/`durationMs` 三個核心欄位，部分 hook 附帶情境欄位（agent, verdict, toolName 等），結構合理。
-4. **測試覆蓋度** -- 新增 `hook-timing.test.js` 含 7 個 test 覆蓋 registry 定義、子進程 hook 執行、事件結構驗證。37 tests / 0 fail。
-5. **安全性** -- 無硬編碼 secrets、無安全漏洞。
-6. **版本管理** -- plugin.json 正確 bump 至 0.28.41。
-Keywords: hook, task, stop, post, start, session, completed, timing, registry, error
-
----
-## 2026-03-04 | retrospective:RETRO Findings
-**回顧摘要**：
-
-- **計時覆蓋的 6 個 hook 正確** — `agent/on-stop.js`、`task/on-task-completed.js`、`tool/post-use.js`、`tool/pre-task.js`、`session/on-start.js`、`session/on-session-end.js` 均已加入 `hook:timing`，且全部有 `try/catch` 保護，計時失敗不影響主流程
-- **registry 定義正確** — `timelineEvents['hook:timing']` 有正確的 `label: 'Hook 計時'` 和 `category: 'hook'`
-- **未計時的 hook 有合理理由** — `session/on-stop.js`（Stop，每回覆觸發一次，屬 loop 控制器，加計時無診斷價值）、`session/pre-compact.js`（PreCompact，偶發）、`prompt/on-submit.js`（UserPromptSubmit）、`tool/pre-bash-guard.js` / `tool/pre-edit-guard.js` / `tool/post-use-failure.js`（守衛型，非核心工作流路徑）— 這些屬於合理範圍排除
-- **測試覆蓋策略正確** — Feature 1（registry 定義）+ Feature 2（正常路徑）+ Feature 3（errorGuard 路徑）+ Feature 4（SessionEnd）+ Feature 5（直接 emit 驗證結構），子進程整合測試搭配直接 unit test，策略完整
-- **測試全數通過** — 7 pass（hook-timing.test.js），整體測試套件 3192 pass / 0 fail
-- **前後一致** — emit 欄位 `hook`、`event`、`durationMs` 在 6 個 hook 中結構一致，meta 欄位（`agent`、`verdict`、`toolName` 等）依各 hook 語意正確添加
-- **早期退出正確處理** — `on-task-completed.js` 在非 DEV task 的早期退出路徑也呼叫 `emitTiming()`，不遺漏
-
-**觀察點**（信心 72%，但屬設計選擇，不構成 ISSUES）：
-
-`session/on-stop.js` 是 244 行的 **Stop hook**（每次 Claude 回覆結束時觸發），也是整個 loop 控制器的核心，但沒有加 `hook:timing`。若未來需要診斷 loop 週期耗時（例如 loop 卡住的根因分析），這裡的計時數據會有價值。目前的取捨是合理的——Stop hook 邏輯包含多個 `process.exit(0)` 提前離開點，加計時需要在每個 exit 前都插入，成本高於其他 hook。
-Keywords: hook, agent, stop, task, completed, tool, post, session, start, timing
-
----
-## 2026-03-04 | retrospective:RETRO Context
-RETRO PASS — 回顧完成，發現 1 個值得注意的觀察點（信心 72%），但基於 `session/on-stop.js` 屬於 **Stop hook（每次 Claude 回覆結束時觸發，頻率極高）** 而非 **一般 hook**，DEV 有意不加計時是合理的設計決策，整體品質達標。
-Keywords: retro, pass, session, stop, hook, claude
-
----
-## 2026-03-04 | developer:DEV Findings
 **關鍵設計決策**：
 
 1. `analyzeFailureHotspot` 優先使用 `failureTracker._readAll()` 取得原始記錄，以便計算 `lastFailedAt`。若 `_readAll` 不存在（非公開 API），則有降級路徑：以 `topPattern` 建立基本輸出。
@@ -762,4 +710,140 @@ Keywords: docs, roadmap, init, overtone, plugin, claude, sessionstart, systemmes
 ## 2026-03-05 | doc-updater:DOCS Context
 本次 workflow（quick）的 DEV + REVIEW 階段已完成。最新 commit 實作了 `buildPluginContext()` 功能，讓 SessionStart hook 在每個 session 啟動時動態注入 plugin 上下文到 systemMessage，使 Main Agent 感知當前 plugin 版本、元件數量和核心規範。
 Keywords: workflow, quick, review, commit, buildplugincontext, sessionstart, hook, session, plugin, systemmessage
+
+---
+## 2026-03-05 | planner:PLAN Findings
+**現有架構關鍵發現**：
+
+1. **`instinct.js` emit() 的去重邏輯**：`list.find(i => i.tag === tag && i.type === type)` — intent_journal 需要每次建立新記錄，必須引入 skipDedup 選項。
+2. **全域 store 去重鍵是 `tag+type`**（`global-instinct.js`）：intent_journal 如果每筆 tag 唯一，畢業後全域 store 會無限累積。這是架構需要決策的關鍵點。
+3. **session-end-handler.js 的 pass 判定**：現有邏輯讀 `currentState.workflowType`，但無明確的 success 旗標，配對邏輯需要 architect 決定讀取策略。
+4. **observations.jsonl 是 session 層檔案**：intent_journal 和其他類型共用同一 JSONL 檔，prune/decay 時需注意 intent_journal 的特殊生命週期。
+
+**需求分解**：
+
+1. **[T1] skipDedup 機制** | agent: developer | files: `plugins/overtone/scripts/lib/knowledge/instinct.js`
+2. **[T2] journalDefaults 設定** (parallel with T1) | agent: developer | files: `plugins/overtone/scripts/lib/registry.js`
+3. **[T3] on-submit 記錄 intent_journal** (依賴 T1+T2) | agent: developer | files: `plugins/overtone/scripts/lib/on-submit-handler.js`
+4. **[T4] session-end 配對 sessionResult** (parallel with T3, 依賴 T1) | agent: developer | files: `plugins/overtone/scripts/lib/session-end-handler.js`
+5. **[T5] 全域畢業機制調整** (Should, 依賴 T3+T4 + architect 決策) | agent: developer | files: `plugins/overtone/scripts/lib/knowledge/global-instinct.js`
+6. **[T6] session-start 注入摘要** (Should, 依賴 T5) | agent: developer | files: `plugins/overtone/scripts/lib/session-start-handler.js`
+7. **[T7] data.js query journal** (Could, 獨立) | agent: developer | files: `plugins/overtone/scripts/data.js`
+8. **[T8] 測試覆蓋** (Must, 依賴 T1-T4) | agent: tester | files: `tests/unit/instinct-skip-dedup.test.js`（新建），現有 on-submit/session-end 測試擴展
+
+**優先順序**：
+- Phase 1 並行：T1 + T2
+- Phase 2 並行：T3 + T4（依賴 Phase 1）
+- Phase 3 依序：T5 → T6（依賴 Phase 2 + architect 決策）
+- Phase 4 獨立：T7（任意時間點）
+- Phase 5：T8（T1-T4 完成後）
+
+**範圍邊界**：
+
+不做：預測引擎、AskUserQuestion 主動互動、AI 語意分析、跨 project journal 聚合。
+Keywords: instinct, emit, list, find, type, skipdedup, store, global, session, handler
+
+---
+## 2026-03-05 | planner:PLAN Context
+**需求**：在 Overtone Instinct 系統上擴展，新增 `intent_journal` 觀察類型，記錄使用者每次 prompt 的完整原文。核心新增機制是 `skipDedup` flag，讓 intent_journal 繞過現有的 `tag+type` 去重邏輯，每次 prompt 都產生獨立記錄。Session 結束時配對 workflow 結果，高信心意圖模式畢業到全域 store，SessionStart 注入「最近常做的事」摘要。
+
+**為什麼現在做**：這是 Level 2.5 能力橋接（持續學習 → 自我進化）。使用者特別強調「架構要寫好」。
+Keywords: overtone, instinct, prompt, skipdedup, flag, type, session, workflow, store, sessionstart
+
+---
+## 2026-03-05 | architect:ARCH Findings
+**技術方案**：
+- 沿用現有 Instinct JSONL append-only 架構，不引入新儲存機制
+- `skipDedup: true` 讓每次 prompt 產生獨立記錄（tag 用 timestamp 確保唯一性）
+- intent_journal 不畢業 → 全域（透過 queryGlobal excludeTypes 過濾）但可選擇畢業（design.md 決策 Q1 選方案 C：畢業但過濾顯示）
+- sessionResult 從 `completedStages` 判定：有完成 stage → pass，workflow 存在但無完成 → fail，無 workflow → abort
+
+**關鍵技術決策**：
+- Q4（decay 行為）：intent_journal 參與現有週衰減（不排除），7 天 -0.02 自然清理，sessionResult=pass 的記錄可透過 confirm 存活更久
+- `_readAll` / `_writeAll` 是 class instance methods，session-end-handler 可直接呼叫（module.exports = instinct 實例）
+- `extraFields` 在 `emit()` 時附加到新記錄，不需要獨立的 `_append` 呼叫序列
+
+**API 介面**：
+
+```javascript
+// instinct.emit() 擴展
+emit(sessionId, type, trigger, action, tag, options = {})
+// options: { skipDedup?: boolean, extraFields?: object }
+// skipDedup=true 時跳過 tag+type 去重，直接建立新記錄（extraFields 合併到新記錄）
+
+// global-instinct.queryGlobal() 擴展
+queryGlobal(projectRoot, filter = {})
+// filter 新增：excludeTypes?: string[]
+
+// session-end-handler 新增私有函式
+resolveSessionResult(currentState)
+// returns: 'pass' | 'fail' | 'abort'
+// 邏輯：!workflowType → 'abort'；completedStages.length > 0 → 'pass'；否則 'fail'
+```
+
+**資料模型**：
+
+```json
+// intent_journal 記錄（observations.jsonl）
+{
+  "id": "inst_lx4abc_def1",
+  "ts": "...",
+  "lastSeen": "...",
+  "type": "intent_journal",
+  "trigger": "<prompt 原文，最多 500 字>",
+  "action": "工作流：standard",
+  "tag": "journal-lx4abc",
+  "confidence": 0.3,
+  "count": 1,
+  "sessionResult": "pending | pass | fail | abort",
+  "workflowType": "standard | null"
+}
+```
+
+```javascript
+// registry.js 新增
+const journalDefaults = {
+  maxPromptLength: 500,
+  loadTopN: 10,
+  minResultForGlobal: 'pass',
+};
+```
+
+**檔案結構**：
+
+| 檔案 | 變更 |
+|------|------|
+| `plugins/overtone/scripts/lib/knowledge/instinct.js` | emit() 第 6 參數 opt
+Keywords: instinct, jsonl, append, only, skipdedup, true, prompt, timestamp, queryglobal, excludetypes
+
+---
+## 2026-03-05 | architect:ARCH Context
+Prompt Journal 功能擴展 Instinct 系統，新增 `intent_journal` 觀察類型。核心改動集中在 6 個現有模組的小幅擴展，無新模組、無新抽象層。設計遵循「最小改動」原則：
+
+1. `emit()` 第 6 參數 options（向後相容，不破壞現有呼叫）
+2. `queryGlobal()` filter.excludeTypes（通用能力，可複用）
+3. session-end-handler 新增配對邏輯（~20 行）
+4. session-start-handler 新增「最近常做的事」注入區塊（~20 行）
+
+架構設計已完整寫入 `specs/features/in-progress/prompt-journal/design.md`。
+Keywords: prompt, journal, instinct, emit, options, queryglobal, filter, excludetypes, session, handler
+
+---
+## 2026-03-05 | developer:DEV Findings
+1. **代碼已完整實作**：instinct.js skipDedup/extraFields、global-instinct.js excludeTypes、registry.js journalDefaults、on-submit-handler.js intent_journal 記錄、session-end-handler.js resolveSessionResult + 配對邏輯、session-start-handler.js 最近常做的事摘要 — 全部已在。
+
+2. **測試補齊策略**：
+   - 新建 `tests/unit/instinct-skip-dedup.test.js`（BDD Feature 1 + 2，7 個 scenarios）
+   - 擴展 `on-submit-handler.test.js`（BDD Feature 4，6 個 scenarios）
+   - 擴展 `session-end-handler.test.js`（BDD Feature 5，resolveSessionResult 5個 + 配對邏輯 2個）
+   - 擴展 `global-instinct.test.js`（BDD Feature 6，excludeTypes 5個 scenarios）
+   - 擴展 `session-start-handler.test.js`（BDD Feature 7，最近常做的事 5個 scenarios）
+   - 擴展 `registry.test.js`（BDD Feature 3，journalDefaults 4個 assertions）
+
+3. **skipDedup 測試陷阱**：兩次快速呼叫可能產生相同 `journal-${Date.now().toString(36)}` tag，改為驗證 id 不同（並加 2ms delay），避免 race condition。
+
+4. **docs/status.md 既有版本不一致**：plugin.json 是 0.28.52，status.md 是 0.28.51，已同步修正。
+
+5. **feature 已被自動歸檔**：`specs/features/archive/2026-03-05_prompt-journal/` — specs-archive-scanner 在 session start 時已自動執行。
+Keywords: instinct, skipdedup, extrafields, global, excludetypes, registry, journaldefaults, submit, handler, session
 

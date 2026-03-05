@@ -8,7 +8,7 @@
 
 const state = require('./state');
 const instinct = require('./knowledge/instinct');
-const { workflows } = require('./registry');
+const { workflows, journalDefaults } = require('./registry');
 const { getSessionId } = require('./hook-utils');
 
 /**
@@ -79,6 +79,28 @@ function handleOnSubmit(input) {
         routingTrigger,
         routingAction,
         `wf-${currentState.workflowType}`
+      );
+    } catch {
+      // 觀察失敗不影響主流程
+    }
+  }
+
+  // ── intent_journal 記錄 ──
+  // 每次 UserPromptSubmit 記錄 prompt 原文，供 session 結束時配對結果
+  if (sessionId) {
+    try {
+      const fullPrompt = userPrompt.slice(0, journalDefaults.maxPromptLength);
+      const workflowCtx = currentState?.workflowType
+        ? `工作流：${currentState.workflowType}`
+        : '無進行中工作流';
+      const journalTag = `journal-${Date.now().toString(36)}`;
+      instinct.emit(
+        sessionId,
+        'intent_journal',
+        fullPrompt || '(empty prompt)',
+        workflowCtx,
+        journalTag,
+        { skipDedup: true, extraFields: { sessionResult: 'pending' } }
       );
     } catch {
       // 觀察失敗不影響主流程

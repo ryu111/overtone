@@ -2,6 +2,71 @@
 
 所有重要變更記錄於此文件。
 
+## [0.28.52] - 2026-03-05
+
+### Prompt Journal 完成——用戶 Intent 記錄與配對
+
+#### 核心功能
+- **Intent Journal**：記錄每次使用者 prompt（用戶意圖）
+  - `instinct.js` emit() 新增 `options: { skipDedup, extraFields }` 參數
+  - `on-submit-handler.js` 每次 UserPromptSubmit 記錄 `intent_journal` 類型觀察
+  - 儲存：`~/.overtone/sessions/{sessionId}/observations.jsonl`
+
+- **Session 結果配對**：SessionEnd 配對用戶 prompt + 執行結果
+  - `session-end-handler.js` 新增 `resolveSessionResult(sessionId)` 函式
+  - 根據 timeline 事件追溯，配對最後一個 intent_journal + session status
+  - 記錄：prompt + result + duration + agents 執行過程
+
+- **會話摘要注入**：SessionStart 注入「最近常做的事」
+  - `session-start-handler.js` 新增 intent 摘要生成
+  - 格式：「最近 5 session 中，你常在 DEV stage 花 30 分鐘」
+  - 提升 agent 對用戶工作模式的認知
+
+- **全域過濾**：`global-instinct.js` queryGlobal 新增 excludeTypes
+  - 支援排除特定觀察類型（例如排除 intent_journal，只取技術決策）
+  - 防止觀察類型污染，提高查詢精度
+
+#### 測試補強
+- 新增 `tests/unit/instinct-skip-dedup.test.js`（skipDedup + extraFields）
+- 擴展 `tests/unit/on-submit-handler.test.js`（intent_journal emit 行為）
+- 擴展 `tests/unit/session-end-handler.test.js`（resolveSessionResult + 配對邏輯）
+- 擴展 `tests/unit/global-instinct.test.js`（excludeTypes 過濾）
+- 擴展 `tests/unit/session-start-handler.test.js`（最近常做的事摘要注入）
+- 擴展 `tests/unit/registry.test.js`（journalDefaults 常數驗證）
+- BDD 全覆蓋：7 個 Feature、40+ Scenario
+- 測試 +38（3378 → 3416，151 → 152 files）
+
+#### 文件同步
+- `plugin.json`：版本 0.28.52
+- `docs/status.md`：版本更新、測試 3378 → 3416（+38）、檔案 151 → 152、Prompt Journal 功能記錄
+- `CHANGELOG.md`：本次變更記錄
+
+---
+
+## [0.28.51] - 2026-03-05
+
+### SessionStart SystemMessage 動態注入 Plugin Context
+
+#### 動態 Context 生成
+- 新增 `buildPluginContext()` 函式（`scripts/lib/session-start-handler.js`）
+- 從 `registry.js` 動態計算：agent 數、stage 數、workflow 模板清單、hook events、並行群組定義
+- 組裝格式化 context 字串，包含版本號、元件概覽、核心規範、目錄結構、常用指令
+
+#### SessionStart Hook 增強
+- Main Agent systemMessage 自動注入 plugin context（`.claude/sessionMessage` 之後）
+- `buildPluginContext()` 失敗時靜默跳過，不阻擋 session 啟動
+- 讓 Main Agent 感知當前 plugin 狀態和設計約束
+
+#### 測試強化
+- 新增 12 個單元測試驗證動態數值計算與 registry 資料一致性
+- 測試 +12（3366 → 3378）
+
+#### 文件同步
+- `docs/status.md`：版本更新、測試 3366 → 3378（+12）
+- `roadmap.md`：init-overtone 項目標記 ✅
+
+---
+
 ## [0.28.49] - 2026-03-05
 
 ### Hook 薄殼化重構完成 + 遠端控制增強（Telegram /run + PM 佇列自動寫入 + Env Filter）

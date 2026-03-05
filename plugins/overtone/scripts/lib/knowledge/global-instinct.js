@@ -197,6 +197,7 @@ function graduate(sessionId, projectRoot) {
  * @param {string} [filter.tag] - 篩選 tag
  * @param {number} [filter.minConfidence] - 最低信心分數
  * @param {number} [filter.limit] - 最多回傳筆數（先按 confidence 降序排列再截取）
+ * @param {string[]} [filter.excludeTypes] - 排除的 type 清單（空陣列或不傳時不過濾）
  * @returns {object[]}
  */
 function queryGlobal(projectRoot, filter = {}) {
@@ -206,6 +207,10 @@ function queryGlobal(projectRoot, filter = {}) {
   if (filter.tag) list = list.filter(i => i.tag === filter.tag);
   if (filter.minConfidence !== undefined) {
     list = list.filter(i => i.confidence >= filter.minConfidence);
+  }
+  if (filter.excludeTypes && filter.excludeTypes.length > 0) {
+    const excluded = new Set(filter.excludeTypes);
+    list = list.filter(i => !excluded.has(i.type));
   }
   if (filter.limit) {
     // 先按 confidence 降序排列，再截取 top-N

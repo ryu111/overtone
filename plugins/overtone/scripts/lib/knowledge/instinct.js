@@ -89,11 +89,16 @@ class Instinct {
    * @param {string} trigger - 觸發條件描述
    * @param {string} action - 建議行動描述
    * @param {string} tag - 分類標籤（kebab-case，如 npm-bun, javascript-imports）
+   * @param {object} [options={}]
+   * @param {boolean} [options.skipDedup=false] - 跳過 tag+type 去重，直接建立新記錄
+   * @param {object} [options.extraFields={}] - 額外欄位，附加到新建記錄中（不影響去重邏輯）
    * @returns {object} instinct 記錄
    */
-  emit(sessionId, type, trigger, action, tag) {
+  emit(sessionId, type, trigger, action, tag, options = {}) {
+    const { skipDedup = false, extraFields = {} } = options || {};
+
     const list = this._readAll(sessionId);
-    const existing = list.find(i => i.tag === tag && i.type === type);
+    const existing = skipDedup ? null : list.find(i => i.tag === tag && i.type === type);
 
     if (existing) {
       // 飽和閾值：信心已達 1.0 → 直接回傳，不追加 JSONL 行（避免無限膨脹）
@@ -123,6 +128,7 @@ class Instinct {
       tag,
       confidence: instinctDefaults.initialConfidence,
       count: 1,
+      ...extraFields,
     };
 
     this._append(sessionId, instinct);

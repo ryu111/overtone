@@ -573,3 +573,27 @@ Hook Humble Object 重構的測試驗證完成。驗證了以下 3 個層面：
 3. **CLI 行為不變**：5 個 hook 子進程 stdin/stdout 協定驗證通過
 Keywords: verify, hook, humble, object, tests, unit, pure, test, pass, fail
 
+---
+## 2026-03-05 | code-reviewer:REVIEW Findings
+**審查範圍**：6 個業務邏輯檔案 + 6 個測試檔案，共 14 個變更檔案、+953/-69 行。
+
+**審查維度**：
+
+1. **功能完整性 vs BDD spec**：7 個 Feature、33 個 Scenario 全部有對應實作。測試覆蓋 40+ test cases，140 tests all pass。
+
+2. **架構合理性**：
+   - `emit()` 的 options object 設計具擴展性，向後相容（不傳 options 行為不變）
+   - `excludeTypes` 使用 Set 做 O(1) lookup，效能合理
+   - `resolveSessionResult` 抽為獨立函式並匯出供測試，符合 Humble Object 模式
+   - `recentIntentsMsg` 插入位置在 msgs 陣列中合理（全域觀察之後、效能基線之前）
+   - 所有新增邏輯都包在 try-catch 中，不影響主流程
+
+3. **Error handling**：完整。intent_journal 記錄（on-submit-handler）、配對（session-end-handler）、摘要載入（session-start-handler）三處都有 try-catch 靜默失敗。
+
+4. **安全性**：無硬編碼 secrets、無 SQL injection 風險、無外部輸入直接執行的路徑。prompt 截斷（500 字）防止過大寫入。
+
+5. **[m] 測試標籤不對齊**：`on-submit-handler.test.js` 的 Scenario 4-6 實際測試的是 "/ot: 指令不記錄 intent_journal"（早期 return 行為），但 BDD spec 的 Scenario 4-6 定義為 "intent_journal 記錄失敗時不影響主流程（靜默失敗）"。實作中 try-catch 靜默失敗已存在但未被測試覆蓋。BDD Scenario 5-8 同理（_readAll/_writeAll 例外時靜默失敗）。兩者都是 Minor 等級，不阻擋合併。
+
+6. **[n] extraFields 可覆蓋標準欄位**：`...extraFields` 在物件建構式最後展開，理論上可覆蓋 `id`/`ts` 等標準欄位。當前使用場景安全（只傳 `sessionResult`），屬 Nitpick。
+Keywords: spec, feature, scenario, test, cases, tests, pass, emit, options, object
+

@@ -241,6 +241,13 @@ const failureDefaults = {
   warningThreshold: 2,    // 同 stage 失敗 >= 此值才產生警告
 };
 
+// Prompt Journal 設定
+const journalDefaults = {
+  maxPromptLength: 500,       // prompt trigger 截斷長度
+  loadTopN: 10,               // SessionStart 載入最近 N 筆 intent_journal
+  minResultForGlobal: 'pass', // 只有 sessionResult=pass 的記錄才提取到摘要
+};
+
 module.exports = {
   stages,
   agentModels,
@@ -259,6 +266,7 @@ module.exports = {
   scoringConfig,
   scoringDefaults,
   failureDefaults,
+  journalDefaults,
   specsConfig,
   knownTools,
   hookEvents,
