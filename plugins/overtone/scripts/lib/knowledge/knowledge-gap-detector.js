@@ -8,7 +8,12 @@
  * 導出：
  *   DOMAIN_KEYWORDS — 15/15 knowledge domain 的關鍵詞靜態表（os-control、autonomous-control、craft 已補齊）
  *   detectKnowledgeGaps — 主要偵測函式
+ *   shouldAutoForge — 判斷哪些 gaps 需要自動 forge
+ *   autoForge — 對篩選出的 gaps 自動執行 forge
  */
+
+const path = require('path');
+const fs = require('fs');
 
 /**
  * 15 個 knowledge domain 的關鍵詞靜態表。
@@ -148,4 +153,124 @@ function detectKnowledgeGaps(prompt, agentSkills, options = {}) {
   return gaps.slice(0, maxGaps);
 }
 
-module.exports = { DOMAIN_KEYWORDS, detectKnowledgeGaps };
+/**
+ * 判斷哪些 gaps 需要自動 forge。
+ *
+ * 篩選條件：
+ *   1. score < minForgeScore（預設 0.2）
+ *   2. 尚未有 SKILL.md 存在（fs.existsSync 檢查）
+ *
+ * @param {Array<{domain: string, score: number, matchedKeywords: string[]}>} gaps - detectKnowledgeGaps 輸出
+ * @param {object} [options]
+ * @param {number} [options.minForgeScore=0.2] - 低於此分數才觸發 forge
+ * @param {string} [options.pluginRoot] - plugin 根目錄（用於檢查 SKILL.md 是否存在）
+ * @returns {{ domains: string[], reason: string }}
+ */
+function shouldAutoForge(gaps, options = {}) {
+  if (!Array.isArray(gaps) || gaps.length === 0) {
+    return { domains: [], reason: '無 gap 需要 forge' };
+  }
+
+  const minForgeScore = options.minForgeScore !== undefined ? options.minForgeScore : 0.2;
+  const pluginRoot = options.pluginRoot || _resolveDefaultPluginRoot();
+
+  const domains = [];
+
+  for (const gap of gaps) {
+    if (typeof gap.domain !== 'string') continue;
+    if (gap.score >= minForgeScore) continue;
+
+    // 檢查是否已有 SKILL.md
+    const skillMdPath = path.join(pluginRoot, 'skills', gap.domain, 'SKILL.md');
+    if (fs.existsSync(skillMdPath)) continue;
+
+    domains.push(gap.domain);
+  }
+
+  const reason = domains.length > 0
+    ? `${domains.length} 個 domain score < ${minForgeScore} 且無既有 SKILL.md`
+    : `無 domain 低於 forge 門檻（minForgeScore=${minForgeScore}）`;
+
+  return { domains, reason };
+}
+
+/**
+ * 對篩選出的 gaps 自動執行 forge。
+ *
+ * @param {Array<{domain: string, score: number, matchedKeywords: string[]}>} gaps - detectKnowledgeGaps 輸出
+ * @param {object} [options]
+ * @param {boolean} [options.dryRun=true] - 預設 dry-run（安全優先）
+ * @param {string} [options.pluginRoot] - plugin 根目錄覆寫
+ * @param {number} [options.maxConsecutiveFailures] - 連續失敗暫停門檻
+ * @param {number} [options.minForgeScore] - 低於此分數才觸發 forge
+ * @returns {{ forged: object[], skipped: string[] }}
+ */
+function autoForge(gaps, options = {}) {
+  const {
+    dryRun = true,
+    pluginRoot,
+    maxConsecutiveFailures,
+    minForgeScore,
+  } = options;
+
+  const { shouldForge } = _getAutoForgeResult(gaps, { pluginRoot, minForgeScore });
+
+  if (shouldForge.domains.length === 0) {
+    return { forged: [], skipped: [] };
+  }
+
+  const { forgeSkill } = require('../skill-forge');
+  const forged = [];
+  const skipped = [];
+
+  let consecutiveFailures = 0;
+  const maxFailures = maxConsecutiveFailures !== undefined ? maxConsecutiveFailures : 3;
+
+  for (let i = 0; i < shouldForge.domains.length; i++) {
+    const domain = shouldForge.domains[i];
+
+    const result = forgeSkill(domain, {}, {
+      dryRun,
+      pluginRoot,
+      maxConsecutiveFailures: maxFailures,
+      initialFailures: consecutiveFailures,
+    });
+
+    forged.push(result);
+
+    if (result.status === 'error') {
+      consecutiveFailures++;
+    } else if (result.status === 'success') {
+      consecutiveFailures = 0;
+    } else if (result.status === 'paused') {
+      // forge 內部已暫停，後續 domain 全部 skip
+      const remaining = shouldForge.domains.slice(i + 1);
+      skipped.push(...remaining);
+      break;
+    }
+  }
+
+  return { forged, skipped };
+}
+
+/**
+ * 內部輔助：執行 shouldAutoForge 並回傳結構化結果
+ * @param {Array} gaps
+ * @param {object} options
+ * @returns {{ shouldForge: { domains: string[], reason: string } }}
+ */
+function _getAutoForgeResult(gaps, options = {}) {
+  const shouldForge = shouldAutoForge(gaps, options);
+  return { shouldForge };
+}
+
+/**
+ * 推算預設 plugin 根目錄路徑
+ * knowledge-gap-detector.js 位於 scripts/lib/knowledge/，往上三層
+ * @returns {string}
+ */
+function _resolveDefaultPluginRoot() {
+  return path.resolve(__dirname, '..', '..', '..');
+}
+
+module.exports = { DOMAIN_KEYWORDS, detectKnowledgeGaps, shouldAutoForge, autoForge };

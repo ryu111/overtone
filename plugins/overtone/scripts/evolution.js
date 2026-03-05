@@ -26,6 +26,7 @@ const { analyzeGaps } = require('./lib/gap-analyzer');
 const { fixGaps } = require('./lib/gap-fixer');
 const { forgeSkill } = require('./lib/skill-forge');
 const { orchestrate } = require('./lib/project-orchestrator');
+const { autoForge } = require('./lib/knowledge/knowledge-gap-detector');
 const { evaluateEntries } = require('./lib/knowledge/skill-evaluator');
 const { generalizeEntries } = require('./lib/knowledge/skill-generalizer');
 const { buildIndex } = require('./lib/knowledge/experience-index');
@@ -42,6 +43,8 @@ function printUsage() {
   process.stdout.write('  status --json        JSON 格式輸出\n');
   process.stdout.write('  analyze              執行 gap 分析，輸出純文字報告\n');
   process.stdout.write('  analyze --json       輸出 JSON 格式報告（供程式消費）\n');
+  process.stdout.write('  analyze --auto-forge 分析後自動對低分 gap 觸發 forge（dry-run）\n');
+  process.stdout.write('  analyze --auto-forge --execute  分析後實際執行 forge\n');
   process.stdout.write('  fix                  預覽可修復缺口（dry-run，不修改任何檔案）\n');
   process.stdout.write('  fix --execute        實際執行修復\n');
   process.stdout.write('  fix --type <type>    只修復指定類型（sync-mismatch / no-references）\n');
@@ -84,14 +87,16 @@ function printSubcommandHelp(subcommand) {
       process.stdout.write('  --json  以 JSON 格式輸出\n');
       break;
     case 'analyze':
-      process.stdout.write('用法：bun scripts/evolution.js analyze [--json]\n');
+      process.stdout.write('用法：bun scripts/evolution.js analyze [--json] [--auto-forge] [--execute]\n');
       process.stdout.write('\n');
       process.stdout.write('執行 gap 分析，檢測元件一致性缺口。有缺口 exit 1，無缺口 exit 0。\n');
       process.stdout.write('\n');
       process.stdout.write('檢測項目：component-chain / closed-loop / completion-gap / dependency-sync\n');
       process.stdout.write('\n');
       process.stdout.write('選項：\n');
-      process.stdout.write('  --json  以 JSON 格式輸出報告（供程式消費）\n');
+      process.stdout.write('  --json        以 JSON 格式輸出報告（供程式消費）\n');
+      process.stdout.write('  --auto-forge  分析後自動對低分知識 gap 觸發 skill forge（預設 dry-run）\n');
+      process.stdout.write('  --execute     搭配 --auto-forge 使用，實際執行 forge（否則僅預覽）\n');
       break;
     case 'fix':
       process.stdout.write('用法：bun scripts/evolution.js fix [--execute] [--type <type>] [--json]\n');
@@ -558,6 +563,9 @@ function main() {
     }
     process.exit(0);
   } else if (subcommand === 'analyze') {
+    const autoForgeFlag = flags.includes('--auto-forge');
+    const execute = flags.includes('--execute');
+
     let report;
     try {
       report = analyzeGaps();
@@ -567,9 +575,54 @@ function main() {
     }
 
     if (jsonOutput) {
-      process.stdout.write(JSON.stringify(report, null, 2) + '\n');
+      let output = report;
+      // 若 --auto-forge，執行 forge 並附加結果
+      if (autoForgeFlag) {
+        let forgeOutput;
+        try {
+          forgeOutput = autoForge([], { dryRun: !execute });
+        } catch (err) {
+          forgeOutput = { forged: [], skipped: [], error: err.message };
+        }
+        output = { ...report, autoForge: { dryRun: !execute, ...forgeOutput } };
+      }
+      process.stdout.write(JSON.stringify(output, null, 2) + '\n');
     } else {
       process.stdout.write(formatTextReport(report) + '\n');
+
+      // --auto-forge：對報告中分析出的 knowledge gap 執行 forge
+      if (autoForgeFlag) {
+        process.stdout.write('\n');
+        process.stdout.write('Auto Forge — 知識缺口自動 Forge\n');
+        process.stdout.write('================================\n');
+
+        // 從 gap report 中提取知識型 gap（no-references 類型的 gaps 包含 domain 資訊）
+        // 此處以空陣列呼叫 autoForge，讓 shouldAutoForge 篩選（不傳入 knowledge gaps 資訊）
+        // 實際觸發的是 skill-forge 的 dry-run 模式，列出預覽
+        let forgeResult;
+        try {
+          forgeResult = autoForge([], { dryRun: !execute });
+        } catch (err) {
+          process.stderr.write(`Auto Forge 執行錯誤：${err.message}\n`);
+          process.exit(1);
+        }
+
+        if (forgeResult.forged.length === 0 && forgeResult.skipped.length === 0) {
+          process.stdout.write('無需 forge 的知識缺口（gaps 陣列為空）\n');
+          process.stdout.write('提示：使用 bun scripts/evolution.js forge <domain> 手動指定 domain\n');
+        } else {
+          for (const r of forgeResult.forged) {
+            process.stdout.write(`  [${r.status}] ${r.domainName}\n`);
+            if (r.error) process.stdout.write(`    錯誤：${r.error}\n`);
+          }
+          if (forgeResult.skipped.length > 0) {
+            process.stdout.write(`  已跳過（連續失敗）：${forgeResult.skipped.join(', ')}\n`);
+          }
+          if (!execute) {
+            process.stdout.write('\n（dry-run 預覽，加 --execute 實際執行）\n');
+          }
+        }
+      }
     }
 
     process.exit(report.summary.total > 0 ? 1 : 0);
