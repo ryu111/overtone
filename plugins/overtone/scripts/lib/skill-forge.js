@@ -193,13 +193,17 @@ function isQualityResearch(output) {
  * @param {string} domainName
  * @param {object} context - forge 上下文
  * @param {string} [pluginRoot] - plugin 根目錄（供快取使用）
- * @returns {string} 研究結果文字（失敗時回傳空字串）
+ * @returns {{ content: string, error: string|null, duration?: number }} 結構化結果
+ *   - 成功：{ content: resultText, error: null, duration: ms }
+ *   - timeout：{ content: '', error: 'timeout', duration: ms }
+ *   - spawn 失敗：{ content: '', error: 'spawn_failed', detail: errorMsg }
+ *   - 快取命中：{ content: cachedText, error: null }（無 duration）
  */
 function extractWebKnowledge(domainName, context, pluginRoot) {
   // 先嘗試讀取快取
   if (pluginRoot) {
     const cached = loadCachedResearch(domainName, pluginRoot);
-    if (cached) return cached;
+    if (cached) return { content: cached, error: null };
   }
 
   const contextStr = typeof context === 'string' ? context : (context ? JSON.stringify(context) : '');
@@ -222,74 +226,86 @@ function extractWebKnowledge(domainName, context, pluginRoot) {
     contextHint,
   ].join('\n');
 
+  /**
+   * 執行單次 spawn 嘗試
+   * @param {string[]} args
+   * @returns {{ output: string|null, error: string|null, timedOut: boolean, duration: number }}
+   */
+  const trySpawn = (args) => {
+    const start = Date.now();
+    try {
+      const result = Bun.spawnSync(args, {
+        timeout: WEB_RESEARCH_TIMEOUT_MS,
+        stderr: 'pipe',
+        stdout: 'pipe',
+        env: {
+          ...process.env,
+          OVERTONE_SPAWNED: '1',
+          OVERTONE_NO_DASHBOARD: '1',
+        },
+      });
+
+      const duration = Date.now() - start;
+
+      // Bun.spawnSync timeout 時 exitCode 為 null 且 signalCode 為 'SIGTERM'
+      if (result.signalCode === 'SIGTERM' || result.exitCode === null) {
+        return { output: null, error: 'timeout', timedOut: true, duration };
+      }
+
+      if (result.exitCode !== 0) {
+        const stderrText = result.stderr ? Buffer.from(result.stderr).toString().trim() : '';
+        return { output: null, error: stderrText || 'non-zero exit', timedOut: false, duration };
+      }
+
+      const output = result.stdout ? Buffer.from(result.stdout).toString().trim() : '';
+      return { output: output || null, error: null, timedOut: false, duration };
+    } catch (err) {
+      const duration = Date.now() - start;
+      // ETIMEDOUT 或其他 spawn 失敗
+      const detail = err && err.message ? err.message : String(err);
+      return { output: null, error: detail, timedOut: false, duration, spawnFailed: true };
+    }
+  };
+
   // 先嘗試帶 --allowedTools 的呼叫（讓 claude 使用 WebSearch/WebFetch）
-  const tryWithTools = () => {
-    try {
-      const result = Bun.spawnSync(
-        ['claude', '-p', '--output-format', 'text', '--allowedTools', 'WebSearch,WebFetch', prompt],
-        {
-          timeout: WEB_RESEARCH_TIMEOUT_MS,
-          stderr: 'pipe',
-          stdout: 'pipe',
-          env: {
-            ...process.env,
-            OVERTONE_SPAWNED: '1',
-            OVERTONE_NO_DASHBOARD: '1',
-          },
-        }
-      );
+  const r1 = trySpawn(['claude', '-p', '--output-format', 'text', '--allowedTools', 'WebSearch,WebFetch', prompt]);
 
-      if (result.exitCode !== 0) return null;
-      const output = result.stdout ? Buffer.from(result.stdout).toString().trim() : '';
-      return output || null;
-    } catch {
-      return null;
-    }
-  };
-
-  // fallback：不帶 --allowedTools 的呼叫
-  const tryWithoutTools = () => {
-    try {
-      const result = Bun.spawnSync(
-        ['claude', '-p', '--output-format', 'text', prompt],
-        {
-          timeout: WEB_RESEARCH_TIMEOUT_MS,
-          stderr: 'pipe',
-          stdout: 'pipe',
-          env: {
-            ...process.env,
-            OVERTONE_SPAWNED: '1',
-            OVERTONE_NO_DASHBOARD: '1',
-          },
-        }
-      );
-
-      if (result.exitCode !== 0) return null;
-      const output = result.stdout ? Buffer.from(result.stdout).toString().trim() : '';
-      return output || null;
-    } catch {
-      return null;
-    }
-  };
-
-  let output = tryWithTools();
-  if (!isQualityResearch(output)) {
-    output = tryWithoutTools();
+  if (r1.spawnFailed) {
+    return { content: '', error: 'spawn_failed', detail: r1.error };
+  }
+  if (r1.timedOut) {
+    return { content: '', error: 'timeout', duration: r1.duration };
   }
 
-  if (!output) return '';
+  let output = r1.output;
+
+  // fallback：不帶 --allowedTools 的呼叫（若 with-tools 結果品質不足）
+  if (!isQualityResearch(output)) {
+    const r2 = trySpawn(['claude', '-p', '--output-format', 'text', prompt]);
+
+    if (r2.spawnFailed) {
+      return { content: '', error: 'spawn_failed', detail: r2.error };
+    }
+    if (r2.timedOut) {
+      return { content: '', error: 'timeout', duration: r2.duration };
+    }
+
+    output = r2.output;
+  }
+
+  if (!output) return { content: '', error: null, duration: r1.duration };
 
   // 截斷到長度上限
-  const result = output.length > WEB_RESEARCH_MAX_LENGTH
+  const finalContent = output.length > WEB_RESEARCH_MAX_LENGTH
     ? output.slice(0, WEB_RESEARCH_MAX_LENGTH) + '\n...(截斷)'
     : output;
 
   // 快取結果
-  if (pluginRoot && isQualityResearch(result)) {
-    cacheWebResearch(domainName, result, pluginRoot);
+  if (pluginRoot && isQualityResearch(finalContent)) {
+    cacheWebResearch(domainName, finalContent, pluginRoot);
   }
 
-  return result;
+  return { content: finalContent, error: null, duration: r1.duration };
 }
 
 // ── SKILL.md 組裝 ──
@@ -297,7 +313,7 @@ function extractWebKnowledge(domainName, context, pluginRoot) {
 /**
  * 組裝 SKILL.md 的 body（不含 frontmatter）
  * @param {string} domainName
- * @param {{ skillPatterns: string[], autoDiscovered: string, claudeMdRelevant: string, webResearch?: string }} extracts
+ * @param {{ skillPatterns: string[], autoDiscovered: string, claudeMdRelevant: string, webResearch?: string|{content:string,error:string|null,duration?:number} }} extracts
  * @returns {string}
  */
 function assembleSkillBody(domainName, extracts) {
@@ -311,8 +327,11 @@ function assembleSkillBody(domainName, extracts) {
     contextNote = `\n> 相關內容（來自 auto-discovered.md）：\n>\n> ${autoDiscovered.replace(/\n/g, '\n> ').trim()}\n`;
   }
 
-  // web 研究 section（若有）
-  const webResearch = extracts.webResearch || '';
+  // web 研究 section（支援新格式物件或舊格式字串）
+  const rawWebResearch = extracts.webResearch;
+  const webResearch = rawWebResearch && typeof rawWebResearch === 'object'
+    ? (rawWebResearch.content || '')
+    : (rawWebResearch || '');
   const webResearchSection = webResearch
     ? `\n## 領域知識\n\n> 來源：外部研究（WebSearch）\n\n${webResearch}\n`
     : '';
@@ -451,7 +470,10 @@ function forgeSkill(domainName, context, options = {}) {
 
   // 3a. 外部研究（選用）
   if (enableWebResearch) {
-    extracts.webResearch = extractWebKnowledge(domainName, context, pluginRoot);
+    const webResult = extractWebKnowledge(domainName, context, pluginRoot);
+    // 取 content 欄位（舊字串格式已不使用）
+    extracts.webResearch = webResult.content || '';
+    extracts.webResearchMeta = { error: webResult.error, duration: webResult.duration };
   }
 
   // 4. SKILL.md 組裝
