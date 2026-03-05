@@ -1,6 +1,6 @@
 ---
 name: testing
-description: 測試知識領域。BDD 方法論、測試策略、測試慣例、scope 調度規則。供 tester 和 qa agent 消費。
+description: 測試知識領域。BDD 方法論、測試策略、測試慣例、並行測試隔離、scope 調度規則。供 tester 和 qa agent 消費。
 disable-model-invocation: true
 user-invocable: false
 ---
@@ -19,11 +19,11 @@ user-invocable: false
 ## Reference 索引
 
 | # | 檔案 | 用途 | 讀取時機 |
-|---|------|------|---------|
+|---|------|------|--------|
 | 1 | references/bdd-spec-guide.md | GIVEN/WHEN/THEN 語法 + 安全 BDD + tag 系統 | spec 模式撰寫規格時 |
 | 2 | references/test-scope-dispatch.md | DEV 後動態決定委派哪些測試 agent | workflow 選擇器調度時 |
 | 3 | references/bdd-methodology.md | BDD 方法論（Scenario Outline、Data Table、tag 分類） | spec 模式深入設計時 |
-| 4 | references/testing-conventions.md | 測試目錄結構、paths.js 用法、spec/verify 操作流程 | verify 模式執行時 |
+| 4 | references/testing-conventions.md | 測試目錄結構、paths.js 用法、spec/verify 操作流程、並行測試隔離 | verify 模式執行時 |
 | 5 | references/test-strategy.md | 五階段測試流程（Assess→Run→Improve→Validate→Report） | verify 模式規劃策略時 |
 | 6 | examples/bdd-spec-samples.md | BDD spec 範例 | spec 模式參考範例時 |
 | 7 | references/test-anti-patterns.md | 6 種測試反模式 + 壞例/好例/判斷準則 | verify 模式撰寫測試時 / code review 時 |

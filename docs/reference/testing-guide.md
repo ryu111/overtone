@@ -115,7 +115,24 @@ const registry = require(path.join(SCRIPTS_LIB, 'registry.js'));
 
 ---
 
-## 7. 相關文件
+## 7. 測試隔離（並行安全）
+
+本專案使用 `bun scripts/test-parallel.js` 以 10 workers 並行執行所有測試。每個測試檔必須**完全隔離**：
+
+| 資源 | 隔離方式 |
+|------|---------|
+| 檔案系統 | `mkdtempSync` 建立獨立 tmp 目錄，`afterEach` 清理 |
+| 環境變數 | `beforeEach` 存 / `afterEach` 還原 `process.env` |
+| 全域 store | `OVERTONE_TEST=1`（setup.js 已設定）阻止寫入 `~/.overtone/` |
+| 模組快取 | 有狀態的 singleton 需在測試間重置 |
+
+⛔ 不可寫入共享路徑（`~/.overtone/`、專案目錄內的非 tmp 路徑）。
+
+詳細規範與程式碼範例見 `plugins/overtone/skills/testing/references/testing-conventions.md` §7。
+
+---
+
+## 8. 相關文件
 
 | 文件 | 說明 |
 |------|------|

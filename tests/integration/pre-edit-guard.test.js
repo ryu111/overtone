@@ -127,6 +127,25 @@ describe('PreEditGuard: 受保護檔案阻擋', () => {
     });
   });
 
+  describe('scripts/lib/registry.js', () => {
+    test('Edit registry.js → deny（SoT 核心映射）', () => {
+      const result = runPreEditGuard('Edit', {
+        file_path: join(PLUGIN_ROOT, 'scripts', 'lib', 'registry.js'),
+      });
+      expect(result.exitCode).toBe(0);
+      expect(isDenied(result.parsed)).toBe(true);
+      expect(denyReason(result.parsed)).toContain('Registry SoT');
+    });
+
+    test('Write registry.js → deny', () => {
+      const result = runPreEditGuard('Write', {
+        file_path: join(PLUGIN_ROOT, 'scripts', 'lib', 'registry.js'),
+      });
+      expect(result.exitCode).toBe(0);
+      expect(isDenied(result.parsed)).toBe(true);
+    });
+  });
+
   describe('.claude-plugin/plugin.json', () => {
     test('Write plugin.json → deny', () => {
       const result = runPreEditGuard('Write', {
@@ -145,28 +164,34 @@ describe('PreEditGuard: 受保護檔案阻擋', () => {
 
 describe('PreEditGuard: 非受保護檔案放行', () => {
 
-  test('commands/*.md → allow（commands 不受保護）', () => {
+  test('commands/*.md → allow 但帶閉環提示', () => {
     const result = runPreEditGuard('Write', {
       file_path: join(PLUGIN_ROOT, 'commands', 'auto', 'COMMAND.md'),
     });
     expect(result.exitCode).toBe(0);
-    expect(isAllowed(result.parsed)).toBe(true);
+    expect(isDenied(result.parsed)).toBe(false);
+    expect(result.parsed.result).toContain('閉環提示');
+    expect(result.parsed.result).toContain('Command 定義');
   });
 
-  test('skills/*/references/*.md → allow（reference 不受保護）', () => {
+  test('skills/*/references/*.md → allow 但帶閉環提示', () => {
     const result = runPreEditGuard('Write', {
       file_path: join(PLUGIN_ROOT, 'skills', 'testing', 'references', 'bdd.md'),
     });
     expect(result.exitCode).toBe(0);
-    expect(isAllowed(result.parsed)).toBe(true);
+    expect(isDenied(result.parsed)).toBe(false);
+    expect(result.parsed.result).toContain('閉環提示');
+    expect(result.parsed.result).toContain('Skill Reference');
   });
 
-  test('hooks/scripts/*.js → allow（hook 腳本不受保護）', () => {
+  test('hooks/scripts/*.js → allow 但帶閉環提示', () => {
     const result = runPreEditGuard('Edit', {
       file_path: join(PLUGIN_ROOT, 'hooks', 'scripts', 'tool', 'pre-task.js'),
     });
     expect(result.exitCode).toBe(0);
-    expect(isAllowed(result.parsed)).toBe(true);
+    expect(isDenied(result.parsed)).toBe(false);
+    expect(result.parsed.result).toContain('閉環提示');
+    expect(result.parsed.result).toContain('Hook 腳本');
   });
 
   test('scripts/lib/state.js → allow（一般 lib 不受保護）', () => {
@@ -258,6 +283,17 @@ describe('PreEditGuard: 邊界情況', () => {
     expect(reason).toContain('manage-component.js');
     expect(reason).toContain('createAgent');
     expect(reason).toContain('updateAgent');
+  });
+
+  test('deny 訊息包含閉環檢查提示', () => {
+    const result = runPreEditGuard('Write', {
+      file_path: join(PLUGIN_ROOT, 'skills', 'testing', 'SKILL.md'),
+    });
+    expect(isDenied(result.parsed)).toBe(true);
+    const reason = denyReason(result.parsed);
+    expect(reason).toContain('閉環檢查');
+    expect(reason).toContain('消費者');
+    expect(reason).toContain('依賴鏈');
   });
 });
 

@@ -143,3 +143,60 @@ Ran 63 tests across 13 files. [...]
 - 不可刪除 Handoff 未標記的測試
 - 不可跳過 verify 模式中的「待清理測試」處理步驟
 - verify 模式不寫新的 BDD 骨架（那是 spec 模式的工作）
+
+---
+
+## 7. 測試隔離（並行安全）
+
+本專案測試以 10 workers 並行執行（`bun scripts/test-parallel.js`）。每個測試檔必須**完全隔離**，不可依賴執行順序或共享可變狀態。
+
+### 7a. 檔案系統隔離
+
+需要寫入檔案的測試 📋 MUST 使用獨立臨時目錄：
+
+```javascript
+const { mkdtempSync, rmSync } = require('fs');
+const os = require('os');
+const path = require('path');
+
+let tmpDir;
+
+beforeEach(() => {
+  tmpDir = mkdtempSync(path.join(os.tmpdir(), 'overtone-test-'));
+});
+
+afterEach(() => {
+  rmSync(tmpDir, { recursive: true, force: true });
+});
+```
+
+⛔ **NEVER** 寫入共享路徑（如 `~/.overtone/`、專案目錄內的非 tmp 路徑）。
+
+### 7b. 環境變數隔離
+
+修改 `process.env` 的測試 📋 MUST 在 afterEach 還原：
+
+```javascript
+let savedEnv;
+
+beforeEach(() => {
+  savedEnv = { ...process.env };
+});
+
+afterEach(() => {
+  process.env = savedEnv;
+});
+```
+
+### 7c. 模組狀態隔離
+
+- 若受測模組有全域狀態（singleton、cache），測試間 📋 MUST 重置
+- 避免依賴 `require()` 快取 — 需要乾淨狀態時使用 `jest.resetModules()` 或重新建構實例
+
+### 7d. 隔離檢查清單
+
+寫測試時自問：
+1. 這個測試寫入檔案系統嗎？→ 用 `mkdtempSync` + `afterEach` 清理
+2. 這個測試修改 `process.env` 嗎？→ `beforeEach` 存 / `afterEach` 還原
+3. 這個測試依賴其他測試的執行結果嗎？→ 重構為獨立
+4. 兩個 worker 同時跑這個測試會衝突嗎？→ 確保路徑/資源唯一

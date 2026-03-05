@@ -29,7 +29,7 @@ const MEMORY_LINE_LIMIT = 200;
 // Plugin 根目錄（此腳本位於 hooks/scripts/tool/，上三層）
 const PLUGIN_ROOT = resolve(__dirname, '..', '..', '..');
 
-// 受保護的檔案模式（相對於 plugin root）
+// 受保護的檔案模式（相對於 plugin root）— deny，必須走 manage-component.js
 const PROTECTED_PATTERNS = [
   {
     pattern: /^agents\/[^/]+\.md$/,
@@ -52,9 +52,38 @@ const PROTECTED_PATTERNS = [
     api: 'createAgent / updateAgent（自動同步）',
   },
   {
+    pattern: /^scripts\/lib\/registry\.js$/,
+    label: 'Registry SoT（核心映射）',
+    api: '直接編輯（需極度謹慎，影響全系統）',
+  },
+  {
     pattern: /^\.claude-plugin\/plugin\.json$/,
     label: 'Plugin manifest',
     api: 'createAgent（自動同步）',
+  },
+];
+
+// 閉環提示模式（不阻擋，但注入 systemMessage 提醒檢查依賴鏈）
+const CLOSEDLOOP_PATTERNS = [
+  {
+    pattern: /^hooks\/scripts\/.*\.js$/,
+    label: 'Hook 腳本',
+    hint: 'CLAUDE.md Hook 架構表、對應的 handler 模組（scripts/lib/*-handler.js）',
+  },
+  {
+    pattern: /^commands\/.*\.md$/,
+    label: 'Command 定義',
+    hint: '引用的 workflow 模板（registry.js）、agent 名稱、CLAUDE.md 指令列表',
+  },
+  {
+    pattern: /^skills\/[^/]+\/references\/.*\.md$/,
+    label: 'Skill Reference',
+    hint: '對應的 SKILL.md 索引描述、消費此 reference 的 agent prompt',
+  },
+  {
+    pattern: /^skills\/[^/]+\/examples\/.*\.md$/,
+    label: 'Skill Example',
+    hint: '對應的 SKILL.md 索引描述',
   },
 ];
 
@@ -129,6 +158,12 @@ safeRun(() => {
       ``,
       `對應 API：${protectedInfo.api}`,
       `詳見：plugins/overtone/scripts/manage-component.js --help`,
+      ``,
+      `📋 閉環檢查（改完後 MUST 思考）：`,
+      `  1. 此元件的消費者（哪些 agent/skill 引用它）是否需要同步？`,
+      `  2. 相關的 reference 索引（SKILL.md）描述是否仍然正確？`,
+      `  3. docs/ 下的對應文件是否需要更新？`,
+      `  4. 依賴鏈：Agent prompt ↔ Skill SKILL.md ↔ Skill reference ↔ docs/`,
     ].join('\n');
 
     process.stdout.write(JSON.stringify({
@@ -141,11 +176,17 @@ safeRun(() => {
     process.exit(0);
   }
 
+  // ── 閉環提示（不阻擋，注入 systemMessage）──
+  const closedLoopHint = checkClosedLoop(relPath);
+
   // ── Workflow 編碼守衛 ──
   // DEV stage 是 pending 且無 activeAgents → Main Agent 在自己寫碼（應委派 developer）
   const codeWarning = checkMainAgentCoding(input);
-  if (codeWarning) {
-    process.stdout.write(JSON.stringify({ result: codeWarning }));
+
+  // 合併提示訊息（閉環 + 編碼守衛）
+  const combinedWarning = [closedLoopHint, codeWarning].filter(Boolean).join('\n\n');
+  if (combinedWarning) {
+    process.stdout.write(JSON.stringify({ result: combinedWarning }));
     process.exit(0);
   }
 
@@ -253,5 +294,25 @@ function shouldWarnMainAgentCoding(state) {
   ].join('\n');
 }
 
+/**
+ * 檢查檔案是否匹配閉環提示模式
+ * @param {string} relPath - 相對於 plugin root 的路徑
+ * @returns {string|null} 閉環提示 systemMessage 或 null
+ */
+function checkClosedLoop(relPath) {
+  if (!relPath) return null;
+  for (const { pattern, label, hint } of CLOSEDLOOP_PATTERNS) {
+    if (pattern.test(relPath)) {
+      return [
+        `📋 閉環提示：你正在編輯${label}（${relPath}）`,
+        `   改完後 MUST 檢查以下是否需要同步：`,
+        `   → ${hint}`,
+        `   依賴鏈：Agent prompt ↔ Skill SKILL.md ↔ Skill reference ↔ docs/`,
+      ].join('\n');
+    }
+  }
+  return null;
+}
+
 // ── 純函數匯出 ──
-module.exports = { checkProtected, checkMemoryLineLimit, checkMainAgentCoding, shouldWarnMainAgentCoding };
+module.exports = { checkProtected, checkClosedLoop, checkMemoryLineLimit, checkMainAgentCoding, shouldWarnMainAgentCoding };

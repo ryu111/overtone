@@ -55,6 +55,7 @@ describe('require.main 守衛', () => {
   test('require() pre-edit-guard.js 不觸發 stdin 讀取，並匯出函數', () => {
     const mod = require(path.join(HOOKS_ROOT, 'tool/pre-edit-guard'));
     expect(typeof mod.checkProtected).toBe('function');
+    expect(typeof mod.checkClosedLoop).toBe('function');
     expect(typeof mod.checkMemoryLineLimit).toBe('function');
     expect(typeof mod.shouldWarnMainAgentCoding).toBe('function');
   });
@@ -485,7 +486,7 @@ describe('pre-task.js 純函數', () => {
 // ── tool/pre-edit-guard.js 純函數 ────────────────────────────────────────
 
 describe('pre-edit-guard.js 純函數', () => {
-  const { checkProtected, checkMemoryLineLimit, shouldWarnMainAgentCoding } = require(path.join(HOOKS_ROOT, 'tool/pre-edit-guard'));
+  const { checkProtected, checkClosedLoop, checkMemoryLineLimit, shouldWarnMainAgentCoding } = require(path.join(HOOKS_ROOT, 'tool/pre-edit-guard'));
 
   describe('checkProtected', () => {
     test('受保護的 agents 路徑回傳 label 和 api', () => {
@@ -518,6 +519,47 @@ describe('pre-edit-guard.js 純函數', () => {
     test('registry-data.json 為受保護路徑', () => {
       const result = checkProtected('scripts/lib/registry-data.json', '/any');
       expect(result).not.toBeNull();
+    });
+
+    test('registry.js 為受保護路徑（SoT 核心映射）', () => {
+      const result = checkProtected('scripts/lib/registry.js', '/any');
+      expect(result).not.toBeNull();
+      expect(result.label).toContain('Registry SoT');
+    });
+  });
+
+  describe('checkClosedLoop', () => {
+    test('hook 腳本回傳閉環提示', () => {
+      const result = checkClosedLoop('hooks/scripts/tool/pre-task.js');
+      expect(result).not.toBeNull();
+      expect(result).toContain('Hook 腳本');
+      expect(result).toContain('閉環提示');
+    });
+
+    test('command 檔案回傳閉環提示', () => {
+      const result = checkClosedLoop('commands/dev/COMMAND.md');
+      expect(result).not.toBeNull();
+      expect(result).toContain('Command 定義');
+    });
+
+    test('skill reference 回傳閉環提示', () => {
+      const result = checkClosedLoop('skills/testing/references/bdd.md');
+      expect(result).not.toBeNull();
+      expect(result).toContain('Skill Reference');
+    });
+
+    test('skill example 回傳閉環提示', () => {
+      const result = checkClosedLoop('skills/testing/examples/sample.md');
+      expect(result).not.toBeNull();
+      expect(result).toContain('Skill Example');
+    });
+
+    test('一般 lib 檔案回傳 null（無閉環提示）', () => {
+      expect(checkClosedLoop('scripts/lib/state.js')).toBeNull();
+    });
+
+    test('空字串回傳 null', () => {
+      expect(checkClosedLoop('')).toBeNull();
     });
   });
 

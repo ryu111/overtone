@@ -200,6 +200,11 @@ if (result.success) {
   } else if (action === 'update' && type === 'agent' && opts.skills !== undefined) {
     process.stderr.write(`${WARN} 記得確認新增的 skill 存在於 skills/ 目錄\n`);
   }
+
+  // ── 通用閉環提醒（所有成功操作）──
+  const CL = '\x1b[36m📋\x1b[0m';
+  process.stderr.write(`${CL} 閉環檢查：此元件的消費者是否需要同步？相關 docs/ 是否需要更新？\n`);
+  process.stderr.write(`${CL} 依賴鏈：Agent prompt ↔ Skill SKILL.md ↔ Skill reference ↔ docs/\n`);
 } else {
   console.error(`❌ ${action} ${type} 失敗：`);
   for (const err of result.errors) {
