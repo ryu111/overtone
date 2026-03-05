@@ -174,11 +174,18 @@ bun scripts/data.js gc --dry-run                     # 預覽全域目錄清理
 bun scripts/data.js recent --limit 5                 # 列出最近 session
 
 # 執行佇列管理
-bun scripts/queue.js add <name> <workflow> [...]         # 新增項目（覆寫現有）
-bun scripts/queue.js append <name> <workflow> [...]     # 累加到現有佇列
-bun scripts/queue.js list                               # 列出佇列狀態
-bun scripts/queue.js enable-auto                        # 啟用自動執行（規劃模式 → 執行模式）
-bun scripts/queue.js clear                              # 清除佇列
+bun scripts/queue.js add <name> <workflow> [...]                        # 新增項目（覆寫現有）
+bun scripts/queue.js append <name> <workflow> [...]                    # 累加到現有佇列
+bun scripts/queue.js list                                              # 列出佇列狀態
+bun scripts/queue.js enable-auto                                       # 啟用自動執行（規劃模式 → 執行模式）
+bun scripts/queue.js clear                                             # 清除佇列
+bun scripts/queue.js insert <name> <workflow> --before <anchor>        # 在指定項目之前插入新項目
+bun scripts/queue.js insert <name> <workflow> --after <anchor>         # 在指定項目之後插入新項目
+bun scripts/queue.js remove <name>                                     # 刪除 pending/failed 項目
+bun scripts/queue.js move <name> --before <anchor>                     # 移動項目到指定位置之前
+bun scripts/queue.js move <name> --after <anchor>                      # 移動項目到指定位置之後
+bun scripts/queue.js info <name>                                       # 查詢項目詳細資訊（含 failReason/時間戳記）
+bun scripts/queue.js retry <name>                                      # 將 failed 項目重設為 pending
 # Flag: --no-auto（規劃模式）、--source <desc>（來源描述）、--project-root <path>
 
 # 手動停止 Loop（需提供 sessionId）

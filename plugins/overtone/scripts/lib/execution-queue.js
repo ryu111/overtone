@@ -370,6 +370,146 @@ function applyOrder(projectRoot, suggested) {
 }
 
 /**
+ * 在指定 anchor 項目前或後插入新項目
+ * @param {string} projectRoot
+ * @param {string} name         - 新項目名稱
+ * @param {string} workflow     - 新項目 workflow
+ * @param {string} anchor       - 定位用的現有項目名稱
+ * @param {'before'|'after'} position
+ * @returns {{ ok: boolean, error?: string }}
+ */
+function insertItem(projectRoot, name, workflow, anchor, position) {
+  const queue = readQueue(projectRoot);
+  if (!queue) return { ok: false, error: 'QUEUE_NOT_FOUND' };
+
+  const anchorIdx = queue.items.findIndex(i => i.name === anchor);
+  if (anchorIdx === -1) return { ok: false, error: 'ANCHOR_NOT_FOUND' };
+
+  const newItem = { name, workflow, status: 'pending' };
+  const insertIdx = position === 'before' ? anchorIdx : anchorIdx + 1;
+  queue.items.splice(insertIdx, 0, newItem);
+
+  const filePath = _queuePath(projectRoot);
+  atomicWrite(filePath, queue);
+
+  return { ok: true };
+}
+
+/**
+ * 刪除指定名稱的佇列項目（僅允許 pending / failed）
+ * @param {string} projectRoot
+ * @param {string} name
+ * @returns {{ ok: boolean, error?: string }}
+ */
+function removeItem(projectRoot, name) {
+  const queue = readQueue(projectRoot);
+  if (!queue) return { ok: false, error: 'QUEUE_NOT_FOUND' };
+
+  const idx = queue.items.findIndex(i => i.name === name);
+  if (idx === -1) return { ok: false, error: 'ITEM_NOT_FOUND' };
+
+  const item = queue.items[idx];
+  if (item.status !== 'pending' && item.status !== 'failed') {
+    return { ok: false, error: 'INVALID_STATUS', status: item.status };
+  }
+
+  queue.items.splice(idx, 1);
+
+  const filePath = _queuePath(projectRoot);
+  atomicWrite(filePath, queue);
+
+  return { ok: true };
+}
+
+/**
+ * 將指定項目移動到 anchor 的前或後（允許 pending / failed）
+ * @param {string} projectRoot
+ * @param {string} name         - 要移動的項目名稱
+ * @param {string} anchor       - 定位用的現有項目名稱
+ * @param {'before'|'after'} position
+ * @returns {{ ok: boolean, error?: string }}
+ */
+function moveItem(projectRoot, name, anchor, position) {
+  const queue = readQueue(projectRoot);
+  if (!queue) return { ok: false, error: 'QUEUE_NOT_FOUND' };
+
+  if (name === anchor) return { ok: false, error: 'SELF_ANCHOR' };
+
+  const itemIdx = queue.items.findIndex(i => i.name === name);
+  if (itemIdx === -1) return { ok: false, error: 'ITEM_NOT_FOUND' };
+
+  const item = queue.items[itemIdx];
+  if (item.status !== 'pending' && item.status !== 'failed') {
+    return { ok: false, error: 'INVALID_STATUS', status: item.status };
+  }
+
+  // 先移除目標項目（避免 anchor index 因移除而偏移）
+  queue.items.splice(itemIdx, 1);
+
+  // 在移除後的陣列中找 anchor
+  const anchorIdx = queue.items.findIndex(i => i.name === anchor);
+  if (anchorIdx === -1) return { ok: false, error: 'ANCHOR_NOT_FOUND' };
+
+  const insertIdx = position === 'before' ? anchorIdx : anchorIdx + 1;
+  queue.items.splice(insertIdx, 0, item);
+
+  const filePath = _queuePath(projectRoot);
+  atomicWrite(filePath, queue);
+
+  return { ok: true };
+}
+
+/**
+ * 查詢單一項目的完整資訊
+ * @param {string} projectRoot
+ * @param {string} name
+ * @returns {{ ok: boolean, item?: object, index?: number, error?: string }}
+ */
+function getItem(projectRoot, name) {
+  const queue = readQueue(projectRoot);
+  if (!queue) return { ok: false, error: 'QUEUE_NOT_FOUND' };
+
+  const idx = queue.items.findIndex(i => i.name === name);
+  if (idx === -1) return { ok: false, error: 'ITEM_NOT_FOUND' };
+
+  return { ok: true, item: { ...queue.items[idx] }, index: idx };
+}
+
+/**
+ * 將 failed 項目重設為 pending（清除 failedAt / failReason / startedAt）
+ * @param {string} projectRoot
+ * @param {string} name
+ * @returns {{ ok: boolean, error?: string }}
+ */
+function retryItem(projectRoot, name) {
+  const queue = readQueue(projectRoot);
+  if (!queue) return { ok: false, error: 'QUEUE_NOT_FOUND' };
+
+  const idx = queue.items.findIndex(i => i.name === name);
+  if (idx === -1) return { ok: false, error: 'ITEM_NOT_FOUND' };
+
+  const item = queue.items[idx];
+  if (item.status !== 'failed') {
+    return { ok: false, error: 'INVALID_STATUS', status: item.status };
+  }
+
+  // 檢查是否有 in_progress 項目
+  const inProgress = queue.items.find(i => i.status === 'in_progress');
+  if (inProgress) {
+    return { ok: false, error: 'IN_PROGRESS_CONFLICT', conflictName: inProgress.name };
+  }
+
+  // 用 destructuring 建立新物件，確保完全移除失敗相關欄位
+  const { failedAt: _fa, failReason: _fr, startedAt: _sa, ...rest } = item;
+  queue.items[idx] = { ...rest, status: 'pending' };
+
+  const filePath = _queuePath(projectRoot);
+  atomicWrite(filePath, queue);
+
+  return { ok: true };
+}
+
+/**
  * 清除佇列（所有項目完成後或手動清除）
  * @param {string} projectRoot
  */
@@ -408,5 +548,10 @@ module.exports = {
   dedup,
   suggestOrder,
   applyOrder,
+  insertItem,
+  removeItem,
+  moveItem,
+  getItem,
+  retryItem,
   WORKFLOW_ORDER,
 };

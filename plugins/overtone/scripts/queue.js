@@ -112,6 +112,152 @@ function cmdDedup(projectRoot) {
   }
 }
 
+function cmdInsert(projectRoot, positional, flags) {
+  if (positional.length < 2) {
+    console.error('用法：bun scripts/queue.js insert <name> <workflow> --before <anchor> | --after <anchor>');
+    process.exit(1);
+  }
+
+  const name = positional[0];
+  const workflow = positional[1];
+  const before = flags['--before'];
+  const after = flags['--after'];
+
+  if (before && after) {
+    console.error('錯誤：--before 和 --after 互斥，只能指定其中一個');
+    process.exit(1);
+  }
+
+  if (!before && !after) {
+    console.error('錯誤：必須指定 --before <anchor> 或 --after <anchor>');
+    process.exit(1);
+  }
+
+  const anchor = before || after;
+  const position = before ? 'before' : 'after';
+
+  const result = executionQueue.insertItem(projectRoot, name, workflow, anchor, position);
+
+  if (!result.ok) {
+    console.log(_formatError(result, name, anchor));
+    process.exit(1);
+  }
+
+  console.log(`✅ 已插入項目：${name}（${workflow}）— ${position} ${anchor}`);
+}
+
+function cmdRemove(projectRoot, positional) {
+  if (positional.length < 1) {
+    console.error('用法：bun scripts/queue.js remove <name>');
+    process.exit(1);
+  }
+
+  const name = positional[0];
+  const result = executionQueue.removeItem(projectRoot, name);
+
+  if (!result.ok) {
+    console.log(_formatError(result, name));
+    process.exit(1);
+  }
+
+  console.log(`✅ 已刪除項目：${name}`);
+}
+
+function cmdMove(projectRoot, positional, flags) {
+  if (positional.length < 1) {
+    console.error('用法：bun scripts/queue.js move <name> --before <anchor> | --after <anchor>');
+    process.exit(1);
+  }
+
+  const name = positional[0];
+  const before = flags['--before'];
+  const after = flags['--after'];
+
+  if (before && after) {
+    console.error('錯誤：--before 和 --after 互斥，只能指定其中一個');
+    process.exit(1);
+  }
+
+  if (!before && !after) {
+    console.error('錯誤：必須指定 --before <anchor> 或 --after <anchor>');
+    process.exit(1);
+  }
+
+  const anchor = before || after;
+  const position = before ? 'before' : 'after';
+
+  const result = executionQueue.moveItem(projectRoot, name, anchor, position);
+
+  if (!result.ok) {
+    console.log(_formatError(result, name, anchor));
+    process.exit(1);
+  }
+
+  console.log(`✅ 已移動項目：${name} — ${position} ${anchor}`);
+}
+
+function cmdInfo(projectRoot, positional) {
+  if (positional.length < 1) {
+    console.error('用法：bun scripts/queue.js info <name>');
+    process.exit(1);
+  }
+
+  const name = positional[0];
+  const result = executionQueue.getItem(projectRoot, name);
+
+  if (!result.ok) {
+    console.log(_formatError(result, name));
+    process.exit(1);
+  }
+
+  const { item, index } = result;
+  const icons = { completed: '✅', in_progress: '🔄', pending: '⬜', failed: '❌' };
+  const icon = icons[item.status] || '⬜';
+
+  console.log(`${icon} ${item.name}（${item.workflow}）— 位置 #${index + 1}`);
+  console.log(`  status:    ${item.status}`);
+  if (item.startedAt) console.log(`  startedAt: ${item.startedAt}`);
+  if (item.completedAt) console.log(`  completedAt: ${item.completedAt}`);
+  if (item.failedAt) console.log(`  failedAt:  ${item.failedAt}`);
+  if (item.failReason) console.log(`  failReason: ${item.failReason}`);
+}
+
+function cmdRetry(projectRoot, positional) {
+  if (positional.length < 1) {
+    console.error('用法：bun scripts/queue.js retry <name>');
+    process.exit(1);
+  }
+
+  const name = positional[0];
+  const result = executionQueue.retryItem(projectRoot, name);
+
+  if (!result.ok) {
+    console.log(_formatError(result, name));
+    process.exit(1);
+  }
+
+  console.log(`✅ 已重設項目為 pending：${name}`);
+}
+
+function _formatError(result, name, anchor) {
+  switch (result.error) {
+    case 'QUEUE_NOT_FOUND':
+      return '佇列不存在';
+    case 'ITEM_NOT_FOUND':
+      return `找不到項目：${name}`;
+    case 'ANCHOR_NOT_FOUND':
+      return `找不到定位項目：${anchor}`;
+    case 'INVALID_STATUS':
+      return `無法操作 ${result.status} 狀態的項目：${name}`;
+    case 'IN_PROGRESS_CONFLICT':
+      return `目前有項目正在執行中（${result.conflictName}），請等待完成後再重試`;
+    case 'SELF_ANCHOR':
+      return `來源和定位項目不可相同：${name}`;
+    default:
+      return `錯誤：${result.error}`;
+  }
+}
+
 function cmdSuggestOrder(projectRoot, applyFlag) {
   const { suggested, changed } = executionQueue.suggestOrder(projectRoot);
   if (suggested === null) {
@@ -166,11 +312,19 @@ function main(argv) {
   // 解析 --apply
   const applyFlag = args.includes('--apply');
 
+  // 解析 --before 和 --after
+  const beforeIdx = args.indexOf('--before');
+  const beforeValue = beforeIdx !== -1 && args[beforeIdx + 1] ? args[beforeIdx + 1] : null;
+  const afterIdx = args.indexOf('--after');
+  const afterValue = afterIdx !== -1 && args[afterIdx + 1] ? args[afterIdx + 1] : null;
+  const flags = { '--before': beforeValue, '--after': afterValue };
+
   // 過濾掉 option 參數，取得 positional args
-  const optionKeys = ['--project-root', '--source', '--no-auto', '--apply'];
+  const optionKeys = ['--project-root', '--source', '--no-auto', '--apply', '--before', '--after'];
+  const valueOptions = ['--project-root', '--source', '--before', '--after'];
   const positional = args.slice(1).filter((arg, i, arr) => {
     if (optionKeys.includes(arg)) return false;
-    if (i > 0 && (arr[i - 1] === '--project-root' || arr[i - 1] === '--source')) return false;
+    if (i > 0 && valueOptions.includes(arr[i - 1])) return false;
     return true;
   });
 
@@ -196,23 +350,45 @@ function main(argv) {
     case 'suggest-order':
       cmdSuggestOrder(projectRoot, applyFlag);
       break;
+    case 'insert':
+      cmdInsert(projectRoot, positional, flags);
+      break;
+    case 'remove':
+      cmdRemove(projectRoot, positional);
+      break;
+    case 'move':
+      cmdMove(projectRoot, positional, flags);
+      break;
+    case 'info':
+      cmdInfo(projectRoot, positional);
+      break;
+    case 'retry':
+      cmdRetry(projectRoot, positional);
+      break;
     default:
-      console.log('用法：bun scripts/queue.js <add|append|list|clear|enable-auto|dedup|suggest-order> [options]');
+      console.log('用法：bun scripts/queue.js <add|append|list|clear|enable-auto|dedup|suggest-order|insert|remove|move|info|retry> [options]');
       console.log('');
       console.log('子命令：');
-      console.log('  add <name> <workflow> [...]   新增項目到佇列（覆寫）');
-      console.log('  append <name> <workflow> [...] 累加到現有佇列');
-      console.log('  list                          列出佇列狀態');
-      console.log('  clear                         清除佇列');
-      console.log('  enable-auto                   啟用自動執行（規劃模式 → 執行模式）');
-      console.log('  dedup                         移除重複項目（name + workflow 相同）');
-      console.log('  suggest-order                 顯示建議執行順序（由簡到繁）');
+      console.log('  add <name> <workflow> [...]         新增項目到佇列（覆寫）');
+      console.log('  append <name> <workflow> [...]      累加到現有佇列');
+      console.log('  list                               列出佇列狀態');
+      console.log('  clear                              清除佇列');
+      console.log('  enable-auto                        啟用自動執行（規劃模式 → 執行模式）');
+      console.log('  dedup                              移除重複項目（name + workflow 相同）');
+      console.log('  suggest-order                      顯示建議執行順序（由簡到繁）');
+      console.log('  insert <name> <workflow> --before|--after <anchor>  插入新項目到指定位置');
+      console.log('  remove <name>                      刪除 pending/failed 項目');
+      console.log('  move <name> --before|--after <anchor>  移動項目到指定位置');
+      console.log('  info <name>                        查詢項目詳細資訊');
+      console.log('  retry <name>                       將 failed 項目重設為 pending');
       console.log('');
       console.log('選項：');
       console.log('  --project-root <path>   指定專案根目錄（預設 cwd）');
       console.log('  --source <desc>         來源描述（add/append 時使用，預設 "CLI"）');
       console.log('  --no-auto               寫入規劃模式佇列（autoExecute: false）');
       console.log('  --apply                 套用建議排序（僅 suggest-order 有效）');
+      console.log('  --before <anchor>       在指定項目之前（insert/move 使用）');
+      console.log('  --after <anchor>        在指定項目之後（insert/move 使用）');
       process.exit(1);
   }
 }
@@ -221,4 +397,4 @@ if (require.main === module) {
   main();
 }
 
-module.exports = { main, _cmdAdd: cmdAdd, _cmdAppend: cmdAppend, _cmdList: cmdList, _cmdClear: cmdClear, _cmdEnableAuto: cmdEnableAuto, _cmdDedup: cmdDedup, _cmdSuggestOrder: cmdSuggestOrder };
+module.exports = { main, _cmdAdd: cmdAdd, _cmdAppend: cmdAppend, _cmdList: cmdList, _cmdClear: cmdClear, _cmdEnableAuto: cmdEnableAuto, _cmdDedup: cmdDedup, _cmdSuggestOrder: cmdSuggestOrder, _cmdInsert: cmdInsert, _cmdRemove: cmdRemove, _cmdMove: cmdMove, _cmdInfo: cmdInfo, _cmdRetry: cmdRetry, _formatError };
