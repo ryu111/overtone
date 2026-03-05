@@ -93,6 +93,17 @@ function findingToGap(finding, sourceCheck) {
       return null;
   }
 
+  // 計算 fixable 和 fixAction
+  let fixable = false;
+  let fixAction = '';
+  if (type === 'sync-mismatch') {
+    fixable = true;
+    fixAction = 'fix-consistency: 在 SKILL.md 消費者表新增缺少的 agent';
+  } else if (type === 'no-references') {
+    fixable = true;
+    fixAction = 'create-references: 建立 references/ 目錄和 README.md 佔位';
+  }
+
   return {
     type,
     severity: finding.severity || 'warning',
@@ -100,6 +111,8 @@ function findingToGap(finding, sourceCheck) {
     message: finding.message || '',
     suggestion: buildSuggestion(type, finding.file || ''),
     sourceCheck,
+    fixable,
+    fixAction,
   };
 }
 

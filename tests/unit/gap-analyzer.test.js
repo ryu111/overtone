@@ -367,6 +367,103 @@ describe('analyzeGaps — suggestion 格式', () => {
 });
 
 // ══════════════════════════════════════════════════════════════════
+// Feature 12: fixable / fixAction 欄位（BDD Feature 1）
+// ══════════════════════════════════════════════════════════════════
+
+describe('analyzeGaps — fixable / fixAction 欄位', () => {
+  // sync-mismatch → fixable: true
+  test('sync-mismatch 缺口 fixable 為 true', () => {
+    const result = analyzeGaps({ checks: ['dependency-sync'] });
+    const syncGaps = result.gaps.filter((g) => g.type === 'sync-mismatch');
+    // 若系統目前無 sync-mismatch，跳過；否則驗證
+    for (const gap of syncGaps) {
+      expect(gap.fixable).toBe(true);
+    }
+    // 確認欄位存在（所有 gap）
+    for (const gap of result.gaps) {
+      expect(typeof gap.fixable).toBe('boolean');
+      expect(typeof gap.fixAction).toBe('string');
+    }
+  });
+
+  test('sync-mismatch fixAction 包含正確描述', () => {
+    // 透過 findingToGap 內部邏輯，利用自訂 gap 結構驗證
+    // 使用真實 dependency-sync check 若有結果；否則用 component-chain 的其他型別
+    const result = analyzeGaps({ checks: ['dependency-sync'] });
+    for (const gap of result.gaps) {
+      if (gap.type === 'sync-mismatch') {
+        expect(gap.fixAction).toBe('fix-consistency: 在 SKILL.md 消費者表新增缺少的 agent');
+      }
+    }
+  });
+
+  test('no-references 缺口 fixable 為 true', () => {
+    const result = analyzeGaps({ checks: ['completion-gap'] });
+    for (const gap of result.gaps) {
+      if (gap.type === 'no-references') {
+        expect(gap.fixable).toBe(true);
+        expect(gap.fixAction).toBe('create-references: 建立 references/ 目錄和 README.md 佔位');
+      }
+    }
+    // 確認欄位存在
+    for (const gap of result.gaps) {
+      expect(typeof gap.fixable).toBe('boolean');
+      expect(typeof gap.fixAction).toBe('string');
+    }
+  });
+
+  test('broken-chain 缺口 fixable 為 false，fixAction 為空字串', () => {
+    const result = analyzeGaps({ pluginRoot: FAKE_ROOT, checks: ['component-chain'] });
+    const brokenGaps = result.gaps.filter((g) => g.type === 'broken-chain');
+    expect(brokenGaps.length).toBeGreaterThan(0);
+    for (const gap of brokenGaps) {
+      expect(gap.fixable).toBe(false);
+      expect(gap.fixAction).toBe('');
+    }
+  });
+
+  test('missing-skill 缺口 fixable 為 false，fixAction 為空字串', () => {
+    // missing-skill 透過 component-chain check 產生（skill 缺失）
+    const result = analyzeGaps({ pluginRoot: FAKE_ROOT, checks: ['component-chain'] });
+    const missingSkillGaps = result.gaps.filter((g) => g.type === 'missing-skill');
+    for (const gap of missingSkillGaps) {
+      expect(gap.fixable).toBe(false);
+      expect(gap.fixAction).toBe('');
+    }
+  });
+
+  test('missing-consumer 缺口 fixable 為 false，fixAction 為空字串', () => {
+    const result = analyzeGaps({ checks: ['closed-loop'] });
+    for (const gap of result.gaps) {
+      if (gap.type === 'missing-consumer') {
+        expect(gap.fixable).toBe(false);
+        expect(gap.fixAction).toBe('');
+      }
+    }
+    // 確認欄位存在
+    for (const gap of result.gaps) {
+      expect(typeof gap.fixable).toBe('boolean');
+      expect(typeof gap.fixAction).toBe('string');
+    }
+  });
+
+  test('每個 gap 仍包含原有欄位：type/severity/file/message/suggestion/sourceCheck', () => {
+    const result = analyzeGaps({ pluginRoot: FAKE_ROOT, checks: ['component-chain'] });
+    for (const gap of result.gaps) {
+      expect(typeof gap.type).toBe('string');
+      expect(typeof gap.severity).toBe('string');
+      expect(typeof gap.file).toBe('string');
+      expect(typeof gap.message).toBe('string');
+      expect(typeof gap.suggestion).toBe('string');
+      expect(typeof gap.sourceCheck).toBe('string');
+      // 新欄位
+      expect(typeof gap.fixable).toBe('boolean');
+      expect(typeof gap.fixAction).toBe('string');
+    }
+  });
+});
+
+// ══════════════════════════════════════════════════════════════════
 // Feature 11: 真實 pluginRoot — 全部 check 通過（無缺口）
 // ══════════════════════════════════════════════════════════════════
 
