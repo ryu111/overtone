@@ -1,12 +1,12 @@
 # Overtone 現況
 
-> 最後更新：2026-03-06 | Plugin 版本：0.28.64（pm-domain-research：領域研究能力 + bugfix + 34 個測試）
+> 最後更新：2026-03-06 | Plugin 版本：0.28.64
 
 ## 版本狀態
 
 | 版本 | 狀態 | 說明 |
 |------|------|------|
-| V1 | 進行中 | 3753 pass，0 fail，核心功能完整 + 守衛強化 11/11 + Knowledge Engine + 跨 Session 長期記憶 + 效能基線追蹤 + 數值評分引擎 + 趨勢分析 + 回饋閉環 + 卡點識別 + 時間序列學習（Level 2 完成）+ 核心穩固清理 + mul-agent 泛化 + P3.0 閉環基礎 + P3.1 感知層（screenshot.js + window.js + perception.md）+ P3.2 心跳引擎（heartbeat.js + session-spawner.js）+ P3.3 系統層（process.js + clipboard.js + system-info.js + notification.js + fswatch.js）+ 並行收斂門 + Status Line TTL 防護 + Specs checkbox fallback 修復 + Level 2→1 整合修復（gradedStages 擴大 + 失敗原因記錄 + 全域觀察注入）+ Agent Memory 升級（8 個跨層級 agent + Score Context 個人化 + Grader 強制化）+ 核心簡化（移除 active-agent.json + 並行提示修復 + 不變量守衛）+ Hook Contract 自我修復（state.sanitize() + 8 個 hook 合約測試）+ 主動偵測（health-check 15 項，含元件鏈 + 資料品質 + 趨勢分析 + 測試增長率 + 製作原則 3 項）+ Health-Check 精確度提升（假陽性 23→0 error + 孤兒 active stage 守衛）+ Queue CLI + PM 佇列整合 + Spawner 防禦 + Hook 薄殼化（9 handler 模組）+ Telegram /run 命令 + PM 佇列自動寫入 + CLAUDECODE env filter + Main Agent 寫碼偵測守衛 + lib/ 結構重構（config 拆分 + analyzers/ + knowledge/ 子目錄）+ SessionStart systemMessage 動態注入 plugin context + Prompt Journal（intent_journal 記錄 prompt 原文）+ 製作原則內化（agent prompt + validate 四模式品質檢查）+ PM Plan Mode（/ot:pm plan 規劃模式 + appendQueue API + enable-auto 指令）+ Agent Prompt 四模式補齊（15 個 agent 信心過濾 + 誤判防護 + 標準化章節排列）+ P4.1-P4.2 進化引擎（Gap Detection + Auto-Fix）+ L3.3 Skill Forge Phase 1（skill-forge.js + 知識萃取 + evolution.js forge CLI）+ L3.4 深度 PM 多輪訪談（interview.js + 7 API + 24 題靜態問題庫 + 五面向結構化訪談 + session 持久化）|
+| V1 | 進行中 | 4222 pass，0 fail。核心能力：BDD 工作流自動化（18 個 agent + 18 個模板）+ 守衛強化（11 個 hook + 19 項 health-check）+ 自我進化引擎（gap detection / auto-fix / skill forge / internalization）+ OS 控制能力（截圖 + 視窗 + 系統層）+ 心跳引擎（跨 session 任務自主執行）+ 深度 PM 多輪訪談（領域研究 + 5 面向訪談）|
 | V2 | 規劃中 | 延後 |
 
 ## 核心指標
@@ -16,8 +16,8 @@
 | Agent 數量 | 18（含 grader） |
 | Stage 數量 | 16 |
 | Workflow 模板 | 18 |
-| 測試通過 | 4088 pass / 0 fail（180+ 個測試檔）|
-| 測試檔案 | 180+ 個 |
+| 測試通過 | 4222 pass / 0 fail（188 個測試檔）|
+| 測試檔案 | 188 個 |
 | Hook 數量 | 11 個 |
 | Skill 數量 | 24（15 knowledge domain + orchestrator + pm + specs + 4 utility-with-refs + instinct） |
 | scripts/lib 模組 | 64（含 analyzers/ 7 + knowledge/ 9 + remote/ 4 + dashboard/ 2 子目錄模組） |
@@ -28,9 +28,9 @@
 
 ## 近期變更（最近 3 筆）
 
-- **[0.28.64] 2026-03-06**：pm-domain-research——PM 領域研究能力 + bugfix——(1) interview.js 新增 researchDomain/startInterview/getResearchQuestions 三個 API，支援 PM 訪談前自主研究領域；(2) saveSession/loadSession 修復 domainResearch 欄位序列化；(3) 新增 21 個單元測試 + 2 個 roundtrip 測試（共 23 個）；(4) L3.4 領域研究整合完成標記 ✅；(5) 版本維持 0.28.64；(6) 測試 +34（4054→4088）✅
-- **[0.28.63+feature] 2026-03-06**：auto-forge-trigger + queue-cli-enhancement——知識缺口自動觸發 forge + 細粒度佇列操作——(1) knowledge-gap-detector.js shouldAutoForge()/autoForge() 低分 gap 自動觸發；(2) execution-queue.js insertItem/removeItem/moveItem 支援指定位置操作；(3) queue.js 新增 insert/remove/move/info/retry CLI 子命令；(4) 新增 15+64=79 個測試；(5) 版本維持 0.28.63；(6) 測試 +79（3971→4050）✅
-- **[0.28.62] 2026-03-06**：L3.7 skill-internalization——經驗內化飛輪——(1) 新增 skill-evaluator.js（資格評估 4 API）+ skill-generalizer.js（通用化 2 API）+ experience-index.js（索引管理 3 API）；(2) Instinct skill 新增 auto-discovered.md 與 internalized.md 管理；(3) evolution.js internalize 子命令（`bun scripts/evolution.js internalize [--execute] [--json]`）；(4) 新增 6 個測試檔 + 95 個測試；(5) 版本維持 0.28.62；(6) scripts/lib 模組 +3（48→51）；(7) health-check +1 項（checkInternalizationIndex）；(8) 測試 +95（3781→3876）✅
+- **[0.28.64] 2026-03-06**：fix(health-check)——修復 checkDataQuality 誤判 resolved 記錄為損壞資料，確保 failures.jsonl 中已解決的記錄不觸發假陽性 error
+- **[0.28.64] 2026-03-06**：fix(health-check)——允許 failures.jsonl 中的 resolved 記錄通過驗證，修復驗證邏輯邊界條件
+- **[0.28.64] 2026-03-06**：fix(health-check)——重設 test-growth baseline（137→188 files），同步當前測試套件實際規模
 
 ## Phase 3 規劃狀態（✅ 完成）
 
