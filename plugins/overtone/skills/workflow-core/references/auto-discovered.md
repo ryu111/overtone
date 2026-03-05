@@ -1,21 +1,4 @@
 ---
-## 2026-03-05 | code-reviewer:REVIEW Findings
-**1. [M] 遺漏檔案：impact.js 未被 commit**
-- 檔案：`plugins/overtone/scripts/impact.js`
-- 描述：Handoff 聲明三個檔案（dependency-graph.js、impact.js、test），但 impact.js 是 untracked（`git status` 顯示 `??`），未包含在 commit 中。
-- 影響：BDD Feature 9 的全部 6 個 scenario（CLI 入口）缺少對應的已提交程式碼。
-- 建議修法：將 impact.js 加入 commit。
-- 信心：100%
-
-**2. [M] 測試缺口：Feature 9（impact.js CLI）完全無測試覆蓋**
-- 檔案：`tests/unit/dependency-graph.test.js`
-- 描述：BDD spec 定義了 Feature 9 的 6 個 CLI scenario（9-1 ~ 9-6），但測試檔案中完全沒有 Feature 9 的測試。測試檔案涵蓋 Feature 1-8 和 Feature 10，唯獨跳過 Feature 9。
-- 影響：CLI 的路徑正規化、`--deps`/`--json` flag 組合、退出碼、pluginRoot 自動偵測等行為完全未驗證。
-- 建議修法：新增 Feature 9 的整合測試，使用 `Bun.spawn` 或 `child_process.execSync` 執行 `bun scripts/impact.js` 並驗證 stdout/退出碼。
-- 信心：100%
-Keywords: impact, commit, plugins, overtone, scripts, handoff, dependency, graph, test, untracked
-
----
 ## 2026-03-05 | planner:PLAN Findings
 **需求分解**：
 
@@ -861,4 +844,12 @@ Keywords: interview, test, null, undefined, roundtrip, enrichbddscenarios, modul
 - 唯一預期人工介入點：Step 2 PM 訪談問答（其餘全自動）
 - roadmap.md 的 L3.6 從「場景待定」升級為含完整觸發能力表和驗收說明，並連結到 proposal.md
 Keywords: markdown, blog, overtone, static, site, generation, skill, forge, deep, orchestrator
+
+---
+## 2026-03-05 | developer:DEV Findings
+- 進化引擎共 8 個模組：`gap-analyzer` / `gap-fixer` / `skill-forge` / `knowledge-gap-detector` / `project-orchestrator` / `skill-evaluator` / `skill-generalizer` / `experience-index`
+- CLI 入口為 `evolution.js`，支援 6 個子命令（status / analyze / fix / forge / orchestrate / internalize）
+- 整合點有 5 個：health-check（上游資料）/ pre-task-handler（即時警告）/ execution-queue（任務排程）/ instinct + PostToolUse（觀察來源）/ score-engine（評分資料）
+- `overtone.md` 已更新，進化引擎文件加在 decision-points 和 workflow-diagram 之間
+Keywords: analyzer, fixer, skill, forge, knowledge, detector, project, orchestrator, evaluator, generalizer
 
