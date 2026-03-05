@@ -1,16 +1,4 @@
 ---
-## 2026-03-05 | retrospective:RETRO Findings
-**回顧摘要：**
-
-health-check warnings 從 27 降至 4，三個修復均有效：
-- BROADCAST_ONLY_EVENTS Set（18 個事件）正確降低了 closed-loop 誤報
-- config-validator.js 移除 4 個未使用 exports（`validateAgentFrontmatter`、`validateSkillFrontmatter` 仍保留，因為 config-api.js 確實有使用）
-- ORCHESTRATOR_SKILLS 排除（auto、workflow-core）正確處理了 completion-gap 誤報
-- 剩餘 3 個 closed-loop warnings（error:fatal、tool:failure、system:warning）是刻意保留的，符合設計文件說明
-- 1 個 quality-trends warning 屬於資料觀察，不是程式碼問題
-Keywords: health, check, warnings, closed, loop, config, validator, exports, validateagentfrontmatter, validateskillfrontmatter
-
----
 ## 2026-03-05 | doc-updater:DOCS Context
 完成 DOCS 階段文件同步工作。本次迭代包含兩組核心修復：
 1. **佇列推進閉環修復**（session-stop-handler.js + init-workflow.js）
@@ -897,4 +885,12 @@ Keywords: agent, hook, skill, enrichbddscenarios, readme, changelog
 - `plugins/overtone/scripts/lib/interview.js` — 內部函式強化（buildBDDScenarios 多 facet 衍生、enrichBDDScenarios 補充場景）
 - `tests/unit/pm-bdd-enrichment.test.js` — 新增 16 個測試
 Keywords: spec, enrichment, feature, plugins, overtone, scripts, interview, buildbddscenarios, facet, enrichbddscenarios
+
+---
+## 2026-03-05 | developer:DEV Findings
+- `config-io.js` 導出 8 個函式：`resolveCommand`、`readAgentFile`、`readSkillFile`、`readHooksJson`、`getHookHandler`、`readRegistryData`、`writeRegistryData`、`readPluginJson`、`writePluginJson`
+- 使用 tmpdir 隔離，`beforeEach` 建立、`afterEach` 清理，符合現有測試慣例
+- `rmSync` 需加 `{ force: true }` 以防前一個測試（如 `writeRegistryData`）沒有預建目標檔案的情況（初始 `makeTmpPluginRoot` 不預建 `registry-data.json`）
+- `getHookHandler` 有副本不污染原始物件的測試，驗證 spread 行為
+Keywords: config, resolvecommand, readagentfile, readskillfile, readhooksjson, gethookhandler, readregistrydata, writeregistrydata, readpluginjson, writepluginjson
 
