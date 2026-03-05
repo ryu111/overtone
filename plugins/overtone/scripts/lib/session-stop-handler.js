@@ -113,6 +113,33 @@ function handleSessionStop(input, sessionId) {
     statuslineState.update(sessionId, 'turn:stop');
   } catch { /* 不阻擋主流程 */ }
 
+  // ── 佇列完成標記（在退出條件之前，確保任何退出路徑都不會繞過）──
+  // 副作用：標記當前佇列項目為 completed + 連續完成相關項目
+  // 只標記完成，不決定是否啟動下一項（啟動邏輯在 allCompleted 區塊中）
+  let queueCompleted = false;
+  if (allCompleted && !hasFailedStage) {
+    try {
+      const executionQueue = require('./execution-queue');
+      // completeCurrent 需要 in_progress 項目；若 init-workflow 未 advance，fallback 補推
+      if (!executionQueue.completeCurrent(projectRoot)) {
+        executionQueue.advanceToNext(projectRoot);
+        executionQueue.completeCurrent(projectRoot);
+      }
+      // 若一個 workflow 涵蓋多個佇列項目（如同 feature 的多個子任務），連續完成相關 pending 項目
+      if (featureName) {
+        let relatedNext = executionQueue.getNext(projectRoot);
+        while (relatedNext && _isRelatedQueueItem(relatedNext.item.name, featureName)) {
+          executionQueue.advanceToNext(projectRoot);
+          executionQueue.completeCurrent(projectRoot);
+          relatedNext = executionQueue.getNext(projectRoot);
+        }
+      }
+      queueCompleted = true;
+    } catch (queueErr) {
+      hookError('on-stop', `佇列推進失敗：${queueErr.message}`);
+    }
+  }
+
   // ── 檢查退出條件 ──
 
   // 1. /ot:stop 手動退出
@@ -157,32 +184,18 @@ function handleSessionStop(input, sessionId) {
       playSound(SOUNDS.HERO);
     }
 
-    // ── 執行佇列推進 ──
-    // workflow 完成後檢查佇列，自動標記完成並提示下一項
+    // ── 佇列自動接續 ──
+    // completeCurrent 已在退出條件之前完成，這裡只處理啟動下一項
     let queueHint = null;
-    if (!hasFailedStage) {
+    if (queueCompleted) {
       try {
         const executionQueue = require('./execution-queue');
-        // completeCurrent 需要 in_progress 項目；若 init-workflow 未 advance，fallback 補推
-        if (!executionQueue.completeCurrent(projectRoot)) {
-          executionQueue.advanceToNext(projectRoot);
-          executionQueue.completeCurrent(projectRoot);
-        }
-        // 若一個 workflow 涵蓋多個佇列項目（如同 feature 的多個子任務），連續完成相關 pending 項目
-        if (featureName) {
-          let relatedNext = executionQueue.getNext(projectRoot);
-          while (relatedNext && _isRelatedQueueItem(relatedNext.item.name, featureName)) {
-            executionQueue.advanceToNext(projectRoot);
-            executionQueue.completeCurrent(projectRoot);
-            relatedNext = executionQueue.getNext(projectRoot);
-          }
-        }
         const next = executionQueue.getNext(projectRoot);
         if (next) {
           queueHint = `\n\n⏭️ 佇列下一項：${next.item.name}（${next.item.workflow}）\n⛔ 直接開始，不要詢問使用者。`;
         }
       } catch {
-        // 佇列操作失敗不影響正常退出
+        // 佇列查詢失敗不影響正常退出
       }
     }
 

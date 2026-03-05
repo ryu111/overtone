@@ -117,7 +117,9 @@ try {
   if (next) {
     executionQueue.advanceToNext(process.cwd());
   }
-} catch { /* 佇列操作失敗不影響主流程 */ }
+} catch (err) {
+  console.error(`⚠️ 佇列推進失敗：${err.message}`);
+}
 
 // 輸出結果
 const stageLabels = Object.keys(newState.stages).join(' → ');
