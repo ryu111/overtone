@@ -141,7 +141,7 @@ describe('buildContinueMessage', () => {
     expect(result).toContain('5');
   });
 
-  test('包含禁止詢問使用者的指令', () => {
+  test('包含禁止使用 AskUserQuestion的指令', () => {
     const result = buildContinueMessage({
       iteration: 1,
       maxIterations: 10,
@@ -151,7 +151,7 @@ describe('buildContinueMessage', () => {
       tasksStatus: null,
       hint: null,
     });
-    expect(result).toContain('禁止詢問使用者');
+    expect(result).toContain('禁止使用 AskUserQuestion');
   });
 
   test('有 hint 時顯示在繼續訊息中', () => {

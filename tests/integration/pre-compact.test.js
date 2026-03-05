@@ -242,7 +242,7 @@ describe('Feature 2：有 workflow state 時組裝狀態摘要', () => {
   test('systemMessage 末尾包含行動指引', () => {
     const ctx = buildCtxFromSession(SESSION_MAIN);
     const systemMessage = buildCompactMessage(ctx);
-    expect(systemMessage).toContain('⛔ 禁止詢問使用者「我該繼續嗎？」');
+    expect(systemMessage).toContain('⛔ 禁止使用 AskUserQuestion');
     expect(systemMessage).toContain('/ot:auto');
   });
 

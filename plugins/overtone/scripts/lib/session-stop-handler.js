@@ -198,7 +198,7 @@ function handleSessionStop(input, sessionId) {
         const executionQueue = require('./execution-queue');
         const next = executionQueue.getNext(projectRoot);
         if (next) {
-          queueHint = `\n\n⏭️ 佇列下一項：${next.item.name}（${next.item.workflow}）\n⛔ 直接開始，不要詢問使用者。`;
+          queueHint = `\n\n⏭️ 佇列下一項：${next.item.name}（${next.item.workflow}）\n⛔ 禁止使用 AskUserQuestion，直接用 init-workflow.js 啟動下一項。`;
         }
       } catch {
         // 佇列查詢失敗不影響正常退出
@@ -342,7 +342,7 @@ function buildContinueMessage(ctx) {
     `進度：${progressBar} (${completedStages}/${totalStages})`,
     tasksLine,
     hintLine,
-    '⛔ 禁止詢問使用者，直接繼續執行。',
+    '⛔ 禁止使用 AskUserQuestion，直接繼續執行下一個階段。',
   ].filter(Boolean).join('\n');
 }
 

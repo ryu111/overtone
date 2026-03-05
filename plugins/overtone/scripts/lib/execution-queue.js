@@ -238,9 +238,9 @@ function formatQueueSummary(projectRoot) {
     lines.push(`目前：${current.name}`);
   }
 
-  if (next && !current) {
+  if (next) {
     lines.push('');
-    lines.push(`⛔ 下一項：${next.name}（${next.workflow}）— 直接開始，不要詢問使用者`);
+    lines.push(`⛔ 下一項：${next.name}（${next.workflow}）— 禁止使用 AskUserQuestion，直接用 init-workflow.js 啟動`);
   }
 
   return lines.join('\n');

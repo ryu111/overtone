@@ -20,7 +20,7 @@ describe('buildCompactMessage', () => {
     expect(result).toContain('Overtone 狀態恢復（compact 後）');
     expect(result).toContain('工作流：quick');
     expect(result).toContain('進度：✅💻 (1/4)');
-    expect(result).toContain('禁止詢問使用者');
+    expect(result).toContain('禁止使用 AskUserQuestion');
   });
 
   it('Scenario 2: stageHint 不為 null 時包含在輸出', () => {

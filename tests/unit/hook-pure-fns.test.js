@@ -239,7 +239,7 @@ describe('on-stop.js 純函數', () => {
       expect(result).toContain('5');
     });
 
-    test('包含禁止詢問使用者的指令', () => {
+    test('包含禁止使用 AskUserQuestion的指令', () => {
       const result = buildContinueMessage({
         iteration: 1,
         maxIterations: 10,
@@ -249,7 +249,7 @@ describe('on-stop.js 純函數', () => {
         tasksStatus: null,
         hint: null,
       });
-      expect(result).toContain('禁止詢問使用者');
+      expect(result).toContain('禁止使用 AskUserQuestion');
     });
 
     test('iteration 達到 maxIterations 時不拋出例外', () => {

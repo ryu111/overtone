@@ -174,7 +174,7 @@ function buildCompactMessage(ctx) {
   }
 
   lines.push('');
-  lines.push('⛔ 禁止詢問使用者「我該繼續嗎？」，直接依照目前階段繼續執行。');
+  lines.push('⛔ 禁止使用 AskUserQuestion。工作流進行中，直接依照目前階段繼續執行，不要停下來詢問使用者任何問題。');
   lines.push('如需查看工作流指引，請使用 /ot:auto。');
 
   let message = lines.join('\n');
