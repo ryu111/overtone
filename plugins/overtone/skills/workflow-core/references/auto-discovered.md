@@ -1,11 +1,4 @@
 ---
-## 2026-03-05 | doc-updater:DOCS Context
-完成 DOCS 階段文件同步工作。本次迭代包含兩組核心修復：
-1. **佇列推進閉環修復**（session-stop-handler.js + init-workflow.js）
-2. **Health-Check 精確度提升**（health-check.js + registry.js + config-validator.js）
-Keywords: docs, session, stop, handler, init, workflow, health, check, registry, config
-
----
 ## 2026-03-05 | retrospective:RETRO Findings
 **回顧摘要**：
 
@@ -893,4 +886,14 @@ Keywords: spec, enrichment, feature, plugins, overtone, scripts, interview, buil
 - `rmSync` 需加 `{ force: true }` 以防前一個測試（如 `writeRegistryData`）沒有預建目標檔案的情況（初始 `makeTmpPluginRoot` 不預建 `registry-data.json`）
 - `getHookHandler` 有副本不污染原始物件的測試，驗證 spread 行為
 Keywords: config, resolvecommand, readagentfile, readskillfile, readhooksjson, gethookhandler, readregistrydata, writeregistrydata, readpluginjson, writepluginjson
+
+---
+## 2026-03-05 | developer:DEV Findings
+- `config-validator.js` 有 6 個公開導出（`validateAgent`、`validateHook`、`validateSkill`、`validateAll`、`validateAgentFrontmatter`、`validateSkillFrontmatter`），測試全部覆蓋。
+- `loop.js` 有 4 個公開導出（`readLoop`、`writeLoop`、`exitLoop`、`readTasksStatus`），測試全部覆蓋。
+- **關鍵發現**：`readTasksCheckboxes` 只解析 `## Stages` 或 `## Tasks` 區塊的 checkbox，測試 tasks.md 必須包含這些標頭；未含標頭的測試會得到 null 回傳值。
+- **關鍵發現**：`validateHook` 的 `resolveCommand` 只替換 `${CLAUDE_PLUGIN_ROOT}` 佔位符，測試中 hooks.json 的 command 必須使用此格式。
+- `exitLoop` 會向 timeline.jsonl emit 兩個事件（`loop:complete` + `session:end`），測試透過真實 session 目錄操作驗證。
+- 全部 41 個新測試通過，整體 4167 pass, 0 fail。
+Keywords: config, validator, validateagent, validatehook, validateskill, validateall, validateagentfrontmatter, validateskillfrontmatter, loop, readloop
 
