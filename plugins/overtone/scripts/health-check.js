@@ -1064,11 +1064,16 @@ function checkDataQuality(globalDirOverride) {
       },
     },
     'failures.jsonl': {
-      required: ['ts', 'stage', 'agent', 'verdict'],
+      required: ['ts', 'stage', 'verdict'],
       validate: (record) => {
         const msgs = [];
-        if (!['fail', 'reject'].includes(record.verdict)) {
+        // resolved 記錄是 recordResolution() 的合法輸出（用於 _filterResolved 邏輯），不需要 agent 欄位
+        if (!['fail', 'reject', 'resolved'].includes(record.verdict)) {
           msgs.push(`verdict 非法值：${record.verdict}`);
+        }
+        // fail/reject 記錄必須有 agent 欄位
+        if (['fail', 'reject'].includes(record.verdict) && !record.agent) {
+          msgs.push('fail/reject 記錄缺少 agent 欄位');
         }
         return msgs;
       },

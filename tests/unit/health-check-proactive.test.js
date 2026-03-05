@@ -218,6 +218,21 @@ describe('checkDataQuality', () => {
     expect(findings[0].message).toContain('為空');
   });
 
+  // Scenario F2-6b: resolved 記錄是 recordResolution() 的合法輸出，不計損壞
+  test('Scenario F2-6b: failures.jsonl 中 resolved 記錄不視為損壞', () => {
+    const projDir = path.join(tmpGlobalDir, 'abcd1234');
+    mkdirSync(projDir, { recursive: true });
+    // 混合 fail + resolved（recordResolution 正常寫入的格式，沒有 agent 欄位）
+    const failLine = JSON.stringify({ ts: '2026-01-01', sessionId: 's1', stage: 'DEV', agent: 'developer', verdict: 'fail' });
+    const resolvedLine = JSON.stringify({ ts: '2026-01-01', sessionId: 's1', stage: 'DEV', verdict: 'resolved' });
+    const lines = [failLine, resolvedLine];
+    writeFileSync(path.join(projDir, 'failures.jsonl'), lines.join('\n') + '\n');
+
+    const findings = checkDataQuality(tmpGlobalDir);
+    const warnings = findings.filter((f) => f.severity === 'warning');
+    expect(warnings.length).toBe(0); // resolved 不是損壞，不應觸發 warning
+  });
+
   // Scenario F2-6: observation confidence 超出範圍 → 計入損壞
   test('Scenario F2-6: confidence 超出 0-1 範圍計入損壞', () => {
     const projDir = path.join(tmpGlobalDir, 'abcd1234');
