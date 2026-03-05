@@ -146,6 +146,7 @@ bun scripts/evolution.js fix --json                  # JSON 格式輸出（供�
 bun scripts/evolution.js forge <domain>              # 預覽 Skill Forge 結果（dry-run，從 codebase 中萃取知識）
 bun scripts/evolution.js forge <domain> --execute    # 實際執行 forge，建立 skill（包含 SKILL.md + references/）
 bun scripts/evolution.js forge <domain> --json       # JSON 格式輸出 forge 結果
+bun scripts/evolution.js forge <domain> --research   # 啟用外部 WebSearch 研究補充知識
 
 # 依賴圖與一致性
 bun scripts/impact.js <path>                         # 查詢修改此檔案會影響哪些元件

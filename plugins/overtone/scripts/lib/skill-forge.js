@@ -139,7 +139,9 @@ const WEB_RESEARCH_TIMEOUT_MS = 30000;
  * @returns {string} 研究結果文字（失敗時回傳空字串）
  */
 function extractWebKnowledge(domainName, context) {
-  const prompt = `研究 ${domainName} 領域的最佳實踐、常見模式、關鍵概念，產出結構化知識摘要（繁體中文，使用 Markdown 格式，含小標題和要點）`;
+  const contextStr = typeof context === 'string' ? context : (context ? JSON.stringify(context) : '');
+  const contextHint = contextStr ? `\n觸發語境：${contextStr.slice(0, 200)}` : '';
+  const prompt = `研究 ${domainName} 領域的最佳實踐、常見模式、關鍵概念，產出結構化知識摘要（繁體中文，使用 Markdown 格式，含小標題和要點）${contextHint}`;
 
   try {
     const result = Bun.spawnSync(
