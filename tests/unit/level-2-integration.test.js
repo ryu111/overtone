@@ -213,9 +213,10 @@ describe('Feature 4：模組可載入性', () => {
     expect(typeof mod.formatQueueSummary).toBe('function');
   });
 
-  test('4-6 failure-tracker.js 匯出 4 個 API', () => {
+  test('4-6 failure-tracker.js 匯出 5 個 API', () => {
     const mod = require(join(SCRIPTS_LIB, 'failure-tracker'));
     expect(typeof mod.recordFailure).toBe('function');
+    expect(typeof mod.recordResolution).toBe('function');
     expect(typeof mod.getFailurePatterns).toBe('function');
     expect(typeof mod.formatFailureWarnings).toBe('function');
     expect(typeof mod.formatFailureSummary).toBe('function');

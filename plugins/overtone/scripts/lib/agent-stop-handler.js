@@ -139,20 +139,31 @@ function handleAgentStop(input, sessionId) {
   });
 
   // 記錄失敗到全域 store（跨 session 失敗模式追蹤）
-  if (result.verdict === 'fail' || result.verdict === 'reject') {
-    try {
-      const failureTracker = require('./failure-tracker');
-      failureTracker.recordFailure(projectRoot, {
-        ts: new Date().toISOString(),
-        sessionId,
-        workflowType: currentState.workflowType,
-        stage: actualStageKey,
-        agent: agentName,
-        verdict: result.verdict,
-        retryAttempt: (result.verdict === 'fail' ? (updatedState.failCount || 1) : (updatedState.rejectCount || 1)),
-        reason: result.reason || null,
-      });
-    } catch { /* 靜默 — 記錄失敗不影響主流程 */ }
+  const failureTracker = (() => { try { return require('./failure-tracker'); } catch { return null; } })();
+  if (failureTracker) {
+    if (result.verdict === 'fail' || result.verdict === 'reject') {
+      try {
+        failureTracker.recordFailure(projectRoot, {
+          ts: new Date().toISOString(),
+          sessionId,
+          workflowType: currentState.workflowType,
+          stage: actualStageKey,
+          agent: agentName,
+          verdict: result.verdict,
+          retryAttempt: (result.verdict === 'fail' ? (updatedState.failCount || 1) : (updatedState.rejectCount || 1)),
+          reason: result.reason || null,
+        });
+      } catch { /* 靜默 — 記錄失敗不影響主流程 */ }
+    } else if (result.verdict === 'pass' && ((updatedState.failCount || 0) > 0 || (updatedState.rejectCount || 0) > 0)) {
+      // stage 最終 pass 且本 session 曾有失敗 → 記錄 resolved，過濾之前的 fail
+      try {
+        failureTracker.recordResolution(projectRoot, {
+          ts: new Date().toISOString(),
+          sessionId,
+          stage: actualStageKey,
+        });
+      } catch { /* 靜默 */ }
+    }
   }
 
   // emit timeline

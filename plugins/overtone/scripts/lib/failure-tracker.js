@@ -26,6 +26,9 @@ const { atomicWrite } = require('./utils');
 function recordFailure(projectRoot, record) {
   if (!projectRoot || !record) return;
 
+  // 測試環境不寫入真實 failures store（避免測試污染生產資料）
+  if (process.env.OVERTONE_TEST || process.env.BUN_TEST) return;
+
   // 驗證必要欄位
   const required = ['ts', 'sessionId', 'stage', 'agent', 'verdict'];
   for (const field of required) {
@@ -38,6 +41,28 @@ function recordFailure(projectRoot, record) {
 
   // 定期截斷：超過上限時保留最新的
   _trimIfNeeded(projectRoot);
+}
+
+/**
+ * 記錄一筆解決記錄（stage 最終 pass 時呼叫，用於過濾之前的 fail）
+ *
+ * @param {string} projectRoot
+ * @param {object} record - { ts, sessionId, stage }
+ */
+function recordResolution(projectRoot, record) {
+  if (!projectRoot || !record) return;
+
+  // 測試環境不寫入真實 failures store
+  if (process.env.OVERTONE_TEST || process.env.BUN_TEST) return;
+
+  const required = ['ts', 'sessionId', 'stage'];
+  for (const field of required) {
+    if (!record[field]) return;
+  }
+
+  const filePath = paths.global.failures(projectRoot);
+  mkdirSync(dirname(filePath), { recursive: true });
+  appendFileSync(filePath, JSON.stringify({ ...record, verdict: 'resolved' }) + '\n', 'utf8');
 }
 
 /**
@@ -55,7 +80,23 @@ function recordFailure(projectRoot, record) {
 function getFailurePatterns(projectRoot, window) {
   const windowSize = window || failureDefaults.warningWindow;
   const all = _readAll(projectRoot);
-  const records = all.slice(-windowSize);
+
+  // 建立 resolved Set：同 sessionId::stage 有 resolved 記錄者，排除其所有 failures
+  const resolvedKeys = new Set();
+  for (const r of all) {
+    if (r.verdict === 'resolved') {
+      resolvedKeys.add(`${r.sessionId}::${r.stage}`);
+    }
+  }
+
+  // 過濾：排除 resolved 的 session+stage 組合中的 fail/reject 記錄，並排除 resolved 記錄本身
+  const failures = all.filter(r => {
+    if (r.verdict === 'resolved') return false;
+    if (resolvedKeys.has(`${r.sessionId}::${r.stage}`)) return false;
+    return true;
+  });
+
+  const records = failures.slice(-windowSize);
 
   const totalFailures = records.length;
 
@@ -178,8 +219,30 @@ function formatFailureSummary(projectRoot) {
   const patterns = getFailurePatterns(projectRoot);
   if (patterns.totalFailures === 0) return '';
 
+  // 計算時間範圍（從最近 warningWindow 筆失敗記錄中取最早和最晚）
+  const all = _readAll(projectRoot);
+  const resolvedKeys = new Set();
+  for (const r of all) {
+    if (r.verdict === 'resolved') resolvedKeys.add(`${r.sessionId}::${r.stage}`);
+  }
+  const recentFailures = all
+    .filter(r => r.verdict !== 'resolved' && !resolvedKeys.has(`${r.sessionId}::${r.stage}`))
+    .slice(-failureDefaults.warningWindow);
+
+  let timeRange = '';
+  const timestamps = recentFailures.map(r => r.ts).filter(Boolean).sort();
+  if (timestamps.length >= 2) {
+    const fmt = (iso) => {
+      const d = new Date(iso);
+      return `${d.getMonth() + 1}/${d.getDate()}`;
+    };
+    const earliest = fmt(timestamps[0]);
+    const latest = fmt(timestamps[timestamps.length - 1]);
+    timeRange = earliest === latest ? `（${earliest}）` : `（${earliest} - ${latest}）`;
+  }
+
   const lines = [
-    `最近 ${failureDefaults.warningWindow} 筆記錄共 ${patterns.totalFailures} 次失敗：`,
+    `最近 ${failureDefaults.warningWindow} 筆記錄共 ${patterns.totalFailures} 次失敗${timeRange}：`,
   ];
 
   // 按 stage 排序（失敗最多的優先）
@@ -238,6 +301,7 @@ function _trimIfNeeded(projectRoot) {
 
 module.exports = {
   recordFailure,
+  recordResolution,
   getFailurePatterns,
   formatFailureWarnings,
   formatFailureSummary,

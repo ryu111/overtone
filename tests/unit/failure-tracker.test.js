@@ -10,9 +10,12 @@
  *   5. formatFailureSummary：無資料空字串 + 有資料 Markdown
  *   6. _trimIfNeeded：超過 maxRecords 時截斷
  *   7. 損壞 JSON 行靜默跳過
+ *   8. OVERTONE_TEST 隔離保護
+ *   9. recordResolution — 已解決過濾
+ *  10. formatFailureSummary — 時間範圍顯示
  */
 
-const { test, expect, describe, afterAll } = require('bun:test');
+const { test, expect, describe, afterAll, beforeEach, afterEach } = require('bun:test');
 const { mkdirSync, rmSync, writeFileSync, readFileSync, existsSync } = require('fs');
 const { join } = require('path');
 const { homedir } = require('os');
@@ -82,6 +85,11 @@ afterAll(() => {
 // ────────────────────────────────────────────────────────────────────────────
 
 describe('recordFailure — JSONL append', () => {
+  // 暫時清除 OVERTONE_TEST，讓 recordFailure 能實際寫入（驗證寫入行為）
+  let savedOvertoneTest;
+  beforeEach(() => { savedOvertoneTest = process.env.OVERTONE_TEST; delete process.env.OVERTONE_TEST; });
+  afterEach(() => { if (savedOvertoneTest !== undefined) process.env.OVERTONE_TEST = savedOvertoneTest; else delete process.env.OVERTONE_TEST; });
+
   test('1-1 正確 append 一筆記錄到 JSONL', () => {
     const project = join(homedir(), '.overtone', 'test-fail-append-' + TIMESTAMP);
     dirsToClean.push(project);
@@ -461,6 +469,11 @@ describe('formatFailureSummary — 摘要格式', () => {
 // ────────────────────────────────────────────────────────────────────────────
 
 describe('_trimIfNeeded — 自動截斷', () => {
+  // 暫時清除 OVERTONE_TEST，讓 recordFailure 能實際寫入（觸發 trim）
+  let savedOvertoneTest;
+  beforeEach(() => { savedOvertoneTest = process.env.OVERTONE_TEST; delete process.env.OVERTONE_TEST; });
+  afterEach(() => { if (savedOvertoneTest !== undefined) process.env.OVERTONE_TEST = savedOvertoneTest; else delete process.env.OVERTONE_TEST; });
+
   test('6-1 超過 maxRecords 時截斷至上限', () => {
     const project = join(homedir(), '.overtone', 'test-fail-trim-' + TIMESTAMP);
     dirsToClean.push(project);
@@ -508,5 +521,158 @@ describe('損壞 JSON 行靜默跳過', () => {
     expect(patterns.totalFailures).toBe(2);
     expect(patterns.byStage['DEV'].count).toBe(1);
     expect(patterns.byStage['REVIEW'].count).toBe(1);
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// 8. OVERTONE_TEST 隔離保護
+// ────────────────────────────────────────────────────────────────────────────
+
+describe('OVERTONE_TEST 隔離保護', () => {
+  test('8-1 OVERTONE_TEST=1 時 recordFailure 不寫入檔案', () => {
+    const project = join(homedir(), '.overtone', 'test-fail-isolation-' + TIMESTAMP);
+    dirsToClean.push(project);
+    clearFailures(project);
+
+    // 確保 OVERTONE_TEST 已設置（setup.js 已設置）
+    const saved = process.env.OVERTONE_TEST;
+    process.env.OVERTONE_TEST = '1';
+
+    const record = makeRecord({ stage: 'DEV', agent: 'developer', verdict: 'fail' });
+    failureTracker.recordFailure(project, record);
+
+    // 應不寫入
+    expect(existsSync(getFailurePath(project))).toBe(false);
+
+    // 恢復
+    if (saved !== undefined) process.env.OVERTONE_TEST = saved;
+    else delete process.env.OVERTONE_TEST;
+  });
+
+  test('8-2 清除 OVERTONE_TEST 後 recordFailure 正常寫入', () => {
+    const project = join(homedir(), '.overtone', 'test-fail-isolation-write-' + TIMESTAMP);
+    dirsToClean.push(project);
+    clearFailures(project);
+
+    // 暫時清除保護
+    const saved = process.env.OVERTONE_TEST;
+    delete process.env.OVERTONE_TEST;
+
+    const record = makeRecord({ stage: 'DEV', agent: 'developer', verdict: 'fail' });
+    failureTracker.recordFailure(project, record);
+
+    // 應正常寫入
+    expect(existsSync(getFailurePath(project))).toBe(true);
+
+    // 恢復
+    if (saved !== undefined) process.env.OVERTONE_TEST = saved;
+    else delete process.env.OVERTONE_TEST;
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// 9. recordResolution — 已解決過濾
+// ────────────────────────────────────────────────────────────────────────────
+
+describe('recordResolution — 已解決過濾', () => {
+  test('9-1 有 resolved 記錄時，該 session+stage 的 fail 被排除', () => {
+    const project = join(homedir(), '.overtone', 'test-fail-resolved-' + TIMESTAMP);
+    dirsToClean.push(project);
+
+    const sid = 'sess-resolved-' + TIMESTAMP;
+
+    // 寫入：同一 session+stage 先 fail 後 resolved
+    writeFailures(project, [
+      makeRecord({ sessionId: sid, stage: 'DEV', agent: 'developer', verdict: 'fail' }),
+      makeRecord({ sessionId: sid, stage: 'DEV', agent: 'developer', verdict: 'fail' }),
+      { ...makeRecord({ sessionId: sid, stage: 'DEV' }), verdict: 'resolved' },
+    ]);
+
+    const patterns = failureTracker.getFailurePatterns(project);
+    // 兩筆 fail 因 resolved 而被排除
+    expect(patterns.totalFailures).toBe(0);
+    expect(patterns.byStage['DEV']).toBeUndefined();
+  });
+
+  test('9-2 不同 session 的 fail 不受 resolved 影響', () => {
+    const project = join(homedir(), '.overtone', 'test-fail-resolved-other-' + TIMESTAMP);
+    dirsToClean.push(project);
+
+    const sid1 = 'sess-a-' + TIMESTAMP;
+    const sid2 = 'sess-b-' + TIMESTAMP;
+
+    // session A resolved，session B 未 resolved
+    writeFailures(project, [
+      makeRecord({ sessionId: sid1, stage: 'DEV', agent: 'developer', verdict: 'fail' }),
+      { ...makeRecord({ sessionId: sid1, stage: 'DEV' }), verdict: 'resolved' },
+      makeRecord({ sessionId: sid2, stage: 'DEV', agent: 'developer', verdict: 'fail' }),
+    ]);
+
+    const patterns = failureTracker.getFailurePatterns(project);
+    // 只剩 session B 的 fail
+    expect(patterns.totalFailures).toBe(1);
+    expect(patterns.byStage['DEV'].count).toBe(1);
+  });
+
+  test('9-3 不同 stage 的 resolved 只影響對應 stage', () => {
+    const project = join(homedir(), '.overtone', 'test-fail-resolved-stage-' + TIMESTAMP);
+    dirsToClean.push(project);
+
+    const sid = 'sess-mixed-' + TIMESTAMP;
+
+    writeFailures(project, [
+      makeRecord({ sessionId: sid, stage: 'DEV', agent: 'developer', verdict: 'fail' }),
+      { ...makeRecord({ sessionId: sid, stage: 'DEV' }), verdict: 'resolved' },
+      makeRecord({ sessionId: sid, stage: 'TEST', agent: 'tester', verdict: 'fail' }),
+    ]);
+
+    const patterns = failureTracker.getFailurePatterns(project);
+    // DEV resolved → 排除，TEST 未 resolved → 保留
+    expect(patterns.totalFailures).toBe(1);
+    expect(patterns.byStage['DEV']).toBeUndefined();
+    expect(patterns.byStage['TEST'].count).toBe(1);
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// 10. formatFailureSummary — 時間範圍顯示
+// ────────────────────────────────────────────────────────────────────────────
+
+describe('formatFailureSummary — 時間範圍顯示', () => {
+  test('10-1 有多筆不同日期的失敗時，摘要包含時間範圍', () => {
+    const project = join(homedir(), '.overtone', 'test-fail-timerange-' + TIMESTAMP);
+    dirsToClean.push(project);
+
+    writeFailures(project, [
+      makeRecord({ stage: 'DEV', agent: 'developer', verdict: 'fail', ts: '2026-02-01T10:00:00.000Z' }),
+      makeRecord({ stage: 'DEV', agent: 'developer', verdict: 'fail', ts: '2026-02-15T10:00:00.000Z' }),
+      makeRecord({ stage: 'TEST', agent: 'tester', verdict: 'fail', ts: '2026-03-01T10:00:00.000Z' }),
+    ]);
+
+    const summary = failureTracker.formatFailureSummary(project);
+    expect(summary).not.toBe('');
+    // 應包含日期範圍格式（M/DD - M/DD）
+    expect(summary).toMatch(/\d+\/\d+/);
+  });
+
+  test('10-2 只有一個日期時，顯示單一日期而非範圍', () => {
+    const project = join(homedir(), '.overtone', 'test-fail-singledate-' + TIMESTAMP);
+    dirsToClean.push(project);
+
+    writeFailures(project, [
+      makeRecord({ stage: 'DEV', agent: 'developer', verdict: 'fail', ts: '2026-03-01T10:00:00.000Z' }),
+      makeRecord({ stage: 'TEST', agent: 'tester', verdict: 'fail', ts: '2026-03-01T20:00:00.000Z' }),
+    ]);
+
+    const summary = failureTracker.formatFailureSummary(project);
+    expect(summary).not.toBe('');
+    // 同一天，應顯示（3/1）而不是範圍
+    expect(summary).toContain('3/1');
+    expect(summary).not.toMatch(/3\/1 - 3\/1/);
+  });
+
+  test('10-3 無資料時 formatFailureSummary 回傳空字串（無時間範圍計算）', () => {
+    const summary = failureTracker.formatFailureSummary('/tmp/no-failures-timerange-' + TIMESTAMP);
+    expect(summary).toBe('');
   });
 });
