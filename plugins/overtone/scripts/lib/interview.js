@@ -662,6 +662,7 @@ function loadSession(statePath) {
       ...DEFAULT_OPTIONS,
       ...data.options,
     },
+    domainResearch: data.domainResearch || undefined,
   };
 }
 
@@ -680,6 +681,7 @@ function saveSession(session, statePath) {
     startedAt: session.startedAt,
     completedAt: session.completedAt || null,
     options: session.options,
+    domainResearch: session.domainResearch || null,
   };
   atomicWrite(statePath, data);
 }

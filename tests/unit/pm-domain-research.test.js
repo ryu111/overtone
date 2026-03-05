@@ -8,13 +8,18 @@
  *   - getResearchQuestions(session)
  */
 
-const { test, expect, describe } = require('bun:test');
+const { test, expect, describe, afterEach } = require('bun:test');
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
 
 const {
   researchDomain,
   startInterview,
   getResearchQuestions,
   init,
+  saveSession,
+  loadSession,
 } = require('../../plugins/overtone/scripts/lib/interview');
 
 // ── researchDomain 測試 ──
@@ -215,5 +220,52 @@ describe('getResearchQuestions', () => {
       const questions = getResearchQuestions(null);
       expect(questions).toEqual([]);
     }).not.toThrow();
+  });
+});
+
+// ── saveSession / loadSession roundtrip 測試 ──
+
+describe('saveSession / loadSession roundtrip', () => {
+  let tmpPath;
+
+  afterEach(() => {
+    if (tmpPath && fs.existsSync(tmpPath)) {
+      fs.unlinkSync(tmpPath);
+    }
+  });
+
+  test('Scenario 4-1: 含 domainResearch 的 session 存取後完整保留', () => {
+    tmpPath = path.join(os.tmpdir(), `interview-roundtrip-${Date.now()}.json`);
+    const session = {
+      ...init('roundtrip-feature', '/tmp/output'),
+      domainResearch: {
+        summary: '電商結帳流程摘要',
+        concepts: ['購物車', '支付閘道'],
+        questions: ['如何處理付款失敗？', '退款流程為何？'],
+      },
+    };
+
+    saveSession(session, tmpPath);
+    const loaded = loadSession(tmpPath);
+
+    expect(loaded).not.toBeNull();
+    expect(loaded.domainResearch).toBeDefined();
+    expect(loaded.domainResearch.summary).toBe('電商結帳流程摘要');
+    expect(loaded.domainResearch.concepts).toEqual(['購物車', '支付閘道']);
+    expect(loaded.domainResearch.questions).toEqual(['如何處理付款失敗？', '退款流程為何？']);
+  });
+
+  test('Scenario 4-2: 無 domainResearch 的 session 存取後 domainResearch 為 undefined', () => {
+    tmpPath = path.join(os.tmpdir(), `interview-roundtrip-nodomain-${Date.now()}.json`);
+    const session = init('no-domain-feature', '/tmp/output');
+    // 確保沒有 domainResearch
+    expect(session.domainResearch).toBeUndefined();
+
+    saveSession(session, tmpPath);
+    const loaded = loadSession(tmpPath);
+
+    expect(loaded).not.toBeNull();
+    expect(loaded.domainResearch).toBeUndefined();
+    expect(loaded.featureName).toBe('no-domain-feature');
   });
 });
