@@ -82,7 +82,7 @@ plugins/overtone/   # Plugin 根目錄
 
 | 事件 | 職責 |
 |------|------|
-| SessionStart | Banner + 初始化 + Dashboard spawn |
+| SessionStart | Banner + 初始化 + Dashboard spawn + systemMessage 動態注入（plugin context + 待完成任務 + 跨 session 知識 + 效能基線 + 品質評分 + 失敗模式 + 執行佇列） |
 | SessionEnd | Session 結束收尾 + 狀態清理 |
 | PreCompact | context 壓縮前注入工作流狀態恢復訊息 |
 | UserPromptSubmit | systemMessage → /ot:auto |

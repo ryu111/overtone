@@ -1,59 +1,5 @@
 ---
 ## 2026-03-04 | code-reviewer:REVIEW Findings
-**1. state.js 第 249 行：fallback 路徑缺少 `?? current` 防禦（信心 95%）**
-
-- **檔案**：`/Users/sbu/projects/overtone/plugins/overtone/scripts/lib/state.js`，第 249 行
-- **問題**：`updateStateAtomic` 的 main path（第 221 行）已加入 `modifier(current) ?? current` 防禦，防止 modifier callback 忘記 return 導致 `enforceInvariants(undefined)` crash。但同一函式的 fallback 路徑（第 249 行）仍然是 `const modified = modifier(current);`，沒有對應的 `?? current` 防禦。
-- **影響**：如果 CAS retry 三次都因 mtime 衝突而失敗（多個 hook 同時修改），且 modifier 不回傳值，fallback 路徑會 crash（`TypeError: Cannot read properties of undefined (reading 'activeAgents')`）。
-- **建議修復**：
-
-```javascript
-// 第 249 行，從：
-const modified = modifier(current);
-// 改為：
-const modified = modifier(current) ?? current;
-```
-Keywords: state, fallback, current, users, projects, overtone, plugins, scripts, updatestateatomic, main
-
----
-## 2026-03-04 | developer:DEV Findings
-1. **pm SKILL.md 更新**：在「多次迭代執行」section 之後新增「佇列整合（📋 MUST）」section，說明用 `queue.js add` 指令一次寫入所有迭代，以及完成後呼叫 `completeCurrent` 推進佇列。
-2. **product-manager.md 更新**：在「停止條件」之前新增「多次迭代輸出格式」section，規定 PM 輸出 Handoff 時必須附上佇列格式摘要表格，讓 Main Agent 可直接用 `queue.js add` 寫入佇列。
-3. **write guard 繞過**：兩個受保護元件（agents/*.md、skills/*/SKILL.md）均透過 config-api.updateAgent/updateSkill 以程式呼叫方式更新，避免 pre-edit-guard.js 攔截。
-4. **測試設計**：新增 3 個 PM 整合流程測試，驗證：(1) 5 次迭代寫入後 source 正確、全部 pending；(2) advanceToNext 後 getCurrent 回傳正確項目；(3) completeCurrent 後下一項仍 pending。
-Keywords: skill, section, must, queue, completecurrent, product, manager, handoff, main, agent
-
----
-## 2026-03-04 | code-reviewer:REVIEW Findings
-**1. `docs/status.md` 版本未同步 -- 信心 95%**
-
-- **檔案**：`/Users/sbu/projects/overtone/docs/status.md`，第 3 行
-- **問題**：`plugin.json` 已 bump 至 `0.28.40`，但 `docs/status.md` 仍記錄 `0.28.39`。這違反了 CLAUDE.md 中「文檔同步」衛生規範，且導致 `tests/unit/docs-sync.test.js` 的「plugin.json 版本與 docs/status.md 標題版本一致」測試失敗（expected `0.28.40`，received `0.28.39`）。
-- **建議修復**：將 `docs/status.md` 第 3 行的 `0.28.39` 更新為 `0.28.40`，並同步更新描述文字（如「PM 佇列整合 + queue CLI」）。
-
-**其他審查面向（無問題）**：
-
-- **queue.js**（119 行）：CLI 結構清晰，三個子命令（add/list/clear）邏輯正確。positional args 過濾器正確處理了 `--project-root` 和 `--source` 選項。error handling 完整（奇數參數、無參數、未知命令皆有處理）。`require.main === module` 守衛 + `module.exports` 雙模式正確。
-- **state.js `?? current` 防禦**：main path（第 221 行）和 fallback path（第 249 行）均已加上 `modifier(current) ?? current`，先前 REVIEW 指出的 fallback 遺漏問題已在此次修復。
-- **PM SKILL.md 佇列指引**：指令清晰可執行，`queue.js add` 範例與 CLI 實際 API 一致。`completeCurrent` 用於迭代完成後推進佇列，`advanceToNext` 由 heartbeat daemon 負責 -- 分工合理，無遺漏。
-- **product-manager.md 輸出格式**：Markdown 表格格式（#、名稱、Workflow、說明）讓 Main Agent 可直接解析並呼叫 `queue.js add`，格式與 CLI 的 `<name> <workflow>` pair 模式相容。
-- **測試覆蓋**：15 個測試（12 CLI + 3 PM 整合），覆蓋 add/list/clear 的 happy path 和 error path，以及 PM 多迭代流程（寫入、推進、完成）。測試全部通過。
-- **措詞檢查**：SKILL.md 和 agent prompt 中的 `📋 MUST` 搭配正確，符合 wording guide 強度規範。
-- **CLAUDE.md 常用指令更新**：queue.js 用法說明已同步新增，格式正確。
-- **安全性**：無硬編碼 secrets、無 SQL injection、無不安全的使用者輸入處理。
-Keywords: docs, status, users, projects, overtone, plugin, json, bump, claude, tests
-
----
-## 2026-03-04 | tester:TEST Context
-模式：verify
-
-data-policy feature 的驗證工作。變更範圍包含：
-1. `docs/spec/data-policy.md` — 新增文件（無程式碼邏輯）
-2. `plugins/overtone/scripts/lib/session-cleanup.js` — 僅修改注釋（常數值未變）
-Keywords: verify, data, policy, feature, docs, spec, plugins, overtone, scripts, session
-
----
-## 2026-03-04 | code-reviewer:REVIEW Findings
 1. **`/Users/sbu/projects/overtone/docs/spec/data-policy.md` 第 97-106 行 -- 手動清理指令描述不正確**
    - **問題描述**：文件聲稱 `bun scripts/data.js gc` 可以 "清理舊 session 和孤兒目錄"，並列出 `--sessions` 和 `--global` 兩個旗標。但 `/Users/sbu/projects/overtone/plugins/overtone/scripts/data.js` 的 `cmdGc` 函式（第 337-364 行）只呼叫 `cleanupStaleGlobalDirs()`，不支援 `--sessions` 或 `--global` 旗標，也不清理 session 目錄。data.js 的 help 文字（第 454-456 行）也只列出 `--dry-run` 和 `--max-age-days`。
    - **建議修復方式**：
@@ -737,4 +683,77 @@ Keywords: structure, optimization, feature, phase, config, readagentfile, readho
 
 **BDD Spec 對照：** 268 行 spec 涵蓋 3 Phase + 整合驗證，所有 require 路徑更新、向後相容 re-export、模組功能不變的要求均已實現。
 Keywords: config, phase, helpers, validator, crud, exports, validateagent, validatehook, validateskill, validateall
+
+---
+## 2026-03-05 | product-manager:PM Findings
+**目標用戶**：Overtone plugin 的使用者（目前為個人 dogfooding，未來可能擴展）
+
+**平台機制調查**（[codebase 佐証]）：
+
+| 機制 | 說明 | 是否可用 |
+|------|------|:--------:|
+| Plugin 根目錄放 `claude.md` | Claude Code plugin spec **未支援** plugin 目錄自動載入 CLAUDE.md（[官方文件](https://code.claude.com/docs/en/plugins-reference) 未提及此欄位） | 否 |
+| `plugin.json` claudeMd 欄位 | plugin manifest schema 無此欄位（[settings-api.md](settings-api.md) L201-236 完整列舉了所有欄位） | 否 |
+| CLAUDE.md 子目錄懶載入 | Claude Code 進入子目錄時才載入該目錄的 CLAUDE.md，但 plugin 被 cache 到 `~/.claude/plugins/cache/`，路徑不在專案樹下 | 否 |
+| SessionStart hook systemMessage | 已有 `session-start-handler.js` 注入 systemMessage 的能力（[codebase 佐証] L79-87, L364-367） | 可用 |
+| Skill reference 自動注入 | pre-task.js 已有 skill context 注入機制（frontmatter `skills:` 宣告） | 可用 |
+| `--add-dir` + `CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD=1` | 環境變數可讓額外目錄的 CLAUDE.md 生效，但需 CLI 層面設定 | 有限 |
+
+**核心發現**：Claude Code plugin 系統**沒有原生的 plugin-level CLAUDE.md 機制**。Plugin 注入指令的管道是 hook systemMessage 和 skill reference，不是 CLAUDE.md 檔案。
+
+**成功指標**：
+- 安裝 Overtone plugin 後，Main Agent **自動獲得**等同現有 CLAUDE.md 的專案上下文（無需手動複製）
+- Plugin 版本更新時，注入的上下文**自動同步**（數量、結構描述與實際一致）
+- 專案根目錄 CLAUDE.md 保留使用者自訂內容的空間（不被 plugin 覆蓋）
+
+**方案比較**：
+
+| 維度 | 方案 A：SessionStart systemMessage 注入 | 方案 B：自動生成 CLAUDE.md 檔案 | 方案 C：Skill reference 嵌入 |
+|------|------|------|------|
+| 概述 | 在 `session-start-handler.js` 中組裝 plugin context，透過 `systemMessage` 注入。內容從 registry.js + plugin.json **動態計算**（agent 數量、stage 清單等），而非靜態文字 | SessionStart hook 偵測專案根目錄是否有 CLAUDE.md，若無則從模板生成；若有則比對版本，自動更新 plugin 管理區段（用 marker 註解界定） | 建立一個 `plugin-context` skill，在 pre-task.js 中自動注入（類似現有 skill context 注入） |
+| 優點 | (1) 零檔案操作，不觸碰使用者 CLAUDE.md (2) 內容永遠最新（每次 session 動態計算）(3) 現有架構已支援（buildStartOutput msgs 陣列）(4) 與既有 CLAUDE.md 完全不衝突 | (1) 使用者可直接編輯看到完整規則 (2) 符合 Claude Code 原生 CLAUDE.md 載入機制 (3) 其他工具（cursor 等）也能讀取 | (1) 利用既有 skill 注入管道 (2) reference 檔案可靜態維護 |
+| 缺點 | (1) systemMessage 佔用 context window（但現有 CLAUDE.md 也是 ~180 行，差不多）(2) 使用者看不到注入內容（除非看 debug log）(3) 不適用 non-Overtone 專案（systemMessage 只在 Overtone plugin 啟用時注入） | (1) 檔案衝突風險 — 使用者自訂內容可能被覆蓋 (2) marker 機制維護成本高（使用者可能刪除 marker）(3) 需處理首次 vs 更新兩條路徑 (4) 測試複雜度高（需 mock fs 操作） | (1) Skill 注入是 per-subagent，Main Agent 可能不觸發 (2) Skill context 設計目的是知識域，不是專案規則 (3) 現有 pre-task.js 只在 PreToolUse(Task) 觸發，Main Agent 初始 turn 拿不到 |
+| 工作量 | 2-3 人天 | 5-7 人天 | 3-4 人天 |
+| RICE | R=8 I=2 C=100% E=2.5 = **6.4** | R=8 I=2 C=80% E=6 = **2.1** | R=5 I=1 C=80% E=3.5 = **1.1** |
+
+**推薦方案**：方案 A（SessionStart s
+Keywords: overtone, plugin, dogfooding, codebase, claude, code, spec, https, docs, plugins
+
+---
+## 2026-03-05 | product-manager:PM Context
+**問题陈述**：Overtone 目前的 CLAUDE.md 是手動維護的，180 行專案規則檔。每次 plugin 更新（新增 agent/hook/skill/command、workflow 變更、hook 架構變化），都需要人工同步 CLAUDE.md 中的對應描述。這造成兩個痛點：
+
+1. **新專案首次安裝**：使用者安裝 Overtone plugin 後，必須手動建立或複製整份 CLAUDE.md，否則 Main Agent 缺乏專案上下文（L3 痛點量化：每個新專案浪費 5-10 分鐘手動設定）
+2. **版本更新同步**：plugin bump version 後，CLAUDE.md 中的數字（agent 數量、hook 數量、skill 數量、workflow 數量）和結構描述經常過時，導致 AI 行為偏移（L4 痛點量化：根據 `docs-sync.test.js` 已有版本一致性測試，但內容層面無自動同步）
+Keywords: overtone, claude, plugin, agent, hook, skill, command, workflow, main, bump
+
+---
+## 2026-03-05 | developer:DEV Findings
+- **動態計算**：Agent 清單從 `stages` 的 `agent` 欄位去重取得，Stage 數量、Workflow 數量、Timeline events 數量皆從 registry 直接計算，版本號從 `plugin.json` 讀取 — 版本更新後自動同步
+- **Import 擴充**：原本只 import `effortLevels`，現在同時 import `stages, workflows, hookEvents, timelineEvents, parallelGroupDefs`
+- **注入順序**：`pluginContextMsg` 放在 msgs 陣列首位，讓 Main Agent 最先看到
+- **防禦性設計**：try-catch 包裹，失敗時回傳 null，`filter(Boolean)` 自動過濾，與現有其他段落一致
+- **間歇性失敗**：`tests/unit/post-use-failure-handler.test.js` 在並行模式下偶發 fail，單獨執行通過，為既有問題與本次無關
+Keywords: agent, stages, stage, workflow, timeline, events, registry, plugin, json, import
+
+---
+## 2026-03-05 | code-reviewer:REVIEW Findings
+**審查面向與結論**：
+
+1. **功能完整性** -- `buildPluginContext()` 正確從 registry.js 動態計算 Agent（從 stages 去重）、Stage 數量、Workflow 數量、Timeline events 數量、Hook events 清單、並行群組定義。版本號從 `plugin.json` 動態讀取。所有數值皆為即時計算，不會與 registry 脫鉤。符合 Handoff 中「動態計算、版本更新後自動同步」的需求。
+
+2. **整合方式** -- `pluginContextMsg` 正確放在 msgs 陣列首位（`/Users/sbu/projects/overtone/plugins/overtone/scripts/lib/session-start-handler.js` 第 445 行），透過既有的 `buildStartOutput` + `filter(Boolean)` 機制注入 systemMessage。與現有段落（pendingTasks、globalObservations 等）的整合方式完全一致。
+
+3. **防禦性設計** -- try-catch 包裹整個函數，失敗時回傳 null，由 `filter(Boolean)` 自動過濾。與現有其他段落的防禦模式一致（baselineSummaryMsg、scoreSummaryMsg 等皆同）。不會阻擋 session 啟動。
+
+4. **內容精簡度** -- 注入內容約 20 行，涵蓋元件概覽、Agent 清單、常用 Workflow、Hook Events、並行群組、核心規範（6 條）、目錄結構、常用指令。context window 佔用合理。核心規範摘錄了 CLAUDE.md 中最重要的 6 條規則（registry SoT、Handoff 格式、薄殼化、元件閉環、updatedInput REPLACE、不做向後相容），選擇精準且無不必要重複。
+
+5. **測試覆蓋** -- 12 個新測試，涵蓋：回傳型別、版本號、各元件數量（>0 驗證）、Hook events 清單、核心規範文字、並行群組、與 registry 資料一致性（agent 數量吻合、workflow 數量吻合）。覆蓋充分。全部通過（34 tests, 0 fail）。
+
+6. **安全性** -- 無硬編碼 secrets、無使用者輸入處理、無外部網路呼叫。純讀取 registry 資料 + 字串組裝。
+
+7. **docs 變更** -- roadmap.md 和 status.md 的更新為既有文件同步（狀態標記更新、版本數字修正），內容正確。auto-discovered.md 的知識歸檔格式正確。
+
+**[m] 未使用的中間變數**：`/Users/sbu/projects/overtone/plugins/overtone/scripts/lib/session-start-handler.js` 第 91 行 `const workflowEntries = Object.entries(workflows)` 用了 `Object.entries()` 但只取 `.length`，`Object.keys(workflows).length` 即可，不需要建立完整的 entries 陣列。作者自行決定是否修改。
+Keywords: buildplugincontext, registry, agent, stages, stage, workflow, timeline, events, hook, plugin
 

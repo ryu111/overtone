@@ -40,3 +40,7 @@ Keywords: claude, knowledge, domain, skill, developer, architect, code, plugin
 - 3206 pass, 1 fail（server.test.js：`GET /api/registry agents 涵蓋 16 個 agent`）
 - 失敗是預先存在的回歸（received 17，expected 16），與此次變更無關，未修改 server.test.js
 Keywords: hooks, json, claude, agent, prompt, manage, component, overtone, conventions, skill
+---
+## 2026-03-05 | developer:DEV Context
+在 `session-start-handler.js` 新增 `buildPluginContext()` 函數，並透過 SessionStart systemMessage 將 plugin 上下文注入每個新 session。
+Keywords: session, start, handler, buildplugincontext, sessionstart, systemmessage, plugin

@@ -682,14 +682,17 @@ describe('Feature 8：on-start.js 重構後行為不變', () => {
     expect(systemMessage).toContain('- [ ] 任務 C');
   });
 
-  // Scenario 8.2: 無活躍 feature 時不輸出 systemMessage
-  test('on-start.js 無活躍 feature 時不輸出 systemMessage', () => {
+  // Scenario 8.2: 無活躍 feature 時仍輸出 plugin context（via buildPluginContext）
+  test('on-start.js 無活躍 feature 時仍輸出 plugin context systemMessage', () => {
     const NO_FEAT_ROOT = join(homedir(), '.overtone', 'test-tmp', `on-start-no-feat-${TS}`);
     mkdirSync(join(NO_FEAT_ROOT, 'specs', 'features', 'in-progress'), { recursive: true });
     const result = runOnStart({ cwd: NO_FEAT_ROOT });
     expect(result.exitCode).toBe(0);
     const output = JSON.parse(result.stdout);
-    expect(output.systemMessage).toBeUndefined();
+    // buildPluginContext() 現在會產生 plugin context systemMessage
+    expect(output.systemMessage).toBeDefined();
+    expect(output.systemMessage).toContain('Overtone Plugin Context');
+    expect(output.systemMessage).toContain('元件概覽');
     rmSync(NO_FEAT_ROOT, { recursive: true, force: true });
   });
 

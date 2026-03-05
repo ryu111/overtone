@@ -1,6 +1,6 @@
 # Overtone Roadmap
 
-> 最後更新：2026-03-04 | 當前 Phase：Phase 3 進行中（P3.3 系統層完成）
+> 最後更新：2026-03-05 | 當前 Phase：Phase 3 進行中（P3.3 系統層完成 + 整合層完成）
 
 ## Phase 總覽
 
@@ -106,10 +106,10 @@
 
 | 任務 | 說明 | 狀態 |
 |------|------|:----:|
-| queue CLI | `bun scripts/queue.js add <name> <workflow>` / `list` / `clear` — 手動佇列管理 | ⬜ |
-| PM 自動寫入 | PM Discovery 產出多迭代計劃時，自動調用 `writeQueue()` 寫入佇列（PM agent 或 on-stop.js 整合） | ⬜ |
-| Telegram `/run` | `/run <featureName> [workflow]` 遠端命令，寫入佇列並通知（telegram-adapter.js `_handleUpdate` 擴充） | ⬜ |
-| session-spawner 防禦 | spawn 時移除 `CLAUDECODE` 環境變數（`env` 選項），防止嵌套 session 保護誤觸發 | ⬜ |
+| queue CLI | `bun scripts/queue.js add <name> <workflow>` / `list` / `clear` — 手動佇列管理 | ✅ |
+| PM 自動寫入 | PM Discovery 產出多迭代計劃時，agent-stop-handler 自動解析佇列表格調用 `writeQueue()` 寫入佇列 | ✅ |
+| Telegram `/run` | `/run <featureName> [workflow]` 遠端命令，寫入佇列並通知（telegram-adapter.js `_handleRun` 擴充） | ✅ |
+| session-spawner 防禦 | spawn 時移除 `CLAUDECODE` 前綴環境變數（SENSITIVE_PREFIXES 過濾），防止嵌套 session 保護誤觸發 | ✅ |
 | health-check 整合 | heartbeat-daemon 偵測 + OS tools 檢測（第 8 項：pbcopy/pbpaste/osascript） | ✅ |
 
 **並行委派 PoC ⏳**
@@ -122,7 +122,7 @@
 |------|------|:----:|
 | CLAUDE.md 規則 | 已寫入「並行委派」區塊（📋 MUST 評估子任務可拆性） | ✅ |
 | PoC 驗證 | 下個 standard workflow 實測觀察 | ⏳ |
-| init-overtone | plugin 內建 `claude.md.d/` 片段 + SessionStart 偵測首次安裝 → 自動合併到用戶 CLAUDE.md（Command + Hook 配合） | ⬜ |
+| init-overtone | SessionStart systemMessage 動態注入 plugin context — buildPluginContext() 從 registry.js 計算版本、agent 數、stage 數、workflow 模板等，無需靜態維護 | ✅ |
 
 ### P3.3 管得住（系統層）
 
@@ -233,7 +233,7 @@
 |------|--------|------|
 | auto/SKILL.md 行數 | 105 行 | ≤ 120 行 |
 | Workflow 模板數 | 18 個 | ≤ 20 個 |
-| Agent 數量 | 17 個 | 按需增減（需佐證） |
+| Agent 數量 | 18 個 | 按需增減（需佐證） |
 
 ---
 

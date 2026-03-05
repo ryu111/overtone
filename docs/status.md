@@ -1,12 +1,12 @@
 # Overtone 現況
 
-> 最後更新：2026-03-05 | Plugin 版本：0.28.50（lib/ 結構優化 — config 拆分 + analyzers/ + knowledge/ 子目錄）
+> 最後更新：2026-03-05 | Plugin 版本：0.28.51（SessionStart systemMessage 動態注入 plugin context）
 
 ## 版本狀態
 
 | 版本 | 狀態 | 說明 |
 |------|------|------|
-| V1 | 進行中 | 3360 pass，0 fail，核心功能完整 + 守衛強化 11/11 + Knowledge Engine + 跨 Session 長期記憶 + 效能基線追蹤 + 數值評分引擎 + 趨勢分析 + 回饋閉環 + 卡點識別 + 時間序列學習（Level 2 完成）+ 核心穩固清理 + mul-agent 泛化 + P3.0 閉環基礎 + P3.1 感知層（screenshot.js + window.js + perception.md）+ P3.2 心跳引擎（heartbeat.js + session-spawner.js）+ P3.3 系統層（process.js + clipboard.js + system-info.js + notification.js + fswatch.js）+ 並行收斂門 + Status Line TTL 防護 + Specs checkbox fallback 修復 + Level 2→1 整合修復（gradedStages 擴大 + 失敗原因記錄 + 全域觀察注入）+ Agent Memory 升級（8 個跨層級 agent + Score Context 個人化 + Grader 強制化）+ 核心簡化（移除 active-agent.json + 並行提示修復 + 不變量守衛）+ Hook Contract 自我修復（state.sanitize() + 8 個 hook 合約測試）+ 主動偵測（health-check 12 項，含元件鏈 + 資料品質 + 趨勢分析 + 測試增長率）+ Health-Check 精確度提升（假陽性 23→0 error + 孤兒 active stage 守衛）+ Queue CLI + PM 佇列整合 + Spawner 防禦 + Hook 薄殼化（9 handler 模組）+ Telegram /run 命令 + PM 佇列自動寫入 + CLAUDECODE env filter|
+| V1 | 進行中 | 3378 pass，0 fail，核心功能完整 + 守衛強化 11/11 + Knowledge Engine + 跨 Session 長期記憶 + 效能基線追蹤 + 數值評分引擎 + 趨勢分析 + 回饋閉環 + 卡點識別 + 時間序列學習（Level 2 完成）+ 核心穩固清理 + mul-agent 泛化 + P3.0 閉環基礎 + P3.1 感知層（screenshot.js + window.js + perception.md）+ P3.2 心跳引擎（heartbeat.js + session-spawner.js）+ P3.3 系統層（process.js + clipboard.js + system-info.js + notification.js + fswatch.js）+ 並行收斂門 + Status Line TTL 防護 + Specs checkbox fallback 修復 + Level 2→1 整合修復（gradedStages 擴大 + 失敗原因記錄 + 全域觀察注入）+ Agent Memory 升級（8 個跨層級 agent + Score Context 個人化 + Grader 強制化）+ 核心簡化（移除 active-agent.json + 並行提示修復 + 不變量守衛）+ Hook Contract 自我修復（state.sanitize() + 8 個 hook 合約測試）+ 主動偵測（health-check 12 項，含元件鏈 + 資料品質 + 趨勢分析 + 測試增長率）+ Health-Check 精確度提升（假陽性 23→0 error + 孤兒 active stage 守衛）+ Queue CLI + PM 佇列整合 + Spawner 防禦 + Hook 薄殼化（9 handler 模組）+ Telegram /run 命令 + PM 佇列自動寫入 + CLAUDECODE env filter + Main Agent 寫碼偵測守衛 + lib/ 結構重構（config 拆分 + analyzers/ + knowledge/ 子目錄）+ SessionStart systemMessage 動態注入 plugin context|
 | V2 | 規劃中 | 延後 |
 
 ## 核心指標
@@ -16,19 +16,20 @@
 | Agent 數量 | 18（含 grader） |
 | Stage 數量 | 16 |
 | Workflow 模板 | 18 |
-| 測試通過 | 3360 pass / 0 fail（151 個測試檔） |
+| 測試通過 | 3378 pass / 0 fail（151 個測試檔） |
 | 測試檔案 | 151 個 |
 | Hook 數量 | 11 個 |
 | Skill 數量 | 23（15 knowledge domain + orchestrator + pm + specs + 4 utility-with-refs） |
 | Knowledge Domain 數 | 15（testing、workflow-core、security-kb、database、dead-code、commit-convention、code-review、wording、debugging、architecture、build-system、os-control、autonomous-control、craft、claude-dev） |
 | Command 數量 | 28（14 stage shortcut + 7 workflow pipeline + 7 utility） |
 | Telegram 命令 | 6（/start、/status、/stop、/run、/sessions、/help） |
-| Timeline Events | 27 個 |
+| Timeline Events | 29 個 |
 
 ## 近期變更（最近 3 筆）
 
+- **[0.28.51] 2026-03-05**：SessionStart systemMessage 動態注入 plugin context——(1) 新增 buildPluginContext() 函數，從 registry.js 動態計算 agent 數、stage 數、workflow 模板清單、hook events、並行群組定義等；(2) 組裝格式化 context 字串，包含版本號、元件概覽、核心規範、目錄結構、常用指令；(3) 注入 sessionMessage 讓 Main Agent 感知當前 plugin 狀態和設計約束；(4) buildPluginContext() 失敗時靜默跳過，不阻擋 session 啟動；(5) 新增 12 個單元測試驗證動態數值計算與 registry 資料一致性；(6) 測試 +12（3366→3378）；(7) roadmap.md init-overtone 項目標記 ✅
+- **[0.28.50] 2026-03-05**：lib/ 結構優化 + Main Agent 寫碼守衛——(1) config-api.js 拆分為 config-io.js（IO helpers）+ config-validator.js（L1 驗證）+ config-api.js（L2 CRUD + 向後相容 re-exports）；(2) 7 個分析模組移入 lib/analyzers/（guard-system, dead-code-scanner, docs-sync-engine, test-quality-scanner, component-repair, hook-diagnostic, cross-analyzer）；(3) 6 個知識模組移入 lib/knowledge/（instinct, global-instinct, knowledge-archiver, knowledge-gap-detector, knowledge-searcher, skill-router）；(4) PreToolUse(Write/Edit) 新增 Main Agent 寫碼偵測（shouldWarnMainAgentCoding）；(5) queue:auto-write timeline 事件註冊；(6) 測試 +6（3360→3366）
 - **[0.28.49] 2026-03-05**：Hook 薄殼化重構完成 + 9 個 Handler 模組 + 遠端控制增強——(1) 9 個 hook 薄殼化（平均 ~250 行 → ~29 行）；(2) 新增 9 個 handler 模組（scripts/lib/）：session-start/stop/end-handler、agent-stop-handler、pre-task-handler、on-submit-handler、post-use/failure-handler、pre-compact-handler；(3) 共用工廠統一使用（specs-archive-scanner + hook-timing + feature-sync）；(4) Telegram /run 命令新增；(5) PM 完成時自動解析佇列表格寫入 execution-queue；(6) CLAUDECODE env 過濾防止嵌套偵測誤觸；(7) 測試 +16（3344→3360，150→151 files）
-- **[0.28.48] 2026-03-05**：Hook 共享模組抽取 + 並行門收斂——(1) 新增 3 個跨 hook 共享模組：specs-archive-scanner.js（掃描式歸檔）、hook-timing.js（hook:timing emit 工廠）、feature-sync.js（featureName 自動同步）；(2) 新增 feature-sync.test.js（7 個測試）；(3) 8 個 hook 改用新工廠函式，確保一致性；(4) 並行收斂門完整測試；(5) 測試 +7（3231→3238，139→140 files）
 - **[0.28.47] 2026-03-04**：statusline 集中式狀態管理 + TTL 機制 + 並行 agent 修復——(1) 新增 statusline-state.js 模組（activeAgents/workflowType/idle 狀態管理）；(2) statusline.js 三態邏輯優化（active agent / Main 控制 / idle 收回）；(3) TTL 機制（idle 10min 自動過期）；(4) 並行 agent statusline 殘留修復；(5) initState 防撞守衛；(6) session ID 隔離強化
 - **[0.28.42] 2026-03-04**：測試套件瘦身 + Hook 優化 — (16) data-auto-digest SessionEnd 自動摘要；(17) quick workflow 移除 TEST stage；(18) TaskCompleted hook 移除 bun test（消除 45s 假等待）；(19) test-suite-slimdown 刪除低價值測試（3235→3114，-121 tests）；(20) test-growth-monitor health-check 第 12 項偵測（20% 增長率閾值）→ 3127 pass / 137 files
 - **[0.28.41] 2026-03-04**：資料管理框架 — (1-10) 穩定化迭代；(11) data-hygiene 清理機制；(12) data-cli 統一查詢 CLI；(13) data-policy 資料保留策略；(14) hook-observability hook:timing 計時事件；(15) data-cross-analysis 跨資料源交叉分析（failure-hotspot + hook-overhead + workflow-velocity）→ 3213 pass / 137 files
