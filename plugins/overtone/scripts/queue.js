@@ -94,6 +94,53 @@ function cmdClear(projectRoot) {
   console.log('✅ 佇列已清除');
 }
 
+function cmdDedup(projectRoot) {
+  const { removed, queue } = executionQueue.dedup(projectRoot);
+  if (queue === null) {
+    console.log('佇列為空');
+    return;
+  }
+  if (removed === 0) {
+    console.log('✅ 無重複項目');
+  } else {
+    console.log(`✅ 已移除 ${removed} 個重複項目（剩餘 ${queue.items.length} 項）`);
+    for (const item of queue.items) {
+      const icons = { completed: '✅', in_progress: '🔄', pending: '⬜', failed: '❌' };
+      const icon = icons[item.status] || '⬜';
+      console.log(`  ${icon} ${item.name}（${item.workflow}）`);
+    }
+  }
+}
+
+function cmdSuggestOrder(projectRoot, applyFlag) {
+  const { suggested, changed } = executionQueue.suggestOrder(projectRoot);
+  if (suggested === null) {
+    console.log('佇列為空');
+    return;
+  }
+  if (!changed) {
+    console.log('✅ 佇列順序已是最佳排列');
+    return;
+  }
+
+  console.log('建議排序（由簡到繁）：');
+  console.log('');
+  for (const item of suggested) {
+    const icons = { completed: '✅', in_progress: '🔄', pending: '⬜', failed: '❌' };
+    const icon = icons[item.status] || '⬜';
+    console.log(`  ${icon} ${item.name}（${item.workflow}）`);
+  }
+
+  if (applyFlag) {
+    executionQueue.applyOrder(projectRoot, suggested);
+    console.log('');
+    console.log('✅ 已套用建議排序');
+  } else {
+    console.log('');
+    console.log('提示：加上 --apply 旗標可套用此排序');
+  }
+}
+
 // ── CLI 入口 ──
 
 function main(argv) {
@@ -116,8 +163,11 @@ function main(argv) {
   const noAutoIdx = args.indexOf('--no-auto');
   const options = noAutoIdx !== -1 ? { autoExecute: false } : { autoExecute: true };
 
+  // 解析 --apply
+  const applyFlag = args.includes('--apply');
+
   // 過濾掉 option 參數，取得 positional args
-  const optionKeys = ['--project-root', '--source', '--no-auto'];
+  const optionKeys = ['--project-root', '--source', '--no-auto', '--apply'];
   const positional = args.slice(1).filter((arg, i, arr) => {
     if (optionKeys.includes(arg)) return false;
     if (i > 0 && (arr[i - 1] === '--project-root' || arr[i - 1] === '--source')) return false;
@@ -140,8 +190,14 @@ function main(argv) {
     case 'enable-auto':
       cmdEnableAuto(projectRoot);
       break;
+    case 'dedup':
+      cmdDedup(projectRoot);
+      break;
+    case 'suggest-order':
+      cmdSuggestOrder(projectRoot, applyFlag);
+      break;
     default:
-      console.log('用法：bun scripts/queue.js <add|append|list|clear|enable-auto> [options]');
+      console.log('用法：bun scripts/queue.js <add|append|list|clear|enable-auto|dedup|suggest-order> [options]');
       console.log('');
       console.log('子命令：');
       console.log('  add <name> <workflow> [...]   新增項目到佇列（覆寫）');
@@ -149,11 +205,14 @@ function main(argv) {
       console.log('  list                          列出佇列狀態');
       console.log('  clear                         清除佇列');
       console.log('  enable-auto                   啟用自動執行（規劃模式 → 執行模式）');
+      console.log('  dedup                         移除重複項目（name + workflow 相同）');
+      console.log('  suggest-order                 顯示建議執行順序（由簡到繁）');
       console.log('');
       console.log('選項：');
       console.log('  --project-root <path>   指定專案根目錄（預設 cwd）');
       console.log('  --source <desc>         來源描述（add/append 時使用，預設 "CLI"）');
       console.log('  --no-auto               寫入規劃模式佇列（autoExecute: false）');
+      console.log('  --apply                 套用建議排序（僅 suggest-order 有效）');
       process.exit(1);
   }
 }
@@ -162,4 +221,4 @@ if (require.main === module) {
   main();
 }
 
-module.exports = { main, _cmdAdd: cmdAdd, _cmdAppend: cmdAppend, _cmdList: cmdList, _cmdClear: cmdClear, _cmdEnableAuto: cmdEnableAuto };
+module.exports = { main, _cmdAdd: cmdAdd, _cmdAppend: cmdAppend, _cmdList: cmdList, _cmdClear: cmdClear, _cmdEnableAuto: cmdEnableAuto, _cmdDedup: cmdDedup, _cmdSuggestOrder: cmdSuggestOrder };

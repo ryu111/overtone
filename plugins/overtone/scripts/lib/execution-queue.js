@@ -263,6 +263,113 @@ function setAutoExecute(projectRoot, value) {
 }
 
 /**
+ * 去除佇列中完全重複的項目（name + workflow 皆相同）
+ * 保留每組重複項目的第一個，移除後續重複項。
+ * 已完成/進行中的項目若與後續項目重複，後續項目會被移除。
+ * @param {string} projectRoot
+ * @returns {{ removed: number, queue: object|null }} 移除筆數和更新後的佇列
+ */
+function dedup(projectRoot) {
+  const queue = readQueue(projectRoot);
+  if (!queue) return { removed: 0, queue: null };
+
+  const seen = new Set();
+  const deduped = [];
+  let removed = 0;
+
+  for (const item of queue.items) {
+    const key = `${item.name}::${item.workflow}`;
+    if (seen.has(key)) {
+      removed++;
+    } else {
+      seen.add(key);
+      deduped.push(item);
+    }
+  }
+
+  if (removed === 0) return { removed: 0, queue };
+
+  queue.items = deduped;
+  const filePath = _queuePath(projectRoot);
+  atomicWrite(filePath, queue);
+
+  return { removed, queue };
+}
+
+/**
+ * workflow 複雜度排序權重
+ * 複雜度從低到高：single < quick < standard < full
+ */
+const WORKFLOW_ORDER = { single: 0, quick: 1, standard: 2, full: 3 };
+
+/**
+ * 根據 workflow 複雜度提供排序建議（不修改佇列）
+ * 同 workflow 類型內保持原始相對順序（穩定排序）。
+ * 不影響已完成/進行中的項目（維持在原位）。
+ * @param {string} projectRoot
+ * @returns {{ suggested: object[]|null, changed: boolean }} 建議順序和是否有變動
+ */
+function suggestOrder(projectRoot) {
+  const queue = readQueue(projectRoot);
+  if (!queue) return { suggested: null, changed: false };
+
+  // 分離已完成/進行中與待執行項目
+  const settled = [];   // completed / in_progress — 保留位置
+  const pending = [];   // pending — 參與排序
+
+  for (const item of queue.items) {
+    if (item.status === 'pending') {
+      pending.push(item);
+    } else {
+      settled.push(item);
+    }
+  }
+
+  // 穩定排序 pending 項目（使用 index 保持同 workflow 的相對順序）
+  const sortedPending = pending
+    .map((item, idx) => ({ item, idx }))
+    .sort((a, b) => {
+      const wa = WORKFLOW_ORDER[a.item.workflow] ?? 99;
+      const wb = WORKFLOW_ORDER[b.item.workflow] ?? 99;
+      if (wa !== wb) return wa - wb;
+      return a.idx - b.idx;
+    })
+    .map(({ item }) => item);
+
+  // 重組：settled 項目保持原位，pending 項目以排序後順序填入
+  const suggested = [];
+  let pendingIdx = 0;
+  for (const item of queue.items) {
+    if (item.status === 'pending') {
+      suggested.push(sortedPending[pendingIdx++]);
+    } else {
+      suggested.push(item);
+    }
+  }
+
+  // 判斷是否有實際變動
+  const changed = suggested.some((item, i) => item !== queue.items[i]);
+
+  return { suggested, changed };
+}
+
+/**
+ * 套用排序建議到佇列（修改檔案）
+ * @param {string} projectRoot
+ * @param {object[]} suggested - suggestOrder 回傳的 suggested 陣列
+ * @returns {boolean} 是否成功套用
+ */
+function applyOrder(projectRoot, suggested) {
+  const queue = readQueue(projectRoot);
+  if (!queue) return false;
+
+  queue.items = suggested;
+  const filePath = _queuePath(projectRoot);
+  atomicWrite(filePath, queue);
+  return true;
+}
+
+/**
  * 清除佇列（所有項目完成後或手動清除）
  * @param {string} projectRoot
  */
@@ -298,4 +405,8 @@ module.exports = {
   formatQueueSummary,
   setAutoExecute,
   clearQueue,
+  dedup,
+  suggestOrder,
+  applyOrder,
+  WORKFLOW_ORDER,
 };
