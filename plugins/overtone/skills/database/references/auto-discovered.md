@@ -54,3 +54,20 @@ Keywords: data, queue, pattern, module, query, baselines, baseline, tracker, que
 - 證據：`/Users/sbu/projects/overtone/CLAUDE.md` 第 100-135 行的常用指令列表包含 `health-check.js`、`validate-agents.js`、`manage-component.js`、`heartbeat.js`、`queue.js` 等，但無 `data.js`
 - 這是 doc-updater 的工作範疇
 Keywords: data, getfailurepatterns, queryscores, queryglobal, cleanupstaleglobaldirs, getbaseline, module, exports, session, process
+---
+## 2026-03-05 | retrospective:RETRO Findings
+**回顧摘要**：
+
+- **模組架構一致**：skill-evaluator / skill-generalizer / experience-index 三個模組職責清晰，純函式設計，I/O 隔離良好，錯誤均有靜默降級處理
+- **整合完整**：evolution.js internalize → skill-evaluator → skill-generalizer → buildIndex 的完整鏈路存在且測試覆蓋；project-orchestrator.js 的 experienceHints 整合點已接入 queryIndex
+- **health-check 第 17 項**：`internalization-index` 檢查邏輯正確，涵蓋格式損壞、domains 空陣列、30 天過時三個面向
+- **instinct SKILL.md**：frontmatter 結構完整，資源索引指向正確路徑
+- **測試策略合理**：測試環境無真實 scores/observations 資料的限制已透過 setupTestData 工具函式解決；evolution-internalize.test.js 15 個測試覆蓋主要流程
+- **REVIEW 已標注的 minor 問題（JSON 欄位 `retained` vs design.md `qualified`，及 Scenario 5-4）**：這些屬於文件同步和測試覆蓋的局部問題，已在 REVIEW 階段登錄，不在 retrospective 重複標注
+
+**跨階段一致性確認**：
+
+- BDD 6 Features / 34 Scenarios 覆蓋範圍與實作的 3 Phase / 6 子任務對應合理
+- 測試 95 tests / 310 expects 的驗證結果支持整體實作正確性
+- `experience-index` 的 path 定義（`~/.overtone/global/{projectHash}/experience-index.json`）與 paths.js 的 `paths.global.experienceIndex()` 方法一致
+Keywords: skill, evaluator, generalizer, experience, index, evolution, internalize, buildindex, project, orchestrator

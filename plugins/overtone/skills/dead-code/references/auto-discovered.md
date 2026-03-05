@@ -68,3 +68,17 @@ Keywords: cleanupstaleglobaldirs, runcleanup, global, instinct, test, aftereach,
 - build: 不適用（此專案無 build 步驟）
 - test: 3366 pass / 0 fail
 Keywords: gray, matter, exports, depcheck, cache, eacces, grep, health, check, dead
+---
+## 2026-03-05 | developer:DEV Findings
+1. **段落級移除策略**：以空行（`\n\s*\n`）分段，對每個段落比對預設 + 自訂 pattern，匹配即整段移除。設計文件的 ADR-3 明確要求純函式、無 I/O 依賴 — 已完全遵守。
+
+2. **BDD 偏差澄清**：
+   - BDD Scenario 2-4 描述的是 `isEmpty` 行為，`minLength` 選項預設 50（設計文件 API 規格）。
+   - 設計文件 API 說 `removedCount: number` 但設計文件的 GeneralizeResult schema 說 `removed: string[]`。實作採用 `removed: string[]`（設計文件內文），因為 `removed.length` 即可取得 count，且 debug 時能查看被移除的內容。
+
+3. **`generalizeEntries` 行為**：只處理 `qualified=true` 的條目（符合 BDD Scenario 2-6 規格）。注意：根據 BDD 規格 generalizeEntries **不**過濾掉 isEmpty 的條目 — 過濾邏輯由上層（T4 evolution.js internalize）決定，generalizeEntries 只負責過濾 qualified=false。
+
+4. **Pattern 設計**：
+   - Session ID pattern（`/\b[0-9a-f]{8,}\b/`）可能誤匹配較長的十六進制字串（如 SHA），這是設計上的合理取捨。
+   - `import ... from '...'` 的 pattern 採用 `\s+.*\s+` 避免過度貪婪。
+Keywords: pattern, scenario, isempty, minlength, removedcount, number, generalizeresult, schema, removed, string

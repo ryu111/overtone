@@ -1,66 +1,4 @@
 ---
-## 2026-03-03 | tester:TEST Findings
-測試結果摘要：2492 passed, 0 failed
-
-- `tests/unit/baseline-tracker.test.js`：19 個單元測試（6 個 describe 群組）
-- `tests/integration/baseline-tracker.test.js`：5 個整合測試（4 個 describe 群組）
-- 全量 2492 pass，0 fail，105 個測試檔案
-
-所有驗證重點均有覆蓋：
-- 5 個公開 API 全部驗證（computeSessionMetrics、saveBaseline、getBaseline、compareToBaseline、formatBaselineSummary）
-- 邊界情況：空 store、無效 JSON、專案隔離、workflowType 隔離、未完成 workflow
-- 整合：SessionEnd 保存、SessionStart 載入、改善偵測、退化偵測、hook 執行
-Keywords: passed, failed, tests, unit, baseline, tracker, test, describe, integration, pass
----
-## 2026-03-03 | tester:TEST Findings
-測試結果摘要：21 passed, 0 failed
-
-所有要求的 BDD scenario 均有對應測試，涵蓋：
-- Unit（15 tests）：score context 產生邏輯（3 個 scenario）、最低維度偵測（4 個 scenario）、無分數回傳 null（3 個 scenario）、lowScoreThreshold 警告閾值邊界（5 個 scenario）
-- Integration（6 tests）：pre-task.js 注入 score context（3 個 scenario）、on-session-end.js 執行 instinct decay（3 個 scenario）
-- 完整套件 2571 tests 全部通過，無回歸問題
-
-閾值邊界測試（= 3.0 不觸發警告）已明確驗證（Unit F4 S4-2），符合規格要求。
-Keywords: passed, failed, scenario, unit, tests, score, context, null, lowscorethreshold, integration
----
-## 2026-03-03 | retrospective:RETRO Findings
-**回顧摘要**：
-
-**BDD 對齊度：完整**
-
-- BDD spec 的 10 個 Feature、37 個 Scenario 全部對應實作。
-- unit/score-engine.test.js 覆蓋 Feature 1-5、8-10（32 個 scenario）。
-- integration/grader-score-engine.test.js 覆蓋 Feature 6-7（14 個 scenario）。
-- integration/feedback-loop.test.js 覆蓋閉環整合（pre-task score context + session-end decay，新增 6 個 scenario）。
-- 全部 2571 pass / 0 fail（110 個測試檔）。
-
-**架構一致性：良好**
-
-- `score-engine.js` 對齊 `baseline-tracker.js` 模式（JSONL append-only + atomicWrite 截斷），不重複造輪子。
-- `scoringConfig` / `scoringDefaults` 放在 `registry.js`，與 `instinctDefaults`、`baselineDefaults` 同層級，符合 Single Source of Truth 設計。
-- `paths.global.scores()` 正確使用 projectHash 隔離不同專案，與 `paths.global.observations()` 及 `paths.global.baselines()` 格式一致。
-- `buildStopMessages` 純函式設計保持不變，副作用透過回傳值傳遞。
-
-**回饋閉環驗證：完整**
-
-資料路徑從 saveScore -> getScoreSummary -> pre-task.js score context 注入 -> agent prompt，資料流向完整且有端到端測試驗證。
-
-**session-end decay 順序：合理**
-
-操作順序：graduate（高信心觀察升至全域）-> decay（降低舊觀察信心）-> saveBaseline（效能指標保存）。decay 在 graduate 之後執行，確保即將畢業的高信心觀察不會被衰減誤刪，設計合理。
-
-**grader agent 整合：符合設計哲學**
-
-grader.md 步驟 5 使用 `$CLAUDE_PLUGIN_ROOT/scripts/lib/score-engine` Node.js CLI 寫入 scores.jsonl，符合「grader 觸發採 hook 提示 Main Agent 而非 hook 直接委派」的架構設計。
-
-**測試品質：良好**
-
-- 各測試使用獨立 projectRoot（含時間戳）避免測試間污染。
-- afterAll 正確清理 global scores 目錄和臨時目錄。
-- Feature 4 截斷測試使用真實 maxRecordsPerStage = 50，不 mock 設定值，測試更可靠。
-- Scenario 7-4 以實際子進程測試 on-stop.js 的靜默捕獲，屬於真正的整合測試。
-Keywords: spec, feature, scenario, unit, score, engine, test, integration, grader, feedback
----
 ## 2026-03-03 | tester:TEST Context
 模式：verify
 
@@ -725,4 +663,43 @@ Keywords: describe, expect, test, coverage
 ## 2026-03-05 | developer:DEV Findings
 - 使用 describe/it/expect 組織 BDD 測試，coverage 達標
 Keywords: describe, expect, coverage
+
+---
+## 2026-03-05 | tester:TEST Findings
+測試結果：**95 passed, 0 failed**
+
+- `tests/unit/knowledge/skill-evaluator.test.js` — 通過
+- `tests/unit/knowledge/skill-generalizer.test.js` — 通過
+- `tests/unit/knowledge/experience-index.test.js` — 通過
+- `tests/unit/evolution-internalize.test.js` — 通過
+- `tests/unit/project-orchestrator.test.js` — 通過
+- `tests/unit/health-check-internalization.test.js` — 通過
+
+310 次 expect() calls，執行時間 1173ms
+Keywords: passed, failed, tests, unit, knowledge, skill, evaluator, test, generalizer, experience
+
+---
+## 2026-03-05 | tester:TEST:2 Findings
+測試結果摘要：**95 pass / 0 fail / 310 expect() calls**
+
+涵蓋的測試檔案（共 6 個）：
+- `tests/unit/knowledge/skill-evaluator.test.js`
+- `tests/unit/knowledge/skill-generalizer.test.js`
+- `tests/unit/knowledge/experience-index.test.js`
+- `tests/unit/evolution-internalize.test.js`
+- `tests/unit/project-orchestrator.test.js`
+- `tests/unit/health-check-internalization.test.js`
+Keywords: pass, fail, expect, calls, tests, unit, knowledge, skill, evaluator, test
+
+---
+## 2026-03-05 | retrospective:RETRO Findings
+**回顧摘要**：
+
+- **根因修復到位**：`session-id-bridge.test.js` 競爭條件因讀寫 `~/.overtone/.current-session-id` 全域共享狀態而起，SEQUENTIAL_FILES 機制在並行階段完成後串行執行，正確隔離競爭，屬治本方案。
+- **格式一致性正確**：`SEQUENTIAL_FILES` Set 使用相對路徑（`tests/integration/session-id-bridge.test.js`），與 `collectTestFiles()` 回傳格式（`join(dir, f)`）完全一致，`Set.has()` 比對可靠。
+- **`--max-concurrency=1` 防護完整**：串行執行時額外傳入旗標，防止 bun 內部並發，雙重保護。
+- **條件式清理邏輯正確**：afterEach 只清理自己寫入的 session ID，避免污染真實 session 狀態。
+- **可擴展性良好**：未來有其他依賴共享狀態的測試只需加入 `SEQUENTIAL_FILES` Set，無需修改執行邏輯。
+- **craft checklist 全部通過**：測試通過 (3864 pass) + 審查 APPROVE + 機制正確。
+Keywords: session, bridge, test, overtone, current, tests, integration, collecttestfiles, join, concurrency
 
