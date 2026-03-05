@@ -1,19 +1,5 @@
 ---
 
-**2. build-error-resolver（缺：誤判防護、信心過濾）**
-
-現狀：有 DO/DON'T、有停止條件，無誤判防護、無信心過濾。
-信心過濾：此 agent 的工作是確定性的（修 build error），不需要傳統信心過濾。但有「是否需要修」的判斷：
-- 只修構建工具回報的明確錯誤，不修「感覺應該有問題」的警告
-- warning 不是 error，除非阻擋構建才處理
-
-誤判防護：
-- 「警告（warning）≠ 需要修復的錯誤」— 只修 error，warning 記錄但不強制修
-- 「新語法/新 API 的 deprecation warning ≠ 構建失敗」— 不要把 deprecation upgrade 當 bug fix
-- 「測試 fail ≠ build error」— 停止條件說明 test 仍通過，但測試 fail 不在此 agent 範圍
-
----
-
 **3. debugger（缺：誤判防護）**
 
 現狀：有 DO/DON'T、有停止條件，無誤判防護，無明確信心過濾（但有「需要程式碼證據」的要求）。
@@ -886,4 +872,27 @@ Keywords: skill, regex, auto, workflow, core, references, handoff, protocol, err
 - spawn 時加入 `OVERTONE_NO_DASHBOARD=1` 和 `OVERTONE_TEST=1` 避免副作用
 - 18 個測試全部通過，執行時間約 2.3s
 Keywords: registry, workflows, timeline, emit, appendevent, evolution, status, exit, queue, list
+
+---
+## 2026-03-05 | retrospective:RETRO Findings
+**回顧摘要**：
+
+1. **架構一致性良好**：`extractWebKnowledge` 的設計遵循 Overtone 的降級（graceful fallback）模式 — `tryWithTools()` 失敗或品質不足時自動 fallback 到 `tryWithoutTools()`，符合系統一貫的容錯設計。
+
+2. **快取機制設計合理**：
+   - 快取路徑選在 `skills/{domain}/references/web-research.md`，與現有 references/ 目錄結構一致
+   - TTL 使用 `fs.statSync().mtimeMs`（基於檔案修改時間）而非寫入後追蹤，語意正確
+   - 空字串不寫入快取，邊界情況處理得宜
+
+3. **品質驗證（isQualityResearch）門檻保守但合理**：只檢查是否含 `## 或 ###` 標題。雖然門檻低，但配合 fallback 邏輯（品質不足時再試 without tools），整體防誤判能力足夠。
+
+4. **測試覆蓋完整**：Feature 8（enableWebResearch）+ Feature 9（快取機制）共 15 個新測試涵蓋主要路徑，包含快取命中、未命中、空字串、TTL 過期前（9-3）等場景。
+
+5. **Overtone principles checklist**：
+   - 自動修復：`extractWebKnowledge` 有雙層 try-catch + fallback，符合容錯原則
+   - 補全能力：快取寫入時自動建立 `references/` 目錄（`mkdirSync recursive`），符合慣例
+   - 驗證品質：測試覆蓋到位，新函式全部從 `module.exports` 導出供測試使用
+
+6. **一個觀察（信心不足 70%，不列為 ISSUES）**：`isQualityResearch` 的截斷發生在 `extractWebKnowledge` 之後（先截斷後判斷品質），若截斷恰好切到最後一個 section header 之前理論上可能誤判為低品質。但 5000 字元的截斷上限實際上遠大於任何合法的 section header，此情況在實際執行中概率極低，不構成可報告問題。
+Keywords: extractwebknowledge, overtone, graceful, fallback, trywithtools, trywithouttools, skills, domain, references, research
 

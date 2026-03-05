@@ -235,3 +235,16 @@ Keywords: docs, status, tests, files, queue, enhancement, plugin, json, manage, 
   - 補充具體實作說明：shouldAutoForge() + autoForge() + forge --auto 機制
 Keywords: claude, evolution, forge, auto, execute, json, docs, status, trigger, pass
 
+---
+## 2026-03-05 | doc-updater:DOCS Findings
+- skill-forge.js 升級：內部優化，無 public API 變更
+- 測試新增 8 個：測試檔案變更，無文件更新需求
+- 前面提交已同步所有文件（CLAUDE.md、roadmap.md、status.md）
+- plugin.json 版本保持 0.28.63（前序提交已更新）
+Keywords: skill, forge, public, claude, roadmap, status, plugin, json
+
+---
+## 2026-03-05 | doc-updater:DOCS Context
+檢視最近 DEV 階段提交（e8e833c），skill-forge.js 升級了 extractWebKnowledge 函式的內部實現（prompt 結構、timeout、--allowedTools flag、品質驗證、快取機制）。核心邏輯優化無涉及 public interface 或文件內容的變更。前序提交（61337d3、01904a9）已完成 CLAUDE.md 和相關文件同步。
+Keywords: skill, forge, extractwebknowledge, prompt, timeout, allowedtools, flag, public, interface, claude
+

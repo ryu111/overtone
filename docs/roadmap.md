@@ -175,7 +175,7 @@
 | evolution.js fix 子命令 | `bun scripts/evolution.js fix [--execute] [--type <type>] [--json]` | ✅ |
 | Auto-Fix 測試 | 修復正確性 + 邊界情況 + 50 個測試 | ✅ |
 
-### L3.3 Skill Forge（自主建立能力）🟡 部分完成
+### L3.3 Skill Forge（自主建立能力）✅
 
 > 真質變起點：系統面對未知領域，能自主研究 → 建立 skill → 驗證可用。
 > 類比：免疫系統遇到新病毒，自己產生抗體。
@@ -183,7 +183,7 @@
 | 任務 | 說明 | 狀態 |
 |------|------|:----:|
 | Phase 1：Codebase 內知識萃取 | skill-forge.js（5 API：forgeSkill / extractKnowledge / assembleSkill / validate / rollback）+ 15 domain 知識庫 + 33 unit tests | ✅ |
-| Phase 2：WebFetch 領域研究 | spawn 研究 session（WebFetch 搜集領域知識 → 結構化整理） | ⬜ |
+| Phase 2：WebFetch 領域研究 | extractWebKnowledge 升級（結構化 prompt + --allowedTools + 品質驗證 + 7 天快取） | ✅ |
 | 能力缺口偵測 | knowledge-gap-detector.js shouldAutoForge() + autoForge() 自動偵測低分 gap（score < 0.3）+ evolution.js forge --auto 掃描缺 references 域自動 forge | ✅ |
 | Skill CLI 整合 | evolution.js forge 子命令（`bun scripts/evolution.js forge <domain> [--execute] [--json] [--auto]`） | ✅ |
 | 安全邊界 | 不覆蓋既有 skill、dry-run 預設、連續失敗暫停 | ✅ |
