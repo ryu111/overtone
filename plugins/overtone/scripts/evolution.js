@@ -75,30 +75,25 @@ function printUsage() {
 function printSubcommandHelp(subcommand) {
   switch (subcommand) {
     case 'status':
-      process.stdout.write('用法：bun scripts/evolution.js status [--json]\n');
+      process.stdout.write('用途：快速顯示系統進化狀態，整合 gap 摘要、internalize 索引、experience index 資訊\n');
       process.stdout.write('\n');
-      process.stdout.write('快速顯示系統進化狀態，整合以下資訊：\n');
-      process.stdout.write('  - Gap 分析摘要（缺口數量 + severity 分佈）\n');
-      process.stdout.write('  - Internalize 索引狀態（internalized.md 是否存在、條目數）\n');
-      process.stdout.write('  - Experience index 狀態（已索引的 domain 數量）\n');
+      process.stdout.write('用法：bun scripts/evolution.js status [--json]\n');
       process.stdout.write('\n');
       process.stdout.write('選項：\n');
       process.stdout.write('  --json  以 JSON 格式輸出\n');
       break;
     case 'analyze':
+      process.stdout.write('用途：執行 gap 分析，檢測元件一致性缺口。有缺口 exit 1，無缺口 exit 0\n');
+      process.stdout.write('\n');
       process.stdout.write('用法：bun scripts/evolution.js analyze [--json]\n');
-      process.stdout.write('\n');
-      process.stdout.write('執行 gap 分析，檢測元件一致性缺口。有缺口 exit 1，無缺口 exit 0。\n');
-      process.stdout.write('\n');
-      process.stdout.write('檢測項目：component-chain / closed-loop / completion-gap / dependency-sync\n');
       process.stdout.write('\n');
       process.stdout.write('選項：\n');
       process.stdout.write('  --json  以 JSON 格式輸出報告（供程式消費）\n');
       break;
     case 'fix':
-      process.stdout.write('用法：bun scripts/evolution.js fix [--execute] [--type <type>] [--json]\n');
+      process.stdout.write('用途：修復可自動修復的缺口。預設 dry-run，加 --execute 實際修復\n');
       process.stdout.write('\n');
-      process.stdout.write('修復可自動修復的缺口。預設 dry-run，加 --execute 實際修復。\n');
+      process.stdout.write('用法：bun scripts/evolution.js fix [--execute] [--type <type>] [--json]\n');
       process.stdout.write('\n');
       process.stdout.write('選項：\n');
       process.stdout.write(`  --execute       實際執行修復\n`);
@@ -106,11 +101,10 @@ function printSubcommandHelp(subcommand) {
       process.stdout.write(`  --json          以 JSON 格式輸出修復結果\n`);
       break;
     case 'forge':
+      process.stdout.write('用途：為指定 domain 建立 Skill。預設 dry-run，加 --execute 實際建立\n');
+      process.stdout.write('\n');
       process.stdout.write('用法：bun scripts/evolution.js forge <domain> [--execute] [--json] [--research]\n');
       process.stdout.write('      bun scripts/evolution.js forge --auto [--execute] [--json]\n');
-      process.stdout.write('\n');
-      process.stdout.write('為指定 domain 建立 Skill。預設 dry-run，加 --execute 實際建立。\n');
-      process.stdout.write('使用 --auto 時，自動偵測缺少 references/ 目錄的 skill domain 並批次 forge。\n');
       process.stdout.write('\n');
       process.stdout.write('選項：\n');
       process.stdout.write('  --auto      自動偵測並 forge 所有缺少 references 的 skill domain\n');
@@ -119,9 +113,9 @@ function printSubcommandHelp(subcommand) {
       process.stdout.write('  --research  啟用外部 WebSearch 研究補充知識\n');
       break;
     case 'orchestrate':
-      process.stdout.write('用法：bun scripts/evolution.js orchestrate <specPath> [--execute] [--json] [--overwrite] [--workflow <template>]\n');
+      process.stdout.write('用途：從 Project Spec 協調 gap 偵測 + skill forge + 佇列排程。預設 dry-run\n');
       process.stdout.write('\n');
-      process.stdout.write('從 Project Spec 協調：gap 偵測 + skill forge + 佇列排程。預設 dry-run。\n');
+      process.stdout.write('用法：bun scripts/evolution.js orchestrate <specPath> [--execute] [--json] [--overwrite] [--workflow <template>]\n');
       process.stdout.write('\n');
       process.stdout.write('選項：\n');
       process.stdout.write('  --execute                    實際執行\n');
@@ -131,9 +125,9 @@ function printSubcommandHelp(subcommand) {
       process.stdout.write('  --project-root <path>        指定專案根目錄（預設 cwd）\n');
       break;
     case 'internalize':
-      process.stdout.write('用法：bun scripts/evolution.js internalize [--execute] [--json]\n');
+      process.stdout.write('用途：評估 auto-discovered.md 條目並生成 internalized.md。預設 dry-run\n');
       process.stdout.write('\n');
-      process.stdout.write('評估 auto-discovered.md 條目並生成 internalized.md。預設 dry-run。\n');
+      process.stdout.write('用法：bun scripts/evolution.js internalize [--execute] [--json]\n');
       process.stdout.write('\n');
       process.stdout.write('選項：\n');
       process.stdout.write('  --execute   實際寫入 internalized.md + 更新 experience-index\n');
@@ -552,7 +546,7 @@ function main() {
     try {
       status = runStatus();
     } catch (err) {
-      process.stderr.write(`status 執行錯誤：${err.message}\n`);
+      process.stderr.write(`❌ 錯誤：${err.message}\n`);
       process.exit(1);
     }
 
@@ -567,7 +561,7 @@ function main() {
     try {
       report = analyzeGaps();
     } catch (err) {
-      process.stderr.write(`錯誤：${err.message}\n`);
+      process.stderr.write(`❌ 錯誤：${err.message}\n`);
       process.exit(1);
     }
 
@@ -588,7 +582,7 @@ function main() {
     // 驗證 --type 值
     if (typeFilter !== undefined) {
       if (!VALID_FIX_TYPES.includes(typeFilter)) {
-        process.stderr.write(`錯誤：無效的 --type 值 "${typeFilter}"。有效值：${VALID_FIX_TYPES.join(' / ')}\n`);
+        process.stderr.write(`❌ 錯誤：無效的 --type 值 "${typeFilter}"。有效值：${VALID_FIX_TYPES.join(' / ')}\n`);
         process.exit(1);
       }
     }
@@ -598,7 +592,7 @@ function main() {
     try {
       report = analyzeGaps();
     } catch (err) {
-      process.stderr.write(`錯誤：${err.message}\n`);
+      process.stderr.write(`❌ 錯誤：${err.message}\n`);
       process.exit(1);
     }
 
@@ -650,7 +644,7 @@ function main() {
     try {
       fixResult = fixGaps(fixableGaps, { dryRun: false, typeFilter: undefined }); // typeFilter 已預先篩選
     } catch (err) {
-      process.stderr.write(`修復過程發生錯誤：${err.message}\n`);
+      process.stderr.write(`❌ 錯誤：修復過程發生錯誤 — ${err.message}\n`);
       process.exit(1);
     }
 
@@ -694,7 +688,7 @@ function main() {
       try {
         gapReport = analyzeGaps();
       } catch (err) {
-        process.stderr.write(`分析缺口時發生錯誤：${err.message}\n`);
+        process.stderr.write(`❌ 錯誤：分析缺口時發生錯誤 — ${err.message}\n`);
         process.exit(1);
       }
 
@@ -724,7 +718,7 @@ function main() {
             r = forgeSkill(domain, {}, { dryRun: !execute, enableWebResearch });
           } catch (err) {
             r = { status: 'error', domainName: domain, error: err.message };
-          }
+  }
           results.push(r);
         }
         process.stdout.write(JSON.stringify({ dryRun: !execute, domains: uniqueDomains, results }, null, 2) + '\n');
@@ -751,7 +745,7 @@ function main() {
         try {
           r = forgeSkill(domain, {}, { dryRun: !execute, enableWebResearch });
         } catch (err) {
-          process.stderr.write(`  [error] ${domain}：${err.message}\n`);
+          process.stderr.write(`  ❌ 錯誤：${domain} — ${err.message}\n`);
           anyError = true;
           continue;
         }
@@ -768,7 +762,7 @@ function main() {
           process.stdout.write(`  [paused] ${domain} — 連續失敗 ${r.consecutiveFailures} 次\n`);
           anyError = true;
         } else {
-          process.stderr.write(`  [error] ${domain}：${r.error || JSON.stringify(r)}\n`);
+          process.stderr.write(`  ❌ 錯誤：${domain} — ${r.error || JSON.stringify(r)}\n`);
           anyError = true;
         }
       }
@@ -783,14 +777,12 @@ function main() {
     // ── 一般模式：指定 domain ──
 
     if (!domainName) {
-      process.stdout.write('forge 子命令用法：bun scripts/evolution.js forge <domain> [--execute] [--json] [--research]\n');
-      process.stdout.write('                  bun scripts/evolution.js forge --auto [--execute] [--json]\n');
-      process.stdout.write('\n');
-      process.stdout.write('  forge <domain>              預覽 forge 結果（dry-run，不建立任何檔案）\n');
-      process.stdout.write('  forge <domain> --execute    實際執行 forge，建立 skill\n');
-      process.stdout.write('  forge <domain> --json       以 JSON 格式輸出結果\n');
-      process.stdout.write('  forge <domain> --research   啟用外部 WebSearch 研究補充知識\n');
-      process.stdout.write('  forge --auto                自動偵測缺少 references 的 domain 並 forge\n');
+      process.stderr.write('❌ 錯誤：forge 需要指定 <domain> 參數\n');
+      process.stderr.write('\n');
+      process.stderr.write('用法：bun scripts/evolution.js forge <domain> [--execute] [--json] [--research]\n');
+      process.stderr.write('      bun scripts/evolution.js forge --auto [--execute] [--json]\n');
+      process.stderr.write('\n');
+      process.stderr.write('執行 bun scripts/evolution.js forge --help 查看完整說明\n');
       process.exit(1);
     }
 
@@ -798,7 +790,7 @@ function main() {
     try {
       result = forgeSkill(domainName, {}, { dryRun: !execute, enableWebResearch });
     } catch (err) {
-      process.stderr.write(`forge 執行錯誤：${err.message}\n`);
+      process.stderr.write(`❌ 錯誤：${err.message}\n`);
       process.exit(1);
     }
 
@@ -851,12 +843,12 @@ function main() {
     }
 
     if (result.status === 'error') {
-      process.stderr.write(`forge 失敗：${result.error}\n`);
+      process.stderr.write(`❌ 錯誤：${result.error}\n`);
       process.exit(1);
     }
 
     // 未預期的 status
-    process.stderr.write(`未預期的 forge 結果：${JSON.stringify(result)}\n`);
+    process.stderr.write(`❌ 錯誤：未預期的 forge 結果 — ${JSON.stringify(result)}\n`);
     process.exit(1);
   } else if (subcommand === 'orchestrate') {
     const specPath = positional[1];
@@ -873,20 +865,18 @@ function main() {
 
     // 無 specPath 時顯示用法
     if (!specPath) {
-      process.stderr.write('orchestrate 子命令用法：bun scripts/evolution.js orchestrate <specPath> [--execute] [--json] [--overwrite] [--workflow <template>]\n');
+      process.stderr.write('❌ 錯誤：orchestrate 需要指定 <specPath> 參數\n');
       process.stderr.write('\n');
-      process.stderr.write('  orchestrate <specPath>              dry-run 預覽（不修改任何檔案）\n');
-      process.stderr.write('  orchestrate <specPath> --execute    實際執行：gap 偵測 + skill forge + 佇列排程\n');
-      process.stderr.write('  orchestrate <specPath> --json       JSON 格式輸出\n');
-      process.stderr.write('  orchestrate <specPath> --overwrite  覆蓋現有佇列（預設 append）\n');
-      process.stderr.write('  orchestrate <specPath> --workflow <template>  指定 workflow 類型（預設 standard）\n');
+      process.stderr.write('用法：bun scripts/evolution.js orchestrate <specPath> [--execute] [--json] [--overwrite] [--workflow <template>]\n');
+      process.stderr.write('\n');
+      process.stderr.write('執行 bun scripts/evolution.js orchestrate --help 查看完整說明\n');
       process.exit(1);
     }
 
     // 讀取 spec 檔案
     const fs = require('fs');
     if (!fs.existsSync(specPath)) {
-      process.stderr.write(`找不到 spec 檔案：${specPath}\n`);
+      process.stderr.write(`❌ 錯誤：找不到 spec 檔案 — ${specPath}\n`);
       process.exit(1);
     }
 
@@ -894,7 +884,7 @@ function main() {
     try {
       specContent = fs.readFileSync(specPath, 'utf8');
     } catch (err) {
-      process.stderr.write(`讀取 spec 檔案失敗：${err.message}\n`);
+      process.stderr.write(`❌ 錯誤：讀取 spec 檔案失敗 — ${err.message}\n`);
       process.exit(1);
     }
 
@@ -909,7 +899,7 @@ function main() {
         projectRoot,
       });
     } catch (err) {
-      process.stderr.write(`orchestrate 執行錯誤：${err.message}\n`);
+      process.stderr.write(`❌ 錯誤：${err.message}\n`);
       process.exit(1);
     }
 
@@ -989,7 +979,7 @@ function main() {
     try {
       result = runInternalize({ execute, pluginRoot, projectRoot });
     } catch (err) {
-      process.stderr.write(`internalize 執行錯誤：${err.message}\n`);
+      process.stderr.write(`❌ 錯誤：${err.message}\n`);
       process.exit(1);
     }
 
@@ -1010,7 +1000,7 @@ function main() {
 
     process.exit(0);
   } else {
-    process.stderr.write(`未知子命令：${subcommand}\n\n`);
+    process.stderr.write(`❌ 錯誤：未知子命令「${subcommand}」\n\n`);
     printUsage();
     process.exit(1);
   }
