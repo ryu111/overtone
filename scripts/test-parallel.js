@@ -43,6 +43,12 @@ const KNOWN_WEIGHTS = {
 // 預設權重（未知檔案）
 const DEFAULT_WEIGHT = 300;
 
+// 需要串行執行的檔案（依賴全域共享狀態，不能與其他測試並行）
+// 這些測試會讀寫 ~/.overtone/.current-session-id，必須獨立執行避免競爭條件
+const SEQUENTIAL_FILES = new Set([
+  'tests/integration/session-id-bridge.test.js',
+]);
+
 // ── 參數解析 ──
 
 const args = process.argv.slice(2);
@@ -131,10 +137,18 @@ function distributeFiles(files, numWorkers) {
 // ── 並行執行 ──
 
 async function runParallel() {
-  const files = collectTestFiles();
-  const workers = distributeFiles(files, workerCount);
+  const allFiles = collectTestFiles();
 
-  console.log(`CPU: ${cpuCount} 核心 | Workers: ${workerCount} | 測試檔案: ${files.length}`);
+  // 分離串行檔案（依賴全域共享狀態）和並行檔案
+  const sequentialFiles = allFiles.filter(f => SEQUENTIAL_FILES.has(f));
+  const parallelFiles = allFiles.filter(f => !SEQUENTIAL_FILES.has(f));
+
+  const workers = distributeFiles(parallelFiles, workerCount);
+
+  console.log(`CPU: ${cpuCount} 核心 | Workers: ${workerCount} | 測試檔案: ${allFiles.length}`);
+  if (sequentialFiles.length > 0) {
+    console.log(`串行測試: ${sequentialFiles.length} 個（依賴全域共享狀態，在並行完成後執行）`);
+  }
 
   if (verbose) {
     for (let i = 0; i < workers.length; i++) {
@@ -146,7 +160,7 @@ async function runParallel() {
 
   const start = performance.now();
 
-  // 啟動所有 worker
+  // 啟動所有並行 worker
   const promises = workers
     .filter(w => w.files.length > 0)
     .map((w, i) => {
@@ -165,6 +179,21 @@ async function runParallel() {
     });
 
   const results = await Promise.all(promises);
+
+  // 並行完成後，串行執行需要隔離的測試
+  for (let i = 0; i < sequentialFiles.length; i++) {
+    const f = sequentialFiles[i];
+    const proc = Bun.spawn(['bun', 'test', '--max-concurrency=1', f], {
+      cwd: PROJECT_ROOT,
+      stdout: 'pipe',
+      stderr: 'pipe',
+    });
+    const stdout = await new Response(proc.stdout).text();
+    const stderr = await new Response(proc.stderr).text();
+    const exitCode = await proc.exited;
+    results.push({ index: workers.length + i, stdout, stderr, exitCode, files: [f], sequential: true });
+  }
+
   const elapsed = Math.round(performance.now() - start);
 
   // 彙總結果
@@ -186,7 +215,8 @@ async function runParallel() {
       hasFailure = true;
       failedFiles.push(...r.files);
       if (verbose) {
-        console.log(`\n❌ Worker ${r.index + 1} 失敗：`);
+        const label = r.sequential ? `串行 ${r.files[0]}` : `Worker ${r.index + 1}`;
+        console.log(`\n❌ ${label} 失敗：`);
         console.log(output);
       }
     }
