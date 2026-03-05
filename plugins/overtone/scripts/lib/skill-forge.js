@@ -555,7 +555,6 @@ module.exports = {
   extractWebKnowledge,
   assembleSkillBody,
   buildSkillContent,
-  validateStructure,
   loadCachedResearch,
   cacheWebResearch,
   isQualityResearch,

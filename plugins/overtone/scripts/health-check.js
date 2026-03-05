@@ -286,12 +286,13 @@ function checkDeadExports() {
 
     for (const exportKey of exportKeys) {
       // 判斷是否被使用：
-      // 1. const { exportKey } = require(...)  → 解構
-      // 2. something.exportKey                 → 存取
-      // 3. { exportKey }                       → 解構賦值
-      // 4. exportKey(                          → 直接呼叫
+      // 1. const { exportKey } = require(...)  → 直接從 require 解構
+      // 2. const { exportKey } = someVar       → 從已賦值變數解構（先 require 再解構）
+      // 3. something.exportKey                 → 屬性存取
+      // 4. { exportKey }                       → 解構賦值
+      // 5. exportKey(                          → 直接呼叫
       const usagePattern = new RegExp(
-        `(?:const|let|var)\\s*\\{[^}]*\\b${exportKey}\\b[^}]*\\}\\s*=\\s*require|` +
+        `(?:const|let|var)\\s*\\{[^}]*\\b${exportKey}\\b[^}]*\\}\\s*=|` +
         `\\.${exportKey}\\b|` +
         `\\b${exportKey}\\s*(?:\\(|,|\\n)`,
         'g'

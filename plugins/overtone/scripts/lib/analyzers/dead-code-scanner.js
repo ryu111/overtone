@@ -136,14 +136,15 @@ function parseExportKeys(content) {
  */
 function isExportUsed(exportKey, moduleBasename, searchFiles) {
   // 匹配解構或屬性存取的 regex：
-  //   const { exportKey } = require(...)
+  //   const { exportKey } = require(...)          — 直接從 require 解構
   //   let { exportKey, other } = require(...)
-  //   something.exportKey
-  //   { exportKey }
-  //   exportKey(
-  //   exportKey,
+  //   const { exportKey } = someVariable          — 從已賦值變數解構（先 require 再解構）
+  //   something.exportKey                         — 屬性存取
+  //   { exportKey }                               — 物件字面量
+  //   exportKey(                                  — 函式呼叫
+  //   exportKey,                                  — 逗號後
   const usageRe = new RegExp(
-    `(?:const|let|var)\\s*\\{[^}]*\\b${exportKey}\\b[^}]*\\}\\s*=\\s*require|` +
+    `(?:const|let|var)\\s*\\{[^}]*\\b${exportKey}\\b[^}]*\\}\\s*=|` +
     `\\.${exportKey}\\b|` +
     `\\b${exportKey}\\s*(?:\\(|,|\\n|\\s*\\})`,
     'g'
