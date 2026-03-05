@@ -118,7 +118,7 @@ bun test
 # 啟動 Dashboard 監控面板（port 7777）
 bun scripts/server.js
 
-# 系統健康檢查（15 項偵測）— checkPhantomEvents/checkDeadExports/checkDocCodeDrift/checkUnusedPaths/checkDuplicateLogic/checkPlatformDrift/checkDocStaleness/checkOsTools/checkComponentChain/checkDataQuality/checkQualityTrends/checkTestGrowth/checkClosedLoop/checkRecoveryStrategy/checkCompletionGap
+# 系統健康檢查（16 項偵測）— checkPhantomEvents/checkDeadExports/checkDocCodeDrift/checkUnusedPaths/checkDuplicateLogic/checkPlatformDrift/checkDocStaleness/checkOsTools/checkComponentChain/checkDataQuality/checkQualityTrends/checkTestGrowth/checkClosedLoop/checkRecoveryStrategy/checkCompletionGap/checkDependencySync
 bun scripts/health-check.js
 
 # 驗證所有元件設定（18 agents + 11 hooks + 23 skills + 28 commands）— agents/skills/hooks/commands 結構校驗
@@ -135,6 +135,13 @@ bun scripts/manage-component.js --help  # 查看完整用法
 bun scripts/heartbeat.js start [--project-root <path>]  # 啟動常駐 daemon
 bun scripts/heartbeat.js stop                            # 停止 daemon
 bun scripts/heartbeat.js status                          # 查看狀態
+
+# 依賴圖與一致性
+bun scripts/impact.js <path>                         # 查詢修改此檔案會影響哪些元件
+bun scripts/impact.js <path> --deps                  # 查詢此檔案依賴哪些元件
+bun scripts/impact.js <path> --json                  # JSON 格式輸出
+bun scripts/fix-consistency.js                       # 偵測 SKILL.md ↔ agent frontmatter 不一致（dry-run）
+bun scripts/fix-consistency.js --fix                 # 自動修復消費者表缺漏
 
 # 資料查詢與管理（timeline/failures/scores/observations/baselines）
 bun scripts/data.js query timeline --session <id>   # 查詢 timeline 事件

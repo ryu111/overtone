@@ -296,9 +296,9 @@ describe('checkQualityTrends', () => {
 // ══════════════════════════════════════════════════════════════════
 
 describe('runAllChecks — 包含 F1/F2/F3 新增 check', () => {
-  test('checks 陣列長度為 15（新增 3 個製作原則偵測）', () => {
+  test('checks 陣列長度為 16（新增 3 個製作原則偵測 + dependency-sync）', () => {
     const { checks } = runAllChecks();
-    expect(checks.length).toBe(15);
+    expect(checks.length).toBe(16);
   });
 
   test('checks 包含所有偵測項目（含 3 個製作原則偵測）', () => {

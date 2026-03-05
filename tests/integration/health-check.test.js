@@ -93,9 +93,9 @@ describe('Feature 6：輸出格式驗證', () => {
     expect(output.summary).not.toBeNull();
   });
 
-  test('Scenario checks — checks 陣列長度為 15（含原本 12 項 + 製作原則 3 項）', () => {
+  test('Scenario checks — checks 陣列長度為 16（含原本 12 項 + 製作原則 3 項 + dependency-sync）', () => {
     const output = getParsed();
-    expect(output.checks.length).toBe(15);
+    expect(output.checks.length).toBe(16);
   });
 
   test('Scenario checks — 包含所有 15 個偵測項目', () => {
@@ -247,10 +247,10 @@ describe('真實 codebase 執行驗證', () => {
     expect(() => JSON.parse(result.stdout)).not.toThrow();
   });
 
-  test('所有 15 個 check 都成功執行（findingsCount 為數字）', () => {
+  test('所有 16 個 check 都成功執行（findingsCount 為數字）', () => {
     const result = runHealthCheck();
     const output = JSON.parse(result.stdout);
-    expect(output.checks.length).toBe(15);
+    expect(output.checks.length).toBe(16);
     for (const c of output.checks) {
       expect(Number.isInteger(c.findingsCount)).toBe(true);
       expect(c.findingsCount).toBeGreaterThanOrEqual(0);
