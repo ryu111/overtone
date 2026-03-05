@@ -1,11 +1,4 @@
 ---
-## 2026-03-03 | developer:DEV Context
-調查 DEV 任務的實作狀態。兩個子任務均已在先前的 session 中完成：
-- 任務 A（Dead Exports 清理）：目前 dead-exports findingsCount = 0，無需額外動作
-- 任務 B（guard-system unit test）：`tests/unit/guard-system.test.js` 已存在，33 個測試涵蓋全部公開 API
-Keywords: session, dead, exports, findingscount, guard, system, unit, test, tests
-
----
 ## 2026-03-03 | tester:TEST Findings
 測試結果摘要：**2695 passed, 0 failed**
 
@@ -661,4 +654,9 @@ Keywords: verify, users, projects, overtone, tests, unit, execution, queue, enha
 - `/Users/sbu/projects/overtone/tests/unit/execution-queue-enhancement.test.js`
 - `/Users/sbu/projects/overtone/tests/integration/queue-cli-enhancement.test.js`
 Keywords: verify, queue, enhancement, users, projects, overtone, tests, unit, execution, test
+
+---
+## 2026-03-05 | developer:DEV Context
+重設 `checkTestGrowth` 的 baseline 常數，消除 health-check 報告的 +37% test-growth warning。
+Keywords: checktestgrowth, baseline, health, check, test, growth, warning
 
