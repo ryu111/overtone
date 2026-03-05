@@ -1,11 +1,4 @@
 ---
-## 2026-03-05 | product-manager:PM Context
-使用者要求對 Overtone 專案做深度掃瞄，檢查規範合規性、驗證品質、架構一致性。掃瞄範圍涵蓋 hooks.json 格式、agent prompt 四模式、skill 結構、registry SoT 一致性、測試品質、文件同步、製作規範（三條原則）、防禦架構。
-
-**核心結論**：系統整體健康度高（3455 pass / 0 fail、health-check 0 errors、元件驗證全部通過），但存在 **文件同步失效**（多處版本數字過時）、**agent prompt 品質缺口**（14/18 agent 缺少四模式中至少一項）、**timeline 閉環缺口**（21 個 event 有 emit 無 consumer）三大系統性問題。
-Keywords: overtone, hooks, json, agent, prompt, skill, registry, pass, fail, health
-
----
 ## 2026-03-05 | planner:PLAN Findings
 **逐 agent 缺失分析與修改計劃**：
 
@@ -896,4 +889,11 @@ Keywords: critical, major, extractinsights, jsdoc, param, querypastinterviews, s
 ## 2026-03-05 | developer:DEV Context
 完成 `skill-router-tune`（opt-7）：調優 `skill-router.js` 路由演算法，提升 agent 知識路由的精準度，減少歧義詞造成的 false positive。
 Keywords: skill, router, tune, agent, false, positive
+
+---
+## 2026-03-05 | developer:DEV Findings
+- **格式 2 跨 skill 引用問題**：最初的 regex 錯誤地把跨 skill 引用（如 `auto` skill 引用 `workflow-core/references/handoff-protocol.md`）解析為當前 skill 的路徑，導致 9 個假陽性 error。修正方式：格式 2 改用捕捉完整三部分（`targetSkill`、`type`、`file`），驗證 `skills/{targetSkill}/{type}/{file}` 的實際存在
+- **`crossRefs` Set 無效問題**：物件在 Set 中比對引用而非值，需改用字串 key 去重（`${targetSkill}/${type}/${file}`）
+- **計數斷言更新**：共 6 個測試檔案有計數斷言需更新（17 → 19），其中 `health-check-internalization.test.js` 未在 MEMORY.md 配套清單中記錄，已補充
+Keywords: skill, regex, auto, workflow, core, references, handoff, protocol, error, targetskill
 

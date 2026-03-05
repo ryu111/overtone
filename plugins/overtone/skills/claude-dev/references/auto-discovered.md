@@ -201,3 +201,8 @@ Keywords: retro, pass, docs, sync, status, plugin, json
    - 加入 `bun scripts/evolution.js analyze [--json]` 說明
 Keywords: plugin, json, docs, status, phase, detection, roadmap, auto, claude, scripts
 
+---
+## 2026-03-05 | developer:DEV Context
+審計所有 18 個 agent prompt 的品質，確認四模式規範（信心過濾 + 邊界清單 DO/DON'T + 誤判防護 + 停止條件）的符合狀況。
+Keywords: agent, prompt
+
