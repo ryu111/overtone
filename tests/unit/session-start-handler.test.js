@@ -17,7 +17,7 @@ const { join } = require('path');
 const { SCRIPTS_LIB } = require('../helpers/paths');
 
 const handler = require(join(SCRIPTS_LIB, 'session-start-handler'));
-const { buildBanner, buildStartOutput } = handler;
+const { buildBanner, buildStartOutput, buildPluginContext } = handler;
 
 // ────────────────────────────────────────────────────────────────────────────
 // buildBanner
@@ -126,6 +126,95 @@ describe('buildStartOutput', () => {
     const output = buildStartOutput({}, undefined);
     expect(output.result).toBe('');
     expect(output.systemMessage).toBeUndefined();
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// buildPluginContext
+// ────────────────────────────────────────────────────────────────────────────
+
+describe('buildPluginContext', () => {
+  test('回傳非空字串', () => {
+    const result = buildPluginContext();
+    expect(typeof result).toBe('string');
+    expect(result.length).toBeGreaterThan(0);
+  });
+
+  test('包含 plugin 版本號（動態計算）', () => {
+    const pkg = require(join(SCRIPTS_LIB, '../../.claude-plugin/plugin.json'));
+    const result = buildPluginContext();
+    expect(result).toContain(pkg.version);
+  });
+
+  test('包含 Agent 數量（大於 0 的數字）', () => {
+    const result = buildPluginContext();
+    // 應含有 "N agents" 格式的描述
+    expect(result).toMatch(/\d+ agents/);
+    const match = result.match(/(\d+) agents/);
+    expect(parseInt(match[1], 10)).toBeGreaterThan(0);
+  });
+
+  test('包含 Stage 數量（大於 0 的數字）', () => {
+    const result = buildPluginContext();
+    expect(result).toMatch(/\d+ stages/);
+    const match = result.match(/(\d+) stages/);
+    expect(parseInt(match[1], 10)).toBeGreaterThan(0);
+  });
+
+  test('包含 Workflow 數量（大於 0 的數字）', () => {
+    const result = buildPluginContext();
+    expect(result).toMatch(/\d+ workflow 模板/);
+    const match = result.match(/(\d+) workflow 模板/);
+    expect(parseInt(match[1], 10)).toBeGreaterThan(0);
+  });
+
+  test('包含 Timeline events 數量（大於 0 的數字）', () => {
+    const result = buildPluginContext();
+    expect(result).toMatch(/\d+ timeline events/);
+    const match = result.match(/(\d+) timeline events/);
+    expect(parseInt(match[1], 10)).toBeGreaterThan(0);
+  });
+
+  test('包含 Hook events 清單（含 SessionStart）', () => {
+    const result = buildPluginContext();
+    expect(result).toContain('SessionStart');
+  });
+
+  test('包含核心規範 — registry.js SoT', () => {
+    const result = buildPluginContext();
+    expect(result).toContain('registry.js 是 SoT');
+  });
+
+  test('包含 Handoff 格式說明', () => {
+    const result = buildPluginContext();
+    expect(result).toContain('Handoff 格式');
+  });
+
+  test('包含並行群組定義（含 quality）', () => {
+    const result = buildPluginContext();
+    expect(result).toContain('quality');
+  });
+
+  test('與 registry.js 資料一致 — agent 數量吻合', () => {
+    const registry = require(join(SCRIPTS_LIB, 'registry'));
+    const agentSet = new Set();
+    for (const stageDef of Object.values(registry.stages)) {
+      if (stageDef.agent) agentSet.add(stageDef.agent);
+    }
+    const expectedCount = agentSet.size;
+
+    const result = buildPluginContext();
+    const match = result.match(/(\d+) agents/);
+    expect(parseInt(match[1], 10)).toBe(expectedCount);
+  });
+
+  test('與 registry.js 資料一致 — workflow 數量吻合', () => {
+    const registry = require(join(SCRIPTS_LIB, 'registry'));
+    const expectedCount = Object.keys(registry.workflows).length;
+
+    const result = buildPluginContext();
+    const match = result.match(/(\d+) workflow 模板/);
+    expect(parseInt(match[1], 10)).toBe(expectedCount);
   });
 });
 

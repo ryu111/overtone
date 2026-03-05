@@ -30,7 +30,7 @@ const timeline = require('./timeline');
 const { syncFeatureName } = require('./feature-sync');
 const state = require('./state');
 const { hookError, buildPendingTasksMessage } = require('./hook-utils');
-const { effortLevels } = require('./registry');
+const { effortLevels, stages, workflows, hookEvents, timelineEvents, parallelGroupDefs } = require('./registry');
 
 // ────────────────────────────────────────────────────────────────────────────
 // 純函數：buildBanner
@@ -62,6 +62,80 @@ function buildBanner(version, sessionId, port, deps) {
     grayMatterStatus || null,
     '',
   ].filter(line => line != null).join('\n');
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// 純函數：buildPluginContext
+// ────────────────────────────────────────────────────────────────────────────
+
+/**
+ * 從 registry.js 動態計算 plugin 上下文，供 SessionStart systemMessage 注入。
+ * 讓每個 session 都能感知目前的 plugin 版本、元件數量和核心規範。
+ *
+ * @returns {string|null} 格式化的 plugin context 字串，失敗時回傳 null
+ */
+function buildPluginContext() {
+  try {
+    // 動態計算 Agent 清單（從 stages 去重取 agent 欄位）
+    const agentSet = new Set();
+    for (const stageDef of Object.values(stages)) {
+      if (stageDef.agent) agentSet.add(stageDef.agent);
+    }
+    const agentList = [...agentSet].sort();
+    const agentCount = agentList.length;
+
+    // Stage 數量
+    const stageCount = Object.keys(stages).length;
+
+    // Workflow 模板清單（常用的放前面）
+    const workflowEntries = Object.entries(workflows);
+    const workflowCount = workflowEntries.length;
+    const commonWorkflows = ['single', 'quick', 'standard', 'full', 'debug', 'tdd']
+      .filter(k => workflows[k])
+      .map(k => `${k}（${workflows[k].label}）`)
+      .join('、');
+
+    // Timeline events 數量
+    const timelineEventCount = Object.keys(timelineEvents).length;
+
+    // Hook events 清單
+    const hookEventList = hookEvents.join('、');
+
+    // 並行群組定義
+    const parallelGroupLines = Object.entries(parallelGroupDefs)
+      .map(([name, members]) => `  - ${name}：${members.join(' + ')}`)
+      .join('\n');
+
+    return [
+      `## Overtone Plugin Context（v${pkg.version}）`,
+      '',
+      `**元件概覽**：${agentCount} agents、${stageCount} stages、${workflowCount} workflow 模板、${timelineEventCount} timeline events`,
+      '',
+      `**Agents（${agentCount}）**：${agentList.join('、')}`,
+      '',
+      `**常用 Workflow**：${commonWorkflows}`,
+      '',
+      `**Hook Events**：${hookEventList}`,
+      '',
+      `**並行群組**：`,
+      parallelGroupLines,
+      '',
+      '**核心規範**：',
+      '- registry.js 是 SoT — 所有 stage/agent/workflow/event 映射從此 import，禁止硬編碼',
+      '- Handoff 格式：Context → Findings → Files Modified → Open Questions',
+      '- Hook 薄殼化架構：hook 本體 ~29 行，業務邏輯在 scripts/lib/*-handler.js',
+      '- 元件閉環：新增/修改 Skill/Agent/Hook 三者依賴必須同步更新',
+      '- updatedInput 是 REPLACE 語意：必須 { ...toolInput, prompt: newPrompt } 保留所有欄位',
+      '- 不做向後相容：舊 API 直接改成新的，沒有地方用到直接刪除',
+      '',
+      '**目錄結構**：plugins/overtone/{agents,skills,commands,hooks,scripts/lib,web}，測試在 tests/，文件在 docs/',
+      '',
+      '**常用指令**：`bun scripts/test-parallel.js`（測試）、`bun scripts/validate-agents.js`（驗證）、`bun scripts/manage-component.js`（元件管理）',
+    ].join('\n');
+  } catch {
+    // 失敗時靜默跳過，不阻擋 session 啟動
+    return null;
+  }
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -359,11 +433,16 @@ function handleSessionStart(input, sessionId, hookTimer) {
     // 佇列載入失敗不阻擋 session 啟動
   }
 
+  // ── Plugin context 注入 ──
+  // 動態計算 plugin 上下文（版本、元件數量、核心規範），讓 Main Agent 感知當前 plugin 狀態
+
+  const pluginContextMsg = buildPluginContext();
+
   // ── 組裝輸出 ──
 
   const output = buildStartOutput(input, {
     banner,
-    msgs: [pendingTasksMsg, globalObservationsMsg, baselineSummaryMsg, scoreSummaryMsg, failureSummaryMsg, queueMsg].filter(Boolean),
+    msgs: [pluginContextMsg, pendingTasksMsg, globalObservationsMsg, baselineSummaryMsg, scoreSummaryMsg, failureSummaryMsg, queueMsg].filter(Boolean),
   });
 
   // ── hook:timing — 記錄 SessionStart 執行耗時 ──
@@ -376,4 +455,4 @@ function handleSessionStart(input, sessionId, hookTimer) {
 }
 
 // ── 匯出 ──
-module.exports = { handleSessionStart, buildBanner, buildStartOutput };
+module.exports = { handleSessionStart, buildBanner, buildStartOutput, buildPluginContext };
