@@ -222,15 +222,16 @@ scoringDefaults: {
 {"sessionId":"s_xxx","stage":"DEV","score":4.2,"dimensions":{"completeness":4,"quality":4.5,"performance":4},"timestamp":"2026-03-03T10:00:00Z"}
 ```
 
-### Module：failure-tracker.js（v0.28.27）
+### Module：failure-tracker.js（v0.28.57）
 
 **目的**：卡點識別——跨 session 聚合失敗模式，自動識別重複卡點並注入改進建議。
 
 **API**：
-- `recordFailure(sessionId, stage, agent, error)`：記錄 fail/reject 事件
-- `getFailurePatterns(projectHash, opts)`：聚合分析（byStage/byAgent/topPattern）
-- `formatFailureWarnings(stage, agent, opts)`：生成 stage 相關失敗警告（pre-task 注入）
-- `formatFailureSummary(projectHash, opts)`：失敗摘要（週期、頻次、建議）
+- `recordFailure(projectRoot, record)`：記錄 fail/reject 事件（record: { ts, sessionId, stage, agent, verdict, retryAttempt }）
+- `recordResolution(projectRoot, record)`：記錄 stage 解決（record: { ts, sessionId, stage }），用於過濾同 sessionId+stage 的舊失敗
+- `getFailurePatterns(projectRoot, window)`：聚合分析（byStage/byAgent/topPattern），自動排除已解決的失敗
+- `formatFailureWarnings(projectRoot, stage, opts)`：生成 stage 相關失敗警告（pre-task 注入）
+- `formatFailureSummary(projectRoot, opts)`：失敗摘要（週期、時間範圍、頻次）
 
 **設定**（registry.js）：
 ```javascript
@@ -241,7 +242,7 @@ failureDefaults: {
 ```
 
 **整合點**：
-- `SubagentStop hook`：fail/reject 時呼叫 recordFailure 記錄
+- `SubagentStop hook / agent-stop-handler.js`：fail/reject 時呼叫 recordFailure；pass 且本 session 曾有失敗時呼叫 recordResolution
 - `SessionStart hook`：注入 `formatFailureSummary` 提醒本專案重複卡點
 - `pre-task.js hook`：注入 `formatFailureWarnings` 提醒本 stage 的常見失敗
 

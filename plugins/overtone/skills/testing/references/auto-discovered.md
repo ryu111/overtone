@@ -612,3 +612,20 @@ Keywords: spec, feature, scenario, test, cases, tests, pass, emit, options, obje
 - `bun test`：3455 pass / 0 fail ✅
 Keywords: phase, architect, debugger, developer, planner, retrospective, tester, build, error, resolver
 
+---
+## 2026-03-05 | developer:DEV Findings
+- `setup.js` 設 `OVERTONE_TEST=1` 後，現有的 `recordFailure` unit tests（1-1 等）會因保護機制而無法寫入，需要在對應的 `describe` 塊中加 `beforeEach`/`afterEach` 暫時清除 env
+- integration test 子進程繼承父進程 env，因此 `OVERTONE_TEST=1` 也會傳播到子進程，有效防止污染
+- `getFailurePatterns` 中 resolved 過濾在 window 截取之前執行（先過濾後截取），確保 window 大小計算基於有效失敗記錄
+- `formatFailureSummary` 重用了 `_readAll` + resolved 過濾邏輯（沒有抽取函式，保持扁平）
+Keywords: setup, recordfailure, unit, tests, describe, beforeeach, aftereach, integration, test, getfailurepatterns
+
+---
+## 2026-03-05 | developer:DEV Context
+實作了 `failure-tracker-precision` 功能的三個精確度修復：
+
+1. **測試污染隔離**：`recordFailure` 和 `recordResolution` 在 `OVERTONE_TEST` 或 `BUN_TEST` 環境變數存在時不寫入；`tests/helpers/setup.js` 全域設置 `OVERTONE_TEST=1`，確保 bun test 子進程（integration test）不會污染真實 `failures.jsonl`
+2. **retry 成功清除**：新增 `recordResolution()` 函式，`agent-stop-handler.js` 在 pass verdict 且本 session 曾有失敗時呼叫；`getFailurePatterns()` 讀取時建立 resolved Set，排除同 sessionId+stage 的所有 fail/reject 記錄
+3. **時間範圍顯示**：`formatFailureSummary` 從最近失敗記錄中計算最早和最晚時間，輸出 `（M/DD - M/DD）` 或 `（M/DD）`
+Keywords: failure, tracker, precision, recordfailure, recordresolution, tests, helpers, setup, test, integration
+

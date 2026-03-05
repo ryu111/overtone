@@ -139,3 +139,29 @@ Keywords: plugin, json, bump, manage, component, version, docs, status, header, 
 - 精確度提升：warnings 從 27 → 4
 Keywords: plugin, bump, manage, component, version, json, changelog, completecurrent, init, workflow
 
+---
+## 2026-03-05 | doc-updater:DOCS Findings
+根據 Handoff 中提供的變更清單，確認以下文件需要更新：
+
+1. **CHANGELOG.md**：新增 v0.28.57 版本條目
+   - 記錄三個核心改善：測試隔離、解決記錄 API、時間範圍顯示
+   - 記錄 8 個新增單元測試
+   - 更新測試統計：3455 → 3468 pass（+13）
+
+2. **package.json**：版本 0.11.0 → 0.28.57（使用 manage-component.js bump-version）
+
+3. **plugin.json**：版本 0.28.56 → 0.28.57（自動同步）
+
+4. **docs/status.md**：
+   - 更新標題版本及描述
+   - 更新核心指標中的測試通過數（3455 → 3468）
+   - 更新「近期變更」前 3 筆記錄
+
+5. **docs/spec/overtone-子系統.md**：
+   - 更新 failure-tracker.js 模組版本（v0.28.27 → v0.28.57）
+   - 更新 API 簽名以反映實作：recordFailure/recordResolution 的參數格式、getFailurePatterns 的自動過濾行為、formatFailureSummary 的時間範圍功能
+   - 更新整合點說明：agent-stop-handler 的 recordResolution 呼叫時機
+
+6. **auto-discovered.md**：自動檢測更新（testing 和 workflow-core skills 的參考文件）
+Keywords: handoff, changelog, pass, package, json, manage, component, bump, version, plugin
+

@@ -1,12 +1,4 @@
 ---
-## 2026-03-04 | retrospective:RETRO Findings
-**回顧摘要**：
-
-整體實作品質良好。SKILL.md 正文 731 字元（< 800 上限）、4 個 reference 文件齊全、developer.md 和 architect.md 的 skills 陣列已正確加入 claude-dev、knowledge-gap-detector.js 已加入 claude-dev domain（16 個關鍵詞）。code-reviewer 發現的 4 個 Major 問題均已正確修復。
-
-BDD spec 的大部分 Feature 都已實作對齊，但發現 Feature 5（knowledge-gap-detector 整合）有數學不對齊問題。
-
----
 Keywords: skill, reference, developer, architect, skills, claude, knowledge, detector, domain, code
 
 ---
@@ -824,4 +816,19 @@ Keywords: health, check, warnings, closed, loop, config, validator, exports, val
 1. **佇列推進閉環修復**（session-stop-handler.js + init-workflow.js）
 2. **Health-Check 精確度提升**（health-check.js + registry.js + config-validator.js）
 Keywords: docs, session, stop, handler, init, workflow, health, check, registry, config
+
+---
+## 2026-03-05 | retrospective:RETRO Findings
+**回顧摘要**：
+
+整體實作品質良好。三個核心修復方向正確：
+
+1. 測試隔離（OVERTONE_TEST / BUN_TEST 環境變數守衛）防止測試污染生產資料，設計合理。
+2. resolved 過濾邏輯在 `getFailurePatterns` 實作完整，9 個對應測試覆蓋三種邊界情境（跨 session、跨 stage）。
+3. 時間範圍顯示正確套用 resolved 過濾後的資料計算。
+
+測試套件數量（3468 pass / 0 fail）與架構一致性良好。`agent-stop-handler.js` 的 recordFailure / recordResolution 呼叫邏輯正確（fail/reject 時記錄失敗，pass 且曾有失敗時記錄 resolved）。
+
+**跨階段發現的問題**：REVIEW 標注的 `formatFailureWarnings` 子查詢問題，在實際程式碼中確認為資料不一致缺口，且本次實作未修復。
+Keywords: resolved, getfailurepatterns, session, stage, pass, fail, agent, stop, handler, recordfailure
 

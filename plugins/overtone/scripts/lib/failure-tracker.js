@@ -81,20 +81,7 @@ function getFailurePatterns(projectRoot, window) {
   const windowSize = window || failureDefaults.warningWindow;
   const all = _readAll(projectRoot);
 
-  // 建立 resolved Set：同 sessionId::stage 有 resolved 記錄者，排除其所有 failures
-  const resolvedKeys = new Set();
-  for (const r of all) {
-    if (r.verdict === 'resolved') {
-      resolvedKeys.add(`${r.sessionId}::${r.stage}`);
-    }
-  }
-
-  // 過濾：排除 resolved 的 session+stage 組合中的 fail/reject 記錄，並排除 resolved 記錄本身
-  const failures = all.filter(r => {
-    if (r.verdict === 'resolved') return false;
-    if (resolvedKeys.has(`${r.sessionId}::${r.stage}`)) return false;
-    return true;
-  });
+  const failures = _filterResolved(all);
 
   const records = failures.slice(-windowSize);
 
@@ -167,9 +154,9 @@ function formatFailureWarnings(projectRoot, targetStage) {
     `此 stage 在最近 ${failureDefaults.warningWindow} 筆記錄中失敗 ${stageData.count} 次（佔 ${Math.round(stageData.rate * 100)}%）。`,
   ];
 
-  // 找出在此 stage 失敗最多的 agent
-  const all = _readAll(projectRoot).slice(-failureDefaults.warningWindow);
-  const stageFailures = all.filter(r => r.stage === targetStage);
+  // 找出在此 stage 失敗最多的 agent（套用 resolved 過濾）
+  const filtered = _filterResolved(_readAll(projectRoot)).slice(-failureDefaults.warningWindow);
+  const stageFailures = filtered.filter(r => r.stage === targetStage);
   if (stageFailures.length > 0) {
     const agentCounts = {};
     for (const r of stageFailures) {
@@ -219,15 +206,8 @@ function formatFailureSummary(projectRoot) {
   const patterns = getFailurePatterns(projectRoot);
   if (patterns.totalFailures === 0) return '';
 
-  // 計算時間範圍（從最近 warningWindow 筆失敗記錄中取最早和最晚）
-  const all = _readAll(projectRoot);
-  const resolvedKeys = new Set();
-  for (const r of all) {
-    if (r.verdict === 'resolved') resolvedKeys.add(`${r.sessionId}::${r.stage}`);
-  }
-  const recentFailures = all
-    .filter(r => r.verdict !== 'resolved' && !resolvedKeys.has(`${r.sessionId}::${r.stage}`))
-    .slice(-failureDefaults.warningWindow);
+  // 計算時間範圍（從最近 warningWindow 筆有效失敗記錄中取最早和最晚）
+  const recentFailures = _filterResolved(_readAll(projectRoot)).slice(-failureDefaults.warningWindow);
 
   let timeRange = '';
   const timestamps = recentFailures.map(r => r.ts).filter(Boolean).sort();
@@ -282,6 +262,25 @@ function _readAll(projectRoot) {
   return content.split('\n')
     .map(line => { try { return JSON.parse(line); } catch { return null; } })
     .filter(Boolean);
+}
+
+/**
+ * 過濾掉已 resolved 的 session+stage 組合
+ * @param {object[]} all - 所有記錄（含 resolved）
+ * @returns {object[]} - 只含未解決的 fail/reject 記錄
+ */
+function _filterResolved(all) {
+  const resolvedKeys = new Set();
+  for (const r of all) {
+    if (r.verdict === 'resolved') {
+      resolvedKeys.add(`${r.sessionId}::${r.stage}`);
+    }
+  }
+  return all.filter(r => {
+    if (r.verdict === 'resolved') return false;
+    if (resolvedKeys.has(`${r.sessionId}::${r.stage}`)) return false;
+    return true;
+  });
 }
 
 /**

@@ -2,6 +2,41 @@
 
 所有重要變更記錄於此文件。
 
+## [0.28.57] - 2026-03-05
+
+### Failure Tracker 精確度改善——測試隔離 + 解決記錄 + 時間範圍顯示
+
+#### 核心功能
+- **測試隔離強化**：recordFailure/recordResolution 加 OVERTONE_TEST 環境變數檢查
+  - setup.js 全域設定（`process.env.OVERTONE_TEST = '1'`）
+  - 防止 bun test 子進程污染真實 failures.jsonl，測試與生產資料隔離
+
+- **解決記錄 API**：新增 recordResolution(projectRoot, record)
+  - stage 最終 pass 時呼叫（由 agent-stop-handler 在 verdict==='pass' 時自動觸發）
+  - 記錄 { ts, sessionId, stage, verdict: 'resolved' }
+
+- **智慧過濾**：getFailurePatterns 排除已解決的失敗
+  - 建立 resolvedKeys Set，過濾同 sessionId+stage 的舊失敗記錄
+  - Retry 成功後自動清除之前的失敗歷史，避免虛假負面信號
+
+- **時間脈絡**：formatFailureSummary 加入時間範圍顯示
+  - 格式：「(M/DD - M/dd)」，讓摘要更有時間脈絡，方便關聯 session 日誌
+
+#### 測試補強
+- 新增 8 個測試（failure-tracker.test.js）
+  - (8-1/8-2) 測試隔離：OVERTONE_TEST=1 時不寫入、未設時正常寫入
+  - (9-1/9-2/9-3) 已解決過濾：resolved 記錄存在時自動排除舊失敗
+  - (10-1/10-2/10-3) 時間範圍：多日失敗時正確顯示日期跨度
+
+#### 文件同步
+- `package.json`：版本 0.28.57
+- `docs/status.md`：版本更新、測試 3455 → 3468（+13）、近期變更
+
+#### 測試
+- 測試 3468 pass / 0 fail（153 files）
+
+---
+
 ## [0.28.56] - 2026-03-05
 
 ### 佇列推進閉環修復 + Health-Check 精確度提升

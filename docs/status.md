@@ -1,6 +1,6 @@
 # Overtone 現況
 
-> 最後更新：2026-03-05 | Plugin 版本：0.28.56（佇列推進閉環修復 + Health-Check 精確度提升）
+> 最後更新：2026-03-05 | Plugin 版本：0.28.57（Failure Tracker 精確度改善）
 
 ## 版本狀態
 
@@ -16,7 +16,7 @@
 | Agent 數量 | 18（含 grader） |
 | Stage 數量 | 16 |
 | Workflow 模板 | 18 |
-| 測試通過 | 3455 pass / 0 fail（153 個測試檔）|
+| 測試通過 | 3468 pass / 0 fail（153 個測試檔）|
 | 測試檔案 | 153 個 |
 | Hook 數量 | 11 個 |
 | Skill 數量 | 23（15 knowledge domain + orchestrator + pm + specs + 4 utility-with-refs） |
@@ -27,9 +27,9 @@
 
 ## 近期變更（最近 3 筆）
 
+- **[0.28.57] 2026-03-05**：Failure Tracker 精確度改善——(1) 測試隔離：recordFailure/recordResolution 檢查 OVERTONE_TEST，setup.js 全域設定，避免測試污染生產資料；(2) 新增 recordResolution API：stage pass 時記錄，getFailurePatterns 自動排除已解決的失敗；(3) 智慧過濾：同 sessionId+stage 有 resolved 記錄時自動清除舊失敗，retry 成功不計失敗；(4) 時間脈絡：formatFailureSummary 加時間範圍顯示（M/DD - M/dd）；(5) agent-stop-handler 自動呼叫 recordResolution；(6) 新增 8 個測試（隔離、過濾、時間範圍）；(7) 測試 +13（3455→3468）✅
 - **[0.28.56] 2026-03-05**：佇列推進閉環修復 + Health-Check 精確度提升——(1) session-stop-handler：completeCurrent 提前，防止手動停止繞過佇列推進；(2) init-workflow：靜默 catch 改 console.error；(3) registry.js：timelineEvents 加入 consumeMode（30 種事件，13 分類）；(4) checkClosedLoop：改從 registry 讀 consumeMode，移除硬編碼白名單（warnings 27→3）；(5) checkCompletionGap：排除 orchestrator skill（warnings 3→1）；(6) config-validator：移除 4 個 dead exports；(7) 測試 3455 pass / 0 fail ✅
-- **[0.28.55] 2026-03-05**：Agent Prompt 四模式補齊 — 15 個 agent 信心過濾 + 誤判防護——(1) architect/debugger/developer/planner/retrospective/tester 加誤判防護；(2) build-error-resolver/designer/doc-updater/e2e-runner/qa/refactor-cleaner 加信心過濾 + 誤判防護；(3) claude-developer/security-reviewer 加信心過濾；(4) grader DON'T 格式標準化 + 信心過濾 + 誤判防護；(5) 章節順序統一（DO → DON'T → 信心過濾 → 誤判防護 → 輸入 → 輸出 → 停止條件）；(6) validate-agents.js 檢查結果：prompt 品質警告 23→0；(7) 測試 3455 pass / 0 fail ✅
-- **[0.28.54] 2026-03-05**：PM Plan Mode 完成 — /ot:pm plan 規劃模式——(1) execution-queue.js 新增 appendQueue() 累加佇列、setAutoExecute() 切換模式 API；(2) formatQueueSummary 顯示「📋 規劃模式（手動啟動）」標籤；(3) queue.js 新增 append/enable-auto 子命令、--no-auto flag；(4) pm/SKILL.md 新增 plan 模式條件分支（execute vs plan）、佇列整合說明；(5) queue-management.md 文件補充 append/enable-auto 用法和 API；(6) CLAUDE.md 常用指令更新；(7) 新增 12 個單元測試；(8) 測試 +9（3446→3455）
+- **[0.28.55] 2026-03-05**：Agent Prompt 四模式補齊 — 15 個 agent 信心過濾 + 誤判防護——(1) architect/debugger/developer/planner/retrospective/tester 加誤判防護；(2) build-error-resolver/designer/doc-updater/e2e-runner/qa/refactor-cleaner 加信心過濾 + 誤判防護；(3) claude-developer/security-reviewer 加信心過濾；(4) grader DON'T 格式標準化 + 信心過濾 + 誤判防護；(5) 章節順序統一；(6) validate-agents.js 檢查：prompt 品質警告 23→0；(7) 測試 3455 pass / 0 fail ✅
 
 ## Phase 3 規劃狀態
 
