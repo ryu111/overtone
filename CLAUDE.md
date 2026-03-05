@@ -147,6 +147,11 @@ bun scripts/evolution.js forge <domain>              # 預覽 Skill Forge 結果
 bun scripts/evolution.js forge <domain> --execute    # 實際執行 forge，建立 skill（包含 SKILL.md + references/）
 bun scripts/evolution.js forge <domain> --json       # JSON 格式輸出 forge 結果
 bun scripts/evolution.js forge <domain> --research   # 啟用外部 WebSearch 研究補充知識
+bun scripts/evolution.js orchestrate <specPath>      # 預覽 Project Orchestrator 分析結果（dry-run）
+bun scripts/evolution.js orchestrate <specPath> --execute     # 執行協調，建立排程 + 佇列項目
+bun scripts/evolution.js orchestrate <specPath> --json        # JSON 格式輸出分析結果
+bun scripts/evolution.js orchestrate <specPath> --overwrite   # 覆寫既有佇列
+bun scripts/evolution.js orchestrate <specPath> --workflow <template>  # 指定 workflow 模板
 
 # 依賴圖與一致性
 bun scripts/impact.js <path>                         # 查詢修改此檔案會影響哪些元件

@@ -1,6 +1,6 @@
 # Overtone 現況
 
-> 最後更新：2026-03-06 | Plugin 版本：0.28.62（skill-forge-engine Phase 1 + deep-pm-interview-engine：Codebase 知識萃取 + 多輪訪談 + 80 個測試）
+> 最後更新：2026-03-06 | Plugin 版本：0.28.62（project-orchestrator：L3.5 自主建構引擎 + 28 個測試）
 
 ## 版本狀態
 
@@ -20,6 +20,7 @@
 | 測試檔案 | 166 個 |
 | Hook 數量 | 11 個 |
 | Skill 數量 | 23（15 knowledge domain + orchestrator + pm + specs + 4 utility-with-refs） |
+| scripts/lib 模組 | 48（包括 project-orchestrator.js） |
 | Knowledge Domain 數 | 15（testing、workflow-core、security-kb、database、dead-code、commit-convention、code-review、wording、debugging、architecture、build-system、os-control、autonomous-control、craft、claude-dev） |
 | Command 數量 | 28（14 stage shortcut + 7 workflow pipeline + 7 utility） |
 | Telegram 命令 | 6（/start、/status、/stop、/run、/sessions、/help） |
@@ -27,9 +28,9 @@
 
 ## 近期變更（最近 3 筆）
 
-- **[0.28.62] 2026-03-06**：L3.3 skill-forge-engine——Codebase 內知識萃取 + CLI 整合——(1) 新增 skill-forge.js（5 API：forgeSkill / extractKnowledge / assembleSkill / validate / rollback）；(2) 支援 15 個 domain 知識萃取（從 codebase 中自動提取 reference、examples、patterns）；(3) evolution.js forge 子命令（`bun scripts/evolution.js forge <domain> [--execute] [--json]`）；(4) 新增 skill-forge.test.js（23 unit tests）+ evolution-forge.test.js（10 integration tests）；(5) 升級 knowledge-gap-detector：15→18 domain（+os-control、autonomous-control、craft）；(6) 版本維持 0.28.62；(7) 測試 +37（3716→3753）✅
+- **[0.28.62] 2026-03-06**：L3.5 project-orchestrator——自主建構引擎 + Spec 推導——(1) 新增 project-orchestrator.js（6 API：analyzeSpec / deriveSkillDemand / planSkillConstruction / orchestrateProject / validate / exportPlan）；(2) Spec 檔案自動解析 → Skill 需求推導 → 排程規劃；(3) evolution.js orchestrate 子命令（`bun scripts/evolution.js orchestrate <specPath> [--execute] [--json] [--overwrite] [--workflow <template>]`）；(4) 新增 project-orchestrator.test.js（28 unit + integration 測試）；(5) 版本維持 0.28.62；(6) scripts/lib 模組 +1（47→48）；(7) 測試 +28（3753→3781）✅
 - **[0.28.62] 2026-03-06**：L3.4 deep-pm-interview-engine——多輪結構化訪談 + PM 操作指引——(1) 新增 interview.js（7 API：init session / add question / get response / advance phase / get summary / export data / clear session）；(2) 靜態問題庫：24 題跨五面向（功能需求、操作流程、UI 設計、邊界條件、驗收標準）；(3) Session 持久化：.overtone/interviews/{sessionId}/ 目錄管理；(4) 新增 interview-guide.md（PM 訪談操作指引 + 問題模板）；(5) 更新 product-manager.md 與 pm/SKILL.md；(6) 新增 33 個 unit + 10 個 integration 測試；(7) 版本 0.28.61→0.28.62；(8) 測試 +43（3673→3716）✅
-- **[0.28.61] 2026-03-05**：P4.2 evolution-engine-auto-create——Auto-Fix 核心模組 + CLI 入口——(1) 新增 gap-fixer.js（根據 gap type 選擇修復策略，支援 component-chain / closed-loop / completion-gap / dependency-sync）；(2) evolution.js fix 子命令（`bun scripts/evolution.js fix [--execute] [--type <type>] [--json]`）；(3) 新增 gap-fixer.test.js（50 個測試：修復策略 + 邊界情況 + integration）；(4) 版本 0.28.60→0.28.61；(5) 測試 +41（3632→3673）✅
+- **[0.28.62] 2026-03-06**：L3.3 skill-forge-engine——Codebase 內知識萃取 + CLI 整合——(1) 新增 skill-forge.js（5 API：forgeSkill / extractKnowledge / assembleSkill / validate / rollback）；(2) 支援 15 個 domain 知識萃取（從 codebase 中自動提取 reference、examples、patterns）；(3) evolution.js forge 子命令（`bun scripts/evolution.js forge <domain> [--execute] [--json]`）；(4) 新增 skill-forge.test.js（23 unit tests）+ evolution-forge.test.js（10 integration tests）；(5) 升級 knowledge-gap-detector：15→18 domain（+os-control、autonomous-control、craft）；(6) 版本維持 0.28.62；(7) 測試 +37（3716→3753）✅
 
 ## Phase 3 規劃狀態（✅ 完成）
 

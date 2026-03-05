@@ -1,6 +1,6 @@
 # Overtone Roadmap
 
-> 最後更新：2026-03-06 | 當前進度：L3.4 深度 PM 多輪訪談完成，L3.3 Skill Forge Phase 1 完成
+> 最後更新：2026-03-06 | 當前進度：L3.5 Project Orchestrator 完成
 
 ## Layer 總覽
 
@@ -199,15 +199,15 @@
 | 領域研究整合 | PM 進入新領域時先自主研究基本概念，問出有深度的問題（保留待後續實現） | ⬜ |
 | Project Spec 產出 | 訪談結果 → 完整 Project Spec（含 ≥10 個 BDD 驗收場景）（保留待後續實現） | ⬜ |
 
-### L3.5 Project Orchestrator（自主建構引擎）⬜
+### L3.5 Project Orchestrator（自主建構引擎）✅
 
 > 串聯 Skill Forge + 深度 PM + 無限迭代，完成從需求到產品的完整流程。
 
 | 任務 | 說明 | 狀態 |
 |------|------|:----:|
-| 能力盤點 | 從 Project Spec 推導需要的 skill 清單 → 標記現有 vs 需建立 | ⬜ |
-| Skill 建構排程 | 批次觸發 Skill Forge 建立缺少的 skill → Agent 配置（skill 分配到 agent） | ⬜ |
-| 專案級迭代 | 多 feature 排程 → execution-queue → 無限迭代直到完成 | ⬜ |
+| 能力盤點 | 從 Project Spec 推導需要的 skill 清單 → 標記現有 vs 需建立 | ✅ |
+| Skill 建構排程 | 批次觸發 Skill Forge 建立缺少的 skill → Agent 配置（skill 分配到 agent） | ✅ |
+| 專案級迭代 | 多 feature 排程 → execution-queue → 無限迭代直到完成 | ✅ |
 
 ### L3.6 Acid Test ⬜
 
