@@ -248,7 +248,7 @@ function main() {
   // ── Metrics 元素 ──
 
   const ctxStr  = `${ANSI.cyan}ctx${ANSI.reset} ${colorPct(ctxUsed, 65, 80)}`;
-  const sizeStr = formatSize(transcriptSize);
+  const sizeStr = transcriptSize !== null ? `💬 ${formatSize(transcriptSize)}` : formatSize(null);
 
   // ── Line 1 判斷（四態：active agent / Main / 完成→收回 / 無 workflow） ──
 
