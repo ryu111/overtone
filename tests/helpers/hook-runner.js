@@ -32,6 +32,7 @@ function buildEnv(sessionId) {
   const env = {
     ...process.env,
     OVERTONE_NO_DASHBOARD: '1', // 防止 on-start 啟動 Dashboard
+    OVERTONE_TEST: '1',          // 防止 failure-tracker 寫入真實 failures.jsonl
   };
   // 移除可能干擾測試的 session 環境變數
   delete env.CLAUDE_SESSION_ID;

@@ -31,9 +31,10 @@ const { workflows } = require(join(SCRIPTS_LIB, 'registry'));
  * @returns {Promise<object>} 解析後的 JSON（{ result: string }）
  */
 async function runHook(input, sessionId) {
+  const baseEnv = { ...process.env, OVERTONE_TEST: '1' }; // 防止 failure-tracker 寫入真實 failures.jsonl
   const envConfig = sessionId !== undefined
-    ? { ...process.env, CLAUDE_SESSION_ID: sessionId }
-    : (() => { const e = { ...process.env }; delete e.CLAUDE_SESSION_ID; return e; })();
+    ? { ...baseEnv, CLAUDE_SESSION_ID: sessionId }
+    : (() => { const e = { ...baseEnv }; delete e.CLAUDE_SESSION_ID; return e; })();
 
   const proc = Bun.spawn(['node', HOOK_PATH], {
     stdin: Buffer.from(JSON.stringify(input)),
@@ -521,7 +522,7 @@ describe('場景 15：featureName auto-sync', () => {
         last_assistant_message: 'VERDICT: pass 開發完成',
         cwd: tmpProject,
       })),
-      env: { ...process.env, CLAUDE_SESSION_ID: sessionId },
+      env: { ...process.env, CLAUDE_SESSION_ID: sessionId, OVERTONE_TEST: '1' },
       stdout: 'pipe',
       stderr: 'pipe',
     });
@@ -566,7 +567,7 @@ describe('場景 15：featureName auto-sync', () => {
         last_assistant_message: 'VERDICT: pass 開發完成',
         cwd: tmpProject,
       })),
-      env: { ...process.env, CLAUDE_SESSION_ID: sessionId },
+      env: { ...process.env, CLAUDE_SESSION_ID: sessionId, OVERTONE_TEST: '1' },
       stdout: 'pipe',
       stderr: 'pipe',
     });
@@ -1319,7 +1320,7 @@ describe('場景 19：auto-sync specsConfig 過濾', () => {
         last_assistant_message: 'VERDICT: pass 開發完成',
         cwd: tmpProject,
       })),
-      env: { ...process.env, CLAUDE_SESSION_ID: sessionId },
+      env: { ...process.env, CLAUDE_SESSION_ID: sessionId, OVERTONE_TEST: '1' },
       stdout: 'pipe',
       stderr: 'pipe',
     });
@@ -1363,7 +1364,7 @@ describe('場景 19：auto-sync specsConfig 過濾', () => {
         last_assistant_message: 'VERDICT: pass 開發完成',
         cwd: tmpProject,
       })),
-      env: { ...process.env, CLAUDE_SESSION_ID: sessionId },
+      env: { ...process.env, CLAUDE_SESSION_ID: sessionId, OVERTONE_TEST: '1' },
       stdout: 'pipe',
       stderr: 'pipe',
     });

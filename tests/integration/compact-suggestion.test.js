@@ -82,6 +82,7 @@ function runOnStop(input, extraEnv = {}) {
       ...process.env,
       CLAUDE_SESSION_ID: sessionId,
       OVERTONE_NO_DASHBOARD: '1',
+      OVERTONE_TEST: '1',
       ...extraEnv,
     },
     stdout: 'pipe',
