@@ -88,3 +88,20 @@ Keywords: pattern, scenario, isempty, minlength, removedcount, number, generaliz
 
 新增五個子命令：`insert`（位置插入）、`remove`（by name 刪除）、`move`（移動位置）、`info`（單項詳情）、`retry`（failed 重標 pending）。
 Keywords: queue, append, clear, list, insert, remove, name, move, info, retry
+---
+## 2026-03-05 | developer:DEV Findings
+**問題 1：`validateStructure`（真正的 dead export）**
+- `skill-forge.js` 的 `validateStructure` 函式只在模組內部呼叫（line 525），但被 export 到 `module.exports`
+- 外部沒有任何模組 import 它（包含測試），從 `module.exports` 移除
+
+**問題 2：`WORKFLOW_ORDER`（scanner 誤判）**
+- `execution-queue.js` 的 `WORKFLOW_ORDER` 被 `tests/unit/queue-smart-schedule.test.js` 使用
+- 但測試用的是「先賦值再解構」模式：`const executionQueue = require(...); const { WORKFLOW_ORDER } = executionQueue;`
+- dead-code-scanner 和 health-check 的 regex 只偵測 `const { X } = require(...)` 直接解構，無法偵測此模式
+- 修復：將 regex 的第一個 pattern 由 `\}\s*=\s*require` 改為 `\}\s*=`（不限定後面是否為 require），解構賦值即可算使用
+Keywords: validatestructure, dead, export, skill, forge, line, module, exports, import, scanner
+---
+## 2026-03-05 | developer:DEV Context
+清理 dead exports：移除 `skill-forge.js` 真正的 dead export，並修復 dead-code-scanner 和 health-check 的 regex 誤判問題。
+Keywords: dead, exports, skill, forge, export, code, scanner, health, check, regex
+
