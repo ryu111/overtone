@@ -11,7 +11,7 @@
  *   5. duplicate-logic     — hooks/scripts 中已知的重複邏輯 pattern
  *   6. platform-drift      — config-api 驗證 + 棄用 tools 白名單偵測
  *   7. doc-staleness       — docs/reference 無引用且超過 90 天未更新的過時文件
- *   8. os-tools            — P3.3 系統層依賴的 macOS 工具可用性（pbcopy/pbpaste/osascript）
+ *   8. os-tools            — P3.3/P3.6 系統層依賴的 macOS 工具可用性（pbcopy/pbpaste/osascript/screencapture）+ heartbeat daemon 狀態
  *   9. component-chain     — Skill → Agent → Hook 依賴鏈斷裂偵測
  *  10. data-quality        — 全域學習資料（JSONL）格式與欄位正確性審計
  *  11. quality-trends      — 失敗模式 / 分數趨勢 / 低分連續警告
@@ -882,7 +882,10 @@ function checkOsTools() {
   }
 
   const { execSync } = require('child_process');
-  const tools = ['pbcopy', 'pbpaste', 'osascript'];
+  const { existsSync, readFileSync } = require('fs');
+  const { HEARTBEAT_PID_FILE } = require('./lib/paths');
+
+  const tools = ['pbcopy', 'pbpaste', 'osascript', 'screencapture'];
   const findings = [];
 
   for (const tool of tools) {
@@ -893,8 +896,57 @@ function checkOsTools() {
         check: 'os-tools',
         severity: 'warning',
         file: 'scripts/os/',
-        message: `macOS 工具 "${tool}" 不可用，P3.3 部分功能將無法正常運作`,
+        message: `macOS 工具 "${tool}" 不可用，P3.3/P3.6 部分功能將無法正常運作`,
         detail: `which ${tool} 失敗`,
+      });
+    }
+  }
+
+  // heartbeat daemon 狀態偵測
+  if (!existsSync(HEARTBEAT_PID_FILE)) {
+    findings.push({
+      check: 'os-tools',
+      severity: 'info',
+      file: 'scripts/heartbeat.js',
+      message: 'heartbeat daemon 未在執行（PID 檔案不存在），自主控制功能不可用',
+    });
+  } else {
+    let pidStr;
+    try {
+      pidStr = readFileSync(HEARTBEAT_PID_FILE, 'utf8').trim();
+      const pid = parseInt(pidStr, 10);
+      if (isNaN(pid)) {
+        findings.push({
+          check: 'os-tools',
+          severity: 'warning',
+          file: 'scripts/heartbeat.js',
+          message: `heartbeat PID 檔案格式無效（內容：${pidStr}）`,
+          detail: pidStr,
+        });
+      } else {
+        // 確認 process 是否仍在執行
+        try {
+          process.kill(pid, 0);
+          // process.kill(pid, 0) 不拋錯 → process 存活，無需記錄 finding
+        } catch (killErr) {
+          if (killErr.code === 'ESRCH') {
+            findings.push({
+              check: 'os-tools',
+              severity: 'warning',
+              file: 'scripts/heartbeat.js',
+              message: `heartbeat daemon stale PID：process ${pid} 不存在`,
+              detail: String(pid),
+            });
+          }
+          // EPERM 代表 process 存在但無權限發訊號，視為存活
+        }
+      }
+    } catch (readErr) {
+      findings.push({
+        check: 'os-tools',
+        severity: 'warning',
+        file: 'scripts/heartbeat.js',
+        message: `heartbeat PID 檔案讀取失敗：${readErr.message}`,
       });
     }
   }

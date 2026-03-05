@@ -6,7 +6,7 @@
 // 職責：
 //   偵測黑名單中的危險系統命令，阻擋可能造成不可逆損害的操作
 //
-// 黑名單規則（14 條）：
+// 黑名單規則（19 條）：
 //   1. sudo rm -rf /    — 刪除根目錄（有 sudo）
 //   2. rm -rf /         — 刪除根目錄（無 sudo）
 //   3. mkfs             — 格式化磁碟
@@ -22,9 +22,18 @@
 //  12. killall <name>   — name-based 批量終止進程（無 -9 也危險）
 //  13. pkill            — pattern-based 批量終止進程
 //  14. kill -9（多 PID）— 一次 kill 多個 PID
+//  P3.6 新增：
+//  15. sudo tee /etc/   — 寫入系統設定目錄（排除 /tmp）
+//  16. sudo chmod -R 777 非暫存目錄 — 遞迴開放非暫存目錄全權限
+//  17. osascript.*delete — AppleScript 刪除操作
+//  18. launchctl unload — 停用系統服務
+//  19. defaults delete / defaults write — 刪除或修改系統偏好設定
 //
 // 允許：
 //   一般開發命令（bun、node、git、ls 等）
+//   sudo tee /tmp/...（暫存目錄）
+//   sudo chmod -R 777 /tmp/...（暫存目錄）
+//   osascript 不含 delete 的操作
 
 const { safeReadStdin, safeRun } = require('../../../scripts/lib/hook-utils');
 
@@ -45,6 +54,17 @@ const BLACKLIST = [
   { pattern: /\bkillall\s+(?!-)\S+/, label: 'name-based 批量終止進程' },
   { pattern: /\bpkill\b/, label: 'pattern-based 批量終止進程' },
   { pattern: /\bkill\s+-9\s+\d+\s+\d+/, label: '批量 kill -9 多個 PID' },
+  // P3.6 新增：OS 層危險操作保護
+  // sudo tee 寫入系統設定目錄（排除 /tmp 路徑）
+  { pattern: /\bsudo\s+tee\s+(?!\/tmp\/)\//, label: '寫入系統設定目錄' },
+  // sudo chmod -R 777 非暫存目錄（排除 /tmp 路徑）
+  { pattern: /\bsudo\s+chmod\s+-R\s+777\s+(?!\/tmp\/)\//, label: '遞迴開放非暫存目錄全權限' },
+  // osascript 含 delete 操作（不含 delete 的放行）
+  { pattern: /\bosascript\b.*\bdelete\b/, label: 'AppleScript 刪除操作' },
+  // launchctl unload — 停用系統服務
+  { pattern: /\blaunchctl\s+unload\b/, label: '停用系統服務' },
+  // defaults delete 或 defaults write — 刪除或修改系統偏好設定
+  { pattern: /\bdefaults\s+(delete|write)\b/, label: '刪除系統偏好設定' },
 ];
 
 // ── 入口守衛 ──

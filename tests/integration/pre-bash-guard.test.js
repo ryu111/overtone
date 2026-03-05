@@ -122,6 +122,80 @@ describe('PreBashGuard: 黑名單命令攔擋', () => {
 });
 
 // ────────────────────────────────────────────────────────────────────────────
+// P3.6 新增規則 → deny
+// ────────────────────────────────────────────────────────────────────────────
+
+describe('PreBashGuard: P3.6 新增黑名單規則（deny）', () => {
+
+  test('sudo tee /etc/hosts → deny（寫入系統設定目錄）', () => {
+    const result = runPreBashGuard({ command: 'sudo tee /etc/hosts' });
+    expect(result.exitCode).toBe(0);
+    expect(isDenied(result.parsed)).toBe(true);
+    expect(denyReason(result.parsed)).toContain('寫入系統設定目錄');
+  });
+
+  test('sudo chmod -R 777 /Applications → deny（遞迴開放非暫存目錄全權限）', () => {
+    const result = runPreBashGuard({ command: 'sudo chmod -R 777 /Applications' });
+    expect(result.exitCode).toBe(0);
+    expect(isDenied(result.parsed)).toBe(true);
+    expect(denyReason(result.parsed)).toContain('遞迴開放非暫存目錄全權限');
+  });
+
+  test('osascript delete Finder file → deny（AppleScript 刪除操作）', () => {
+    const result = runPreBashGuard({ command: 'osascript -e \'tell application "Finder" to delete file "test"\'' });
+    expect(result.exitCode).toBe(0);
+    expect(isDenied(result.parsed)).toBe(true);
+    expect(denyReason(result.parsed)).toContain('AppleScript 刪除操作');
+  });
+
+  test('launchctl unload /Library/LaunchDaemons/com.apple.example.plist → deny（停用系統服務）', () => {
+    const result = runPreBashGuard({ command: 'launchctl unload /Library/LaunchDaemons/com.apple.example.plist' });
+    expect(result.exitCode).toBe(0);
+    expect(isDenied(result.parsed)).toBe(true);
+    expect(denyReason(result.parsed)).toContain('停用系統服務');
+  });
+
+  test('defaults delete com.apple.finder.plist → deny（刪除系統偏好設定）', () => {
+    const result = runPreBashGuard({ command: 'defaults delete com.apple.finder.plist' });
+    expect(result.exitCode).toBe(0);
+    expect(isDenied(result.parsed)).toBe(true);
+    expect(denyReason(result.parsed)).toContain('刪除系統偏好設定');
+  });
+
+  test('defaults write NSGlobalDomain key value → deny（修改系統偏好設定）', () => {
+    const result = runPreBashGuard({ command: 'defaults write NSGlobalDomain AppleShowAllFiles true' });
+    expect(result.exitCode).toBe(0);
+    expect(isDenied(result.parsed)).toBe(true);
+    expect(denyReason(result.parsed)).toContain('刪除系統偏好設定');
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// P3.6 防誤殺 → allow
+// ────────────────────────────────────────────────────────────────────────────
+
+describe('PreBashGuard: P3.6 防誤殺（allow）', () => {
+
+  test('sudo tee /tmp/test.conf → allow（暫存目錄排除）', () => {
+    const result = runPreBashGuard({ command: 'sudo tee /tmp/test.conf' });
+    expect(result.exitCode).toBe(0);
+    expect(isAllowed(result.parsed)).toBe(true);
+  });
+
+  test('osascript key code 49（不含 delete）→ allow（鍵盤操作放行）', () => {
+    const result = runPreBashGuard({ command: 'osascript -e \'tell application "System Events" to key code 49\'' });
+    expect(result.exitCode).toBe(0);
+    expect(isAllowed(result.parsed)).toBe(true);
+  });
+
+  test('sudo chmod -R 777 /tmp/build → allow（暫存目錄排除）', () => {
+    const result = runPreBashGuard({ command: 'sudo chmod -R 777 /tmp/build' });
+    expect(result.exitCode).toBe(0);
+    expect(isAllowed(result.parsed)).toBe(true);
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────
 // 正常命令 → allow
 // ────────────────────────────────────────────────────────────────────────────
 
