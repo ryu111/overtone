@@ -144,9 +144,12 @@ bun scripts/data.js gc --dry-run                     # 預覽全域目錄清理
 bun scripts/data.js recent --limit 5                 # 列出最近 session
 
 # 執行佇列管理
-bun scripts/queue.js add <name> <workflow> [...]  # 新增項目
-bun scripts/queue.js list                          # 列出佇列狀態
-bun scripts/queue.js clear                         # 清除佇列
+bun scripts/queue.js add <name> <workflow> [...]         # 新增項目（覆寫現有）
+bun scripts/queue.js append <name> <workflow> [...]     # 累加到現有佇列
+bun scripts/queue.js list                               # 列出佇列狀態
+bun scripts/queue.js enable-auto                        # 啟用自動執行（規劃模式 → 執行模式）
+bun scripts/queue.js clear                              # 清除佇列
+# Flag: --no-auto（規劃模式）、--source <desc>（來源描述）、--project-root <path>
 
 # 手動停止 Loop（需提供 sessionId）
 bun scripts/stop-loop.js {sessionId}

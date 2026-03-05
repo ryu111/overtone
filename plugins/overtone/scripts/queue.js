@@ -82,18 +82,10 @@ function cmdList(projectRoot) {
 }
 
 function cmdEnableAuto(projectRoot) {
-  const queue = executionQueue.readQueue(projectRoot);
-  if (!queue) {
+  if (!executionQueue.setAutoExecute(projectRoot, true)) {
     console.log('佇列不存在');
     return;
   }
-
-  queue.autoExecute = true;
-  const filePath = require('path').join(
-    require('./lib/paths').global.dir(projectRoot),
-    'execution-queue.json'
-  );
-  require('./lib/utils').atomicWrite(filePath, queue);
   console.log('✅ 已啟用自動執行');
 }
 

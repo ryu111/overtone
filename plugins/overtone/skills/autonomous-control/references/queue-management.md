@@ -15,7 +15,7 @@
 ### 新增項目
 
 ```bash
-# 新增單一項目
+# 新增單一項目（覆寫現有佇列）
 bun scripts/queue.js add my-feature standard
 
 # 新增多個項目（name workflow 成對）
@@ -31,6 +31,24 @@ bun scripts/queue.js add my-feature standard --source "PM Discovery 2026-03-04"
 bun scripts/queue.js add my-feature standard --project-root /path/to/project
 ```
 
+### 累加到現有佇列
+
+```bash
+# 累加項目到現有佇列（保留已完成/進行中的項目）
+bun scripts/queue.js append bugfix-d quick
+
+# 多個項目
+bun scripts/queue.js append \
+  feature-c standard \
+  feature-d quick
+
+# 寫入規劃模式佇列（autoExecute: false，不自動執行）
+bun scripts/queue.js append feature-e standard --no-auto
+
+# 指定來源描述
+bun scripts/queue.js append feature-f standard --source "PM Discovery 2026-03-05"
+```
+
 ### 查詢佇列
 
 ```bash
@@ -43,6 +61,15 @@ bun scripts/queue.js list
 #   ✅ feature-a（standard）
 #   🔄 feature-b（quick）
 #   ⬜ bugfix-c（single）
+```
+
+### 啟用自動執行
+
+```bash
+# 從規劃模式轉換為執行模式（autoExecute: false → true）
+bun scripts/queue.js enable-auto
+
+# 啟用後 Heartbeat 自動推進佇列項目
 ```
 
 ### 清除佇列
@@ -109,7 +136,12 @@ const queue = eq.readQueue(projectRoot);
 eq.writeQueue(projectRoot, [
   { name: 'feature-a', workflow: 'standard' },
   { name: 'feature-b', workflow: 'quick' },
-], 'PM Discovery 2026-03-04');
+], 'PM Discovery 2026-03-04', { autoExecute: true });
+
+// 累加到現有佇列（保留進度）
+eq.appendQueue(projectRoot, [
+  { name: 'feature-c', workflow: 'standard' },
+], 'PM Discovery 2026-03-05', { autoExecute: false });
 
 // 推進到下一個 pending 項目
 const next = eq.advanceToNext(projectRoot);
@@ -123,6 +155,9 @@ eq.completeCurrent(projectRoot);
 
 // 標記失敗
 eq.failCurrent(projectRoot, 'session timeout');
+
+// 設定佇列的 autoExecute 狀態（規劃模式 → 執行模式）
+eq.setAutoExecute(projectRoot, true);
 
 // 取得佇列摘要（用於 SessionStart 注入）
 const summary = eq.formatQueueSummary(projectRoot);

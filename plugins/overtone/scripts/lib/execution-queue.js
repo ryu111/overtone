@@ -247,6 +247,22 @@ function formatQueueSummary(projectRoot) {
 }
 
 /**
+ * 設定佇列的 autoExecute 狀態
+ * @param {string} projectRoot
+ * @param {boolean} value - 新的 autoExecute 值
+ * @returns {boolean} 是否成功設定
+ */
+function setAutoExecute(projectRoot, value) {
+  const queue = readQueue(projectRoot);
+  if (!queue) return false;
+
+  queue.autoExecute = !!value;
+  const filePath = _queuePath(projectRoot);
+  atomicWrite(filePath, queue);
+  return true;
+}
+
+/**
  * 清除佇列（所有項目完成後或手動清除）
  * @param {string} projectRoot
  */
@@ -280,5 +296,6 @@ module.exports = {
   completeCurrent,
   failCurrent,
   formatQueueSummary,
+  setAutoExecute,
   clearQueue,
 };
