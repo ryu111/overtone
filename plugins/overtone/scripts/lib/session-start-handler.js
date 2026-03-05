@@ -88,8 +88,7 @@ function buildPluginContext() {
     const stageCount = Object.keys(stages).length;
 
     // Workflow 模板清單（常用的放前面）
-    const workflowEntries = Object.entries(workflows);
-    const workflowCount = workflowEntries.length;
+    const workflowCount = Object.keys(workflows).length;
     const commonWorkflows = ['single', 'quick', 'standard', 'full', 'debug', 'tdd']
       .filter(k => workflows[k])
       .map(k => `${k}（${workflows[k].label}）`)
