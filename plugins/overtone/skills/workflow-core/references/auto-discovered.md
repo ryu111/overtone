@@ -1,9 +1,4 @@
 ---
-
-**發現問題彙總**（按嚴重度排序）：
-Keywords: overtone, dogfooding, health, check, errors, warnings, validate, agents, prompt, codebase
-
----
 ## 2026-03-05 | product-manager:PM Context
 使用者要求對 Overtone 專案做深度掃瞄，檢查規範合規性、驗證品質、架構一致性。掃瞄範圍涵蓋 hooks.json 格式、agent prompt 四模式、skill 結構、registry SoT 一致性、測試品質、文件同步、製作規範（三條原則）、防禦架構。
 
@@ -896,4 +891,9 @@ Keywords: agent, session, interview, export
 
 [n] `extractInsights` 的 JSDoc `@param` 描述的型別是 `queryPastInterviews` 回傳的 sessions 陣列（不含 `answers`），但實際函式需要含 `answers` 欄位的完整 session 物件（來自 `loadSession`）。JSDoc 已在描述中補充「需包含完整 answers，來自 loadSession」，但型別定義與實際需求不一致。不阻擋合併。
 Keywords: critical, major, extractinsights, jsdoc, param, querypastinterviews, sessions, answers, session, loadsession
+
+---
+## 2026-03-05 | developer:DEV Context
+完成 `skill-router-tune`（opt-7）：調優 `skill-router.js` 路由演算法，提升 agent 知識路由的精準度，減少歧義詞造成的 false positive。
+Keywords: skill, router, tune, agent, false, positive
 

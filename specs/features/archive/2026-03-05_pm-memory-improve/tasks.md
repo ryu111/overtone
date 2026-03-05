@@ -1,15 +1,15 @@
 ---
 feature: pm-memory-improve
-status: in-progress
+status: archived
 workflow: quick
 created: 2026-03-05T19:31:40.756Z
+archivedAt: 2026-03-05T19:39:59.538Z
 ---
-
 ## Stages
 
 - [x] DEV
 - [x] REVIEW
-- [ ] RETRO
-- [ ] DOCS
+- [x] RETRO
+- [x] DOCS
 
 ## Tasks
