@@ -1,23 +1,4 @@
 ---
-## 2026-03-05 | planner:PLAN Findings
-**逐 agent 缺失分析與修改計劃**：
-
-**1. architect（缺：誤判防護）**
-
-現狀：有 DO/DON'T、有停止條件，無信心過濾（性質上不需要 — 架構師出方案不是過濾式），無誤判防護。
-需要補的誤判防護（針對 architect 常見誤判）：
-- 「沒有顯式 pattern 就引入新慣例」誤判 — 先看現有 codebase pattern，不要自創
-- 「over-engineering 衝動」— 設計複雜到未來才需要的彈性，違反 DON'T
-- 「design.md 中的 interface 定義 = 實作程式碼」誤判 — 只寫 type/interface 定義，不寫函式實作
-- 「dev phases 任意切割」— 只有真正可並行（不同檔案 + 無邏輯依賴）才切 phases
-
-指令：
-```bash
-bun scripts/manage-component.js update agent architect '{"body": "..."}'
-```
-（body 為完整更新後的 markdown，需在現有架構上增加誤判防護章節）
-
----
 
 **2. build-error-resolver（缺：誤判防護、信心過濾）**
 
@@ -896,4 +877,13 @@ Keywords: skill, router, tune, agent, false, positive
 - **`crossRefs` Set 無效問題**：物件在 Set 中比對引用而非值，需改用字串 key 去重（`${targetSkill}/${type}/${file}`）
 - **計數斷言更新**：共 6 個測試檔案有計數斷言需更新（17 → 19），其中 `health-check-internalization.test.js` 未在 MEMORY.md 配套清單中記錄，已補充
 Keywords: skill, regex, auto, workflow, core, references, handoff, protocol, error, targetskill
+
+---
+## 2026-03-05 | developer:DEV Findings
+- registry 匯出 `workflows`（非 `WORKFLOW_TYPES`），timeline 匯出 `emit`（非 `appendEvent`）— 初次斷言錯誤，已根據實際 API 修正
+- `evolution.js status` 子命令存在且 exit 0
+- `queue.js list` 空佇列時 exit 1 為預期行為，測試接受 `[0, 1]`
+- spawn 時加入 `OVERTONE_NO_DASHBOARD=1` 和 `OVERTONE_TEST=1` 避免副作用
+- 18 個測試全部通過，執行時間約 2.3s
+Keywords: registry, workflows, timeline, emit, appendevent, evolution, status, exit, queue, list
 
