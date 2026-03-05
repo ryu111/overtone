@@ -103,14 +103,37 @@ const DOMAIN_KEYWORDS = {
 };
 
 /**
+ * 預計算跨 domain 出現的歧義詞集合。
+ * 出現在 2+ 個 domain 的關鍵詞命中時只給 0.5 倍權重，降低噪音。
+ * @returns {Set<string>}
+ */
+function _buildAmbiguousKeywords() {
+  const kwCount = new Map();
+  for (const keywords of Object.values(DOMAIN_KEYWORDS)) {
+    for (const kw of keywords) {
+      const lower = kw.toLowerCase();
+      kwCount.set(lower, (kwCount.get(lower) || 0) + 1);
+    }
+  }
+  const result = new Set();
+  for (const [kw, count] of kwCount) {
+    if (count >= 2) result.add(kw);
+  }
+  return result;
+}
+
+// 模組級快取，避免每次呼叫重複計算
+const AMBIGUOUS_KEYWORDS = _buildAmbiguousKeywords();
+
+/**
  * 偵測 prompt 中出現但 agent 尚未具備的知識 domain。
  *
- * 演算法：
+ * 演算法（v2 — 歧義詞減重）：
  *   1. 將 prompt 轉為小寫
- *   2. 對每個 domain，計算命中的關鍵詞數量
- *   3. score = 命中數 / 總關鍵詞數（正規化到 0~1）
+ *   2. 對每個 domain，計算命中的關鍵詞，歧義詞（跨 2+ domain）只給 0.5 倍 score 貢獻
+ *   3. score = 加權命中分 / 總關鍵詞數（正規化到 0~1）
  *   4. 排除 agent 已有的 skills
- *   5. score >= minScore 才回報
+ *   5. score >= minScore 且非歧義詞命中數 >= minTotalHits 才回報
  *   6. 依 score 降序排列，取前 maxGaps 個
  *
  * @param {string} prompt - 使用者/任務 prompt
@@ -118,6 +141,7 @@ const DOMAIN_KEYWORDS = {
  * @param {object} [options]
  * @param {number} [options.minScore=0.2] - 最低分數門檻（0~1）
  * @param {number} [options.maxGaps=3] - 最多回報幾個缺口
+ * @param {number} [options.minTotalHits=2] - 至少需要幾個非歧義詞命中才算有效 gap
  * @returns {Array<{domain: string, score: number, matchedKeywords: string[]}>} 依 score 降序排列的缺口
  */
 function detectKnowledgeGaps(prompt, agentSkills, options = {}) {
@@ -128,6 +152,7 @@ function detectKnowledgeGaps(prompt, agentSkills, options = {}) {
 
   const minScore = options.minScore !== undefined ? options.minScore : 0.2;
   const maxGaps = options.maxGaps !== undefined ? options.maxGaps : 3;
+  const minTotalHits = options.minTotalHits !== undefined ? options.minTotalHits : 2;
 
   // 安全處理 agentSkills（undefined / null → 空陣列）
   const existingSkills = Array.isArray(agentSkills) ? agentSkills : [];
@@ -139,11 +164,19 @@ function detectKnowledgeGaps(prompt, agentSkills, options = {}) {
     // 已有此 skill → 跳過
     if (existingSkills.includes(domain)) continue;
 
-    // 計算命中的關鍵詞
+    // 計算命中的關鍵詞，歧義詞只給 0.5 倍貢獻
     const matchedKeywords = keywords.filter(kw => lowerPrompt.includes(kw.toLowerCase()));
-    const score = matchedKeywords.length / keywords.length;
+    let weightedHits = 0;
+    let nonAmbiguousHits = 0;
+    for (const kw of matchedKeywords) {
+      const isAmbiguous = AMBIGUOUS_KEYWORDS.has(kw.toLowerCase());
+      weightedHits += isAmbiguous ? 0.5 : 1.0;
+      if (!isAmbiguous) nonAmbiguousHits++;
+    }
+    const score = weightedHits / keywords.length;
 
-    if (score >= minScore) {
+    // 需同時滿足：分數門檻 + 非歧義詞命中數門檻
+    if (score >= minScore && nonAmbiguousHits >= minTotalHits) {
       gaps.push({ domain, score, matchedKeywords });
     }
   }
