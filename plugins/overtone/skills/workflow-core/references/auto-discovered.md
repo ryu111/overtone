@@ -1,23 +1,4 @@
 ---
-## 2026-03-05 | product-manager:PM Findings
-**目標用戶**：個人 dogfooding（Product Owner 自己），場景為讓 Overtone 自主建構新領域能力（Acid Test：自動交易系統）。
-
-**成功指標**：
-- 系統能自主偵測「缺少交易相關 skill」並建議建立
-- 系統能用 manage-component.js 自主建立 skill + agent，且通過閉環檢查
-- 整個過程無需人工編寫 skill/agent prompt
-
-**方案比較**：
-
-| 維度 | 方案 A：繼續完成 P3.4-P3.6 | 方案 B：跳到 Phase 4 進化引擎 PoC | 方案 C：混合 -- P3.6 精簡版 + 進化引擎 PoC |
-|------|---|---|---|
-| 概述 | 按原 roadmap 依序完成 P3.4/P3.5/P3.6 | 跳過 P3.4/P3.5，直接做 Level 3 進化引擎 | P3.6 只做 Guard 精鍊 + health-check 擴展，然後做進化引擎 |
-| 優點 | Phase 3 完整收尾，roadmap 一致性；OS 能力齊全 | 直接觸及最高價值目標；現有零件可串聯；ROI 最高 | 安全基礎紮實後再開放自我修改；風險較低 |
-| 缺點 | P3.4 keyboard/mouse 對 Phase 4 無貢獻（codebase 佐證：Acid Test 是 API 交易，不需要 UI 操控）；延遲最高價值工作 | P3.4/P3.5/P3.6 變成技術債；E2E 安全驗證未做就開放自我修改 | 工作量略多於方案 B |
-| 工作量 | 8-12 人天（P3.4: 3-5 + P3.5: 1-2 + P3.6: 3-5） | 5-8 人天 | 6
-Keywords: dogfooding, product, owner, overtone, acid, test, skill, manage, component, agent
-
----
 ## 2026-03-05 | planner:PLAN Findings
 **需求分解**：
 
@@ -820,4 +801,13 @@ Keywords: health, check, quality, trends, warning, warnings, hook, failure, trac
 - 新增 18 個測試後，smoke.test.js 共 36 個測試，全部通過（2.61s）。
 - `init-workflow.js` 執行時還會推進 execution-queue，但在測試環境（`OVERTONE_NO_DASHBOARD=1`, `OVERTONE_TEST=1`）中不會有副作用。
 Keywords: init, workflow, workflowtype, sessionid, atomicwrite, smoke, test, name, timestamp, afterall
+
+---
+## 2026-03-05 | developer:DEV Findings
+- 現有 `skill-forge.test.js` 已覆蓋 API 行為（status、conflict、paused）和 SKILL.md 三 section 存在性（Feature 7），本次測試聚焦在現有測試未涵蓋的品質面向
+- `assembleSkillBody` 確認輸出 `# {domain} 知識域` 格式的標題，且 `buildSkillContent` 產生的 description 固定包含 domain 名稱（`${domainName} 知識域。提供 ${domainName} 相關的知識和參考資料。`），因此品質門檻測試全部通過
+- 不需要調整模板（模板品質已足夠）
+- 測試使用 `TMP_BASE` 統一清理策略，`beforeAll` 建立目錄，`afterAll` 遞迴清理
+- 20 個測試，15ms 執行時間（純函數呼叫，無 spawn）
+Keywords: skill, forge, test, status, conflict, paused, section, feature, assembleskillbody, domain
 

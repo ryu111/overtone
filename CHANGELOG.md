@@ -2,6 +2,29 @@
 
 所有重要變更記錄於此文件。
 
+## [0.28.65] - 2026-03-06
+
+### Skill Forge 品質校準測試套件
+
+#### 測試新增
+- **skill-forge-quality.test.js**：建立 Skill Forge 產出品質校準測試（20 個測試案例）
+  - Feature 1：多 domain 品質一致性（data-pipeline、api-design、monitoring 三域）
+  - Feature 2：title 標題格式驗證（# {domain} 知識域）
+  - Feature 3：description 包含 domain 名稱
+  - Feature 4：最低 body 長度門檻（> 100 字元）
+  - Feature 5：preview 結構完整性（四欄位類型驗證）
+  - Feature 6：多 domain 並行品質對比（sourcesScanned 獨立隔離）
+
+#### 文件同步
+- `docs/status.md`：測試 4277 → 4297（20 個新測試）、版本 0.28.64 → 0.28.65、測試檔案 188 → 190、近期變更更新
+- `CHANGELOG.md`：新增本條目
+- `plugins/overtone/skills/testing/references/auto-discovered.md`：自動記錄開發內容
+
+#### 測試
+- 測試 4297 pass / 0 fail（190 files）
+
+---
+
 ## [0.28.64] - 2026-03-06
 
 ### PM Domain Research Session 持久化修復

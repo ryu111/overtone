@@ -253,3 +253,26 @@ Keywords: skill, forge, extractwebknowledge, prompt, timeout, allowedtools, flag
 實作了 PM 訪談前領域自主研究能力（pm-domain-research feature），讓 PM agent 在進入陌生領域時，可以先用 `claude -p` 自主研究基本概念，再進行深度訪談。
 Keywords: domain, research, feature, agent, claude
 
+---
+## 2026-03-05 | doc-updater:DOCS Findings
+**同步變更：**
+
+1. **docs/status.md** 
+   - 版本：0.28.64 → 0.28.65
+   - 測試通過：4277 → 4297（+20）
+   - 測試檔案：188 → 190（+2 個新檔）
+   - 近期變更：新增 forge-quality-calibration 測試紀錄
+
+2. **CHANGELOG.md**
+   - 新增 [0.28.65] 版本段（2026-03-06）
+   - 記錄 Skill Forge 品質校準測試套件的 6 個 Feature
+   - 包含測試統計和文件同步清單
+
+3. **plugin.json**
+   - 版本號更新：0.28.64 → 0.28.65（透過 manage-component.js）
+
+4. **auto-discovered.md**（自動更新，無人工修改）
+   - testing domain：新增開發上下文記錄
+   - workflow-core domain：自動同步歸檔
+Keywords: docs, status, forge, quality, calibration, changelog, skill, feature, plugin, json
+

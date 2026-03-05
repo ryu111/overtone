@@ -1,14 +1,4 @@
 ---
-## 2026-03-03 | tester:TEST Context
-模式：verify
-
-執行 `readTasksCheckboxes` fallback 修復的驗證測試。確認以下三個目標：
-1. `tests/integration/specs.test.js` — 新增的 4 個 fallback 測試和全部 81 個案例通過
-2. `tests/unit/get-workflow-context.test.js` — 修正的 `# Tasks` → `## Tasks` 標頭後 9 個案例全通過
-3. 全量回歸確認無任何既有測試因 fallback 行為改變而失敗
-Keywords: verify, readtaskscheckboxes, fallback, tests, integration, specs, test, unit, workflow, context
-
----
 ## 2026-03-03 | tester:TEST Findings
 測試結果摘要：
 
@@ -616,4 +606,9 @@ Keywords: tests, unit, interview, edge, cases, test, feature, plugins, overtone,
 ## 2026-03-05 | developer:DEV Context
 為 `smoke-test-all-flows` feature 在 `tests/e2e/smoke.test.js` 新增 Scenario 4，覆蓋全 18 個 workflow 模板的初始化驗證。
 Keywords: smoke, test, flows, feature, tests, scenario, workflow
+
+---
+## 2026-03-05 | developer:DEV Context
+實作 `forge-quality-calibration` 功能：在 `tests/unit/skill-forge-quality.test.js` 建立 forgeSkill 產出品質校準測試，驗證不同 domain 的 SKILL.md 輸出品質符合最低門檻。
+Keywords: forge, quality, calibration, tests, unit, skill, test, forgeskill, domain
 
