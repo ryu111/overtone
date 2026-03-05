@@ -312,6 +312,122 @@ describe('writeKnowledge — Scenario 4-8: 不同 content 正常追加', () => {
   });
 });
 
+// ── v2 精準度改善測試 ──
+
+describe('routeKnowledge — Scenario 4-10: 歧義詞（跨 domain）不單獨決定路由', () => {
+  it('"solid" 單獨出現（存在 code-review 和 craft）時降級為 gap-observation', () => {
+    const fragment = {
+      content: 'solid principle',
+      keywords: ['solid'],
+      source: 'developer:DEV',
+    };
+
+    const result = routeKnowledge(fragment, {});
+
+    // "solid" 同時出現在 code-review 和 craft，歧義過高 → gap-observation
+    // 或兩者分差 < 0.05 → gap-observation
+    // 不應路由到任一 domain（信心不足）
+    expect(result.action).toBe('gap-observation');
+  });
+
+  it('"refactor" 加上 code-review 獨有詞時能正確路由到 code-review', () => {
+    const fragment = {
+      content: 'code review refactor smell lint style guide maintainability',
+      keywords: ['refactor', 'code review', 'lint'],
+      source: 'code-reviewer:REVIEW',
+    };
+
+    const result = routeKnowledge(fragment, {});
+
+    // 有足夠的 code-review 獨有詞，能明確路由
+    expect(result.action).toBe('append');
+    expect(result.domain).toBe('code-review');
+  });
+});
+
+describe('routeKnowledge — Scenario 4-11: 最小命中數門檻（totalHits >= 2）', () => {
+  it('只有 1 個命中時降級為 gap-observation（即使 score 夠高）', () => {
+    // 設計一個只命中 1 個詞但 score 可能高的情況
+    // 需用 fragment keywords 單詞命中一個小 domain
+    const fragment = {
+      content: 'commit message format',
+      keywords: ['squash'],
+      source: 'developer:DEV',
+    };
+
+    // 'squash' 只在 commit-convention，1 個 keywords hit（totalHits=1）
+    // content 中 'commit' 也會在 commit-convention 命中，所以 totalHits >= 2
+    // 此 test 驗證：純 keywords hit=1 且 content 完全無關時的行為
+    const fragmentSingle = {
+      content: '量子糾纏現象的觀測',
+      keywords: ['squash'],
+      source: 'developer:DEV',
+    };
+
+    const result = routeKnowledge(fragmentSingle, {});
+    // squash 命中 commit-convention，但 content 無命中 → totalHits=1 < 2 → gap-observation
+    expect(result.action).toBe('gap-observation');
+  });
+
+  it('多個命中（keywords + content）能正常路由', () => {
+    const fragment = {
+      content: 'write unit tests with describe it expect mock stub',
+      keywords: ['test', 'mock', 'stub'],
+      source: 'developer:DEV',
+    };
+
+    const result = routeKnowledge(fragment, {});
+    expect(result.action).toBe('append');
+    expect(result.domain).toBe('testing');
+    // totalHits 多個，score 明顯
+    expect(result.score).toBeGreaterThan(0.2);
+  });
+});
+
+describe('routeKnowledge — Scenario 4-12: 精準路由（v2 加權演算法）', () => {
+  it('含多個歧義詞（solid、refactor、design pattern）但無獨有詞時降級為 gap-observation', () => {
+    // solid、refactor、design pattern 同時出現在 code-review 和 craft（歧義詞）
+    // 歧義詞折半後分數不足 0.2 → gap-observation（分數門檻攔截）
+    const fragment = {
+      content: 'refactor solid design pattern',
+      keywords: ['refactor', 'solid', 'design pattern'],
+      source: 'developer:DEV',
+    };
+
+    const result = routeKnowledge(fragment, {});
+    // 全部是歧義詞，折半後 score < 0.2 → 無法確定路由
+    expect(result.action).toBe('gap-observation');
+  });
+
+  it('明確主導 domain（security-kb）時正常路由，score 遠高於其他 domain', () => {
+    const fragment = {
+      content: 'security vulnerability xss injection csrf auth authentication authorization encrypt hash',
+      keywords: ['security', 'xss', 'injection', 'auth'],
+      source: 'developer:DEV',
+    };
+
+    const result = routeKnowledge(fragment, {});
+    expect(result.action).toBe('append');
+    expect(result.domain).toBe('security-kb');
+    // 高分確認
+    expect(result.score).toBeGreaterThan(0.4);
+  });
+
+  it('fragment keywords 強信號（×2 加權）使路由更精準', () => {
+    // fragment.keywords 精確包含 domain 獨有詞時，強信號加倍
+    // testing 的 'bun:test', 'describe', 'expect' 是強信號
+    const fragment = {
+      content: '使用 bun:test describe it expect 組織測試',
+      keywords: ['bun:test', 'describe', 'expect'],
+      source: 'developer:DEV',
+    };
+
+    const result = routeKnowledge(fragment, {});
+    expect(result.action).toBe('append');
+    expect(result.domain).toBe('testing');
+  });
+});
+
 describe('writeKnowledge — Scenario 4-9: content A 包含 content B 時不誤判', () => {
   it('先寫長 content，再寫其子字串，子字串被正確阻擋（existingContent 包含它）', () => {
     const pluginRoot = setupTmpPlugin();

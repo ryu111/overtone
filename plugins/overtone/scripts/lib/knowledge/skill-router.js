@@ -22,13 +22,42 @@ const MAX_FILE_SIZE = 5 * 1024;
 const MAX_ENTRIES_KEEP = 50;
 
 /**
+ * 預計算跨 domain 出現的歧義詞集合。
+ * 出現在 2+ 個 domain 的關鍵詞命中時只給 0.5 倍權重，降低噪音。
+ * @returns {Set<string>}
+ */
+function _buildAmbiguousKeywords() {
+  const kwCount = new Map();
+  for (const keywords of Object.values(DOMAIN_KEYWORDS)) {
+    for (const kw of keywords) {
+      const lower = kw.toLowerCase();
+      kwCount.set(lower, (kwCount.get(lower) || 0) + 1);
+    }
+  }
+  const result = new Set();
+  for (const [kw, count] of kwCount) {
+    if (count >= 2) result.add(kw);
+  }
+  return result;
+}
+
+// 模組級快取，避免每次呼叫重複計算
+const AMBIGUOUS_KEYWORDS = _buildAmbiguousKeywords();
+
+// 信心差距保護：前兩名分數差距小於此值時視為歧義，降級為 gap-observation
+const MIN_CONFIDENCE_GAP = 0.05;
+
+/**
  * 路由知識片段到正確的 domain。
  *
- * 演算法：
- *   1. 對 fragment.keywords 與 fragment.content 計算每個 domain 的命中分數
- *   2. score = (keywords 命中數 + content 命中詞數 / 2) / domain 總關鍵詞數
- *   3. score >= 0.2 → action: 'append'，選分數最高的 domain
- *   4. score < 0.2  → action: 'gap-observation'
+ * 演算法（v2 — 提升精準度）：
+ *   1. 對 fragment.keywords（強信號）與 fragment.content（弱信號）計算每個 domain 的命中分數
+ *   2. fragment.keywords 精確命中 domain 詞時給 ×2 加成；歧義詞（跨 domain）只給 0.5 倍
+ *   3. content 命中給 0.5 倍基礎權重；歧義詞再折半為 0.25 倍
+ *   4. 分數對 domain keywords 總數正規化
+ *   5. bestScore >= 0.2 且 totalHits >= 2 → 進入候選
+ *   6. 前兩名分差 < 0.05 → 歧義太高，降級為 gap-observation
+ *   7. 通過以上條件 → action: 'append'
  *
  * @param {object} fragment - { type, content, source, keywords }
  * @param {object} [options]
@@ -43,46 +72,75 @@ function routeKnowledge(fragment, options = {}) {
   const fragmentKeywords = Array.isArray(fragment.keywords) ? fragment.keywords : [];
   const lowerContent = fragment.content.toLowerCase();
   const minScore = 0.2;
+  const minTotalHits = 2;
 
-  let bestDomain = null;
-  let bestScore = 0;
+  // 結果陣列（含前兩名用於信心差距檢查）
+  const scores = [];
 
   for (const [domain, domainKeywords] of Object.entries(DOMAIN_KEYWORDS)) {
-    // 計算 fragment.keywords 中命中此 domain 的關鍵詞
-    const keywordHits = fragmentKeywords.filter(kw =>
-      domainKeywords.some(dk => dk.toLowerCase().includes(kw.toLowerCase()) || kw.toLowerCase().includes(dk.toLowerCase()))
-    ).length;
+    let weightedScore = 0;
+    let totalHits = 0;
 
-    // 計算 fragment.content 中命中此 domain 的關鍵詞
-    const contentHits = domainKeywords.filter(dk =>
-      lowerContent.includes(dk.toLowerCase())
-    ).length;
+    // fragment.keywords 強信號：精確命中給 ×2，歧義詞折半為 ×1
+    for (const kw of fragmentKeywords) {
+      const lowerKw = kw.toLowerCase();
+      const hit = domainKeywords.some(dk => {
+        const lowerDk = dk.toLowerCase();
+        return lowerDk.includes(lowerKw) || lowerKw.includes(lowerDk);
+      });
+      if (hit) {
+        const ambiguityFactor = AMBIGUOUS_KEYWORDS.has(lowerKw) ? 0.5 : 1.0;
+        weightedScore += 2.0 * ambiguityFactor;
+        totalHits++;
+      }
+    }
 
-    // 綜合分數：keywords 命中 + content 命中（降半權重）
-    const score = (keywordHits + contentHits * 0.5) / domainKeywords.length;
+    // fragment.content 弱信號：命中給 0.5，歧義詞再折半為 0.25
+    for (const dk of domainKeywords) {
+      const lowerDk = dk.toLowerCase();
+      if (lowerContent.includes(lowerDk)) {
+        const ambiguityFactor = AMBIGUOUS_KEYWORDS.has(lowerDk) ? 0.5 : 1.0;
+        weightedScore += 0.5 * ambiguityFactor;
+        totalHits++;
+      }
+    }
 
-    if (score > bestScore) {
-      bestScore = score;
-      bestDomain = domain;
+    // 正規化：除以 domain keywords 總數
+    const score = weightedScore / domainKeywords.length;
+
+    if (score > 0) {
+      scores.push({ domain, score, totalHits });
     }
   }
 
-  if (bestScore >= minScore && bestDomain) {
-    const targetPath = options.pluginRoot
-      ? path.join(options.pluginRoot, 'skills', bestDomain, 'references', 'auto-discovered.md')
-      : null;
+  // 依分數降序排列
+  scores.sort((a, b) => b.score - a.score);
 
-    return {
-      action: 'append',
-      domain: bestDomain,
-      targetPath,
-      score: bestScore,
-    };
+  const best = scores[0];
+  const second = scores[1];
+
+  // 條件 1：分數門檻 + 最小命中數
+  if (!best || best.score < minScore || best.totalHits < minTotalHits) {
+    const observation = `未分類知識片段 from ${fragment.source || 'unknown'}. Keywords: ${fragmentKeywords.join(', ') || '(無)'}`;
+    return { action: 'gap-observation', observation };
   }
 
-  // 未匹配任何 domain → gap-observation
-  const observation = `未分類知識片段 from ${fragment.source || 'unknown'}. Keywords: ${fragmentKeywords.join(', ') || '(無)'}`;
-  return { action: 'gap-observation', observation };
+  // 條件 2：信心差距保護（前兩名分差過小 → 歧義，降級）
+  if (second && (best.score - second.score) < MIN_CONFIDENCE_GAP) {
+    const observation = `知識片段路由歧義（${best.domain} vs ${second.domain}，分差 ${(best.score - second.score).toFixed(3)}）from ${fragment.source || 'unknown'}`;
+    return { action: 'gap-observation', observation };
+  }
+
+  const targetPath = options.pluginRoot
+    ? path.join(options.pluginRoot, 'skills', best.domain, 'references', 'auto-discovered.md')
+    : null;
+
+  return {
+    action: 'append',
+    domain: best.domain,
+    targetPath,
+    score: best.score,
+  };
 }
 
 /**
