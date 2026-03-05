@@ -137,6 +137,9 @@ bun scripts/heartbeat.js stop                            # 停止 daemon
 bun scripts/heartbeat.js status                          # 查看狀態
 
 # 進化引擎（gap detection / 自動修復 / skill forge / 內化飛輪）
+bun scripts/evolution.js --help                      # 顯示所有子命令說明（exit 0）
+bun scripts/evolution.js status                      # 快速顯示系統進化狀態（gap 摘要 + internalize + experience index）
+bun scripts/evolution.js status --json               # JSON 格式輸出狀態
 bun scripts/evolution.js analyze                     # 執行 gap 分析，輸出純文字報告
 bun scripts/evolution.js analyze --json              # JSON 格式報告（供程式消費）
 bun scripts/evolution.js fix                         # 自動修復可修復缺口（預設 dry-run）

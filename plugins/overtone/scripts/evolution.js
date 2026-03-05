@@ -38,6 +38,8 @@ function printUsage() {
   process.stdout.write('用法：bun scripts/evolution.js <subcommand> [options]\n');
   process.stdout.write('\n');
   process.stdout.write('子命令：\n');
+  process.stdout.write('  status               快速顯示系統進化狀態（gap 摘要 + internalize 索引 + forge 結果）\n');
+  process.stdout.write('  status --json        JSON 格式輸出\n');
   process.stdout.write('  analyze              執行 gap 分析，輸出純文字報告\n');
   process.stdout.write('  analyze --json       輸出 JSON 格式報告（供程式消費）\n');
   process.stdout.write('  fix                  預覽可修復缺口（dry-run，不修改任何檔案）\n');
@@ -58,9 +60,210 @@ function printUsage() {
   process.stdout.write('  internalize --json   以 JSON 格式輸出內化結果\n');
   process.stdout.write('\n');
   process.stdout.write('選項：\n');
+  process.stdout.write('  --help      顯示此說明（或子命令說明）\n');
   process.stdout.write('  --json      以 JSON 格式輸出\n');
   process.stdout.write('  --execute   實際執行（fix/forge/orchestrate/internalize 子命令預設為 dry-run）\n');
   process.stdout.write('  --type <t>  限制修復類型（sync-mismatch / no-references）\n');
+}
+
+/**
+ * 列印子命令說明
+ * @param {string} subcommand
+ */
+function printSubcommandHelp(subcommand) {
+  switch (subcommand) {
+    case 'status':
+      process.stdout.write('用法：bun scripts/evolution.js status [--json]\n');
+      process.stdout.write('\n');
+      process.stdout.write('快速顯示系統進化狀態，整合以下資訊：\n');
+      process.stdout.write('  - Gap 分析摘要（缺口數量 + severity 分佈）\n');
+      process.stdout.write('  - Internalize 索引狀態（internalized.md 是否存在、條目數）\n');
+      process.stdout.write('  - Experience index 狀態（已索引的 domain 數量）\n');
+      process.stdout.write('\n');
+      process.stdout.write('選項：\n');
+      process.stdout.write('  --json  以 JSON 格式輸出\n');
+      break;
+    case 'analyze':
+      process.stdout.write('用法：bun scripts/evolution.js analyze [--json]\n');
+      process.stdout.write('\n');
+      process.stdout.write('執行 gap 分析，檢測元件一致性缺口。有缺口 exit 1，無缺口 exit 0。\n');
+      process.stdout.write('\n');
+      process.stdout.write('檢測項目：component-chain / closed-loop / completion-gap / dependency-sync\n');
+      process.stdout.write('\n');
+      process.stdout.write('選項：\n');
+      process.stdout.write('  --json  以 JSON 格式輸出報告（供程式消費）\n');
+      break;
+    case 'fix':
+      process.stdout.write('用法：bun scripts/evolution.js fix [--execute] [--type <type>] [--json]\n');
+      process.stdout.write('\n');
+      process.stdout.write('修復可自動修復的缺口。預設 dry-run，加 --execute 實際修復。\n');
+      process.stdout.write('\n');
+      process.stdout.write('選項：\n');
+      process.stdout.write(`  --execute       實際執行修復\n`);
+      process.stdout.write(`  --type <type>   只修復指定類型（${VALID_FIX_TYPES.join(' / ')}）\n`);
+      process.stdout.write(`  --json          以 JSON 格式輸出修復結果\n`);
+      break;
+    case 'forge':
+      process.stdout.write('用法：bun scripts/evolution.js forge <domain> [--execute] [--json] [--research]\n');
+      process.stdout.write('\n');
+      process.stdout.write('為指定 domain 建立 Skill。預設 dry-run，加 --execute 實際建立。\n');
+      process.stdout.write('\n');
+      process.stdout.write('選項：\n');
+      process.stdout.write('  --execute   實際執行 forge，建立 skill\n');
+      process.stdout.write('  --json      以 JSON 格式輸出 forge 結果\n');
+      process.stdout.write('  --research  啟用外部 WebSearch 研究補充知識\n');
+      break;
+    case 'orchestrate':
+      process.stdout.write('用法：bun scripts/evolution.js orchestrate <specPath> [--execute] [--json] [--overwrite] [--workflow <template>]\n');
+      process.stdout.write('\n');
+      process.stdout.write('從 Project Spec 協調：gap 偵測 + skill forge + 佇列排程。預設 dry-run。\n');
+      process.stdout.write('\n');
+      process.stdout.write('選項：\n');
+      process.stdout.write('  --execute                    實際執行\n');
+      process.stdout.write('  --json                       JSON 格式輸出\n');
+      process.stdout.write('  --overwrite                  覆蓋現有佇列（預設 append）\n');
+      process.stdout.write('  --workflow <template>        指定 workflow 類型（預設 standard）\n');
+      process.stdout.write('  --project-root <path>        指定專案根目錄（預設 cwd）\n');
+      break;
+    case 'internalize':
+      process.stdout.write('用法：bun scripts/evolution.js internalize [--execute] [--json]\n');
+      process.stdout.write('\n');
+      process.stdout.write('評估 auto-discovered.md 條目並生成 internalized.md。預設 dry-run。\n');
+      process.stdout.write('\n');
+      process.stdout.write('選項：\n');
+      process.stdout.write('  --execute   實際寫入 internalized.md + 更新 experience-index\n');
+      process.stdout.write('  --json      以 JSON 格式輸出內化結果\n');
+      break;
+    default:
+      printUsage();
+  }
+}
+
+/**
+ * 取得 status 資料（純邏輯，不呼叫 process.exit）
+ * @param {object} [options]
+ * @param {string} [options.pluginRoot]
+ * @param {string} [options.projectRoot]
+ * @returns {{ gaps: object, internalize: object, experienceIndex: object }}
+ */
+function runStatus(options = {}) {
+  const { join } = require('path');
+  const { existsSync, readFileSync } = require('fs');
+
+  const pluginRoot = options.pluginRoot || _resolvePluginRoot();
+  const projectRoot = options.projectRoot || process.cwd();
+
+  // 1. Gap 摘要（輕量 analyze）
+  let gapSummary;
+  try {
+    const report = analyzeGaps();
+    gapSummary = {
+      ok: true,
+      total: report.summary.total,
+      bySeverity: report.summary.bySeverity,
+      byType: report.summary.byType,
+    };
+  } catch (err) {
+    gapSummary = { ok: false, error: err.message };
+  }
+
+  // 2. Internalize 索引狀態
+  const internalizedPath = join(pluginRoot, 'skills', 'instinct', 'internalized.md');
+  let internalizeSummary;
+  if (existsSync(internalizedPath)) {
+    try {
+      const content = readFileSync(internalizedPath, 'utf8');
+      // 計算 ## 段落數（即條目數）
+      const sectionCount = (content.match(/^##\s+\S/gm) || []).length;
+      internalizeSummary = { exists: true, sections: sectionCount, path: internalizedPath };
+    } catch (err) {
+      internalizeSummary = { exists: true, sections: 0, path: internalizedPath, error: err.message };
+    }
+  } else {
+    internalizeSummary = { exists: false };
+  }
+
+  // 3. Experience index 狀態
+  const paths = require('./lib/paths');
+  const indexPath = paths.global.experienceIndex(projectRoot);
+  let experienceIndexSummary;
+  if (existsSync(indexPath)) {
+    try {
+      const raw = readFileSync(indexPath, 'utf8');
+      const data = JSON.parse(raw);
+      const entries = Array.isArray(data.entries) ? data.entries : [];
+      const selfHash = paths.projectHash(projectRoot);
+      const selfEntry = entries.find(e => e.projectHash === selfHash);
+      experienceIndexSummary = {
+        exists: true,
+        totalProjects: entries.length,
+        selfDomains: selfEntry ? selfEntry.domains : [],
+        selfSessionCount: selfEntry ? selfEntry.sessionCount : 0,
+      };
+    } catch (err) {
+      experienceIndexSummary = { exists: true, error: err.message };
+    }
+  } else {
+    experienceIndexSummary = { exists: false };
+  }
+
+  return { gaps: gapSummary, internalize: internalizeSummary, experienceIndex: experienceIndexSummary };
+}
+
+/**
+ * 格式化 status 輸出（human-readable）
+ * @param {object} status - runStatus() 回傳值
+ * @returns {string}
+ */
+function formatStatusOutput(status) {
+  const lines = [];
+  lines.push('Evolution Status');
+  lines.push('================');
+  lines.push('');
+
+  // Gap 分析
+  lines.push('Gap 分析：');
+  if (!status.gaps.ok) {
+    lines.push(`  [錯誤] ${status.gaps.error}`);
+  } else if (status.gaps.total === 0) {
+    lines.push('  無缺口 — 元件一致性正常');
+  } else {
+    const s = status.gaps.bySeverity;
+    lines.push(`  缺口總計：${status.gaps.total}`);
+    lines.push(`  error=${s.error} / warning=${s.warning} / info=${s.info}`);
+    const byType = Object.entries(status.gaps.byType).filter(([, v]) => v > 0);
+    if (byType.length > 0) {
+      lines.push(`  類型：${byType.map(([k, v]) => `${k}:${v}`).join(' / ')}`);
+    }
+  }
+  lines.push('');
+
+  // Internalize 索引
+  lines.push('Internalize 索引：');
+  if (!status.internalize.exists) {
+    lines.push('  未建立（執行 internalize --execute 生成）');
+  } else {
+    lines.push(`  已建立（${status.internalize.sections} 個條目）`);
+    lines.push(`  路徑：${status.internalize.path}`);
+  }
+  lines.push('');
+
+  // Experience Index
+  lines.push('Experience Index：');
+  if (!status.experienceIndex.exists) {
+    lines.push('  未建立（執行 internalize --execute 後自動生成）');
+  } else {
+    const ei = status.experienceIndex;
+    lines.push(`  已索引專案：${ei.totalProjects} 個`);
+    if (ei.selfDomains && ei.selfDomains.length > 0) {
+      lines.push(`  本專案 domains（${ei.selfDomains.length}）：${ei.selfDomains.join(', ')}`);
+      lines.push(`  本專案 session 數：${ei.selfSessionCount}`);
+    } else {
+      lines.push('  本專案尚無索引記錄');
+    }
+  }
+
+  return lines.join('\n');
 }
 
 function formatTextReport(report) {
@@ -325,13 +528,36 @@ function main() {
 
   const subcommand = positional[0];
   const jsonOutput = flags.includes('--json');
+  const wantsHelp = flags.includes('--help');
 
-  if (!subcommand) {
+  // 頂層 --help 或無子命令
+  if (!subcommand || (wantsHelp && !subcommand)) {
     printUsage();
-    process.exit(1);
+    process.exit(wantsHelp ? 0 : 1);
   }
 
-  if (subcommand === 'analyze') {
+  // 子命令 --help
+  if (wantsHelp) {
+    printSubcommandHelp(subcommand);
+    process.exit(0);
+  }
+
+  if (subcommand === 'status') {
+    let status;
+    try {
+      status = runStatus();
+    } catch (err) {
+      process.stderr.write(`status 執行錯誤：${err.message}\n`);
+      process.exit(1);
+    }
+
+    if (jsonOutput) {
+      process.stdout.write(JSON.stringify(status, null, 2) + '\n');
+    } else {
+      process.stdout.write(formatStatusOutput(status) + '\n');
+    }
+    process.exit(0);
+  } else if (subcommand === 'analyze') {
     let report;
     try {
       report = analyzeGaps();
@@ -693,4 +919,4 @@ if (require.main === module) {
   main();
 }
 
-module.exports = { formatTextReport, formatFixDryRun, formatFixResult, formatInternalizeOutput, runInternalize, main, VALID_FIX_TYPES, orchestrate };
+module.exports = { formatTextReport, formatFixDryRun, formatFixResult, formatInternalizeOutput, runInternalize, runStatus, formatStatusOutput, printSubcommandHelp, main, VALID_FIX_TYPES, orchestrate };
