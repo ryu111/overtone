@@ -833,3 +833,99 @@ describe('graduate merge 語意', () => {
     expect(obs[0].action).toBe('新行動');
   });
 });
+
+// ════════════════════════════════════════════════════════════════════
+// Feature 6: queryGlobal excludeTypes 過濾（BDD Feature 6）
+// ════════════════════════════════════════════════════════════════════
+
+describe('Feature 6: queryGlobal excludeTypes 過濾', () => {
+  let projectRoot;
+
+  beforeEach(() => {
+    projectRoot = makeTmpProject('excl');
+  });
+
+  afterEach(() => {
+    rmSync(projectRoot, { recursive: true, force: true });
+    rmSync(paths.global.dir(projectRoot), { recursive: true, force: true });
+  });
+
+  function seedGlobal(observations) {
+    const obsPath = paths.global.observations(projectRoot);
+    mkdirSync(path.dirname(obsPath), { recursive: true });
+    for (const o of observations) {
+      appendFileSync(obsPath, JSON.stringify(o) + '\n', 'utf8');
+    }
+  }
+
+  // Scenario 6-1
+  test('Scenario 6-1: excludeTypes 過濾掉指定 type 的記錄', () => {
+    seedGlobal([
+      makeObs({ tag: 'j1', type: 'intent_journal', confidence: 0.8, globalTs: new Date().toISOString() }),
+      makeObs({ tag: 'p1', type: 'tool_preferences', confidence: 0.8, globalTs: new Date().toISOString() }),
+    ]);
+
+    const result = globalInstinct.queryGlobal(projectRoot, { excludeTypes: ['intent_journal'] });
+
+    expect(result.some(o => o.type === 'intent_journal')).toBe(false);
+    expect(result.some(o => o.type === 'tool_preferences')).toBe(true);
+  });
+
+  // Scenario 6-2
+  test('Scenario 6-2: excludeTypes 為空陣列時不過濾任何記錄', () => {
+    seedGlobal([
+      makeObs({ tag: 'j1', type: 'intent_journal', confidence: 0.8, globalTs: new Date().toISOString() }),
+      makeObs({ tag: 'p1', type: 'tool_preferences', confidence: 0.8, globalTs: new Date().toISOString() }),
+    ]);
+
+    const result = globalInstinct.queryGlobal(projectRoot, { excludeTypes: [] });
+
+    expect(result).toHaveLength(2);
+  });
+
+  // Scenario 6-3
+  test('Scenario 6-3: excludeTypes 不傳時不過濾任何記錄（向後相容）', () => {
+    seedGlobal([
+      makeObs({ tag: 'j1', type: 'intent_journal', confidence: 0.8, globalTs: new Date().toISOString() }),
+    ]);
+
+    const result = globalInstinct.queryGlobal(projectRoot, {});
+
+    expect(result.some(o => o.type === 'intent_journal')).toBe(true);
+  });
+
+  // Scenario 6-4
+  test('Scenario 6-4: excludeTypes 可同時排除多個 type', () => {
+    seedGlobal([
+      makeObs({ tag: 'j1', type: 'intent_journal', confidence: 0.8, globalTs: new Date().toISOString() }),
+      makeObs({ tag: 'p1', type: 'tool_preferences', confidence: 0.8, globalTs: new Date().toISOString() }),
+      makeObs({ tag: 'u1', type: 'user_corrections', confidence: 0.8, globalTs: new Date().toISOString() }),
+    ]);
+
+    const result = globalInstinct.queryGlobal(projectRoot, {
+      excludeTypes: ['intent_journal', 'tool_preferences'],
+    });
+
+    expect(result.some(o => o.type === 'intent_journal')).toBe(false);
+    expect(result.some(o => o.type === 'tool_preferences')).toBe(false);
+    expect(result.some(o => o.type === 'user_corrections')).toBe(true);
+  });
+
+  // Scenario 6-5
+  test('Scenario 6-5: excludeTypes 與 type filter 可同時使用（雙重過濾）', () => {
+    seedGlobal([
+      makeObs({ tag: 'j1', type: 'intent_journal', confidence: 0.8, globalTs: new Date().toISOString() }),
+      makeObs({ tag: 'p1', type: 'tool_preferences', confidence: 0.8, globalTs: new Date().toISOString() }),
+      makeObs({ tag: 'u1', type: 'user_corrections', confidence: 0.8, globalTs: new Date().toISOString() }),
+    ]);
+
+    const result = globalInstinct.queryGlobal(projectRoot, {
+      type: 'tool_preferences',
+      excludeTypes: ['intent_journal'],
+    });
+
+    expect(result).toHaveLength(1);
+    expect(result[0].type).toBe('tool_preferences');
+    expect(result.some(o => o.type === 'intent_journal')).toBe(false);
+  });
+});

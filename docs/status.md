@@ -1,6 +1,6 @@
 # Overtone 現況
 
-> 最後更新：2026-03-05 | Plugin 版本：0.28.51（SessionStart systemMessage 動態注入 plugin context）
+> 最後更新：2026-03-05 | Plugin 版本：0.28.52（Prompt Journal — intent_journal 觀察類型記錄 prompt 原文）
 
 ## 版本狀態
 

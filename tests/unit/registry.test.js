@@ -8,6 +8,7 @@ const {
   agentMemory,
   agentModels,
   hookEvents,
+  journalDefaults,
 } = require('../../plugins/overtone/scripts/lib/registry');
 
 describe('registry.js 資料完整性', () => {
@@ -155,6 +156,28 @@ describe('registry.js 資料完整性', () => {
       for (const [model, level] of Object.entries(effortLevels)) {
         expect(validLevels.has(level)).toBe(true);
       }
+    });
+  });
+
+  // Feature 3 BDD: journalDefaults 常數
+  describe('journalDefaults — BDD Feature 3', () => {
+    // Scenario 3-1
+    test('Scenario 3-1: journalDefaults.maxPromptLength 等於 500', () => {
+      expect(journalDefaults.maxPromptLength).toBe(500);
+    });
+
+    test('Scenario 3-1: journalDefaults.loadTopN 等於 10', () => {
+      expect(journalDefaults.loadTopN).toBe(10);
+    });
+
+    test('Scenario 3-1: journalDefaults.minResultForGlobal 等於 "pass"', () => {
+      expect(journalDefaults.minResultForGlobal).toBe('pass');
+    });
+
+    // Scenario 3-2
+    test('Scenario 3-2: journalDefaults 是 module.exports 的一部分（可直接解構取得）', () => {
+      expect(journalDefaults).toBeDefined();
+      expect(typeof journalDefaults).toBe('object');
     });
   });
 });
