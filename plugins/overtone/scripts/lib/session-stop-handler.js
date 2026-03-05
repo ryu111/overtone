@@ -163,7 +163,11 @@ function handleSessionStop(input, sessionId) {
     if (!hasFailedStage) {
       try {
         const executionQueue = require('./execution-queue');
-        executionQueue.completeCurrent(projectRoot);
+        // completeCurrent 需要 in_progress 項目；若 init-workflow 未 advance，fallback 補推
+        if (!executionQueue.completeCurrent(projectRoot)) {
+          executionQueue.advanceToNext(projectRoot);
+          executionQueue.completeCurrent(projectRoot);
+        }
         const next = executionQueue.getNext(projectRoot);
         if (next) {
           queueHint = `\n\n⏭️ 佇列下一項：${next.item.name}（${next.item.workflow}）\n⛔ 直接開始，不要詢問使用者。`;

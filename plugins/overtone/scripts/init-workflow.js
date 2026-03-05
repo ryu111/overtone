@@ -109,6 +109,16 @@ if (featureName && specsFeaturePath) {
   });
 }
 
+// ── 執行佇列推進（pending → in_progress）──
+// 如果佇列中有匹配的 pending 項目，標記為 in_progress
+try {
+  const executionQueue = require('./lib/execution-queue');
+  const next = executionQueue.getNext(process.cwd());
+  if (next && next.item.workflow === workflowType) {
+    executionQueue.advanceToNext(process.cwd());
+  }
+} catch { /* 佇列操作失敗不影響主流程 */ }
+
 // 輸出結果
 const stageLabels = Object.keys(newState.stages).join(' → ');
 console.log(`✅ 工作流已初始化：${workflow.label}（${workflowType}）`);

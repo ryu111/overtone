@@ -207,6 +207,78 @@ describe('clearQueue', () => {
 // 6. 完整流程
 // ────────────────────────────────────────────────────────────────────────────
 
+// ────────────────────────────────────────────────────────────────────────────
+// 6. 防禦性推進（修復 init-workflow 未 advance 場景）
+// ────────────────────────────────────────────────────────────────────────────
+
+describe('防禦性推進：completeCurrent fallback', () => {
+  test('直接 completeCurrent pending 項目回傳 false', () => {
+    executionQueue.writeQueue(TEST_PROJECT, [
+      { name: 'no-advance', workflow: 'quick' },
+    ], 'test');
+
+    // 不呼叫 advanceToNext → completeCurrent 應失敗
+    const success = executionQueue.completeCurrent(TEST_PROJECT);
+    expect(success).toBe(false);
+
+    // 項目仍為 pending
+    const queue = executionQueue.readQueue(TEST_PROJECT);
+    expect(queue.items[0].status).toBe('pending');
+  });
+
+  test('fallback 模式：advance + complete 可完成 pending 項目', () => {
+    executionQueue.writeQueue(TEST_PROJECT, [
+      { name: 'fallback-item', workflow: 'quick' },
+    ], 'test');
+
+    // 模擬 session-stop-handler 的 fallback 邏輯
+    if (!executionQueue.completeCurrent(TEST_PROJECT)) {
+      executionQueue.advanceToNext(TEST_PROJECT);
+      executionQueue.completeCurrent(TEST_PROJECT);
+    }
+
+    const queue = executionQueue.readQueue(TEST_PROJECT);
+    expect(queue.items[0].status).toBe('completed');
+    expect(queue.items[0].completedAt).toBeDefined();
+  });
+
+  test('fallback 模式：多項佇列只完成第一個 pending', () => {
+    executionQueue.writeQueue(TEST_PROJECT, [
+      { name: 'first', workflow: 'quick' },
+      { name: 'second', workflow: 'standard' },
+    ], 'test');
+
+    // fallback 推進
+    if (!executionQueue.completeCurrent(TEST_PROJECT)) {
+      executionQueue.advanceToNext(TEST_PROJECT);
+      executionQueue.completeCurrent(TEST_PROJECT);
+    }
+
+    const queue = executionQueue.readQueue(TEST_PROJECT);
+    expect(queue.items[0].status).toBe('completed');
+    expect(queue.items[1].status).toBe('pending');
+  });
+
+  test('正常流程（已 advance）不觸發 fallback', () => {
+    executionQueue.writeQueue(TEST_PROJECT, [
+      { name: 'normal', workflow: 'quick' },
+    ], 'test');
+
+    executionQueue.advanceToNext(TEST_PROJECT);
+
+    // completeCurrent 直接成功，不需要 fallback
+    const success = executionQueue.completeCurrent(TEST_PROJECT);
+    expect(success).toBe(true);
+
+    const queue = executionQueue.readQueue(TEST_PROJECT);
+    expect(queue.items[0].status).toBe('completed');
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// 7. 完整流程
+// ────────────────────────────────────────────────────────────────────────────
+
 describe('完整流程', () => {
   test('3 項佇列完整推進', () => {
     executionQueue.writeQueue(TEST_PROJECT, [
