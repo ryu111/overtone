@@ -51,3 +51,48 @@ Keywords: session, start, handler, buildplugincontext, sessionstart, systemmessa
 - 近期變更更新：status.md 最新 3 筆摘要已更新（0.28.53、0.28.52、0.28.51）
 - 新功能文檔化完成：craft skill 的 SKILL.md 已包含 overtone-principles.md 參考
 Keywords: plugin, json, changelog, status, spec, overtone, readme, pass, fail, craft
+---
+## 2026-03-05 | architect:ARCH Findings
+**技術方案**：
+- 透過 `manage-component.js update agent` 傳入 `body` 欄位做整段替換
+- `updateAgent` 保留 frontmatter，只替換正文；atomicWrite 確保原子操作；各 agent 操作獨立檔案，無 race condition
+- 14 個 agent 分三類：A 類（只加誤判防護 x6）、B/C 類（加信心過濾+誤判防護 x7）、D 類（極精簡補齊 grader x1）+ security-reviewer（只加信心過濾）
+
+**API 介面**：
+
+```bash
+bun plugins/overtone/scripts/manage-component.js update agent <name> '{"body":"<完整正文>"}'
+```
+
+- `body`：從 `# 標題` 開始的完整正文字串，整段替換
+- developer 必須先 Read 現有檔案，找到 DON'T 章節末尾，附加新章節後傳入完整 body
+
+**資料模型**：
+
+無新資料結構。修改對象是 14 個 `.md` 檔案的正文內容，每個修改：讀取現有正文 → 在 DON'T 後插入新章節 → 整段寫回。
+
+**檔案結構**：
+
+```
+修改的檔案（14 個，全在 plugins/overtone/agents/）：
+  architect.md, debugger.md, developer.md, planner.md, retrospective.md, tester.md
+  build-error-resolver.md, designer.md, doc-updater.md, e2e-runner.md
+  qa.md, refactor-cleaner.md, claude-developer.md, security-reviewer.md, grader.md
+```
+
+設計文件：
+- `/Users/sbu/projects/overtone/specs/features/in-progress/agent-prompt-four-modes/design.md`
+- `/Users/sbu/projects/overtone/specs/features/in-progress/agent-prompt-four-modes/tasks.md`
+
+**Dev Phases**：
+Keywords: manage, component, update, agent, body, updateagent, frontmatter, atomicwrite, race, condition
+---
+## 2026-03-05 | architect:ARCH Context
+14 個 agent 的 prompt 四模式補齊設計完成。選擇以 `manage-component.js update agent <name> '{"body":"..."}'` 作為唯一修改路徑（agents/*.md 受 pre-edit guard 保護，Edit 工具被阻擋）。章節位置標準化為 database-reviewer 模式：DO → DON'T → 信心過濾（適用者）→ 誤判防護（適用者）→ 輸入 → 輸出 → 停止條件。
+Keywords: agent, prompt, manage, component, update, name, body, agents, edit, guard
+---
+## 2026-03-05 | tester:TEST Context
+模式：spec（TEST:spec）
+
+為「Agent Prompt 四模式補齊」功能撰寫完整的 BDD 行為規格。根據 design.md 和 tasks.md 的設計，定義了 10 個 Scenario 涵蓋：結構驗證、內容驗證、章節順序、frontmatter 不變性、回歸驗證等面向。
+Keywords: spec, test, agent, prompt, design, tasks, scenario, frontmatter

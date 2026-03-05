@@ -1,244 +1,4 @@
 ---
-## 2026-03-04 | architect:ARCH Findings
-**技術方案**：
-- 採用就地匯出策略：在 hook 檔案底部加 `module.exports = { pureFn }` + `if (require.main === module) { safeRun(...) }` 守衛
-- 不建 `hooks/scripts/lib/` 子目錄（避免過度設計，函數太小不值得獨立模組）
-- 混合測試策略：spawn 測試保留做端到端驗証（外部行為不變），新增 require 測試做純函數業務邏輯
-
-**現況**：13 個 hook 中已有 3 個完成（`agent/on-stop.js`、`tool/post-use.js`、`tool/post-use-failure.js`），需重構 10 個
-
-**API 介面**（匯出的純函數）：
-
-| Hook | 匯出函數 | 測試核心 |
-|------|---------|---------|
-| `session/on-start.js` | `buildBanner(version, sessionId, port, deps)` | banner 字串包含版本/session 資訊 |
-| `session/on-start.js` | `buildStartOutput(input, msgs)` | systemMessage 組裝邏輯 |
-| `session/on-stop.js` | `buildCompletionSummary(ws, stages)` | 完成摘要格式（已存在，加匯出） |
-| `session/on-stop.js` | `calcDuration(startIso)` | 時間格式化（已存在，加匯出） |
-| `session/on-stop.js` | `buildContinueMessage(ctx)` | loop 繼續訊息組裝 |
-| `session/pre-compact.js` | `buildCompactMessage(ctx)` | 壓縮恢復訊息含截斷邏輯 |
-| `prompt/on-submit.js` | `buildSystemMessage(ctx)` | 三種分支：override/進行中/無 workflow |
-| `tool/pre-task.js` | `checkSkippedStages(state, targetStage, stages)` | 返回被跳過 stage 清單 |
-| `tool/pre-edit-guard.js` | `checkProtected(filePath, pluginRoot)` | 返回 `{label, api}` 或 null |
-| `tool/pre-edit-guard.js` | `checkMemoryLineLimit(filePath, toolName, toolInput, limit)` | 返回 `{exceeded, estimatedLines}` |
-| `tool/pre-bash-guard.js` | `checkDangerousCommand(command)` | 返回 label 或 null |
-| `notification/on-notification.js` | `shouldPlaySound(notificationType, soundTypes)` | 返回 boolean |
-| `session/on-session-end.js` | 無（僅加守衛） | — |
-| `task/on-task-completed.js` | 無（僅加守衛） | — |
-
-**資料模型**：無新增。stdin/stdout JSON 協定不變。
-
-**檔案結構**：
-
-```
-修改（加守衛 + 匯出）：
-  plugins/overtone/hooks/scripts/session/on-start.js
-  plugins/overtone/hooks/scripts/session/on-stop.js
-  plugins/overtone/hooks/scripts/session/pre-compact.js
-  plugins/overtone/hooks/scripts/session/on-session-end.js   ← 僅加守衛
-  plugins/overtone/hooks/scripts/prompt/on-submit.js
-  plugins/overtone/hooks/scripts/tool/pre-task.js
-  plugins/overtone/hooks/scripts/tool/pre-edit-guard.js
-  plugins/overtone/hooks/scripts/tool/pre-bash-guard.js
-  plugins/overtone/hooks/scripts/task/on-task-completed.js   ← 僅加守衛
-  plugins/overtone/hooks/scripts/notification/on-notification.js
-
-新增：
-  tests/unit/hook-pure-fns.test.js
-
-修改（新增純函數測試 cases）：
-  tests/integration/session-start.test.js
-  tests/integration/pre-compact.test.js
-  tests/integration/on-submit.test.js
-  tests/integration/pre-task.test.js
-```
-
-**Dev Phases**：
-Keywords: hook, module, exports, purefn, require, main, saferun, hooks, scripts, spawn
-
----
-## 2026-03-04 | tester:TEST Findings
-共定義 **10 個 Feature**、**44 個 Scenario**：
-
-| Feature | Scenario 數 |
-|---------|------------|
-| Hook 純函數匯出契約（session/on-start.js — buildBanner/buildStartOutput） | 5 |
-| session/on-stop.js 純函數匯出契約（calcDuration/buildCompletionSummary/buildContinueMessage） | 6 |
-| session/pre-compact.js 純函數匯出契約（buildCompactMessage） | 3 |
-| prompt/on-submit.js 純函數匯出契約（buildSystemMessage） | 4 |
-| tool/pre-task.js 純函數匯出契約（checkSkippedStages） | 4 |
-| tool/pre-edit-guard.js 純函數匯出契約（checkProtected/checkMemoryLineLimit） | 6 |
-| tool/pre-bash-guard.js 純函數匯出契約（checkDangerousCommand） | 4 |
-| notification/on-notification.js 純函數匯出契約（shouldPlaySound） | 3 |
-| require.main 守衛 | 4 |
-| Hook CLI 行為不變（stdin/stdout 協定） | 5 |
-
-每個 Feature 均涵蓋：happy path + 邊界條件（空值/空陣列/null）+ 型別契約驗證。
-Keywords: feature, scenario, hook, session, start, buildbanner, buildstartoutput, stop, calcduration, buildcompletionsummary
-
----
-## 2026-03-04 | product-manager:PM Findings
-**目標用戶**：
-- 主要：developer agent（DEV 階段修改 Overtone 元件時）
-- 次要：architect agent（ARCH 階段設計新元件時）、人類使用者（手動修改時查閱）
-
-**成功指標**：
-- 元件修改時零格式錯誤（hooks.json 三層嵌套、agent frontmatter 完整欄位）
-- developer agent 不再因為不知道 manage-component.js 而被 pre-edit-guard 攔截
-- 新增 agent/skill/hook 時一次到位，不需要多輪修正
-
-**方案比較**：
-
-| 維度 | 方案 A：新建 Overtone 內部 `claude-dev` skill | 方案 B：將 plugin-dev skills 引用整合進 Overtone | 方案 C：擴展現有 craft skill 加入元件開發章節 |
-|------|------|------|------|
-| 概述 | 在 `plugins/overtone/skills/` 新建 `claude-dev` knowledge domain，整合 Claude Code 平台知識 + Overtone 專有規範 | 在 Overtone agent frontmatter 的 `skills` 欄位加入 plugin-dev 的 skills 引用，並補充 Overtone 特有 reference | 在 craft skill 的 references 目錄加入元件開發參考文件 |
-| 優點 | **完全自主**：知識在 Overtone 內部，不依賴外部 plugin；可精準客製 Overtone 專有規範（三層嵌套、manage-component.js、四模式）；progressive disclosure 按需載入 | 複用現有 plugin-dev 知識（約 3,500 行），不重複造輪子 | 最小改動，不新增 skill |
-| 缺點 | 需要從 plugin-dev 萃取相關知識 + 加入 Overtone 專有內容，初始工作量較大（5-7 人天） | plugin-dev 是通用知識，缺少 Overtone 專有規範，仍需大
-Keywords: developer, agent, overtone, architect, arch, hooks, json, frontmatter, manage, component
-
----
-## 2026-03-04 | product-manager:PM Context
-Overtone 開發者（主要是 developer agent 和人類使用者）在修改核心元件（agents、skills、hooks、commands、statusline）時，面臨兩層知識缺口：(1) Claude Code 平台 API 的正確用法散落在外部 plugin-dev plugin 中，不在 developer agent 的 skill 清單內；(2) Overtone 專案特有規範（三層嵌套、manage-component.js 強制路徑、agent 四模式、pre-edit-guard 保護）零散地記錄在 CLAUDE.md 和各處 auto-discovered.md 中。這導致每次元件修改都有格式錯誤風險和重複查詢成本。
-Keywords: overtone, developer, agent, agents, skills, hooks, commands, statusline, claude, code
-
----
-## 2026-03-04 | planner:PLAN Findings
-**需求分解**：
-
-1. 建立 `plugins/overtone/skills/claude-dev/SKILL.md` | agent: developer | files: `plugins/overtone/skills/claude-dev/SKILL.md`
-   - frontmatter：name, description, disable-model-invocation: true, user-invocable: false
-   - 正文必須在 800 字元內（buildSkillContext 截斷限制）
-   - 消費者表：developer、architect
-   - 決策樹：何時讀 hooks-api vs agent-api
-   - 資源索引：指向兩個 reference 檔案
-
-2. 建立 `plugins/overtone/skills/claude-dev/references/hooks-api.md` (parallel) | agent: developer | files: 新建
-   - 三層嵌套格式（`{ hooks: { EventName: [{ matcher?, hooks: [{ type, command }] }] } }`）
-   - 全 11 個事件（SessionStart, SessionEnd, PreCompact, UserPromptSubmit, PreToolUse, PostToolUse, PostToolUseFailure, SubagentStop, Stop, TaskCompleted, Notification）
-   - updatedInput REPLACE 語意（`{ ...toolInput, prompt: newPrompt }` 保留所有欄位）
-   - PreToolUse 的三種 output：permissionDecision + updatedInput + systemMessage
-   - Stop/SubagentStop 的 decision（approve/block）
-   - exit code 語意（0=透明通過, 2=阻擋+stderr 注入）
-   - stdin JSON 解析模式（所有 hook 用 safeReadStdin）
-   - manage-component.js 是唯一合法的 hook 修改路徑
-
-3. 建立 `plugins/overtone/skills/claude-dev/references/agent-api.md` (parallel) | agent: developer | files: 新建
-   - Overtone 額外 frontmatter 欄位：permissionMode, skills, memory, maxTurns, disallowedTools, color
-   - 四模式 prompt 設計（信心過濾 + 邊界清單 DO/DON'T + 誤判防護 + 停止條件）
-   - manage-component.js 建立/更新路徑（pre-edit-guard 保護 agents/*.md）
-   - buildSkillContext 機制（frontmatter skills → SKILL.md 正文截斷注入）
-   - Handoff 格式（Context → Findings → Files Modified → Open Questions）
-
-4. 更新 developer frontmatter 加入 claude-dev skill (parallel with #5) | agent: developer | files: `plugins/overtone/agents/developer.md`
-   - 透過 `manage-component.js update agent developer '{"skills": [...]}'` 執行
-   - 新 skills 列表：autonomous-control, commit-convention, wording, os-control, craft, claude-dev
-
-5. 更新 architect frontmatter 加入 claude-dev skill (parallel with #4) | agent: developer | files: `plugins/overtone/agents/architect.md`
-   - 透過 `manage-component.js update agent architect '{"skills": [...]}'` 執行
-   - 新 skills 列表：autonomous-control, architecture, os-control, wording, craft, claude-dev
-
-6. 更新 knowledge-gap-detector.js 加入 claude-dev domain | agent: developer | files: `plugins/overtone/scripts/lib/knowledge-gap-detector.js`
-   - 在 DOMAIN_KEYWORDS 加入 `claude-dev` 關鍵詞（hooks.json, hook, event, subagent, PreToolUse, frontmatter, agent, skill, manage-component 等）
-   - 讓 pre-task hook 能偵測到元件修改場景並建議查閱 claude-dev skill
-
-**優先順序**：
-
-- Phase 1 (parallel)：子任務 1 + 2 + 3 同時建立（SKILL.md + hooks-api.md + agent-api.md，無依賴）
-- Phase 2 (parallel)：子任務 4 + 5 + 6 同時執行（更新兩個 agent frontmatter + 更新 knowledge-gap-detector，依賴 Phase 1 的 skill name 確定）
-
-**範圍邊界**：
-
-不在迭代 1 範圍內：
-- skill-api.md、command-api.m
-Keywords: plugins, overtone, skills, claude, skill, agent, developer, files, frontmatter, name
-
----
-## 2026-03-04 | planner:PLAN Context
-使用者要建立 `claude-dev` knowledge domain skill（迭代 1），解決 Overtone 開發者修改核心元件時缺乏平台知識支援的問題。當前 Claude Code 平台知識散落在外部 plugin-dev plugin（且部分過時，如三層嵌套格式和 TaskCompleted/Notification 事件），Overtone 專有規範零散在 CLAUDE.md，導致每次修改元件都有格式錯誤風險。
-Keywords: claude, knowledge, domain, skill, overtone, code, plugin, taskcompleted, notification
-
----
-## 2026-03-04 | architect:ARCH Context
-設計 `claude-dev` 第 15 個 knowledge domain skill，提供 developer 和 architect agent 在開發 Claude Code plugin 時所需的 hooks API 和 agent API 知識。方案與現有 14 個 knowledge domain 完全一致：SKILL.md 正文作索引（< 800 chars），完整知識放 references（無截斷限制）。
-Keywords: claude, knowledge, domain, skill, developer, architect, agent, code, plugin, hooks
-
----
-## 2026-03-04 | tester:TEST Findings
-定義了 6 個 Feature，共 25 個 Scenario：
-
-**Feature 1 — SKILL.md 結構正確性（5 個 Scenario）**
-- frontmatter 必要欄位、正文 800 字元上限、消費者表、決策樹、資源索引
-
-**Feature 2 — hooks-api.md 內容完整性（6 個 Scenario）**
-- 三層嵌套格式、11 個 Hook 事件完整性、updatedInput REPLACE 語意、exit code、Overtone 元件保護、截斷後不崩潰
-
-**Feature 3 — agent-api.md 內容完整性（6 個 Scenario）**
-- frontmatter 欄位、skills 三階段注入流程、manage-component.js 路徑、四模式 prompt 設計、model 選擇策略、禁止硬編碼路徑
-
-**Feature 4 — Agent frontmatter 更新（3 個 Scenario）**
-- developer.md 含 claude-dev、architect.md 含 claude-dev、原有 skills 不被覆蓋
-
-**Feature 5 — knowledge-gap-detector 整合（6 個 Scenario）**
-- DOMAIN_KEYWORDS 含 claude-dev（>=10 關鍵詞）、Hook 相關 prompt 命中、Agent 設定相關 prompt 命中、已有 skill 不重複回報、不影響既有 domain、無關 prompt 不誤報
-
-**Feature 6 — buildSkillContext 相容性（3 個 Scenario）**
-- 正確讀取截斷、多 skill 總長截斷邏輯、SKILL.md 不存在時靜默跳過
-Keywords: feature, scenario, skill, frontmatter, hooks, hook, updatedinput, replace, exit, code
-
----
-## 2026-03-04 | tester:TEST Context
-模式：spec（TEST:spec 階段，DEV 前）
-
-撰寫了 `claude-dev-skill` feature 的完整 BDD 行為規格，涵蓋 Architect Handoff 定義的 6 個驗證面向。
-Keywords: spec, test, claude, skill, feature, architect, handoff
-
----
-## 2026-03-04 | code-reviewer:REVIEW Findings
-- 25 個 BDD Scenario 全部符合要求
-- 新增 3 個檔案（SKILL.md + hooks-api.md + agent-api.md）品質良好
-- 7 個修改檔案（agent frontmatter、knowledge-gap-detector、docs/status.md、CLAUDE.md、plugin.json、docs-sync test、knowledge-gap-detector test）交叉引用一致
-- 附帶變更（commands 並行委派、statusline 四態、on-stop PM 狀態）邏輯正確
-- 2 個 Minor/Nitpick 觀察（SKILL.md 缺少 EOF 換行、hooks-api.md 章節標題可更精確），不阻擋合併
-Keywords: scenario, skill, hooks, agent, frontmatter, knowledge, detector, docs, status, claude
-
----
-## 2026-03-04 | tester:TEST:2 Findings
-測試結果：**25 Scenario PASS，0 FAIL**
-
-全量測試：3206 pass / 1 fail（pre-existing）。
-
-關鍵驗證項目：
-- SKILL.md 正文 730 字元，在 800 字元限制內
-- hooks-api.md 記載全部 11 個 Hook 事件 + updatedInput REPLACE 語意
-- agent-api.md 覆蓋四模式 prompt 設計、manage-component.js 路徑、skills 截斷限制
-- developer.md 和 architect.md 各含 claude-dev skill（原有 skills 保留）
-- DOMAIN_KEYWORDS 擴展至 12 個 domain，docs-sync skill count 更新至 23
-Keywords: scenario, pass, fail, existing, skill, hooks, hook, updatedinput, replace, agent
-
----
-## 2026-03-04 | doc-updater:DOCS Findings
-文件同步驗證結果：
-
-1. **docs/status.md** — ✅ 已正確更新
-   - 版本號：0.28.44（claude-dev knowledge domain）
-   - Skill 數量：23（15 knowledge domain + orchestrator + pm + specs + 4 utility-with-refs）
-   - Knowledge Domains：15 個（新增 claude-dev 作為第 15 個）
-   - 近期變更：最新 3 筆已正確記錄
-
-2. **CLAUDE.md** — ✅ 已正確更新
-   - 目錄結構：23 個 Skill、15 knowledge domains（包含 claude-dev）
-   - 驗證指令：已更新為 17 agents + 11 hooks + 23 skills + 27 commands
-
-3. **docs/spec/overtone.md** — ✅ 已更新
-   - 版本號：v0.28.37 → v0.28.44
-
-4. **docs/roadmap.md** — ✅ 保留歷史狀態
-   - P3.2 驗證記錄保持原樣（當時是 22 skills），不涉及本次更新
-
-5. **plugin.json** — ✅ 已正確設定（0.28.44）
-Keywords: docs, status, claude, knowledge, domain, skill, orchestrator, specs, utility, refs
-
----
 ## 2026-03-04 | doc-updater:DOCS Context
 已完成 `claude-dev-skill` 功能的文件同步。Developer 建立了第 15 個 knowledge domain skill，包含 hooks API 和 agent API 知識。
 Keywords: claude, skill, developer, knowledge, domain, hooks, agent
@@ -904,4 +664,151 @@ Keywords: overtone, dogfooding, plan, workflow, heartbeat, daemon, skill, autoex
 ## 2026-03-05 | product-manager:PM Context
 使用者需要 PM skill 支援兩種模式：立即執行（現有預設）和規劃模式（plan）。核心問題是 PM 的 SKILL.md 強制 MUST 立即啟動 workflow，沒有「只規劃」的選項。這阻礙了「批次規劃、延遲執行」的工作流。
 Keywords: skill, plan, must, workflow
+
+---
+## 2026-03-05 | product-manager:PM Findings
+**目標用戶**：Overtone 開發者（個人 dogfooding）
+
+**成功指標**：
+- health-check 0 errors + 0 warnings（目前 27 warnings）
+- validate-agents prompt 品質檢查 0 warnings（目前 23 warnings）
+- 所有規範文件版本數字與 codebase 一致
+
+---
+
+**發現問題彙總**（按嚴重度排序）：
+Keywords: overtone, dogfooding, health, check, errors, warnings, validate, agents, prompt, codebase
+
+---
+## 2026-03-05 | product-manager:PM Context
+使用者要求對 Overtone 專案做深度掃瞄，檢查規範合規性、驗證品質、架構一致性。掃瞄範圍涵蓋 hooks.json 格式、agent prompt 四模式、skill 結構、registry SoT 一致性、測試品質、文件同步、製作規範（三條原則）、防禦架構。
+
+**核心結論**：系統整體健康度高（3455 pass / 0 fail、health-check 0 errors、元件驗證全部通過），但存在 **文件同步失效**（多處版本數字過時）、**agent prompt 品質缺口**（14/18 agent 缺少四模式中至少一項）、**timeline 閉環缺口**（21 個 event 有 emit 無 consumer）三大系統性問題。
+Keywords: overtone, hooks, json, agent, prompt, skill, registry, pass, fail, health
+
+---
+## 2026-03-05 | planner:PLAN Findings
+**逐 agent 缺失分析與修改計劃**：
+
+**1. architect（缺：誤判防護）**
+
+現狀：有 DO/DON'T、有停止條件，無信心過濾（性質上不需要 — 架構師出方案不是過濾式），無誤判防護。
+需要補的誤判防護（針對 architect 常見誤判）：
+- 「沒有顯式 pattern 就引入新慣例」誤判 — 先看現有 codebase pattern，不要自創
+- 「over-engineering 衝動」— 設計複雜到未來才需要的彈性，違反 DON'T
+- 「design.md 中的 interface 定義 = 實作程式碼」誤判 — 只寫 type/interface 定義，不寫函式實作
+- 「dev phases 任意切割」— 只有真正可並行（不同檔案 + 無邏輯依賴）才切 phases
+
+指令：
+```bash
+bun scripts/manage-component.js update agent architect '{"body": "..."}'
+```
+（body 為完整更新後的 markdown，需在現有架構上增加誤判防護章節）
+
+---
+
+**2. build-error-resolver（缺：誤判防護、信心過濾）**
+
+現狀：有 DO/DON'T、有停止條件，無誤判防護、無信心過濾。
+信心過濾：此 agent 的工作是確定性的（修 build error），不需要傳統信心過濾。但有「是否需要修」的判斷：
+- 只修構建工具回報的明確錯誤，不修「感覺應該有問題」的警告
+- warning 不是 error，除非阻擋構建才處理
+
+誤判防護：
+- 「警告（warning）≠ 需要修復的錯誤」— 只修 error，warning 記錄但不強制修
+- 「新語法/新 API 的 deprecation warning ≠ 構建失敗」— 不要把 deprecation upgrade 當 bug fix
+- 「測試 fail ≠ build error」— 停止條件說明 test 仍通過，但測試 fail 不在此 agent 範圍
+
+---
+
+**3. debugger（缺：誤判防護）**
+
+現狀：有 DO/DON'T、有停止條件，無誤判防護，無明確信心過濾（但有「需要程式碼證據」的要求）。
+
+誤判防護：
+- 「第一個看起來符合的假設 ≠ 根因」— 必須形成至少 2 個假設才能排除
+- 「stack trace 最頂層 ≠ 根因所在位置」— 要追蹤到是哪個上游呼叫造成的
+- 「測試 mock 導致的失敗 ≠ 應用程式碼 bug」— 先確認 mock 設定正確
+- 「間歇性失敗（flaky test）≠ 可確定性 bug」— 需跑多次確認是否穩定重現
+
+---
+
+**4. designer（缺：誤判防護、信心過濾、停止條件需補充）**
+
+現狀：有 DON'T，有停止條件，但缺誤判防護與信心過濾。designer 的結構較特殊（以 pipeline 流程為主體），不是標準四模式格式。
+
+信心過濾（designer 特有）：
+- search.py 找到路徑 → 使用 search.py 生成（高信心）
+- search.py NOT_FOUND → 使用降級方案（已有說明）
+- 不對 UI 偏好做「更好的設計」主張 — 只實現 handoff 指定的需求
+
+誤判防護：
+- 「新色彩方案 ≠ 改變 agent 顏色語義映射」— registry.js 顏色映射不能動
+- 「設計規格 ≠ 前端程式碼」— 不寫 JS/CSS 實作，只寫設計規格和 HTML Mockup
+- 「獨立模式 ≠ Pipeline 模式」— 判斷模式要看 prompt 是否含 specs feature 路徑
+
+---
+
+**5. developer（缺：誤判防護）**
+
+現狀：有完整 DO/DON'T、有停止條件，無誤判防護。
+
+誤判防護：
+- 「Handoff 的 Open Questions ≠ 需要立即解決的需求」— Open Questions 是提醒，不阻擋實作
+- 「測試 fail ≠ 一定要修測試」— 先確認是應用程式碼問題還是測試本身問題；不改測試除非 Handoff 明確要求
+- 「bun test 整體 pass ≠ 所有 scenario 都有覆蓋」— 要確認新功能有新測試
+- 「code-reviewer REJECT 含 'REJECT' 文字 ≠ reject 判定」— parseResult 讀 verdict，不是單純字串比對（此點上層已有，可強調）
+
+---
+
+**6. doc-updater（缺：誤判防護、信心過濾）**
+
+現狀：有 DO/DON'T、有停止條件，無誤判防護、無信心過濾。
+
+信心過濾（doc-updater 特有）：
+- 快速退出條件已存在（Files Modified 不含相關路徑 → 直接跳過），這本身是信心過濾的一種
+- 補充：只更新有直接對應變更的文件段落，不更新「感覺應該同步」的章節
+- 日期更新：只在有實質內容變更時更新日期，不因為「跑了 DOCS 階段」就更新
+
+誤判防護：
+- 「程式碼有變更 ≠ API 文件需要更新」— 只有 public interface / exported function 改變才需要更新
+- 「status.md 的數字 ≠ 隨意更新」— 測試數量只有在 Handoff 明確提供新數字時才更新
+- 「roadmap.md 的任務定義 ≠ doc-updater 可修改」— 只更新進度狀態，不修改任務描述或範圍
+
+---
+
+**7. e2e-runner（缺：誤判防護、信心過濾）**
+
+現狀：有 DO/DON'T、有停止條件，無誤判防護、無信心過濾。
+
+信心過濾：
+- E2E 測試是執行型（確定性），不需要傳統信心過濾
+- 但有「是否要新增 E2E 測試」的判斷：只為 BDD spec 有描述的使用者流程寫 E2E，不自行發明額外場景
+
+誤判防護：
+- 「agent-browser snapshot 的 @ref 編號在每次操作後可能改變」— 每次互動後重新 snapshot 取最新 @ref
+- 「headless 通過 ≠ interactive 也通過」— headless 是預設，但 Handoff 要說明測試環境限制
+- 「DOM element 不可見 ≠ 測試應該跳過」— 可能是條件渲染，要確認狀態條件
+- 「E2E 失敗 ≠ 一定是
+Keywords: agent, architect, pattern, codebase, over, engineering, design, interface, type, phases
+
+---
+## 2026-03-05 | planner:PLAN Context
+這個任務是補齊 Overtone 18 個 agent 中 14 個缺失「四模式」元素的 agent prompt。四模式定義為：信心過濾、邊界清單（DO/DON'T）、誤判防護、停止條件。分析完所有 agent 後，發現實際缺失情況比 PM 報告更細緻 — 部分「缺失」是因為 agent 的性質不需要某些模式，需要逐個判斷。
+Keywords: overtone, agent, prompt
+
+---
+## 2026-03-05 | retrospective:RETRO Findings
+**回顧摘要**：
+
+- **BDD 對齊完整**：11 個 Scenario 的要求全部在實作中得到滿足或超越。Security-reviewer 雖 BDD 說「不需要誤判防護」但實際加了（超越需求，不違反），grader 的 DON'T 完整包含 `⛔ 不修改任何程式碼` 和 `⛔ MUST NOT 寫 Handoff`，各類型 agent 的章節順序（DO → DON'T → 信心過濾 → 誤判防護 → 輸入 → 輸出 → 停止條件）均符合規範。
+
+- **跨模組一致性良好**：18 個 agent 中 17 個補齊了 `## 誤判防護`，唯一沒有的是 code-reviewer — 這是設計決策，code-reviewer 用原有的「防 false positive」說明替代，且不在 14/15 個目標清單中，屬預期範圍。
+
+- **品質指標達成**：validate-agents.js prompt 品質警告從 23 降至 0，bun test 3455 pass / 0 fail，兩項核心指標均達到 BDD 規格要求。
+
+- **誤判防護格式差異**：類型 A 的 6 個 agent（architect、debugger、developer、planner、retrospective、tester）使用 bullet list 而非 BDD Scenario 2 要求的「表格」格式，但 REVIEW 階段已明確標注為 [m]（minor），11/11 BDD scenario 均通過。此問題已由 code-reviewer 覆蓋，不重複報告。
+
+- **overtone-principles checklist 對齊**：各 agent 定義了停止條件和誤判防護（對應「自動修復」原則），新元件通過 validate-agents 檢查（對應「補全能力」原則），整體符合製作規範。
+Keywords: scenario, security, reviewer, grader, must, handoff, agent, code, false, positive
 

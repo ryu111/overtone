@@ -597,3 +597,18 @@ Keywords: verify, hook, humble, object, tests, unit, pure, test, pass, fail
 6. **[n] extraFields 可覆蓋標準欄位**：`...extraFields` 在物件建構式最後展開，理論上可覆蓋 `id`/`ts` 等標準欄位。當前使用場景安全（只傳 `sessionResult`），屬 Nitpick。
 Keywords: spec, feature, scenario, test, cases, tests, pass, emit, options, object
 
+---
+## 2026-03-05 | developer:DEV Findings
+**實作決策**：
+- Phase 1（architect/debugger/developer/planner/retrospective/tester）：在 DON'T 章節後插入 `## 誤判防護` 章節
+- Phase 2（build-error-resolver/designer/doc-updater/e2e-runner/qa/refactor-cleaner）：在 DON'T 章節後插入 `## 信心過濾` + `## 誤判防護` 兩個章節
+- claude-developer：原有誤判防護 → 補加信心過濾（移至 DON'T 後，信心過濾在誤判防護前）
+- grader：原精簡格式 `⛔ **DON'T**：` → 改為標準 `## DON'T（⛔ NEVER）` 格式（原有 pattern 不符合 validate-agents.js 的邊界清單偵測 patterns）
+- security-reviewer：已有誤判防護表格 → 補加信心過濾章節
+- designer：body 開頭無 `#` 標題行（原本如此）→ 保持原有格式，只在 DON'T 後插入新章節
+
+**驗證結果**：
+- `validate-agents.js`：所有 agent prompt 包含四模式要素 ✅（0 warnings）
+- `bun test`：3455 pass / 0 fail ✅
+Keywords: phase, architect, debugger, developer, planner, retrospective, tester, build, error, resolver
+

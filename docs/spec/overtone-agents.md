@@ -73,14 +73,14 @@
 | pink | 測試類 | tester |
 | green | 驗證類 | e2e-runner |
 
-### Agent 設計模式（ECC 全套）
+### Agent 設計模式（ECC 全套，v0.28.55 全覆蓋）
 
 | 模式 | 說明 | 適用 Agent |
 |------|------|-----------|
-| **信心過濾** | >80% 把握才回報問題 | code-reviewer |
-| **邊界清單** | DO/DON'T 明確列出 | 所有 agent |
-| **誤判防護** | 區分 false positive | security-reviewer |
-| **停止條件** | 何時放棄/升級 | build-error-resolver、debugger |
+| **邊界清單（DO/DON'T）** | 操作邊界明確列出 | 全部 18 個 agent |
+| **信心過濾** | 把握度閾值判斷 | code-reviewer、security-reviewer、claude-developer、build-error-resolver、designer、doc-updater、e2e-runner、qa、refactor-cleaner、grader（10 個） |
+| **誤判防護** | false positive 防護 | architect、debugger、developer、planner、retrospective、tester、build-error-resolver、designer、doc-updater、e2e-runner、qa、refactor-cleaner、security-reviewer、grader（14 個） |
+| **停止條件** | 完成/放棄判斷標準 | 全部 18 個 agent |
 
 ### 特殊 Agent 設計
 
