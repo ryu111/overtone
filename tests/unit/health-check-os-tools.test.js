@@ -199,10 +199,10 @@ describe('checkOsTools: heartbeat daemon 狀態偵測', () => {
     }
   });
 
-  test('Feature 5 Scenario 4: health-check 的 check 項目數量仍維持 16 項', () => {
+  test('Feature 5 Scenario 4: health-check 的 check 項目數量為 17 項（含 internalization-index）', () => {
     const { runAllChecks } = require('../../plugins/overtone/scripts/health-check');
     const { checks } = runAllChecks();
-    expect(checks.length).toBe(16);
+    expect(checks.length).toBe(17);
     // screencapture 和 heartbeat 屬於 checkOsTools 內部擴展，不增加 check item
     const osToolsCheck = checks.find(c => c.name === 'os-tools');
     expect(osToolsCheck).toBeDefined();

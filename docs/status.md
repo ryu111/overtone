@@ -1,6 +1,6 @@
 # Overtone 現況
 
-> 最後更新：2026-03-06 | Plugin 版本：0.28.62（project-orchestrator：L3.5 自主建構引擎 + 28 個測試）
+> 最後更新：2026-03-06 | Plugin 版本：0.28.62（skill-internalization：L3.7 經驗內化飛輪 + 95 個測試）
 
 ## 版本狀態
 
@@ -19,8 +19,8 @@
 | 測試通過 | 3753 pass / 0 fail（166 個測試檔）|
 | 測試檔案 | 166 個 |
 | Hook 數量 | 11 個 |
-| Skill 數量 | 23（15 knowledge domain + orchestrator + pm + specs + 4 utility-with-refs） |
-| scripts/lib 模組 | 48（包括 project-orchestrator.js） |
+| Skill 數量 | 24（15 knowledge domain + orchestrator + pm + specs + 4 utility-with-refs + instinct） |
+| scripts/lib 模組 | 51（含 skill-evaluator.js + skill-generalizer.js + experience-index.js） |
 | Knowledge Domain 數 | 15（testing、workflow-core、security-kb、database、dead-code、commit-convention、code-review、wording、debugging、architecture、build-system、os-control、autonomous-control、craft、claude-dev） |
 | Command 數量 | 28（14 stage shortcut + 7 workflow pipeline + 7 utility） |
 | Telegram 命令 | 6（/start、/status、/stop、/run、/sessions、/help） |
@@ -28,9 +28,9 @@
 
 ## 近期變更（最近 3 筆）
 
+- **[0.28.62] 2026-03-06**：L3.7 skill-internalization——經驗內化飛輪——(1) 新增 skill-evaluator.js（資格評估 4 API）+ skill-generalizer.js（通用化 2 API）+ experience-index.js（索引管理 3 API）；(2) Instinct skill 新增 auto-discovered.md 與 internalized.md 管理；(3) evolution.js internalize 子命令（`bun scripts/evolution.js internalize [--execute] [--json]`）；(4) 新增 6 個測試檔 + 95 個測試；(5) 版本維持 0.28.62；(6) scripts/lib 模組 +3（48→51）；(7) health-check +1 項（checkInternalizationIndex）；(8) 測試 +95（3781→3876）✅
 - **[0.28.62] 2026-03-06**：L3.5 project-orchestrator——自主建構引擎 + Spec 推導——(1) 新增 project-orchestrator.js（6 API：analyzeSpec / deriveSkillDemand / planSkillConstruction / orchestrateProject / validate / exportPlan）；(2) Spec 檔案自動解析 → Skill 需求推導 → 排程規劃；(3) evolution.js orchestrate 子命令（`bun scripts/evolution.js orchestrate <specPath> [--execute] [--json] [--overwrite] [--workflow <template>]`）；(4) 新增 project-orchestrator.test.js（28 unit + integration 測試）；(5) 版本維持 0.28.62；(6) scripts/lib 模組 +1（47→48）；(7) 測試 +28（3753→3781）✅
 - **[0.28.62] 2026-03-06**：L3.4 deep-pm-interview-engine——多輪結構化訪談 + PM 操作指引——(1) 新增 interview.js（7 API：init session / add question / get response / advance phase / get summary / export data / clear session）；(2) 靜態問題庫：24 題跨五面向（功能需求、操作流程、UI 設計、邊界條件、驗收標準）；(3) Session 持久化：.overtone/interviews/{sessionId}/ 目錄管理；(4) 新增 interview-guide.md（PM 訪談操作指引 + 問題模板）；(5) 更新 product-manager.md 與 pm/SKILL.md；(6) 新增 33 個 unit + 10 個 integration 測試；(7) 版本 0.28.61→0.28.62；(8) 測試 +43（3673→3716）✅
-- **[0.28.62] 2026-03-06**：L3.3 skill-forge-engine——Codebase 內知識萃取 + CLI 整合——(1) 新增 skill-forge.js（5 API：forgeSkill / extractKnowledge / assembleSkill / validate / rollback）；(2) 支援 15 個 domain 知識萃取（從 codebase 中自動提取 reference、examples、patterns）；(3) evolution.js forge 子命令（`bun scripts/evolution.js forge <domain> [--execute] [--json]`）；(4) 新增 skill-forge.test.js（23 unit tests）+ evolution-forge.test.js（10 integration tests）；(5) 升級 knowledge-gap-detector：15→18 domain（+os-control、autonomous-control、craft）；(6) 版本維持 0.28.62；(7) 測試 +37（3716→3753）✅
 
 ## Phase 3 規劃狀態（✅ 完成）
 

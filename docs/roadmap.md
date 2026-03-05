@@ -1,6 +1,6 @@
 # Overtone Roadmap
 
-> 最後更新：2026-03-06 | 當前進度：L3.5 Project Orchestrator 完成
+> 最後更新：2026-03-06 | 當前進度：L3.7 Skill Internalization 完成
 
 ## Layer 總覽
 
@@ -216,16 +216,17 @@
 
 **完成標準**：系統自主完成端到端能力建構 + 產品開發，無需人工編寫 skill 或 agent。
 
-### L3.7 Skill Internalization（飛輪 — 專案經驗內化）⬜
+### L3.7 Skill Internalization（飛輪 — 專案經驗內化）✅
 
 > 建產品過程中產出的專案 skill，內化為永久能力。
 > 下次遇到類似專案，skill 已存在，直接使用。
 
 | 任務 | 說明 | 狀態 |
 |------|------|:----:|
-| 專案 skill 評估 | 專案完成後評估哪些 skill 值得永久保留（使用頻率、品質評分） | ⬜ |
-| 內化流程 | 專案 skill → 通用化（移除專案特定內容）→ 納入永久 skill 庫 | ⬜ |
-| 經驗索引 | 記錄「什麼類型的專案需要哪些 skill」，加速未來專案的能力盤點 | ⬜ |
+| 專案 skill 評估 | skill-evaluator.js（資格評估）+ 品質評分 + 通過門檻判斷 | ✅ |
+| 內化流程 | skill-generalizer.js（通用化移除特定內容）→ internalized.md | ✅ |
+| 經驗索引 | experience-index.js（記錄專案類型與 skill 對應關係） | ✅ |
+| CLI 整合 | evolution.js internalize 子命令 + 95 個測試 | ✅ |
 
 ### Layer 3 完成標準
 

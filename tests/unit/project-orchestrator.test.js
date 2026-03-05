@@ -2,8 +2,7 @@
 /**
  * tests/unit/project-orchestrator.test.js
  *
- * 覆蓋 Feature 1–4, 6, 7（純函式 + orchestrate 行為）。
- * Feature 5（CLI 端到端）在 integration test 中驗證。
+ * 覆蓋 Feature 1–4, 5（experienceHints）, 6, 7（純函式 + orchestrate 行為）。
  */
 
 const { describe, it, expect, beforeEach, mock, afterEach } = require('bun:test');
@@ -407,5 +406,90 @@ describe('Feature 7: OrchestrateResult 結構完整性', () => {
     });
     const result = orchestrate(spec);
     expect(result.summary.featureCount).toBe(3);
+  });
+});
+
+// ── Feature 5: orchestrate — experienceHints 整合 ──
+
+describe('Feature 5: orchestrate — experienceHints 整合', () => {
+  let tempDir;
+
+  beforeEach(() => {
+    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'orch-exp-test-'));
+  });
+
+  afterEach(() => {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  });
+
+  it('Scenario 5-1: experience-index 有資料時回傳 experienceHints 欄位', () => {
+    // 在 tempDir 寫入一個 experience-index.json（模擬相似專案）
+    const { buildIndex } = require('../../plugins/overtone/scripts/lib/knowledge/experience-index');
+    // 建立一個不同的 projectRoot 模擬「其他專案」的索引
+    const otherDir = fs.mkdtempSync(path.join(os.tmpdir(), 'orch-other-'));
+    try {
+      // 先在 tempDir 建立索引（模擬 otherDir 曾用過 testing, database domains）
+      // 直接寫入 experience-index.json 到 global 路徑
+      const paths = require('../../plugins/overtone/scripts/lib/paths');
+      const indexPath = paths.global.experienceIndex(tempDir);
+      const indexDir = path.dirname(indexPath);
+      fs.mkdirSync(indexDir, { recursive: true });
+
+      // 寫入一個不同 hash 的相似專案（testing + database 使用到）
+      const fakeHash = 'fake-similar-project-hash';
+      const indexData = {
+        version: 1,
+        entries: [{
+          projectHash: fakeHash,
+          domains: ['testing', 'database'],
+          lastUpdated: new Date().toISOString(),
+          sessionCount: 3,
+        }],
+      };
+      fs.writeFileSync(indexPath, JSON.stringify(indexData), 'utf8');
+
+      const spec = {
+        feature: 'test',
+        facets: {
+          functional: ['unit test describe it( assert expect mock spec'],
+          flow: [], ui: [], edgeCases: [], acceptance: [],
+        },
+      };
+      const result = orchestrate(spec, { projectRoot: tempDir });
+
+      // experienceHints 欄位存在
+      expect(result).toHaveProperty('experienceHints');
+      expect(result.experienceHints).not.toBeNull();
+      expect(Array.isArray(result.experienceHints.recommendedDomains)).toBe(true);
+      expect(typeof result.experienceHints.matchedProjects).toBe('number');
+      expect(result.experienceHints.matchedProjects).toBeGreaterThanOrEqual(0);
+    } finally {
+      fs.rmSync(otherDir, { recursive: true, force: true });
+    }
+  });
+
+  it('Scenario 5-2: experience-index.json 不存在時 experienceHints.recommendedDomains 為空陣列', () => {
+    // tempDir 沒有任何 experience-index.json
+    const spec = makeSpec();
+    const result = orchestrate(spec, { projectRoot: tempDir });
+
+    // 主流程正常執行
+    expect(result).toHaveProperty('domainAudit');
+    expect(result).toHaveProperty('experienceHints');
+    // 無索引 → 空陣列
+    expect(result.experienceHints.recommendedDomains).toEqual([]);
+    expect(result.experienceHints.matchedProjects).toBe(0);
+  });
+
+  it('Scenario 5-3: 未提供 projectRoot 時不含 experienceHints', () => {
+    const spec = makeSpec();
+    // 不傳 projectRoot
+    const result = orchestrate(spec, {});
+
+    // 不含 experienceHints 或為 undefined
+    expect(result.experienceHints).toBeUndefined();
+    // 主流程正常
+    expect(result).toHaveProperty('domainAudit');
+    expect(result).toHaveProperty('summary');
   });
 });

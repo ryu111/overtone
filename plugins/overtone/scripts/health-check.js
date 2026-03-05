@@ -3,23 +3,24 @@
 /**
  * health-check.js — Overtone 系統健康自動化偵測
  *
- * 執行 16 項確定性偵測：
- *   1. phantom-events      — registry 事件 vs 實際 emit 呼叫差異
- *   2. dead-exports        — scripts/lib 模組 export 但從未被 require 使用
- *   3. doc-code-drift      — docs 文件中的數量與程式碼實際值不符
- *   4. unused-paths        — paths.js export 但從未被使用
- *   5. duplicate-logic     — hooks/scripts 中已知的重複邏輯 pattern
- *   6. platform-drift      — config-api 驗證 + 棄用 tools 白名單偵測
- *   7. doc-staleness       — docs/reference 無引用且超過 90 天未更新的過時文件
- *   8. os-tools            — P3.3/P3.6 系統層依賴的 macOS 工具可用性（pbcopy/pbpaste/osascript/screencapture）+ heartbeat daemon 狀態
- *   9. component-chain     — Skill → Agent → Hook 依賴鏈斷裂偵測
- *  10. data-quality        — 全域學習資料（JSONL）格式與欄位正確性審計
- *  11. quality-trends      — 失敗模式 / 分數趨勢 / 低分連續警告
- *  12. test-growth         — 測試套件增長率監控（超過基線 20% 時警告）
- *  13. closed-loop         — 有 emit 但無 consumer 的孤立 timeline 事件偵測（製作原則 1）
- *  14. recovery-strategy   — handler 模組 + agent 是否定義失敗恢復行為（製作原則 2）
- *  15. completion-gap      — skill 是否缺少 references/ 子目錄（製作原則 3）
- *  16. dependency-sync     — SKILL.md 消費者表 vs agent frontmatter skills 一致性偵測
+ * 執行 17 項確定性偵測：
+ *   1. phantom-events           — registry 事件 vs 實際 emit 呼叫差異
+ *   2. dead-exports             — scripts/lib 模組 export 但從未被 require 使用
+ *   3. doc-code-drift           — docs 文件中的數量與程式碼實際值不符
+ *   4. unused-paths             — paths.js export 但從未被使用
+ *   5. duplicate-logic          — hooks/scripts 中已知的重複邏輯 pattern
+ *   6. platform-drift           — config-api 驗證 + 棄用 tools 白名單偵測
+ *   7. doc-staleness            — docs/reference 無引用且超過 90 天未更新的過時文件
+ *   8. os-tools                 — P3.3/P3.6 系統層依賴的 macOS 工具可用性（pbcopy/pbpaste/osascript/screencapture）+ heartbeat daemon 狀態
+ *   9. component-chain          — Skill → Agent → Hook 依賴鏈斷裂偵測
+ *  10. data-quality             — 全域學習資料（JSONL）格式與欄位正確性審計
+ *  11. quality-trends           — 失敗模式 / 分數趨勢 / 低分連續警告
+ *  12. test-growth              — 測試套件增長率監控（超過基線 20% 時警告）
+ *  13. closed-loop              — 有 emit 但無 consumer 的孤立 timeline 事件偵測（製作原則 1）
+ *  14. recovery-strategy        — handler 模組 + agent 是否定義失敗恢復行為（製作原則 2）
+ *  15. completion-gap           — skill 是否缺少 references/ 子目錄（製作原則 3）
+ *  16. dependency-sync          — SKILL.md 消費者表 vs agent frontmatter skills 一致性偵測
+ *  17. internalization-index    — experience-index.json 格式、域完整性與時效性偵測
  *
  * 輸出：JSON stdout（HealthCheckOutput schema）
  * Exit code：有 findings → 1；無 findings → 0
@@ -438,12 +439,12 @@ function checkDocCodeDrift() {
       const actual = truths[category];
       if (actual === undefined) continue;
 
-      // 排除複合短語：若 category 後面緊跟另一個詞（英文字母或中文字），
-      // 則視為描述性片語（如「8 個 agent 消費」「14 stage shortcut」），而非計數聲明。
+      // 排除複合短語：若 category 後面緊跟另一個詞（英文字母、中文字或連字符 -），
+      // 則視為描述性片語（如「8 個 agent 消費」「14 stage shortcut」「L3.3 Skill Forge」），而非計數聲明。
       // 計數聲明後通常跟標點、空白、換行或句尾。
       const matchEnd = m.index + m[0].length;
       const afterText = content.slice(matchEnd, matchEnd + 20);
-      if (/^[^\S\n]*[a-zA-Z\u4e00-\u9fff]/.test(afterText)) {
+      if (/^[^\S\n]*[-a-zA-Z\u4e00-\u9fff]/.test(afterText)) {
         continue;
       }
 
@@ -1727,6 +1728,122 @@ function checkDependencySync(pluginRootOverride) {
   return findings;
 }
 
+// ── 17. Internalization Index 內化索引健康偵測 ──
+
+/**
+ * 偵測 ~/.overtone/global/ 下所有 experience-index.json 的健康狀態。
+ *
+ * 偵測項目：
+ *   - 索引不存在（任何 global 子目錄下均無 experience-index.json）→ info
+ *   - 索引存在但 JSON 格式損壞 → warning
+ *   - 索引中有 domains 為空陣列的條目 → warning
+ *   - 索引中所有條目的 lastUpdated 均超過 30 天 → info
+ *   - 索引健康 → 無 finding
+ *
+ * @param {string} [globalDirOverride] — 供測試覆蓋 global 目錄（預設 ~/.overtone/global）
+ * @returns {Finding[]}
+ */
+function checkInternalizationIndex(globalDirOverride) {
+  const os = require('os');
+  const { existsSync } = require('fs');
+  const findings = [];
+
+  const globalDir = globalDirOverride || require('path').join(os.homedir(), '.overtone', 'global');
+
+  // 收集所有 experience-index.json 路徑
+  const indexFiles = [];
+  try {
+    const subdirs = readdirSync(globalDir, { withFileTypes: true });
+    for (const entry of subdirs) {
+      if (entry.isDirectory()) {
+        const candidatePath = path.join(globalDir, entry.name, 'experience-index.json');
+        if (existsSync(candidatePath)) {
+          indexFiles.push(candidatePath);
+        }
+      }
+    }
+  } catch {
+    // globalDir 不存在或無法讀取 → 視同索引尚未建立
+  }
+
+  // 索引不存在
+  if (indexFiles.length === 0) {
+    findings.push({
+      check: 'internalization-index',
+      severity: 'info',
+      file: 'global/experience-index.json',
+      message: 'experience-index.json 尚未建立（Skill Internalization 尚未啟用）',
+      detail: '執行 `bun evolution.js internalize --execute` 後索引將自動建立',
+    });
+    return findings;
+  }
+
+  const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+  const now = Date.now();
+
+  for (const indexPath of indexFiles) {
+    const raw = safeRead(indexPath);
+    let data;
+    try {
+      data = JSON.parse(raw);
+    } catch {
+      findings.push({
+        check: 'internalization-index',
+        severity: 'warning',
+        file: path.relative(path.join(globalDir, '..'), indexPath),
+        message: `experience-index.json JSON 格式損壞，無法解析`,
+        detail: `檔案路徑：${indexPath}`,
+      });
+      continue;
+    }
+
+    if (!data || !Array.isArray(data.entries)) {
+      findings.push({
+        check: 'internalization-index',
+        severity: 'warning',
+        file: path.relative(path.join(globalDir, '..'), indexPath),
+        message: `experience-index.json 格式不符合預期（缺少 entries 陣列）`,
+        detail: `檔案路徑：${indexPath}`,
+      });
+      continue;
+    }
+
+    // 偵測 domains 為空的條目
+    const emptyDomainEntries = data.entries.filter(
+      (e) => !Array.isArray(e.domains) || e.domains.length === 0,
+    );
+    if (emptyDomainEntries.length > 0) {
+      findings.push({
+        check: 'internalization-index',
+        severity: 'warning',
+        file: path.relative(path.join(globalDir, '..'), indexPath),
+        message: `experience-index.json 中有 ${emptyDomainEntries.length} 筆條目的 domains 為空陣列`,
+        detail: `無效條目 projectHash：${emptyDomainEntries.map((e) => e.projectHash).join(', ')}`,
+      });
+    }
+
+    // 偵測所有條目均超過 30 天未更新
+    if (data.entries.length > 0) {
+      const allStale = data.entries.every((e) => {
+        if (!e.lastUpdated) return true;
+        const ts = new Date(e.lastUpdated).getTime();
+        return isNaN(ts) || (now - ts) > THIRTY_DAYS_MS;
+      });
+      if (allStale) {
+        findings.push({
+          check: 'internalization-index',
+          severity: 'info',
+          file: path.relative(path.join(globalDir, '..'), indexPath),
+          message: `experience-index.json 所有條目均超過 30 天未更新，索引可能過時`,
+          detail: '建議重新執行 `bun evolution.js internalize --execute` 更新索引',
+        });
+      }
+    }
+  }
+
+  return findings;
+}
+
 /**
  * 執行所有健康檢查
  * @returns {{ checks: object[], findings: Finding[] }}
@@ -1747,8 +1864,9 @@ function runAllChecks() {
     { name: 'test-growth',       fn: checkTestGrowth },
     { name: 'closed-loop',       fn: checkClosedLoop },
     { name: 'recovery-strategy', fn: checkRecoveryStrategy },
-    { name: 'completion-gap',    fn: checkCompletionGap },
-    { name: 'dependency-sync',   fn: checkDependencySync },
+    { name: 'completion-gap',         fn: checkCompletionGap },
+    { name: 'dependency-sync',        fn: checkDependencySync },
+    { name: 'internalization-index',  fn: checkInternalizationIndex },
   ];
 
   const allFindings = [];
@@ -1840,6 +1958,7 @@ module.exports = {
   checkRecoveryStrategy,
   checkCompletionGap,
   checkDependencySync,
+  checkInternalizationIndex,
   runAllChecks,
   // 測試 DI 支援
   TEST_BASELINE,

@@ -296,9 +296,9 @@ describe('checkQualityTrends', () => {
 // ══════════════════════════════════════════════════════════════════
 
 describe('runAllChecks — 包含 F1/F2/F3 新增 check', () => {
-  test('checks 陣列長度為 16（新增 3 個製作原則偵測 + dependency-sync）', () => {
+  test('checks 陣列長度為 17（新增 3 個製作原則偵測 + dependency-sync + internalization-index）', () => {
     const { checks } = runAllChecks();
-    expect(checks.length).toBe(16);
+    expect(checks.length).toBe(17);
   });
 
   test('checks 包含所有偵測項目（含 3 個製作原則偵測）', () => {
@@ -319,6 +319,7 @@ describe('runAllChecks — 包含 F1/F2/F3 新增 check', () => {
       'duplicate-logic', 'platform-drift', 'doc-staleness', 'os-tools',
       'component-chain', 'data-quality', 'quality-trends', 'test-growth',
       'closed-loop', 'recovery-strategy', 'completion-gap',
+      'dependency-sync', 'internalization-index',
     ]);
     for (const f of findings) {
       expect(validChecks.has(f.check)).toBe(true);

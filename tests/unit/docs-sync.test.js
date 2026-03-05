@@ -159,9 +159,9 @@ describe('1. docs/status.md 核心指標數字', () => {
     expect(actual.hookCount).toBe(11);
   });
 
-  test('Skill 數量：status.md 與含 SKILL.md 的 skills/ 子目錄一致（應為 23）', () => {
+  test('Skill 數量：status.md 與含 SKILL.md 的 skills/ 子目錄一致（應為 24）', () => {
     expect(metrics['Skill 數量']).toBe(actual.skillCount);
-    expect(actual.skillCount).toBe(23);
+    expect(actual.skillCount).toBe(24);
   });
 
   test('Command 數量：status.md 與 commands/ 目錄 .md 檔案一致（應為 28）', () => {

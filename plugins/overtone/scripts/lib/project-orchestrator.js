@@ -19,6 +19,7 @@
 const path = require('path');
 const fs = require('fs');
 const { detectKnowledgeGaps } = require('./knowledge/knowledge-gap-detector');
+const { queryIndex } = require('./knowledge/experience-index');
 const { forgeSkill } = require('./skill-forge');
 const { appendQueue, writeQueue } = require('./execution-queue');
 
@@ -239,6 +240,17 @@ function orchestrate(projectSpec, options = {}) {
   // 1. 轉換規格為純文字
   const specText = parseSpecToText(projectSpec);
 
+  // 1.5 查詢 experience-index（有 projectRoot 才查；失敗時靜默降級）
+  let experienceHints = null;
+  if (projectRoot) {
+    try {
+      experienceHints = queryIndex(projectRoot, specText);
+    } catch (_err) {
+      // 降級：不影響主流程
+      experienceHints = null;
+    }
+  }
+
   // 2. 偵測知識缺口（傳空陣列給 agentSkills，讓 orchestrator 自行比對 skills/ 目錄）
   const gaps = specText
     ? detectKnowledgeGaps(specText, [], { minScore: 0.15, maxGaps: 10 })
@@ -336,12 +348,19 @@ function orchestrate(projectSpec, options = {}) {
     dryRun: isDryRun,
   };
 
-  return {
+  const result = {
     domainAudit,
     forgeResults,
     queueResult,
     summary,
   };
+
+  // experienceHints 只在有查詢時才加入（無 projectRoot 時不加）
+  if (projectRoot !== undefined) {
+    result.experienceHints = experienceHints;
+  }
+
+  return result;
 }
 
 module.exports = {

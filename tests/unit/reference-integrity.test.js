@@ -225,8 +225,10 @@ describe('Feature D：Agent Skills 雙向引用', () => {
 
   // 特殊豁免：有獨立設計理由的 knowledge domain skill
   // workflow-core：供 Hook 腳本和 Orchestrator 使用，沒有特定 agent consumer（設計決策）
+  // instinct：Skill Internalization 飛輪的 output 知識庫，由系統自動維護，不直接被 agent frontmatter 引用
   const AGENT_CONSUMER_EXEMPT_SKILLS = new Set([
     'workflow-core',
+    'instinct',
   ]);
 
   // 讀取所有 agent 的 skills frontmatter

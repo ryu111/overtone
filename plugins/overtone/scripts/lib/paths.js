@@ -71,12 +71,13 @@ function projectHash(projectRoot) {
  * 全域路徑物件（所有函式都需要 projectRoot 參數）
  */
 const global = {
-  dir:          (projectRoot) => join(GLOBAL_DIR, projectHash(projectRoot)),
-  observations: (projectRoot) => join(GLOBAL_DIR, projectHash(projectRoot), 'observations.jsonl'),
-  baselines:    (projectRoot) => join(GLOBAL_DIR, projectHash(projectRoot), 'baselines.jsonl'),
-  scores:       (projectRoot) => join(GLOBAL_DIR, projectHash(projectRoot), 'scores.jsonl'),
-  failures:     (projectRoot) => join(GLOBAL_DIR, projectHash(projectRoot), 'failures.jsonl'),
-  digests:      (projectRoot) => join(GLOBAL_DIR, projectHash(projectRoot), 'digests.jsonl'),
+  dir:             (projectRoot) => join(GLOBAL_DIR, projectHash(projectRoot)),
+  observations:    (projectRoot) => join(GLOBAL_DIR, projectHash(projectRoot), 'observations.jsonl'),
+  baselines:       (projectRoot) => join(GLOBAL_DIR, projectHash(projectRoot), 'baselines.jsonl'),
+  scores:          (projectRoot) => join(GLOBAL_DIR, projectHash(projectRoot), 'scores.jsonl'),
+  failures:        (projectRoot) => join(GLOBAL_DIR, projectHash(projectRoot), 'failures.jsonl'),
+  digests:         (projectRoot) => join(GLOBAL_DIR, projectHash(projectRoot), 'digests.jsonl'),
+  experienceIndex: (projectRoot) => join(GLOBAL_DIR, projectHash(projectRoot), 'experience-index.json'),
 };
 
 // ── Heartbeat 路徑 ──
