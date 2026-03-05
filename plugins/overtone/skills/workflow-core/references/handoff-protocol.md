@@ -50,6 +50,15 @@
 - 無問題時寫：`（無）`
 - 每個問題附建議的處理方式
 
+### Main Agent 處理 Open Questions（📋 MUST）
+
+Agent Handoff 含非空 Open Questions 時，Main Agent 📋 MUST 用 **AskUserQuestion** 工具呈現給使用者：
+- 每個 Open Question 轉為一個選項（或合併為 2-4 個決策選項）
+- 使用者選擇後再繼續下一個 stage
+- ⛔ 不可將 Open Questions 當純文字輸出然後跳過
+
+例外：Open Questions 為`（無）`時直接繼續。
+
 ## Chaining 規則
 
 ### 基本規則

@@ -120,13 +120,20 @@ function handleSessionStop(input, sessionId) {
   if (allCompleted && !hasFailedStage) {
     try {
       const executionQueue = require('./execution-queue');
-      // completeCurrent 需要 in_progress 項目；若 init-workflow 未 advance，fallback 補推
-      if (!executionQueue.completeCurrent(projectRoot)) {
-        executionQueue.advanceToNext(projectRoot);
-        executionQueue.completeCurrent(projectRoot);
+      // completeCurrent 需要 in_progress 項目
+      if (executionQueue.completeCurrent(projectRoot)) {
+        queueCompleted = true;
+      } else if (featureName) {
+        // fallback：init-workflow 未 advance 時，驗證佇列下一項是否匹配當前 featureName
+        const next = executionQueue.getNext(projectRoot);
+        if (next && _isRelatedQueueItem(next.item.name, featureName)) {
+          executionQueue.advanceToNext(projectRoot);
+          executionQueue.completeCurrent(projectRoot);
+          queueCompleted = true;
+        }
       }
-      // 若一個 workflow 涵蓋多個佇列項目（如同 feature 的多個子任務），連續完成相關 pending 項目
-      if (featureName) {
+      // 連續完成相關 pending 項目（同 feature 的多個子任務）
+      if (queueCompleted && featureName) {
         let relatedNext = executionQueue.getNext(projectRoot);
         while (relatedNext && _isRelatedQueueItem(relatedNext.item.name, featureName)) {
           executionQueue.advanceToNext(projectRoot);
@@ -134,7 +141,6 @@ function handleSessionStop(input, sessionId) {
           relatedNext = executionQueue.getNext(projectRoot);
         }
       }
-      queueCompleted = true;
     } catch (queueErr) {
       hookError('on-stop', `佇列推進失敗：${queueErr.message}`);
     }
