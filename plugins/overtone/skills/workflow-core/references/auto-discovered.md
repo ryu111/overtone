@@ -1,62 +1,4 @@
 ---
-## 2026-03-05 | product-manager:PM Findings
-**目標用戶**：Overtone 使用者（個人 dogfooding），在需要一次規劃多個功能然後批次執行的場景下使用。
-
-**成功指標**：
-- `/ot:pm plan <需求>` 完成後寫入佇列即停止，不啟動 workflow
-- `/ot:pm <需求>`（無 plan 參數）行為不變，分析後立即啟動 workflow
-- plan 模式佇列可被 heartbeat daemon 接續執行
-
-**方案比較**：
-
-| 維度 | 方案 A：純 SKILL.md 條件分支 | 方案 B：autoExecute 聯動 | 方案 C：獨立 plan command |
-|------|-----|-----|-----|
-| 概述 | SKILL.md 加 plan 模式條件判斷，PM 完成後根據模式決定是否啟動 workflow | 方案 A + writeQueue 支援 autoExecute: false，plan 模式寫入時設為 false | 新建 `/ot:pm-plan` command，與 `/ot:pm` 分離 |
-| 優點 | 最小改動（僅 SKILL.md），邏輯集中 | 語意完整，佇列層級也知道「不要自動執行」 | 完全隔離，不影響現有 PM 流程 |
-| 缺點 | autoExecute 永遠為 true，佇列語意不精確 | 多改一個檔案（execution-queue.js 或 queue.js），但改動極小 | 多一個 command 維護成本，兩個 command 共用同一 agent，容易不同步 |
-| 工作量 | 0.5 人天 | 1 人天 | 1.5 人天 |
-| RICE | (8x3x100%)/0.5 = 48 | (8x3x100%)/1 = 24 | (8x3x80%)/1.5 = 12.8 |
-| 證據等級 | codebase 佐證 | codebase 佐證（autoExecute 守衛已存在） | 推測 |
-
-**推薦方案**：方案 B（autoExecute 聯動），理由：
-- RICE 雖低於方案 A，但語意完整性更高 — `autoExecute: false` 讓 `getNext` / `advanceToNext` 回傳 null，佇列層級天然阻擋自動推進（codebase 佐證：第 74、104 行已有守衛）
-- 額外工作量極小（writeQueue 加一個 options 參數，queue.js CLI 加 `--no-auto` flag）
-- 方案 A 的風險：佇列寫了 `autoExecute: true` 但實際不執行，語意矛盾，若 heartbeat 讀佇列會誤啟動
-
-**MVP 範圍（MoSCoW）**：
-
-- **Must**:
-  - SKILL.md 新增 plan 模式條件分支（PM 完成後：plan 模式 -> 寫佇列 + 停止，execute 模式 -> 現有行為）
-  - `writeQueue` 支援 `autoExecute` 參數（預設 true，plan 模式傳 false）
-  - Plan 模式完成訊息（「已加入佇列，使用 /ot:queue 查看」）
-
-- **Should**:
-  - queue.js CLI 新增 `--no-auto` flag（讓手動寫佇列也能設 `autoExecute: false`）
-  - Plan 模式佇列可用 `queue.js` 手動切換為 autoExecute: true 以啟動執行
-
-- **Could**:
-  - 多次 `/ot:pm plan` 累加佇列（現有 writeQueue 是覆寫，可能需要 appendQueue）
-
-- **Won't**:
-  - 修改 product-manager agent prompt（agent 不需要感知模式，它只產 Brief）
-  - 修改 session
-Keywords: overtone, dogfooding, plan, workflow, heartbeat, daemon, skill, autoexecute, command, writequeue
-
----
-## 2026-03-05 | product-manager:PM Context
-使用者需要 PM skill 支援兩種模式：立即執行（現有預設）和規劃模式（plan）。核心問題是 PM 的 SKILL.md 強制 MUST 立即啟動 workflow，沒有「只規劃」的選項。這阻礙了「批次規劃、延遲執行」的工作流。
-Keywords: skill, plan, must, workflow
-
----
-## 2026-03-05 | product-manager:PM Findings
-**目標用戶**：Overtone 開發者（個人 dogfooding）
-
-**成功指標**：
-- health-check 0 errors + 0 warnings（目前 27 warnings）
-- validate-agents prompt 品質檢查 0 warnings（目前 23 warnings）
-- 所有規範文件版本數字與 codebase 一致
-
----
 
 **發現問題彙總**（按嚴重度排序）：
 Keywords: overtone, dogfooding, health, check, errors, warnings, validate, agents, prompt, codebase
@@ -921,4 +863,37 @@ Keywords: overtone, current, session, submit, instinct, test, hook, bridge, init
    - 總計：**64 個**（文件記載 51，差距 13 個）
 4. **其他數字確認**：agents 18、skills 24、hooks 11、commands 28、health-check 17 項 — 均已正確
 Keywords: health, check, code, drift, passed, true, sync, engine, agents, skills
+
+---
+## 2026-03-05 | developer:DEV Findings
+**queryPastInterviews(projectRoot, options?)**
+- 掃描 `~/.overtone/sessions/{sessionId}/interview-state.json`
+- 支援 `options.limit`（預設 10）和 `options.feature`（依 feature 名稱過濾）
+- 已完成的訪談（有 completedAt）排在未完成前面
+- 無法讀取的 session 靜默跳過
+- JSDoc 中避免使用 `*` 萬用字元（Bun 會把 JSDoc 註解中的 glob 路徑當成語法解析）
+
+**extractInsights(sessions)**
+- 純函式，無 I/O，輸入含 `answers` 欄位的 session 物件陣列
+- functional 回答 → commonRequirements
+- edge-cases 回答 → boundaryConditions
+- flow + ui 回答 → userPreferences
+- 各類別最多 5 筆，重複去重
+
+**設計決策**
+- `queryPastInterviews` 使用硬編碼 `~/.overtone` 路徑（與 paths.js 一致，不依賴 projectRoot 來定位 sessions）
+- projectRoot 參數保留供未來依專案隔離訪談使用
+Keywords: querypastinterviews, projectroot, options, overtone, sessions, sessionid, interview, state, json, limit
+
+---
+## 2026-03-05 | developer:DEV Context
+實作了 PM agent 的跨 session 記憶能力。在 `interview.js` 新增兩個 export 函式，讓 PM 在開始新訪談前可以查詢並參考過去的訪談記錄。
+Keywords: agent, session, interview, export
+
+---
+## 2026-03-05 | code-reviewer:REVIEW Findings
+無 Critical 或 Major 等級問題。
+
+[n] `extractInsights` 的 JSDoc `@param` 描述的型別是 `queryPastInterviews` 回傳的 sessions 陣列（不含 `answers`），但實際函式需要含 `answers` 欄位的完整 session 物件（來自 `loadSession`）。JSDoc 已在描述中補充「需包含完整 answers，來自 loadSession」，但型別定義與實際需求不一致。不阻擋合併。
+Keywords: critical, major, extractinsights, jsdoc, param, querypastinterviews, sessions, answers, session, loadsession
 

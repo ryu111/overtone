@@ -8,3 +8,7 @@ Keywords: project, orchestrator, skill, forge, interview, execution, queue, spec
 ## 2026-03-05 | architect:ARCH Context
 設計 `project-orchestrator.js`——一個純協調模組，串聯三個現有子系統（knowledge-gap-detector + skill-forge + execution-queue），完成「從 Project Spec 到填充佇列」的端到端自動化。所有 4 個 Open Questions 已做出明確決策。
 Keywords: project, orchestrator, knowledge, detector, skill, forge, execution, queue, spec, open
+---
+## 2026-03-05 | developer:DEV Context
+為執行佇列實作智慧排程功能（queue-smart-schedule），新增 `dedup`（去重）和 `suggest-order`（排序建議）兩個功能，並在 `queue.js` CLI 加入對應子命令。
+Keywords: queue, smart, schedule, dedup, suggest, order
