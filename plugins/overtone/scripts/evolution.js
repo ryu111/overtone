@@ -26,7 +26,6 @@ const { analyzeGaps } = require('./lib/gap-analyzer');
 const { fixGaps } = require('./lib/gap-fixer');
 const { forgeSkill } = require('./lib/skill-forge');
 const { orchestrate } = require('./lib/project-orchestrator');
-const { autoForge } = require('./lib/knowledge/knowledge-gap-detector');
 const { evaluateEntries } = require('./lib/knowledge/skill-evaluator');
 const { generalizeEntries } = require('./lib/knowledge/skill-generalizer');
 const { buildIndex } = require('./lib/knowledge/experience-index');
@@ -43,8 +42,6 @@ function printUsage() {
   process.stdout.write('  status --json        JSON 格式輸出\n');
   process.stdout.write('  analyze              執行 gap 分析，輸出純文字報告\n');
   process.stdout.write('  analyze --json       輸出 JSON 格式報告（供程式消費）\n');
-  process.stdout.write('  analyze --auto-forge 分析後自動對低分 gap 觸發 forge（dry-run）\n');
-  process.stdout.write('  analyze --auto-forge --execute  分析後實際執行 forge\n');
   process.stdout.write('  fix                  預覽可修復缺口（dry-run，不修改任何檔案）\n');
   process.stdout.write('  fix --execute        實際執行修復\n');
   process.stdout.write('  fix --type <type>    只修復指定類型（sync-mismatch / no-references）\n');
@@ -53,6 +50,8 @@ function printUsage() {
   process.stdout.write('  forge <domain> --execute  實際執行 forge，建立 skill\n');
   process.stdout.write('  forge <domain> --json     以 JSON 格式輸出 forge 結果\n');
   process.stdout.write('  forge <domain> --research 啟用外部 WebSearch 研究補充知識\n');
+  process.stdout.write('  forge --auto         自動偵測缺少 references 的 skill domain 並 forge（dry-run）\n');
+  process.stdout.write('  forge --auto --execute  自動 forge 實際執行\n');
   process.stdout.write('  orchestrate <specPath>              從 Project Spec dry-run 預覽協調流程\n');
   process.stdout.write('  orchestrate <specPath> --execute    實際執行：gap 偵測 + skill forge + 佇列排程\n');
   process.stdout.write('  orchestrate <specPath> --json       JSON 格式輸出\n');
@@ -87,16 +86,14 @@ function printSubcommandHelp(subcommand) {
       process.stdout.write('  --json  以 JSON 格式輸出\n');
       break;
     case 'analyze':
-      process.stdout.write('用法：bun scripts/evolution.js analyze [--json] [--auto-forge] [--execute]\n');
+      process.stdout.write('用法：bun scripts/evolution.js analyze [--json]\n');
       process.stdout.write('\n');
       process.stdout.write('執行 gap 分析，檢測元件一致性缺口。有缺口 exit 1，無缺口 exit 0。\n');
       process.stdout.write('\n');
       process.stdout.write('檢測項目：component-chain / closed-loop / completion-gap / dependency-sync\n');
       process.stdout.write('\n');
       process.stdout.write('選項：\n');
-      process.stdout.write('  --json        以 JSON 格式輸出報告（供程式消費）\n');
-      process.stdout.write('  --auto-forge  分析後自動對低分知識 gap 觸發 skill forge（預設 dry-run）\n');
-      process.stdout.write('  --execute     搭配 --auto-forge 使用，實際執行 forge（否則僅預覽）\n');
+      process.stdout.write('  --json  以 JSON 格式輸出報告（供程式消費）\n');
       break;
     case 'fix':
       process.stdout.write('用法：bun scripts/evolution.js fix [--execute] [--type <type>] [--json]\n');
@@ -110,10 +107,13 @@ function printSubcommandHelp(subcommand) {
       break;
     case 'forge':
       process.stdout.write('用法：bun scripts/evolution.js forge <domain> [--execute] [--json] [--research]\n');
+      process.stdout.write('      bun scripts/evolution.js forge --auto [--execute] [--json]\n');
       process.stdout.write('\n');
       process.stdout.write('為指定 domain 建立 Skill。預設 dry-run，加 --execute 實際建立。\n');
+      process.stdout.write('使用 --auto 時，自動偵測缺少 references/ 目錄的 skill domain 並批次 forge。\n');
       process.stdout.write('\n');
       process.stdout.write('選項：\n');
+      process.stdout.write('  --auto      自動偵測並 forge 所有缺少 references 的 skill domain\n');
       process.stdout.write('  --execute   實際執行 forge，建立 skill\n');
       process.stdout.write('  --json      以 JSON 格式輸出 forge 結果\n');
       process.stdout.write('  --research  啟用外部 WebSearch 研究補充知識\n');
@@ -563,9 +563,6 @@ function main() {
     }
     process.exit(0);
   } else if (subcommand === 'analyze') {
-    const autoForgeFlag = flags.includes('--auto-forge');
-    const execute = flags.includes('--execute');
-
     let report;
     try {
       report = analyzeGaps();
@@ -575,54 +572,9 @@ function main() {
     }
 
     if (jsonOutput) {
-      let output = report;
-      // 若 --auto-forge，執行 forge 並附加結果
-      if (autoForgeFlag) {
-        let forgeOutput;
-        try {
-          forgeOutput = autoForge([], { dryRun: !execute });
-        } catch (err) {
-          forgeOutput = { forged: [], skipped: [], error: err.message };
-        }
-        output = { ...report, autoForge: { dryRun: !execute, ...forgeOutput } };
-      }
-      process.stdout.write(JSON.stringify(output, null, 2) + '\n');
+      process.stdout.write(JSON.stringify(report, null, 2) + '\n');
     } else {
       process.stdout.write(formatTextReport(report) + '\n');
-
-      // --auto-forge：對報告中分析出的 knowledge gap 執行 forge
-      if (autoForgeFlag) {
-        process.stdout.write('\n');
-        process.stdout.write('Auto Forge — 知識缺口自動 Forge\n');
-        process.stdout.write('================================\n');
-
-        // 從 gap report 中提取知識型 gap（no-references 類型的 gaps 包含 domain 資訊）
-        // 此處以空陣列呼叫 autoForge，讓 shouldAutoForge 篩選（不傳入 knowledge gaps 資訊）
-        // 實際觸發的是 skill-forge 的 dry-run 模式，列出預覽
-        let forgeResult;
-        try {
-          forgeResult = autoForge([], { dryRun: !execute });
-        } catch (err) {
-          process.stderr.write(`Auto Forge 執行錯誤：${err.message}\n`);
-          process.exit(1);
-        }
-
-        if (forgeResult.forged.length === 0 && forgeResult.skipped.length === 0) {
-          process.stdout.write('無需 forge 的知識缺口（gaps 陣列為空）\n');
-          process.stdout.write('提示：使用 bun scripts/evolution.js forge <domain> 手動指定 domain\n');
-        } else {
-          for (const r of forgeResult.forged) {
-            process.stdout.write(`  [${r.status}] ${r.domainName}\n`);
-            if (r.error) process.stdout.write(`    錯誤：${r.error}\n`);
-          }
-          if (forgeResult.skipped.length > 0) {
-            process.stdout.write(`  已跳過（連續失敗）：${forgeResult.skipped.join(', ')}\n`);
-          }
-          if (!execute) {
-            process.stdout.write('\n（dry-run 預覽，加 --execute 實際執行）\n');
-          }
-        }
-      }
     }
 
     process.exit(report.summary.total > 0 ? 1 : 0);
@@ -730,19 +682,115 @@ function main() {
     }
     process.exit(0);
   } else if (subcommand === 'forge') {
+    const autoMode = flags.includes('--auto');
     const domainName = positional[1];
     const execute = flags.includes('--execute');
-
-    // 缺少 domain 參數
     const enableWebResearch = flags.includes('--research');
+
+    // ── --auto 模式：自動偵測缺少 references 的 skill domain ──
+    if (autoMode) {
+      // 掃描 analyzeGaps() 找出 no-references 類型的 gap，提取 domain 名稱
+      let gapReport;
+      try {
+        gapReport = analyzeGaps();
+      } catch (err) {
+        process.stderr.write(`分析缺口時發生錯誤：${err.message}\n`);
+        process.exit(1);
+      }
+
+      // 從 no-references gap 提取 domain 名稱（gap.file 格式為 skills/{domain}/SKILL.md）
+      const noRefGaps = gapReport.gaps.filter(g => g.type === 'no-references');
+      const autoDomains = noRefGaps.map(g => {
+        // gap.file 可能是 skills/{domain}/SKILL.md，取 domain 部分
+        if (!g.file) return null;
+        // 從路徑中提取 domain 名稱：skills/<domain>/SKILL.md → <domain>
+        const parts = g.file.replace(/\\/g, '/').split('/');
+        const skillsIdx = parts.lastIndexOf('skills');
+        if (skillsIdx >= 0 && parts[skillsIdx + 1]) {
+          return parts[skillsIdx + 1];
+        }
+        return null;
+      }).filter(Boolean);
+
+      // 去重
+      const uniqueDomains = [...new Set(autoDomains)];
+
+      if (jsonOutput) {
+        // JSON 模式：列出所有 auto domain 並輸出各自的 forge 結果
+        const results = [];
+        for (const domain of uniqueDomains) {
+          let r;
+          try {
+            r = forgeSkill(domain, {}, { dryRun: !execute, enableWebResearch });
+          } catch (err) {
+            r = { status: 'error', domainName: domain, error: err.message };
+          }
+          results.push(r);
+        }
+        process.stdout.write(JSON.stringify({ dryRun: !execute, domains: uniqueDomains, results }, null, 2) + '\n');
+        process.exit(0);
+      }
+
+      // 人類可讀輸出
+      process.stdout.write('Skill Forge — Auto 模式\n');
+      process.stdout.write('=======================\n');
+
+      if (uniqueDomains.length === 0) {
+        process.stdout.write('無需 forge 的缺口（所有 skill domain 已有 references/）\n');
+        process.stdout.write('提示：使用 bun scripts/evolution.js forge <domain> 手動指定 domain\n');
+        process.exit(0);
+      }
+
+      process.stdout.write(`偵測到 ${uniqueDomains.length} 個缺少 references 的 domain：${uniqueDomains.join(', ')}\n`);
+      process.stdout.write('\n');
+
+      let anyError = false;
+      for (const domain of uniqueDomains) {
+        process.stdout.write(`正在處理：${domain}\n`);
+        let r;
+        try {
+          r = forgeSkill(domain, {}, { dryRun: !execute, enableWebResearch });
+        } catch (err) {
+          process.stderr.write(`  [error] ${domain}：${err.message}\n`);
+          anyError = true;
+          continue;
+        }
+
+        if (r.status === 'success') {
+          if (r.preview) {
+            process.stdout.write(`  [dry-run] ${domain} — 預覽完成（加 --execute 執行）\n`);
+          } else {
+            process.stdout.write(`  [success] ${domain} — 已建立 ${r.skillPath}\n`);
+          }
+        } else if (r.status === 'conflict') {
+          process.stdout.write(`  [skip] ${domain} — 已存在（${r.conflictPath}）\n`);
+        } else if (r.status === 'paused') {
+          process.stdout.write(`  [paused] ${domain} — 連續失敗 ${r.consecutiveFailures} 次\n`);
+          anyError = true;
+        } else {
+          process.stderr.write(`  [error] ${domain}：${r.error || JSON.stringify(r)}\n`);
+          anyError = true;
+        }
+      }
+
+      if (!execute) {
+        process.stdout.write('\n（dry-run 預覽，加 --execute 實際執行）\n');
+      }
+
+      process.exit(anyError ? 1 : 0);
+    }
+
+    // ── 一般模式：指定 domain ──
 
     if (!domainName) {
       process.stdout.write('forge 子命令用法：bun scripts/evolution.js forge <domain> [--execute] [--json] [--research]\n');
+      process.stdout.write('                  bun scripts/evolution.js forge --auto [--execute] [--json]\n');
       process.stdout.write('\n');
       process.stdout.write('  forge <domain>              預覽 forge 結果（dry-run，不建立任何檔案）\n');
       process.stdout.write('  forge <domain> --execute    實際執行 forge，建立 skill\n');
       process.stdout.write('  forge <domain> --json       以 JSON 格式輸出結果\n');
       process.stdout.write('  forge <domain> --research   啟用外部 WebSearch 研究補充知識\n');
+      process.stdout.write('  forge --auto                自動偵測缺少 references 的 domain 並 forge\n');
       process.exit(1);
     }
 

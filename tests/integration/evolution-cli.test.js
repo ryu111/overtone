@@ -115,6 +115,11 @@ describe('Scenario 2c: analyze --help 子命令說明', () => {
     expect(result.exitCode).toBe(0);
     expect(result.stdout).toContain('analyze');
   });
+
+  test('stdout 不包含 --auto-forge（已移除）', () => {
+    const result = runEvolution(['analyze', '--help']);
+    expect(result.stdout).not.toContain('--auto-forge');
+  });
 });
 
 describe('Scenario 2d: internalize --help 子命令說明', () => {
@@ -126,11 +131,83 @@ describe('Scenario 2d: internalize --help 子命令說明', () => {
   });
 });
 
+describe('Scenario 2d-2: forge --help 包含 --auto 說明', () => {
+  test('forge --help 包含 --auto flag 說明', () => {
+    const result = runEvolution(['forge', '--help']);
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toContain('--auto');
+  });
+});
+
 describe('Scenario 2e: status --help 子命令說明', () => {
   test('exit code 為 0 且包含 status 用法', () => {
     const result = runEvolution(['status', '--help']);
     expect(result.exitCode).toBe(0);
     expect(result.stdout).toContain('status');
+  });
+});
+
+// ══════════════════════════════════════════════════════════════════
+// Scenario 2f: forge --auto dry-run 行為
+// ══════════════════════════════════════════════════════════════════
+
+describe('Scenario 2f: forge --auto dry-run 行為', () => {
+  let result;
+
+  function getResult() {
+    if (!result) result = runEvolution(['forge', '--auto']);
+    return result;
+  }
+
+  test('forge --auto 執行不崩潰（exit 0 或 1）', () => {
+    const r = getResult();
+    expect([0, 1]).toContain(r.exitCode);
+  });
+
+  test('stdout 包含 Auto 模式標題', () => {
+    expect(getResult().stdout).toContain('Auto 模式');
+  });
+
+  test('stderr 無預期外錯誤', () => {
+    // 允許 stderr 有錯誤訊息（當 no-references gap 存在時），但不應出現 uncaught exception
+    const stderr = getResult().stderr;
+    expect(stderr).not.toContain('uncaught');
+    expect(stderr).not.toContain('TypeError');
+  });
+});
+
+describe('Scenario 2g: forge --auto --json 輸出結構', () => {
+  let result;
+  let parsed;
+
+  function getResult() {
+    if (!result) result = runEvolution(['forge', '--auto', '--json']);
+    return result;
+  }
+
+  function getParsed() {
+    if (!parsed) {
+      const r = getResult();
+      parsed = JSON.parse(r.stdout);
+    }
+    return parsed;
+  }
+
+  test('forge --auto --json 輸出合法 JSON', () => {
+    expect(() => getParsed()).not.toThrow();
+  });
+
+  test('JSON 結構包含 dryRun 欄位', () => {
+    expect(typeof getParsed().dryRun).toBe('boolean');
+    expect(getParsed().dryRun).toBe(true);
+  });
+
+  test('JSON 結構包含 domains 陣列', () => {
+    expect(Array.isArray(getParsed().domains)).toBe(true);
+  });
+
+  test('JSON 結構包含 results 陣列', () => {
+    expect(Array.isArray(getParsed().results)).toBe(true);
   });
 });
 
