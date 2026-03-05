@@ -155,18 +155,18 @@ describe('PreBashGuard: P3.6 新增黑名單規則（deny）', () => {
     expect(denyReason(result.parsed)).toContain('停用系統服務');
   });
 
-  test('defaults delete com.apple.finder.plist → deny（刪除系統偏好設定）', () => {
+  test('defaults delete com.apple.finder.plist → deny（修改或刪除系統偏好設定）', () => {
     const result = runPreBashGuard({ command: 'defaults delete com.apple.finder.plist' });
     expect(result.exitCode).toBe(0);
     expect(isDenied(result.parsed)).toBe(true);
-    expect(denyReason(result.parsed)).toContain('刪除系統偏好設定');
+    expect(denyReason(result.parsed)).toContain('修改或刪除系統偏好設定');
   });
 
   test('defaults write NSGlobalDomain key value → deny（修改系統偏好設定）', () => {
     const result = runPreBashGuard({ command: 'defaults write NSGlobalDomain AppleShowAllFiles true' });
     expect(result.exitCode).toBe(0);
     expect(isDenied(result.parsed)).toBe(true);
-    expect(denyReason(result.parsed)).toContain('刪除系統偏好設定');
+    expect(denyReason(result.parsed)).toContain('修改或刪除系統偏好設定');
   });
 });
 

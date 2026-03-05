@@ -1,108 +1,4 @@
 ---
-Keywords: skill, reference, developer, architect, skills, claude, knowledge, detector, domain, code
-
----
-## 2026-03-04 | developer:DEV Findings
-- `statusline.js` 讀取 stdin JSON 中的 `session_id`、`transcript_path`、`context_window.used_percentage` 三個欄位
-- `on-start.js` 設定 `settings.json` 時用的 key 是 `statusLine`（camelCase），欄位包含 `type: "command"`、`command`、`padding`
-- 四態邏輯已從 `buildAgentDisplay()` 函式的條件分支整理成清晰的表格
-- 文件包含：settings.json 格式、stdin JSON 欄位說明、ANSI 色碼參考、四態顯示邏輯、SessionStart 自動設定機制、自訂腳本範例
-Keywords: statusline, stdin, json, start, settings, camelcase, type, command, padding, buildagentdisplay
-
----
-## 2026-03-04 | developer:DEV Context
-建立 `/Users/sbu/projects/overtone/plugins/overtone/skills/claude-dev/references/statusline-api.md`，提供 Claude Code StatusLine 設定的完整 API 參考文件。
-Keywords: users, projects, overtone, plugins, skills, claude, references, statusline, code
-
----
-## 2026-03-04 | developer:DEV Findings
-**設計決策：不加 stages**
-- `claude-developer` 是工具型 agent，不對應 workflow 流程節點
-- 只更新 `registry-data.json` 的 `agentModels` 和 `agentMemory`，不增加 stages
-- 這讓 stage 計數維持 16，agent 計數變 18（含 grader 和 claude-developer）
-
-**manage-component.js 繞過**
-- `createAgent()` 強制要求 stage 欄位，但 claude-developer 不對應 stage
-- 改用直接寫 .md 檔案 + 手動更新 registry-data.json + plugin.json 的方式
-- 這是正確的處理方式（grader 也是這樣加入的）
-
-**health-check.js 修正**
-- `checkDocCodeDrift()` 原本用 `stages` 數量（16）計算 agentCount，但 docs 說 18
-- 修正為用 `agents/` 目錄的 .md 檔案數量計算，與 docs-sync.test.js 計算方式一致
-
-**registry-config.test.js 規則更新**
-- 原規則：「每個非 grader 的 agent 都必須對應 stage」
-- 更新為：「每個非 workflow-stage agent（grader、claude-developer）都豁免」
-Keywords: stages, claude, developer, agent, workflow, registry, data, json, agentmodels, agentmemory
-
----
-## 2026-03-04 | developer:DEV Context
-建立 `claude-developer` 專職 agent，作為 Claude Code plugin 元件開發的專家角色。此 agent 不對應任何 workflow stage（和 `grader` 相同），可由 Main Agent 直接委派使用。
-Keywords: claude, developer, agent, code, plugin, workflow, stage, grader, main
-
----
-## 2026-03-04 | code-reviewer:REVIEW Findings
-審查了 commit `40ff2c2` 的 10 個變更檔案，涵蓋以下面向：
-
-1. **Agent .md 品質**：frontmatter 欄位完整（name、description、model、permissionMode、color、maxTurns、memory、skills），system prompt 符合四模式規範（DO/DON'T 邊界清單 + 誤判防護 + 停止條件），skills 選擇合理（claude-dev + commit-convention + wording）
-2. **registry-data.json 映射**：agentModels 和 agentMemory 正確加入 claude-developer，不加入 stages（與 grader 設計一致但 grader 不在 agentModels 中，claude-developer 在 — 這是因為 claude-developer 需要 model 分配和記憶功能）
-3. **health-check.js 修正**：agentCount 改用 agents/ 目錄計數，正確解決了非 stage agent 導致的計數不匹配。try/catch 防護完善
-4. **registry-config.test.js 豁免邏輯**：從硬編碼 grader 字串改為 NON_WORKFLOW_AGENTS Set，擴展性更好
-5. **計數一致性**：所有 17 -> 18 的更新完整覆蓋（CLAUDE.md x4 處、docs/status.md x3 處、overtone-agents.md x6 處、workflow-diag
-Keywords: commit, agent, frontmatter, name, description, model, permissionmode, color, maxturns, memory
-
----
-## 2026-03-04 | retrospective:RETRO Findings
-**回顧摘要**：
-
-本次 `claude-dev-skill` feature 實作了第 15 個 knowledge domain skill，整體品質良好，BDD spec 對齊度高，無需重工。
-
-**確認的品質點**：
-
-1. SKILL.md 正文長度 737 字元，在 800 chars 限制內（Scenario 1-2 通過），且資源索引完整列出兩個以上 reference 路徑（Scenario 1-5 通過）。
-
-2. hooks-api.md 覆蓋了 11 個事件（設計文件估算為 9，但實作正確補齊了 TaskCompleted 和 Stop），三層嵌套格式說明完整，updatedInput REPLACE 語意有明確程式碼範例（Scenario 2-1、2-2、2-3 通過）。
-
-3. agent-api.md 的四模式 prompt 設計、manage-component.js 路徑說明、model 選擇策略均完整（Scenario 3-1 至 3-5 通過）。
-
-4. developer.md 和 architect.md frontmatter 的 skills 陣列均已加入 claude-dev，且原有 skills 未遺失（Scenario 4-1、4-2、4-3 通過）。
-
-5. knowledge-gap-detector.js 加入了 15 個 claude-dev 關鍵詞（Scenario 5-1 要求 >= 10，通過），domain 總數為 12，測試全部 13 個 pass。
-
-6. 實作在設計規格之上擴充了 5 個額外 reference（skill-api.md、command-api.md、statusline-api.md、settings-api.md、overtone-conventions.md），超出 BDD 只要求兩個的最低要求，為更全面的 plugin 開發知識庫。
-
-7. claude-developer.md 新 agent 的四模式 prompt 結構正確，元件閉環（manage-component.js + claude-dev skill）已驗證。
-
-**值得注意（不構成問題）**：
-
-- SKILL.md 正文採用緊湊內聯格式而非 Markdown 表格列出消費者（BDD Scenario 1-3 要求 "含有以 developer 為列的 Markdown 表格"），屬格式偏差但功能等效；在 800 chars 字數壓力下此設計取捨合理，且 tester 階段已通過驗證，信心不足 70% 不列為 ISSUES。
-Keywords: claude, skill, feature, knowledge, domain, spec, chars, scenario, reference, hooks
-
----
-## 2026-03-04 | retrospective:RETRO Findings
-**回顧摘要**：
-
-整體 iteration 5 的變更品質良好，達到 Single Source of Truth 的整合目標。具體確認如下：
-
-1. **CLAUDE.md 簡化品質達標** — hooks.json 格式說明精簡為一行描述 + cross-reference，Agent prompt 四模式、元件閉環均正確指向 claude-dev skill references，保留了足夠的核心資訊（三層架構、Agent/Workflow 數量、Hook 清單仍完整）
-
-2. **Cross-reference 模式一致** — CLAUDE.md 的三處 cross-reference 格式統一，分別指向 `hooks-api.md`（hooks.json 格式）、`agent-api.md`（Agent prompt 四模式）、`overtone-conventions.md`（元件閉環）、`handoff-protocol.md`（Handoff 格式）
-
-3. **overtone-conventions.md 加入 Handoff cross-reference 正確** — Section 5 的 Handoff 格式說明後，加入指向 `workflow-core/references/handoff-protocol.md` 的備注，符合 SST 目標
-
-4. **附帶變更安全評估**：
-   - `statusline.js` 四態邏輯（active agent / Main / 完成收回 / 無 workflow）實作正確，tests 覆蓋充分
-   - `on-stop.js` PM status = active 邏輯結構合理，有 try/catch 保護
-   - `auto/SKILL.md` 工作流選擇指南更新，quick workflow 明確標注包含 DOCS
-   - `test-quality-scanner.js` 5 項規則完整，測試覆蓋率高（63 個 test cases）
-   - server.test.js agent count 16→17 修復已驗證正確（實際 agents/ 目錄有 18 個，含 grader 不映射 stage）
-
-5. **3207 pass / 0 fail** — 測試全通過
-
----
-Keywords: iteration, single, source, truth, claude, hooks, json, cross, reference, agent
-
----
 ## 2026-03-04 | doc-updater:DOCS Findings
 所有受影響的文件已檢查並更新一致：
 
@@ -831,4 +727,225 @@ Keywords: docs, session, stop, handler, init, workflow, health, check, registry,
 
 **跨階段發現的問題**：REVIEW 標注的 `formatFailureWarnings` 子查詢問題，在實際程式碼中確認為資料不一致缺口，且本次實作未修復。
 Keywords: resolved, getfailurepatterns, session, stage, pass, fail, agent, stop, handler, recordfailure
+
+---
+## 2026-03-05 | planner:PLAN Findings
+**需求分解**：
+1. **分析 plugin 結構並輸出 design.md** | agent: architect | files: `agents/*.md`、`skills/*/SKILL.md`、`scripts/lib/registry-data.json`、`hooks/scripts/**/*.js`
+2. **實作 `dependency-graph.js` 核心模組** | agent: developer | files: `plugins/overtone/scripts/lib/dependency-graph.js`（新建）
+3. **實作 `impact.js` CLI 入口**（parallel with 2，API 定義清楚後） | agent: developer | files: `plugins/overtone/scripts/impact.js`（新建）
+4. **撰寫 BDD 驗收測試** | agent: tester | files: `tests/unit/dependency-graph.test.js`（新建）
+
+**優先順序**：
+- Phase 1（序列）：architect 完成 design.md — 確認 SKILL.md 格式一致性、require() 路徑正規化策略、API 簽名
+- Phase 2（並行）：developer 實作 dependency-graph.js（核心）+ impact.js（CLI）可並行，因 API 在 design.md 定義清楚後兩者互不依賴
+- Phase 3（序列）：tester 撰寫驗收測試，需要 dependency-graph.js 已存在
+
+**範圍邊界**：
+- 不含：Command → Agent 引用解析（自由文字，v2）
+- 不含：整合進 pre-edit-guard（dependency-graph-core 穩定後下一步）
+- 不含：持久化快取、循環依賴偵測、視覺化輸出
+Keywords: plugin, design, agent, architect, files, agents, skills, skill, scripts, registry
+
+---
+## 2026-03-05 | planner:PLAN Context
+**需求分析**：Overtone 的閉環機制目前仰賴人工記憶，`pre-edit-guard` 只能給通用提示。目標是建立 `scripts/lib/dependency-graph.js` 掃描 plugin 結構，產生雙向依賴圖，再透過 `scripts/impact.js` CLI 提供對外查詢介面。這是閉環完整性的自動化升級，不是新功能，是對現有製作規範缺口的補全。
+
+**四類資料來源**（已確認各來源位置）：
+1. `agents/*.md` frontmatter 的 `skills` 欄位（gray-matter 解析）
+2. `skills/*/SKILL.md` 的 Reference 索引表（各 SKILL.md 格式需 architect 確認一致性）
+3. `scripts/lib/registry-data.json` 的 `stages[stage].agent` 欄位（JSON，已確認格式清楚）
+4. `hooks/scripts/**/*.js` 的 `require()` 呼叫（需路徑正規化）
+Keywords: overtone, edit, guard, scripts, dependency, graph, plugin, impact, agents, frontmatter
+
+---
+## 2026-03-05 | architect:ARCH Findings
+**技術方案**：
+- on-demand 掃描（每次呼叫重新掃描所有 plugin 元件），不持久化
+- 雙向索引：`dependencies`（X→Y）和 `dependents`（Y→X）同步維護
+- 四類掃描器獨立實作，組合成完整圖
+
+**Open Questions 解答**：
+1. **SKILL.md Reference 表格格式**：有 2 欄和 4 欄兩種，但路徑格式一致（`` `${CLAUDE_PLUGIN_ROOT}/skills/...` ``）。掃描策略：regex 全文掃描，pattern 為 `` /`\${CLAUDE_PLUGIN_ROOT}\/skills\/[^`]+`/g ``
+2. **路徑參數慣例**：相對路徑（相對於 plugin root）。CLI 支援絕對路徑輸入（自動轉換）
+3. **require() 正規化**：`path.resolve(hookDir, relativePath)` → `path.relative(pluginRoot, absPath)` → 加 `.js`，只收錄 plugin root 下的依賴
+4. **Commands 依賴**：不納入 v1（自由文字，複雜度高），列為 v2
+
+**API 介面**：
+- `buildGraph(pluginRoot: string): DependencyGraph`
+- `graph.getImpacted(path: string): ImpactResult`（`{ path, impacted: [{ path, type, reason }] }`）
+- `graph.getDependencies(path: string): string[]`
+- `graph.getRawGraph(): RawGraph`
+- CLI：`bun scripts/impact.js <path> [--deps] [--json]`
+
+**資料模型**：
+- 內部：`Map<string, Set<string>>`（dependencies + dependents 雙向）
+- 對外：plain object（JSON 可序列化）
+- 無持久化，純記憶體
+
+**檔案結構**：
+- 新增：`plugins/overtone/scripts/lib/dependency-graph.js`（核心模組）
+- 新增：`plugins/overtone/scripts/impact.js`（CLI 入口）
+- 新增：`tests/unit/dependency-graph.test.js`（BDD 測試）
+
+**Dev Phases**：
+
+    ### Phase 1: 核心模組 + CLI (parallel)
+    - [ ] 實作 dependency-graph.js（buildGraph + 四類掃描器） | files: plugins/overtone/scripts/lib/dependency-graph.js
+    - [ ] 實作 impact.js CLI（參數解析 + 格式化輸出） | files: plugins/overtone/scripts/impact.js
+
+    ### Phase 2: 測試 (sequential)
+    - [ ] 撰寫 BDD 驗收測試（3 場景） | files: tests/unit/dependency-graph.test.js
+Keywords: demand, plugin, dependencies, dependents, open, questions, skill, reference, skills, regex
+
+---
+## 2026-03-05 | code-reviewer:REVIEW Findings
+**1. [M] 遺漏檔案：impact.js 未被 commit**
+- 檔案：`plugins/overtone/scripts/impact.js`
+- 描述：Handoff 聲明三個檔案（dependency-graph.js、impact.js、test），但 impact.js 是 untracked（`git status` 顯示 `??`），未包含在 commit 中。
+- 影響：BDD Feature 9 的全部 6 個 scenario（CLI 入口）缺少對應的已提交程式碼。
+- 建議修法：將 impact.js 加入 commit。
+- 信心：100%
+
+**2. [M] 測試缺口：Feature 9（impact.js CLI）完全無測試覆蓋**
+- 檔案：`tests/unit/dependency-graph.test.js`
+- 描述：BDD spec 定義了 Feature 9 的 6 個 CLI scenario（9-1 ~ 9-6），但測試檔案中完全沒有 Feature 9 的測試。測試檔案涵蓋 Feature 1-8 和 Feature 10，唯獨跳過 Feature 9。
+- 影響：CLI 的路徑正規化、`--deps`/`--json` flag 組合、退出碼、pluginRoot 自動偵測等行為完全未驗證。
+- 建議修法：新增 Feature 9 的整合測試，使用 `Bun.spawn` 或 `child_process.execSync` 執行 `bun scripts/impact.js` 並驗證 stdout/退出碼。
+- 信心：100%
+Keywords: impact, commit, plugins, overtone, scripts, handoff, dependency, graph, test, untracked
+
+---
+## 2026-03-05 | planner:PLAN Findings
+**需求分解**：
+
+1. 實作 `websocket.js` CLI 腳本 | agent: developer | files: `plugins/overtone/scripts/os/websocket.js`
+   - 三個子命令：`connect`、`send`、`listen [--duration <ms>]`
+   - Bun 原生 WebSocket API + 依賴注入模式（`_deps = { WebSocket }`）
+   - JSON 輸出格式（結構化，agent 可 parse）
+   - 錯誤碼：`INVALID_ARGUMENT` / `CONNECTION_FAILED` / `TIMEOUT` / `SEND_FAILED`
+   - 不 throw，所有錯誤以 `{ ok: false, error, message }` 回傳
+
+2. 撰寫 `realtime.md` 參考文件 | agent: developer | files: `plugins/overtone/skills/os-control/references/realtime.md`
+   - 使用場景說明（何時用 WebSocket vs HTTP）
+   - 三個子命令的 CLI 範例
+   - 輸出格式解析指引（agent 看懂 JSON 欄位意義）
+   - 常見場景：幣安行情、IoT 訊號、即時通知
+
+3. 更新 SKILL.md 索引 | agent: developer | files: `plugins/overtone/skills/os-control/SKILL.md`
+   - `realtime.md` 條目狀態更新（P3.5 ✅）
+   - 確認「按需讀取」章節的 realtime.md 指引完整
+
+4. 撰寫 `websocket.test.js` | agent: tester（TEST 階段）| files: `tests/unit/websocket.test.js`
+   - mock WebSocket 依賴注入
+   - 情境覆蓋：正常連線、訊息接收、逾時、無效 URL、連線失敗
+   - 對齊 bdd.md BDD 情境（由 TEST:spec 階段產出）
+
+**優先順序**：
+
+- 第一優先：子任務 1（websocket.js）— 核心能力，其他均依賴它的 API 設計
+- 子任務 2 和 3 在 websocket.js API 設計確定後可**並行**進行（文件和 SKILL.md 索引互不影響）
+- 子任務 4（測試）依賴 BDD 規格（TEST:spec 階段輸出），在 DEV 後驗證
+
+**範圍邊界**：
+
+- 明確不做：TTS（`tts.js`）、STT（`stt.js`）、Guard 擴充
+- 明確不做：重連邏輯、訊息佇列、Binary frame 支援
+- roadmap.md 中 P3.5 的 `tts.js` 和 `stt.js` 為後續獨立迭代
+Keywords: websocket, agent, developer, files, plugins, overtone, scripts, connect, send, listen
+
+---
+## 2026-03-05 | planner:PLAN Context
+**需求**：實作 Overtone P3.5 WebSocket 能力（websocket-realtime），讓 agent 透過 Bash tool 建立 WebSocket 連線進行即時通訊。
+
+**為什麼**：Phase 4 交易場景驗收條件明確要求「WebSocket 接收即時幣安行情」，本次提前（在 P3.4 操控層之前）交付 WebSocket 能力以鋪路。PM Discovery 認定此為優先子項。
+
+**範圍**：遵循已驗證的 P3.x 閉環交付模型（腳本 + Reference + SKILL.md 索引 + 測試），不做 TTS/STT/Guard 擴充。
+Keywords: overtone, websocket, realtime, agent, bash, tool, phase, discovery, reference, skill
+
+---
+## 2026-03-05 | product-manager:PM Findings
+**目標用戶**：個人 dogfooding（Product Owner 自己），場景為讓 Overtone 自主建構新領域能力（Acid Test：自動交易系統）。
+
+**成功指標**：
+- 系統能自主偵測「缺少交易相關 skill」並建議建立
+- 系統能用 manage-component.js 自主建立 skill + agent，且通過閉環檢查
+- 整個過程無需人工編寫 skill/agent prompt
+
+**方案比較**：
+
+| 維度 | 方案 A：繼續完成 P3.4-P3.6 | 方案 B：跳到 Phase 4 進化引擎 PoC | 方案 C：混合 -- P3.6 精簡版 + 進化引擎 PoC |
+|------|---|---|---|
+| 概述 | 按原 roadmap 依序完成 P3.4/P3.5/P3.6 | 跳過 P3.4/P3.5，直接做 Level 3 進化引擎 | P3.6 只做 Guard 精鍊 + health-check 擴展，然後做進化引擎 |
+| 優點 | Phase 3 完整收尾，roadmap 一致性；OS 能力齊全 | 直接觸及最高價值目標；現有零件可串聯；ROI 最高 | 安全基礎紮實後再開放自我修改；風險較低 |
+| 缺點 | P3.4 keyboard/mouse 對 Phase 4 無貢獻（codebase 佐證：Acid Test 是 API 交易，不需要 UI 操控）；延遲最高價值工作 | P3.4/P3.5/P3.6 變成技術債；E2E 安全驗證未做就開放自我修改 | 工作量略多於方案 B |
+| 工作量 | 8-12 人天（P3.4: 3-5 + P3.5: 1-2 + P3.6: 3-5） | 5-8 人天 | 6
+Keywords: dogfooding, product, owner, overtone, acid, test, skill, manage, component, agent
+
+---
+## 2026-03-05 | planner:PLAN Findings
+**需求分解**：
+
+1. Guard 精鍊：pre-bash-guard.js 新增 OS 相關危險命令黑名單 | agent: developer | files: `plugins/overtone/hooks/scripts/tool/pre-bash-guard.js`
+
+2. Guard 測試更新 | agent: developer | files: `tests/unit/pre-bash-guard.test.js`（或對應路徑）
+
+3. health-check 擴展：checkOsTools() 新增 screencapture 偵測 + heartbeat daemon 狀態偵測 | agent: developer | files: `plugins/overtone/scripts/health-check.js`
+
+4. health-check 測試更新 | agent: developer | files: `tests/unit/health-check.test.js` 或整合測試
+
+5. os-control SKILL.md 狀態標記更新 | agent: developer | files: `plugins/overtone/skills/os-control/SKILL.md`（受 pre-edit-guard 保護，需 manage-component.js）
+
+6. OS 腳本整合測試（新建）| agent: developer | files: `tests/integration/os-scripts.test.js`
+
+**優先順序**：
+
+- 任務 1+2 可並行於任務 3+4（操作不同檔案，無邏輯依賴）
+- 任務 5 獨立（SKILL.md 更新不依賴其他任務）
+- 任務 6 獨立（整合測試覆蓋已有功能，不依賴 guard 或 health-check 變化）
+- 因此可三組並行：{1,2} + {3,4} + {5,6}
+
+**範圍邊界**：
+
+- 明確不在此次範圍：P3.4 操控層（keyboard/mouse/applescript/computer-use）、截圖→理解→操作→驗證完整 E2E
+- fswatch 外部工具偵測不需要新增（fswatch.js 使用 Node.js `fs.watch()` 原生 API，無外部 CLI 依賴）
+Keywords: guard, bash, agent, developer, files, plugins, overtone, hooks, scripts, tool
+
+---
+## 2026-03-05 | code-reviewer:REVIEW Findings
+**1. [M] 邏輯不一致：`defaults write` 的 label 與實際行為不符**
+
+檔案：`/Users/sbu/projects/overtone/plugins/overtone/hooks/scripts/tool/pre-bash-guard.js` 第 67 行
+
+```javascript
+{ pattern: /\bdefaults\s+(delete|write)\b/, label: '刪除系統偏好設定' },
+```
+
+pattern 同時匹配 `defaults delete` 和 `defaults write`，但 label 只寫「刪除系統偏好設定」。`defaults write` 的行為是「修改」而非「刪除」。註解（第 19 行、第 30 行）正確寫了「刪除或修改」，但 label 只有「刪除」。
+
+影響：測試 `tests/integration/pre-bash-guard.test.js` 第 176 行驗證 `defaults write NSGlobalDomain` 的 deny reason 期望包含「刪除系統偏好設定」，雖然測試通過（因為 label 確實是這個字串），但呈現給使用者的攔截原因描述不正確 -- 使用者執行 `defaults write` 被告知「刪除系統偏好設定」會造成困惑。
+
+建議：label 改為 `'修改或刪除系統偏好設定'`，測試的 expect 也同步更新。信心：90%。
+
+**2. [M] 語法錯誤：SKILL.md 平台偵測範例缺少引號**
+
+檔案：`/Users/sbu/projects/overtone/plugins/overtone/skills/os-control/SKILL.md` 第 45 行
+
+```
+- macOS：`process.platform === darwin`
+```
+
+修改前是 `'darwin'`（有引號），修改後引號被移除了。這是一個 JavaScript 比較語句，`process.platform === darwin` 在 JS 中 `darwin` 是未定義變數而非字串。作為文件中的範例程式碼，這會誤導 Agent 寫出有 bug 的程式碼。
+
+建議：改回 `process.platform === 'darwin'`。信心：95%。
+
+**3. [m] 測試與 spec 的 API 名稱不一致**
+
+`os-scripts.test.js` 的函式名稱與 BDD spec 有偏差：
+- BDD spec Feature 6 Scenario 1 寫 `takeScreenshot({ type: 'full' })`，測試使用 `captureFullScreen()`
+- BDD spec Feature 6 Scenario 2 寫 `getWindowList()`，測試使用 `listProcesses()`
+- BDD spec Feature 6 Scenario 4 寫 `getSystemInfo()`，測試使用 `getMemoryInfo()`
+
+測試已加註解說明差異原因（模組實際匯出名稱不同），且功能等價。這屬於 spec 與實作 API 名稱的漂移，不影響功能覆蓋。
+Keywords: defaults, write, label, users, projects, overtone, plugins, hooks, scripts, tool
 

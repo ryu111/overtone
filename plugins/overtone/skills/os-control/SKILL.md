@@ -42,7 +42,7 @@ Overtone 的 OS 能力架構：
 2. **Computer Use 兜底**：截圖→理解→操作→驗證 迴圈，處理無 AppleScript API 的場景
 
 ### 平台偵測
-- macOS：`process.platform === darwin`
+- macOS：`process.platform === 'darwin'`
 - 工具檢測：`which screencapture`、`which osascript`、`which cliclick`
 
 ## 按需讀取

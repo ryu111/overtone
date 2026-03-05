@@ -64,7 +64,7 @@ const BLACKLIST = [
   // launchctl unload — 停用系統服務
   { pattern: /\blaunchctl\s+unload\b/, label: '停用系統服務' },
   // defaults delete 或 defaults write — 刪除或修改系統偏好設定
-  { pattern: /\bdefaults\s+(delete|write)\b/, label: '刪除系統偏好設定' },
+  { pattern: /\bdefaults\s+(delete|write)\b/, label: '修改或刪除系統偏好設定' },
 ];
 
 // ── 入口守衛 ──

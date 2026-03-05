@@ -1,6 +1,6 @@
 # Overtone 現況
 
-> 最後更新：2026-03-05 | Plugin 版本：0.28.58（WebSocket 即時通訊能力）
+> 最後更新：2026-03-05 | Plugin 版本：0.28.59（security-integration：Guard 精鍊 19 條 + health-check checkOsTools 擴展 + OS 腳本整合測試）
 
 ## 版本狀態
 
@@ -16,8 +16,8 @@
 | Agent 數量 | 18（含 grader） |
 | Stage 數量 | 16 |
 | Workflow 模板 | 18 |
-| 測試通過 | 3556 pass / 0 fail（156 個測試檔）|
-| 測試檔案 | 156 個 |
+| 測試通過 | 3580 pass / 0 fail（158 個測試檔）|
+| 測試檔案 | 158 個 |
 | Hook 數量 | 11 個 |
 | Skill 數量 | 23（15 knowledge domain + orchestrator + pm + specs + 4 utility-with-refs） |
 | Knowledge Domain 數 | 15（testing、workflow-core、security-kb、database、dead-code、commit-convention、code-review、wording、debugging、architecture、build-system、os-control、autonomous-control、craft、claude-dev） |
@@ -27,9 +27,9 @@
 
 ## 近期變更（最近 3 筆）
 
+- **[0.28.59] 2026-03-05**：P3.6 安全整合——Guard 精鍊 + health-check 擴展 + OS 腳本整合測試——(1) pre-bash-guard.js 黑名單 14→19 條（新增 killall、killall -9 等 OS 層級危險命令防護）；(2) health-check checkOsTools 擴展（第 8 項新增 screencapture、heartbeat daemon 狀態檢測，16 項不變）；(3) os-control SKILL.md 完成度更新（索引精準化、reference 整合）；(4) 新增 OS 腳本整合 smoke test（pre-bash-guard、system-info、notification、fswatch 五項）；(5) 版本 0.28.58→0.28.59；(6) 測試 +23（3557→3580）✅
 - **[0.28.58] 2026-03-05**：P3.5 WebSocket 即時通訊能力——(1) 新增 websocket.js（Bun 原生 WebSocket client，connect/send/on/close API + CLI 支援）；(2) 新增 realtime.md 知識參考（WebSocket 應用場景、協議、錯誤處理、安全考量）；(3) 新增 websocket.test.js 測試 19 個（基礎連線、訊息收發、錯誤恢復、多連接、並發）；(4) 更新 os-control SKILL.md 索引 + agent frontmatter；(5) 版本 0.28.57→0.28.58；(6) 測試 +18（3538→3556）✅
 - **[0.28.57] 2026-03-05**：Failure Tracker 精確度改善——(1) 測試隔離：recordFailure/recordResolution 檢查 OVERTONE_TEST，setup.js 全域設定，避免測試污染生產資料；(2) 新增 recordResolution API：stage pass 時記錄，getFailurePatterns 自動排除已解決的失敗；(3) 智慧過濾：同 sessionId+stage 有 resolved 記錄時自動清除舊失敗，retry 成功不計失敗；(4) 時間脈絡：formatFailureSummary 加時間範圍顯示（M/DD - M/dd）；(5) agent-stop-handler 自動呼叫 recordResolution；(6) 新增 8 個測試（隔離、過濾、時間範圍）；(7) 測試 +13（3455→3468）✅
-- **[0.28.56] 2026-03-05**：佇列推進閉環修復 + Health-Check 精確度提升——(1) session-stop-handler：completeCurrent 提前，防止手動停止繞過佇列推進；(2) init-workflow：靜默 catch 改 console.error；(3) registry.js：timelineEvents 加入 consumeMode（30 種事件，13 分類）；(4) checkClosedLoop：改從 registry 讀 consumeMode，移除硬編碼白名單（warnings 27→3）；(5) checkCompletionGap：排除 orchestrator skill（warnings 3→1）；(6) config-validator：移除 4 個 dead exports；(7) 測試 3455 pass / 0 fail ✅
 
 ## Phase 3 規劃狀態
 
@@ -47,7 +47,7 @@ Phase 3 目標：Layer 2 完整 OS 能力，達到 Phase 4 Ready。
 | P3.3 | 管得住 | Process + 剪貼簿 + 系統資訊 + 通知 + 檔案監控 | ✅ |
 | P3.4 | 動得了 | keyboard.js + mouse.js + applescript.js + computer-use.js | ⬜ |
 | P3.5 | 聽說能力 | WebSocket ✅ + TTS ⬜ + STT ⬜ | 🟡 部分完成 |
-| P3.6 | 安全整合 | Guard 精鍊 + E2E 驗證 + health-check 擴展 | ⬜ |
+| P3.6 | 安全整合 | Guard 精鍊 + E2E 驗證 + health-check 擴展 | ✅ |
 
 > 詳細計劃見 `docs/roadmap.md` Phase 3 章節。
 

@@ -629,3 +629,78 @@ Keywords: setup, recordfailure, unit, tests, describe, beforeeach, aftereach, in
 3. **時間範圍顯示**：`formatFailureSummary` 從最近失敗記錄中計算最早和最晚時間，輸出 `（M/DD - M/DD）` 或 `（M/DD）`
 Keywords: failure, tracker, precision, recordfailure, recordresolution, tests, helpers, setup, test, integration
 
+---
+## 2026-03-05 | tester:TEST Findings
+**測試結果：PASS**
+
+| 測試檔案 | 測試數 | 結果 |
+|---------|--------|------|
+| `tests/unit/dependency-graph.test.js` | 46 | 46 pass |
+| `tests/unit/impact-cli.test.js` | 7（新增） | 7 pass |
+| 全量套件 | 3533 | 3533 pass |
+
+BDD Spec 對照覆蓋狀況：
+
+- Feature 1（buildGraph）：Scenario 1-1 至 1-4 — 全部覆蓋
+- Feature 2（Agent Skills）：Scenario 2-1 至 2-4 — 全部覆蓋
+- Feature 3（Skill References）：Scenario 3-1 至 3-5 — 全部覆蓋
+- Feature 4（Registry Stages）：Scenario 4-1 至 4-4 — 全部覆蓋
+- Feature 5（Hook Requires）：Scenario 5-1 至 5-5 — 全部覆蓋
+- Feature 6（getImpacted）：Scenario 6-1 至 6-5 — 全部覆蓋
+- Feature 7（getDependencies）：Scenario 7-1 至 7-4 — 全部覆蓋
+- Feature 8（getRawGraph）：Scenario 8-1 至 8-2 — 全部覆蓋
+- Feature 9（CLI）：Scenario 9-1 至 9-6 — 新增 7 個測試覆蓋
+- Feature 10（邊界條件）：Scenario 10-1 至 10-5 — 全部覆蓋（10-1 已在 Feature 5 describe 中）
+Keywords: pass, tests, unit, dependency, graph, test, impact, spec, feature, buildgraph
+
+---
+## 2026-03-05 | developer:DEV Findings
+1. **Mock WebSocket 設計**：BDD Scenario 中「伺服器拒絕連線」在 mock 環境難以準確模擬（真實 `ws://localhost:19999` 需要真實連線），改用 `closeImmediately` 行為模擬同等效果（open 未觸發就 close），符合規格意圖。
+
+2. **send Scenario 的 response 結構**：BDD spec 寫 `response: "hello"`，但 Architect Handoff 明確定義 `response: MessageEntry`（`{ data, receivedAt }`）。實作以 Architect 定義為準，response 是完整 MessageEntry，`responseAt` 獨立欄位。
+
+3. **NeverOpenWS**：Scenario「open 事件永遠不觸發」需要特殊 mock（不能用 createMockWS 工廠），因為 createMockWS 的 `_init()` 會在 `setImmediate` 後呼叫，導致事件已被設置。改用手動 class 定義確保 setter 是 no-op。
+
+4. **listen durationMs**：回傳值是 `Date.now() - startTime`（實際測量），不是傳入的 `opts.duration`，連線提前斷開時可正確反映真實持續時間。
+
+5. **post-use-failure-handler.test.js 偶發失敗**：並行測試中 1 個 fail，單獨執行時 8 pass / 0 fail，確認是既有的 flaky 測試問題，與本次修改無關。
+Keywords: mock, websocket, scenario, localhost, closeimmediately, open, close, send, response, spec
+
+---
+## 2026-03-05 | tester:TEST Context
+模式：verify
+
+執行 `bun test tests/unit/websocket.test.js`，16 個測試全部通過。
+全量測試（3553 pass）中 `post-use-failure-handler.test.js` 偶發 1 fail，為既有並行隔離問題，與 websocket-realtime 無關（單獨執行通過）。
+Keywords: verify, test, tests, unit, websocket, pass, post, failure, handler, fail
+
+---
+## 2026-03-05 | tester:TEST Context
+模式：verify
+
+security-integration feature 的 BDD spec 驗證已完成。三個目標測試檔案全部存在且通過：
+- `tests/integration/pre-bash-guard.test.js`
+- `tests/unit/health-check-os-tools.test.js`
+- `tests/integration/os-scripts.test.js`
+
+另外發現 `docs/status.md` 版本號（0.28.58）與 `plugin.json`（0.28.59）不一致，導致 `tests/unit/docs-sync.test.js` 測試失敗。已修正 status.md 版本號，全量測試恢復 3580 pass, 0 fail。
+Keywords: verify, security, integration, feature, spec, tests, bash, guard, test, unit
+
+---
+## 2026-03-05 | tester:TEST:2 Findings
+所有測試通過，無 regression：
+
+| 測試檔案 | 結果 |
+|----------|------|
+| `tests/integration/pre-bash-guard.test.js` | 35 pass / 0 fail |
+| `tests/unit/health-check-os-tools.test.js` | 6 pass / 0 fail |
+| `tests/integration/os-scripts.test.js` | 8 pass / 0 fail |
+| 全量（158 files） | 3580 pass / 0 fail |
+
+程式碼確認：
+- `pre-bash-guard.js` 第 67 行：label 正確為「修改或刪除系統偏好設定」
+- `plugins/overtone/skills/os-control/SKILL.md` 第 45 行：`process.platform === 'darwin'`（引號完整）
+
+**判斷：PASS**
+Keywords: regression, tests, integration, bash, guard, test, pass, fail, unit, health
+

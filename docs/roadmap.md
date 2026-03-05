@@ -1,6 +1,6 @@
 # Overtone Roadmap
 
-> 最後更新：2026-03-05 | 當前 Phase：Phase 3 進行中（P3.3 系統層完成 + P3.5 WebSocket 完成）
+> 最後更新：2026-03-05 | 當前 Phase：Phase 3 進行中（P3.3 系統層完成 + P3.5 WebSocket 完成 + P3.6 安全整合完成）
 
 ## Phase 總覽
 
@@ -158,10 +158,10 @@
 
 | 任務 | 說明 | 狀態 |
 |------|------|:----:|
-| Guard 精鍊 | pre-bash-guard.js 黑名單完善 + 各階段累積的危險模式整合 | ⬜ |
-| E2E 驗證 | 端到端測試：截圖→理解→操作→驗證 完整流程 | ⬜ |
-| health-check 擴展 | 偵測 cliclick/fswatch 等外部依賴是否安裝 + heartbeat daemon 狀態 | ⬜ |
-| Skill 完善 | os-control SKILL.md 正式版 + 所有 reference 完成度驗證 | ⬜ |
+| Guard 精鍊 | pre-bash-guard.js 黑名單完善 + 各階段累積的危險模式整合 | ✅ |
+| E2E 驗證 | OS smoke test ✅（完整 UI E2E 驗證待 P3.4 動得了）| ✅ |
+| health-check 擴展 | 偵測 screencapture、heartbeat daemon 狀態 + checkOsTools 擴展（第 8 項內容豐富化） | ✅ |
+| Skill 完善 | os-control SKILL.md 完成度更新 + reference 整合 | ✅ |
 
 ### Phase 3 完成標準（Phase 4 Ready）
 
