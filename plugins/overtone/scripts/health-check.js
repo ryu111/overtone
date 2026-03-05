@@ -3,7 +3,7 @@
 /**
  * health-check.js — Overtone 系統健康自動化偵測
  *
- * 執行 15 項確定性偵測：
+ * 執行 16 項確定性偵測：
  *   1. phantom-events      — registry 事件 vs 實際 emit 呼叫差異
  *   2. dead-exports        — scripts/lib 模組 export 但從未被 require 使用
  *   3. doc-code-drift      — docs 文件中的數量與程式碼實際值不符
@@ -19,6 +19,7 @@
  *  13. closed-loop         — 有 emit 但無 consumer 的孤立 timeline 事件偵測（製作原則 1）
  *  14. recovery-strategy   — handler 模組 + agent 是否定義失敗恢復行為（製作原則 2）
  *  15. completion-gap      — skill 是否缺少 references/ 子目錄（製作原則 3）
+ *  16. dependency-sync     — SKILL.md 消費者表 vs agent frontmatter skills 一致性偵測
  *
  * 輸出：JSON stdout（HealthCheckOutput schema）
  * Exit code：有 findings → 1；無 findings → 0
@@ -1554,6 +1555,126 @@ function checkCompletionGap(skillsDirOverride) {
  * @property {string} [detail]
  */
 
+// ── 16. Dependency Sync 依賴一致性偵測 ──
+
+// 用 dependency-graph 掃描 SKILL.md 消費者表 vs agent frontmatter 的 skills 欄位，
+// 偵測兩端不一致（agent 宣告了 skill 但 SKILL.md 消費者表沒列、或反之）。
+function checkDependencySync(pluginRootOverride) {
+  const findings = [];
+  const root = pluginRootOverride || PLUGIN_ROOT;
+
+  let buildGraph;
+  try {
+    buildGraph = require('./lib/dependency-graph').buildGraph;
+  } catch {
+    return findings; // dependency-graph 不可用時靜默跳過
+  }
+
+  let graph;
+  try {
+    graph = buildGraph(root);
+  } catch {
+    return findings;
+  }
+
+  const matter = require('gray-matter');
+  const { existsSync } = require('fs');
+  const agentsDir = path.join(root, 'agents');
+  const skillsDir = path.join(root, 'skills');
+
+  // 收集 agent → skills 映射（from frontmatter）
+  const agentSkillMap = new Map(); // agentName → Set<skillName>
+  let agentFiles;
+  try {
+    agentFiles = readdirSync(agentsDir).filter(f => f.endsWith('.md'));
+  } catch {
+    return findings;
+  }
+
+  for (const file of agentFiles) {
+    const agentName = file.replace(/\.md$/, '');
+    const content = safeRead(path.join(agentsDir, file));
+    if (!content) continue;
+    try {
+      const fm = matter(content).data;
+      const skills = fm.skills;
+      if (Array.isArray(skills) && skills.length > 0) {
+        agentSkillMap.set(agentName, new Set(skills));
+      }
+    } catch { /* 靜默跳過 */ }
+  }
+
+  // 收集 SKILL.md 消費者表（from SKILL.md content）
+  const skillConsumerMap = new Map(); // skillName → Set<agentName>
+  let skillDirs;
+  try {
+    skillDirs = readdirSync(skillsDir).filter(d => {
+      try { return statSync(path.join(skillsDir, d)).isDirectory(); } catch { return false; }
+    });
+  } catch {
+    return findings;
+  }
+
+  for (const skillName of skillDirs) {
+    const skillMd = path.join(skillsDir, skillName, 'SKILL.md');
+    const content = safeRead(skillMd);
+    if (!content) continue;
+
+    // 解析消費者表：| Agent | 用途 | 格式
+    const consumers = new Set();
+    const tableRe = /\|\s*(\w[\w-]*)\s*\|/g;
+    // 找消費者區段
+    const consumerSection = content.match(/##\s*消費者[\s\S]*?(?=\n##|\n---|\n$)/);
+    if (consumerSection) {
+      let m;
+      while ((m = tableRe.exec(consumerSection[0])) !== null) {
+        const name = m[1];
+        // 排除表頭
+        if (name !== 'Agent' && name !== 'agent' && name !== '---') {
+          consumers.add(name);
+        }
+      }
+    }
+    if (consumers.size > 0) {
+      skillConsumerMap.set(skillName, consumers);
+    }
+  }
+
+  // 比對 1：agent frontmatter 宣告 skill，但 SKILL.md 消費者表未列此 agent
+  for (const [agentName, skills] of agentSkillMap) {
+    for (const skillName of skills) {
+      const consumers = skillConsumerMap.get(skillName);
+      if (consumers && !consumers.has(agentName)) {
+        findings.push({
+          check: 'dependency-sync',
+          severity: 'warning',
+          file: `agents/${agentName}.md`,
+          message: `agent "${agentName}" 的 frontmatter 引用 skill "${skillName}"，但 ${skillName}/SKILL.md 消費者表未列出此 agent`,
+          detail: `SKILL.md 消費者表列出：${[...consumers].join(', ')}`,
+        });
+      }
+    }
+  }
+
+  // 比對 2：SKILL.md 消費者表列了 agent，但該 agent frontmatter 沒有此 skill
+  for (const [skillName, consumers] of skillConsumerMap) {
+    for (const agentName of consumers) {
+      const agentSkills = agentSkillMap.get(agentName);
+      if (agentSkills && !agentSkills.has(skillName)) {
+        findings.push({
+          check: 'dependency-sync',
+          severity: 'warning',
+          file: `skills/${skillName}/SKILL.md`,
+          message: `${skillName}/SKILL.md 消費者表列出 agent "${agentName}"，但該 agent frontmatter 未引用此 skill`,
+          detail: `agent frontmatter skills：${[...agentSkills].join(', ')}`,
+        });
+      }
+    }
+  }
+
+  return findings;
+}
+
 /**
  * 執行所有健康檢查
  * @returns {{ checks: object[], findings: Finding[] }}
@@ -1575,6 +1696,7 @@ function runAllChecks() {
     { name: 'closed-loop',       fn: checkClosedLoop },
     { name: 'recovery-strategy', fn: checkRecoveryStrategy },
     { name: 'completion-gap',    fn: checkCompletionGap },
+    { name: 'dependency-sync',   fn: checkDependencySync },
   ];
 
   const allFindings = [];
@@ -1665,6 +1787,7 @@ module.exports = {
   checkClosedLoop,
   checkRecoveryStrategy,
   checkCompletionGap,
+  checkDependencySync,
   runAllChecks,
   // 測試 DI 支援
   TEST_BASELINE,
