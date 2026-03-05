@@ -14,11 +14,12 @@ user-invocable: false
 | Agent | 用途 |
 |-------|------|
 | developer | Commit 撰寫標準 — type 分類、atomic 原則、拆分判斷 |
+| claude-developer | Plugin 元件 commit 時遵循 conventional commit 標準 |
 
 ## 資源索引
 
 | 檔案 | 說明 |
 |------|------|
-| 💡 `${CLAUDE_PLUGIN_ROOT}/skills/commit-convention/references/commit-convention.md` | Conventional commit 完整規範 |
-| 💡 `${CLAUDE_PLUGIN_ROOT}/skills/commit-convention/references/commit-examples.md` | Overtone 實際 commit 範例（好例/壞例對比） |
-| 💡 `${CLAUDE_PLUGIN_ROOT}/skills/commit-convention/examples/good-bad-commits.md` | 完整好壞 commit 對比範例 |
+| 💡 \`\${CLAUDE_PLUGIN_ROOT}/skills/commit-convention/references/commit-convention.md\` | Conventional commit 完整規範 |
+| 💡 \`\${CLAUDE_PLUGIN_ROOT}/skills/commit-convention/references/commit-examples.md\` | Overtone 實際 commit 範例（好例/壞例對比） |
+| 💡 \`\${CLAUDE_PLUGIN_ROOT}/skills/commit-convention/examples/good-bad-commits.md\` | 完整好壞 commit 對比範例 |
