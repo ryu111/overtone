@@ -170,8 +170,8 @@ describe('2. Timeline 事件完整性', () => {
     timelineEvents = TIMELINE_EVENTS_SNAPSHOT;
   });
 
-  test('registry 中共有 30 種 timelineEvents', () => {
-    expect(Object.keys(timelineEvents).length).toBe(30);
+  test('registry 中共有 31 種 timelineEvents', () => {
+    expect(Object.keys(timelineEvents).length).toBe(31);
   });
 
   test('每個 timelineEvent 都有 label 和 category', () => {
@@ -185,16 +185,16 @@ describe('2. Timeline 事件完整性', () => {
     }
   });
 
-  test('共有 13 種 category 類型', () => {
+  test('共有 14 種 category 類型', () => {
     const categories = [...new Set(Object.values(timelineEvents).map(e => e.category))];
-    expect(categories.length).toBe(13);
+    expect(categories.length).toBe(14);
   });
 
-  test('13 個 category 每個至少有一個事件', () => {
+  test('14 個 category 每個至少有一個事件', () => {
     const expectedCategories = [
       'workflow', 'stage', 'agent', 'loop',
       'parallel', 'grader', 'specs', 'error',
-      'session', 'tool', 'system', 'hook', 'queue',
+      'session', 'tool', 'system', 'hook', 'queue', 'quality',
     ];
     for (const cat of expectedCategories) {
       const events = Object.values(timelineEvents).filter(e => e.category === cat);

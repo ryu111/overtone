@@ -16,6 +16,28 @@ const paths = require('./paths');
 
 const MAX_MESSAGE_LENGTH = 2000;
 
+// 頻率偵測門檻常數（export 供 health-check 直接引用）
+const COMPACT_FREQ_WINDOW_MS = 5 * 60 * 1000; // 5 分鐘
+const COMPACT_FREQ_THRESHOLD = 3;              // 3 次
+const MAX_AUTO_TIMESTAMPS = 20;
+
+/**
+ * 偵測 auto-compact 頻率是否異常（純函式，無 side effect）
+ * @param {string[]} timestamps - ISO 8601 時間戳陣列（最近 N 筆）
+ * @param {number} windowMs - 時間窗口（毫秒）
+ * @param {number} threshold - 觸發門檻次數
+ * @returns {{ anomaly: boolean, autoCount: number }}
+ */
+function detectFrequencyAnomaly(timestamps, windowMs, threshold) {
+  const now = Date.now();
+  const windowStart = now - windowMs;
+  const recentCount = timestamps.filter((ts) => {
+    const t = new Date(ts).getTime();
+    return Number.isFinite(t) && t >= windowStart;
+  }).length;
+  return { anomaly: recentCount >= threshold, autoCount: recentCount };
+}
+
 /**
  * 處理 PreCompact 事件
  * @param {object} input - hook stdin 解析後的物件
@@ -74,6 +96,28 @@ function handlePreCompact(input) {
     compactCount.manual = (compactCount.manual || 0) + 1;
   } else {
     compactCount.auto = (compactCount.auto || 0) + 1;
+    // 追蹤 autoTimestamps（FIFO 截斷至最近 MAX_AUTO_TIMESTAMPS 筆）
+    const autoTimestamps = (compactCount.autoTimestamps || []);
+    autoTimestamps.push(new Date().toISOString());
+    compactCount.autoTimestamps = autoTimestamps.slice(-MAX_AUTO_TIMESTAMPS);
+
+    // 頻率偵測：超過門檻則 emit quality:compact-frequency 事件
+    const { anomaly, autoCount } = detectFrequencyAnomaly(
+      compactCount.autoTimestamps, COMPACT_FREQ_WINDOW_MS, COMPACT_FREQ_THRESHOLD,
+    );
+    if (anomaly) {
+      try {
+        const windowStart = new Date(Date.now() - COMPACT_FREQ_WINDOW_MS).toISOString();
+        timeline.emit(sessionId, 'quality:compact-frequency', {
+          autoCount,
+          windowMs: COMPACT_FREQ_WINDOW_MS,
+          threshold: COMPACT_FREQ_THRESHOLD,
+          windowStartIso: windowStart,
+        });
+      } catch {
+        // emit 失敗不阻擋 compaction
+      }
+    }
   }
   atomicWrite(compactCountPath, compactCount);
 
@@ -200,4 +244,10 @@ function buildCompactMessage(ctx) {
   return message;
 }
 
-module.exports = { handlePreCompact, buildCompactMessage };
+module.exports = {
+  handlePreCompact,
+  buildCompactMessage,
+  detectFrequencyAnomaly,
+  COMPACT_FREQ_WINDOW_MS,
+  COMPACT_FREQ_THRESHOLD,
+};

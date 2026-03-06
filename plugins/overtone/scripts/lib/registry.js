@@ -105,7 +105,7 @@ const retryDefaults = {
   maxRetries: 3,
 };
 
-// Timeline 事件類型（31 種，13 分類）
+// Timeline 事件類型（32 種，14 分類）
 // consumeMode: 'targeted'（需專屬 consumer）| 'broadcast'（全量消費者覆蓋）| 'fire-and-forget'（純記錄，無需 consumer）
 const timelineEvents = {
   // workflow 類（3）
@@ -163,6 +163,9 @@ const timelineEvents = {
 
   // queue 類（1）
   'queue:auto-write':   { label: '佇列自動寫入', category: 'queue', consumeMode: 'fire-and-forget' },
+
+  // quality 類（1）
+  'quality:compact-frequency': { label: 'Auto-Compact 頻率異常', category: 'quality', consumeMode: 'fire-and-forget' },
 };
 
 // Remote 控制命令

@@ -3,7 +3,7 @@
 /**
  * health-check.js — Overtone 系統健康自動化偵測
  *
- * 執行 20 項確定性偵測：
+ * 執行 21 項確定性偵測：
  *   1. phantom-events              — registry 事件 vs 實際 emit 呼叫差異
  *   2. dead-exports                — scripts/lib 模組 export 但從未被 require 使用
  *   3. doc-code-drift              — docs 文件中的數量與程式碼實際值不符
@@ -24,6 +24,7 @@
  *  18. test-file-alignment         — scripts/lib 模組是否有對應 tests/unit/ 測試檔案
  *  19. skill-reference-integrity   — SKILL.md 引用的 references/ 檔案是否實際存在
  *  20. concurrency-guards          — G1/G2/G3 並發風險文件完整性 + runtime orphan agent 偵測
+ *  21. compact-frequency            — 偵測各 session 的 auto-compact 頻率異常
  *
  * 輸出：JSON stdout（HealthCheckOutput schema）
  * Exit code：有 findings → 1；無 findings → 0
@@ -2117,6 +2118,82 @@ function checkConcurrencyGuards({ sessionsDirOverride, fsConMdOverride } = {}) {
 }
 
 /**
+ * 偵測各 session 的 compact 頻率異常記錄
+ * @param {string} [sessionsDirOverride] - 供測試覆蓋 sessions 目錄
+ * @returns {Finding[]}
+ */
+function checkCompactFrequency(sessionsDirOverride) {
+  const { existsSync } = require('fs');
+  let { detectFrequencyAnomaly, COMPACT_FREQ_WINDOW_MS, COMPACT_FREQ_THRESHOLD } = {};
+  try {
+    const handler = require('./lib/pre-compact-handler');
+    detectFrequencyAnomaly = handler.detectFrequencyAnomaly;
+    COMPACT_FREQ_WINDOW_MS = handler.COMPACT_FREQ_WINDOW_MS;
+    COMPACT_FREQ_THRESHOLD = handler.COMPACT_FREQ_THRESHOLD;
+  } catch {
+    return [];
+  }
+
+  const findings = [];
+
+  let sessionsDir;
+  if (sessionsDirOverride) {
+    sessionsDir = sessionsDirOverride;
+  } else {
+    try {
+      const { SESSIONS_DIR } = require('./lib/paths');
+      sessionsDir = SESSIONS_DIR;
+    } catch {
+      return findings;
+    }
+  }
+
+  if (!existsSync(sessionsDir)) {
+    return findings;
+  }
+
+  let sessionDirs;
+  try {
+    sessionDirs = readdirSync(sessionsDir, { withFileTypes: true })
+      .filter((e) => e.isDirectory())
+      .map((e) => path.join(sessionsDir, e.name));
+  } catch {
+    return findings;
+  }
+
+  for (const sessionDir of sessionDirs) {
+    const compactCountPath = path.join(sessionDir, 'compact-count.json');
+    if (!existsSync(compactCountPath)) continue;
+
+    let compactCount;
+    try {
+      compactCount = JSON.parse(readFileSync(compactCountPath, 'utf8'));
+    } catch {
+      continue;
+    }
+
+    const autoTimestamps = compactCount.autoTimestamps;
+    if (!Array.isArray(autoTimestamps) || autoTimestamps.length === 0) continue;
+
+    const { anomaly, autoCount } = detectFrequencyAnomaly(
+      autoTimestamps, COMPACT_FREQ_WINDOW_MS, COMPACT_FREQ_THRESHOLD,
+    );
+    if (anomaly) {
+      const sessionName = path.basename(sessionDir);
+      findings.push({
+        check: 'compact-frequency',
+        severity: 'warning',
+        file: path.relative(PROJECT_ROOT, compactCountPath),
+        message: `session "${sessionName}" 在過去 ${Math.round(COMPACT_FREQ_WINDOW_MS / 60000)} 分鐘內 auto-compact 次數 (${autoCount}) 達到異常門檻 (${COMPACT_FREQ_THRESHOLD})`,
+        detail: `autoCount: ${autoCount}, windowMs: ${COMPACT_FREQ_WINDOW_MS}, threshold: ${COMPACT_FREQ_THRESHOLD}`,
+      });
+    }
+  }
+
+  return findings;
+}
+
+/**
  * 執行所有健康檢查
  * @returns {{ checks: object[], findings: Finding[] }}
  */
@@ -2142,6 +2219,7 @@ function runAllChecks() {
     { name: 'test-file-alignment',    fn: checkTestFileAlignment },
     { name: 'skill-reference-integrity', fn: checkSkillReferenceIntegrity },
     { name: 'concurrency-guards',     fn: checkConcurrencyGuards },
+    { name: 'compact-frequency',      fn: checkCompactFrequency },
   ];
 
   const allFindings = [];
@@ -2237,6 +2315,7 @@ module.exports = {
   checkTestFileAlignment,
   checkSkillReferenceIntegrity,
   checkConcurrencyGuards,
+  checkCompactFrequency,
   runAllChecks,
   // 測試 DI 支援
   TEST_BASELINE,

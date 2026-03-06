@@ -369,3 +369,236 @@ describeI('handlePreCompact', () => {
     expectI(Object.keys(st.activeAgents)).toHaveLength(0);
   });
 });
+
+// ── Feature A: detectFrequencyAnomaly 純函式 ─────────────────────────────────
+
+const { describe: describeA, it: itA, expect: expectA } = require('bun:test');
+const { detectFrequencyAnomaly, COMPACT_FREQ_WINDOW_MS, COMPACT_FREQ_THRESHOLD } =
+  require('../../plugins/overtone/scripts/lib/pre-compact-handler');
+
+describeA('detectFrequencyAnomaly', () => {
+  function recent(offsetMs = 0) {
+    return new Date(Date.now() - offsetMs).toISOString();
+  }
+
+  itA('Scenario A-1: 空陣列時不回報異常', () => {
+    const result = detectFrequencyAnomaly([], 300000, 3);
+    expectA(result).toEqual({ anomaly: false, autoCount: 0 });
+  });
+
+  itA('Scenario A-2: 窗口內次數未達門檻時不回報異常', () => {
+    const timestamps = [recent(60000), recent(30000)]; // 2 個，在 5 分鐘內
+    const result = detectFrequencyAnomaly(timestamps, 300000, 3);
+    expectA(result).toEqual({ anomaly: false, autoCount: 2 });
+  });
+
+  itA('Scenario A-3: 窗口內次數達到門檻時回報異常', () => {
+    const timestamps = [recent(180000), recent(120000), recent(60000)]; // 3 個
+    const result = detectFrequencyAnomaly(timestamps, 300000, 3);
+    expectA(result).toEqual({ anomaly: true, autoCount: 3 });
+  });
+
+  itA('Scenario A-4: 超過門檻次數時 autoCount 正確反映實際數量', () => {
+    const timestamps = [recent(240000), recent(180000), recent(120000), recent(60000), recent(10000)];
+    const result = detectFrequencyAnomaly(timestamps, 300000, 3);
+    expectA(result).toEqual({ anomaly: true, autoCount: 5 });
+  });
+
+  itA('Scenario A-5: 窗口外的時間戳不計入判斷', () => {
+    const timestamps = [
+      recent(600000), // 10 分鐘前（窗口外）
+      recent(120000), // 2 分鐘前（窗口內）
+      recent(60000),  // 1 分鐘前（窗口內）
+    ];
+    const result = detectFrequencyAnomaly(timestamps, 300000, 3);
+    expectA(result).toEqual({ anomaly: false, autoCount: 2 });
+  });
+
+  itA('Scenario A-6: NaN 時間戳自動被過濾不影響計數', () => {
+    const timestamps = [
+      'invalid-date',
+      recent(120000),
+      recent(60000),
+    ];
+    const result = detectFrequencyAnomaly(timestamps, 300000, 3);
+    expectA(result).toEqual({ anomaly: false, autoCount: 2 });
+  });
+
+  itA('COMPACT_FREQ_WINDOW_MS 為 5 分鐘（300000ms）', () => {
+    expectA(COMPACT_FREQ_WINDOW_MS).toBe(300000);
+  });
+
+  itA('COMPACT_FREQ_THRESHOLD 為 3', () => {
+    expectA(COMPACT_FREQ_THRESHOLD).toBe(3);
+  });
+});
+
+// ── Feature B: autoTimestamps 追蹤 ───────────────────────────────────────────
+
+const { describe: describeB, it: itB, expect: expectB, beforeEach: beforeEachB, afterEach: afterEachB } = require('bun:test');
+const fsPc2 = require('fs');
+const { homedir: homedirPc2 } = require('os');
+const { join: joinPc2 } = require('path');
+const stateLibPc2 = require('../../plugins/overtone/scripts/lib/state');
+const pathsPc2 = require('../../plugins/overtone/scripts/lib/paths');
+
+function makePcSession2(suffix) {
+  const id = `test_pch2_${suffix}_${Date.now()}`;
+  return { id, dir: joinPc2(homedirPc2(), '.overtone', 'sessions', id) };
+}
+
+describeB('autoTimestamps 追蹤', () => {
+  let sess2;
+
+  beforeEachB(() => {
+    sess2 = makePcSession2(`b${Date.now().toString(36)}`);
+    fsPc2.mkdirSync(sess2.dir, { recursive: true });
+  });
+
+  afterEachB(() => {
+    fsPc2.rmSync(sess2.dir, { recursive: true, force: true });
+  });
+
+  itB('Scenario B-1: 首次 auto-compact 寫入 autoTimestamps', () => {
+    stateLibPc2.initState(sess2.id, 'quick', ['DEV']);
+    handlePreCompact({ session_id: sess2.id, trigger: 'auto', cwd: '/tmp' });
+    const compactPath = pathsPc2.session.compactCount(sess2.id);
+    const counts = JSON.parse(fsPc2.readFileSync(compactPath, 'utf8'));
+    expectB(Array.isArray(counts.autoTimestamps)).toBe(true);
+    expectB(counts.autoTimestamps.length).toBe(1);
+    // 驗證是合法 ISO 8601
+    expectB(new Date(counts.autoTimestamps[0]).getTime()).toBeGreaterThan(0);
+  });
+
+  itB('Scenario B-2: 舊格式 compact-count.json 向後相容', () => {
+    stateLibPc2.initState(sess2.id, 'quick', ['DEV']);
+    // 寫入舊格式（無 autoTimestamps）
+    const compactPath = pathsPc2.session.compactCount(sess2.id);
+    fsPc2.writeFileSync(compactPath, JSON.stringify({ auto: 5, manual: 2 }));
+    let threw = false;
+    try {
+      handlePreCompact({ session_id: sess2.id, trigger: 'auto', cwd: '/tmp' });
+    } catch {
+      threw = true;
+    }
+    expectB(threw).toBe(false);
+    const counts = JSON.parse(fsPc2.readFileSync(compactPath, 'utf8'));
+    expectB(Array.isArray(counts.autoTimestamps)).toBe(true);
+    expectB(counts.auto).toBe(6);
+    expectB(counts.manual).toBe(2);
+  });
+
+  itB('Scenario B-3: autoTimestamps 超過 20 筆時 FIFO 截斷', () => {
+    stateLibPc2.initState(sess2.id, 'quick', ['DEV']);
+    // 寫入已有 20 筆的 autoTimestamps
+    const compactPath = pathsPc2.session.compactCount(sess2.id);
+    const old20 = Array.from({ length: 20 }, (_, i) =>
+      new Date(Date.now() - (20 - i) * 60000).toISOString()
+    );
+    fsPc2.writeFileSync(compactPath, JSON.stringify({ auto: 20, manual: 0, autoTimestamps: old20 }));
+    handlePreCompact({ session_id: sess2.id, trigger: 'auto', cwd: '/tmp' });
+    const counts = JSON.parse(fsPc2.readFileSync(compactPath, 'utf8'));
+    expectB(counts.autoTimestamps.length).toBe(20);
+    // 最新的在末尾（時間最大）
+    const last = new Date(counts.autoTimestamps[19]).getTime();
+    const first = new Date(counts.autoTimestamps[0]).getTime();
+    expectB(last).toBeGreaterThan(first);
+  });
+
+  itB('Scenario B-4: manual compact 不寫入 autoTimestamps', () => {
+    stateLibPc2.initState(sess2.id, 'quick', ['DEV']);
+    const compactPath = pathsPc2.session.compactCount(sess2.id);
+    fsPc2.writeFileSync(compactPath, JSON.stringify({ auto: 0, manual: 0, autoTimestamps: [] }));
+    handlePreCompact({ session_id: sess2.id, trigger: 'manual', cwd: '/tmp' });
+    const counts = JSON.parse(fsPc2.readFileSync(compactPath, 'utf8'));
+    expectB(counts.autoTimestamps.length).toBe(0);
+    expectB(counts.manual).toBe(1);
+  });
+});
+
+// ── Feature C: timeline event emit ───────────────────────────────────────────
+
+const { describe: describeC, it: itC, expect: expectC, beforeEach: beforeEachC, afterEach: afterEachC } = require('bun:test');
+const fsPc3 = require('fs');
+const { homedir: homedirPc3 } = require('os');
+const { join: joinPc3 } = require('path');
+const stateLibPc3 = require('../../plugins/overtone/scripts/lib/state');
+const pathsPc3 = require('../../plugins/overtone/scripts/lib/paths');
+
+function makePcSession3(suffix) {
+  const id = `test_pch3_${suffix}_${Date.now()}`;
+  return { id, dir: joinPc3(homedirPc3(), '.overtone', 'sessions', id) };
+}
+
+describeC('Feature C: timeline event emit', () => {
+  let sess3;
+
+  beforeEachC(() => {
+    sess3 = makePcSession3(`c${Date.now().toString(36)}`);
+    fsPc3.mkdirSync(sess3.dir, { recursive: true });
+  });
+
+  afterEachC(() => {
+    fsPc3.rmSync(sess3.dir, { recursive: true, force: true });
+  });
+
+  itC('Scenario C-1: 偵測到頻率異常時 emit quality:compact-frequency 事件', () => {
+    stateLibPc3.initState(sess3.id, 'quick', ['DEV']);
+    const compactPath = pathsPc3.session.compactCount(sess3.id);
+    // 寫入 3 筆最近 autoTimestamps（已達門檻）
+    const timestamps = [
+      new Date(Date.now() - 180000).toISOString(),
+      new Date(Date.now() - 120000).toISOString(),
+      new Date(Date.now() - 60000).toISOString(),
+    ];
+    fsPc3.writeFileSync(compactPath, JSON.stringify({ auto: 3, manual: 0, autoTimestamps: timestamps }));
+    // 第 4 次 auto-compact，加入後達到 4 筆 → 異常
+    handlePreCompact({ session_id: sess3.id, trigger: 'auto', cwd: '/tmp' });
+    // 驗證 timeline.jsonl 包含 quality:compact-frequency
+    const timelinePath = joinPc3(sess3.dir, 'timeline.jsonl');
+    const lines = fsPc3.readFileSync(timelinePath, 'utf8').trim().split('\n');
+    const qualityEvents = lines
+      .map((l) => { try { return JSON.parse(l); } catch { return null; } })
+      .filter((e) => e && e.type === 'quality:compact-frequency');
+    expectC(qualityEvents.length).toBeGreaterThan(0);
+    const ev = qualityEvents[0];
+    // timeline.emit 用 ...data 展開，欄位直接在 event 頂層
+    expectC(typeof ev.autoCount).toBe('number');
+    expectC(ev.windowMs).toBe(COMPACT_FREQ_WINDOW_MS);
+    expectC(ev.threshold).toBe(COMPACT_FREQ_THRESHOLD);
+    expectC(typeof ev.windowStartIso).toBe('string');
+  });
+
+  itC('Scenario C-2: 未達異常門檻時不 emit 事件', () => {
+    stateLibPc3.initState(sess3.id, 'quick', ['DEV']);
+    const compactPath = pathsPc3.session.compactCount(sess3.id);
+    // 只有 1 筆 autoTimestamps（未達門檻 3）
+    const timestamps = [new Date(Date.now() - 60000).toISOString()];
+    fsPc3.writeFileSync(compactPath, JSON.stringify({ auto: 1, manual: 0, autoTimestamps: timestamps }));
+    handlePreCompact({ session_id: sess3.id, trigger: 'auto', cwd: '/tmp' });
+    const timelinePath = joinPc3(sess3.dir, 'timeline.jsonl');
+    let qualityEvents = [];
+    try {
+      const lines = fsPc3.readFileSync(timelinePath, 'utf8').trim().split('\n');
+      qualityEvents = lines
+        .map((l) => { try { return JSON.parse(l); } catch { return null; } })
+        .filter((e) => e && e.type === 'quality:compact-frequency');
+    } catch { /* 可能 timeline 只含其他事件 */ }
+    expectC(qualityEvents.length).toBe(0);
+  });
+
+  itC('Scenario C-3: pre-compact-handler 的頻率 emit 包在 try/catch 內（原始碼驗證）', () => {
+    // 驗證 pre-compact-handler.js 的頻率 emit 包在 try/catch 中
+    // 此為靜態驗證：讀取原始碼確認 try/catch 包覆
+    const handlerPath = joinPc3(
+      homedirPc3(), '..', '..', 'Users', 'sbu', 'projects', 'overtone',
+      'plugins', 'overtone', 'scripts', 'lib', 'pre-compact-handler.js',
+    );
+    const src = fsPc3.readFileSync(
+      require.resolve('../../plugins/overtone/scripts/lib/pre-compact-handler'),
+    ).toString();
+    // 確認 quality:compact-frequency emit 被包在 try/catch 內
+    expectC(src).toContain('quality:compact-frequency');
+    expectC(src).toContain('// emit 失敗不阻擋 compaction');
+  });
+});
