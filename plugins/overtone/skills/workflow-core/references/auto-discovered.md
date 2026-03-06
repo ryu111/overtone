@@ -1,32 +1,4 @@
 ---
-## 2026-03-05 | planner:PLAN Findings
-**需求分解**：
-
-1. 擴展 gap-analyzer.js — 新增 fixable + fixAction 欄位 | agent: developer | files: `plugins/overtone/scripts/lib/gap-analyzer.js`
-
-2. 實作 gap-fixer.js — lib 層修復執行邏輯（新建）| agent: developer | files: `plugins/overtone/scripts/lib/gap-fixer.js` — 可與子任務 1 並行（需等 1 定義完 fixAction 格式）
-
-3. 更新 evolution.js — 新增 fix 子命令 | agent: developer | files: `plugins/overtone/scripts/evolution.js` — 依賴 1、2 完成
-
-4. 新增 unit 測試 — gap-analyzer 新欄位 + gap-fixer | agent: developer | files: `tests/unit/gap-analyzer.test.js`（擴展）、`tests/unit/gap-fixer.test.js`（新建）— 4 可與 2 並行
-
-5. 新增 integration 測試 — evolution.js fix 子命令 | agent: developer | files: `tests/integration/evolution-fix.test.js`（新建）— 依賴 3 完成
-
-**優先順序**：
-
-- 子任務 1 先做（定義 fixable/fixAction 格式，是後續的依據）
-- 子任務 2 和 4 的 unit 測試部分可在 1 完成後並行
-- 子任務 3 依賴 1+2，完成後執行 5
-
-**範圍邊界**：
-
-- missing-skill / broken-chain / missing-consumer 不自動修復，只顯示建議
-- fix-consistency.js 的核心邏輯不修改（只呼叫）
-- manage-component.js 不修改
-- 不做互動式修復模式
-Keywords: analyzer, fixable, fixaction, agent, developer, files, plugins, overtone, scripts, fixer
-
----
 ## 2026-03-05 | planner:PLAN Context
 P4.2 目標是為 gap-analyzer 的偵測結果新增自動執行層。使用者執行 `bun scripts/evolution.js fix` 後，系統自動修復 `sync-mismatch`（SKILL.md 消費者表不一致）和 `no-references`（skill 缺少 references 目錄）兩種可安全修復的缺口，並重新驗證缺口是否消失。安全邊界：預設 dry-run，需明確加旗標才真正執行；不自動建立 agent 或 skill。
 Keywords: analyzer, scripts, evolution, sync, mismatch, skill, references, agent
@@ -771,4 +743,15 @@ Keywords: templates, strategy, hook, agent, stop, handler, session, notification
 - Hook 整合：agent-stop-handler + session-stop-handler + on-notification
 - 64 個新測試 → 總測試數 4381（對應 194 個測試檔）
 Keywords: voice, system, plugins, overtone, scripts, templates, strategy, hook, agent, stop
+
+---
+## 2026-03-06 | doc-updater:DOCS Context
+Kuji 專案已完成 product-full workflow 的多個階段：
+- ✅ 產品願景、規劃、架構、設計、BDD 規格
+- ✅ 開發（Phase 0-5 前台+後台實作完成）
+- ✅ 審查、測試驗證
+- ✅ 回顧（發現已知問題）
+
+目前處於 📝 文件同步階段，需要更新存量文件與任務進度。
+Keywords: kuji, product, full, workflow, phase
 

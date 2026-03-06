@@ -147,3 +147,28 @@ Keywords: kuji, postgresql, select, update, skip, locked, monorepo
 - `DB 連線失敗` console.error 是 DB_ERROR 場景的預期行為
 Keywords: phase, monorepo, apps, hono, drizzle, next, packages, shared, table, schema
 
+---
+## 2026-03-06 | retrospective:RETRO Findings
+**回顧摘要**：
+
+Kuji 一番賞平台整體實作結構清晰，核心功能全面覆蓋 BDD 17 個 Feature 的 Scenario。以下是確認的品質點：
+
+**確認的品質點**：
+
+1. **防超賣核心設計正確**：`executeDraw` 使用 PostgreSQL `SELECT FOR UPDATE SKIP LOCKED` 悲觀鎖，transaction 原子性覆蓋所有必要步驟（prize_item → prize_grade → prizes → orders → payments），SSE 廣播在 transaction 外執行。符合 Scenario 6-1 到 6-6 的完整設計。
+
+2. **ECPay 驗簽與冪等保護完整**：`verifyWebhookSignature` 正確實作，`payment.status === 'success'` 冪等防護到位，webhook payload 儲存供除錯。符合 Scenario 7-1 到 7-4。
+
+3. **安全邊界一致**：`requireAuth` / `requireAdmin` / `requireAddress` 三層 middleware 設計清楚。Next.js Edge Middleware 在前端保護 `/admin/*` 路由（Scenario 15-4）。訂單 404 保護（非 403）符合 Scenario 15-2。
+
+4. **SSE 訂閱清理正確**：`ctx.req.raw.signal.addEventListener('abort', cleanup)` 防止孤兒訂閱，SSEBus 在訂閱者為 0 時清除 Map key 節省記憶體。符合 Scenario 9-3。
+
+5. **快照設計完整**：`address_snapshot` 和 `prize_snapshot` 使用 jsonb 儲存，確保歷史訂單不受地址修改影響。符合 Scenario 10-4。
+
+6. **Fisher-Yates shuffle 公平隨機**：`buildShuffledPrizeItems` 正確實作，測試驗證分佈公平性。符合 Scenario 6-4。
+
+7. **測試覆蓋關鍵路徑**：抽獎引擎（unit + 並發模擬）、ECPay 驗簽、JWT 認證、訂單安全性、後台 RBAC 均有對應測試。
+
+---
+Keywords: kuji, feature, scenario, executedraw, postgresql, select, update, skip, locked, transaction
+
