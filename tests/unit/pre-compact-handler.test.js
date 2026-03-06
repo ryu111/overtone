@@ -122,4 +122,250 @@ describe('buildCompactMessage', () => {
     expect(() => buildCompactMessage(null)).not.toThrow();
     expect(() => buildCompactMessage(undefined)).not.toThrow();
   });
+
+  it('Scenario 10: currentState 為 null 時只輸出標頭和禁止訊息', () => {
+    const result = buildCompactMessage({
+      currentState: null,
+      progressBar: '',
+      completed: 0,
+      total: 0,
+      stageHint: null,
+      pendingMsg: null,
+      queueSummary: null,
+    });
+    expect(result).toContain('Overtone 狀態恢復（compact 後）');
+    expect(result).toContain('禁止使用 AskUserQuestion');
+    expect(result).not.toContain('工作流：');
+  });
+
+  it('Scenario 11: failCount 為 0 時不顯示失敗次數', () => {
+    const result = buildCompactMessage({
+      currentState: { workflowType: 'quick', currentStage: 'DEV', failCount: 0, rejectCount: 0 },
+      progressBar: '',
+      completed: 1,
+      total: 4,
+      stageHint: null,
+      pendingMsg: null,
+      queueSummary: null,
+    });
+    expect(result).not.toContain('失敗次數');
+  });
+
+  it('Scenario 12: rejectCount 為 0 時不顯示拒絕次數', () => {
+    const result = buildCompactMessage({
+      currentState: { workflowType: 'quick', currentStage: 'DEV', failCount: 0, rejectCount: 0 },
+      progressBar: '',
+      completed: 1,
+      total: 4,
+      stageHint: null,
+      pendingMsg: null,
+      queueSummary: null,
+    });
+    expect(result).not.toContain('拒絕次數');
+  });
+
+  it('Scenario 13: featureName 為 null 時不顯示 Feature 行', () => {
+    const result = buildCompactMessage({
+      currentState: { workflowType: 'quick', currentStage: 'DEV', featureName: null },
+      progressBar: '',
+      completed: 1,
+      total: 2,
+      stageHint: null,
+      pendingMsg: null,
+      queueSummary: null,
+    });
+    expect(result).not.toContain('Feature：');
+  });
+
+  it('Scenario 14: pendingAction type=fix-reject 時顯示待執行指示', () => {
+    const result = buildCompactMessage({
+      currentState: {
+        workflowType: 'quick',
+        currentStage: 'DEV',
+        pendingAction: { type: 'fix-reject', count: 2, reason: '缺少測試' },
+      },
+      progressBar: '',
+      completed: 1,
+      total: 4,
+      stageHint: null,
+      pendingMsg: null,
+      queueSummary: null,
+    });
+    // type 值不直接顯示，但拒絕相關訊息和 DEVELOPER 指示要在
+    expect(result).toContain('缺少測試');
+    expect(result).toContain('DEVELOPER');
+    expect(result).toContain('待執行');
+  });
+
+  it('Scenario 15: pendingAction type=fix-fail 時顯示 DEBUGGER 指示', () => {
+    const result = buildCompactMessage({
+      currentState: {
+        workflowType: 'quick',
+        currentStage: 'DEV',
+        pendingAction: { type: 'fix-fail', count: 1, stage: 'TEST', reason: 'test failed' },
+      },
+      progressBar: '',
+      completed: 1,
+      total: 4,
+      stageHint: null,
+      pendingMsg: null,
+      queueSummary: null,
+    });
+    expect(result).toContain('DEBUGGER');
+    expect(result).toContain('test failed');
+  });
+
+  it('Scenario 16: pendingAction 無 reason 時不拋出', () => {
+    expect(() => buildCompactMessage({
+      currentState: {
+        workflowType: 'quick',
+        pendingAction: { type: 'fix-reject', count: 1 },
+      },
+      progressBar: '',
+      completed: 0,
+      total: 2,
+      stageHint: null,
+      pendingMsg: null,
+      queueSummary: null,
+    })).not.toThrow();
+  });
+
+  it('Scenario 17: 包含「/ot:auto」參考提示', () => {
+    const result = buildCompactMessage({
+      currentState: { workflowType: 'quick', currentStage: 'DEV' },
+      progressBar: '',
+      completed: 0,
+      total: 2,
+      stageHint: null,
+      pendingMsg: null,
+      queueSummary: null,
+    });
+    expect(result).toContain('/ot:auto');
+  });
+
+  it('Scenario 18: 回傳字串型別', () => {
+    const result = buildCompactMessage({
+      currentState: { workflowType: 'standard', currentStage: 'REVIEW' },
+      progressBar: '✅💻',
+      completed: 2,
+      total: 6,
+      stageHint: '目前執行 REVIEW',
+      pendingMsg: '未完成：1 項',
+      queueSummary: '佇列：1 個項目',
+    });
+    expect(typeof result).toBe('string');
+    expect(result.length).toBeGreaterThan(0);
+  });
+
+  it('Scenario 19: 自訂 MAX_MESSAGE_LENGTH 截斷', () => {
+    const result = buildCompactMessage({
+      currentState: { workflowType: 'quick', currentStage: 'DEV' },
+      progressBar: '',
+      completed: 0,
+      total: 1,
+      stageHint: null,
+      pendingMsg: 'x'.repeat(500),
+      queueSummary: null,
+      MAX_MESSAGE_LENGTH: 300,
+    });
+    expect(result.length).toBeLessThanOrEqual(300);
+    expect(result).toContain('已截斷');
+  });
+
+  it('Scenario 20: stageHint 為 null 時不顯示「目前階段」行', () => {
+    const result = buildCompactMessage({
+      currentState: { workflowType: 'quick', currentStage: 'DEV' },
+      progressBar: '',
+      completed: 0,
+      total: 2,
+      stageHint: null,
+      pendingMsg: null,
+      queueSummary: null,
+    });
+    expect(result).not.toContain('目前階段：');
+  });
+});
+
+// ── handlePreCompact 整合測試 ─────────────────────────────────────────────────
+
+const { describe: describeI, it: itI, expect: expectI, beforeEach, afterEach } = require('bun:test');
+const fsPc = require('fs');
+const { homedir: homedirPc } = require('os');
+const { join: joinPc } = require('path');
+const stateLibPc = require('../../plugins/overtone/scripts/lib/state');
+const pathsPc = require('../../plugins/overtone/scripts/lib/paths');
+const { handlePreCompact } = require('../../plugins/overtone/scripts/lib/pre-compact-handler');
+
+function makePcSession(suffix) {
+  const id = `test_pch_${suffix}_${Date.now()}`;
+  return { id, dir: joinPc(homedirPc(), '.overtone', 'sessions', id) };
+}
+
+describeI('handlePreCompact', () => {
+  let sess;
+
+  beforeEach(() => {
+    sess = makePcSession(`s${Date.now().toString(36)}`);
+    fsPc.mkdirSync(sess.dir, { recursive: true });
+  });
+
+  afterEach(() => {
+    fsPc.rmSync(sess.dir, { recursive: true, force: true });
+  });
+
+  itI('無 sessionId 且 input 為空物件 → 回傳 result: ""', () => {
+    const result = handlePreCompact({});
+    expectI(result.output.result).toBe('');
+  });
+
+  itI('有 sessionId 但無 workflow state → 回傳 result: ""', () => {
+    const result = handlePreCompact({ session_id: sess.id });
+    expectI(result.output.result).toBe('');
+  });
+
+  itI('有 workflow state → 回傳 systemMessage', () => {
+    stateLibPc.initState(sess.id, 'quick', ['DEV', 'REVIEW']);
+    const result = handlePreCompact({ session_id: sess.id, cwd: '/tmp' });
+    expectI(result.output).toHaveProperty('systemMessage');
+    expectI(result.output.systemMessage).toContain('Overtone 狀態恢復');
+  });
+
+  itI('auto trigger → compact-count.json auto 遞增', () => {
+    stateLibPc.initState(sess.id, 'quick', ['DEV']);
+    handlePreCompact({ session_id: sess.id, trigger: 'auto', cwd: '/tmp' });
+    const compactPath = pathsPc.session.compactCount(sess.id);
+    const counts = JSON.parse(fsPc.readFileSync(compactPath, 'utf8'));
+    expectI(counts.auto).toBe(1);
+    expectI(counts.manual).toBe(0);
+  });
+
+  itI('manual trigger → compact-count.json manual 遞增', () => {
+    stateLibPc.initState(sess.id, 'quick', ['DEV']);
+    handlePreCompact({ session_id: sess.id, trigger: 'manual', cwd: '/tmp' });
+    const compactPath = pathsPc.session.compactCount(sess.id);
+    const counts = JSON.parse(fsPc.readFileSync(compactPath, 'utf8'));
+    expectI(counts.manual).toBe(1);
+    expectI(counts.auto).toBe(0);
+  });
+
+  itI('多次 auto compact → 計數累積', () => {
+    stateLibPc.initState(sess.id, 'quick', ['DEV']);
+    handlePreCompact({ session_id: sess.id, trigger: 'auto', cwd: '/tmp' });
+    handlePreCompact({ session_id: sess.id, trigger: 'auto', cwd: '/tmp' });
+    const compactPath = pathsPc.session.compactCount(sess.id);
+    const counts = JSON.parse(fsPc.readFileSync(compactPath, 'utf8'));
+    expectI(counts.auto).toBe(2);
+  });
+
+  itI('compact 後 activeAgents 被清空', () => {
+    stateLibPc.initState(sess.id, 'quick', ['DEV']);
+    // 先寫入一個 activeAgent
+    stateLibPc.updateStateAtomic(sess.id, (s) => {
+      s.activeAgents['inst_test'] = { stage: 'DEV', agentName: 'developer' };
+      return s;
+    });
+    handlePreCompact({ session_id: sess.id, trigger: 'auto', cwd: '/tmp' });
+    const st = stateLibPc.readState(sess.id);
+    expectI(Object.keys(st.activeAgents)).toHaveLength(0);
+  });
 });
