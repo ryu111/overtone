@@ -114,7 +114,7 @@ describe('OS smoke: notification.js', () => {
     let caughtError = null;
     let result;
     try {
-      result = sendNotification({ title: 'Overtone Test', message: 'smoke test' });
+      result = sendNotification({ title: 'Overtone Test', message: 'smoke test' }, { execSync: () => {} });
     } catch (err) {
       caughtError = err;
     }

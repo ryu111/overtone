@@ -187,16 +187,6 @@ function handleSessionStop(input, sessionId) {
         workflowType: currentState.workflowType,
         duration: calcDuration(currentState.createdAt),
       });
-      playSound(SOUNDS.HERO);
-      // TTS fire-and-forget — 不阻擋主流程
-      try {
-        const ttsStrategy = require('./tts-strategy');
-        const ttsConfig = ttsStrategy.readTtsConfig();
-        if (ttsConfig.enabled && ttsStrategy.shouldSpeak('workflow:complete', ttsConfig.level)) {
-          const args = ttsStrategy.buildSpeakArgs('workflow:complete', {}, ttsConfig);
-          if (args) require('../os/tts').speakBackground(args.text, args.opts);
-        }
-      } catch { /* TTS 錯誤不影響主流程 */ }
     }
 
     // ── 佇列自動接續 ──
@@ -217,6 +207,7 @@ function handleSessionStop(input, sessionId) {
     const summary = buildCompletionSummary(currentState) + (queueHint || '');
 
     // 佇列有下一項 → 用 decision: 'block' 強制 loop 繼續（程式控制，不依賴 Main Agent 自主行動）
+    // 不播音效 — workflow 尚未真正結束
     if (queueHint) {
       return {
         output: {
@@ -224,6 +215,20 @@ function handleSessionStop(input, sessionId) {
           reason: summary,
         },
       };
+    }
+
+    // 真正結束（無佇列接續）→ 播放完成音效
+    if (!hasFailedStage) {
+      playSound(SOUNDS.HERO);
+      // TTS fire-and-forget — 不阻擋主流程
+      try {
+        const ttsStrategy = require('./tts-strategy');
+        const ttsConfig = ttsStrategy.readTtsConfig();
+        if (ttsConfig.enabled && ttsStrategy.shouldSpeak('workflow:complete', ttsConfig.level)) {
+          const args = ttsStrategy.buildSpeakArgs('workflow:complete', {}, ttsConfig);
+          if (args) require('../os/tts').speakBackground(args.text, args.opts);
+        }
+      } catch { /* TTS 錯誤不影響主流程 */ }
     }
 
     return { output: { result: summary } };
