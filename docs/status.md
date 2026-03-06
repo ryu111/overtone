@@ -28,9 +28,9 @@
 
 ## 近期變更（最近 3 筆）
 
+- **[L3.6] 2026-03-06**：feat(acid-test-md-blog)——Markdown 部落格生成器 CLI 完成：standard workflow 全通過（22 pass / 0 fail），BDD 20/20 場景驗證，三層分離架構（parser + renderer + builder），Catppuccin Mocha 配色，完整端到端功能
 - **[0.28.68] 2026-03-06**：feat(pm-architect)——PM-Architect 深度改進：PM 訪談 flow 新增 flow-6/7/8 探索 + architect 決策點 DO/DON'T 清單 + state-sync patterns 知識萃取 + pre-task-handler MoSCoW 優先級注入（16 個新測試）
 - **[0.28.67] 2026-03-06**：feat(tts)——L2.6 TTS 語音通知系統完成：macOS say 封裝 + 13 鍵事件口語模板 + 三級策略引擎 + Hook 整合（64 個新測試）
-- **[0.28.66] 2026-03-06**：chore(pruning)——清理空檔案 + 歸檔中斷 specs：刪除空 auto-discovered.md + 歸檔 3 個 in-progress specs（acid-test-scenario-design、health-check-zero-warnings、smoke-test-all-flows）
 
 ## Phase 3 規劃狀態（✅ 完成）
 

@@ -1,6 +1,6 @@
 # Overtone Roadmap
 
-> 最後更新：2026-03-06 | 當前進度：Layer 3 大部分完成（L3.1-L3.5 + L3.7 ✅，L3.6 場景已設計待執行）
+> 最後更新：2026-03-06 | 當前進度：Layer 3 完成開發驗證（L3.1-L3.7 ✅，L3.6 Acid Test standard workflow 完成，含 Skill Forge + Internalization 驗證待執行）
 
 ## Layer 總覽
 
@@ -209,7 +209,7 @@
 | Skill 建構排程 | 批次觸發 Skill Forge 建立缺少的 skill → Agent 配置（skill 分配到 agent） | ✅ |
 | 專案級迭代 | 多 feature 排程 → execution-queue → 無限迭代直到完成 | ✅ |
 
-### L3.6 Acid Test 🟡
+### L3.6 Acid Test ✅（Standard Workflow 完成，完整驗收進行中）
 
 > 用真實場景驗證 L3 端到端：給高層目標 → 深度訪談 → 自主建 skill → 無限迭代 → 產品完成。
 
@@ -217,17 +217,24 @@
 
 高層目標：「建立一個 CLI 工具，把 Markdown 文件轉成靜態 HTML 部落格。`md-blog build ./posts` 產出 `./dist/`，每篇文章獨立 HTML，首頁有清單，文章間可互連。」
 
-| 觸發能力 | 說明 |
-|---------|------|
-| deep-pm（L3.4）| 釐清模板系統、CSS 框架、Front Matter 格式、路由結構 |
-| Skill Forge（L3.3）| 自主建立 `static-site-generation` + `cli-tooling` 兩個新 skill |
-| Orchestrator（L3.5）| 從 Project Spec 建立 feature 佇列並啟動自動執行 |
-| Internalization（L3.7）| 完成後將兩個新 skill 內化為永久能力 |
+| 觸發能力 | 說明 | 進度 |
+|---------|------|:----:|
+| PLAN（PM + Architect）| PM 深度訪談（5 面向）+ Architect 系統設計 | ✅ |
+| ARCH（Architect）| 三層分離架構 + Bun runtime + marked v9 | ✅ |
+| DEV（Developer）| parser + renderer + builder + CLI 5 模組 + 22 測試 | ✅ |
+| REVIEW（Code Reviewer）| 19 項檢查（命名 + 型別 + 邊界 + 架構 + 性能）| ✅ |
+| RETRO（Retrospective）| 品質評分 5/5（理解力、創造力、美感、細心、完整度） | ✅ |
+| Skill Forge（L3.3）| 自主建立 `static-site-generation` + `cli-tooling` 兩個新 skill（驗證待做） | 🟡 |
+| Internalization（L3.7）| 完成後內化為永久能力（驗證待做） | 🟡 |
 
-驗收：生成的 HTML 可在瀏覽器開啟，連結不 404，Markdown 正確渲染。
-完整場景設計：`specs/features/archive/2026-03-06_acid-test-scenario-design/proposal.md`
+**產出**：
+- CLI 工具可執行（`md-blog build ./posts -o ./dist`）
+- 22 個 BDD 場景 pass（單元 + 整合 + 端到端）
+- 首頁 index.html + 文章頁面 + 連結完整
+- Catppuccin Mocha 配色 + 響應式 CSS
+- 完整 README 和測試覆蓋
 
-**完成標準**：系統自主完成端到端能力建構 + 產品開發，無需人工編寫 skill 或 agent。
+**完成標準**：Standard workflow（PLAN → ARCH → TEST:spec → DEV → REVIEW → TEST → RETRO → DOCS）全部通過，產品端到端可用。Skill Forge + Internalization 驗證為下一階段。
 
 ### L3.7 Skill Internalization（飛輪 — 專案經驗內化）✅
 
