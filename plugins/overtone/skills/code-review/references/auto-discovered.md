@@ -46,3 +46,13 @@ session-stop-handler.js 中存在多段動態 `require`（`specs`、`tts-strateg
 
 session-end-handler.js 的主流程包含六個獨立的 try/catch 區塊（global-instinct 畢業、instinct 衰減、intent_journal 配對、觀察效果反饋、baseline-tracker、session-digest），測試檔僅驗證整體回傳格式和 loop.json 狀態。這些副作用路徑的測試空白是既有技術債，本次迭代選擇集中測試 `resolveSessionResult` 純函數和 `handleSessionEnd` 基礎行為，策略上合理。
 Keywords: handler, code, reviewer, approve, critical, major, issue, humble, object, session
+---
+## 2026-03-06 | retrospective:RETRO Context
+ISSUES — 發現 2 個值得優化的問題（信心 ≥70%）。
+
+7 次迭代整體成果顯著：測試從 4417 增至 4613（+196），handler 測試密度從 5.2% 升至 12.8%，agent memory/BDD 覆蓋率大幅提升。本次（第 7 次）4 個 handler 測試檔案 148 tests 全數通過，code-reviewer 給出 APPROVE。
+
+然而，全套測試跑完後發現 2 個既有測試失敗，且這 2 個失敗測試在本次迭代引入的改變後未被更新，屬於跨階段一致性問題，在本次 DEV + REVIEW 階段未被察覺。
+
+---
+Keywords: issues, handler, agent, memory, tests, code, reviewer, approve, review

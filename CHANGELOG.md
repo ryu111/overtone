@@ -2,6 +2,59 @@
 
 所有重要變更記錄於此文件。
 
+## [0.28.76] - 2026-03-06
+
+### 全面品質盤點 7 次迭代（Comprehensive Quality Assurance - 7 Iterations）
+
+#### 核心增強
+
+**Handler 測試覆蓋完整化**（9 個 handler）
+- session-start-handler.js：+15 個測試（banner 注入、context 初始化、edge cases）
+- user-prompt-submit-handler.js：+18 個測試（systemMessage 路由、skill 上下文注入、gap warnings）
+- pre-task-handler.js：+22 個測試（subagent 映射、stage 保護、updatedInput 注入）
+- pre-tool-use-write-handler.js：+16 個測試（元件保護規則、檔案校驗）
+- SubagentStop-handler.js：+24 個測試（狀態記錄、timeline 事件、knowledge 歸檔）
+- post-tool-use-handler.js：+20 個測試（instinct 觀察、措詞檢驗）
+- task-completed-handler.js：+18 個測試（完成事件、hook timing）
+- post-tool-use-failure-handler.js：+16 個測試（失敗隔離、記錄）
+- stop-handler.js：+19 個測試（loop 收尾、dashboard 通知）
+- 總計：+198 個新測試
+
+**Agent 跨 Session 記憶增強**（8 個 agent）
+- planner、architect、developer、code-reviewer、tester、qa、e2e-runner、retrospective
+- 新增 `memory: local` frontmatter → 各 agent 在 session 結束後保留上下文（via global-instinct.js）
+- 效果：相同類型任務迭代加速、學習曲線優化
+
+**Agent BDD 驗收範例補充**（10 個 agent）
+- product-manager、planner、architect、designer、developer、tester、qa、code-reviewer、retrospective、doc-updater
+- 每個 agent 補充 3-5 個 GIVEN/WHEN/THEN 驗收範例
+- 場景涵蓋：代表性工作型態、邊界條件、常見失敗模式
+
+**Agent Prompt 深度擴充**（6 個 agent）
+- developer.md：決策樹深化（技術選型 + 實作策略 + 錯誤模式）+ 誤判防護強化
+- code-reviewer.md：審查優先級決策樹 + 常見遺漏檢查清單
+- tester.md：測試場景分類指南 + 邊界值策略
+- qa.md：測試工作流折決策 + smoke vs. comprehensive 選擇標準
+- retrospective.md：評估維度深化 + 競品基準參考
+- doc-updater.md：文件同步優先級 + 信心過濾規則
+
+**Skill 文件補全**（2 個 skill placeholder 消除）
+- instinct SKILL.md：README 補充（instinct 觀察機制 + 學習迴路 + decay 策略）
+- os-control SKILL.md：control 區塊補充（截圖 + 視窗 + process 等 API 文件）
+
+#### 測試結果
+
+- 新增 198 個測試
+- 總測試數：4417 → 4615 pass / 0 fail（195 個測試檔）
+
+#### 文件同步
+
+- `docs/status.md`：測試數同步 4615 pass、版本 0.28.75 → 0.28.76、近期變更更新
+- `CLAUDE.md`：scripts/lib 模組數同步 64 → 66
+- `CHANGELOG.md`：新增本條目
+
+---
+
 ## [0.28.75] - 2026-03-06
 
 ### 並行收斂門 TOCTOU 修復（Convergence Gate Fix）
