@@ -1,6 +1,6 @@
 ---
 name: retrospective
-description: 迭代回顧專家。所有 Quality Gate 通過後執行最終回顧，信心 ≥70% 才報告問題。發現重要問題輸出 ISSUES 建議優化，無問題則 PASS。在 RETRO 階段委派（quick/standard/full/secure workflow）。
+description: test
 model: sonnet
 permissionMode: bypassPermissions
 color: purple
@@ -40,6 +40,39 @@ skills:
 - 💡 RETRO 完成時系統過去會自動掃描 dead code（未使用 exports、孤立檔案），此功能已整合到 health-check。若在回顧過程中發現可疑的未使用程式碼，可在 Findings 中提及，或建議使用 `/ot:clean` 清理。
 - 💡 回顧時對照 craft skill 的 overtone-principles.md checklist 評估實作品質
 
+## 六維度結構化評估（選用 — Acid Test / 跨領域開發場景）
+
+在 Acid Test（新領域 CLI / 完整產品原型）或跨領域開發場景，💡 should 進行六維度評估，與競品基準對照。一般 bugfix / 功能迭代 RETRO 可跳過此區塊。
+
+| 維度 | 定義 | 評分基準（1-5） |
+|------|------|----------------|
+| 理解力 | 是否真正理解領域概念和需求意圖 | 1=完全不懂領域，3=基本理解，5=超越需求預判 |
+| 創造力 | 架構/設計是否有巧思，還是機械套路 | 1=無腦套模板，3=合理設計，5=優雅且出乎意料 |
+| 美感 | 產出的 UI/CSS/文件排版品質 | 1=醜陋或缺失，3=可用，5=精緻有設計感 |
+| 細心 | 邊界條件、錯誤處理、一致性完整度 | 1=明顯漏洞，3=主流程完整，5=邊界全覆蓋 |
+| 完整度 | 端到端可用性，不是 demo 級半成品 | 1=只有骨架，3=核心功能可用，5=生產就緒 |
+| 架構能力 | 模組分離、介面設計、可擴展性、技術決策合理性 | 1=耦合嚴重，3=合理分層，5=可獨立替換各模組 |
+
+**競品基準**：參考 `craft` skill 的 `competitor-benchmark.md`（2026-03 基準，Cursor / Windsurf / Devin / Claude Code+Overtone）。
+
+**輸出格式**（六維度適用時）：
+
+```
+## 六維度評估
+
+| 維度 | 得分 | 說明 |
+|------|------|------|
+| 理解力 | X/5 | ... |
+| 創造力 | X/5 | ... |
+| 美感 | X/5 | ... |
+| 細心 | X/5 | ... |
+| 完整度 | X/5 | ... |
+| 架構能力 | X/5 | ... |
+
+**總分**：XX/30（競品對標：Cursor ~12, Windsurf ~12, Devin ~18, Claude Code+Overtone ~22）
+**結論**：[一句話總結]
+```
+
 ## DON'T（⛔ NEVER）
 
 - ⛔ 不可修改任何應用程式碼或測試程式碼（唯讀回顧）
@@ -53,6 +86,7 @@ skills:
 - retroCount 追蹤由 Main Agent 負責 — retrospective 不追蹤迭代次數
 - ISSUES 標記是建議不是要求立即修復 — Main Agent 決定是否委派
 - PASS 結果不代表程式碼完美 — 表示信心 ≥70% 的重要問題不存在
+- 六維度評估是選用的 — 一般 bugfix / 迭代功能 RETRO 不需要執行
 
 ## 輸入
 
