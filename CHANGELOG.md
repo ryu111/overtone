@@ -2,6 +2,37 @@
 
 所有重要變更記錄於此文件。
 
+## [0.28.69] - 2026-03-06
+
+### 外部專案知識過濾修復（Instinct Pollution Fix）
+
+#### 核心修復
+- **knowledge-archiver.js `archiveKnowledge()`**：加入來源路徑過濾機制
+  - 新增 `_isExternalFragment(fragment, pluginRoot)` 內部函式，偵測 fragment.content 中的非 Overtone 外部專案路徑
+  - 外部知識（non-Overtone 內容）跳過 skill-router 路由，降級為 instinct gap-observation
+  - 回傳值新增 `skipped` 欄位，追蹤過濾統計
+  - 測試依賴注入支援（`_deps` 參數）
+
+- **auto-discovered.md 清理**：移除已知污染的 5 個 domain 條目
+  - 清理目標：資料管道、API 設計、監控、雲端架構、容器化相關外部知識
+
+#### 測試補強
+- 新增 10 個測試（instinct-pollution-fix.test.js）
+  - 外部路徑過濾正確性（Overtone vs 非 Overtone）
+  - 清理後 auto-discovered.md 完整性驗證
+  - skipped 計數統計
+  - 邊界案例處理
+
+#### 文件同步
+- `docs/status.md`：測試 4397 → 4407（10 個新測試）、版本 0.28.68 → 0.28.69、近期變更更新
+- `CHANGELOG.md`：新增本條目
+- `specs/features/archive/2026-03-06_instinct-pollution-fix/`：規格文件歸檔
+
+#### 測試
+- 測試 4407 pass / 0 fail（194 files）
+
+---
+
 ## [0.28.65] - 2026-03-06
 
 ### Skill Forge 品質校準測試套件

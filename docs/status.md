@@ -16,7 +16,7 @@
 | Agent 數量 | 18（含 grader） |
 | Stage 數量 | 16 |
 | Workflow 模板 | 18 |
-| 測試通過 | 4397 pass / 0 fail（194 個測試檔）|
+| 測試通過 | 4407 pass / 0 fail（194 個測試檔）|
 | 測試檔案 | 194 個 |
 | Hook 數量 | 11 個 |
 | Skill 數量 | 24（15 knowledge domain + orchestrator + pm + specs + 4 utility-with-refs + instinct） |
@@ -28,9 +28,9 @@
 
 ## 近期變更（最近 3 筆）
 
+- **[0.28.69] 2026-03-06**：fix(instinct)——外部專案知識過濾修復：knowledge-archiver.js 加入來源路徑過濾，過濾外部專案污染（non-Overtone 內容降級為 instinct gap-observation）+ auto-discovered.md 清理（5 個 domain 已清理）（10 個新測試）
 - **[L3.6] 2026-03-06**：feat(acid-test-md-blog)——Markdown 部落格生成器 CLI 完成：standard workflow 全通過（22 pass / 0 fail），BDD 20/20 場景驗證，三層分離架構（parser + renderer + builder），Catppuccin Mocha 配色，完整端到端功能
 - **[0.28.68] 2026-03-06**：feat(pm-architect)——PM-Architect 深度改進：PM 訪談 flow 新增 flow-6/7/8 探索 + architect 決策點 DO/DON'T 清單 + state-sync patterns 知識萃取 + pre-task-handler MoSCoW 優先級注入（16 個新測試）
-- **[0.28.67] 2026-03-06**：feat(tts)——L2.6 TTS 語音通知系統完成：macOS say 封裝 + 13 鍵事件口語模板 + 三級策略引擎 + Hook 整合（64 個新測試）
 
 ## Phase 3 規劃狀態（✅ 完成）
 

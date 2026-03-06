@@ -1,29 +1,5 @@
 ---
 ## 2026-03-05 | planner:PLAN Context
-P4.2 目標是為 gap-analyzer 的偵測結果新增自動執行層。使用者執行 `bun scripts/evolution.js fix` 後，系統自動修復 `sync-mismatch`（SKILL.md 消費者表不一致）和 `no-references`（skill 缺少 references 目錄）兩種可安全修復的缺口，並重新驗證缺口是否消失。安全邊界：預設 dry-run，需明確加旗標才真正執行；不自動建立 agent 或 skill。
-Keywords: analyzer, scripts, evolution, sync, mismatch, skill, references, agent
-
----
-## 2026-03-05 | planner:PLAN Findings
-**需求分解**：
-
-1. **掃描所有決策點來源，整理原始資料** | agent: developer | files: `plugins/overtone/scripts/lib/registry.js`, `pre-task-handler.js`, `agent-stop-handler.js`, `session-stop-handler.js`, `skills/pm/SKILL.md`, `skills/workflow-core/references/failure-handling.md`, `docs/spec/overtone-工作流.md`
-
-2. **撰寫 `docs/spec/overtone-decision-points.md`**（依賴 1）| agent: developer | files: `docs/spec/overtone-decision-points.md`（新建）
-
-3. **更新 `docs/spec/overtone.md` 規格索引**（依賴 2）| agent: developer | files: `docs/spec/overtone.md`
-
-**優先順序**：1 → 2 → 3 序列執行（各有依賴），整體為單一 DEV 任務，不需拆成多個 subagent。
-
-**範圍邊界**（明確不在此次範圍）：
-- 程式化 Decision Registry（JSON 可查詢結構）
-- health-check 整合 checkDecisionPoints
-- 18 個 workflow 的完整 Mermaid 狀態機（只做 standard）
-- timeline event 發射/消費索引
-Keywords: agent, developer, files, plugins, overtone, scripts, registry, task, handler, stop
-
----
-## 2026-03-05 | planner:PLAN Context
 **需求**：建立 `docs/spec/overtone-decision-points.md`，將 Overtone 控制流決策點從 6 個散落的層次（registry.js、SKILL.md、pre-task-handler.js、agent-stop-handler.js、session-stop-handler.js、hooks.json）整合成單一可查詢的索引文件。
 
 **為什麼**：設計者目前需要逐一翻讀多個 handler 才能回答「某 stage 結束後系統做什麼」。這份索引的目標是讓任何決策點在 30 秒內可定位，以及讓新功能設計時能快速判斷是否需要新增 user gate。
@@ -745,4 +721,15 @@ Keywords: templates, strategy, hook, agent, stop, handler, session, notification
 Keywords: voice, system, plugins, overtone, scripts, templates, strategy, hook, agent, stop
 
 ---
+
+---
+## 2026-03-06 | developer:DEV Context
+實作 Instinct 知識歸檔來源過濾（`instinct-pollution-fix` feature），防止 Overtone 在外部專案工作時將外部知識污染 skill 的 `auto-discovered.md`。同步清理 5 個 domain 的既有污染條目。
+Keywords: instinct, pollution, feature, overtone, skill, auto, discovered, domain
+
+---
+## 2026-03-06 | tester:TEST:2 Context
+模式：verify
+執行 instinct-pollution-fix feature 的 BDD 規格驗證。BDD spec 已歸檔至 `/Users/sbu/projects/overtone/specs/features/archive/2026-03-06_instinct-pollution-fix/bdd.md`（非 in-progress）。
+Keywords: verify, instinct, pollution, feature, spec, users, projects, overtone, specs, features
 
