@@ -340,6 +340,9 @@ function checkParallelConvergence(currentState, parallelGroups) {
  * 規則 2：修復有 completedAt 但 status 非 completed 的 stage
  * 規則 3：修復孤兒 active stage（status=active 但無對應 activeAgents entry）
  *         → 有 completedAt 修正為 completed，無 completedAt 修正為 pending
+ * 規則 4：修復被跳過的 pending stage（status=pending 但其索引在 currentStage 之前）
+ *         → 並行群組收斂後遺留的 pending 成員（如 TEST:2 在 REVIEW 完成後未被標記）
+ *         → 修正為 completed（workflow 已推進代表此 stage 應已完成）
  *
  * 此函式直接操作檔案（writeState），適合在 SessionStart 時呼叫清理上一個
  * session 可能遺留的不一致狀態。
@@ -384,6 +387,27 @@ function sanitize(sessionId) {
         const correctedStatus = entry.completedAt ? 'completed' : 'pending';
         entry.status = correctedStatus;
         fixed.push(`修復孤兒 active stage ${key}: active → ${correctedStatus}`);
+      }
+    }
+  }
+
+  // 規則 4：修復被跳過的 pending stage（索引在 currentStage 之前）
+  // 場景：並行群組收斂後，某成員（如 TEST:2）因 context 問題未被標記 completed
+  // 條件：status=pending 且在 workflow 順序中排在 currentStage 之前
+  // 修正：→ completed（workflow 已推進代表此 stage 應已完成）
+  if (s.currentStage) {
+    const stageKeys = Object.keys(s.stages || {});
+    const currentIdx = stageKeys.indexOf(s.currentStage);
+    if (currentIdx > 0) {
+      for (let i = 0; i < currentIdx; i++) {
+        const key = stageKeys[i];
+        const entry = s.stages[key];
+        if (entry.status === 'pending') {
+          entry.status = 'completed';
+          entry.completedAt = entry.completedAt || new Date().toISOString();
+          entry.result = entry.result || 'pass';
+          fixed.push(`修復跳過的 pending stage ${key}: pending → completed（currentStage 已推進至 ${s.currentStage}）`);
+        }
       }
     }
   }

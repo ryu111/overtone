@@ -11,6 +11,7 @@
  * Scenario 5: completedAt 存在但 status 非 completed 時 status 被修正為 completed
  * Scenario 6: 複合情況：孤兒 activeAgent + status 不一致同時修復
  * Scenario 7: sanitize() 已匯出（module.exports 包含 sanitize）
+ * Scenario 9: 被跳過的 pending stage — TEST:2 並行收斂遺留問題（規則 4）
  */
 
 const { describe, it, expect, afterAll } = require('bun:test');
@@ -310,6 +311,115 @@ describe('Scenario 8: 孤兒 active stage 被修復（規則 3）', () => {
     expect(result.fixed[0]).toContain('REVIEW');
     expect(result.fixed[0]).toContain('active');
     expect(result.fixed[0]).toContain('pending');
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// Scenario 9: 被跳過的 pending stage（規則 4）— TEST:2 並行收斂遺留問題
+// ────────────────────────────────────────────────────────────────────────────
+
+describe('Scenario 9: TEST:2 status=pending 但 currentStage 已推進到更後面（規則 4）', () => {
+  it('驗收標準 1：TEST:2 status=active 且無 activeAgents → 修復為 pending（由規則 3 處理）', () => {
+    const sessionId = newSessionId();
+    // standard workflow: PLAN, ARCH, TEST, DEV, REVIEW, TEST:2, RETRO, DOCS
+    state.initState(sessionId, 'standard', ['PLAN', 'ARCH', 'TEST', 'DEV', 'REVIEW', 'TEST', 'RETRO', 'DOCS']);
+
+    const s = state.readState(sessionId);
+    // 設定 TEST:2 status=active、無 activeAgents
+    s.stages['TEST:2'].status = 'active';
+    s.activeAgents = {};
+    state.writeState(sessionId, s);
+
+    const result = state.sanitize(sessionId);
+    const ws = state.readState(sessionId);
+    // 規則 3 應將 active（無 activeAgents）修復為 pending
+    expect(ws.stages['TEST:2'].status).toBe('pending');
+    expect(result.fixed.some((msg) => msg.includes('TEST:2'))).toBe(true);
+  });
+
+  it('驗收標準 2：TEST:2 status=pending 且 REVIEW completed 且 currentStage=RETRO → 修復為 completed', () => {
+    const sessionId = newSessionId();
+    state.initState(sessionId, 'standard', ['PLAN', 'ARCH', 'TEST', 'DEV', 'REVIEW', 'TEST', 'RETRO', 'DOCS']);
+
+    // 模擬：前置 stages 全部 completed，REVIEW completed，TEST:2 pending 被跳過，currentStage=RETRO
+    state.writeState(sessionId, {
+      ...state.readState(sessionId),
+      currentStage: 'RETRO',
+      stages: {
+        'PLAN':   { status: 'completed', result: 'pass', completedAt: new Date().toISOString() },
+        'ARCH':   { status: 'completed', result: 'pass', completedAt: new Date().toISOString() },
+        'TEST':   { status: 'completed', result: 'pass', completedAt: new Date().toISOString(), mode: 'spec' },
+        'DEV':    { status: 'completed', result: 'pass', completedAt: new Date().toISOString() },
+        'REVIEW': { status: 'completed', result: 'pass', completedAt: new Date().toISOString() },
+        'TEST:2': { status: 'pending', result: null, mode: 'verify' },  // 被跳過的遺留
+        'RETRO':  { status: 'pending', result: null },
+        'DOCS':   { status: 'pending', result: null },
+      },
+    });
+
+    const result = state.sanitize(sessionId);
+    const ws = state.readState(sessionId);
+
+    expect(ws.stages['TEST:2'].status).toBe('completed');
+    expect(result.fixed.some((msg) => msg.includes('TEST:2'))).toBe(true);
+    expect(result.fixed.some((msg) => msg.includes('RETRO'))).toBe(true);
+  });
+
+  it('驗收標準 3：正常 workflow（TEST:2 pending, REVIEW 也 pending）→ 不改變 TEST:2', () => {
+    const sessionId = newSessionId();
+    state.initState(sessionId, 'standard', ['PLAN', 'ARCH', 'TEST', 'DEV', 'REVIEW', 'TEST', 'RETRO', 'DOCS']);
+
+    // 正常狀態：DEV completed，currentStage=REVIEW（並行群組開始），TEST:2 pending
+    state.writeState(sessionId, {
+      ...state.readState(sessionId),
+      currentStage: 'REVIEW',
+      stages: {
+        'PLAN':   { status: 'completed', result: 'pass', completedAt: new Date().toISOString() },
+        'ARCH':   { status: 'completed', result: 'pass', completedAt: new Date().toISOString() },
+        'TEST':   { status: 'completed', result: 'pass', completedAt: new Date().toISOString(), mode: 'spec' },
+        'DEV':    { status: 'completed', result: 'pass', completedAt: new Date().toISOString() },
+        'REVIEW': { status: 'pending', result: null },  // currentStage
+        'TEST:2': { status: 'pending', result: null, mode: 'verify' },  // 並行群組成員，正常 pending
+        'RETRO':  { status: 'pending', result: null },
+        'DOCS':   { status: 'pending', result: null },
+      },
+    });
+
+    const result = state.sanitize(sessionId);
+    const ws = state.readState(sessionId);
+
+    // TEST:2 在 currentStage (REVIEW) 之後，不應被修改
+    expect(ws.stages['TEST:2'].status).toBe('pending');
+    // REVIEW 是 currentStage，其前的都已 completed，不觸發規則 4
+    expect(result.fixed).toEqual([]);
+  });
+
+  it('currentStage=DOCS 時，所有前置 pending stage 都被修復', () => {
+    const sessionId = newSessionId();
+    state.initState(sessionId, 'standard', ['PLAN', 'ARCH', 'TEST', 'DEV', 'REVIEW', 'TEST', 'RETRO', 'DOCS']);
+
+    state.writeState(sessionId, {
+      ...state.readState(sessionId),
+      currentStage: 'DOCS',
+      stages: {
+        'PLAN':   { status: 'completed', result: 'pass', completedAt: new Date().toISOString() },
+        'ARCH':   { status: 'completed', result: 'pass', completedAt: new Date().toISOString() },
+        'TEST':   { status: 'completed', result: 'pass', completedAt: new Date().toISOString(), mode: 'spec' },
+        'DEV':    { status: 'completed', result: 'pass', completedAt: new Date().toISOString() },
+        'REVIEW': { status: 'completed', result: 'pass', completedAt: new Date().toISOString() },
+        'TEST:2': { status: 'pending', result: null, mode: 'verify' },  // 遺留
+        'RETRO':  { status: 'completed', result: 'pass', completedAt: new Date().toISOString() },
+        'DOCS':   { status: 'pending', result: null },  // currentStage
+      },
+    });
+
+    const result = state.sanitize(sessionId);
+    const ws = state.readState(sessionId);
+
+    expect(ws.stages['TEST:2'].status).toBe('completed');
+    expect(ws.stages['RETRO'].status).toBe('completed');  // 已有 completedAt，不受影響
+    expect(ws.stages['DOCS'].status).toBe('pending');  // currentStage，不受影響
+    expect(result.fixed.some((msg) => msg.includes('TEST:2'))).toBe(true);
   });
 });
 
