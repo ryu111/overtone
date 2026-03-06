@@ -22,6 +22,7 @@ user-invocable: false
 | 💡 `${CLAUDE_PLUGIN_ROOT}/skills/architecture/references/adr-template.md` | MADR 4.0 模板、Y-Statement 格式、ADR 使用指南 |
 | 💡 `${CLAUDE_PLUGIN_ROOT}/skills/architecture/references/architectural-patterns.md` | 架構層級設計模式決策樹（建構/結構/行為），含 tradeoff 和反模式 |
 | 💡 `${CLAUDE_PLUGIN_ROOT}/skills/architecture/references/tradeoff-framework.md` | 技術決策 tradeoff 分析框架、常見場景決策指引 |
+| 💡 `${CLAUDE_PLUGIN_ROOT}/skills/architecture/references/state-sync-patterns.md` | 跨元件/頁面狀態同步四種模式（Props/Store/EventBus/Server State）+ 決策樹 |
 | 💡 `${CLAUDE_PLUGIN_ROOT}/skills/architecture/examples/adr-sample.md` | ADR 範例：使用 Bun 作為 runtime 的決策記錄 |
 
 ## 跨域引用

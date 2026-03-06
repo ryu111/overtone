@@ -95,6 +95,9 @@ ProjectSpec：{ feature, generatedAt, facets: { functional, flow, ui, edgeCases,
 | flow-3：失敗路徑 | 是 | 最常見的失敗情況與通知方式 |
 | flow-4：取消與狀態恢復 | 否 | 中途取消能恢復嗎？ |
 | flow-5：狀態機描述 | 否 | 列出主要狀態轉換（如：草稿→送出→完成） |
+| flow-6：入口點與上下文 | 是 | 使用者從哪個頁面/入口點觸發？觸發前的上下文是什麼？ |
+| flow-7：post-action flow | 是 | 操作完成後使用者最可能想做什麼？系統應引導去哪？ |
+| flow-8：狀態傳播範圍 | 是 | 操作結果需要即時反映在哪些其他頁面或元件？ |
 
 ### 3. ui（UI 設計，可選）
 

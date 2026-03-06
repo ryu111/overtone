@@ -113,6 +113,27 @@ const QUESTION_BANK = [
     required: false,
     dependsOn: null,
   },
+  {
+    id: 'flow-6',
+    facet: 'flow',
+    text: '使用者從哪個頁面或入口點觸發這個操作？完成前的上下文是什麼？',
+    required: true,
+    dependsOn: null,
+  },
+  {
+    id: 'flow-7',
+    facet: 'flow',
+    text: '操作完成後，使用者最可能想做什麼？系統應引導他們到哪裡（post-action flow）？',
+    required: true,
+    dependsOn: null,
+  },
+  {
+    id: 'flow-8',
+    facet: 'flow',
+    text: '這個操作的結果需要即時反映在哪些其他頁面或元件上？',
+    required: true,
+    dependsOn: null,
+  },
 
   // ── ui（0 必問 + 4 補充）──
   {

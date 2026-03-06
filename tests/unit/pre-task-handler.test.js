@@ -7,13 +7,16 @@
  * 覆蓋範圍：
  *   - checkSkippedStages — 前置 stage 跳過偵測邏輯
  *   - handlePreTask 部分邏輯（無 session / 無 state / 無法辨識 agent）
+ *   - _buildMoscowWarning — MoSCoW 警告生成邏輯（T6）
  */
 
-const { describe, test, expect } = require('bun:test');
+const { describe, test, expect, afterAll } = require('bun:test');
 const path = require('path');
+const fs = require('fs');
+const os = require('os');
 const { SCRIPTS_LIB } = require('../helpers/paths');
 
-const { checkSkippedStages, handlePreTask } = require(path.join(SCRIPTS_LIB, 'pre-task-handler'));
+const { checkSkippedStages, handlePreTask, _buildMoscowWarning } = require(path.join(SCRIPTS_LIB, 'pre-task-handler'));
 
 // ── checkSkippedStages ───────────────────────────────────────────────────
 
@@ -186,5 +189,144 @@ describe('handlePreTask — agent 辨識', () => {
     });
     // 無 sessionId → 早期 return { result: '' }
     expect(result).toEqual({ output: { result: '' } });
+  });
+});
+
+// ── _buildMoscowWarning — MoSCoW 警告生成邏輯（T6）─────────────────────────
+
+describe('_buildMoscowWarning', () => {
+  // 暫時目錄，測試後清理
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ot-moscow-test-'));
+  const inProgressDir = path.join(tmpDir, 'specs', 'features', 'in-progress');
+
+  afterAll(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  function makeProposal(featureName, content, mtimeOffset = 0) {
+    const featureDir = path.join(inProgressDir, featureName);
+    fs.mkdirSync(featureDir, { recursive: true });
+    const proposalPath = path.join(featureDir, 'proposal.md');
+    fs.writeFileSync(proposalPath, content, 'utf-8');
+    if (mtimeOffset !== 0) {
+      const now = Date.now();
+      const t = (now + mtimeOffset) / 1000;
+      fs.utimesSync(proposalPath, t, t);
+    }
+    return proposalPath;
+  }
+
+  test('developer agent + prompt 含 Should 項目 keyword 時注入 MoSCoW 警告', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ot-moscow-s1-'));
+    try {
+      const ip = path.join(dir, 'specs', 'features', 'in-progress', 'test-feature');
+      fs.mkdirSync(ip, { recursive: true });
+      fs.writeFileSync(path.join(ip, 'proposal.md'), '## MoSCoW\n\n**Should**:\n- 報表匯出功能\n\n**Must**:\n- 基本登入\n', 'utf-8');
+
+      const result = _buildMoscowWarning(dir, 'developer', '請實作匯出報表的功能');
+      expect(result).not.toBeNull();
+      expect(result).toContain('[PM MoSCoW 警告]');
+      expect(result).toContain('Should');
+      expect(result).toContain('報表匯出功能');
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  test('architect agent + prompt 含 Could 項目 keyword 時注入 MoSCoW 警告', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ot-moscow-s2-'));
+    try {
+      const ip = path.join(dir, 'specs', 'features', 'in-progress', 'feat');
+      fs.mkdirSync(ip, { recursive: true });
+      fs.writeFileSync(path.join(ip, 'proposal.md'), '**Could**:\n- 深色模式支援\n', 'utf-8');
+
+      const result = _buildMoscowWarning(dir, 'architect', '設計深色模式介面');
+      expect(result).not.toBeNull();
+      expect(result).toContain('[PM MoSCoW 警告]');
+      expect(result).toContain('Could');
+      expect(result).toContain('深色模式支援');
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  test('prompt 中無 Should/Could 項目 keyword 時回傳 null', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ot-moscow-s3-'));
+    try {
+      const ip = path.join(dir, 'specs', 'features', 'in-progress', 'feat');
+      fs.mkdirSync(ip, { recursive: true });
+      fs.writeFileSync(path.join(ip, 'proposal.md'), '**Should**:\n- 報表匯出功能\n', 'utf-8');
+
+      const result = _buildMoscowWarning(dir, 'developer', '實作使用者登入邏輯');
+      expect(result).toBeNull();
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  test('targetAgent 非 developer 或 architect 時回傳 null', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ot-moscow-s4-'));
+    try {
+      const ip = path.join(dir, 'specs', 'features', 'in-progress', 'feat');
+      fs.mkdirSync(ip, { recursive: true });
+      fs.writeFileSync(path.join(ip, 'proposal.md'), '**Should**:\n- 報表匯出功能\n', 'utf-8');
+
+      const result = _buildMoscowWarning(dir, 'tester', '報表匯出功能測試');
+      expect(result).toBeNull();
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  test('specs/features/in-progress/ 目錄不存在時靜默降級回傳 null', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ot-moscow-s5-'));
+    try {
+      // 不建立 in-progress 目錄
+      const result = _buildMoscowWarning(dir, 'developer', 'some prompt');
+      expect(result).toBeNull();
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  test('proposal.md 內容為空時回傳 null', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ot-moscow-s6-'));
+    try {
+      const ip = path.join(dir, 'specs', 'features', 'in-progress', 'feat');
+      fs.mkdirSync(ip, { recursive: true });
+      fs.writeFileSync(path.join(ip, 'proposal.md'), '', 'utf-8');
+
+      const result = _buildMoscowWarning(dir, 'developer', 'some prompt');
+      expect(result).toBeNull();
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  test('多個 in-progress feature 存在時取最新修改的 proposal.md', async () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ot-moscow-s7-'));
+    try {
+      const ipBase = path.join(dir, 'specs', 'features', 'in-progress');
+
+      // feature-a（設為較舊）
+      const ipA = path.join(ipBase, 'feature-a');
+      fs.mkdirSync(ipA, { recursive: true });
+      fs.writeFileSync(path.join(ipA, 'proposal.md'), '**Should**:\n- 舊功能項目\n', 'utf-8');
+
+      // 稍等確保 mtime 有差異
+      await new Promise(r => setTimeout(r, 10));
+
+      // feature-b（設為最新）
+      const ipB = path.join(ipBase, 'feature-b');
+      fs.mkdirSync(ipB, { recursive: true });
+      fs.writeFileSync(path.join(ipB, 'proposal.md'), '**Should**:\n- 新功能項目\n', 'utf-8');
+
+      const result = _buildMoscowWarning(dir, 'developer', '新功能');
+      expect(result).not.toBeNull();
+      expect(result).toContain('新功能項目');
+      expect(result).not.toContain('舊功能項目');
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
   });
 });

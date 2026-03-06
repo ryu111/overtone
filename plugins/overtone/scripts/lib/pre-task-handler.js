@@ -23,6 +23,101 @@ const { detectKnowledgeGaps } = require('./knowledge/knowledge-gap-detector');
 const { createHookTimer } = require('./hook-timing');
 
 /**
+ * 從 Product Brief（proposal.md）讀取 MoSCoW Should/Could 項目
+ * 並比對 task prompt，若命中則回傳警告文字
+ * 靜默降級：找不到 Brief 或解析失敗時回傳 null
+ *
+ * @param {string} projectRoot - 專案根目錄
+ * @param {string} targetAgent - 目標 agent 名稱
+ * @param {string} originalPrompt - 原始 task prompt
+ * @returns {string|null} 警告文字，若無警告則回傳 null
+ */
+function buildMoscowWarning(projectRoot, targetAgent, originalPrompt) {
+  // 只對 developer / architect 執行
+  if (!['developer', 'architect'].includes(targetAgent)) return null;
+
+  const fs = require('fs');
+  const pathLib = require('path');
+
+  // 掃描 specs/features/in-progress/*/proposal.md，取最新
+  const inProgressDir = pathLib.join(projectRoot, 'specs', 'features', 'in-progress');
+  if (!fs.existsSync(inProgressDir)) return null;
+
+  let latestFile = null;
+  let latestMtime = 0;
+
+  try {
+    const dirs = fs.readdirSync(inProgressDir, { withFileTypes: true });
+    for (const d of dirs) {
+      if (!d.isDirectory()) continue;
+      const proposalPath = pathLib.join(inProgressDir, d.name, 'proposal.md');
+      if (!fs.existsSync(proposalPath)) continue;
+      const stat = fs.statSync(proposalPath);
+      if (stat.mtimeMs > latestMtime) {
+        latestMtime = stat.mtimeMs;
+        latestFile = proposalPath;
+      }
+    }
+  } catch { return null; }
+
+  if (!latestFile) return null;
+
+  // 讀取 proposal.md
+  let content;
+  try { content = fs.readFileSync(latestFile, 'utf-8'); }
+  catch { return null; }
+
+  // 提取 Should/Could 項目
+  const items = [];
+  const lines = content.split('\n');
+  let currentPriority = null;
+
+  for (const line of lines) {
+    // 偵測 Should/Could 標題（**Should**: 或 - **Should**: 等格式）
+    if (/\*\*Should\*\*/i.test(line)) { currentPriority = 'Should'; continue; }
+    if (/\*\*Could\*\*/i.test(line)) { currentPriority = 'Could'; continue; }
+    if (/\*\*Must\*\*/i.test(line) || /\*\*Won't\*\*/i.test(line) || /^##\s/.test(line)) {
+      currentPriority = null; continue;
+    }
+
+    if (currentPriority && /^\s*[-*]\s+/.test(line)) {
+      const text = line.replace(/^\s*[-*]\s+/, '').trim();
+      if (text.length >= 4) { // 最低 4 字避免誤判
+        items.push({ priority: currentPriority, text });
+      }
+    }
+  }
+
+  if (items.length === 0) return null;
+
+  // keyword 比對 prompt
+  const promptLower = originalPrompt.toLowerCase();
+  const matched = items.filter(item => {
+    // 拆成空格分隔的詞（適合英文）
+    const spaceTokens = item.text
+      .replace(/[（）()「」、，。：；！？]/g, ' ')
+      .split(/\s+/)
+      .filter(t => t.length >= 2);
+
+    // 對中文：額外產生 bigram（連續 2 字），擴大命中率
+    const bigrams = [];
+    const clean = item.text.replace(/\s+/g, '');
+    for (let i = 0; i < clean.length - 1; i++) {
+      bigrams.push(clean.slice(i, i + 2));
+    }
+
+    const allTokens = [...new Set([...spaceTokens, ...bigrams])].filter(t => t.length >= 2);
+    return allTokens.some(token => promptLower.includes(token.toLowerCase()));
+  });
+
+  if (matched.length === 0) return null;
+
+  // 組裝警告
+  const warningLines = matched.map(m => `  - [${m.priority}] ${m.text}`);
+  return `\n[PM MoSCoW 警告]\n以下功能在 Product Brief 中標記為 Should/Could（非 Must），\n請確認是否在本次 MVP 範圍內，避免 scope creep：\n${warningLines.join('\n')}\n若確認要實作，請在 Handoff 中說明理由。\n`;
+}
+
+/**
  * 檢查目標 stage 之前是否有未完成的必要前置階段
  * @param {object|null} currentState - workflow 狀態物件（含 stages 屬性）
  * @param {string} targetStage - 目標 stage 名稱（如 "DEV"）
@@ -257,7 +352,7 @@ function handlePreTask(input, sessionIdOverride) {
     stage: targetStage,
   });
 
-  // ── 組裝 updatedInput（注入 workflow context + skill context + gap warnings + test-index 摘要）──
+  // ── 組裝 updatedInput（注入 workflow context + skill context + gap warnings + test-index 摘要 + moscowWarning）──
 
   const projectRoot = input.cwd || process.cwd();
   const context = buildWorkflowContext(sessionId, projectRoot);
@@ -355,20 +450,30 @@ function handlePreTask(input, sessionIdOverride) {
     failureWarning = failureTracker.formatFailureWarnings(projectRoot, targetStage);
   } catch { /* 靜默降級 — failure warning 失敗不影響主流程 */ }
 
+  // MoSCoW 警告注入（只對 developer / architect，靜默降級）
+  const MOSCOW_WARNING_AGENTS = ['developer', 'architect'];
+  let moscowWarning = null;
+  try {
+    if (MOSCOW_WARNING_AGENTS.includes(targetAgent)) {
+      moscowWarning = buildMoscowWarning(projectRoot, targetAgent, toolInput.prompt || '');
+    }
+  } catch { /* 靜默降級 */ }
+
   const hasContext = !!context;
   const hasSkillContext = !!skillContextStr;
   const hasGapWarnings = !!gapWarnings;
   const hasTestIndex = !!testIndexSummary;
   const hasScoreContext = !!scoreContext;
   const hasFailureWarning = !!failureWarning;
+  const hasMoscowWarning = !!moscowWarning;
   const hasGlobalObs = !!globalObsContext;
   // 僅在有 parallelTotal 時注入 PARALLEL INSTANCE 區塊
   const hasParallelInstance = parallelTotal !== null && !isNaN(parallelTotal);
 
-  if (hasContext || hasSkillContext || hasGapWarnings || hasTestIndex || hasScoreContext || hasFailureWarning || hasGlobalObs || hasParallelInstance) {
+  if (hasContext || hasSkillContext || hasGapWarnings || hasTestIndex || hasScoreContext || hasFailureWarning || hasMoscowWarning || hasGlobalObs || hasParallelInstance) {
     const originalPrompt = toolInput.prompt || '';
 
-    // 組裝順序：[PARALLEL INSTANCE] → workflowContext → skillContext → gapWarnings → globalObs → scoreContext → failureWarning → testIndex → originalPrompt
+    // 組裝順序：[PARALLEL INSTANCE] → workflowContext → skillContext → gapWarnings → globalObs → scoreContext → failureWarning → moscowWarning → testIndex → originalPrompt
     const parts = [];
     if (hasParallelInstance) {
       parts.push([
@@ -396,6 +501,9 @@ function handlePreTask(input, sessionIdOverride) {
     if (hasFailureWarning) {
       parts.push(failureWarning);
     }
+    if (hasMoscowWarning) {
+      parts.push(moscowWarning);
+    }
     if (hasTestIndex) {
       parts.push(testIndexSummary);
     }
@@ -421,4 +529,4 @@ function handlePreTask(input, sessionIdOverride) {
   return { output: { result: '' } };
 }
 
-module.exports = { handlePreTask, checkSkippedStages };
+module.exports = { handlePreTask, checkSkippedStages, _buildMoscowWarning: buildMoscowWarning };
