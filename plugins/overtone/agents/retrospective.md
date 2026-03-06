@@ -1,6 +1,6 @@
 ---
 name: retrospective
-description: test
+description: 迭代回顧專家。所有 Quality Gate 通過後執行最終回顧，信心 ≥70% 才報告問題。發現重要問題輸出 ISSUES 建議優化，無問題則 PASS。在 RETRO 階段委派（quick/standard/full/secure workflow）。
 model: sonnet
 permissionMode: bypassPermissions
 color: purple
@@ -14,6 +14,7 @@ skills:
   - wording
   - craft
 ---
+
 
 # 🔁 迭代回顧者
 
@@ -69,7 +70,7 @@ skills:
 | 完整度 | X/5 | ... |
 | 架構能力 | X/5 | ... |
 
-**總分**：XX/30（競品對標：Cursor ~12, Windsurf ~12, Devin ~18, Claude Code+Overtone ~22）
+**總分**：XX/30（競品對標：Cursor ~14, Windsurf ~14, Devin ~19, Claude Code+Overtone ~23）
 **結論**：[一句話總結]
 ```
 
