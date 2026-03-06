@@ -1,6 +1,6 @@
 # Overtone 現況
 
-> 最後更新：2026-03-06 | Plugin 版本：0.28.71
+> 最後更新：2026-03-06 | Plugin 版本：0.28.72
 
 ## 版本狀態
 
@@ -28,9 +28,9 @@
 
 ## 近期變更（最近 3 筆）
 
+- **[0.28.72] 2026-03-06**：feat(arch)——架構師設計規範完善：architect.md 設計規範補強，誤判防護新增 Edge Cases 列舉規範，輸出 Handoff 格式明確化，強化開發者設計對照能力
 - **[0.28.71] 2026-03-06**：feat(retro)——RETRO 評估框架升級：retrospective.md 加入六維度結構化評估框架（理解力/創造力/美感/細心/完整度/架構能力），craft SKILL.md 索引更新，新增 2026-03 競品基準矩陣（Cursor ~14 / Windsurf ~14 / Devin ~19 / Claude Code+Overtone ~23）
 - **[0.28.70] 2026-03-06**：fix(state)——並行收斂 TEST:2 狀態修復：state.js sanitize() 新增規則 4，修復並行 agent 收斂後 TEST:2 等帶編號 stage 遺留 pending 狀態（4 個新測試）
-- **[0.28.69] 2026-03-06**：fix(instinct)——外部專案知識過濾修復：knowledge-archiver.js 加入來源路徑過濾，過濾外部專案污染（non-Overtone 內容降級為 instinct gap-observation）+ auto-discovered.md 清理（5 個 domain 已清理）（10 個新測試）
 
 ## Phase 3 規劃狀態（✅ 完成）
 

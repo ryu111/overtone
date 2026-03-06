@@ -2,6 +2,22 @@
 
 所有重要變更記錄於此文件。
 
+## [0.28.72] - 2026-03-06
+
+### 架構師設計規範完善（Architect Design Specification Enhancement）
+
+#### 核心增強
+- **architect.md**：設計規範補強
+  - 誤判防護新增：Edge Cases 區塊列舉規範（聚焦在架構設計中最容易被忽略的風險點，不列舉所有可能邊界）
+  - 輸出 Handoff 格式更新：明確示例「Edge Cases to Handle」區塊（含風險類型標註：狀態組合/語意陷阱/並行競爭/資料邊界）
+  - 提示開發者實作對照：MUST 在 Handoff 的 Edge Cases 區塊標注設計中的邊界風險，供 developer 實作時對照
+
+#### 文件同步
+- `docs/status.md`：版本 0.28.71 → 0.28.72
+- `CHANGELOG.md`：新增本條目
+
+---
+
 ## [0.28.71] - 2026-03-06
 
 ### RETRO 評估框架升級（Retrospective Evaluation Framework Upgrade）
