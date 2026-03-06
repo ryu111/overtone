@@ -1,78 +1,4 @@
 ---
-## 2026-03-05 | planner:PLAN Context
-**需求**：建立 `docs/spec/overtone-decision-points.md`，將 Overtone 控制流決策點從 6 個散落的層次（registry.js、SKILL.md、pre-task-handler.js、agent-stop-handler.js、session-stop-handler.js、hooks.json）整合成單一可查詢的索引文件。
-
-**為什麼**：設計者目前需要逐一翻讀多個 handler 才能回答「某 stage 結束後系統做什麼」。這份索引的目標是讓任何決策點在 30 秒內可定位，以及讓新功能設計時能快速判斷是否需要新增 user gate。
-
-**PM 已定義的 MVP 範圍（MoSCoW Must）**：
-- User Gate 索引（decision tree 格式）
-- 自動決策索引（表格格式）
-- Stage 轉場摘要（按 workflow 類型）
-- standard workflow Mermaid 狀態圖
-Keywords: docs, spec, overtone, decision, points, registry, skill, task, handler, agent
-
----
-## 2026-03-05 | architect:ARCH Findings
-**技術方案**：
-
-- 純文件方案，新建 `docs/spec/overtone-decision-points.md`
-- 5 個 Section：User Gate 索引、自動決策索引、Stage 轉場摘要、Standard Workflow 狀態圖、快速查找索引
-- 不引入新的程式模組，不需要測試
-
-**Open Questions 解答**：
-
-- Q1 (entry schema)：統一格式含 Gate ID / 觸發條件 / 觸發時機 / 呈現方式 / Handler 位置 / 選項列表。`呈現方式` 欄位區分「正常互動 gate」（AskUserQuestion）與「異常介入 gate」（停止並等待）。
-- Q2 (Mermaid 粒度)：主幹路徑 + subgraph 包圍 retry loop，圖外文字說明重試上限。使用 `stateDiagram-v2` + `<<fork>>`/`<<join>>` 語法。
-- Q3 (佇列控制流定位)：納入 Section 二「自動決策索引」的獨立子節 2.4，不與 loop 決策混合。
-
-**User Gate 清單（5 個，UG-01 ~ UG-05）**：
-- UG-01：Discovery 模式使用者確認（pm/SKILL.md L84-92）
-- UG-02：規劃模式確認（pm/SKILL.md L109-113）
-- UG-03：TEST FAIL 上限 3 次（failure-handling.md L31-47）
-- UG-04：REVIEW REJECT 上限 3 次（failure-handling.md L61-73）
-- UG-05：RETRO ISSUES 上限 3 次（failure-handling.md L119-125）
-
-**自動決策來源**：
-- PreToolUse 阻擋：`pre-task-handler.js` L142-172（前置 stage 未完成 → deny）
-- SubagentStop 收斂：`agent-stop-handler.js` L100-138（fail/reject 立即標記；全 pass 收斂；PM stage 完成 → 寫佇列）
-- Stop hook 退出（7 級優先順序）：`session-stop-handler.js` L152-270
-- 佇列控制流：`session-stop-handler.js` L119-218（completeCurrent + getNext + decision:block）
-
-**Stop hook 7 級退出優先順序**（Section 2.3 核心內容）：
-1. loopState.stopped → 手動退出
-2. iteration >= 100 → 最大迭代退出
-3. consecutiveErrors >= 3 → 連續錯誤退出
-4. allCompleted + hasFailedStage → workflow abort
-5. allCompleted + !hasFailedStage → workflow complete（→ 觸發佇列邏輯）
-6. nextStage === 'PM' → 不阻擋（PM 互動模式）
-7. 其他 → decision: block（loop 繼續）
-
-**Stage 轉場摘要資料**（來自 registry.js L46-80）：
-- 18 個 workflow，3 個並行群組（quality/verify/secure-quality）
-- 詳見 design.md 中各 Section 格式規範
-
-**API 介面**：無（純文件任務）
-
-**資料模型**：無（純文件任務）
-
-**檔案結構**：
-
-```
-新增：
-  docs/spec/overtone-decision-points.md   <- 控制流決策點索引（主要產出）
-
-修改：
-  docs/spec/overtone.md                   <- 加入 overtone-decision-points.md 引用
-
-Specs：
-  specs/features/in-progress/decision-point-index/design.md   <- 已建立
-  specs/features/in-progress/decision-point-index/tasks.md    <- 已建立
-```
-
-**Dev Phases**：所有子任務線性依賴（撰寫文件 → 更新索引），無並行可能，省略 Dev Phases 區塊。
-Keywords: docs, spec, overtone, decision, points, section, user, gate, stage, standard
-
----
 ## 2026-03-05 | developer:DEV Findings
 1. **實際行號與 BDD spec 記載一致**：session-stop-handler.js 的 7 級退出條件優先順序（L152 手動退出 → L158 最大迭代 → L165 連續錯誤 → L172 allCompleted → L227 PM 特例 → L244 block）與 BDD scenario 描述吻合。
 
@@ -732,4 +658,32 @@ Keywords: instinct, pollution, feature, overtone, skill, auto, discovered, domai
 模式：verify
 執行 instinct-pollution-fix feature 的 BDD 規格驗證。BDD spec 已歸檔至 `/Users/sbu/projects/overtone/specs/features/archive/2026-03-06_instinct-pollution-fix/bdd.md`（非 in-progress）。
 Keywords: verify, instinct, pollution, feature, spec, users, projects, overtone, specs, features
+
+---
+## 2026-03-06 | developer:DEV Context
+更新了 `retrospective` agent，將六維度評估從「選用」升級為「standard/full/secure workflow 必做」，並要求每個維度評分必須有客觀證據和競品對標理由。
+Keywords: retrospective, agent, standard, full, secure, workflow
+
+---
+## 2026-03-06 | retrospective:RETRO Findings
+**回顧摘要**：
+
+這次修改的目標是解決 RETRO 評分通膨問題，透過將六維度評估從選用升級為必做（限定 workflow 類型），並強制「先列證據再給分」的評分程序。
+
+**確認的品質點**：
+
+- **目標達成**：評分通膨的根因在於評分者可「先給分再找理由」，本次修改在第 39 行以 `📋 MUST 先列出客觀證據，再給分數` + `禁止「先給分再找理由」` 雙重規則直接封閉此漏洞，指令強度正確（📋 MUST 層級）。
+
+- **分級觸發邏輯一致**：第 47-49 行的觸發條件（quick=選用、standard/full/secure=必做）與第 93 行的誤判防護敘述完全一致，無矛盾。描述中 quick workflow 的 Task prompt 也正確標注為 `💡 should（選用）`，三處一致。
+
+- **輸出格式強制競品對標**：第 62-78 行的輸出範本將「對標」欄位納入表格結構，加上第 51 行明確要求閱讀 `competitor-benchmark.md`，讓競品對標有據可查而非主觀臆測。
+
+- **邊界清單完整**：DO/DON'T 四模式（信心過濾 + 邊界清單 + 誤判防護 + 停止條件）全部保留，五項變更未破壞既有結構。
+
+- **無遺漏**：Developer Handoff 列出的五項變更（A 觸發條件分級、B 評分程序強制、C 輸出格式加對標欄、D description frontmatter 更新、E 誤判防護補充）在檔案中逐一可驗證對應，無缺漏。
+
+**跨階段觀察**：
+
+本次是 agent prompt 的文字修改，無程式碼、無測試、無資料結構變更，因此不存在跨模組一致性或測試覆蓋的問題。Handoff 鏈（DEV → REVIEW → RETRO）傳遞清楚，每階段結果明確。
+Keywords: retro, workflow, must, quick, standard, full, secure, task, prompt, should
 
