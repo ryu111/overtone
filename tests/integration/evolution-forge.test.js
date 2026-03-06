@@ -43,11 +43,12 @@ function runEvolution(args = []) {
 
 describe('Feature 5: evolution.js forge 子命令', () => {
   test('Scenario 5-1: 不帶 domain 參數 → 顯示用法 exit 1', () => {
-    const { stdout, exitCode } = runEvolution(['forge']);
+    const { stdout, stderr, exitCode } = runEvolution(['forge']);
 
     expect(exitCode).toBe(1);
-    expect(stdout).toContain('forge');
-    expect(stdout.toLowerCase()).toMatch(/domain|用法|usage/i);
+    const output = stdout + stderr;
+    expect(output).toContain('forge');
+    expect(output.toLowerCase()).toMatch(/domain|用法|usage/i);
   });
 
   test('Scenario 5-2: dry-run 模式 → 人類可讀預覽 exit 0', () => {

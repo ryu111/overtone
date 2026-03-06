@@ -225,7 +225,7 @@
 | Internalization（L3.7）| 完成後將兩個新 skill 內化為永久能力 |
 
 驗收：生成的 HTML 可在瀏覽器開啟，連結不 404，Markdown 正確渲染。
-完整場景設計：`specs/features/in-progress/acid-test-scenario-design/proposal.md`
+完整場景設計：`specs/features/archive/2026-03-06_acid-test-scenario-design/proposal.md`
 
 **完成標準**：系統自主完成端到端能力建構 + 產品開發，無需人工編寫 skill 或 agent。
 

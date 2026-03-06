@@ -1,20 +1,4 @@
 ---
-## 2026-03-03 | tester:TEST Findings
-測試結果摘要：
-
-| 測試目標 | 結果 |
-|---------|------|
-| `tests/unit/stop-message-builder.test.js` | 26 pass / 0 fail（含 Feature 6 全部 10 個 Grader 強制化 Scenarios） |
-| `tests/unit/registry.test.js` | 22 pass / 0 fail（agentMemory 8 個 agent 斷言全部通過） |
-| `tests/unit/platform-alignment-agents.test.js` | 109 pass / 0 fail（含 memoryAgents 8 個 agent memory: local 斷言） |
-| `tests/integration/feedback-loop.test.js` | 6 pass / 0 fail（score context 標題 `[品質歷史 — developer@DEV（1 筆）]` 斷言通過） |
-| `bun plugins/overtone/scripts/validate-agents.js` | 17 agents + 11 hooks + 21 skills 全部驗證通過 |
-| `bun test`（全量回歸） | **3047 pass / 0 fail**（129 files） |
-
-所有 BDD Scenario 均有對應的測試並全部通過，無回歸。
-Keywords: tests, unit, stop, message, builder, test, pass, fail, feature, grader
-
----
 ## 2026-03-04 | tester:TEST Findings
 測試結果：**3083 passed, 0 failed**（全套 132 個測試檔）
 
@@ -611,4 +595,38 @@ Keywords: smoke, test, flows, feature, tests, scenario, workflow
 ## 2026-03-05 | developer:DEV Context
 實作 `forge-quality-calibration` 功能：在 `tests/unit/skill-forge-quality.test.js` 建立 forgeSkill 產出品質校準測試，驗證不同 domain 的 SKILL.md 輸出品質符合最低門檻。
 Keywords: forge, quality, calibration, tests, unit, skill, test, forgeskill, domain
+
+---
+## 2026-03-06 | developer:DEV Findings
+**項目 1 — Dead exports 清理**
+`health-check.js` 的 `dead-exports` check 回傳 `passed: true, findingsCount: 0`。系統目前零死亡 exports，無需清理。
+
+**項目 2 — 未使用的 test helpers**
+`tests/helpers/` 中的 4 個 helpers 全部有被使用：
+- `paths.js` — 被 30+ 測試 require
+- `frontmatter.js` — 被 5 個測試 require
+- `hook-runner.js` — 被 13 個測試 require
+- `setup.js` — 通過 `bunfig.toml` preload 全域載入
+
+無任何未使用的 helper，無需清理。
+
+**項目 3 — 空的 auto-discovered.md**
+掃描 15 個 `auto-discovered.md`：
+- `build-system/references/auto-discovered.md` — 只有 1 行標題，無實質內容 → **已刪除**
+- 其他 14 個都有實質內容（4-814 行），保留
+
+**項目 4 — 過時的 in-progress specs**
+發現 3 個殘留的 in-progress specs（流程已中斷、未正式完成）：
+- `health-check-zero-warnings` — DEV+REVIEW 完成，RETRO/DOCS 未完成 → **已歸檔**
+- `smoke-test-all-flows` — DEV 完成，其餘未完成 → **已歸檔**
+- `acid-test-scenario-design` — 只有 proposal.md，未正式啟動 → **已歸檔**
+
+**項目 5 — 冗餘程式碼**
+掃描到 21 個連續 3 行以上的 // 區塊，逐一確認後全部是：
+- 分段標記線（`// ─────────`）
+- 邏輯說明注解（解釋算法、regex 匹配規則）
+- 模組功能說明
+
+無任何被註解掉的程式碼，無需清理。
+Keywords: dead, exports, health, check, passed, true, findingscount, test, helpers, tests
 

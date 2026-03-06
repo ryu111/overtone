@@ -1,12 +1,12 @@
 # Overtone 現況
 
-> 最後更新：2026-03-06 | Plugin 版本：0.28.65
+> 最後更新：2026-03-06 | Plugin 版本：0.28.66
 
 ## 版本狀態
 
 | 版本 | 狀態 | 說明 |
 |------|------|------|
-| V1 | 進行中 | 4319 pass，0 fail。核心能力：BDD 工作流自動化（18 個 agent + 18 個模板）+ 守衛強化（11 個 hook + 19 項 health-check）+ 自我進化引擎（gap detection / auto-fix / skill forge / internalization）+ OS 控制能力（截圖 + 視窗 + 系統層）+ 心跳引擎（跨 session 任務自主執行）+ 深度 PM 多輪訪談（領域研究 + 5 面向訪談）|
+| V1 | 進行中 | 4316 pass，0 fail。核心能力：BDD 工作流自動化（18 個 agent + 18 個模板）+ 守衛強化（11 個 hook + 19 項 health-check）+ 自我進化引擎（gap detection / auto-fix / skill forge / internalization）+ OS 控制能力（截圖 + 視窗 + 系統層）+ 心跳引擎（跨 session 任務自主執行）+ 深度 PM 多輪訪談（領域研究 + 5 面向訪談）|
 | V2 | 規劃中 | 延後 |
 
 ## 核心指標
@@ -16,7 +16,7 @@
 | Agent 數量 | 18（含 grader） |
 | Stage 數量 | 16 |
 | Workflow 模板 | 18 |
-| 測試通過 | 4319 pass / 0 fail（191 個測試檔）|
+| 測試通過 | 4316 pass / 0 fail（191 個測試檔）|
 | 測試檔案 | 191 個 |
 | Hook 數量 | 11 個 |
 | Skill 數量 | 24（15 knowledge domain + orchestrator + pm + specs + 4 utility-with-refs + instinct） |
@@ -28,10 +28,9 @@
 
 ## 近期變更（最近 3 筆）
 
-- **[0.28.65] 2026-03-06**：feat(interview)——訪談 UX 優化：nextQuestion 進度指示器 + getProgress facet 完成度 + getAnswerSummary 答案預覽（36 個新測試）
-- **[0.28.65] 2026-03-06**：test(forge-quality-calibration)——新增 skill-forge-quality.test.js（20 個測試），覆蓋 6 個品質面向（多 domain 一致性、標題格式、description、body 長度、preview 結構、並行獨立性）
-- **[0.28.64] 2026-03-06**：fix(health-check)——修復 checkDataQuality 誤判 resolved 記錄為損壞資料，確保 failures.jsonl 中已解決的記錄不觸發假陽性 error
-- **[0.28.64] 2026-03-06**：fix(health-check)——允許 failures.jsonl 中的 resolved 記錄通過驗證，修復驗證邏輯邊界條件
+- **[0.28.66] 2026-03-06**：chore(pruning)——清理空檔案 + 歸檔中斷 specs：刪除空 auto-discovered.md + 歸檔 3 個 in-progress specs（acid-test-scenario-design、health-check-zero-warnings、smoke-test-all-flows）
+- **[0.28.66] 2026-03-06**：feat(evolution)——統一 CLI help 格式與 error 訊息：所有子命令 help 統一為 exit 0 + 明確列出 exit 1 條件 + 錯誤訊息對齐格式化
+- **[0.28.65] 2026-03-06**：docs(interview-ux)——訪談 UX 改進 + specs 歸檔：nextQuestion 進度指示器 + getProgress facet 完成度 + getAnswerSummary 答案預覽（36 個新測試）
 
 ## Phase 3 規劃狀態（✅ 完成）
 
