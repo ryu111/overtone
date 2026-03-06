@@ -24,6 +24,15 @@ safeRun(() => {
 
   if (shouldPlaySound(notificationType, SOUND_TYPES)) {
     playSound(SOUNDS.GLASS);
+    // TTS fire-and-forget — 不阻擋主流程
+    try {
+      const ttsStrategy = require('../../../scripts/lib/tts-strategy');
+      const ttsConfig = ttsStrategy.readTtsConfig();
+      if (ttsConfig.enabled && ttsStrategy.shouldSpeak('notification:ask', ttsConfig.level)) {
+        const args = ttsStrategy.buildSpeakArgs('notification:ask', {}, ttsConfig);
+        if (args) require('../../../scripts/os/tts').speakBackground(args.text, args.opts);
+      }
+    } catch { /* TTS 錯誤不影響主流程 */ }
   }
 
   process.stdout.write(JSON.stringify({ result: '' }));

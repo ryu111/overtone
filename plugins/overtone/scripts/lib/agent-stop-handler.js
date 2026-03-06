@@ -266,6 +266,19 @@ function handleAgentStop(input, sessionId) {
     archiveKnowledge(agentOutput.slice(0, 3000), { agentName, actualStageKey, projectRoot, sessionId });
   }
 
+  // TTS fire-and-forget — 不阻擋主流程
+  try {
+    const ttsStrategy = require('./tts-strategy');
+    const ttsConfig = ttsStrategy.readTtsConfig();
+    if (ttsConfig.enabled) {
+      const eventKey = (result.verdict === 'fail' || result.verdict === 'reject') ? 'agent:error' : 'agent:complete';
+      if (ttsStrategy.shouldSpeak(eventKey, ttsConfig.level)) {
+        const args = ttsStrategy.buildSpeakArgs(eventKey, { stage: stageKey }, ttsConfig);
+        if (args) require('../os/tts').speakBackground(args.text, args.opts);
+      }
+    }
+  } catch { /* TTS 錯誤不影響主流程 */ }
+
   // hook:timing — 記錄 SubagentStop 執行耗時
   hookTimer.emit(sessionId, 'on-stop', 'SubagentStop', { agent: agentName, verdict: result.verdict });
 

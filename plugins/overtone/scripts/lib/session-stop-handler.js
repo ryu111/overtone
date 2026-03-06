@@ -188,6 +188,15 @@ function handleSessionStop(input, sessionId) {
         duration: calcDuration(currentState.createdAt),
       });
       playSound(SOUNDS.HERO);
+      // TTS fire-and-forget — 不阻擋主流程
+      try {
+        const ttsStrategy = require('./tts-strategy');
+        const ttsConfig = ttsStrategy.readTtsConfig();
+        if (ttsConfig.enabled && ttsStrategy.shouldSpeak('workflow:complete', ttsConfig.level)) {
+          const args = ttsStrategy.buildSpeakArgs('workflow:complete', {}, ttsConfig);
+          if (args) require('../os/tts').speakBackground(args.text, args.opts);
+        }
+      } catch { /* TTS 錯誤不影響主流程 */ }
     }
 
     // ── 佇列自動接續 ──
