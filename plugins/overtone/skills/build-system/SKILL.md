@@ -14,6 +14,7 @@ disable-model-invocation: true
 | Agent | 用途 |
 |-------|------|
 | build-error-resolver | 修復 TypeScript 型別錯誤時查詢修復模式；解決依賴衝突時查詢管理策略 |
+| developer | （依賴圖自動偵測新增） |
 
 ## 資源索引
 

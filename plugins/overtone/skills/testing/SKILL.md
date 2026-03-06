@@ -15,6 +15,7 @@ user-invocable: false
 |-------|------|
 | tester | BDD spec 撰寫（spec 模式）+ 測試執行（verify 模式）+ 測試策略 |
 | qa | 行為驗證的 BDD 標準 |
+| developer | （依賴圖自動偵測新增） |
 
 ## Reference 索引
 

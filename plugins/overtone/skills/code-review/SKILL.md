@@ -16,6 +16,7 @@ user-invocable: false
 | Agent | 用途 |
 |-------|------|
 | code-reviewer | PR 審查四維度檢查清單 + 回饋分級標準 |
+| developer | （依賴圖自動偵測新增） |
 
 ## 資源索引
 

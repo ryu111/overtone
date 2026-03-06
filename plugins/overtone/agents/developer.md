@@ -7,12 +7,20 @@ color: yellow
 maxTurns: 50
 memory: local
 skills:
-  - autonomous-control
+  - testing
+  - workflow-core
+  - security-kb
+  - dead-code
   - commit-convention
+  - code-review
   - wording
+  - debugging
+  - build-system
   - os-control
+  - autonomous-control
   - craft
   - claude-dev
+  - architecture
 ---
 
 # 💻 開發者
