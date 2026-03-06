@@ -1,18 +1,4 @@
 ---
-## 2026-03-04 | developer:DEV Context
-迭代 2/6 — 建立統一資料查詢 CLI `plugins/overtone/scripts/data.js`。
-
-本次迭代確認了 data.js 在迭代 1 已有完整實作（539 行，含依賴注入設計支援測試）。測試檔 `tests/unit/data-cli.test.js` 也已存在（813 行，39 個測試案例）。
-
-驗收結果：
-- `bun plugins/overtone/scripts/data.js --help` 顯示所有子命令
-- 各 query 子命令（timeline/failures/scores/observations/baselines）正確調用底層 API
-- gc --dry-run 正確調用 cleanupStaleGlobalDirs
-- 39 個測試全部通過
-- `bun test` 全部 3185 個測試通過
-Keywords: plugins, overtone, scripts, data, tests, unit, test, help, query, timeline
-
----
 ## 2026-03-04 | tester:TEST Findings
 - `bun test tests/unit/data-cli.test.js`：**39 pass / 0 fail**
 - `bun test`（全套）：**3185 pass / 0 fail / 7200 expect() calls**（135 files）
@@ -602,4 +588,11 @@ Keywords: spec, test, convergence, gate, scenario
 - 測試隔離完整：每個測試使用獨立 sessionId，afterAll 清理所有 session 目錄
 - Feature A（findActualStageKey 移入 updateStateAtomic）、Feature B（pre-task sanitize）、Feature C（退化場景）全部驗證通過
 Keywords: pass, fail, expect, calls, spec, scenario, state, test, paralleldone, stage
+
+---
+## 2026-03-06 | developer:DEV Context
+為 Overtone 兩個最高風險 handler 補強測試覆蓋：
+- `tests/unit/agent-stop-handler.test.js`：從 13 tests 擴充至 44 tests
+- `tests/unit/pre-task-handler.test.js`：從 28 tests 擴充至 54 tests
+Keywords: overtone, handler, tests, unit, agent, stop, test, task
 

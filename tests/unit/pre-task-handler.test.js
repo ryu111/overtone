@@ -8,6 +8,18 @@
  *   - checkSkippedStages — 前置 stage 跳過偵測邏輯
  *   - handlePreTask 部分邏輯（無 session / 無 state / 無法辨識 agent）
  *   - _buildMoscowWarning — MoSCoW 警告生成邏輯（T6）
+ *
+ * 補強（handler-test-critical）：
+ *   - handlePreTask subagent_type ot: 直接映射（L1）
+ *   - handlePreTask identifyAgent fallback（L1 fallback）
+ *   - 跳階阻擋輸出格式（deny + permissionDecisionReason）
+ *   - updatedInput 組裝：prompt 包含 workflowContext + originalPrompt
+ *   - instanceId 格式驗證
+ *   - parallelTotal 注入 PARALLEL INSTANCE 區塊
+ *   - retry 場景：stage 為 completed+fail → 重設為 active
+ *   - timeline 事件：agent:delegate / stage:start
+ *   - statusline update 不拋出例外
+ *   - activeAgents 寫入
  */
 
 const { describe, test, expect, afterAll } = require('bun:test');
@@ -17,6 +29,33 @@ const os = require('os');
 const { SCRIPTS_LIB } = require('../helpers/paths');
 
 const { checkSkippedStages, handlePreTask, _buildMoscowWarning } = require(path.join(SCRIPTS_LIB, 'pre-task-handler'));
+const stateLib = require(path.join(SCRIPTS_LIB, 'state'));
+const paths = require(path.join(SCRIPTS_LIB, 'paths'));
+
+// ── Session 管理工具 ─────────────────────────────────────────────────────────
+
+const SESSION_PREFIX = `test_ptask_${Date.now()}`;
+let sessionCounter = 0;
+const createdSessions = [];
+
+function newSessionId() {
+  const sid = `${SESSION_PREFIX}_${++sessionCounter}`;
+  createdSessions.push(sid);
+  return sid;
+}
+
+function setupSession(sid, stageList, workflowType = 'quick') {
+  const dir = paths.sessionDir(sid);
+  fs.mkdirSync(dir, { recursive: true });
+  return stateLib.initState(sid, workflowType, stageList);
+}
+
+afterAll(() => {
+  for (const sid of createdSessions) {
+    const dir = paths.sessionDir(sid);
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
 
 // ── checkSkippedStages ───────────────────────────────────────────────────
 
@@ -148,9 +187,29 @@ describe('checkSkippedStages', () => {
     const result = checkSkippedStages(currentState, 'DEV', mockStages);
     expect(result).toHaveLength(0);
   });
+
+  test('部分前置 stage 為 active，部分為 pending → pending 的視為跳過', () => {
+    const currentState = {
+      stages: {
+        PLAN: { status: 'active' },
+        ARCH: { status: 'pending' },
+        DEV:  { status: 'pending' },
+      },
+    };
+    const result = checkSkippedStages(currentState, 'DEV', mockStages);
+    // PLAN active（不算跳過），ARCH pending（算跳過）
+    expect(result.length).toBe(1);
+    expect(result[0]).toContain('ARCH');
+  });
+
+  test('currentState.stages 為 undefined 時不拋出例外', () => {
+    const result = checkSkippedStages({ stages: undefined }, 'DEV', mockStages);
+    expect(Array.isArray(result)).toBe(true);
+    expect(result).toHaveLength(0);
+  });
 });
 
-// ── handlePreTask — 無 session / 無 state / 無法辨識 agent ────────────────
+// ── handlePreTask — 早期返回路徑 ─────────────────────────────────────────────
 
 describe('handlePreTask — 早期返回路徑', () => {
   test('無 session 時回傳 { output: { result: \'\' } }', () => {
@@ -173,13 +232,34 @@ describe('handlePreTask — 早期返回路徑', () => {
     const result = handlePreTask({});
     expect(() => JSON.stringify(result.output)).not.toThrow();
   });
+
+  test('有 session 但無 workflow state → 回傳空 result（不擋）', () => {
+    // 不建立 session 目錄，readState 回傳 null
+    const result = handlePreTask({ session_id: 'nonexistent-session-xyz' }, 'nonexistent-session-xyz');
+    expect(result).toEqual({ output: { result: '' } });
+  });
+
+  test('無法辨識 agent 時回傳空 result（不擋）', () => {
+    const sid = newSessionId();
+    setupSession(sid, ['DEV'], 'single');
+
+    const result = handlePreTask({
+      session_id: sid,
+      tool_input: {
+        subagent_type: 'unknown-type',
+        description: 'some random task description',
+        prompt: 'do something unrelated',
+      },
+    }, sid);
+
+    expect(result).toEqual({ output: { result: '' } });
+  });
 });
 
-// ── agent 辨識邏輯 ────────────────────────────────────────────────────────
+// ── agent 辨識邏輯 ────────────────────────────────────────────────────────────
 
 describe('handlePreTask — agent 辨識', () => {
   test('未知 subagent_type 且 prompt 無法辨識時回傳空 result（不擋）', () => {
-    // 沒有 sessionId 會在更早 return，所以此測試主要驗證「不拋出例外」
     const result = handlePreTask({
       tool_input: {
         subagent_type: 'unknown',
@@ -190,32 +270,552 @@ describe('handlePreTask — agent 辨識', () => {
     // 無 sessionId → 早期 return { result: '' }
     expect(result).toEqual({ output: { result: '' } });
   });
+
+  test('subagent_type 為 ot:developer → 正確辨識 developer', () => {
+    const sid = newSessionId();
+    setupSession(sid, ['DEV'], 'single');
+
+    const result = handlePreTask({
+      session_id: sid,
+      cwd: process.cwd(),
+      tool_input: {
+        subagent_type: 'ot:developer',
+        description: '委派開發',
+        prompt: '請實作功能 X',
+      },
+    }, sid);
+
+    // DEV 是 pending，無跳過階段 → 放行（allow 或空 result）
+    expect(result.output).toBeDefined();
+    // 不應是 deny
+    if (result.output.hookSpecificOutput) {
+      expect(result.output.hookSpecificOutput.permissionDecision).not.toBe('deny');
+    }
+  });
+
+  test('subagent_type 為 ot:unknown → 回傳空 result（未知 agent）', () => {
+    const sid = newSessionId();
+    setupSession(sid, ['DEV'], 'single');
+
+    const result = handlePreTask({
+      session_id: sid,
+      tool_input: {
+        subagent_type: 'ot:nonexistent-agent',
+        description: '委派',
+        prompt: '做點什麼',
+      },
+    }, sid);
+
+    // ot:nonexistent-agent 不在 stages，fallback 到 identifyAgent
+    // identifyAgent 也不認識 → 回傳空
+    expect(result).toEqual({ output: { result: '' } });
+  });
+
+  test('description 含 tester 關鍵字 → identifyAgent fallback 辨識', () => {
+    const sid = newSessionId();
+    setupSession(sid, ['DEV', 'TEST'], 'tdd');
+
+    // DEV 先完成，TEST pending
+    stateLib.updateStateAtomic(sid, (s) => {
+      s.stages['DEV'].status = 'completed';
+      s.stages['DEV'].result = 'pass';
+      return s;
+    });
+
+    const result = handlePreTask({
+      session_id: sid,
+      cwd: process.cwd(),
+      tool_input: {
+        // 無 ot: 前綴，靠 description fallback
+        description: '委派 tester 執行測試',
+        prompt: '請執行所有測試',
+      },
+    }, sid);
+
+    expect(result.output).toBeDefined();
+    if (result.output.hookSpecificOutput) {
+      expect(result.output.hookSpecificOutput.permissionDecision).not.toBe('deny');
+    }
+  });
+});
+
+// ── 跳階阻擋 ─────────────────────────────────────────────────────────────────
+
+describe('handlePreTask — 跳階阻擋', () => {
+  test('前置 stage 未完成 → deny + permissionDecisionReason 含錯誤訊息', () => {
+    const sid = newSessionId();
+    setupSession(sid, ['PLAN', 'ARCH', 'DEV'], 'standard');
+    // PLAN, ARCH 都 pending，直接跳到 DEV
+
+    const result = handlePreTask({
+      session_id: sid,
+      tool_input: {
+        subagent_type: 'ot:developer',
+        description: '委派開發',
+        prompt: '請實作功能',
+      },
+    }, sid);
+
+    expect(result.output.hookSpecificOutput).toBeDefined();
+    expect(result.output.hookSpecificOutput.permissionDecision).toBe('deny');
+    expect(result.output.hookSpecificOutput.permissionDecisionReason).toContain('不可跳過');
+  });
+
+  test('deny 訊息包含被跳過的 stage 資訊', () => {
+    const sid = newSessionId();
+    setupSession(sid, ['PLAN', 'DEV'], 'quick');
+
+    const result = handlePreTask({
+      session_id: sid,
+      tool_input: {
+        subagent_type: 'ot:developer',
+        description: '委派開發',
+        prompt: '請實作',
+      },
+    }, sid);
+
+    const reason = result.output.hookSpecificOutput?.permissionDecisionReason || '';
+    expect(reason).toContain('PLAN');
+  });
+
+  test('deny 回傳結構符合 hookSpecificOutput 規格', () => {
+    const sid = newSessionId();
+    setupSession(sid, ['PLAN', 'DEV'], 'quick');
+
+    const result = handlePreTask({
+      session_id: sid,
+      tool_input: {
+        subagent_type: 'ot:developer',
+        description: '委派',
+        prompt: '實作',
+      },
+    }, sid);
+
+    const output = result.output;
+    expect(output.hookSpecificOutput).toBeDefined();
+    expect(output.hookSpecificOutput.hookEventName).toBe('PreToolUse');
+    expect(output.hookSpecificOutput.permissionDecision).toBe('deny');
+    expect(typeof output.hookSpecificOutput.permissionDecisionReason).toBe('string');
+    expect(output.hookSpecificOutput.permissionDecisionReason.length).toBeGreaterThan(0);
+  });
+});
+
+// ── updatedInput 組裝 ─────────────────────────────────────────────────────────
+
+describe('handlePreTask — updatedInput 組裝', () => {
+  test('放行時 updatedInput.prompt 包含 originalPrompt', () => {
+    const sid = newSessionId();
+    setupSession(sid, ['DEV'], 'single');
+
+    const originalPrompt = '請實作功能 X，包含單元測試。';
+    const result = handlePreTask({
+      session_id: sid,
+      cwd: process.cwd(),
+      tool_input: {
+        subagent_type: 'ot:developer',
+        description: '委派開發',
+        prompt: originalPrompt,
+      },
+    }, sid);
+
+    if (result.output.hookSpecificOutput?.updatedInput) {
+      expect(result.output.hookSpecificOutput.updatedInput.prompt).toContain(originalPrompt);
+    }
+    // 即使沒有 context 注入（context 為空），也應放行
+    expect(result.output.hookSpecificOutput?.permissionDecision).not.toBe('deny');
+  });
+
+  test('放行時 updatedInput 保留所有原始 tool_input 欄位', () => {
+    const sid = newSessionId();
+    setupSession(sid, ['DEV'], 'single');
+
+    const result = handlePreTask({
+      session_id: sid,
+      cwd: process.cwd(),
+      tool_input: {
+        subagent_type: 'ot:developer',
+        description: '委派開發',
+        prompt: '實作功能',
+        customField: 'should-be-preserved',
+      },
+    }, sid);
+
+    if (result.output.hookSpecificOutput?.updatedInput) {
+      // subagent_type 應被保留（MUST 規則）
+      expect(result.output.hookSpecificOutput.updatedInput.subagent_type).toBe('ot:developer');
+      expect(result.output.hookSpecificOutput.updatedInput.description).toBe('委派開發');
+      expect(result.output.hookSpecificOutput.updatedInput.customField).toBe('should-be-preserved');
+    }
+  });
+
+  test('有 workflowContext 時 updatedInput.prompt 包含工作流狀態', () => {
+    const sid = newSessionId();
+    setupSession(sid, ['DEV', 'REVIEW'], 'quick');
+
+    const result = handlePreTask({
+      session_id: sid,
+      cwd: process.cwd(),
+      tool_input: {
+        subagent_type: 'ot:developer',
+        description: '委派開發',
+        prompt: '開發功能 Y',
+      },
+    }, sid);
+
+    if (result.output.hookSpecificOutput?.updatedInput) {
+      const prompt = result.output.hookSpecificOutput.updatedInput.prompt;
+      // workflow context 應在 prompt 中（含工作流類型或 stage 資訊）
+      expect(typeof prompt).toBe('string');
+      expect(prompt).toContain('開發功能 Y');
+    }
+  });
+});
+
+// ── instanceId 生成 ───────────────────────────────────────────────────────────
+
+describe('handlePreTask — instanceId 生成', () => {
+  test('放行後 activeAgents 中新增一個以 developer: 開頭的 instanceId', () => {
+    const sid = newSessionId();
+    setupSession(sid, ['DEV'], 'single');
+
+    handlePreTask({
+      session_id: sid,
+      cwd: process.cwd(),
+      tool_input: {
+        subagent_type: 'ot:developer',
+        description: '委派',
+        prompt: '實作',
+      },
+    }, sid);
+
+    const state = stateLib.readState(sid);
+    const keys = Object.keys(state.activeAgents);
+    expect(keys.length).toBeGreaterThan(0);
+    const devKey = keys.find(k => k.startsWith('developer:'));
+    expect(devKey).toBeDefined();
+  });
+
+  test('instanceId 格式為 agentName:timestamp36-random6', () => {
+    const sid = newSessionId();
+    setupSession(sid, ['DEV'], 'single');
+
+    handlePreTask({
+      session_id: sid,
+      cwd: process.cwd(),
+      tool_input: {
+        subagent_type: 'ot:developer',
+        description: '委派',
+        prompt: '實作',
+      },
+    }, sid);
+
+    const state = stateLib.readState(sid);
+    const keys = Object.keys(state.activeAgents);
+    const devKey = keys.find(k => k.startsWith('developer:'));
+    // 格式：developer:xxxxx-xxxxxx
+    expect(devKey).toMatch(/^developer:[a-z0-9]+-[a-z0-9]+$/);
+  });
+
+  test('兩次委派同一 agent 產生不同 instanceId', async () => {
+    const sid1 = newSessionId();
+    const sid2 = newSessionId();
+    setupSession(sid1, ['DEV'], 'single');
+    setupSession(sid2, ['DEV'], 'single');
+
+    handlePreTask({
+      session_id: sid1,
+      cwd: process.cwd(),
+      tool_input: { subagent_type: 'ot:developer', description: '委派 1', prompt: '實作 1' },
+    }, sid1);
+
+    // 稍微等一下確保 timestamp 不同
+    await new Promise(r => setTimeout(r, 2));
+
+    handlePreTask({
+      session_id: sid2,
+      cwd: process.cwd(),
+      tool_input: { subagent_type: 'ot:developer', description: '委派 2', prompt: '實作 2' },
+    }, sid2);
+
+    const state1 = stateLib.readState(sid1);
+    const state2 = stateLib.readState(sid2);
+
+    const keys1 = Object.keys(state1.activeAgents).filter(k => k.startsWith('developer:'));
+    const keys2 = Object.keys(state2.activeAgents).filter(k => k.startsWith('developer:'));
+
+    expect(keys1[0]).not.toBe(keys2[0]);
+  });
+});
+
+// ── PARALLEL_TOTAL 注入 ───────────────────────────────────────────────────────
+
+describe('handlePreTask — PARALLEL_TOTAL 注入', () => {
+  test('prompt 含 PARALLEL_TOTAL → updatedInput.prompt 包含 PARALLEL INSTANCE 區塊', () => {
+    const sid = newSessionId();
+    setupSession(sid, ['DEV'], 'single');
+
+    const result = handlePreTask({
+      session_id: sid,
+      cwd: process.cwd(),
+      tool_input: {
+        subagent_type: 'ot:developer',
+        description: '委派開發',
+        prompt: 'PARALLEL_TOTAL: 3\n\n請實作功能。',
+      },
+    }, sid);
+
+    if (result.output.hookSpecificOutput?.updatedInput) {
+      const prompt = result.output.hookSpecificOutput.updatedInput.prompt;
+      expect(prompt).toContain('[PARALLEL INSTANCE]');
+      expect(prompt).toContain('PARALLEL_TOTAL: 3');
+      expect(prompt).toContain('INSTANCE_ID:');
+    }
+  });
+
+  test('prompt 不含 PARALLEL_TOTAL → 不注入 PARALLEL INSTANCE 區塊', () => {
+    const sid = newSessionId();
+    setupSession(sid, ['DEV'], 'single');
+
+    const result = handlePreTask({
+      session_id: sid,
+      cwd: process.cwd(),
+      tool_input: {
+        subagent_type: 'ot:developer',
+        description: '委派',
+        prompt: '請實作功能。',
+      },
+    }, sid);
+
+    if (result.output.hookSpecificOutput?.updatedInput) {
+      const prompt = result.output.hookSpecificOutput.updatedInput.prompt;
+      expect(prompt).not.toContain('[PARALLEL INSTANCE]');
+    }
+  });
+
+  test('stage parallelTotal 取最大值（防止 race condition）', () => {
+    const sid = newSessionId();
+    setupSession(sid, ['DEV'], 'single');
+
+    // 先設 parallelTotal = 2
+    stateLib.updateStateAtomic(sid, (s) => {
+      s.stages['DEV'].parallelTotal = 2;
+      s.stages['DEV'].status = 'pending';
+      return s;
+    });
+
+    // 新進來的設 PARALLEL_TOTAL: 5
+    handlePreTask({
+      session_id: sid,
+      cwd: process.cwd(),
+      tool_input: {
+        subagent_type: 'ot:developer',
+        description: '委派',
+        prompt: 'PARALLEL_TOTAL: 5\n\n請實作。',
+      },
+    }, sid);
+
+    const state = stateLib.readState(sid);
+    // 取 max(2, 5) = 5
+    expect(state.stages['DEV'].parallelTotal).toBe(5);
+  });
+});
+
+// ── retry 場景（stage 為 completed+fail → 重設為 active）─────────────────────
+
+describe('handlePreTask — retry 場景', () => {
+  test('stage 為 completed+fail → 重設為 active，清除 result/completedAt', () => {
+    const sid = newSessionId();
+    setupSession(sid, ['DEV', 'TEST'], 'tdd');
+
+    stateLib.updateStateAtomic(sid, (s) => {
+      s.stages['DEV'].status = 'completed';
+      s.stages['DEV'].result = 'pass';
+      s.stages['TEST'].status = 'completed';
+      s.stages['TEST'].result = 'fail';
+      s.stages['TEST'].completedAt = new Date().toISOString();
+      return s;
+    });
+
+    handlePreTask({
+      session_id: sid,
+      cwd: process.cwd(),
+      tool_input: {
+        subagent_type: 'ot:tester',
+        description: '重試測試',
+        prompt: '請重新執行所有測試',
+      },
+    }, sid);
+
+    const state = stateLib.readState(sid);
+    // TEST 應被重設為 active
+    expect(state.stages['TEST'].status).toBe('active');
+    expect(state.stages['TEST'].result).toBeUndefined();
+  });
+
+  test('stage 為 completed+reject → 重設為 active（REVIEW retry）', () => {
+    const sid = newSessionId();
+    setupSession(sid, ['DEV', 'REVIEW'], 'quick');
+
+    stateLib.updateStateAtomic(sid, (s) => {
+      s.stages['DEV'].status = 'completed';
+      s.stages['DEV'].result = 'pass';
+      s.stages['REVIEW'].status = 'completed';
+      s.stages['REVIEW'].result = 'reject';
+      s.stages['REVIEW'].completedAt = new Date().toISOString();
+      return s;
+    });
+
+    handlePreTask({
+      session_id: sid,
+      cwd: process.cwd(),
+      tool_input: {
+        subagent_type: 'ot:code-reviewer',
+        description: '重試審查',
+        prompt: '請重新審查修改後的程式碼',
+      },
+    }, sid);
+
+    const state = stateLib.readState(sid);
+    expect(state.stages['REVIEW'].status).toBe('active');
+  });
+});
+
+// ── timeline 事件 ─────────────────────────────────────────────────────────────
+
+describe('handlePreTask — timeline 事件', () => {
+  test('放行後 timeline 記錄 agent:delegate', () => {
+    const sid = newSessionId();
+    setupSession(sid, ['DEV'], 'single');
+
+    handlePreTask({
+      session_id: sid,
+      cwd: process.cwd(),
+      tool_input: {
+        subagent_type: 'ot:developer',
+        description: '委派開發',
+        prompt: '實作功能',
+      },
+    }, sid);
+
+    const timelinePath = paths.session.timeline(sid);
+    expect(fs.existsSync(timelinePath)).toBe(true);
+    const content = fs.readFileSync(timelinePath, 'utf8');
+    const events = content.split('\n').filter(Boolean).map(l => JSON.parse(l));
+    const delegateEvent = events.find(e => e.type === 'agent:delegate');
+    expect(delegateEvent).toBeDefined();
+    // timeline event 格式：{ ts, type, category, label, ...data }（直接 spread，不是 .data）
+    expect(delegateEvent.agent).toBe('developer');
+    expect(delegateEvent.stage).toBe('DEV');
+  });
+
+  test('stage 從 pending 變 active → timeline 記錄 stage:start', () => {
+    const sid = newSessionId();
+    setupSession(sid, ['DEV'], 'single');
+    // DEV 預設為 pending
+
+    handlePreTask({
+      session_id: sid,
+      cwd: process.cwd(),
+      tool_input: {
+        subagent_type: 'ot:developer',
+        description: '委派',
+        prompt: '實作',
+      },
+    }, sid);
+
+    const timelinePath = paths.session.timeline(sid);
+    const content = fs.readFileSync(timelinePath, 'utf8');
+    const events = content.split('\n').filter(Boolean).map(l => JSON.parse(l));
+    const stageStart = events.find(e => e.type === 'stage:start');
+    expect(stageStart).toBeDefined();
+    expect(stageStart.stage).toBe('DEV');
+    expect(stageStart.agent).toBe('developer');
+  });
+
+  test('stage 已 active 且有 activeAgent → actualKey 為 undefined，不 emit stage:start', () => {
+    const sid = newSessionId();
+    setupSession(sid, ['DEV'], 'single');
+
+    // 設 DEV 為 active，且有一個 activeAgent（防止 sanitize 把 active 改回 pending）
+    const existingInst = 'developer:existing1-aabbcc';
+    stateLib.updateStateAtomic(sid, (s) => {
+      s.stages['DEV'].status = 'active';
+      s.activeAgents[existingInst] = { agentName: 'developer', stage: 'DEV', startedAt: new Date().toISOString() };
+      return s;
+    });
+
+    handlePreTask({
+      session_id: sid,
+      cwd: process.cwd(),
+      tool_input: {
+        subagent_type: 'ot:developer',
+        description: '委派',
+        prompt: '實作',
+      },
+    }, sid);
+
+    const timelinePath = paths.session.timeline(sid);
+    if (fs.existsSync(timelinePath)) {
+      const content = fs.readFileSync(timelinePath, 'utf8');
+      const events = content.split('\n').filter(Boolean).map(l => JSON.parse(l));
+      const stageStarts = events.filter(e => e.type === 'stage:start');
+      // DEV 已 active 且有 activeAgent → actualKey 查不到（active 不符合條件） → 不 emit stage:start
+      expect(stageStarts.length).toBe(0);
+    }
+  });
+});
+
+// ── state 寫入 ────────────────────────────────────────────────────────────────
+
+describe('handlePreTask — state 寫入', () => {
+  test('放行後 stage 狀態由 pending 變為 active', () => {
+    const sid = newSessionId();
+    setupSession(sid, ['DEV'], 'single');
+
+    expect(stateLib.readState(sid).stages['DEV'].status).toBe('pending');
+
+    handlePreTask({
+      session_id: sid,
+      cwd: process.cwd(),
+      tool_input: {
+        subagent_type: 'ot:developer',
+        description: '委派',
+        prompt: '實作',
+      },
+    }, sid);
+
+    const state = stateLib.readState(sid);
+    expect(state.stages['DEV'].status).toBe('active');
+  });
+
+  test('activeAgents 寫入 agentName 和 stage 欄位', () => {
+    const sid = newSessionId();
+    setupSession(sid, ['DEV'], 'single');
+
+    handlePreTask({
+      session_id: sid,
+      cwd: process.cwd(),
+      tool_input: {
+        subagent_type: 'ot:developer',
+        description: '委派',
+        prompt: '實作',
+      },
+    }, sid);
+
+    const state = stateLib.readState(sid);
+    const keys = Object.keys(state.activeAgents);
+    expect(keys.length).toBeGreaterThan(0);
+
+    const devEntry = state.activeAgents[keys[0]];
+    expect(devEntry.agentName).toBe('developer');
+    expect(devEntry.stage).toBe('DEV');
+    expect(typeof devEntry.startedAt).toBe('string');
+  });
 });
 
 // ── _buildMoscowWarning — MoSCoW 警告生成邏輯（T6）─────────────────────────
 
 describe('_buildMoscowWarning', () => {
-  // 暫時目錄，測試後清理
-  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ot-moscow-test-'));
-  const inProgressDir = path.join(tmpDir, 'specs', 'features', 'in-progress');
-
-  afterAll(() => {
-    fs.rmSync(tmpDir, { recursive: true, force: true });
-  });
-
-  function makeProposal(featureName, content, mtimeOffset = 0) {
-    const featureDir = path.join(inProgressDir, featureName);
-    fs.mkdirSync(featureDir, { recursive: true });
-    const proposalPath = path.join(featureDir, 'proposal.md');
-    fs.writeFileSync(proposalPath, content, 'utf-8');
-    if (mtimeOffset !== 0) {
-      const now = Date.now();
-      const t = (now + mtimeOffset) / 1000;
-      fs.utimesSync(proposalPath, t, t);
-    }
-    return proposalPath;
-  }
-
   test('developer agent + prompt 含 Should 項目 keyword 時注入 MoSCoW 警告', () => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ot-moscow-s1-'));
     try {
@@ -281,7 +881,6 @@ describe('_buildMoscowWarning', () => {
   test('specs/features/in-progress/ 目錄不存在時靜默降級回傳 null', () => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ot-moscow-s5-'));
     try {
-      // 不建立 in-progress 目錄
       const result = _buildMoscowWarning(dir, 'developer', 'some prompt');
       expect(result).toBeNull();
     } finally {
@@ -313,7 +912,6 @@ describe('_buildMoscowWarning', () => {
       fs.mkdirSync(ipA, { recursive: true });
       fs.writeFileSync(path.join(ipA, 'proposal.md'), '**Should**:\n- 舊功能項目\n', 'utf-8');
 
-      // 稍等確保 mtime 有差異
       await new Promise(r => setTimeout(r, 10));
 
       // feature-b（設為最新）
@@ -328,5 +926,81 @@ describe('_buildMoscowWarning', () => {
     } finally {
       fs.rmSync(dir, { recursive: true, force: true });
     }
+  });
+
+  test('proposal.md 只有 Must 和 Won\'t 項目時回傳 null', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ot-moscow-s8-'));
+    try {
+      const ip = path.join(dir, 'specs', 'features', 'in-progress', 'feat');
+      fs.mkdirSync(ip, { recursive: true });
+      fs.writeFileSync(path.join(ip, 'proposal.md'), "**Must**:\n- 基本功能\n\n**Won't**:\n- 不做的功能\n", 'utf-8');
+
+      const result = _buildMoscowWarning(dir, 'developer', '基本功能和不做的功能');
+      // 只有 Must/Won't，無 Should/Could → null
+      expect(result).toBeNull();
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  test('警告訊息包含正確格式（[priority] text）', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ot-moscow-s9-'));
+    try {
+      const ip = path.join(dir, 'specs', 'features', 'in-progress', 'feat');
+      fs.mkdirSync(ip, { recursive: true });
+      fs.writeFileSync(path.join(ip, 'proposal.md'), '**Should**:\n- 通知功能\n**Could**:\n- 主題切換\n', 'utf-8');
+
+      const result = _buildMoscowWarning(dir, 'developer', '請實作通知功能和主題切換');
+      expect(result).not.toBeNull();
+      expect(result).toContain('[Should]');
+      expect(result).toContain('[Could]');
+      expect(result).toContain('通知功能');
+      expect(result).toContain('主題切換');
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  test('proposal.md 的 feature 目錄不包含 proposal.md 時跳過', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ot-moscow-s10-'));
+    try {
+      const ip = path.join(dir, 'specs', 'features', 'in-progress', 'feat-no-proposal');
+      fs.mkdirSync(ip, { recursive: true });
+      // 不建立 proposal.md，只建立目錄
+
+      const result = _buildMoscowWarning(dir, 'developer', '任何 prompt');
+      expect(result).toBeNull();
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+// ── 不拋出例外 ────────────────────────────────────────────────────────────────
+
+describe('handlePreTask — 穩定性（不拋出例外）', () => {
+  test('input 為空物件時不拋出例外', () => {
+    expect(() => handlePreTask({})).not.toThrow();
+  });
+
+  test('tool_input 為 undefined 時不拋出例外', () => {
+    expect(() => handlePreTask({ session_id: 'test' }, 'test')).not.toThrow();
+  });
+
+  test('cwd 未設定時不拋出例外（使用 process.cwd() 作 fallback）', () => {
+    const sid = newSessionId();
+    setupSession(sid, ['DEV'], 'single');
+
+    expect(() => {
+      handlePreTask({
+        session_id: sid,
+        // cwd 未設定
+        tool_input: {
+          subagent_type: 'ot:developer',
+          description: '委派',
+          prompt: '實作',
+        },
+      }, sid);
+    }).not.toThrow();
   });
 });

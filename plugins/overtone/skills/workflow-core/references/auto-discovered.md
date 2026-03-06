@@ -1,17 +1,5 @@
 ---
 ## 2026-03-05 | developer:DEV Context
-實作了 PM agent 的跨 session 記憶能力。在 `interview.js` 新增兩個 export 函式，讓 PM 在開始新訪談前可以查詢並參考過去的訪談記錄。
-Keywords: agent, session, interview, export
-
----
-## 2026-03-05 | code-reviewer:REVIEW Findings
-無 Critical 或 Major 等級問題。
-
-[n] `extractInsights` 的 JSDoc `@param` 描述的型別是 `queryPastInterviews` 回傳的 sessions 陣列（不含 `answers`），但實際函式需要含 `answers` 欄位的完整 session 物件（來自 `loadSession`）。JSDoc 已在描述中補充「需包含完整 answers，來自 loadSession」，但型別定義與實際需求不一致。不阻擋合併。
-Keywords: critical, major, extractinsights, jsdoc, param, querypastinterviews, sessions, answers, session, loadsession
-
----
-## 2026-03-05 | developer:DEV Context
 完成 `skill-router-tune`（opt-7）：調優 `skill-router.js` 路由演算法，提升 agent 知識路由的精準度，減少歧義詞造成的 false positive。
 Keywords: skill, router, tune, agent, false, positive
 
@@ -608,4 +596,26 @@ Keywords: retro, threshold, retrospective, agent, issues, standard, full, secure
 ## 2026-03-06 | doc-updater:DOCS Context
 此次 Handoff 涉及在 `plugins/overtone/agents/retrospective.md` 中加入六維度分數門檻機制：任何維度評分 <3/5 時自動觸發 ISSUES flag（僅適用 standard/full/secure workflow，quick workflow 除外）。
 Keywords: handoff, plugins, overtone, agents, retrospective, issues, flag, standard, full, secure
+
+---
+## 2026-03-06 | developer:DEV Findings
+**實作過程中的關鍵決策：**
+
+1. **timeline 事件格式**：timeline.emit 使用 `{ ts, type, category, label, ...data }` 直接 spread，不是 `{ data: {...} }`。現有測試中用 `.data.agent` 的寫法是錯的，補強測試全部改為 `.agent`。
+
+2. **enforceInvariants 規則 4 與並行收斂門測試的交互**：規則 4 會將 active stage（無對應 activeAgents）自動改回 pending，所以測試並行場景時必須設置至少一個 activeAgents entry 才能維持 active 狀態。
+
+3. **mid-session sanitize() 行為**：pre-task-handler 在每次委派前呼叫 `state.sanitize()`，會將 active stage（無 activeAgents）改回 pending，導致 `actualKey` 又能找到 pending stage 並 emit `stage:start`。因此「stage 已 active 不重複 emit stage:start」的測試需設置 activeAgents 才有效。
+
+4. **`_parseQueueTable` 的 break 行為**：遇到非表格行即停止掃描，不繼續尋找後續佇列區塊。這是設計意圖（取第一個佇列），測試預期改為符合此行為。
+
+**覆蓋範圍完整性：**
+- agent-stop-handler：邊界情況（7）、pass/fail/reject verdict（9）、activeAgents 清理（3）、並行收斂門（3）、timeline 事件（3）、tasks.md checkbox（3）、currentStage 推進（1）、PM queue 寫入（1）、RETRO issues（2）、retry 計數（2）、_parseQueueTable（7）
+- pre-task-handler：checkSkippedStages（10）、早期返回（5）、agent 辨識（4）、跳階阻擋（3）、updatedInput 組裝（3）、instanceId 生成（3）、PARALLEL_TOTAL 注入（3）、retry 場景（2）、timeline 事件（3）、state 寫入（2）、MoSCoW 警告（10）、穩定性（3）
+Keywords: timeline, emit, type, category, label, data, spread, agent, enforceinvariants, active
+
+---
+## 2026-03-06 | doc-updater:DOCS Context
+掃描工作流最後的 DOCS 階段變更。發現本次改動為純測試補強（agent-stop-handler.test.js / pre-task-handler.test.js），未涉及任何設計文件、規格、API、hook、skill 等核心模組。
+Keywords: docs, agent, stop, handler, test, task, hook, skill
 
