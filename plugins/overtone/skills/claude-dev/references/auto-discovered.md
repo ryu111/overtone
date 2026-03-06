@@ -513,3 +513,49 @@ Keywords: stop, message, builder, pass, postdev, retro, issues, docs, parallel, 
 - `docs/reference/` 目錄已存在（含 claude-code-platform.md 和 testing-guide.md），性質一致
 Keywords: hooks, json, taskcompleted, timeout, hook, test, parallel, statusline, docs, reference
 
+---
+## 2026-03-06 | doc-updater:DOCS Findings
+**已驗證的文檔狀況**：
+
+1. **CLAUDE.md**
+   - health-check 計數：✅ 已正確更新為 21 項
+   - checkCompactFrequency：✅ 已在清單中（列表位置：第 21 項）
+   - 最後更新：與程式碼一致
+
+2. **plugin.json**
+   - 版本號：✅ 0.28.79（與 docs/status.md 一致）
+
+3. **testing/SKILL.md**
+   - Reference 索引：✅ 完整包含 10 個條目
+   - 新增項目：✅ concurrency-testing-guide（#9）、task-splitting-guide（#10）
+   - 按需讀取段落：✅ 已更新
+
+4. **workflow-core/references/parallel-groups.md**
+   - 存在：✅ 完整 110 行
+   - 四個並行群組：✅ quality、verify、secure-quality、postdev 均已記錄
+   - postdev 群組規則：✅ 完整包含 RETRO + DOCS 協調邏輯
+
+5. **workflow-core/references/filesystem-concurrency.md**
+   - 存在：✅ 完整 213 行
+   - G2 狀態：✅ 標記為「已修復（v0.28.68）」
+   - 監控和緩解措施：✅ 完整記錄
+
+6. **docs/status.md**
+   - 版本：✅ 0.28.79
+   - 最後更新日期：✅ 2026-03-07
+   - Health-check 計數：✅ 21 項（在說明中提及）
+   - Timeline Events：✅ 31 個
+   - 近期變更：✅ 最新 3 筆已同步
+Keywords: claude, health, check, checkcompactfrequency, plugin, json, docs, status, testing, skill
+
+---
+## 2026-03-06 | doc-updater:DOCS Context
+檢查清單共 6 項，驗證以下文檔同步狀況：
+1. CLAUDE.md 中 health-check 計數
+2. CLAUDE.md 中是否列出 checkCompactFrequency
+3. plugin.json 版本號
+4. testing SKILL.md 的 reference 索引
+5. parallel-groups.md 文檔狀況
+6. filesystem-concurrency.md 中 G2 修復標記
+Keywords: claude, health, check, checkcompactfrequency, plugin, json, testing, skill, reference, parallel
+

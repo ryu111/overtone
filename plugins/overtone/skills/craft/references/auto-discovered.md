@@ -14,3 +14,11 @@ Keywords: config, validator, loop, health, check, checktestfilealignment
 
 5. **並行競爭 3 fail**：bun scripts/test-parallel.js 仍有 3 個 fail，確認是原有的並行競爭條件問題（stash 前也有 23 fail），非本次引入
 Keywords: registry, edit, guard, date, null, gettime, startedat, unix, epoch, agems
+---
+## 2026-03-06 | retrospective:RETRO Findings
+**回顧摘要**：
+
+8 個迭代的並行能力強化整體品質良好。G2 孤兒 TTL 偵測（17 個 scenario 全覆蓋）、CAS 壓力測試、compact 頻率偵測（health-check #21）、suggestOrder 失敗率二次排序、postdev 並行群組、docs 閉環均已正確實作並有對應測試。核心邏輯架構一致，模組化設計合理。
+
+然而發現 **1 個 regression 測試失敗** 和 **1 個文件數字過時**：
+Keywords: scenario, compact, health, check, suggestorder, postdev, docs, regression
