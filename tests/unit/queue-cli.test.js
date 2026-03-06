@@ -341,3 +341,64 @@ describe('Discovery 模式守衛', () => {
     expect(logs[0]).toContain('已建立佇列');
   });
 });
+
+// ────────────────────────────────────────────────────────────────────────────
+// Feature C: queue.js CLI suggest-order --smart flag
+// ────────────────────────────────────────────────────────────────────────────
+
+describe('suggest-order --smart flag', () => {
+  test('C-1 不加 --smart 時不顯示智慧排序說明文字', () => {
+    executionQueue.writeQueue(TEST_PROJECT, [
+      { name: 'full-task', workflow: 'full' },
+      { name: 'quick-task', workflow: 'quick' },
+    ], 'test');
+
+    const { logs } = runCli(['suggest-order', '--project-root', TEST_PROJECT]);
+    const output = logs.join('\n');
+    expect(output).toContain('建議排序');
+    expect(output).not.toContain('智慧排序模式');
+  });
+
+  test('C-2 加 --smart 時輸出包含智慧排序模式說明', () => {
+    executionQueue.writeQueue(TEST_PROJECT, [
+      { name: 'full-task', workflow: 'full' },
+      { name: 'quick-task', workflow: 'quick' },
+    ], 'test');
+
+    const { logs } = runCli(['suggest-order', '--smart', '--project-root', TEST_PROJECT]);
+    const output = logs.join('\n');
+    expect(output).toContain('智慧排序模式（依複雜度 + 歷史失敗率）');
+    expect(output).toContain('建議排序');
+  });
+
+  test('C-3 --smart 不被誤判為 positional 參數（不產生 Unknown command）', () => {
+    executionQueue.writeQueue(TEST_PROJECT, [
+      { name: 'task-A', workflow: 'standard' },
+      { name: 'task-B', workflow: 'quick' },
+    ], 'test');
+
+    const { errors, exitCode } = runCli(['suggest-order', '--smart', '--project-root', TEST_PROJECT]);
+    expect(errors).toHaveLength(0);
+    expect(exitCode).not.toBe(1);
+  });
+
+  test('C-4 --smart 與 --apply 可同時使用，排序套用後佇列順序改變', () => {
+    executionQueue.writeQueue(TEST_PROJECT, [
+      { name: 'full-task', workflow: 'full' },
+      { name: 'quick-task', workflow: 'quick' },
+    ], 'test');
+
+    const { logs, errors } = runCli([
+      'suggest-order', '--smart', '--apply', '--project-root', TEST_PROJECT,
+    ]);
+    const output = logs.join('\n');
+    expect(errors).toHaveLength(0);
+    expect(output).toContain('智慧排序模式');
+    expect(output).toContain('已套用建議排序');
+
+    // 確認佇列順序已被套用
+    const queue = executionQueue.readQueue(TEST_PROJECT);
+    expect(queue.items[0].name).toBe('quick-task');
+    expect(queue.items[1].name).toBe('full-task');
+  });
+});
