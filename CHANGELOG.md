@@ -2,6 +2,41 @@
 
 所有重要變更記錄於此文件。
 
+## [0.28.75] - 2026-03-06
+
+### 並行收斂門 TOCTOU 修復（Convergence Gate Fix）
+
+#### 核心修復
+- **agent-stop-handler.js & state.js**：收斂門 TOCTOU 競爭條件修復（方向 B：findActualStageKey 移入 callback）
+  - 問題：並行完成時，若後到者觀察到 stage 已標記 completed，會錯誤路由到 wrong stage
+  - 修正：findActualStageKey 移入 updateStateAtomic callback，確保 read-check-write 原子性
+  - updateStateAtomic callback 新增 `{ stage, stageKey }` 返回值，caller 透過返回值補位
+
+- **pre-task-handler.js**：PreToolUse(Task) 委派前加入 sanitize 觸發（方向 C）
+  - 場景：session 中斷後，孤兒 pending active stage 未被回收
+  - 修正：委派前調用 `sanitize({ workflow, projectRoot })`，修復失效狀態
+  - sanitize 規則 4（既有）：status=pending 且排在 currentStage 之前 → auto-mark completed
+
+#### 測試補強
+- 新增 7 個測試（convergence-gate-fix.test.js）
+  - Feature A：兩個並行 agent 依序完成，stage 正確標記
+  - Feature A：後到者補位場景 — 先到者已將 stage 標記 completed+pass
+  - Feature A：callback 內無匹配 stage，安全 early exit 不修改 state
+  - Feature B：PreToolUse(Task) 委派前 sanitize 修復孤兒 active stage
+  - Feature B：sanitize 靜默處理 — workflow.json 不存在時不 throw
+  - Feature C：parallelTotal=1 時正常完成（非並行路徑）
+  - Edge case：並行衝突預防
+
+#### 文件同步
+- `docs/status.md`：測試 4411 → 4417（7 個新測試）、版本 0.28.74 → 0.28.75、測試檔案 194 → 195
+- `CHANGELOG.md`：新增本條目
+- `specs/features/done/2026-03-06_convergence-gate-fix/`：規格文件歸檔
+
+#### 測試
+- 測試 4417 pass / 0 fail（195 files）
+
+---
+
 ## [0.28.72] - 2026-03-06
 
 ### 架構師設計規範完善（Architect Design Specification Enhancement）

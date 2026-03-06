@@ -588,3 +588,18 @@ Keywords: verify, spec, specs, features, progress, voice, system, test, template
 Keywords: pass, fail, expect, calls, tests, unit, test, templates, strategy
 
 
+---
+## 2026-03-06 | tester:TEST Context
+模式：spec（TEST:spec）
+已為 convergence-gate-fix 功能撰寫完整 BDD 規格，涵蓋架構文件定義的 6 個 scenario。
+Keywords: spec, test, convergence, gate, scenario
+
+---
+## 2026-03-06 | tester:TEST:2 Findings
+- 7 pass / 0 fail / 26 expect() calls
+- BDD spec 定義 6 個 Scenario，測試實作 7 個（C-1 拆分為函式層與 state 整合層各一個 test，覆蓋更完整）
+- 所有斷言使用實際值驗證（parallelDone 數值、stage status、result），無純存在性斷言
+- 測試隔離完整：每個測試使用獨立 sessionId，afterAll 清理所有 session 目錄
+- Feature A（findActualStageKey 移入 updateStateAtomic）、Feature B（pre-task sanitize）、Feature C（退化場景）全部驗證通過
+Keywords: pass, fail, expect, calls, spec, scenario, state, test, paralleldone, stage
+

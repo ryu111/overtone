@@ -1,6 +1,6 @@
 # Overtone 現況
 
-> 最後更新：2026-03-06 | Plugin 版本：0.28.74
+> 最後更新：2026-03-06 | Plugin 版本：0.28.75
 
 ## 版本狀態
 
@@ -16,8 +16,8 @@
 | Agent 數量 | 18（含 grader） |
 | Stage 數量 | 16 |
 | Workflow 模板 | 18 |
-| 測試通過 | 4411 pass / 0 fail（194 個測試檔）|
-| 測試檔案 | 194 個 |
+| 測試通過 | 4417 pass / 0 fail（195 個測試檔）|
+| 測試檔案 | 195 個 |
 | Hook 數量 | 11 個 |
 | Skill 數量 | 24（15 knowledge domain + orchestrator + pm + specs + 4 utility-with-refs + instinct） |
 | scripts/lib 模組 | 66（含 analyzers/ 7 + knowledge/ 9 + remote/ 4 + dashboard/ 2 子目錄模組 + tts 相關 2） |
@@ -28,9 +28,9 @@
 
 ## 近期變更（最近 3 筆）
 
+- **[0.28.75] 2026-03-06**：fix(convergence)——並行收斂門 TOCTOU 修復：findActualStageKey 移入 updateStateAtomic callback 保證原子性，pre-task 觸發 mid-session sanitize 修復孤兒 stage，新增 7 個測試
 - **[0.28.74] 2026-03-06**：docs(craft)——Design Taste 文件同步：新增 design-taste.md 設計品味評估參考指南（RETRO phase 使用），craft SKILL.md 加入 design-taste reference 索引
 - **[0.28.73] 2026-03-06**：feat(developer)——創意引導 + Design Highlight 規範：developer.md 加入三項創意引導（細節微調、品味思考、Edge Cases 對照），誤判防護新增 Design Highlight 非必填說明，輸出 Handoff 格式新增 Design Highlight 區塊
-- **[0.28.72] 2026-03-06**：feat(arch)——架構師設計規範完善：architect.md 設計規範補強，誤判防護新增 Edge Cases 列舉規範，輸出 Handoff 格式明確化，強化開發者設計對照能力
 
 ## Phase 3 規劃狀態（✅ 完成）
 

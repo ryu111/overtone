@@ -1,208 +1,4 @@
 ---
-## 2026-03-05 | product-manager:PM Findings
-**目標用戶**：Overtone 開發者（個人 dogfooding），在面對新領域時需要系統自主建構能力堆疊。
-
-**成功指標**：
-- L3.3：score < 0.2 的 prompt 自動觸發 Skill Forge，成功率 >= 80%
-- L3.4：PM 訪談產出的 Project Spec 包含 >= 10 個 BDD 場景
-- L3.5：收到高層目標後，系統自主完成能力盤點 + 排程 + 迭代，人工介入 <= 2 次
-- L3.7：專案完成後 skill 通用化 + 納入永久庫的自動化率 >= 90%
-- 10 次迭代後，系統指標可量化改善（測試覆蓋率、health-check 通過項、skill 完整度）
-
-**方案比較**：
-
-| 維度 | 方案 A：按 Roadmap 順序 | 方案 B：依賴優化順序 | 方案 C：先清理再建新 |
-|------|------------------------|---------------------|---------------------|
-| 概述 | L3.3 -> L3.4 -> L3.5 -> L3.7 -> 10x 優化 | L3.4 -> L3.3 -> L3.5 -> L3.7 -> 10x 優化（PM 先行） | 5x 清理/重構 -> L3
-Keywords: overtone, dogfooding, score, prompt, skill, forge, project, spec, health, check
-
----
-## 2026-03-05 | product-manager:PM Context
-Overtone 已完成 L1（核心大腦）和 L2（感知操控），目前在 L3（自我進化）。L3.1-3.2（Gap Detection + Auto-Fix）已完成。使用者需要完成 L3 剩餘能力（L3.3 Skill Forge、L3.4 深度 PM、L3.5 Project Orchestrator、L3.7 Skill Internalization），加上 10 次自我優化迭代和技術棧清理。
-
-核心問題不是「能不能做」而是「用什麼順序做最高效」。Codebase 分析顯示基礎設施覆蓋率高，許多模組只需串接而非重寫。
-Keywords: overtone, detection, auto, skill, forge, project, orchestrator, internalization, codebase
-
----
-## 2026-03-05 | planner:PLAN Findings
-**需求分解**：
-
-1. **interview.js 引擎核心**（新建）
-   | agent: developer | files: `plugins/overtone/scripts/lib/interview.js`
-   建立訪談狀態機，純函式模組，API：`init` / `nextQuestion` / `recordAnswer` / `isComplete` / `generateSpec`
-
-2. **Project Spec 模板**（新建）— 可與任務 1 並行
-   | agent: developer | files: `plugins/overtone/skills/pm/references/project-spec-template.md`
-   定義含 ≥10 個 BDD 場景骨架的標準格式，供 `generateSpec()` 組裝使用
-
-3. **PM agent prompt 升級**（修改）— 依賴任務 1, 2
-   | agent: developer | files: `plugins/overtone/agents/product-manager.md`
-   加入訪談模式章節，透過 manage-component.js 更新（受 pre-edit-guard 保護）
-
-4. **PM skill 更新**（修改）— 依賴任務 2
-   | agent: developer | files: `plugins/overtone/skills/pm/SKILL.md`
-   新增 project-spec-template.md 索引和 interview.js API 摘要，透過 manage-component.js 更新
-
-5. **interview.js 單元測試**（新建）— 依賴任務 1 (parallel with 3, 4)
-   | agent: developer | files: `tests/unit/interview.test.js`
-   五個核心函式的完整測試（含邊界條件）
-
-6. **整合測試**（新建）— 依賴所有前置任務
-   | agent: developer | files: `tests/integration/interview.test.js`
-   端到端驗證 10 輪問答流程、五面向覆蓋、Spec 格式正確性
-
-**優先順序**：
-- 第一批並行：任務 1 + 任務 2
-- 第二批並行（第一批完成後）：任務 3 + 任務 4 + 任務 5
-- 最後執行：任務 6
-
-**範圍邊界**：明確不在此次範圍內：
-- L3.5 Project Orchestrator 整合（訪談自動觸發）
-- 訪談回答的跨 session 持久化
-- Dashboard 訪談進度可視化
-- 多語言支援
-Keywords: interview, agent, developer, files, plugins, overtone, scripts, init, nextquestion, recordanswer
-
----
-## 2026-03-05 | architect:ARCH Findings
-**技術方案**：
-- 新建 `interview.js`：純 CJS module（符合現有 lib 慣例），提供 `init/nextQuestion/recordAnswer/isComplete/generateSpec/loadSession/saveSession` 七個 API
-- 靜態問題庫（五面向：functional/flow/ui/edge-cases/acceptance），每面向必問題 + 補充題，完成門檻可透過 options 覆蓋（預設 minAnswersPerFacet = 2）
-- session 狀態存 `~/.overtone/sessions/{sessionId}/interview-state.json`，支援中斷恢復，使用 `utils.atomicWrite` 原子寫入
-- Project Spec 直接寫檔到 `specs/features/in-progress/{featureName}/project-spec.md`（非 Handoff 輸出），確保無人值守場景下資料不丟失
-- PM agent prompt 和 SKILL.md 透過 `manage-component.js` 更新（pre-edit guard 保護）
-
-**關鍵技術決策和理由**：
-- 靜態問題庫 vs LLM 生成 → 靜態：一致性高、可測試、0 latency
-- CLI 入口 vs inline → inline（`node -e`）：與 knowledge-gap-detector.js、execution-queue.js 現有模式一致
-- 寫檔 vs Handoff → 寫檔：Handoff 在 context compact 後消失，無人值守不可靠
-- 無需更新 pre-task-handler.js：interview.js 是 PM agent 主動呼叫的工具，不是 Hook 注入 context
-
-**API 介面**：
-
-```javascript
-// 七個核心函式（module.exports）
-init(featureName, outputPath, options?)  → InterviewSession
-nextQuestion(session)                    → Question | null
-recordAnswer(session, questionId, answer) → InterviewSession
-isComplete(session)                      → boolean
-generateSpec(session)                    → ProjectSpec（並寫入 outputPath）
-loadSession(statePath)                   → InterviewSession | null
-saveSession(session, statePath)          → void
-```
-
-**資料模型**：
-- `InterviewSession`：featureName, outputPath, answers(Record), startedAt, completedAt?, options
-- `Question`：id（格式 `func-1`）, facet, text, required, dependsOn?
-- `ProjectSpec`：feature, generatedAt, facets（functional/flow/ui?/edgeCases/acceptance>=10個BDD）
-- `InterviewStateFile`：version:1, featureName, outputPath, answers, startedAt, completedAt?, options
-
-**檔案結構**：
-
-| 檔案 | 操作 | 用途 |
-|------|------|------|
-| `plugins/overtone/scripts/lib/interview.js` | 新增 | 引擎核心 |
-| `plugins/overtone/skills/pm/references/interview-guide.md` | 新增 | PM agent 訪談指引 |
-| `plugins/overtone/agents/product-manager.md` | 修改 | 新增多輪訪談模式章節 |
-| `plugins/overtone/skills/pm/SKILL.md` | 修改 | 新增 interview-guide.md reference |
-| `tests/unit/interview.test.js` | 新增 | 單元測試 |
-| `tests/integration/pm-interview-integration.test.js` | 新增 | 整合測試 |
-
-**Dev Phases**：
-Keywords: interview, module, init, nextquestion, recordanswer, iscomplete, generatespec, loadsession, savesession, functional
-
----
-## 2026-03-05 | architect:ARCH Context
-PM agent 從「單輪分析」升級為「多輪結構化訪談」引擎。核心方案是新建 `interview.js` 引擎模組，提供靜態問題庫（五面向 20 題）+ session 狀態持久化 + BDD Project Spec 產生能力，再升級 PM agent prompt 和 PM SKILL.md 讓 PM agent 主動呼叫。
-Keywords: agent, interview, session, project, spec, prompt, skill
-
----
-## 2026-03-05 | doc-updater:DOCS Context
-L3.4 深度 PM 多輪訪談引擎已完成開發、測試與代碼審查，進入文件同步階段。主要變更包括：
-
-- **新增核心模組**：interview.js（多輪結構化訪談引擎，7 API，24 題問題庫）
-- **新增操作指引**：interview-guide.md（PM 訪談操作指南）
-- **升級 Agent**：product-manager.md（新增 Advisory vs Interview 模式）
-- **升級 Skill**：pm/SKILL.md（新增 interview-guide.md reference）
-- **測試補強**：43 個新增測試（33 unit + 10 integration）
-- **版本更新**：0.28.61 → 0.28.62
-Keywords: interview, guide, agent, product, manager, advisory, skill, reference, unit, integration
-
----
-## 2026-03-05 | planner:PLAN Findings
-**需求分解**：
-
-1. `skill-evaluator.js` — 評估模組 | agent: developer | files: `scripts/lib/skill-evaluator.js`, `scripts/lib/score-engine.js`, `scripts/lib/knowledge/instinct.js`, `scripts/lib/timeline.js`, `scripts/lib/paths.js`
-
-2. `skill-generalizer.js` — 通用化模組 | agent: developer | files: `scripts/lib/skill-generalizer.js`, `scripts/lib/skill-forge.js`, `plugins/overtone/skills/*/references/`
-
-3. `experience-index.js` — 經驗索引模組 | agent: developer | files: `scripts/lib/experience-index.js`, `scripts/lib/paths.js`
-
-4. `evolution.js internalize 子命令` | agent: developer | files: `scripts/evolution.js`（需 T1+T2+T3 完成）
-
-5. `project-orchestrator.js 整合經驗查詢` (parallel with T6) | agent: developer | files: `scripts/lib/project-orchestrator.js`（需 T3 完成）
-
-6. `health-check.js 新增 checkInternalizationIndex` (parallel with T5) | agent: developer | files: `scripts/health-check.js`（需 T3 完成）
-
-7. `測試覆蓋`（unit x3 + integration x1）| agent: tester | files: `tests/unit/skill-evaluator.test.js`, `tests/unit/skill-generalizer.test.js`, `tests/unit/experience-index.test.js`, `tests/integration/skill-internalization.test.js`
-
-**優先順序**：
-- Phase 1（可並行）：T1 + T2 + T3
-- Phase 2（需等 T1+T2+T3）：T4
-- Phase 3（T3 後可並行）：T5 + T6
-- Phase 4（全部完成後）：T7
-
-**範圍邊界**：
-- 不包含：跨專案 skill 語意合併、SessionEnd 自動觸發、Dashboard 可視化
-- 不包含：多語言 skill 支援
-Keywords: skill, evaluator, agent, developer, files, scripts, score, engine, knowledge, instinct
-
----
-## 2026-03-05 | planner:PLAN Context
-L3.7 Skill Internalization 目標是建立「經驗內化飛輪」：專案完成後，系統性評估哪些 skill 值得永久保留，通用化後合併到永久 skill 庫，並建立跨專案的「什麼樣的專案需要哪些 skill」經驗索引，加速未來專案啟動。
-
-現有基礎設施：
-- `score-engine.js`：JSONL append-only 評分記錄（scores.jsonl）
-- `knowledge-archiver.js`：SubagentStop 時提取知識片段 → skill-router → auto-discovered.md
-- `global-instinct.js`：高信心觀察升級到全域 store
-- `timeline.js`：session 事件流（timeline.jsonl）
-- `session-digest.js`：SessionEnd 時產生 session 摘要（digests.jsonl）
-- `evolution.js`：現有 analyze/fix/forge/orchestrate 子命令，擴展模式已成熟
-Keywords: skill, internalization, score, engine, jsonl, append, only, scores, knowledge, archiver
-
----
-## 2026-03-05 | architect:ARCH Context
-L3.7 Skill Internalization 的技術設計已完成。目標是建立「經驗內化飛輪」：從 session 學習資料評估知識條目是否值得永久保留，通用化後寫入 `skills/instinct/internalized.md`，並透過 experience-index 支援 project-orchestrator 加速能力盤點。
-Keywords: skill, internalization, session, skills, instinct, internalized, experience, index, project, orchestrator
-
----
-## 2026-03-05 | developer:DEV Context
-實作 L3.7 Skill Internalization T2：`skill-generalizer.js` — 知識條目通用化處理器。
-
-純函式模組，負責移除知識條目中的專案特定內容（段落級移除策略），使其可通用化後保存至 `skills/instinct/internalized.md`。
-Keywords: skill, internalization, generalizer, skills, instinct, internalized
-
----
-## 2026-03-05 | developer:DEV Findings
-**根因分析**：
-- `~/.overtone/.current-session-id` 是全域共享文件
-- `on-submit-instinct.test.js` 執行 `on-submit.js` 子進程，此 hook 會將 `session_id` 寫入該共享文件
-- `session-id-bridge.test.js` 的測試 A 先寫入自己的 session ID，再執行 `init-workflow.js`（從共享文件讀取）
-- `bun test file1 file2` 同一 invocation 中多個文件並行執行（max-concurrency=20）
-- 當這兩個文件在同一個 worker 中並行執行時，`on-submit-instinct.test.js` 的 `runHook` 可能在測試 A 的寫入和讀取之間覆寫共享文件，導致 `init-workflow.js` 讀到錯誤的 session ID，workflow.json 被建立在錯誤目錄
-
-**修復方式**：
-- 在 `test-parallel.js` 中新增 `SEQUENTIAL_FILES` 機制
-- `session-id-bridge.test.js` 加入此列表，在所有並行 worker 完成後獨立執行
-- 使用 `--max-concurrency=1` 確保完全隔離
-- 不影響整體測試時間（+~0.3s），無需修改任何實作碼或測試邏輯
-
-**確認**：
-- 修復後執行 5 次 `test-parallel.js` 全部 pass
-- `bun test` 3864 pass, 0 fail
-Keywords: overtone, current, session, submit, instinct, test, hook, bridge, init, workflow
-
----
 ## 2026-03-05 | developer:DEV Findings
 1. **health-check doc-code-drift** — 執行前已是 `passed: true`，無 drift 發現（doc-sync-engine 只追蹤 agents/skills/commands/hooks 四項，不含 scripts/lib 計數）
 2. **docs-sync.test.js** — 28 pass，執行前後皆通過
@@ -671,4 +467,170 @@ Keywords: architect, agent, prompt, handoff, edge, cases, handle
 - frontmatter 未被改動，無副作用
 - 指令強度用詞一致，無 emoji-關鍵詞不匹配
 Keywords: plugins, overtone, agents, developer, should, design, highlight, findings, files, modified
+
+---
+## 2026-03-06 | developer:DEV Findings
+- `manage-component.js` 實際位於 `plugins/overtone/scripts/`，不在 `scripts/`，需用絕對路徑呼叫
+- `update skill` 支援 `body` 欄位，傳入完整 body 字串即可全量替換 SKILL.md 內容
+- validate-agents.js 通過：18 agents + 11 hooks + 24 skills 全部正確
+- design-taste.md 內容涵蓋六大主題：視覺層次、配色、動效、反模式、靈感範例、快速 Checklist
+Keywords: manage, component, plugins, overtone, scripts, update, skill, body, validate, agents
+
+---
+## 2026-03-06 | retrospective:RETRO Findings
+**回顧摘要**：
+
+- `design-taste.md`（247 行）內容結構完整，涵蓋 6 個主題（視覺層次、配色、動效、反模式、靈感範例、Checklist），知識密度高且具體可操作
+- SKILL.md 決策樹已正確新增 `UI/前端設計品味問題 → design-taste.md` 分支，資源索引也同步加入對應條目，閉環完整
+- 指南定位清晰（developer/designer agent 在 UI 或前端元件實作時使用），不與現有 craft references 重疊（clean-code 管命名/格式，design-taste 管視覺品質）
+- 反模式章節（6 個反模式）與 Checklist 章節形成互補：前者教「為什麼錯」，後者提供「執行時快速驗證」，認知路徑合理
+- 靈感範例選用 Linear / Raycast / Arc / Vercel，均為 Developer Tool 領域標竿，與 Overtone 作為 CLI plugin 的定位相符
+- craft overtone-principles.md checklist 回顧：此次新增純文件，無程式碼改動，不涉及元件閉環（無新 agent/hook 需要同步）
+Keywords: design, taste, checklist, skill, developer, designer, agent, craft, references, clean
+
+---
+## 2026-03-06 | doc-updater:DOCS Findings
+- **新增文件**：`plugins/overtone/skills/craft/references/design-taste.md`（設計品味評估參考指南）
+- **更新文件**：`plugins/overtone/skills/craft/SKILL.md`（加入 design-taste reference）
+- **版本更新**：0.28.73 → 0.28.74
+- **狀態同步**：`docs/status.md` 版本號和近期變更已更新
+Keywords: plugins, overtone, skills, craft, references, design, taste, skill, reference, docs
+
+---
+## 2026-03-06 | planner:PLAN Findings
+**需求分解**：
+
+1. **[修復 B] stage key 查找移入 updateStateAtomic callback** | agent: developer | files: `plugins/overtone/scripts/lib/agent-stop-handler.js`, `plugins/overtone/scripts/lib/state.js`
+
+   具體位置：第 89 行的 `findActualStageKey(currentState, stageKey)` 需改為在第 104 行的 `updateStateAtomic` callback 內執行，傳入最新的 `s` 而非舊快照。`actualStageKey` 透過 closure 變數傳出。第 91-98 行的 statusline 更新和 early exit 判斷也依賴 `actualStageKey`，執行順序需重組。
+
+2. **[修復 C] pre-task 委派前觸發 sanitize** | agent: developer | files: `plugins/overtone/scripts/lib/pre-task-handler.js`
+
+   在 `handlePreTask` 通過路徑（第 286 行 `state.updateStateAtomic` 之前）插入 `state.sanitize(sessionId)`，靜默降級（try/catch）。
+
+3. **[測試] 並行收斂場景 + pre-task sanitize 觸發測試** | agent: developer | files: `tests/unit/agent-stop-handler.test.js`, `tests/unit/pre-task-handler.test.js`
+
+**優先順序**：B 和 C 可並行（修改不同檔案），測試依賴 B+C 完成後同步進行（但可預先撰寫測試框架）。
+
+**範圍邊界**：
+- 不改動 `sanitize()` 函式本身（Rule 4 邏輯已正確）
+- 不調整 `updateStateAtomic` 的 CAS retry 機制
+- 不審查其他 handler 的潛在 stale snapshot 問題
+- 不新增 timeline event 追蹤修復觸發
+Keywords: stage, updatestateatomic, callback, agent, developer, files, plugins, overtone, scripts, stop
+
+---
+## 2026-03-06 | planner:PLAN Context
+**問題**：`agent-stop-handler.js` 的 `handleAgentStop` 存在並行競爭條件。核心問題是第 57 行讀取 state 快照（`currentState`），第 69-84 行透過 `updateStateAtomic` 清除 activeAgents（寫入磁碟），然後第 89 行用**舊快照**呼叫 `findActualStageKey`。
+
+若兩個並行 agent 幾乎同時完成：先到的 A 在 updateStateAtomic 裡完成了 parallelDone 遞增並標記 stage completed；後到的 B 在第 57 行讀到的快照中 stage 看起來 active，但 B 的 updateStateAtomic（清除 activeAgents）在磁碟寫入時，A 已經把 stage 標記為 completed。B 的 findActualStageKey 找不到 active/pending 匹配，返回 null，early exit 發生，parallelDone 不遞增，stage 永久卡住。
+
+**PM 決定修復方向 B + C**。
+Keywords: agent, stop, handler, handleagentstop, state, currentstate, updatestateatomic, activeagents, findactualstagekey, paralleldone
+
+---
+## 2026-03-06 | architect:ARCH Findings
+**技術方案**：
+
+- 方向 B 的 closure pattern（`let resolvedActualStageKey = null`）與 L79 現有的 `resolvedInstanceId` pattern 完全一致，零新慣例
+- `findActualStageKey` 的 4 個搜尋條件缺少 `completed+pass` 場景（只有 fail/reject 安全網），需在 callback 內補位邏輯（< 10 行，不獨立函式）
+- statusline 更新和 early exit 依賴 `actualStageKey`，必須整體移到第二個 `updateStateAtomic` 之後
+- 方向 C 的 `sanitize()` 在正常情況只讀不寫（~1ms），不需要快速路徑優化
+- `state.js` 無需新增任何匯出
+
+**API 介面**：
+
+```javascript
+// agent-stop-handler.js：內部邏輯重組，對外 API 不變
+let resolvedActualStageKey = null;
+
+updateStateAtomic(sessionId, (s) => {
+  resolvedActualStageKey = findActualStageKey(s, stageKey);
+  if (!resolvedActualStageKey) {
+    // 補位：找 completed+pass（後到者場景）
+    resolvedActualStageKey = Object.keys(s.stages).find(
+      (k) => (k === stageKey || k.startsWith(stageKey + ':')) &&
+        s.stages[k].status === 'completed' && s.stages[k].result === 'pass'
+    ) || null;
+  }
+  if (!resolvedActualStageKey) return s;
+  // ... parallelDone 遞增和收斂邏輯 ...
+  return s;
+});
+
+// pre-task-handler.js：在 updateStateAtomic 之前插入
+try { state.sanitize(sessionId); } catch {}
+```
+
+**資料模型**：`workflow.json` schema 無變更。
+
+**檔案結構**：
+
+- 修改：`plugins/overtone/scripts/lib/agent-stop-handler.js`（方向 B）
+- 修改：`plugins/overtone/scripts/lib/pre-task-handler.js`（方向 C）
+- 新增測試：`tests/unit/agent-stop-handler.test.js`（並行收斂場景）
+- 新增測試：`tests/unit/pre-task-handler.test.js`（sanitize 觸發驗證）
+
+**Dev Phases**：
+
+Phase 1 和 Phase 2 必須依序（B 完成後 C 更清楚最終介面），Phase 3 兩個測試檔可並行。
+Keywords: closure, pattern, resolvedactualstagekey, null, resolvedinstanceid, findactualstagekey, completed, pass, fail, reject
+
+---
+## 2026-03-06 | architect:ARCH Context
+分析了 `agent-stop-handler.js` 的 TOCTOU 競爭條件後，確認問題根因是 L89 的 `findActualStageKey` 使用 L57 的舊快照（S0），而此時另一個並行 agent 可能已透過自己的 `updateStateAtomic` 將 stage 改為 `completed`。修復採用 PM 決定的 B+C 雙層方案：
+
+- B：將 stage key 查找移入第二個 `updateStateAtomic` callback，使用 callback 拿到的最新 state
+- C：在 pre-task 委派前插入 `state.sanitize(sessionId)` 作為防禦層
+Keywords: agent, stop, handler, toctou, findactualstagekey, updatestateatomic, stage, completed, callback, state
+
+---
+## 2026-03-06 | tester:TEST Findings
+定義了 3 個 Feature，共 6 個 Scenario：
+
+**Feature A — 收斂門根因修復（方向 B）**
+- A-1: 兩個並行 agent 依序完成，parallelDone 累計正確，stage 標記 completed
+- A-2: 後到者補位場景 — 先到者已將 stage 標記 completed+pass，補位邏輯正確遞增 parallelDone
+- A-3: callback 內無匹配 stage，安全 early exit，state 不被修改
+
+**Feature B — Mid-session sanitize（方向 C）**
+- B-1: PreToolUse(Task) 委派前觸發 sanitize，孤兒 active stage 被修復
+- B-2: workflow.json 不存在時 sanitize 靜默處理，不中斷委派流程
+
+**Feature C — 退化場景**
+- C-1: parallelTotal=1（未設定）時正常完成，收斂邏輯不受影響
+Keywords: feature, scenario, agent, paralleldone, stage, completed, pass, callback, early, exit
+
+---
+## 2026-03-06 | developer:DEV Findings
+1. **舊架構的競爭窗口**：原本 `findActualStageKey(currentState, stageKey)` 用的是 `readState` 讀取的快照，與第二個 `updateStateAtomic` 執行之間存在窗口。若先到者在此期間標記 stage 為 `completed`，後到者的 `actualStageKey` 會變成 `null`（`findActualStageKey` 找不到 active/pending stage），導致 early exit 且 `parallelDone` 未遞增。
+
+2. **補位邏輯設計**：後到者場景（先到者已 `completed+pass`），`findActualStageKey` 在新 state 內仍找不到（函式不搜尋 `completed+pass`），因此加入顯式補位：`Object.keys(s.stages).find(k => ... completed && pass)`。
+
+3. **closure 變數傳出**：`resolvedActualStageKey` 以 closure 變數形式在 callback 外使用，`actualStageKey` 作為後續邏輯的別名。
+
+4. **`sanitize` 已是公開 API**，無需新增任何 `state.js` 匯出。
+
+5. **`stageKeys` 重新讀取問題**：`pre-task-handler.js` 中 `stageKeys` 在 `sanitize` 之前已從 `currentState` 取得，`sanitize` 後修復的狀態透過 `updateStateAtomic` 內的重新讀取生效，不影響 `checkSkippedStages` 邏輯（因 `sanitize` 是修復孤兒 active stage，不會讓跳過邏輯誤判）。
+Keywords: findactualstagekey, currentstate, stagekey, readstate, updatestateatomic, stage, completed, actualstagekey, null, active
+
+---
+## 2026-03-06 | developer:DEV Context
+實作 convergence-gate-fix 的兩個方向：
+- **方向 B**：修復 `agent-stop-handler.js` 的 TOCTOU 競爭條件，將 `findActualStageKey` 移入第二個 `updateStateAtomic` callback 內執行，確保使用最新 state 解析 actualStageKey。加入後到者補位邏輯（搜尋 `completed+pass` stage）。`statusline.update` 移至 `updateStateAtomic` 之後。
+- **方向 C**：在 `pre-task-handler.js` 的 `updateStateAtomic` 之前插入 `try { state.sanitize(sessionId); } catch {}`，修復可能殘留的孤兒 active stage。
+Keywords: convergence, gate, agent, stop, handler, toctou, findactualstagekey, updatestateatomic, callback, state
+
+---
+## 2026-03-06 | retrospective:RETRO Findings
+**回顧摘要**：
+
+convergence-gate-fix 實作了兩個方向的修復：方向 B 將 `findActualStageKey` 移入 `updateStateAtomic` callback 內，消除 TOCTOU 競爭條件；方向 C 在 `handlePreTask` 委派前觸發 `state.sanitize()`，主動修復孤兒 active stage。實作與 BDD spec 完整對齊，7 個 test 通過。
+
+**Overtone Principles Checklist 評估**：
+
+- 完全閉環：activeAgents cleanup 在 early exit 前執行，resolved/unresolved 都有 timeline emit，statusline 也在 early exit 前更新。事件 consumer 鏈完整。
+- 自動修復：sanitize() 呼叫用 try/catch 靜默降級，不會中斷主流程。updateStateAtomic callback 有安全 early exit（`if (!resolvedActualStageKey) return s`）。
+- 補全能力：修復的是既有核心模組，不涉及新 Skill/Agent 建立。新增測試 7 個，完整對應 BDD spec 所有 scenario。
+Keywords: convergence, gate, findactualstagekey, updatestateatomic, callback, toctou, handlepretask, state, sanitize, active
 
