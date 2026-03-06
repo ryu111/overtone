@@ -411,13 +411,13 @@ describe('場景 7：Knowledge Engine — gapWarnings 注入', () => {
     mkdirSync(paths.sessionDir(sessionId), { recursive: true });
     state.initState(sessionId, 'single', workflows['single'].stages);
 
-    // developer 無 security-kb skill，但 prompt 含 security 關鍵詞
+    // doc-updater 無 security-kb skill，但 prompt 含 security 關鍵詞
     const result = await runHook(
       {
         session_id: sessionId,
         tool_name: 'Task',
         tool_input: {
-          subagent_type: 'ot:developer',
+          subagent_type: 'ot:doc-updater',
           description: '安全修復',
           prompt: '修復 XSS vulnerability，檢查 authentication 和 authorization，加入 CSRF protection 和 input sanitization',
         },
