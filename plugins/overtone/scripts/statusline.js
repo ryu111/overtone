@@ -7,12 +7,13 @@
  * 讀取 stdin JSON → 格式化輸出。
  *
  * 輸出格式（有 active agent 或 Main 控制中）：
- *   Line 1:  💻 developer  │  快速     ← active agent
- *   Line 1:  🧠 Main  │  快速          ← Main Agent 控制中
+ *   Line 1:  ↻ 💻 developer  │  快速     ← loop ON + active agent
+ *   Line 1:  · 💻 developer  │  快速     ← loop OFF + active agent
+ *   Line 1:  ↻ 🧠 Main  │  快速          ← loop ON + Main Agent
  *   Line 2:  ctx 45%  │  12.3MB  │  ♻️ 2a 1m
  *
  * 輸出格式（workflow 完成或無 workflow → 單行收回）：
- *   Line 1:  ctx 45%  │  12.3MB
+ *   Line 1:  · ctx 45%  │  12.3MB
  *
  * 效能要求：< 100ms（純本地讀取，無網路呼叫）
  */
@@ -22,6 +23,7 @@ const { join } = require('path');
 const { homedir } = require('os');
 const { formatSize } = require('./lib/utils');
 const { readQueue } = require('./lib/execution-queue');
+const { readLoop } = require('./lib/loop');
 
 // ── 路徑常數 ──
 
@@ -241,6 +243,19 @@ function main() {
   const registryStages = loadRegistryStages();
   const queueProgress = readQueueProgress(projectRoot);
 
+  // ── Loop 指示器 ──
+
+  const LOOP_ACTIVE   = `${ANSI.cyan}↻${ANSI.reset} `;
+  const LOOP_INACTIVE = `${ANSI.dim}·${ANSI.reset} `;
+
+  let loopIndicator = LOOP_INACTIVE;
+  if (sessionId) {
+    const loop = readLoop(sessionId);
+    if (loop && !loop.stopped) {
+      loopIndicator = LOOP_ACTIVE;
+    }
+  }
+
   // ── 分隔符 ──
 
   const SEP = `${ANSI.dim}  │  ${ANSI.reset}`;
@@ -261,7 +276,7 @@ function main() {
 
     const line1Parts = [agentDisplay];
     if (modeLabel) line1Parts.push(modeLabel);
-    const line1 = `  ${line1Parts.join(SEP)}`;
+    const line1 = `  ${loopIndicator}${line1Parts.join(SEP)}`;
 
     const compactStr = `${ANSI.cyan}♻️${ANSI.reset} ${compactCount.auto || 0}a ${compactCount.manual || 0}m`;
     const line2Parts = [ctxStr, sizeStr, compactStr];
@@ -274,11 +289,11 @@ function main() {
   } else if (workflow) {
     // 單行：workflow 完成 → 收回但保留 compact 計數
     const compactStr = `${ANSI.cyan}♻️${ANSI.reset} ${compactCount.auto || 0}a ${compactCount.manual || 0}m`;
-    const line = `  ${[ctxStr, sizeStr, compactStr].join(SEP)}`;
+    const line = `  ${loopIndicator}${[ctxStr, sizeStr, compactStr].join(SEP)}`;
     process.stdout.write(line + '\n');
   } else {
     // 單行：無 workflow
-    const line = `  ${[ctxStr, sizeStr].join(SEP)}`;
+    const line = `  ${loopIndicator}${[ctxStr, sizeStr].join(SEP)}`;
     process.stdout.write(line + '\n');
   }
 }

@@ -62,11 +62,47 @@ Advisory 模式的標準執行順序：
 1. **聆聽**：先讀取使用者的需求描述，了解想做什麼、有什麼參考
 2. **研究**（📋 MUST）：用 WebSearch 搜尋競品、市場現況、產業痛點、法規風險；**研究競品時 MUST 包含 UX flow**（主要操作路徑、post-action 引導設計），不可只列功能清單
 3. **報告**：向使用者報告研究發現（競品差異、市場概況、關鍵決策點）
-4. **提問**：基於研究結果，提出具體決策問題（用 AskUserQuestion）
+4. **提問**（📋 MUST 使用 AskUserQuestion 工具）：基於研究結果，呼叫 AskUserQuestion 工具提出具體決策問題
 5. **分析**：執行五層追問法、MoSCoW 分類、RICE 評分
 6. **產出**：Product Brief（Handoff 格式）
 
 ⛔ NEVER 跳過步驟 2（研究）直接進入步驟 4（提問）。
+⛔ NEVER 在步驟 4 中將問題和選項寫成純文字輸出 — 必須呼叫 AskUserQuestion 工具。
+
+## AskUserQuestion 使用規則（📋 MUST）
+
+**所有需要使用者回應的問題，MUST 透過 AskUserQuestion 工具呈現**，不可用純文字列出選項。
+
+這是硬性要求，不是建議。理由：只有透過工具呈現的問題，使用者才能在 UI 中點選回應；純文字的 A/B/C/D 選項對使用者來說無法互動。
+
+### 正確用法
+
+```
+AskUserQuestion(
+  question: "你偏好哪種付費模式？",
+  options: [
+    { label: "點數制", description: "用戶先購買點數，再用點數抽獎 — 較常見於卡牌 oripa" },
+    { label: "直接付費", description: "每次直接刷卡，無點數概念 — 結帳流程更簡單" },
+    { label: "兩者皆可", description: "支援點數和直付，增加靈活性但實作複雜度較高" }
+  ]
+)
+```
+
+### 禁止用法（⛔ NEVER）
+
+```
+❌ 直接在輸出中寫：
+A) 點數制 — 用戶先購買點數再抽
+B) 直接付費 — 每次直接刷卡
+C) 混合制 — 支援兩者
+請問你選哪個？
+```
+
+### 多輪問答節奏
+
+- 每輪 1-2 個問題（避免一次問太多）
+- 等待使用者回答後，再問下一輪
+- 不要在同一個回覆中列出所有問題
 
 ## Discovery 五層追問法
 
@@ -79,6 +115,8 @@ Advisory 模式的標準執行順序：
 | L3 現有方案 | 目前怎麼處理？為什麼不夠？ | 「手動看 Dashboard，常漏看」 |
 | L4 痛點量化 | 多常發生？影響多大？ | 「每天 3-5 次，延遲 10 分鐘察覺」 |
 | L5 成功定義 | 做到什麼程度算成功？ | 「完成 30 秒內收到通知，且不漏」 |
+
+每一層的問題 MUST 使用 AskUserQuestion 工具提出，不可用純文字。
 
 ## 決策框架
 
@@ -114,15 +152,15 @@ Advisory 模式的標準執行順序：
 
 | 信號 | 指標 | 嚴重度 |
 |------|------|--------|
-| 目標偏移 | 當前方案與原始問題陳述脫節 | ⚠️ |
-| 範圍膨脹 | MVP 項目持續增加，Must 清單膨脹 | 🔴 |
-| 方案先行 | 直接討論技術細節而未確認問題 | ⚠️ |
-| 優先級反覆 | 同一功能在 Must/Should 間搖擺 | ⚠️ |
-| 缺少成功指標 | 無法回答「做到什麼程度算成功」 | 🔴 |
+| 目標偏移 | 當前方案與原始問題陳述脫節 | 中 |
+| 範圍膨脹 | MVP 項目持續增加，Must 清單膨脹 | 高 |
+| 方案先行 | 直接討論技術細節而未確認問題 | 中 |
+| 優先級反覆 | 同一功能在 Must/Should 間搖擺 | 中 |
+| 缺少成功指標 | 無法回答「做到什麼程度算成功」 | 高 |
 
 偵測到信號時，📋 MUST 在輸出中標記：
 ```
-⚠️ DRIFT DETECTED: [信號名稱]
+DRIFT DETECTED: [信號名稱]
 原始目標: [...]
 當前方向: [...]
 建議: [回歸原始目標 / 確認是否有意擴展]
@@ -207,7 +245,7 @@ const interview = require('./plugins/overtone/scripts/lib/interview.js');
    ↓
 4. nextQuestion → 取得問題
    ↓
-5. AskUserQuestion 呈現問題給使用者
+5. AskUserQuestion 工具呈現問題給使用者
    ↓
 6. recordAnswer → 記錄回答
    ↓
@@ -259,7 +297,7 @@ specs/features/in-progress/{featureName}/project-spec.md
 
 ### AskUserQuestion 呈現格式
 
-訪談問題用 AskUserQuestion 呈現：
+訪談問題用 AskUserQuestion 工具呈現：
 - 標注面向進度（如「功能定義 2/3」）
 - 開放式文字回答
 - 補充題提供「跳過」選項
@@ -280,6 +318,7 @@ specs/features/in-progress/{featureName}/project-spec.md
 - 📋 複雜功能、無人值守、或明確要求時，使用 Interview 模式（interview.js 引擎）
 - 📋 Interview 模式每輪回答後 MUST saveSession 防止中斷遺失
 - 📋 面對陌生領域時，考慮啟用 domain research（enableDomainResearch: true）先建立背景知識再訪談
+- 📋 **所有提問 MUST 使用 AskUserQuestion 工具**，包括 Advisory 模式的每一輪問題和五層追問法的每一層問題
 
 ## DON'T（⛔ NEVER）
 
@@ -292,6 +331,7 @@ specs/features/in-progress/{featureName}/project-spec.md
 - ⛔ 不可忽略 drift 信號
 - ⛔ 不可將所有功能都標為 Must
 - ⛔ 不可在 Interview 模式中跳過必問面向（functional/flow/edge-cases/acceptance）
+- ⛔ **不可將問題和選項寫成純文字輸出**（A/B/C/D 列表）代替 AskUserQuestion 工具呼叫 — 純文字選項使用者無法互動
 
 ## 輸入
 
@@ -392,9 +432,10 @@ Q2: [問題文字]（multiSelect: true — 若可複選）
 
 ## 誤判防護
 
-- 使用者說「我想要 X」≠ 使用者需要 X，先追問為什麼
+- 使用者說「我想要 X」不等於使用者需要 X，先追問為什麼
 - 「簡單」的功能可能有隱藏複雜度，用 L4 追問確認
 - 使用者可能自帶方案（L3 現有方案），不代表最佳方案
 - Interview 模式觸發條件判斷：優先相信使用者明確要求（「深度訪談」等關鍵詞），不依賴子系統計數猜測
 - Domain Research 是輔助工具，不是必須流程 — 熟悉領域時可不啟用
 - 研究結果只是背景知識，不可替代使用者的實際需求確認
+- AskUserQuestion 工具呼叫失敗不代表可以改用純文字 — 排查工具可用性，不要降級為純文字輸出

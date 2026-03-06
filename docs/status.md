@@ -24,7 +24,7 @@
 | Knowledge Domain 數 | 15（testing、workflow-core、security-kb、database、dead-code、commit-convention、code-review、wording、debugging、architecture、build-system、os-control、autonomous-control、craft、claude-dev） |
 | Command 數量 | 28（14 stage shortcut + 7 workflow pipeline + 7 utility） |
 | Telegram 命令 | 6（/start、/status、/stop、/run、/sessions、/help） |
-| Timeline Events | 29 個 |
+| Timeline Events | 30 個 |
 
 ## 近期變更（最近 3 筆）
 

@@ -47,13 +47,13 @@ afterEach(() => {
 // ── Feature 1: buildSkillContext ──
 
 describe('buildSkillContext — Scenario 1-1: Agent 有 skills 欄位時載入 SKILL.md 摘要', () => {
-  it('回傳字串包含 commit-convention 和 wording 區塊標頭', () => {
-    // developer.md 有 skills: ['commit-convention', 'wording']
+  it('回傳字串包含 developer agent 的前幾個 skill 區塊標頭', () => {
+    // developer.md 有 14 個 skills，maxTotalChars=2400 限制下只載入前幾個
     const result = buildSkillContext('developer', PLUGIN_ROOT);
     expect(result).not.toBeNull();
     expect(typeof result).toBe('string');
-    expect(result).toContain('--- commit-convention ---');
-    expect(result).toContain('--- wording ---');
+    // 檢查至少包含第一個 skill（testing）的區塊標頭
+    expect(result).toContain('--- testing ---');
   });
 
   it('回傳字串以 [Skill 知識摘要] 開頭', () => {
