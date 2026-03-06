@@ -1,12 +1,5 @@
 ---
 ## 2026-03-05 | developer:DEV Findings
-- **格式 2 跨 skill 引用問題**：最初的 regex 錯誤地把跨 skill 引用（如 `auto` skill 引用 `workflow-core/references/handoff-protocol.md`）解析為當前 skill 的路徑，導致 9 個假陽性 error。修正方式：格式 2 改用捕捉完整三部分（`targetSkill`、`type`、`file`），驗證 `skills/{targetSkill}/{type}/{file}` 的實際存在
-- **`crossRefs` Set 無效問題**：物件在 Set 中比對引用而非值，需改用字串 key 去重（`${targetSkill}/${type}/${file}`）
-- **計數斷言更新**：共 6 個測試檔案有計數斷言需更新（17 → 19），其中 `health-check-internalization.test.js` 未在 MEMORY.md 配套清單中記錄，已補充
-Keywords: skill, regex, auto, workflow, core, references, handoff, protocol, error, targetskill
-
----
-## 2026-03-05 | developer:DEV Findings
 - registry 匯出 `workflows`（非 `WORKFLOW_TYPES`），timeline 匯出 `emit`（非 `appendEvent`）— 初次斷言錯誤，已根據實際 API 修正
 - `evolution.js status` 子命令存在且 exit 0
 - `queue.js list` 空佇列時 exit 1 為預期行為，測試接受 `[0, 1]`
@@ -629,4 +622,9 @@ Keywords: docs, agent, stop, handler, test, task, hook, skill
 - `describe` + `test` 用於純函數測試
 - `describeI` + `testI`（aliased）用於整合測試（避免 `afterAll` 衝突）
 Keywords: require, handler, buildcompactmessage, buildcompletionsummary, calcduration, buildcontinuemessage, resolvesessionresult, session, overtone, sessions
+
+---
+## 2026-03-06 | code-reviewer:REVIEW Context
+程式碼審查通過。10 個 agent 的 BDD 驗收標準範例品質良好，精準對應各 agent 職責。
+Keywords: agent
 
