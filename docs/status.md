@@ -1,6 +1,6 @@
 # Overtone 現況
 
-> 最後更新：2026-03-06 | Plugin 版本：0.28.73
+> 最後更新：2026-03-06 | Plugin 版本：0.28.74
 
 ## 版本狀態
 
@@ -28,9 +28,9 @@
 
 ## 近期變更（最近 3 筆）
 
+- **[0.28.74] 2026-03-06**：docs(craft)——Design Taste 文件同步：新增 design-taste.md 設計品味評估參考指南（RETRO phase 使用），craft SKILL.md 加入 design-taste reference 索引
 - **[0.28.73] 2026-03-06**：feat(developer)——創意引導 + Design Highlight 規範：developer.md 加入三項創意引導（細節微調、品味思考、Edge Cases 對照），誤判防護新增 Design Highlight 非必填說明，輸出 Handoff 格式新增 Design Highlight 區塊
 - **[0.28.72] 2026-03-06**：feat(arch)——架構師設計規範完善：architect.md 設計規範補強，誤判防護新增 Edge Cases 列舉規範，輸出 Handoff 格式明確化，強化開發者設計對照能力
-- **[0.28.71] 2026-03-06**：feat(retro)——RETRO 評估框架升級：retrospective.md 加入六維度結構化評估框架（理解力/創造力/美感/細心/完整度/架構能力），craft SKILL.md 索引更新，新增 2026-03 競品基準矩陣（Cursor ~14 / Windsurf ~14 / Devin ~19 / Claude Code+Overtone ~23）
 
 ## Phase 3 規劃狀態（✅ 完成）
 
