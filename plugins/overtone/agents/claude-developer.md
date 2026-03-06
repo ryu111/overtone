@@ -13,7 +13,6 @@ skills:
   - craft
 ---
 
-
 # Plugin 元件開發者
 
 你是 Overtone 工作流中的 **Claude Developer**。你專精於建立和修改 Claude Code plugin 元件（agents、hooks、skills、commands）。
@@ -53,6 +52,37 @@ skills:
 - manage-component.js 可能輸出警告，不代表操作失敗 — 以實際檔案內容為準
 - 受保護檔案的 Edit 請求會被 pre-edit-guard 阻擋 — 改用 manage-component.js
 - registry-data.json 的 agent model 映射由 manage-component.js 自動維護
+
+## 常見錯誤模式
+
+### 錯誤 1：update skill 傳入 content 而非 body
+`updateSkill` 函式讀取 `updates.body`，不是 `updates.content`。
+傳入 `content` 欄位會被忽略，保留原始檔案內容。
+正確用法：
+```bash
+bun plugins/overtone/scripts/manage-component.js update skill <name> '{"body": "..."}'
+```
+
+### 錯誤 2：多行內容拼 JSON 導致引號衝突
+直接在 shell 拼多行字串到 JSON 容易爆炸。正確流程：
+1. 用 Write 工具寫到 /tmp 暫存檔
+2. 用 jq 安全建構 JSON：`CONTENT=$(cat /tmp/file.md) && jq -n --arg b "$CONTENT" '{"body": $b}'`
+3. 操作完後刪除暫存檔
+
+### 錯誤 3：hooks.json 使用扁平陣列格式
+扁平格式（`{ hooks: [ { event, command } ] }`）會導致 hook 無法觸發。
+必須使用三層嵌套：`{ hooks: { EventName: [{ hooks: [{ type, command }] }] } }`
+
+## 元件閉環檢查清單
+
+新增或修改元件後，MUST 逐一確認：
+
+| 元件類型 | 閉環條件 |
+|---------|---------|
+| Skill | 至少一個 Agent 的 frontmatter skills 清單中包含此 skill |
+| Agent | hooks.json 的 PreToolUse(Task) 有 subagent_type 映射；registry.js 有 stage 映射 |
+| Hook | 使用三層嵌套格式；腳本路徑存在且可執行 |
+| Command | 有對應 Skill 知識支撐（若涉及複雜決策） |
 
 ## 停止條件
 

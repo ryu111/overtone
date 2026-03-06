@@ -1,36 +1,4 @@
 ---
-## 2026-03-05 | developer:DEV Findings
-- registry 匯出 `workflows`（非 `WORKFLOW_TYPES`），timeline 匯出 `emit`（非 `appendEvent`）— 初次斷言錯誤，已根據實際 API 修正
-- `evolution.js status` 子命令存在且 exit 0
-- `queue.js list` 空佇列時 exit 1 為預期行為，測試接受 `[0, 1]`
-- spawn 時加入 `OVERTONE_NO_DASHBOARD=1` 和 `OVERTONE_TEST=1` 避免副作用
-- 18 個測試全部通過，執行時間約 2.3s
-Keywords: registry, workflows, timeline, emit, appendevent, evolution, status, exit, queue, list
-
----
-## 2026-03-05 | retrospective:RETRO Findings
-**回顧摘要**：
-
-1. **架構一致性良好**：`extractWebKnowledge` 的設計遵循 Overtone 的降級（graceful fallback）模式 — `tryWithTools()` 失敗或品質不足時自動 fallback 到 `tryWithoutTools()`，符合系統一貫的容錯設計。
-
-2. **快取機制設計合理**：
-   - 快取路徑選在 `skills/{domain}/references/web-research.md`，與現有 references/ 目錄結構一致
-   - TTL 使用 `fs.statSync().mtimeMs`（基於檔案修改時間）而非寫入後追蹤，語意正確
-   - 空字串不寫入快取，邊界情況處理得宜
-
-3. **品質驗證（isQualityResearch）門檻保守但合理**：只檢查是否含 `## 或 ###` 標題。雖然門檻低，但配合 fallback 邏輯（品質不足時再試 without tools），整體防誤判能力足夠。
-
-4. **測試覆蓋完整**：Feature 8（enableWebResearch）+ Feature 9（快取機制）共 15 個新測試涵蓋主要路徑，包含快取命中、未命中、空字串、TTL 過期前（9-3）等場景。
-
-5. **Overtone principles checklist**：
-   - 自動修復：`extractWebKnowledge` 有雙層 try-catch + fallback，符合容錯原則
-   - 補全能力：快取寫入時自動建立 `references/` 目錄（`mkdirSync recursive`），符合慣例
-   - 驗證品質：測試覆蓋到位，新函式全部從 `module.exports` 導出供測試使用
-
-6. **一個觀察（信心不足 70%，不列為 ISSUES）**：`isQualityResearch` 的截斷發生在 `extractWebKnowledge` 之後（先截斷後判斷品質），若截斷恰好切到最後一個 section header 之前理論上可能誤判為低品質。但 5000 字元的截斷上限實際上遠大於任何合法的 section header，此情況在實際執行中概率極低，不構成可報告問題。
-Keywords: extractwebknowledge, overtone, graceful, fallback, trywithtools, trywithouttools, skills, domain, references, research
-
----
 ## 2026-03-05 | doc-updater:DOCS Findings
 本次 commit (507a401) 修復了 PM domain research session 持久化的問題：
 
@@ -627,4 +595,16 @@ Keywords: require, handler, buildcompactmessage, buildcompletionsummary, calcdur
 ## 2026-03-06 | code-reviewer:REVIEW Context
 程式碼審查通過。10 個 agent 的 BDD 驗收標準範例品質良好，精準對應各 agent 職責。
 Keywords: agent
+
+---
+## 2026-03-06 | developer:DEV Context
+消除 2 個 placeholder reference 檔案，填入實質內容：
+1. `plugins/overtone/skills/instinct/references/README.md` — 從 13 bytes 的空殼擴充為 instinct 系統完整參考索引
+2. `plugins/overtone/skills/os-control/references/control.md` — 從 P3.2 placeholder 更新為 L2.5 狀態說明
+Keywords: placeholder, reference, plugins, overtone, skills, instinct, references, readme, bytes, control
+
+---
+## 2026-03-06 | code-reviewer:REVIEW Findings
+審查了 10 個檔案的變更（6 個 agent prompt + 3 個 skill reference + 1 個 auto-discovered 維護）。所有新增內容品質良好，決策樹邏輯正確，貼合各 agent 職責，未修改現有語意。validate-agents 驗證通過。唯一觀察為 5 個 agent 標題 emoji 移除造成風格不一致（Minor，不阻擋）。
+Keywords: agent, prompt, skill, reference, auto, discovered, validate, agents, emoji, minor
 

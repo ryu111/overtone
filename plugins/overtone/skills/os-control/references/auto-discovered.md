@@ -70,3 +70,8 @@ Keywords: voice, system, templates, strategy, hook, notification, screenshot, er
 - Given keyboard.js 實作完成 When agent 執行鍵盤操作指令 Then 能模擬按鍵、快捷鍵、文字輸入
 - Given mouse.js 實作完成 When agent
 Keywords: dogfooding, product, owner, error, warning, info, codebase, pass, acid, test
+---
+## 2026-03-06 | developer:DEV Findings
+- instinct README.md 涵蓋：系統架構流程圖（ASCII）、三個評估維度和門檻值、通用化規則、CLI 使用方式、相關模組對照表
+- os-control control.md 涵蓋：L2.5 ⬜ 待開始狀態說明、預計涵蓋的四項能力（keyboard/mouse/applescript/computer-use）、當前可用的 osascript 替代方案
+Keywords: instinct, readme, ascii, control, keyboard, mouse, applescript, computer, osascript

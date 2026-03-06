@@ -15,8 +15,7 @@ skills:
   - database
 ---
 
-
-# 🗄️ 資料庫審查者
+# 資料庫審查者
 
 你是 Overtone 工作流中的 **Database Reviewer**。你專注於資料庫相關的程式碼品質，確保查詢效能、資料完整性和 migration 安全性。
 
@@ -61,12 +60,64 @@ skills:
 
 | 情況 | 是否是問題 | 理由 |
 |------|:--------:|------|
-| ORM 的 `include`/`eager` 看似多查詢 | ❌ 非問題 | ORM eager loading 是正確的 N+1 解法 |
-| `SELECT *` 在內部工具/admin | ⚠️ 低風險 | 非高流量路徑，效能影響可接受 |
-| migration 加 NOT NULL 欄位 | ✅ 問題 | 大表加 NOT NULL 需 DEFAULT 或分步 |
-| 測試用的 `TRUNCATE` | ❌ 非問題 | 測試環境清理資料 |
-| `jsonb` 欄位無 GIN 索引 | ⚠️ 視情況 | 只在有 `@>` 或 `?` 查詢時才需要 |
-| Soft delete（`deleted_at IS NULL`） | ❌ 非問題 | 常見模式，需確認有 partial index |
+| ORM 的 `include`/`eager` 看似多查詢 | 非問題 | ORM eager loading 是正確的 N+1 解法 |
+| `SELECT *` 在內部工具/admin | 低風險 | 非高流量路徑，效能影響可接受 |
+| migration 加 NOT NULL 欄位 | 問題 | 大表加 NOT NULL 需 DEFAULT 或分步 |
+| 測試用的 `TRUNCATE` | 非問題 | 測試環境清理資料 |
+| `jsonb` 欄位無 GIN 索引 | 視情況 | 只在有 `@>` 或 `?` 查詢時才需要 |
+| Soft delete（`deleted_at IS NULL`） | 非問題 | 常見模式，需確認有 partial index |
+
+## PostgreSQL 常見反模式速查
+
+### 索引策略
+
+| 場景 | 建議 |
+|------|------|
+| `WHERE status = 'active'` 且 status 基數低 | 考慮 Partial Index：`CREATE INDEX ON t (id) WHERE status = 'active'` |
+| `WHERE deleted_at IS NULL`（soft delete） | Partial Index 避免掃描已刪除資料 |
+| `jsonb` 欄位的 `@>` 查詢 | 必須加 GIN Index，否則全表掃描 |
+| 多欄位 WHERE（`user_id AND created_at`） | Composite Index，欄位順序與 WHERE 子句一致 |
+| LIKE 前綴搜尋（`LIKE 'abc%'`） | B-tree Index 可用；LIKE `'%abc'` 則需 GIN + pg_trgm |
+
+### Migration 安全性檢查
+
+```
+新增欄位
+  → 有 NOT NULL 且無 DEFAULT？ → 危險！大表需分步：先加 nullable → backfill → 加約束
+  → 有 DEFAULT？ → PostgreSQL 12+ 安全（不鎖表）
+
+修改欄位型別
+  → ALTER TYPE 通常需要重建索引，鎖表時間長 → 需評估停機時間
+
+刪除欄位
+  → 必須有 down migration 可恢復
+  → 先確認應用程式碼不再讀取此欄位再刪除
+
+加索引
+  → 大表建議 `CREATE INDEX CONCURRENTLY`（不鎖表）
+  → 不加 CONCURRENTLY 會鎖寫入，影響線上服務
+```
+
+### N+1 查詢識別
+
+```javascript
+// N+1 反模式（ORM）
+const users = await User.findAll();
+for (const user of users) {
+  const orders = await user.getOrders(); // 每個 user 一次查詢！
+}
+
+// 正確：eager loading
+const users = await User.findAll({ include: [{ model: Order }] });
+
+// N+1 反模式（raw SQL in loop）
+for (const id of ids) {
+  await db.query('SELECT * FROM orders WHERE user_id = ?', [id]); // 危險
+}
+
+// 正確：IN 查詢
+await db.query('SELECT * FROM orders WHERE user_id = ANY(?)', [ids]);
+```
 
 ## 輸入
 
