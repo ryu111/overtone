@@ -278,8 +278,14 @@ function _formatError(result, name, anchor) {
   }
 }
 
-function cmdSuggestOrder(projectRoot, applyFlag) {
-  const { suggested, changed } = executionQueue.suggestOrder(projectRoot);
+function cmdSuggestOrder(projectRoot, applyFlag, smartFlag) {
+  let failureData;
+  if (smartFlag) {
+    const { getWorkflowFailureRates } = require('./lib/failure-tracker');
+    failureData = getWorkflowFailureRates(projectRoot);
+  }
+
+  const { suggested, changed } = executionQueue.suggestOrder(projectRoot, failureData !== undefined ? { failureData } : undefined);
   if (suggested === null) {
     console.log('佇列為空');
     return;
@@ -289,6 +295,9 @@ function cmdSuggestOrder(projectRoot, applyFlag) {
     return;
   }
 
+  if (smartFlag) {
+    console.log('智慧排序模式（依複雜度 + 歷史失敗率）：');
+  }
   console.log('建議排序（由簡到繁）：');
   console.log('');
   for (const item of suggested) {
@@ -329,9 +338,10 @@ function main(argv) {
   const noAutoIdx = args.indexOf('--no-auto');
   const options = noAutoIdx !== -1 ? { autoExecute: false } : { autoExecute: true };
 
-  // 解析 --apply / --force
+  // 解析 --apply / --force / --smart
   const applyFlag = args.includes('--apply');
   const forceFlag = args.includes('--force');
+  const smartFlag = args.includes('--smart');
 
   // 解析 --before 和 --after
   const beforeIdx = args.indexOf('--before');
@@ -341,7 +351,7 @@ function main(argv) {
   const flags = { '--before': beforeValue, '--after': afterValue };
 
   // 過濾掉 option 參數，取得 positional args
-  const optionKeys = ['--project-root', '--source', '--no-auto', '--apply', '--before', '--after', '--force'];
+  const optionKeys = ['--project-root', '--source', '--no-auto', '--apply', '--before', '--after', '--force', '--smart'];
   const valueOptions = ['--project-root', '--source', '--before', '--after'];
   const positional = args.slice(1).filter((arg, i, arr) => {
     if (optionKeys.includes(arg)) return false;
@@ -371,7 +381,7 @@ function main(argv) {
       cmdDedup(projectRoot);
       break;
     case 'suggest-order':
-      cmdSuggestOrder(projectRoot, applyFlag);
+      cmdSuggestOrder(projectRoot, applyFlag, smartFlag);
       break;
     case 'insert':
       cmdInsert(projectRoot, positional, flags);
@@ -421,4 +431,4 @@ if (require.main === module) {
   main();
 }
 
-module.exports = { main, _cmdAdd: cmdAdd, _cmdAppend: cmdAppend, _cmdList: cmdList, _cmdClear: cmdClear, _cmdEnableAuto: cmdEnableAuto, _cmdDedup: cmdDedup, _cmdSuggestOrder: cmdSuggestOrder, _cmdInsert: cmdInsert, _cmdRemove: cmdRemove, _cmdMove: cmdMove, _cmdInfo: cmdInfo, _cmdRetry: cmdRetry, _formatError };
+module.exports = { main, _cmdAdd: cmdAdd, _cmdAppend: cmdAppend, _cmdList: cmdList, _cmdClear: cmdClear, _cmdEnableAuto: cmdEnableAuto, _cmdDedup: cmdDedup, _cmdSuggestOrder: cmdSuggestOrder, _cmdInsert: cmdInsert, _cmdRemove: cmdRemove, _cmdMove: cmdMove, _cmdInfo: cmdInfo, _cmdRetry: cmdRetry, _formatError, _guardDiscoveryMode: guardDiscoveryMode };

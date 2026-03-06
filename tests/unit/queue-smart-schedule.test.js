@@ -264,6 +264,115 @@ describe('applyOrder', () => {
 });
 
 // ────────────────────────────────────────────────────────────────────────────
+// Feature A: suggestOrder with failureData（智慧排程 BDD Scenarios）
+// ────────────────────────────────────────────────────────────────────────────
+
+describe('suggestOrder with failureData', () => {
+  test('A-1 無 failureData 時行為與原有邏輯完全相同', () => {
+    executionQueue.writeQueue(TEST_PROJECT, [
+      { name: 'full-task', workflow: 'full' },
+      { name: 'quick-task', workflow: 'quick' },
+      { name: 'std-task', workflow: 'standard' },
+    ], 'test');
+
+    const { suggested, changed } = executionQueue.suggestOrder(TEST_PROJECT);
+    expect(changed).toBe(true);
+    expect(suggested[0].name).toBe('quick-task');
+    expect(suggested[1].name).toBe('std-task');
+    expect(suggested[2].name).toBe('full-task');
+
+    // 確認佇列未被修改（原始順序保留）
+    const queue = executionQueue.readQueue(TEST_PROJECT);
+    expect(queue.items[0].name).toBe('full-task');
+  });
+
+  test('A-2 同複雜度（standard）時低失敗率優先', () => {
+    // 兩個項目皆為 standard，其中一個 workflow 失敗率較高
+    // 測試：pA=standard(rate=0.6), pB=quick(rate=0.1) → pB 先（複雜度差異主導）
+    executionQueue.writeQueue(TEST_PROJECT, [
+      { name: 'proj-A', workflow: 'standard' },
+      { name: 'proj-B', workflow: 'quick' },
+    ], 'test');
+
+    const failureData = { standard: { count: 3, rate: 0.6 }, quick: { count: 1, rate: 0.1 } };
+    const { suggested, changed } = executionQueue.suggestOrder(TEST_PROJECT, { failureData });
+    expect(changed).toBe(true);
+    // quick 複雜度低，排前
+    expect(suggested[0].name).toBe('proj-B');
+    expect(suggested[1].name).toBe('proj-A');
+  });
+
+  test('A-2b 同複雜度同 workflow 時低失敗率項目排前', () => {
+    // 兩個項目皆為 standard，failureData 只有 standard 的整體 rate
+    // 由於同 workflow 失敗率相同，回退到 idx 保持原始順序
+    executionQueue.writeQueue(TEST_PROJECT, [
+      { name: 'std-low', workflow: 'quick' },
+      { name: 'std-high', workflow: 'standard' },
+    ], 'test');
+
+    const failureData = { standard: { count: 3, rate: 0.6 }, quick: { count: 1, rate: 0.1 } };
+    const { suggested } = executionQueue.suggestOrder(TEST_PROJECT, { failureData });
+    // quick rate=0.1 < standard rate=0.6，low 排前
+    expect(suggested[0].name).toBe('std-low');
+    expect(suggested[1].name).toBe('std-high');
+  });
+
+  test('A-3 複雜度差異大於失敗率差異時仍以複雜度為主', () => {
+    executionQueue.writeQueue(TEST_PROJECT, [
+      { name: 'heavy', workflow: 'full' },
+      { name: 'light', workflow: 'single' },
+    ], 'test');
+
+    // single 失敗率極高，但複雜度低 → 仍應排前
+    const failureData = { full: { count: 0, rate: 0 }, single: { count: 10, rate: 1.0 } };
+    const { suggested } = executionQueue.suggestOrder(TEST_PROJECT, { failureData });
+    expect(suggested[0].name).toBe('light');
+    expect(suggested[1].name).toBe('heavy');
+  });
+
+  test('A-4 failureData 中無對應 workflow 時 rate 預設為 0（不拋錯）', () => {
+    executionQueue.writeQueue(TEST_PROJECT, [
+      { name: 'task-A', workflow: 'standard' },
+      { name: 'task-B', workflow: 'quick' },
+    ], 'test');
+
+    // quick 不在 failureData 中
+    const failureData = { standard: { count: 3, rate: 0.3 } };
+    expect(() => executionQueue.suggestOrder(TEST_PROJECT, { failureData })).not.toThrow();
+
+    const { suggested } = executionQueue.suggestOrder(TEST_PROJECT, { failureData });
+    // quick 複雜度低（WORKFLOW_ORDER: quick=1, standard=2）→ 排前
+    expect(suggested[0].name).toBe('task-B');
+    expect(suggested[1].name).toBe('task-A');
+  });
+
+  test('A-5 空 failureData {} 時退化為原始複雜度邏輯', () => {
+    executionQueue.writeQueue(TEST_PROJECT, [
+      { name: 'full-task', workflow: 'full' },
+      { name: 'single-task', workflow: 'single' },
+    ], 'test');
+
+    const { suggested } = executionQueue.suggestOrder(TEST_PROJECT, { failureData: {} });
+    expect(suggested[0].name).toBe('single-task');
+    expect(suggested[1].name).toBe('full-task');
+  });
+
+  test('A-6 同複雜度同失敗率時保持原始相對順序（穩定排序）', () => {
+    executionQueue.writeQueue(TEST_PROJECT, [
+      { name: 'std-1', workflow: 'standard' },
+      { name: 'std-2', workflow: 'standard' },
+      { name: 'std-3', workflow: 'standard' },
+    ], 'test');
+
+    const { suggested, changed } = executionQueue.suggestOrder(TEST_PROJECT, { failureData: {} });
+    expect(suggested[0].name).toBe('std-1');
+    expect(suggested[1].name).toBe('std-2');
+    expect(suggested[2].name).toBe('std-3');
+    expect(changed).toBe(false);
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────
 // 4. WORKFLOW_ORDER 常數
 // ────────────────────────────────────────────────────────────────────────────
 

@@ -298,10 +298,51 @@ function _trimIfNeeded(projectRoot) {
   atomicWrite(filePath, content ? content + '\n' : '');
 }
 
+/**
+ * 取得各 workflow 類型的失敗率（用於智慧排序）
+ *
+ * @param {string} projectRoot
+ * @param {number} [window] - 取最近幾筆，預設 warningWindow
+ * @returns {{ [workflowType: string]: { count: number, rate: number } }}
+ *   workflowType key：如 'standard', 'quick', 'single', 'full'
+ *   rate：該 workflowType 失敗次數佔總失敗次數的比率（0~1）
+ *   無資料時回傳 {}
+ */
+function getWorkflowFailureRates(projectRoot, window) {
+  const windowSize = window || failureDefaults.warningWindow;
+  const all = _readAll(projectRoot);
+
+  // 套用 resolved 過濾，與 getFailurePatterns 一致
+  const failures = _filterResolved(all);
+  const records = failures.slice(-windowSize);
+
+  if (records.length === 0) return {};
+
+  // 跳過 workflowType 為 null/undefined 的記錄
+  const filtered = records.filter(r => r.workflowType != null);
+
+  if (filtered.length === 0) return {};
+
+  const total = filtered.length;
+  const groups = {};
+  for (const r of filtered) {
+    const wt = r.workflowType;
+    if (!groups[wt]) groups[wt] = { count: 0 };
+    groups[wt].count++;
+  }
+
+  for (const [, v] of Object.entries(groups)) {
+    v.rate = Math.round((v.count / total) * 10000) / 10000;
+  }
+
+  return groups;
+}
+
 module.exports = {
   recordFailure,
   recordResolution,
   getFailurePatterns,
+  getWorkflowFailureRates,
   formatFailureWarnings,
   formatFailureSummary,
 };

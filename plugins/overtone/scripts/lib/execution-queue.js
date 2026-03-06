@@ -306,10 +306,15 @@ const WORKFLOW_ORDER = { single: 0, quick: 1, standard: 2, full: 3 };
  * 根據 workflow 複雜度提供排序建議（不修改佇列）
  * 同 workflow 類型內保持原始相對順序（穩定排序）。
  * 不影響已完成/進行中的項目（維持在原位）。
+ *
  * @param {string} projectRoot
+ * @param {object} [options]
+ * @param {object} [options.failureData]
+ *   getWorkflowFailureRates() 回傳值，用於二次排序（低失敗率優先）
+ *   缺席時退化為原邏輯（只依複雜度排序）
  * @returns {{ suggested: object[]|null, changed: boolean }} 建議順序和是否有變動
  */
-function suggestOrder(projectRoot) {
+function suggestOrder(projectRoot, options) {
   const queue = readQueue(projectRoot);
   if (!queue) return { suggested: null, changed: false };
 
@@ -325,6 +330,8 @@ function suggestOrder(projectRoot) {
     }
   }
 
+  const failureData = options && options.failureData;
+
   // 穩定排序 pending 項目（使用 index 保持同 workflow 的相對順序）
   const sortedPending = pending
     .map((item, idx) => ({ item, idx }))
@@ -332,6 +339,12 @@ function suggestOrder(projectRoot) {
       const wa = WORKFLOW_ORDER[a.item.workflow] ?? 99;
       const wb = WORKFLOW_ORDER[b.item.workflow] ?? 99;
       if (wa !== wb) return wa - wb;
+      // 二次排序：失敗率（低→高），只在有 failureData 時啟用
+      if (failureData) {
+        const fa = failureData[a.item.workflow]?.rate ?? 0;
+        const fb = failureData[b.item.workflow]?.rate ?? 0;
+        if (fa !== fb) return fa - fb;
+      }
       return a.idx - b.idx;
     })
     .map(({ item }) => item);

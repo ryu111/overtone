@@ -676,3 +676,97 @@ describe('formatFailureSummary — 時間範圍顯示', () => {
     expect(summary).toBe('');
   });
 });
+
+// ────────────────────────────────────────────────────────────────────────────
+// 11. getWorkflowFailureRates — 按 workflowType 聚合失敗率
+// ────────────────────────────────────────────────────────────────────────────
+
+describe('getWorkflowFailureRates', () => {
+  test('B-1 failures.jsonl 不存在時回傳空物件', () => {
+    const result = failureTracker.getWorkflowFailureRates('/tmp/no-workflow-failures-' + TIMESTAMP);
+    expect(result).toEqual({});
+  });
+
+  test('B-2 有失敗記錄時正確按 workflowType 聚合', () => {
+    const project = join(homedir(), '.overtone', 'test-wf-rates-b2-' + TIMESTAMP);
+    dirsToClean.push(project);
+
+    writeFailures(project, [
+      makeRecord({ workflowType: 'standard', stage: 'DEV', verdict: 'fail' }),
+      makeRecord({ workflowType: 'standard', stage: 'TEST', verdict: 'fail' }),
+      makeRecord({ workflowType: 'quick', stage: 'DEV', verdict: 'fail' }),
+      makeRecord({ workflowType: 'standard', stage: 'REVIEW', verdict: 'reject' }),
+    ]);
+
+    const result = failureTracker.getWorkflowFailureRates(project);
+    expect(Object.keys(result)).toContain('standard');
+    expect(Object.keys(result)).toContain('quick');
+    expect(result.standard.count).toBe(3);
+    expect(result.quick.count).toBe(1);
+    expect(result.standard.rate).toBe(0.75);
+    expect(result.quick.rate).toBe(0.25);
+  });
+
+  test('B-3 workflowType 為 null 的記錄跳過不計入', () => {
+    const project = join(homedir(), '.overtone', 'test-wf-rates-b3-' + TIMESTAMP);
+    dirsToClean.push(project);
+
+    writeFailures(project, [
+      makeRecord({ workflowType: 'standard', stage: 'DEV', verdict: 'fail' }),
+      makeRecord({ workflowType: null, stage: 'DEV', verdict: 'fail' }),
+      { ts: new Date().toISOString(), sessionId: 'test-session', stage: 'TEST', agent: 'developer', verdict: 'fail' },
+    ]);
+
+    const result = failureTracker.getWorkflowFailureRates(project);
+    expect(Object.keys(result)).toEqual(['standard']);
+    expect(result.standard.count).toBe(1);
+    expect(result.standard.rate).toBe(1.0);
+  });
+
+  test('B-4 回傳的 rate 四捨五入至小數點後 4 位（1/3 → 0.3333）', () => {
+    const project = join(homedir(), '.overtone', 'test-wf-rates-b4-' + TIMESTAMP);
+    dirsToClean.push(project);
+
+    writeFailures(project, [
+      makeRecord({ workflowType: 'standard', verdict: 'fail' }),
+      makeRecord({ workflowType: 'standard', verdict: 'fail' }),
+      makeRecord({ workflowType: 'standard', verdict: 'fail' }),
+      makeRecord({ workflowType: 'quick', verdict: 'fail' }),
+    ]);
+
+    const result = failureTracker.getWorkflowFailureRates(project);
+    expect(result.standard.rate).toBe(0.75);
+    expect(result.quick.rate).toBe(0.25);
+
+    // 驗證 1/3 情境（精確測試四捨五入行為）
+    const project2 = join(homedir(), '.overtone', 'test-wf-rates-b4b-' + TIMESTAMP);
+    dirsToClean.push(project2);
+    writeFailures(project2, [
+      makeRecord({ workflowType: 'standard', verdict: 'fail' }),
+      makeRecord({ workflowType: 'quick', verdict: 'fail' }),
+      makeRecord({ workflowType: 'full', verdict: 'fail' }),
+    ]);
+    const result2 = failureTracker.getWorkflowFailureRates(project2);
+    // 每個 rate 應為 0.3333（1/3 四捨五入至 4 位）
+    expect(result2.standard.rate).toBe(0.3333);
+    expect(result2.quick.rate).toBe(0.3333);
+    expect(result2.full.rate).toBe(0.3333);
+  });
+
+  test('B-5 已 resolved 的失敗記錄不計入失敗率', () => {
+    const project = join(homedir(), '.overtone', 'test-wf-rates-b5-' + TIMESTAMP);
+    dirsToClean.push(project);
+
+    const sessionId = 'test-session-resolved-' + TIMESTAMP;
+    writeFailures(project, [
+      { ts: new Date().toISOString(), sessionId, workflowType: 'standard', stage: 'DEV', agent: 'developer', verdict: 'fail' },
+      { ts: new Date().toISOString(), sessionId, workflowType: 'standard', stage: 'DEV', agent: 'developer', verdict: 'resolved' },
+      { ts: new Date().toISOString(), sessionId: 'other-session-' + TIMESTAMP, workflowType: 'standard', stage: 'TEST', agent: 'tester', verdict: 'fail' },
+    ]);
+
+    const result = failureTracker.getWorkflowFailureRates(project);
+    // 第一筆 fail 被 resolved 過濾，只剩第三筆
+    expect(result.standard.count).toBe(1);
+    expect(result.standard.rate).toBe(1.0);
+  });
+});
