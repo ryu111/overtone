@@ -43,3 +43,10 @@
 
 ---
 Keywords: phase, sequential, agent, developer, files, package, json, schema, architect, docker
+---
+## 2026-03-06 | developer:DEV Findings
+- `bun:test` 的 `it()` 第三個參數可接受 `{ retry, timeout }` 物件，與原本的純數字 timeout 語意相容，直接替換即可
+- `// @stress-test` 必須放在第一行（`'use strict'` 之前），否則被 strict mode pragma 覆蓋後位置語意不明確
+- `filesystem-concurrency.md` 不存在（Handoff 中引用了一個不存在的文件），指南改為直接描述三種策略並從現有測試中引用程式碼範例
+- 7 個測試全數通過，執行時間 80ms（因使用 Bun 快取，子進程 spawn 很快）
+Keywords: test, retry, timeout, stress, strict, mode, pragma, filesystem, concurrency, handoff

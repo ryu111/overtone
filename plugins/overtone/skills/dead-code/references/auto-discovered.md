@@ -105,3 +105,61 @@ Keywords: validatestructure, dead, export, skill, forge, line, module, exports, 
 清理 dead exports：移除 `skill-forge.js` 真正的 dead export，並修復 dead-code-scanner 和 health-check 的 regex 誤判問題。
 Keywords: dead, exports, skill, forge, export, code, scanner, health, check, regex
 
+---
+## 2026-03-06 | tester:TEST Findings
+定義了 5 個 Feature，共 17 個 Scenario：
+
+**Feature A — detectAndCleanOrphans 基本清理（3 scenarios）**
+- A-1: 超過 TTL 的 orphan 被清除並 emit timeline 事件
+- A-2: 未超過 TTL 的 entry 保留
+- A-3: 清除 orphan 後 loop 不再卡在 soft-release
+
+**Feature B — 邊界條件與防禦性處理（5 scenarios）**
+- B-1: 缺少 startedAt 欄位時跳過
+- B-2: startedAt 為非法 ISO 字串時跳過
+- B-3: activeAgents 為空物件時不拋例外
+- B-4: 多筆 orphan 同時清除，回傳所有清除記錄
+- B-5: 並行競爭 — SubagentStop 已先清除時 delete 為 no-op
+
+**Feature C — checkConcurrencyGuards 靜態掃描（3 scenarios）**
+- C-1: G1/G2/G3 全存在時 0 findings
+- C-2: 缺少 G2 時回傳 info finding
+- C-3: 文件不存在時靜默跳過
+
+**Feature D — checkConcurrencyGuards Runtime 掃描（5 scenarios）**
+- D-1: 有超時 orphan 時回傳 warning finding
+- D-2: 無 orphan 時 0 warning
+- D-3: sessions 目錄不存在時靜默跳過（全新安裝）
+- D-4: workflow.json 損壞時靜默跳過該 session
+- D-5: activeAgents 缺失時靜默跳過
+
+**Feature E — timeline 事件格式（2 scenarios）**
+- E-1: emit 包含所有必要欄位（instanceId、agentName、ageMs、ttlMs）
+- E-2: 事件 type 符合 registry.js 定義，不產生 phantom event finding
+Keywords: feature, scenario, detectandcleanorphans, scenarios, orphan, emit, timeline, entry, loop, soft
+
+---
+## 2026-03-06 | developer:DEV Findings
+根因在第 2097 行：`new Date(null).getTime()` 回傳 `0`（Unix epoch），不是 `NaN`，使得 `ageMs = Date.now() - 0` 為極大正數，通過 `Number.isFinite` 檢查，誤觸 orphan TTL warning。
+
+修復方式：在計算 `startMs` 前加 `if (entry.startedAt == null) continue;`，然後對 `startMs` 做 `Number.isFinite` 檢查，再計算 `ageMs`。與 `detectAndCleanOrphans` 的既有防禦邏輯完全對稱。
+Keywords: date, null, gettime, unix, epoch, agems, number, isfinite, orphan, warning
+
+---
+## 2026-03-06 | architect:ARCH Context
+設計採用最小侵入方案：在現有 `pre-compact-handler.js` 中加入純函式 `detectFrequencyAnomaly` 和 `autoTimestamps` 追蹤，門檻常數 export 後供 `health-check.js` 直接 import（避免 registry 過度設計）。新增 `quality:compact-frequency` timeline 事件為 `fire-and-forget`，不影響 `checkClosedLoop` 偵測邏輯。
+Keywords: compact, handler, detectfrequencyanomaly, autotimestamps, export, health, check, import, registry, quality
+
+---
+## 2026-03-06 | developer:DEV Findings
+**架構決策**：
+- `detectFrequencyAnomaly` 是純函式（無 side effect），從 `pre-compact-handler.js` export，`health-check.js` 直接 import 常數，避免重複定義
+- timeline.emit 用 `...data` 展開而非 `payload` 包覆 — 測試初版用 `ev.payload.autoCount` 導致失敗，已修正
+- C-3 測試（emit 失敗不阻擋）改用靜態原始碼字串掃描，避免 chmod 導致 `session:compact`（emit 在頻率 emit 前）先行失敗的干擾
+- health-check-compact-frequency.test.js 原本含 `runAllChecks()` 整合測試，但並行環境中多個 test 同時呼叫 runAllChecks 導致 5 秒 timeout，改由 health-check-proactive.test.js 覆蓋計數斷言
+
+**Pre-existing failures（非本次引入）**：
+- `platform-alignment-skills.test.js` — testing skill 有 2 個孤立 reference 檔案（修改前已存在）
+- `health-check integration Feature 6` timeout — 並行子進程競爭（修改前 24 fail，修改後 16 fail）
+Keywords: detectfrequencyanomaly, side, effect, compact, handler, export, health, check, import, timeline
+

@@ -155,3 +155,51 @@ Keywords: queue, enhancement, feature, execution
     - [ ] 撰寫 tts-strategy.test.js | files: tests/unit/tts-strategy.test.js
 Keywords: scripts, macos, speak, speakbackground, spawn, detach, listvoices, notification, templates, strategy
 
+---
+## 2026-03-06 | code-reviewer:REVIEW Findings
+**審查摘要**
+
+審查了 5 個核心變更檔案（3 個實作 + 2 個測試），以及 6 個 `auto-discovered.md` 知識歸檔變更。
+
+**逐項檢查結果：**
+
+1. **BDD 覆蓋完整性** -- BDD spec 定義 Feature A（6 scenarios）+ Feature B（5 scenarios）+ Feature C（4 scenarios）。測試檔案覆蓋情況：
+   - A-1 ~ A-6：`queue-smart-schedule.test.js` 第 271-373 行全覆蓋（含 A-2b 額外測試）
+   - B-1 ~ B-5：`failure-tracker.test.js` 第 684-772 行全覆蓋（含 B-4b 1/3 精確四捨五入）
+   - Feature C（CLI --smart flag）：未有獨立測試，但 `cmdSuggestOrder` 的邏輯路徑透過 A 系列測試間接覆蓋了 `suggestOrder` + `failureData` 的整合。CLI 層面的 `--smart` flag 解析在 `optionKeys` 和 `positional` 過濾中正確處理
+
+2. **向後相容性** -- `suggestOrder(projectRoot)` 無第二參數時，`options` 為 `undefined`，`options && options.failureData` 回傳 `undefined`（falsy），`if (failureData)` 不進入二次排序分支。完全向後相容，A-1 測試驗證
+
+3. **getWorkflowFailureRates 聚合邏輯** -- 正確使用 `_filterResolved` 過濾已解決記錄（與 `getFailurePatterns` 一致），`r.workflowType != null` 同時過濾 null 和 undefined，`Math.round(... * 10000) / 10000` 正確四捨五入至 4 位。B-4b 測試驗證 1/3 = 0.3333
+
+4. **排序穩定性** -- `if (fa !== fb) return fa - fb` 只在失敗率不同時改變順序，相同時 fallback 到 `a.idx - b.idx`（原始索引），A-6 測試驗證
+
+5. **--smart flag 不被誤解為 positional** -- `optionKeys` 陣列已加入 `'--smart'`，`smartFlag` 使用 `args.includes('--smart')` 正確提取。`--smart` 不在 `valueOptions` 中（它是純 flag 無值參數），正確
+
+6. **Error handling** -- `failureData[a.item.workflow]?.rate ?? 0`：optional chaining + nullish coalescing，workflow 不在 failureData 中時安全回傳 0，A-4 測試驗證
+
+7. **安全性** -- 無硬編碼 secrets、無 SQL injection、無 command injection 風險。`require('./lib/failure-tracker')` 懶加載僅在 `--smart` flag 啟用時觸發
+
+8. **額外變更** -- `_guardDiscoveryMode` 新增 export 與 smart-scheduling 無關但無害（暴露既有函式供測試用）。`auto-discovered.md` 變更為知識歸檔（internalization 機制的正常操作），workflow-core 的大量刪除是舊條目清理
+
+9. **測試結果** -- 65 pass / 0 fail / 165 expect() calls
+
+未發現任何高信心（>80%）問題。
+Keywords: auto, discovered, spec, feature, scenarios, queue, smart, schedule, test, failure
+
+---
+## 2026-03-06 | tester:TEST Findings
+測試結果摘要：
+
+| 測試檔案 | 通過 | 失敗 | 覆蓋 BDD Scenario |
+|---------|------|------|-------------------|
+| queue-smart-schedule.test.js | 27 | 0 | Feature A (A-1 ~ A-6) |
+| failure-tracker.test.js | 38 | 0 | Feature B (B-1 ~ B-5) |
+| execution-queue.test.js | 30 | 0 | 回歸（無新增） |
+| queue-cli.test.js | 24 | 0 | Feature C (C-1 ~ C-4)（補充新增） |
+
+**總計：119 pass / 0 fail**
+
+Feature C（CLI --smart flag）原本無測試覆蓋，已補充 4 個 Scenario 測試。
+Keywords: scenario, queue, smart, schedule, test, feature, failure, tracker, execution, pass
+

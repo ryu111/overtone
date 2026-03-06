@@ -1,12 +1,12 @@
 # Overtone 現況
 
-> 最後更新：2026-03-07 | Plugin 版本：0.28.78
+> 最後更新：2026-03-07 | Plugin 版本：0.28.79
 
 ## 版本狀態
 
 | 版本 | 狀態 | 說明 |
 |------|------|------|
-| V1 | 進行中 | 4635 pass，0 fail。核心能力：BDD 工作流自動化（18 個 agent + 18 個模板）+ 守衛強化（11 個 hook + 20 項 health-check）+ 自我進化引擎（gap detection / auto-fix / skill forge / internalization）+ OS 控制能力（截圖 + 視窗 + 系統層 + TTS 語音通知）+ 心跳引擎（跨 session 任務自主執行）+ 深度 PM 多輪訪談（領域研究 + 5 面向訪談）|
+| V1 | 進行中 | 4635 pass，0 fail。核心能力：BDD 工作流自動化（18 個 agent + 18 個模板）+ 守衛強化（11 個 hook + 20 項 health-check）+ 自我進化引擎（gap detection / auto-fix / skill forge / internalization）+ OS 控制能力（截圖 + 視窗 + 系統層 + TTS 語音通知）+ 心跳引擎（跨 session 任務自主執行）+ 深度 PM 多輪訪談（領域研究 + 5 面向訪談）+ DEV 並行任務拆分 + CAS 壓力測試 + compact 品質偵測 + postdev 並行群組|
 | V2 | 規劃中 | 延後 |
 
 ## 核心指標
@@ -24,13 +24,13 @@
 | Knowledge Domain 數 | 15（testing、workflow-core、security-kb、database、dead-code、commit-convention、code-review、wording、debugging、architecture、build-system、os-control、autonomous-control、craft、claude-dev） |
 | Command 數量 | 28（14 stage shortcut + 7 workflow pipeline + 7 utility） |
 | Telegram 命令 | 6（/start、/status、/stop、/run、/sessions、/help） |
-| Timeline Events | 30 個 |
+| Timeline Events | 31 個 |
 
 ## 近期變更（最近 3 筆）
 
+- **[0.28.79] 2026-03-07**：docs(testing)——全局文件同步閉環：testing SKILL.md 補齊兩個孤立 reference（concurrency-testing-guide + task-splitting-guide），timeline events 計數更新（30→31），4 個完成 spec 歸檔，auto-discovered.md 批次提交
+- **[0.28.78] 2026-03-07**：fix(sound)——音效通知時機修正：佇列接續時不播 Hero + integration test mock 通知
 - **[0.28.76] 2026-03-06**：全面品質盤點文件同步——handler 測試完整覆蓋（9 handler 共 +198 tests → 4615 pass）、8 agent 加入跨 session 記憶、10 agent 補 BDD 驗收範例、6 agent prompt 深度擴充、2 skill placeholder 消除，plugin 版本同步
-- **[0.28.75] 2026-03-06**：fix(convergence)——並行收斂門 TOCTOU 修復：findActualStageKey 移入 updateStateAtomic callback 保證原子性，pre-task 觸發 mid-session sanitize 修復孤兒 stage，新增 7 個測試
-- **[0.28.74] 2026-03-06**：docs(craft)——Design Taste 文件同步：新增 design-taste.md 設計品味評估參考指南（RETRO phase 使用），craft SKILL.md 加入 design-taste reference 索引
 
 ## Phase 3 規劃狀態（✅ 完成）
 

@@ -1,55 +1,4 @@
 ---
-## 2026-03-04 | tester:TEST Findings
-- `bun test tests/unit/data-cli.test.js`：**39 pass / 0 fail**
-- `bun test`（全套）：**3185 pass / 0 fail / 7200 expect() calls**（135 files）
-- `bun scripts/data.js --help`：正常顯示所有子命令（query / stats / gc / recent + 全域選項）
-- 所有 BDD 驗收標準通過：
-  - `--help` 顯示所有子命令 ✅
-  - `query scores` 輸出 JSON ✅
-  - `gc --dry-run` 不實際刪除 ✅
-  - 全域測試 3185+ pass / 0 fail ✅
-Keywords: test, tests, unit, data, pass, fail, expect, calls, files, scripts
-
----
-## 2026-03-04 | code-reviewer:REVIEW Findings
-審查了 `plugins/overtone/scripts/data.js`（539 行）和 `tests/unit/data-cli.test.js`（813 行，39 個測試），以及兩個 `auto-discovered.md` 的知識歸檔變更。
-
-檢查了六個面向：依賴注入設計、API 調用正確性（逐一比對 7 個底層模組 exports 的函式簽名）、GC 子命令安全性、錯誤處理完整性、測試覆蓋度、安全性。全部 39 個測試通過。未發現任何高信心問題（>80%）。
-Keywords: plugins, overtone, scripts, data, tests, unit, test, auto, discovered, exports
-
----
-## 2026-03-04 | tester:TEST Findings
-測試結果摘要：3185 passed, 0 failed
-
-- `tests/unit/session-cleanup.test.js`：25 pass / 0 fail（全部通過）
-- 常數值確認未被修改：`DEFAULT_MAX_AGE_DAYS=7`，`DEFAULT_GLOBAL_MAX_AGE_DAYS=30`
-- 完整測試套件：3185 pass / 0 fail（135 個測試檔案）
-Keywords: passed, failed, tests, unit, session, cleanup, test, pass, fail
-
----
-## 2026-03-04 | planner:PLAN Findings
-**需求分解**：
-
-1. 合併 platform-alignment-agents.test.js 展開的逐 agent 存在性測試 | agent: developer | files: `tests/unit/platform-alignment-agents.test.js`
-2. 刪除/降級 guard-coverage.test.js（與 test-quality-guard 功能重疊）| agent: developer | files: `tests/unit/guard-coverage.test.js`, `tests/unit/test-quality-guard.test.js`（可與 1 並行）
-3. 修正計數硬編碼 Anti-Pattern | agent: developer | files: `tests/unit/platform-alignment-registry.test.js`, `tests/unit/registry.test.js`, `tests/unit/health-check.test.js`（可與 1、2 並行）
-4. 執行完整測試驗收 | agent: tester | files: 整個 tests/ 目錄（依賴 1、2、3 完成）
-
-**優先順序**：子任務 1、2、3 可完全並行，由三個 developer 同時執行。子任務 4 依賴前三者。
-
-**範圍邊界**：
-- 不動 e2e tests
-- 不動有真實 spawn 的 integration tests
-- 不移動 tests 到不同目錄
-- 不新增任何測試
-Keywords: platform, alignment, agents, test, agent, developer, files, tests, unit, guard
-
----
-## 2026-03-04 | planner:PLAN Context
-目標將 `bun test` 從 55 秒降至 < 40 秒，刪除低價值測試。執行時間瓶頸主要在 integration/（36 秒，spawn process 密集），unit/ 只需 14 秒。
-Keywords: test, integration, spawn, process, unit
-
----
 ## 2026-03-04 | architect:ARCH Findings
 **Open Questions 回覆**：
 
@@ -595,4 +544,50 @@ Keywords: pass, fail, expect, calls, spec, scenario, state, test, paralleldone, 
 - `tests/unit/agent-stop-handler.test.js`：從 13 tests 擴充至 44 tests
 - `tests/unit/pre-task-handler.test.js`：從 28 tests 擴充至 54 tests
 Keywords: overtone, handler, tests, unit, agent, stop, test, task
+
+---
+## 2026-03-06 | developer:DEV Context
+實作了 S2 系列多進程並發壓力測試（整合測試），位於 `tests/integration/stress-concurrency.test.js`，共 7 個測試全部通過。
+Keywords: tests, integration, stress, concurrency, test
+
+---
+## 2026-03-06 | developer:DEV Context
+實作了 `tests/unit/cas-retry.test.js`，涵蓋 BDD spec S1 的全部 7 個 scenario，直接測試 `updateStateAtomic` 的 CAS retry 機制。
+Keywords: tests, unit, retry, test, spec, scenario, updatestateatomic
+
+---
+## 2026-03-06 | code-reviewer:REVIEW Findings
+審查了 9 個變更檔案（2 個測試檔 + 1 個 BDD spec + 6 個 auto-discovered.md），檢查了以下面向：
+
+1. **BDD 覆蓋完整性**：S1（7 scenarios）+ S2（6 scenarios）全覆蓋，斷言與 THEN 子句對齊
+2. **bun:test API 使用**：`{ retry: 1, timeout: 30000 }` 物件格式正確，替換原本純數字 timeout
+3. **CAS 測試手法正確性**：驗證 `touchFile` + `utimesSync` 在 modifier 執行期間修改 mtime 確實觸發 CAS 衝突偵測（mtime 讀取 → modifier 執行 → mtime 重讀的時序正確）
+4. **enforceInvariants 覆蓋**：S1-4 fallback 路徑 + S1-6 正常路徑均有驗證
+5. **Error handling**：session 清理用 `force: true`、S2-6 stderr 檢查合理
+6. **安全性**：子進程 spawn 路徑用 `JSON.stringify` 正確轉義，無硬編碼 secrets
+7. **測試結果**：14 pass / 0 fail / 117 expect() calls
+
+未發現任何高信心（>80%）問題。
+Keywords: spec, auto, discovered, scenarios, test, retry, timeout, touchfile, utimessync, modifier
+
+---
+## 2026-03-06 | tester:TEST Findings
+測試結果摘要：
+
+- `tests/unit/pre-compact-handler.test.js`：42 pass / 0 fail
+- `tests/unit/health-check-compact-frequency.test.js`：8 pass / 0 fail
+- 本 feature 測試總計：50 pass / 0 fail
+- BDD 18 個 scenario 全數覆蓋（Feature A 6 + Feature B 4 + Feature C 3 + Feature D 5）
+
+全量回歸：4709 pass / 2 fail（fail 均為預先存在的問題，與本次 feature 無關）：
+1. `platform-alignment-skills.test.js` — skills/testing/ 有 2 個孤立 reference 檔案（task-splitting-guide.md、concurrency-testing-guide.md）未被 SKILL.md 引用
+2. `pre-task.test.js` — gap detection 知識缺口注入邏輯期待 `'知識缺口'` 字串但實際 prompt 未包含
+Keywords: tests, unit, compact, handler, test, pass, fail, health, check, frequency
+
+---
+## 2026-03-06 | tester:TEST Context
+模式：verify
+
+執行 compact-quality-detect feature 的 TEST:verify 階段。對照 BDD spec 中 18 個 scenario，確認測試覆蓋完整並執行測試套件。
+Keywords: verify, compact, quality, detect, feature, test, spec, scenario
 

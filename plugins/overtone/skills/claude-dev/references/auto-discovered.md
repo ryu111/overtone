@@ -478,3 +478,38 @@ Keywords: docs, status, pass, fail, changelog, handler, tests, agent, memory, pr
 - 健康檢查通過（skill-reference-integrity 正常）
 Keywords: plugin, json, skill, claude, parallel, background, workflow, core, filesystem, concurrency
 
+---
+## 2026-03-06 | tester:TEST:2 Findings
+測試結果摘要：**20 passed, 0 failed**
+
+| 測試套件 | 結果 |
+|----------|------|
+| concurrency-guard-g2.test.js（20 個）| 20 pass / 0 fail |
+| session-stop-handler.test.js 等 5 個 unit files | 159 pass / 0 fail |
+| integration/health-check.test.js 等 2 個 integration files | 51 pass / 0 fail |
+
+BDD Scenario 覆蓋對照：
+- Feature A（基本清理）：A-1, A-2, A-3 — 全覆蓋 ✅
+- Feature B（邊界條件）：B-1, B-2, B-3, B-4, B-5 — 全覆蓋（額外新增 B-2b: null startedAt）✅
+- Feature C（靜態掃描）：C-1, C-2, C-3 — 全覆蓋 ✅
+- Feature D（Runtime 掃描）：D-1, D-2, D-3, D-4, D-5 — 全覆蓋 ✅
+- Feature E（timeline 事件格式）：E-1, E-2 — 全覆蓋（額外新增 E-2b: check 欄位驗證）✅
+
+health-check 第 20 項 `checkConcurrencyGuards` 正常運行，已在 live 環境偵測到真實 orphan sessions。
+
+ORPHAN_TTL_MS 常數值已驗證為 900000（15 分鐘）。
+Keywords: passed, failed, concurrency, guard, test, pass, fail, session, stop, handler
+
+---
+## 2026-03-06 | developer:DEV Context
+在 `stop-message-builder.js` 的 PASS 路徑新增 postdev 並行群組收斂後的 RETRO issues 提示邏輯。對應 `retro-docs-parallel` feature 的 BDD Feature C（5 個 scenarios）。
+Keywords: stop, message, builder, pass, postdev, retro, issues, docs, parallel, feature
+
+---
+## 2026-03-06 | developer:DEV Findings
+- hooks.json 中只有 `TaskCompleted` 有明確 `timeout: 60`，其他 hook 均使用平台預設值
+- test-parallel.js 的 `KNOWN_WEIGHTS` 是真實測量數據，直接引用確保準確性
+- statusline.js 原始碼第 18 行明確寫有 `效能要求：< 100ms`，直接引用
+- `docs/reference/` 目錄已存在（含 claude-code-platform.md 和 testing-guide.md），性質一致
+Keywords: hooks, json, taskcompleted, timeout, hook, test, parallel, statusline, docs, reference
+
