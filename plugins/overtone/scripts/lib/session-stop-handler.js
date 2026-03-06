@@ -253,6 +253,14 @@ function handleSessionStop(input, sessionId) {
     return { output: { result: '' } };
   }
 
+  // ── 背景 agent 等待 → soft-release ──
+  // Main Agent 的 turn 結束時若仍有 activeAgents，表示這些是背景 agent。
+  // 不 block（避免浪費 loop iteration），讓 task-notification 自然喚醒。
+  const hint = state.getNextStageHint(currentState, { stages, parallelGroups });
+  if (hint && hint.startsWith('等待並行 agent 完成')) {
+    return { output: { result: '' } };
+  }
+
   // ── 未完成 → Loop 繼續 ──
 
   // 遞增 iteration
@@ -266,7 +274,6 @@ function handleSessionStop(input, sessionId) {
 
   // 產生繼續 prompt
   const progressBar = buildProgressBar(stageStatuses, stages);
-  const hint = state.getNextStageHint(currentState, { stages, parallelGroups });
 
   const continueMessage = buildContinueMessage({
     iteration: loopState.iteration,

@@ -444,6 +444,42 @@ describeI('handleSessionStop PM stage', () => {
   });
 });
 
+// ── handleSessionStop：背景 agent soft-release ──────────────────────────────
+
+describeI('handleSessionStop 背景 agent soft-release', () => {
+  testI('有 activeAgents 且 stage 未完成 → soft-release（不 block loop）', () => {
+    const sid = newSid();
+    setupSession(sid, ['DEV', 'REVIEW']);
+    // DEV 設為 active 且有 activeAgents（模擬背景 agent 正在執行）
+    stateLib.updateStateAtomic(sid, (s) => {
+      s.stages.DEV.status = 'active';
+      s.activeAgents['developer:abc123'] = {
+        agentName: 'developer',
+        stage: 'DEV',
+      };
+      return s;
+    });
+    loopLib.writeLoop(sid, { iteration: 1, stopped: false, consecutiveErrors: 0, startedAt: new Date().toISOString() });
+
+    const result = handleSessionStop({ cwd: '/tmp' }, sid);
+    // 應 soft-release 而非 block
+    expectI(result.output).toHaveProperty('result');
+    expectI(result.output.result).toBe('');
+    expectI(result.output.decision).toBeUndefined();
+  });
+
+  testI('無 activeAgents 且 stage 未完成 → block loop 繼續', () => {
+    const sid = newSid();
+    setupSession(sid, ['DEV', 'REVIEW']);
+    stateLib.updateStage(sid, 'DEV', { status: 'completed', result: 'pass' });
+    // REVIEW 仍為 pending，無 activeAgents
+    loopLib.writeLoop(sid, { iteration: 1, stopped: false, consecutiveErrors: 0, startedAt: new Date().toISOString() });
+
+    const result = handleSessionStop({ cwd: '/tmp' }, sid);
+    expectI(result.output.decision).toBe('block');
+  });
+});
+
 // ── buildCompletionSummary 補充 ───────────────────────────────────────────────
 
 describeI('buildCompletionSummary 補充', () => {
