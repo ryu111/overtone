@@ -50,6 +50,15 @@ skills:
 
 進行六維度評估時，📋 MUST 閱讀 `craft` skill 的 `competitor-benchmark.md`，每個維度評分時對標競品分數。
 
+### 分數門檻規則（standard/full/secure workflow 適用）
+
+在 standard / full / secure workflow 中，若六維度評估中**任何維度分數 <3/5**，📋 MUST 自動輸出 ISSUES flag，並在「改善建議」中說明低分維度及具體改善方向。此規則與信心門檻並列 — 任一觸發即輸出 ISSUES：
+
+- **觸發條件 A**：信心 ≥70% 的具體問題（現有規則）
+- **觸發條件 B**：任何維度 <3/5（新增門檻，standard/full/secure 適用）
+
+⚠️ 此門檻規則**不適用**於 quick workflow（quick 的六維度評估本身是選用的）。
+
 | 維度 | 定義 | 評分基準（1-5） |
 |------|------|----------------|
 | 理解力 | 是否真正理解領域概念和需求意圖 | 1=完全不懂領域，3=基本理解，5=超越需求預判 |
@@ -89,8 +98,10 @@ skills:
 - code-reviewer 已標注的問題不需重複 — 聚焦跨階段的整體問題
 - retroCount 追蹤由 Main Agent 負責 — retrospective 不追蹤迭代次數
 - ISSUES 標記是建議不是要求立即修復 — Main Agent 決定是否委派
-- PASS 結果不代表程式碼完美 — 表示信心 ≥70% 的重要問題不存在
+- PASS 結果不代表程式碼完美 — 表示信心 ≥70% 的重要問題不存在，且所有維度 ≥3/5（standard/full/secure）
 - 六維度評估在 quick workflow 是選用的，在 standard/full/secure workflow 是必做的
+- **分數門檻僅適用 standard/full/secure**：quick workflow 的六維度低分不觸發 ISSUES（quick 是選用評估）
+- **2/5 不等於問題輕微**：某維度 2/5 即便沒有「具體程式碼位置」也必須觸發 ISSUES — 分數本身就是證據
 
 ## 輸入
 
@@ -106,7 +117,7 @@ skills:
 ## HANDOFF: retrospective → doc-updater
 
 ### Context
-RETRO PASS — 回顧完成，無信心 ≥70% 的重要問題，整體品質達標。
+RETRO PASS — 回顧完成，無信心 ≥70% 的重要問題，所有維度 ≥3/5（standard/full/secure workflow），整體品質達標。
 
 ### Findings
 **回顧摘要**：
@@ -122,7 +133,9 @@ RETRO PASS — 回顧完成，無信心 ≥70% 的重要問題，整體品質達
 
 ### 情況 B：發現重要問題（ISSUES）
 
-輸出中 📋 MUST 包含 `ISSUES` 標記和 `## 改善建議` 章節：
+輸出中 📋 MUST 包含 `ISSUES` 標記和 `## 改善建議` 章節。觸發來源可能是：
+- 信心 ≥70% 的具體問題
+- 任何維度分數 <3/5（standard/full/secure workflow）
 
 ```
 ## HANDOFF: retrospective → main-agent
@@ -149,6 +162,6 @@ ISSUES — 發現 N 個值得優化的問題（信心 ≥70%）。
 
 ## 停止條件
 
-- ✅ 回顧完成且無重要問題 → PASS，繼續 DOCS
-- ✅ 回顧完成且發現問題 → ISSUES，Main Agent 📋 MUST 自動委派 developer 修復（retroCount < 3 時）
+- ✅ 回顧完成且無重要問題、所有維度 ≥3/5（standard/full/secure）→ PASS，繼續 DOCS
+- ✅ 回顧完成且發現問題（信心 ≥70% 或任何維度 <3/5 且為 standard/full/secure）→ ISSUES，Main Agent 📋 MUST 自動委派 developer 修復（retroCount < 3 時）
 - ✅ retroCount 達到上限（由 Main Agent 追蹤）→ 無論結果都標注「已達迭代上限」並 PASS

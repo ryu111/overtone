@@ -1,39 +1,4 @@
 ---
-## 2026-03-05 | developer:DEV Findings
-1. **health-check doc-code-drift** — 執行前已是 `passed: true`，無 drift 發現（doc-sync-engine 只追蹤 agents/skills/commands/hooks 四項，不含 scripts/lib 計數）
-2. **docs-sync.test.js** — 28 pass，執行前後皆通過
-3. **scripts/lib 實際計數**：
-   - 頂層 `.js`：42 個
-   - `analyzers/`：7 個
-   - `knowledge/`：9 個
-   - `dashboard/`：2 個
-   - `remote/`：4 個
-   - 總計：**64 個**（文件記載 51，差距 13 個）
-4. **其他數字確認**：agents 18、skills 24、hooks 11、commands 28、health-check 17 項 — 均已正確
-Keywords: health, check, code, drift, passed, true, sync, engine, agents, skills
-
----
-## 2026-03-05 | developer:DEV Findings
-**queryPastInterviews(projectRoot, options?)**
-- 掃描 `~/.overtone/sessions/{sessionId}/interview-state.json`
-- 支援 `options.limit`（預設 10）和 `options.feature`（依 feature 名稱過濾）
-- 已完成的訪談（有 completedAt）排在未完成前面
-- 無法讀取的 session 靜默跳過
-- JSDoc 中避免使用 `*` 萬用字元（Bun 會把 JSDoc 註解中的 glob 路徑當成語法解析）
-
-**extractInsights(sessions)**
-- 純函式，無 I/O，輸入含 `answers` 欄位的 session 物件陣列
-- functional 回答 → commonRequirements
-- edge-cases 回答 → boundaryConditions
-- flow + ui 回答 → userPreferences
-- 各類別最多 5 筆，重複去重
-
-**設計決策**
-- `queryPastInterviews` 使用硬編碼 `~/.overtone` 路徑（與 paths.js 一致，不依賴 projectRoot 來定位 sessions）
-- projectRoot 參數保留供未來依專案隔離訪談使用
-Keywords: querypastinterviews, projectroot, options, overtone, sessions, sessionid, interview, state, json, limit
-
----
 ## 2026-03-05 | developer:DEV Context
 實作了 PM agent 的跨 session 記憶能力。在 `interview.js` 新增兩個 export 函式，讓 PM 在開始新訪談前可以查詢並參考過去的訪談記錄。
 Keywords: agent, session, interview, export
@@ -633,4 +598,14 @@ convergence-gate-fix 實作了兩個方向的修復：方向 B 將 `findActualSt
 - 自動修復：sanitize() 呼叫用 try/catch 靜默降級，不會中斷主流程。updateStateAtomic callback 有安全 early exit（`if (!resolvedActualStageKey) return s`）。
 - 補全能力：修復的是既有核心模組，不涉及新 Skill/Agent 建立。新增測試 7 個，完整對應 BDD spec 所有 scenario。
 Keywords: convergence, gate, findactualstagekey, updatestateatomic, callback, toctou, handlepretask, state, sanitize, active
+
+---
+## 2026-03-06 | developer:DEV Context
+實作了 `retro-threshold` 功能：在 retrospective agent 的六維度評估中加入分數門檻機制，任何維度 <3/5 時自動觸發 ISSUES（僅限 standard/full/secure workflow）。
+Keywords: retro, threshold, retrospective, agent, issues, standard, full, secure, workflow
+
+---
+## 2026-03-06 | doc-updater:DOCS Context
+此次 Handoff 涉及在 `plugins/overtone/agents/retrospective.md` 中加入六維度分數門檻機制：任何維度評分 <3/5 時自動觸發 ISSUES flag（僅適用 standard/full/secure workflow，quick workflow 除外）。
+Keywords: handoff, plugins, overtone, agents, retrospective, issues, flag, standard, full, secure
 
