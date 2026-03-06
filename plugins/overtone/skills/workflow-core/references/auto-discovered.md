@@ -745,13 +745,4 @@ Keywords: templates, strategy, hook, agent, stop, handler, session, notification
 Keywords: voice, system, plugins, overtone, scripts, templates, strategy, hook, agent, stop
 
 ---
-## 2026-03-06 | doc-updater:DOCS Context
-Kuji 專案已完成 product-full workflow 的多個階段：
-- ✅ 產品願景、規劃、架構、設計、BDD 規格
-- ✅ 開發（Phase 0-5 前台+後台實作完成）
-- ✅ 審查、測試驗證
-- ✅ 回顧（發現已知問題）
-
-目前處於 📝 文件同步階段，需要更新存量文件與任務進度。
-Keywords: kuji, product, full, workflow, phase
 

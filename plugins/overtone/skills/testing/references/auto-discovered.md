@@ -587,32 +587,4 @@ Keywords: verify, spec, specs, features, progress, voice, system, test, template
 判定：**PASS**
 Keywords: pass, fail, expect, calls, tests, unit, test, templates, strategy
 
----
-## 2026-03-06 | tester:TEST:2 Findings
-**測試結果：88 pass / 0 fail / 141 expect() calls**
-
-原有測試（37 個，維持通過）：
-- `engine/__tests__/lottery.test.ts` — fisherYatesShuffle、buildShuffledPrizeItems、executeDraw
-- `routes/__tests__/auth.test.ts` — 輸入驗證格式
-- `routes/__tests__/draws.test.ts` — initiate 驗證、ECPay 驗簽
-- `routes/__tests__/admin.test.ts` — requireAdmin、上架驗證、出貨標記
-
-新增補充測試（51 個）：
-- `/Users/sbu/projects/kuji/apps/api/src/lib/__tests__/jwt.test.ts` — signToken / verifyToken / extractBearerToken，覆蓋 Scenario 1-1, 1-4, 1-6, 15-5（偽造 JWT 拒絕）
-- `/Users/sbu/projects/kuji/apps/api/src/lib/__tests__/ecpay-utils.test.ts` — generateMerchantTradeNo / formatECPayDate / computeCheckMacValue / buildPaymentFormData，覆蓋 Scenario 7 系列
-- `/Users/sbu/projects/kuji/apps/api/src/lib/__tests__/sse-bus.test.ts` — SSEBus subscribe / publish / cleanup，覆蓋 Scenario 9-1, 9-3, 6-5, 6-6
-- `/Users/sbu/projects/kuji/apps/api/src/engine/__tests__/lottery-sold-out.test.ts` — isSoldOut 邊界條件、getPrizeCurrentState，覆蓋 Scenario 6-6
-- `/Users/sbu/projects/kuji/apps/api/src/routes/__tests__/prizes.test.ts` — 列表格式、IP tag 篩選、remainingCount 計算、冪等保護邏輯，覆蓋 Scenario 3-1, 3-3, 3-5, 7-3, 7-4
-Keywords: pass, fail, expect, calls, engine, lottery, test, fisheryatesshuffle, buildshuffledprizeitems, executedraw
-
----
-## 2026-03-06 | tester:TEST:2 Context
-模式：verify（驗證現有測試 + 補充遺漏的關鍵 unit test）
-
-完成了：
-1. 執行現有 4 個測試檔（37 個測試），全數通過
-2. 對照 51 個 BDD scenario，分析覆蓋缺口
-3. 新增 4 個補充測試檔，補足關鍵遺漏
-4. 完整測試套件 88 個測試，0 個失敗
-Keywords: verify, unit, test, scenario
 
