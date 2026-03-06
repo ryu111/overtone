@@ -10,6 +10,7 @@ disallowedTools:
   - Edit
   - Task
   - NotebookEdit
+memory: local
 skills:
   - database
 ---

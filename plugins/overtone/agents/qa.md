@@ -9,6 +9,7 @@ disallowedTools:
   - Edit
   - Task
   - NotebookEdit
+memory: local
 skills:
   - testing
   - os-control

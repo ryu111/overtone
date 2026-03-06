@@ -412,3 +412,28 @@ Keywords: retrospective, workflow, parseresult, minor, issues, context, pass, fr
 - 核心指標或測試數量變更
 Keywords: retrospective, agent, prompt, pass, docs, status, spec, overtone, retro, plugin
 
+---
+## 2026-03-06 | code-reviewer:REVIEW Findings
+- 審查了 4 個變更檔案（3 個測試 + 1 個 auto-discovered.md）
+- 103 個測試全部通過（session-stop: 45, pre-compact: 27, session-end: 31）
+- Handler 原始碼未被修改（唯讀審查確認）
+- 測試涵蓋邊界條件、正常路徑、副作用驗證、容錯處理
+- DEV 的三個發現（maxIterations=100、buildCompletionSummary 含失敗時仍顯示、pendingAction type 不直接顯示）均與原始碼行為一致
+- 無 Critical/Major 問題
+Keywords: auto, discovered, session, stop, compact, handler, maxiterations, buildcompletionsummary, pendingaction, type
+
+---
+## 2026-03-06 | code-reviewer:REVIEW Findings
+- 8 個 agent .md 各 +1 行 `memory: local`，位置和格式與既有慣例一致
+- registry-data.json agentMemory 從 9 → 17 entries，與 .md 檔完全對齊
+- grader 正確排除（無 memory 需求）
+- agent prompt 內容未被修改（純 frontmatter 變更）
+- validate-agents.js 驗證通過
+- 3 個 auto-discovered.md 變更為前輪知識歸檔，與本次任務無關
+Keywords: agent, memory, local, registry, data, json, agentmemory, entries, grader, prompt
+
+---
+## 2026-03-06 | code-reviewer:REVIEW Context
+程式碼審查通過。agent-memory-setup 變更乾淨，8 個 agent 正確加入 `memory: local`，registry-data.json 同步更新，grader 正確排除。
+Keywords: agent, memory, setup, local, registry, data, json, grader
+

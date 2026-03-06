@@ -5,6 +5,7 @@ model: sonnet
 permissionMode: bypassPermissions
 color: orange
 maxTurns: 50
+memory: local
 skills:
   - build-system
 ---

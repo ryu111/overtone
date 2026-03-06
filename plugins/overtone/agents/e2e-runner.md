@@ -5,6 +5,7 @@ model: sonnet
 permissionMode: bypassPermissions
 color: green
 maxTurns: 50
+memory: local
 ---
 
 # 🌐 E2E 測試者

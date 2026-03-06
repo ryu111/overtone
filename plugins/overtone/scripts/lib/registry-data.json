@@ -131,6 +131,14 @@
     "debugger": "local",
     "planner": "local",
     "architect": "local",
-    "claude-developer": "local"
+    "claude-developer": "local",
+    "retrospective": "local",
+    "designer": "local",
+    "database-reviewer": "local",
+    "qa": "local",
+    "e2e-runner": "local",
+    "build-error-resolver": "local",
+    "refactor-cleaner": "local",
+    "doc-updater": "local"
   }
 }

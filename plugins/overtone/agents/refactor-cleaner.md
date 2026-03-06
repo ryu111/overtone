@@ -5,6 +5,7 @@ model: sonnet
 permissionMode: bypassPermissions
 color: blue
 maxTurns: 50
+memory: local
 skills:
   - dead-code
 ---

@@ -5,6 +5,7 @@ model: haiku
 permissionMode: bypassPermissions
 color: purple
 maxTurns: 20
+memory: local
 skills:
   - wording
 ---
