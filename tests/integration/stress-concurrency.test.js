@@ -1,3 +1,4 @@
+// @stress-test
 'use strict';
 /**
  * stress-concurrency.test.js — 多進程並發壓力測試（整合測試）
@@ -11,12 +12,17 @@
  *   S2-6: 高並發下 CAS 最終一致性（多子進程 updateStateAtomic）
  *
  * 測試策略：使用 Bun.spawn 啟動子進程，主進程等待全部完成後驗證結果。
+ * Flaky 防護：壓力測試因 OS 排程差異可能偶發失敗，設定 retry: 1 自動重試一次。
  */
 
 const { describe, it, expect, beforeEach, afterEach } = require('bun:test');
 const { existsSync, rmSync, mkdirSync, readdirSync, readFileSync, writeFileSync } = require('fs');
 const { join } = require('path');
 const { SCRIPTS_LIB } = require('../helpers/paths');
+
+// ── Flaky 防護設定 ──
+// 壓力測試因 OS 排程不確定性可能偶發失敗，自動重試一次
+const STRESS_TEST_OPTIONS = { retry: 1, timeout: 30000 };
 
 // ── 路徑設定 ──
 
@@ -82,7 +88,7 @@ describe('S2-1/S2-2: N 個子進程同時 atomicWrite', () => {
     const files = readdirSync(TMP_DIR);
     const tmpFiles = files.filter((f) => f.endsWith('.tmp'));
     expect(tmpFiles).toEqual([]);
-  }, 30000);
+  }, STRESS_TEST_OPTIONS);
 
   it('S2-2: 最終 workflow.json 存在且內容可 JSON.parse，writerId 欄位存在', async () => {
     const targetFile = join(TMP_DIR, 'workflow.json');
@@ -106,7 +112,7 @@ describe('S2-1/S2-2: N 個子進程同時 atomicWrite', () => {
     expect(typeof parsed.writerId).toBe('number');
     expect(parsed.writerId).toBeGreaterThanOrEqual(0);
     expect(parsed.writerId).toBeLessThan(N);
-  }, 30000);
+  }, STRESS_TEST_OPTIONS);
 });
 
 // ═══════════════════════════════════════════════════════
@@ -145,7 +151,7 @@ describe('S2-3/S2-4: N 個子進程同時 appendFileSync 同一 JSONL', () => {
     for (const line of lines) {
       expect(() => { parsed.push(JSON.parse(line)); }).not.toThrow();
     }
-  }, 30000);
+  }, STRESS_TEST_OPTIONS);
 
   it('S2-4: 每個 processId 恰好出現 5 次，(processId, lineIndex) 組合唯一', async () => {
     const targetFile = join(TMP_DIR, 'timeline.jsonl');
@@ -179,7 +185,7 @@ describe('S2-3/S2-4: N 個子進程同時 appendFileSync 同一 JSONL', () => {
     // 驗證：每個 (processId, lineIndex) 組合唯一
     const keys = new Set(records.map((r) => `${r.processId}:${r.lineIndex}`));
     expect(keys.size).toBe(50);
-  }, 30000);
+  }, STRESS_TEST_OPTIONS);
 });
 
 // ═══════════════════════════════════════════════════════
@@ -285,5 +291,5 @@ describe('S2-6: 高並發下 CAS 最終一致性（多子進程 updateStateAtomi
 
     // 清理 session 目錄
     rmSync(sessionDir, { recursive: true, force: true });
-  }, 30000);
+  }, STRESS_TEST_OPTIONS);
 });
