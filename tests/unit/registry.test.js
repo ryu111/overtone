@@ -110,8 +110,8 @@ describe('registry.js 資料完整性', () => {
       expect(agentMemory['debugger']).toBe('local');
       expect(agentMemory['planner']).toBe('local');
       expect(agentMemory['architect']).toBe('local');
-      // retrospective 尚未設定 memory
-      expect(agentMemory['retrospective']).toBeUndefined();
+      // retrospective 已在品質盤點迭代 3 加入 memory
+      expect(agentMemory['retrospective']).toBe('local');
     });
 
     test('只包含 agentModels 中存在的 agent', () => {

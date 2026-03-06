@@ -26,7 +26,7 @@ const agentFiles = [
   'code-reviewer', 'debugger', 'security-reviewer', 'database-reviewer', 'retrospective',
   'architect', 'planner', 'qa', 'product-manager', 'designer',
   'tester', 'developer', 'doc-updater', 'e2e-runner', 'build-error-resolver',
-  'refactor-cleaner', 'grader',
+  'refactor-cleaner', 'grader', 'claude-developer',
 ];
 
 beforeAll(() => {
@@ -276,12 +276,12 @@ describe('Feature 1b: Agent skills 預載（agent frontmatter）', () => {
 
 describe('Feature S10: Agent Memory', () => {
 
-  // S10-1: 啟用 memory 的 agent
-  // 決策型（opus）：code-reviewer、security-reviewer、product-manager
-  // 執行型（sonnet，Phase 2 個體學習升級）：developer、tester、debugger、planner、architect
+  // S10-1: 啟用 memory 的 agent（17 個，排除 grader）
   const memoryAgents = [
     'code-reviewer', 'security-reviewer', 'product-manager',
     'developer', 'tester', 'debugger', 'planner', 'architect',
+    'claude-developer', 'retrospective', 'designer', 'database-reviewer',
+    'qa', 'e2e-runner', 'build-error-resolver', 'refactor-cleaner', 'doc-updater',
   ];
   describe('S10-1: memory: local agent', () => {
     test('所有啟用 memory 的 agent frontmatter 包含 memory: local', () => {
