@@ -15,6 +15,7 @@ skills:
   - code-review
   - wording
   - craft
+  - debugging
 ---
 
 # 🔍 審查者
