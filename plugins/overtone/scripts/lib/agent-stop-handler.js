@@ -125,6 +125,13 @@ function handleAgentStop(input, sessionId) {
         if (nextPending) s.currentStage = nextPending;
         isConvergedOrFailed = true;
         finalResult = result.verdict;
+      } else if (result.verdict === 'issues') {
+        // RETRO issues → stage 完成，result='issues'，視為收斂（不阻擋後續 stage）
+        Object.assign(entry, { status: 'completed', result: 'issues', completedAt: new Date().toISOString() });
+        const nextPending = Object.keys(s.stages).find((k) => s.stages[k].status === 'pending');
+        if (nextPending) s.currentStage = nextPending;
+        isConvergedOrFailed = true;
+        finalResult = 'issues';
       } else if (checkSameStageConvergence(entry)) {
         // 全部 pass + 已收斂
         Object.assign(entry, { status: 'completed', result: 'pass', completedAt: new Date().toISOString() });

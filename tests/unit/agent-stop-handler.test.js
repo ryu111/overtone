@@ -901,9 +901,63 @@ describe('handleAgentStop — RETRO stage issues verdict', () => {
     );
 
     const state = stateLib.readState(sid);
+    // B-1: status=completed + result='issues'
     expect(state.stages['RETRO'].status).toBe('completed');
-    // issues verdict 也算 pass（非 fail/reject）
-    // pendingAction 不應寫入（issues 不是 fail/reject）
+    expect(state.stages['RETRO'].result).toBe('issues');
+    // issues 不是 fail/reject，pendingAction 不應寫入
+    expect(state.pendingAction).toBeNull();
+  });
+
+  test('B-3: RETRO issues → isConvergedOrFailed=true（stage:complete timeline 事件存在）', () => {
+    const sid = newSessionId();
+    setupSession(sid, ['DEV', 'RETRO'], 'quick');
+
+    stateLib.updateStateAtomic(sid, (s) => {
+      s.stages['DEV'].status = 'completed';
+      s.stages['DEV'].result = 'pass';
+      s.stages['RETRO'].status = 'active';
+      return s;
+    });
+
+    handleAgentStop(
+      {
+        agent_type: 'retrospective',
+        last_assistant_message: '本次 sprint 有以下 issues：架構設計有改善空間，建議重構。',
+      },
+      sid
+    );
+
+    // isConvergedOrFailed=true 的效果：stage:complete 事件被 emit 到 timeline
+    const timelinePath = paths.session.timeline(sid);
+    const content = fs.readFileSync(timelinePath, 'utf8');
+    const events = content.split('\n').filter(Boolean).map(l => JSON.parse(l));
+    const stageComplete = events.find(e => e.type === 'stage:complete' && e.stage === 'RETRO');
+    expect(stageComplete).toBeDefined();
+    expect(stageComplete.result).toBe('issues');
+  });
+
+  test('B-2: RETRO verdict=pass → stage completed + result=pass（無回歸）', () => {
+    const sid = newSessionId();
+    setupSession(sid, ['DEV', 'RETRO'], 'quick');
+
+    stateLib.updateStateAtomic(sid, (s) => {
+      s.stages['DEV'].status = 'completed';
+      s.stages['DEV'].result = 'pass';
+      s.stages['RETRO'].status = 'active';
+      return s;
+    });
+
+    handleAgentStop(
+      {
+        agent_type: 'retrospective',
+        last_assistant_message: '本次 sprint 執行順暢，所有目標達成。',
+      },
+      sid
+    );
+
+    const state = stateLib.readState(sid);
+    expect(state.stages['RETRO'].status).toBe('completed');
+    expect(state.stages['RETRO'].result).toBe('pass');
     expect(state.pendingAction).toBeNull();
   });
 
