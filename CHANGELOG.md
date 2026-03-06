@@ -2,6 +2,37 @@
 
 所有重要變更記錄於此文件。
 
+## [0.28.71] - 2026-03-06
+
+### RETRO 評估框架升級（Retrospective Evaluation Framework Upgrade）
+
+#### 核心增強
+- **retrospective.md**：新增六維度結構化評估框架
+  - 六維度：理解力、創造力、美感、細心、完整度、架構能力（各 1-5 分）
+  - 適用場景：Acid Test（新領域 CLI/完整產品原型）或跨領域開發
+  - 一般 bugfix/功能迭代 RETRO 可跳過此區塊
+  - 輸出格式：六維度評估表格 + 競品對標總分
+
+- **craft SKILL.md**：索引更新，補充競品基準參考
+  - 決策樹新增分支：「Acid Test / 跨領域開發六維度評估 → competitor-benchmark.md」
+  - 資源索引新增：`competitor-benchmark.md` 條目
+
+- **craft/references/competitor-benchmark.md**：新增 2026-03 競品基準矩陣
+  - 維度：理解力、創造力、美感、細心、完整度、架構能力
+  - 競品：Cursor、Windsurf、Devin、Claude Code + Overtone
+  - 量化基準：每維度 1-5 分，六維度總分 1-30 分
+  - 競品參考總分：Cursor ~14、Windsurf ~14、Devin ~19、Claude Code + Overtone ~23
+  - 更新頻率：建議每季度人工審查一次
+
+#### 文件同步
+- `docs/status.md`：版本 0.28.70 → 0.28.71、近期變更更新（加入 retro-evaluation-upgrade feature）
+- `CHANGELOG.md`：新增本條目
+
+#### 內容說明
+本 feature 未添加測試，因為 retrospective agent 的評估邏輯由 Main Agent 委派時觸發，品質驗證透過實際回顧工作流達成（黑盒驗證）。
+
+---
+
 ## [0.28.70] - 2026-03-06
 
 ### 並行收斂 TEST:2 狀態修復（Parallel Convergence State Fix）
