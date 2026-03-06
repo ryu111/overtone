@@ -2,13 +2,14 @@
 
 > 📋 **何時讀取**：執行到含並行群組的 workflow stages 時。
 
-## 三個並行群組
+## 四個並行群組
 
 | 群組名 | Stages | 使用於 |
 |--------|--------|--------|
 | `quality` | REVIEW + TEST:verify | standard, refactor |
 | `verify` | QA + E2E | full |
 | `secure-quality` | REVIEW + TEST:verify + SECURITY | secure |
+| `postdev` | RETRO + DOCS | quick, standard, full, secure |
 
 ## 執行方式
 
@@ -79,6 +80,24 @@ TEST 結果保留，不重做
 REVIEW 結果保留，不重做
 ```
 
+## postdev 群組收斂規則
+
+`postdev` 群組（RETRO + DOCS）在所有品質驗證通過後執行：
+
+📋 MUST 在**同一訊息中**同時委派 `retrospective` + `doc-updater` agent。
+
+### RETRO ISSUES 特殊處理
+
+RETRO 回報 ISSUES 不阻擋 DOCS 完成。等待 DOCS agent 完成後：
+
+```
+RETRO ISSUES → 等 DOCS 完成 → 委派 developer 修復 → 重新 RETRO（retroCount+1，上限 3 次）
+```
+
+- DOCS 完成後才啟動修復，不提前中斷 DOCS
+- 修復後只重跑 RETRO，不重跑 DOCS（除非修復涉及文件）
+- retroCount 達上限（3 次）時，記錄 ISSUES 並繼續完成 workflow
+
 ## 不可並行的情況
 
 以下 stages 📋 MUST 序列執行，不可並行：
@@ -87,3 +106,4 @@ REVIEW 結果保留，不重做
 - ARCH → TEST:spec（規格依賴架構）
 - TEST:spec → DEV（開發依賴規格）
 - DEV → 任何品質檢查（檢查依賴程式碼）
+- 品質驗證（quality/verify/secure-quality）→ postdev（回顧依賴最終結果）

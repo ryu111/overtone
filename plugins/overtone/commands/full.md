@@ -1,6 +1,6 @@
 ---
 name: full
-description: 完整功能開發工作流。PLAN → ARCH → DESIGN → TEST:spec → DEV → [REVIEW + TEST:verify] → [QA + E2E] → DOCS。適用於大型跨模組功能。
+description: 完整功能開發工作流。PLAN → ARCH → DESIGN → TEST:spec → DEV → [REVIEW + TEST:verify] → [QA + E2E] → [RETRO + DOCS]。適用於大型跨模組功能。
 ---
 
 # 完整功能開發（Full）
@@ -98,26 +98,26 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/init-workflow.js full ${CLAUDE_SESSION_ID} {f
   - **輸入**：developer 的 Handoff
   - **產出**：PASS / FAIL（端對端自動化測試）
 
-### 10. RETRO — 🔁 迭代回顧
+### 10-11. [RETRO + DOCS] — 並行
 
-委派 `retrospective` agent。
+📋 MUST 在同一訊息中同時委派 `retrospective` + `doc-updater` agent。
 
-- **輸入**：所有前面階段的 Handoff（含 QA + E2E 結果）
-- **產出**：PASS（無重要問題）/ ISSUES（有改善建議）
-- 📋 ISSUES → Main Agent 📋 MUST 自動委派 developer 修復 → 重回 [REVIEW + TEST] → RETRO（retroCount+1，上限 3 次）
+- **retrospective**（RETRO）
+  - **輸入**：所有前面階段的 Handoff（含 QA + E2E 結果）
+  - **產出**：PASS（無重要問題）/ ISSUES（有改善建議）
 
-### 11. DOCS — 📝 文件
+- **doc-updater**（DOCS）
+  - **輸入**：所有前面階段的 Handoff
+  - **產出**：更新的文件
 
-委派 `doc-updater` agent。
-
-- **輸入**：所有前面階段的 Handoff
-- **產出**：更新的文件
+若 RETRO 回報 ISSUES：等 DOCS 完成後，委派 developer 修復 → 重回 [REVIEW + TEST] → RETRO（retroCount+1，上限 3 次）。
 
 ## 並行規則
 
-兩組並行：
+三組並行：
 1. `quality`：REVIEW + TEST:verify（同時委派）
 2. `verify`：QA + E2E（同時委派，在 quality 之後）
+3. `postdev`：RETRO + DOCS（同時委派，在 verify 之後）
 
 ## BDD 規則
 

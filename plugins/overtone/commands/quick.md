@@ -1,6 +1,6 @@
 ---
 name: quick
-description: 快速開發工作流。DEV 後執行 REVIEW，適用於小 bug 修復和簡單功能。
+description: 快速開發工作流。DEV 後執行 REVIEW，完成後並行 [RETRO + DOCS]。適用於小 bug 修復和簡單功能。
 ---
 
 # 快速開發（Quick）
@@ -44,20 +44,19 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/init-workflow.js quick ${CLAUDE_SESSION_ID} {
 - **輸入**：developer 的 Handoff
 - **產出**：PASS / REJECT
 
-### 3. RETRO — 🔁 迭代回顧
+### 3-4. [RETRO + DOCS] — 並行
 
-委派 `retrospective` agent。
+📋 MUST 在同一訊息中同時委派 `retrospective` + `doc-updater` agent。
 
-- **輸入**：所有前面階段的 Handoff
-- **產出**：PASS（無重要問題）/ ISSUES（有改善建議）
-- 📋 ISSUES → Main Agent 📋 MUST 自動委派 developer 修復 → 重回 REVIEW → RETRO（retroCount+1，上限 3 次）
+- **retrospective**（RETRO）
+  - **輸入**：所有前面階段的 Handoff
+  - **產出**：PASS（無重要問題）/ ISSUES（有改善建議）
 
-### 4. DOCS — 📝 文件
+- **doc-updater**（DOCS）
+  - **輸入**：所有前面階段的 Handoff
+  - **產出**：更新的文件（README、API 文件等）
 
-委派 `doc-updater` agent。
-
-- **輸入**：所有前面階段的 Handoff
-- **產出**：更新的文件（README、API 文件等）
+若 RETRO 回報 ISSUES：等 DOCS 完成後，委派 developer 修復 → 重回 REVIEW → RETRO（retroCount+1，上限 3 次）。
 
 ## 失敗處理
 

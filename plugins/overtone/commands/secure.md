@@ -1,6 +1,6 @@
 ---
 name: secure
-description: 高風險功能開發工作流。PLAN → ARCH → TEST:spec → DEV → [REVIEW + TEST:verify + SECURITY] → DOCS。適用於認證、支付、安全敏感功能。
+description: 高風險功能開發工作流。PLAN → ARCH → TEST:spec → DEV → [REVIEW + TEST:verify + SECURITY] → [RETRO + DOCS]。適用於認證、支付、安全敏感功能。
 ---
 
 # 高風險功能開發（Secure）
@@ -81,24 +81,24 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/init-workflow.js secure ${CLAUDE_SESSION_ID} 
   - **輸入**：developer 的 Handoff + architect 的安全架構設計
   - **產出**：PASS / REJECT（含安全問題嚴重程度分級）
 
-### 8. RETRO — 🔁 迭代回顧
+### 8-9. [RETRO + DOCS] — 並行
 
-委派 `retrospective` agent。
+📋 MUST 在同一訊息中同時委派 `retrospective` + `doc-updater` agent。
 
-- **輸入**：所有前面階段的 Handoff（含安全審查結果）
-- **產出**：PASS（無重要問題）/ ISSUES（有改善建議）
-- 📋 ISSUES → Main Agent 📋 MUST 自動委派 developer 修復 → 重回 [REVIEW + TEST] → RETRO（retroCount+1，上限 3 次）
+- **retrospective**（RETRO）
+  - **輸入**：所有前面階段的 Handoff（含安全審查結果）
+  - **產出**：PASS（無重要問題）/ ISSUES（有改善建議）
 
-### 9. DOCS — 📝 文件
+- **doc-updater**（DOCS）
+  - **輸入**：所有前面階段的 Handoff（含安全審查結果）
+  - **產出**：更新的文件
 
-委派 `doc-updater` agent。
-
-- **輸入**：所有前面階段的 Handoff（含安全審查結果）
-- **產出**：更新的文件
+若 RETRO 回報 ISSUES：等 DOCS 完成後，委派 developer 修復 → 重回 [REVIEW + TEST] → RETRO（retroCount+1，上限 3 次）。
 
 ## 並行規則
 
 REVIEW + TEST:verify + SECURITY 屬於 `secure-quality` 並行群組，📋 MUST 同時委派三者。
+RETRO + DOCS 屬於 `postdev` 並行群組，📋 MUST 同時委派。
 
 ## BDD 規則
 
@@ -114,5 +114,5 @@ TEST FAIL → debugger → developer → tester 迴圈（上限 3 次）。REVIE
 
 ## 完成條件
 
-- ✅ 所有 9 個 stage 完成
+- ✅ 所有 9 個 stage 完成（含並行 RETRO + DOCS）
 - ✅ lint 0 error + test 0 fail + code-review PASS + security PASS + RETRO PASS（或 retroCount 達上限）

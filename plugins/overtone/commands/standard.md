@@ -1,6 +1,6 @@
 ---
 name: standard
-description: 標準功能開發工作流。PLAN → ARCH → TEST:spec → DEV → [REVIEW + TEST:verify] → DOCS。適用於中型新功能。
+description: 標準功能開發工作流。PLAN → ARCH → TEST:spec → DEV → [REVIEW + TEST:verify] → [RETRO + DOCS]。適用於中型新功能。
 ---
 
 # 標準功能開發（Standard）
@@ -76,24 +76,24 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/init-workflow.js standard ${CLAUDE_SESSION_ID
   - **輸入**：developer 的 Handoff + BDD spec
   - **產出**：PASS / FAIL
 
-### 7. RETRO — 🔁 迭代回顧
+### 7-8. [RETRO + DOCS] — 並行
 
-委派 `retrospective` agent。
+📋 MUST 在同一訊息中同時委派 `retrospective` + `doc-updater` agent。
 
-- **輸入**：所有前面階段的 Handoff + 測試結果 + review 結果
-- **產出**：PASS（無重要問題）/ ISSUES（有改善建議）
-- 📋 ISSUES → Main Agent 📋 MUST 自動委派 developer 修復 → 重回 [REVIEW + TEST] → RETRO（retroCount+1，上限 3 次）
+- **retrospective**（RETRO）
+  - **輸入**：所有前面階段的 Handoff + 測試結果 + review 結果
+  - **產出**：PASS（無重要問題）/ ISSUES（有改善建議）
 
-### 8. DOCS — 📝 文件
+- **doc-updater**（DOCS）
+  - **輸入**：所有前面階段的 Handoff
+  - **產出**：更新的文件（README、API 文件等）
 
-委派 `doc-updater` agent。
-
-- **輸入**：所有前面階段的 Handoff
-- **產出**：更新的文件（README、API 文件等）
+若 RETRO 回報 ISSUES：等 DOCS 完成後，委派 developer 修復 → 重回 [REVIEW + TEST] → RETRO（retroCount+1，上限 3 次）。
 
 ## 並行規則
 
 REVIEW + TEST:verify 屬於 `quality` 並行群組，📋 MUST 同時委派。
+RETRO + DOCS 屬於 `postdev` 並行群組，📋 MUST 同時委派。
 
 ## BDD 規則
 
@@ -109,5 +109,5 @@ TEST FAIL → debugger → developer → tester 迴圈（上限 3 次）。REVIE
 
 ## 完成條件
 
-- ✅ 所有 8 個 stage 完成
+- ✅ 所有 8 個 stage 完成（含並行 RETRO + DOCS）
 - ✅ lint 0 error + test 0 fail + code-review PASS + RETRO PASS（或 retroCount 達上限）
