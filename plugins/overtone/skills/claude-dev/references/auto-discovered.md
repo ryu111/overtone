@@ -470,3 +470,11 @@ Keywords: frontmatter, agent, developer, tester, diff, noise, trailing, newline,
    - 系統自動生成，已含在 commit 中
 Keywords: docs, status, pass, fail, changelog, handler, tests, agent, memory, prompt
 
+---
+## 2026-03-06 | doc-updater:DOCS Findings
+- plugin.json 版本已更新：0.28.76 → 0.28.77
+- 兩個 SKILL.md 索引表已更新：claude-dev（新增 parallel-and-background）、workflow-core（新增 filesystem-concurrency）
+- docs/status.md、CLAUDE.md 無需更新（核心指標數字未變）
+- 健康檢查通過（skill-reference-integrity 正常）
+Keywords: plugin, json, skill, claude, parallel, background, workflow, core, filesystem, concurrency
+

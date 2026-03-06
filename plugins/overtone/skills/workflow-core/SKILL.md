@@ -15,7 +15,7 @@ user-invocable: false
 
 | 引用者 | 用途 |
 |--------|------|
-| skills/auto/SKILL.md | 讀取全部 4 個 reference |
+| skills/auto/SKILL.md | 讀取全部 5 個 reference |
 | commands/standard.md | 讀取 failure-handling.md |
 | commands/quick.md | 讀取 failure-handling.md |
 | commands/full.md | 讀取 failure-handling.md |
@@ -32,6 +32,7 @@ user-invocable: false
 | 2 | references/parallel-groups.md | 並行 stage 群組定義 | auto |
 | 3 | references/handoff-protocol.md | Handoff 檔案格式 | auto |
 | 4 | references/completion-signals.md | 各 workflow 完成信號定義 | auto |
+| 5 | references/filesystem-concurrency.md | Overtone 檔案系統並發模式（atomicWrite/CAS/JSONL/invariants） | developer · architect |
 
 ## 按需讀取
 
@@ -42,6 +43,8 @@ user-invocable: false
 💡 Handoff 交接協定：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/workflow-core/references/handoff-protocol.md`
 
 💡 完成信號定義：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/workflow-core/references/completion-signals.md`
+
+💡 檔案系統並發模式：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/workflow-core/references/filesystem-concurrency.md`
 
 ## Examples
 

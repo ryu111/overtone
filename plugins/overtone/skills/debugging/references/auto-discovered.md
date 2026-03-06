@@ -68,3 +68,25 @@ Keywords: feature, scenario, validate, agents, prompt, exit, agent, architect, d
 - grader 的 DON'T 格式從單行改為標準 `## DON'T（⛔ NEVER）` 結構，提升一致性
 - 所有 15 個 agent 的內容都針對角色定制，無通用模板嫌疑
 Keywords: frontmatter, validate, agents, spec, scenario, agent, architect, debugger, developer, planner
+---
+## 2026-03-06 | retrospective:RETRO Findings
+**回顧摘要**：
+
+4 個新建 reference 的知識內容品質整體良好：
+
+- `parallel-and-background.md`：內容實用，平台機制說明清楚，「經驗觀察」標記誠實，決策樹格式易查閱
+- `concurrency-patterns.md`：決策樹設計好，5 種模式各有 Tradeoff 和反模式警告，與 Overtone 實際架構對齊
+- `concurrency-debugging.md`：分類清晰（Race Condition/TOCTOU/Deadlock/Starvation/Lost Update），診斷步驟結構化，code reviewer checklist 實用
+- `filesystem-concurrency.md`：對照實際程式碼（utils.js、state.js、timeline.js），mtime 精度限制說明誠實，已知風險透明
+
+REVIEW 流程有效：PIPE_BUF 值錯誤、路徑錯誤、語意區分不當 — 三個 Major 問題都被合理抓出，修正後確認正確。
+
+**發現的問題：**
+
+SKILL.md 閉環驗證失敗。REVIEW 補上了 `architecture/SKILL.md` 和 `debugging/SKILL.md`，但以下兩個仍然缺失：
+
+1. `claude-dev/SKILL.md` 沒有 `parallel-and-background.md` 的路徑索引
+2. `workflow-core/SKILL.md` 沒有 `filesystem-concurrency.md` 的路徑索引（只有 auto-discovered.md 有提到，但那是探索記錄不是功能索引）
+
+這意味著 agent 查詢 claude-dev skill 時不會被引導讀取 `parallel-and-background.md`，filesystem-concurrency 對 workflow-core 消費者也不可見。
+Keywords: reference, parallel, background, concurrency, patterns, tradeoff, overtone, debugging, race, condition

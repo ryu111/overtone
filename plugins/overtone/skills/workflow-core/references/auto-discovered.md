@@ -1,109 +1,5 @@
 ---
 ## 2026-03-05 | doc-updater:DOCS Findings
-本次 commit (507a401) 修復了 PM domain research session 持久化的問題：
-
-**實作變更**：
-- `plugins/overtone/scripts/lib/interview.js`：
-  - `saveSession()` 新增 `domainResearch: session.domainResearch || null` 序列化
-  - `loadSession()` 新增 `domainResearch: data.domainResearch || undefined` 還原
-  - 確保含領域研究的 session 在中斷恢復時研究資料完整性
-
-**測試補強**：
-- `tests/unit/pm-domain-research.test.js`：新增 2 個 roundtrip 測試
-  - Scenario 4-1：含 domainResearch 的 session 存取後完整保留
-  - Scenario 4-2：無 domainResearch 的 session 存取後 domainResearch 為 undefined
-
-**更新的文件**：
-
-1. **CHANGELOG.md**：
-   - 新增 [0.28.64] bugfix 條目（修復 domainResearch 序列化）
-   - 補充 [0.28.63+feature] 說明（pm-domain-research 功能，3 個新 API：researchDomain/startInterview/getResearchQuestions）
-   - 測試統計更新（4054 → 4086 → 4088）
-
-2. **docs/status.md**：
-   - 更新「最後更新」版本描述（含 pm-domain-research + bugfix）
-   - 更新「測試通過」：4054 → 4088 pass（+34 個測試）
-   - 更新「近期變更」（3 筆最新）：0.28.64 pm-domain-research + 0.28.63+feature auto-forge-trigger/queue-cli-enhancement + 0.28.62 internalization
-
-3. **docs/roadmap.md**：
-   - L3.4 深度 PM 狀態：🟡 部分完成 → ✅ 完成
-   - L3.4 子項「領域研究整合」：⬜ → ✅（新增 researchDomain/startInterview/getResearchQuestions 三個 API）
-
-4. **plugins/overtone/skills/pm/references/interview-guide.md**（技術同步）：
-   - 新增「領域研究 API」表格（researchDomain/startInterview/getResearchQuestions）
-   - 更新「領域研究整合」章節，加入新 API 使用說明與流程
-   - 補充呼叫範例：「帶領域研究的完整訪談流程」
-
-5. **plugins/overtone/skills/claude-dev/references/auto-discovered.md**（自動知識記錄）：
-   - Hook 自動記錄 pm-domain-research feature 實作訊息
-Keywords: commit, domain, research, session, plugins, overtone, scripts, interview, savesession, domainresearch
-
----
-## 2026-03-05 | doc-updater:DOCS Context
-pm-domain-research 功能 + bugfix 提交已完成。涉及 interview.js 核心模組（saveSession/loadSession domainResearch 欄位序列化修復）和測試新增（2 個 roundtrip 測試）。
-Keywords: domain, research, bugfix, interview, savesession, loadsession, domainresearch, roundtrip
-
----
-## 2026-03-05 | developer:DEV Findings
-**主要實作決策：**
-
-1. `buildBDDScenarios` 改為從三個 facet 衍生場景：
-   - `acceptance` facet → 驗收場景（given 含「功能已啟用」）
-   - `edge-cases` facet → 邊界條件場景（given 含「邊界條件」，title 以「邊界場景：」開頭）
-   - `flow` facet → 流程場景（given 含「操作流程」，title 以「流程場景：」開頭）
-   - 內建 title 去重（Set 追蹤）
-
-2. `enrichBDDScenarios(scenarios, session)` 新增為獨立導出函式：
-   - 先對傳入 base 陣列進行 title 去重（防禦性）
-   - 從 `functional` facet 補充 happy path 場景（title 以「功能場景：」開頭）
-   - 加入三個通用模板（空輸入、權限不足、網路逾時），但透過關鍵詞比對跳過 edgeCases 已涵蓋的議題
-   - Fallback 到 `buildSupplementaryScenarios` 確保到達 10 個
-
-3. `generateSpec` 改為：`enrichBDDScenarios(buildBDDScenarios(session), session)`，雙重保險確保場景數
-
-**函式宣告順序**：`buildBDDScenarios`（330）在 `enrichBDDScenarios`（439）之前，因為兩者均為 `function` 宣告，JavaScript hoisting 正常運作。
-Keywords: buildbddscenarios, facet, acceptance, given, edge, cases, title, flow, enrichbddscenarios, scenarios
-
----
-## 2026-03-05 | developer:DEV Context
-強化 `interview.js` 的 `buildBDDScenarios()` 函式，新增從多個 facet 自動衍生 BDD 場景的能力，並新增 `enrichBDDScenarios()` 函式確保場景數量達到 PM spec 的最低要求（≥10 個）。
-Keywords: interview, buildbddscenarios, facet, enrichbddscenarios, spec
-
----
-## 2026-03-05 | retrospective:RETRO Findings
-**回顧摘要**：
-
-1. **架構一致性良好** — `buildBDDScenarios` 內部在場景不足 10 個時呼叫 `enrichBDDScenarios`，`generateSpec` 又以 `enrichBDDScenarios(buildBDDScenarios(session), session)` 組合兩層。表面上看像雙重調用，但邏輯正確：`buildBDDScenarios` 內部的 `enrichBDDScenarios` 呼叫只發生在場景 < 10 時，且 `generateSpec` 的外層 `enrichBDDScenarios` 是幂等的（`seenTitles` 去重保護），不會造成重複或錯誤。
-
-2. **去重邏輯一致** — `buildBDDScenarios` 與 `enrichBDDScenarios` 皆使用 `Set` 追蹤 `seenTitles`，兩個函式邊界清晰，互不破壞對方的不變量。
-
-3. **測試覆蓋結構合理** — 16 個測試橫跨 Feature A（場景衍生）、Feature B（補充邏輯）、Feature C（generateSpec 整合），涵蓋邊界情境（空輸入、極少回答、已滿場景、去重）。
-
-4. **純函式設計確認** — `enrichBDDScenarios` 不修改傳入的 `scenarios` 陣列（Scenario B-4 驗證），符合不可變原則。
-
-5. **Overtone 原則 Checklist 對照**：
-   - 測試通過（DEV Handoff 確認）
-   - 行為符合規格（場景 ≥10、多 facet 衍生、去重）
-   - `generateSpec` 的錯誤路徑有 `try-catch` 保護並拋出帶 code 的 Error
-
-6. **一個觀察（信心 < 70%，不列為 ISSUES）** — `generateSpec` 在 `acceptance` facet 的處理為 `enrichBDDScenarios(buildBDDScenarios(session), session)`，其中 `buildBDDScenarios` 本身在場景不足時已內部呼叫 `enrichBDDScenarios`，外層再包一次雖然幂等但稍顯冗餘。這是設計選擇而非缺陷，且無法量化其對行為的影響，因此不升為 ISSUES。
-Keywords: buildbddscenarios, enrichbddscenarios, generatespec, session, seentitles, feature, scenarios, scenario, overtone, checklist
-
----
-## 2026-03-05 | code-reviewer:REVIEW Findings
-審查了以下面向，未發現高信心問題：
-- **功能完整性**：buildBDDScenarios 的多 facet 衍生 + enrichBDDScenarios 的三層補充策略 + generateSpec 整合，均符合需求
-- **去重機制**：title-based Set 去重在 buildBDDScenarios 和 enrichBDDScenarios 中各有獨立實作，防禦性足夠
-- **Error handling**：answers[q.id] 為空時 `if (!answer) continue` 正確處理、enrichBDDScenarios 對空陣列輸入有防禦
-- **測試覆蓋**：16 個新測試涵蓋 facet 衍生、補充策略、去重、immutability、通用模板條件判斷、generateSpec 整合
-- **向後相容**：33 個既有 interview.test.js 測試全部通過
-- **安全性**：無硬編碼 secrets、無外部輸入注入風險
-
-[m] 雙重 enrichBDDScenarios 呼叫是有意設計（雙重保險），功能正確但略增認知負擔。
-Keywords: buildbddscenarios, facet, enrichbddscenarios, generatespec, title, based, error, handling, answers, answer
-
----
-## 2026-03-05 | doc-updater:DOCS Findings
 - ✅ 無新 CLI 指令
 - ✅ 無新 agent/hook/skill 配置
 - ✅ 無公開 API 新增（enrichBDDScenarios 是內部實現）
@@ -607,4 +503,49 @@ Keywords: placeholder, reference, plugins, overtone, skills, instinct, reference
 ## 2026-03-06 | code-reviewer:REVIEW Findings
 審查了 10 個檔案的變更（6 個 agent prompt + 3 個 skill reference + 1 個 auto-discovered 維護）。所有新增內容品質良好，決策樹邏輯正確，貼合各 agent 職責，未修改現有語意。validate-agents 驗證通過。唯一觀察為 5 個 agent 標題 emoji 移除造成風格不一致（Minor，不阻擋）。
 Keywords: agent, prompt, skill, reference, auto, discovered, validate, agents, emoji, minor
+
+---
+## 2026-03-06 | developer:DEV Findings
+- 格式對齊同目錄的 `hooks-api.md` 和 `agent-api.md`：標題層級、表格、程式碼區塊、警告標記（⚠️ / ⛔）風格一致
+- 在第 5 節詳述 Overtone 的並行收斂門機制（activeAgents instanceId + parallelDone/parallelTotal），連結到現有 on-stop.js 實作
+- 第 7 節提供快速決策樹，讓 agent 能在 30 秒內找到正確的並行策略
+- run_in_background 的 tmp log 路徑以 `{agentId}` 佔位，實際路徑由平台提供，符合目前文件風格（不硬編碼不確定的細節）
+Keywords: hooks, agent, overtone, activeagents, instanceid, paralleldone, paralleltotal, stop, agentid
+
+---
+## 2026-03-06 | developer:DEV Findings
+- 決策樹涵蓋 6 個分支：只讀 / JSONL Append / Atomic Write / 分割策略 / CAS / Advisory File Lock
+- 每個模式都有：原理、適用場景、Overtone 實作參照、Tradeoff、反模式警告
+- Overtone 特定場景表格完整涵蓋 7 個關鍵檔案（workflow.json / timeline.jsonl / observations.jsonl / statusline-state.json / loop.json / compact-count.json / .current-session-id）
+- SKILL.md 透過 manage-component.js 正確更新（description + body + developer 消費者），並通過 fix-consistency 修復 4 個 SKILL.md 消費者表同步問題
+- developer agent frontmatter 已加入 architecture skill
+Keywords: jsonl, append, atomic, write, advisory, file, lock, overtone, tradeoff, workflow
+
+---
+## 2026-03-06 | developer:DEV Context
+新增 `plugins/overtone/skills/architecture/references/concurrency-patterns.md`，為 architect/developer agent 提供並發策略選擇的系統性決策框架。
+Keywords: plugins, overtone, skills, architecture, references, concurrency, patterns, architect, developer, agent
+
+---
+## 2026-03-06 | developer:DEV Findings
+1. **基於實際程式碼**：直接讀取 `utils.js`、`state.js`、`timeline.js` 後描述，所有細節（tmp 命名欄位、MAX_RETRIES=3、jitter 1-5ms、MAX_EVENTS=2000、PIPE_BUF 4KB）均來自程式碼。
+
+2. **強調「為什麼」**：每個設計決策都說明了原因——為何用 rename（POSIX 原子性）、為何有 jitter（避免永久碰撞）、為何 fallback 強制寫入（避免卡死）、為何 enforceInvariants 執行順序重要（規則 2 先於規則 4）。
+
+3. **sanitize 與 enforceInvariants 的區別**：用表格清楚對比兩者的觸發時機、操作對象、目的，解釋它們互補而非重複。
+
+4. **HFS+ mtime 1s 精度限制**：在 mtime CAS 機制的限制段落中明確說明，APFS 環境不受影響。
+
+5. **格式對齊**：參考 `parallel-groups.md` 的寫作風格（表格、程式碼區塊、粗體強調），保持一致。
+Keywords: utils, state, timeline, jitter, rename, posix, fallback, enforceinvariants, sanitize, mtime
+
+---
+## 2026-03-06 | developer:DEV Context
+建立了 `plugins/overtone/skills/workflow-core/references/filesystem-concurrency.md`，系統性說明 Overtone 檔案系統並發設計的原理、適用場景和限制。
+Keywords: plugins, overtone, skills, workflow, core, references, filesystem, concurrency
+
+---
+## 2026-03-06 | retrospective:RETRO Context
+ISSUES — 發現 1 個重要品質問題（信心 90%）。REVIEW Handoff 聲稱「SKILL.md 閉環缺口已補上索引」，但實際驗證顯示只補了 2 個（architecture + debugging），另外 2 個 SKILL.md 索引仍然缺失。
+Keywords: issues, review, handoff, skill, architecture, debugging
 

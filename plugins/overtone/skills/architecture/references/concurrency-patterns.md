@@ -44,7 +44,7 @@
 - 需要防止「寫到一半被讀取」的問題
 - 設定檔、狀態快照
 
-**Overtone 實作**：`scripts/lib/atomic-write.js` 的 `atomicWrite(path, content)`
+**Overtone 實作**：`scripts/lib/utils.js` 的 `atomicWrite(filePath, data)`
 
 ```js
 // 模式示意
@@ -112,9 +112,9 @@ throw new Error('CAS failed after max retries');
 **原理**：每次寫入一整行（JSON 序列化後 + `\n`），利用 POSIX 的原子 append 保證。
 
 **POSIX 原子保證**：
-- 單次 `write()` syscall，寫入量 <= `PIPE_BUF`（通常 4KB，Linux 為 65536 bytes）
-- 多個 process 同時 append 到同一檔案，每行保持完整（不會交錯）
-- 超過 PIPE_BUF 則原子性不保證 — 單行記錄必須 < 4KB
+- `PIPE_BUF` 為 4096 bytes（macOS 和 Linux 皆為 4KB）
+- 單次 `write()` syscall 在寫入量 <= PIPE_BUF 時，多個 process 同時 append 不會交錯
+- 注意：PIPE_BUF 嚴格來說是 pipe/FIFO 的保證；regular file 的 O_APPEND 模式下 seek+write 也是原子的，但單行仍建議 < 4KB
 
 **適用場景**：
 - 事件日誌（不需修改歷史記錄）
