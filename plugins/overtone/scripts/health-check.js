@@ -2094,8 +2094,10 @@ function checkConcurrencyGuards({ sessionsDirOverride, fsConMdOverride } = {}) {
     if (!activeAgents || typeof activeAgents !== 'object') continue;
 
     for (const [instanceId, entry] of Object.entries(activeAgents)) {
-      const ageMs = now - new Date(entry.startedAt).getTime();
-      if (!Number.isFinite(ageMs)) continue;
+      if (entry.startedAt == null) continue;
+      const startMs = new Date(entry.startedAt).getTime();
+      if (!Number.isFinite(startMs)) continue;
+      const ageMs = now - startMs;
       if (ageMs > ORPHAN_TTL_MS) {
         const sessionName = path.basename(sessionDir);
         const agentName = entry.agentName || instanceId;

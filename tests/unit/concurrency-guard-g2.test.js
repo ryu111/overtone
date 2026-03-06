@@ -472,6 +472,32 @@ describe('Feature D: checkConcurrencyGuards — Runtime 掃描', () => {
     expect(errorsForThis.length).toBe(0);
   });
 
+  test('Scenario D-5b: startedAt 為 null 時不產生 false positive warning', () => {
+    const sessionId = `d5b-${Date.now()}`;
+    const sessionDir = path.join(tmpSessionsDir, sessionId);
+    fs.mkdirSync(sessionDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(sessionDir, 'workflow.json'),
+      JSON.stringify({
+        workflowType: 'quick',
+        activeAgents: {
+          'developer:null-start': { agentName: 'developer', stage: 'DEV', startedAt: null },
+        },
+      }),
+      'utf8',
+    );
+
+    const findings = checkConcurrencyGuards({
+      sessionsDirOverride: tmpSessionsDir,
+      fsConMdOverride: fsConMdPath,
+    });
+
+    const warningsForThis = findings.filter(
+      (f) => f.severity === 'warning' && f.file && f.file.includes(sessionId),
+    );
+    expect(warningsForThis.length).toBe(0);
+  });
+
   test('Scenario D-5: activeAgents 欄位缺失的 workflow.json 靜默跳過', () => {
     const sessionId = `d5-${Date.now()}`;
     const sessionDir = path.join(tmpSessionsDir, sessionId);
