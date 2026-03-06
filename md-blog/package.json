@@ -1,0 +1,16 @@
+{
+  "name": "md-blog",
+  "version": "1.0.0",
+  "description": "Markdown 部落格靜態網站生成器",
+  "main": "index.js",
+  "bin": {
+    "md-blog": "./index.js"
+  },
+  "scripts": {
+    "test": "bun test"
+  },
+  "dependencies": {
+    "gray-matter": "^4.0.3",
+    "marked": "^9.0.0"
+  }
+}
