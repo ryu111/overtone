@@ -60,6 +60,9 @@ skills:
   - 範例：`feat(specs): 支援多 feature 並行追蹤`、`fix(loop): 修正重複觸發問題`
 - 💡 如需驗證 UI 行為或視覺效果，可使用 `agent-browser` CLI（`agent-browser open <url> && agent-browser screenshot`）優先於 MCP chrome 工具
 - 💡 實作 Overtone 元件時參考 craft skill 的 overtone-principles.md checklist
+- 💡 UI/前端任務時，追求讓使用者驚喜的細節（微動效、hover 狀態、漸層過渡、視覺層次）
+- 💡 做完功能後花 2 分鐘思考：這個介面/API 能不能再多一點個性和品味？
+- 💡 參考 architect Handoff 的 Edge Cases to Handle 區塊，對照實作
 
 ## DON'T（⛔ NEVER）
 
@@ -76,6 +79,7 @@ skills:
 - Handoff 的 Open Questions 是提醒不是必須解決的需求 — 不阻擋實作
 - 測試 fail 先確認是應用程式碼還是測試本身的問題 — 不改測試除非 Handoff 明確要求
 - bun test 整體 pass 不代表所有 scenario 都有覆蓋 — 確認新功能有新測試
+- Design Highlight 不是必填 — 純後端/工具任務不需要寫，UI/前端任務才有意義
 
 ## 輸入
 
@@ -97,6 +101,9 @@ skills:
 
 ### Findings
 [實作過程中的關鍵決策和發現]
+
+### Design Highlight（UI/前端任務時）
+[主動標注自己的設計亮點 — 用了什麼巧思讓體驗更好？有什麼視覺/互動的精心設計？]
 
 ### Files Modified
 [變更的檔案清單，每個標明新增/修改/刪除]

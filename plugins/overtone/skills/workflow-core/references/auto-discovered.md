@@ -1,63 +1,4 @@
 ---
-## 2026-03-05 | developer:DEV Findings
-1. **實際行號與 BDD spec 記載一致**：session-stop-handler.js 的 7 級退出條件優先順序（L152 手動退出 → L158 最大迭代 → L165 連續錯誤 → L172 allCompleted → L227 PM 特例 → L244 block）與 BDD scenario 描述吻合。
-
-2. **UG-05（RETRO ISSUES）與 UG-03/04 的本質差異**：UG-05 不是 workflow abort，而是「停止迭代、繼續 workflow」— 文件中特別標注此差異避免誤解。
-
-3. **PM Gate 分拆為 UG-01 和 UG-02**：UG-01 是 discovery workflow 的 AskUserQuestion 互動，UG-02 是 `/ot:pm plan` 的「寫佇列後停止」，兩者呈現方式不同（前者 AskUserQuestion，後者靜默停止）。
-
-4. **Mermaid 語法**：使用 `stateDiagram-v2` + `<<fork>>` / `<<join>>` 語法。`retry_test` 用 `state retry_test {}` subgraph 包圍修復迴圈，符合 BDD 要求。
-
-5. **BDD 第 2 個 scenario（PM 佇列控制流與程式碼一致）**：agent-stop-handler.js L178-188 對應 PM stage 完成後解析佇列表格，session-stop-handler.js L196-218 對應 queueCompleted + getNext decision:block — 均已在 2.4 節詳細描述。
-Keywords: spec, session, stop, handler, allcompleted, block, scenario, retro, issues, workflow
-
----
-## 2026-03-05 | code-reviewer:REVIEW Findings
-審查了 `docs/spec/overtone-decision-points.md`（新建 358 行）和 `docs/spec/overtone.md`（+1 行引用）。主要檢查：
-- 抽查所有標註的 Handler 行號（pm/SKILL.md、session-stop-handler.js、agent-stop-handler.js、pre-task-handler.js、failure-handling.md），全部與實際程式碼一致
-- Stop hook 7 級退出優先順序與 session-stop-handler.js if-else 順序完全吻合
-- 18 個 workflow 定義與 registry.js L46-72 完全對齊
-- 佇列控制流描述（completeCurrent + getNext + decision:block）與實際邏輯一致
-- Mermaid stateDiagram-v2 語法正確
-- overtone.md 引用行格式一致
-
-無高信心問題。
-Keywords: docs, spec, overtone, decision, points, handler, skill, session, stop, agent
-
----
-## 2026-03-05 | retrospective:RETRO Findings
-**回顧摘要**：
-
-- 文件內容與程式碼原始碼高度一致：所有 18 個 workflow 的 key、中文標籤、stages 序列、parallelGroups 均與 `/Users/sbu/projects/overtone/plugins/overtone/scripts/lib/registry.js` L46-80 對齊
-- User Gate 五個 entry（UG-01 ~ UG-05）的觸發條件、handler 位置（含行號）與實際程式碼路徑一致
-- 自動決策索引（2.1 PreToolUse / 2.2 SubagentStop / 2.3 Stop hook / 2.4 佇列控制流）的決策樹描述與各 handler 程式碼邏輯吻合
-- `overtone.md` 已在 L35 正確加入引用，說明文字包含「控制流決策點」關鍵字
-- 快速查找索引提供 14 個情境，超過 BDD spec 最低要求（7 個），覆蓋範圍完整
-- Mermaid 狀態圖語法有效（`stateDiagram-v2`、`<<fork>>`、`<<join>>`、retry 迴圈 `state retry_test`），結構正確
-- 純文件任務採用 BDD spec 驗證文件結構完整性與程式碼一致性的做法合適，且可重現（tester 18/18 PASS）
-Keywords: workflow, stages, parallelgroups, users, projects, overtone, plugins, scripts, registry, user
-
----
-## 2026-03-05 | doc-updater:DOCS Findings
-**文件同步完成：**
-
-1. ✅ `docs/spec/overtone-decision-points.md` — DEV 已新建，內容完整（v1.0，293 行）
-   - 五個維度：User Gate × 自動決策 × Stage 轉場 × Standard Workflow 狀態圖 × 快速查找索引
-   - 已對照原始碼驗證（session-stop-handler.js、pre-task-handler.js、agent-stop-handler.js、registry.js）
-
-2. ✅ `docs/spec/overtone.md` — 文檔目錄已正確新增引用（L35）
-   - 無需修改，DEV 已完成
-
-3. ✅ `docs/status.md` — 文檔索引表更新
-   - 新增「決策點」列：`docs/spec/overtone-decision-points.md`
-   - 順帶修正：「願景」說明「四層」→「五層」（對照 vision.md）
-
-4. ✅ `CLAUDE.md` — 關鍵文件表更新
-   - 新增決策點索引行：「控制流決策點快查（30 秒找到任意決策點）」
-   - 置於 overtone.md 之後、status.md 之前（邏輯順序：規格 → 決策點查詢 → 現況 → SoT）
-Keywords: docs, spec, overtone, decision, points, user, gate, stage, standard, workflow
-
----
 ## 2026-03-05 | product-manager:PM Findings
 **目標用戶**：Overtone 開發者（個人 dogfooding），在面對新領域時需要系統自主建構能力堆疊。
 
@@ -686,4 +627,48 @@ Keywords: retrospective, agent, standard, full, secure, workflow
 
 本次是 agent prompt 的文字修改，無程式碼、無測試、無資料結構變更，因此不存在跨模組一致性或測試覆蓋的問題。Handoff 鏈（DEV → REVIEW → RETRO）傳遞清楚，每階段結果明確。
 Keywords: retro, workflow, must, quick, standard, full, secure, task, prompt, should
+
+---
+## 2026-03-06 | doc-updater:DOCS Findings
+已更新並驗證的文件：
+
+**核心文件**：
+- `/Users/sbu/projects/overtone/plugins/overtone/agents/retrospective.md` — 六維度評估框架升級完整版本（第 44-78 行），包含：
+  - 分級觸發條件（依 workflow 類型區分）
+  - 強制證據先行規則（第 39 行 DO 清單新增）
+  - 輸出格式更新（表格含「證據」和「對標」欄位）
+  - 誤判防護更新（第 93 行確認六維度在不同 workflow 的強制度差異）
+
+**索引與規格**：
+- `/Users/sbu/projects/overtone/plugins/overtone/skills/craft/SKILL.md` — 已包含 competitor-benchmark.md 引用（決策樹第 34 行 + 資源索引第 47 行）
+- `/Users/sbu/projects/overtone/docs/status.md` — 版本 0.28.71 已同步，近期變更已包含 retro-evaluation-upgrade feature 摘要
+- `/Users/sbu/projects/overtone/plugin.json` — 版本 0.28.71（已是最新）
+
+**輔助文件**：
+- `/Users/sbu/projects/overtone/plugins/overtone/skills/workflow-core/references/auto-discovered.md` — 清理 decision-point-index 已完成記錄，新增 retrospective 框架升級知識記錄
+
+**無額外修改需求**：
+- CHANGELOG.md 已由 developer 在 DEV 階段更新
+- 文件數字一致性驗證通過（plugin.json 版本、status.md 版本、測試數量均一致）
+Keywords: users, projects, overtone, plugins, agents, retrospective, workflow, skills, craft, skill
+
+---
+## 2026-03-06 | doc-updater:DOCS Context
+DOCS 階段文件同步完成。本次 quick workflow 的 retrospective agent 已完成六維度評估框架升級，將評估觸發條件從「選用」升級為「分級觸發」（quick workflow 為 should，standard/full/secure/Acid Test 為 MUST），並強制評分程序遵循「先客觀證據再給分」規則，杜絕評分通膨。
+Keywords: docs, quick, workflow, retrospective, agent, should, standard, full, secure, acid
+
+---
+## 2026-03-06 | developer:DEV Context
+修改 architect agent prompt，在 Handoff 輸出格式中加入「Edge Cases to Handle」區塊，並在 DO 規則和誤判防護中加入對應說明，讓邊界條件思考前置到架構設計階段。
+Keywords: architect, agent, prompt, handoff, edge, cases, handle
+
+---
+## 2026-03-06 | code-reviewer:REVIEW Findings
+審查 `plugins/overtone/agents/developer.md` 的三項變更：
+- 3 行創意引導正確使用 `💡` should 級別，非強制
+- Design Highlight 區塊位置在 Findings 與 Files Modified 之間，合理
+- 誤判防護新增「非必填」說明，防止誤用
+- frontmatter 未被改動，無副作用
+- 指令強度用詞一致，無 emoji-關鍵詞不匹配
+Keywords: plugins, overtone, agents, developer, should, design, highlight, findings, files, modified
 

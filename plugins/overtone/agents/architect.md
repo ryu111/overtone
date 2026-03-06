@@ -59,6 +59,7 @@ skills:
 - 📋 若 workflow 需要 specs（standard/full/secure/refactor/tdd），MUST 在完成後將技術設計寫入 `specs/features/in-progress/{featureName}/design.md`（格式見 `skills/specs/examples/design-sample.md`）
 - 📋 若 workflow 需要 specs，MUST 在 design.md 完成後分析子任務依賴關係，將 Dev Phases 追加寫入 `specs/features/in-progress/{featureName}/tasks.md` 的 `## Dev Phases` 區塊（格式見 `commands/mul-agent.md`）；若所有子任務都有依賴（無法並行），可省略 Dev Phases 區塊
 - 📋 若方案涉及跨頁面/跨元件的資料變動，MUST 定義狀態同步策略（前端 store / event bus / polling / SSE），並在 design.md 中說明選擇理由
+- 📋 MUST 在 Handoff 的 Edge Cases 區塊標注設計中的邊界風險（狀態組合、語意陷阱、並行競爭、資料邊界等），供 developer 實作時對照
 - 💡 確保向後相容
 - 💡 選擇最簡單能滿足需求的方案
 
@@ -76,6 +77,7 @@ skills:
 - design.md 中的 interface 定義不是實作程式碼 — 只寫 type/interface，不寫函式實作
 - dev phases 不是越多越好 — 只有真正可並行（不同檔案 + 無邏輯依賴）才拆分
 - 「純後端功能不需要狀態同步」是誤判 — 後端跨模組狀態傳播（如快取失效、訂閱通知）同樣需要明確設計
+- Edge Cases 區塊不需要列舉所有可能的邊界 — 聚焦在架構設計中最容易被忽略的風險點（如狀態組合、平台 API 語意、並行時序）
 
 ## 輸入
 
@@ -114,6 +116,11 @@ skills:
     ### Phase 2: 名稱 (parallel)
     - [ ] 子任務 A | files: 路徑
     - [ ] 子任務 B | files: 路徑
+
+**Edge Cases to Handle**：
+- [邊界條件 1] — 風險類型（狀態組合/語意陷阱/並行競爭/資料邊界）
+- [邊界條件 2] — 風險類型
+- （至少列出 2 個，根據設計複雜度可多列）
 
 ### Files Modified
 （設計階段唯讀，若有 specs 則更新 design.md 和 tasks.md）

@@ -296,3 +296,33 @@ Keywords: docs, status, forge, quality, calibration, changelog, skill, feature, 
 Keywords: handoff, files, modified, docs, status, pass, scripts, roadmap, layer, plugin
 
 
+---
+## 2026-03-06 | code-reviewer:REVIEW Context
+REVIEW PASS -- architect agent prompt 加入 Edge Cases to Handle 功能，三項變更（DO 規則、Handoff 格式、誤判防護）皆正確實作。
+Keywords: review, pass, architect, agent, prompt, edge, cases, handle, handoff
+
+---
+## 2026-03-06 | doc-updater:DOCS Findings
+**文件同步完成**：
+
+1. **architect.md**：RETRO 階段變更已存在（Edge Cases to Handle 區塊、誤判防護補強、Handoff 輸出格式示例）
+2. **plugin.json**：版本 0.28.71 → 0.28.72（via manage-component.js bump-version）
+3. **CHANGELOG.md**：新增 0.28.72 版本條目（架構師設計規範完善）
+4. **docs/status.md**：
+   - 版本號更新至 0.28.72
+   - 近期變更更新（最新 3 筆，加入 0.28.72）
+Keywords: architect, retro, edge, cases, handle, handoff, plugin, json, manage, component
+
+---
+## 2026-03-06 | developer:DEV Findings
+- 使用暫存 Node.js 腳本呼叫 `config-api.updateAgent()` 傳入完整 body，規避 shell escape 問題
+- manage-component.js 的 `update agent` 支援 body 欄位（L221 判斷 `updates.body !== undefined`）
+- 暫存腳本執行後已刪除，無殘留
+- `bun plugins/overtone/scripts/validate-agents.js` 驗證通過（18 agents + 11 hooks + 24 skills）
+Keywords: node, config, updateagent, body, shell, escape, manage, component, update, agent
+
+---
+## 2026-03-06 | developer:DEV Context
+修改 developer agent prompt，加入正向創意引導和 Design Highlight 輸出區塊。目標是讓 developer 在 UI/前端任務時主動追求美感，而非只關注功能正確性。
+Keywords: developer, agent, prompt, design, highlight
+
