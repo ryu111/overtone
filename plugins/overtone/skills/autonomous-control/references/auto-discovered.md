@@ -110,3 +110,48 @@ Keywords: spec, specs, features, archive, enhancement, scenarios, execution, que
 queue-cli-enhancement feature 文件同步完成。開發階段已新增 execution-queue.js 的五個細粒度操作函式與對應 CLI 子命令。
 Keywords: queue, enhancement, feature, execution
 
+---
+## 2026-03-06 | architect:ARCH Findings
+**技術方案**：
+- `scripts/os/tts.js`：macOS `say` 指令封裝，`speak()`（阻塞）+ `speakBackground()`（spawn+detach 非阻塞）+ `listVoices()`，完全對齊 notification.js 慣例
+- `scripts/lib/tts-templates.js`：純資料模組，16 個事件鍵對應中文口語模板，`{key}` 插值
+- `scripts/lib/tts-strategy.js`：策略引擎，TTS_LEVELS（0-3 累積式）+ shouldSpeak() + buildSpeakArgs() + readTtsConfig()，設定從 `~/.overtone/tts.json` 讀取
+- Hook 整合採 fire-and-forget 模式，try/catch 包裹不阻擋主流程
+
+**API 介面**：
+- `speak(text, opts?, _deps?) → { ok, voice, text } | { ok, error, message }`
+- `speakBackground(text, opts?, _deps?) → { ok } | { ok, error, message }`
+- `listVoices(_deps?) → { ok, voices: [{name, lang}] } | { ok, error, message }`
+- `getTemplate(eventKey, params?) → string | null`
+- `shouldSpeak(eventKey, level) → boolean`
+- `buildSpeakArgs(eventKey, context?, config?) → { text, opts } | null`
+- `readTtsConfig(_deps?) → { enabled, level, voice, rate }`
+
+**資料模型**：
+- `~/.overtone/tts.json`：`{ enabled: false, level: 1, voice: null, rate: 200 }`
+- TTS Levels：0=SILENT, 1=CRITICAL（error:fatal/workflow:complete/notification:ask）, 2=PROGRESS（+agent:complete/stage:complete），3=VERBOSE（+session:start）
+
+**檔案結構**：
+- 新增：`plugins/overtone/scripts/os/tts.js`、`plugins/overtone/scripts/lib/tts-templates.js`、`plugins/overtone/scripts/lib/tts-strategy.js`、`tests/unit/tts.test.js`、`tests/unit/tts-templates.test.js`、`tests/unit/tts-strategy.test.js`
+- 修改：`plugins/overtone/scripts/lib/agent-stop-handler.js`、`plugins/overtone/scripts/lib/session-stop-handler.js`、`plugins/overtone/hooks/scripts/notification/on-notification.js`
+
+**Dev Phases**：
+
+    ### Phase 1: 底層模組建立 (parallel)
+    - [ ] 建立 tts.js | files: plugins/overtone/scripts/os/tts.js
+    - [ ] 建立 tts-templates.js | files: plugins/overtone/scripts/lib/tts-templates.js
+
+    ### Phase 2: 策略引擎建立 (sequential)
+    - [ ] 建立 tts-strategy.js | files: plugins/overtone/scripts/lib/tts-strategy.js
+
+    ### Phase 3: Hook 整合 (parallel)
+    - [ ] 整合 agent-stop-handler.js | files: plugins/overtone/scripts/lib/agent-stop-handler.js
+    - [ ] 整合 session-stop-handler.js | files: plugins/overtone/scripts/lib/session-stop-handler.js
+    - [ ] 整合 on-notification.js | files: plugins/overtone/hooks/scripts/notification/on-notification.js
+
+    ### Phase 4: 單元測試 (parallel)
+    - [ ] 撰寫 tts.test.js | files: tests/unit/tts.test.js
+    - [ ] 撰寫 tts-templates.test.js | files: tests/unit/tts-templates.test.js
+    - [ ] 撰寫 tts-strategy.test.js | files: tests/unit/tts-strategy.test.js
+Keywords: scripts, macos, speak, speakbackground, spawn, detach, listvoices, notification, templates, strategy
+

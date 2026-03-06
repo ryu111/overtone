@@ -2,118 +2,6 @@
 ## 2026-03-05 | planner:PLAN Findings
 **需求分解**：
 
-1. Guard 精鍊：pre-bash-guard.js 新增 OS 相關危險命令黑名單 | agent: developer | files: `plugins/overtone/hooks/scripts/tool/pre-bash-guard.js`
-
-2. Guard 測試更新 | agent: developer | files: `tests/unit/pre-bash-guard.test.js`（或對應路徑）
-
-3. health-check 擴展：checkOsTools() 新增 screencapture 偵測 + heartbeat daemon 狀態偵測 | agent: developer | files: `plugins/overtone/scripts/health-check.js`
-
-4. health-check 測試更新 | agent: developer | files: `tests/unit/health-check.test.js` 或整合測試
-
-5. os-control SKILL.md 狀態標記更新 | agent: developer | files: `plugins/overtone/skills/os-control/SKILL.md`（受 pre-edit-guard 保護，需 manage-component.js）
-
-6. OS 腳本整合測試（新建）| agent: developer | files: `tests/integration/os-scripts.test.js`
-
-**優先順序**：
-
-- 任務 1+2 可並行於任務 3+4（操作不同檔案，無邏輯依賴）
-- 任務 5 獨立（SKILL.md 更新不依賴其他任務）
-- 任務 6 獨立（整合測試覆蓋已有功能，不依賴 guard 或 health-check 變化）
-- 因此可三組並行：{1,2} + {3,4} + {5,6}
-
-**範圍邊界**：
-
-- 明確不在此次範圍：P3.4 操控層（keyboard/mouse/applescript/computer-use）、截圖→理解→操作→驗證完整 E2E
-- fswatch 外部工具偵測不需要新增（fswatch.js 使用 Node.js `fs.watch()` 原生 API，無外部 CLI 依賴）
-Keywords: guard, bash, agent, developer, files, plugins, overtone, hooks, scripts, tool
-
----
-## 2026-03-05 | code-reviewer:REVIEW Findings
-**1. [M] 邏輯不一致：`defaults write` 的 label 與實際行為不符**
-
-檔案：`/Users/sbu/projects/overtone/plugins/overtone/hooks/scripts/tool/pre-bash-guard.js` 第 67 行
-
-```javascript
-{ pattern: /\bdefaults\s+(delete|write)\b/, label: '刪除系統偏好設定' },
-```
-
-pattern 同時匹配 `defaults delete` 和 `defaults write`，但 label 只寫「刪除系統偏好設定」。`defaults write` 的行為是「修改」而非「刪除」。註解（第 19 行、第 30 行）正確寫了「刪除或修改」，但 label 只有「刪除」。
-
-影響：測試 `tests/integration/pre-bash-guard.test.js` 第 176 行驗證 `defaults write NSGlobalDomain` 的 deny reason 期望包含「刪除系統偏好設定」，雖然測試通過（因為 label 確實是這個字串），但呈現給使用者的攔截原因描述不正確 -- 使用者執行 `defaults write` 被告知「刪除系統偏好設定」會造成困惑。
-
-建議：label 改為 `'修改或刪除系統偏好設定'`，測試的 expect 也同步更新。信心：90%。
-
-**2. [M] 語法錯誤：SKILL.md 平台偵測範例缺少引號**
-
-檔案：`/Users/sbu/projects/overtone/plugins/overtone/skills/os-control/SKILL.md` 第 45 行
-
-```
-- macOS：`process.platform === darwin`
-```
-
-修改前是 `'darwin'`（有引號），修改後引號被移除了。這是一個 JavaScript 比較語句，`process.platform === darwin` 在 JS 中 `darwin` 是未定義變數而非字串。作為文件中的範例程式碼，這會誤導 Agent 寫出有 bug 的程式碼。
-
-建議：改回 `process.platform === 'darwin'`。信心：95%。
-
-**3. [m] 測試與 spec 的 API 名稱不一致**
-
-`os-scripts.test.js` 的函式名稱與 BDD spec 有偏差：
-- BDD spec Feature 6 Scenario 1 寫 `takeScreenshot({ type: 'full' })`，測試使用 `captureFullScreen()`
-- BDD spec Feature 6 Scenario 2 寫 `getWindowList()`，測試使用 `listProcesses()`
-- BDD spec Feature 6 Scenario 4 寫 `getSystemInfo()`，測試使用 `getMemoryInfo()`
-
-測試已加註解說明差異原因（模組實際匯出名稱不同），且功能等價。這屬於 spec 與實作 API 名稱的漂移，不影響功能覆蓋。
-Keywords: defaults, write, label, users, projects, overtone, plugins, hooks, scripts, tool
-
----
-## 2026-03-05 | planner:PLAN Findings
-**需求分解**：
-
-1. **建立 gap-analyzer.js 核心模組** | agent: developer | files: `plugins/overtone/scripts/lib/gap-analyzer.js`（新增）
-   - 整合信號源：health-check 的 `checkComponentChain` + `checkCompletionGap` + `checkDependencySync` + `checkClosedLoop`（已有 module.exports）
-   - 統一 Gap 格式：`{ type, severity, file, message, suggestion }`
-   - suggestion 含 manage-component.js 指令 skeleton
-
-2. **建立 evolution.js CLI 入口** | agent: developer | files: `plugins/overtone/scripts/evolution.js`（新增）
-   - 支援 `analyze [--json]`
-   - 純文字報告 + JSON 模式雙輸出
-   - exit code：有缺口 1，無缺口 0
-
-3. **撰寫 gap-analyzer.js unit tests** | agent: tester | files: `tests/unit/gap-analyzer.test.js`（新增）
-   - 使用暫存目錄 fixture，驗證各缺口類型偵測和 suggestion 格式
-
-4. **撰寫 evolution.js CLI 整合測試**（可與 3 並行）| agent: tester | files: `tests/integration/evolution-analyze.test.js`（新增）
-   - 驗證 JSON schema、exit code、--json flag 行為
-
-**優先順序**：
-- 1 → 2（CLI 依賴 lib）
-- 3 和 4 依賴 1+2，但 3 和 4 可並行
-- 整體：序列 [1 → 2]，然後並行 [3, 4]
-
-**範圍邊界**：
-- 不做 P4.2 自動執行建議
-- 不修改 health-check.js / fix-consistency.js / dependency-graph.js
-- knowledge-gap-detector.js 的 AI 語意分析缺口不在此次範圍
-- fix-consistency.js 不需要新增 module.exports（health-check 已匯出 `checkDependencySync` 已足夠）
-Keywords: analyzer, agent, developer, files, plugins, overtone, scripts, health, check, checkcomponentchain
-
----
-## 2026-03-05 | developer:DEV Findings
-1. **health-check 匯出確認**：四個目標函式（checkComponentChain, checkClosedLoop, checkCompletionGap, checkDependencySync）已在 health-check.js 底部 `module.exports` 中正確匯出，無需修改現有檔案。
-
-2. **checkCompletionGap 參數注意**：此函式接受 `skillsDirOverride`（skills 目錄路徑），非 pluginRoot。gap-analyzer.js 中已正確計算：`const skillsDir = pluginRoot ? path.join(pluginRoot, 'skills') : undefined`。
-
-3. **checkClosedLoop 無 pluginRoot 參數**：此函式直接使用 registry，無法透過參數覆寫路徑。這是 health-check.js 的既有設計，不影響功能。
-
-4. **實際測試**：現有 plugin 環境下 `analyzeGaps()` 回傳 0 個缺口（系統健康），符合預期。`pluginRoot: '/nonexistent/path'` 測試回傳 16 個缺口（component-chain 和 dependency-sync 掃描到錯誤路徑下的結果被計入），不拋例外，結構完整。
-
-5. **BDD 覆蓋**：五種 GapType 映射、三種 severity、去重邏輯、checks 過濾、pluginRoot 不存在優雅降級、CLI 輸出格式均已實作。
-Keywords: health, check, checkcomponentchain, checkclosedloop, checkcompletiongap, checkdependencysync, module, exports, skillsdiroverride, skills
-
----
-## 2026-03-05 | planner:PLAN Findings
-**需求分解**：
-
 1. 擴展 gap-analyzer.js — 新增 fixable + fixAction 欄位 | agent: developer | files: `plugins/overtone/scripts/lib/gap-analyzer.js`
 
 2. 實作 gap-fixer.js — lib 層修復執行邏輯（新建）| agent: developer | files: `plugins/overtone/scripts/lib/gap-fixer.js` — 可與子任務 1 並行（需等 1 定義完 fixAction 格式）
@@ -810,4 +698,77 @@ Keywords: init, workflow, workflowtype, sessionid, atomicwrite, smoke, test, nam
 - 測試使用 `TMP_BASE` 統一清理策略，`beforeAll` 建立目錄，`afterAll` 遞迴清理
 - 20 個測試，15ms 執行時間（純函數呼叫，無 spawn）
 Keywords: skill, forge, test, status, conflict, paused, section, feature, assembleskillbody, domain
+
+---
+## 2026-03-06 | planner:PLAN Findings
+**需求分解**：
+
+1. **建立 tts.js 核心模組** | agent: developer | files: `plugins/overtone/scripts/os/tts.js`
+   — speak() + listVoices() + CLI 入口，仿照 sound.js 非阻塞 + notification.js 不 throw 慣例
+
+2. **建立 tts-templates.js 口語模板**（可與 1 並行）| agent: developer | files: `plugins/overtone/scripts/lib/tts-templates.js`
+   — 事件鍵 → 自然口語字串映射表，`getTemplate(eventKey, params)` 統一入口
+
+3. **建立 tts-strategy.js 事件語音策略**（依賴 1、2）| agent: developer | files: `plugins/overtone/scripts/lib/tts-strategy.js`
+   — shouldSpeak(eventKey, level) + buildSpeakArgs()，讀取 config tts.level
+
+4. **Hook 整合**（依賴 3）| agent: developer | files: `agent-stop-handler.js`、`session-stop-handler.js`、`hooks/scripts/notification/on-notification.js`
+   — 在 stage completed / workflow completed / elicitation_dialog 路徑觸發語音
+
+5. **單元測試**（依賴 1-4）| agent: tester | files: `tests/unit/os/tts.test.js`、`tests/unit/lib/tts-templates.test.js`、`tests/unit/lib/tts-strategy.test.js`
+
+**優先順序**：
+- 任務 1 和 2 可並行先做（互不依賴）
+- 任務 3 需等 1 和 2 完成
+- 任務 4（hook 整合）需等 3 完成
+- 任務 5（測試）伴隨 1-4 同步撰寫或最後集中補齊
+
+**範圍邊界**：
+- 非 macOS 平台不在此版本
+- 無 Dashboard UI 控制介面
+- 無串流 TTS、無語音辨識
+- level=3 的 PostToolUse 整合待 architect 確認後決定是否納入
+Keywords: agent, developer, files, plugins, overtone, scripts, speak, listvoices, sound, notification
+
+---
+## 2026-03-06 | planner:PLAN Context
+使用者要為 Overtone 加入語音輸出能力。核心動機是：使用者背對螢幕工作時，現有的 Hero.aiff 音效資訊量不足，需要口語說出工作進度。MVP 聚焦在 macOS `say` 指令封裝 + 三級事件語音策略 + Hook 整合。
+
+架構上有清楚的先例可循：`sound.js`（spawn + detach 非阻塞）、`notification.js`（依賴注入 + 不 throw）、`screenshot.js`（UNSUPPORTED_PLATFORM 模式），tts.js 的慣例已完全確定。
+Keywords: overtone, hero, aiff, macos, hook, sound, spawn, detach, notification, throw
+
+---
+## 2026-03-06 | retrospective:RETRO Findings
+**回顧摘要**：
+
+**架構一致性 — 良好**
+三層模組分工明確：`tts.js`（OS 底層）、`tts-templates.js`（純資料）、`tts-strategy.js`（決策引擎）。各層職責單一，無跨層污染。Hook 整合三處（agent-stop-handler、session-stop-handler、on-notification）模式完全一致，均採 try/catch fire-and-forget，符合設計規格。
+
+**BDD 對齊度 — 完整**
+BDD spec 共 30 個 Scenario，實作測試 64 個（覆蓋率超越 spec）。逐一核查：所有 Scenario 均有對應測試，模板鍵、level 邊界值、設定合併邏輯均在測試範圍內。
+
+**Command Injection 風險評估 — 可接受**
+`_buildSayArgs` 在 `execSync` 路徑使用字串拼接，`text` 做了 `replace(/"/g, '\\"')` 跳脫雙引號，`voice` 未做跳脫（第 134 行 `` -v "${opts.voice}" ``）。
+
+評估：`voice` 值的來源是 `~/.overtone/tts.json` 由使用者自己設定，屬本機信任邊界內的設定欄位，不存在遠端攻擊面。攻擊者若能控制該設定檔，等同已控制本機，風險等級不構成信心 >=70% 的安全問題。此外 `speakBackground` 使用 `spawn` 陣列形式，無 shell injection 問題。
+
+**測試品質 — 扎實**
+依賴注入完整覆蓋所有 OS 呼叫。邊界值（空字串、空白字串、非 darwin 平台、設定欄位型別轉換）均有測試。三個測試檔共 64 個測試，結構清晰無重複。
+
+**Hook 整合安全性 — 符合規範**
+三處整合均在 `try/catch` 內以 `require()` 懶加載，確保主流程隔離。`speakBackground` 回傳值未被使用（fire-and-forget 語意正確）。
+
+**潛在觀察（信心 <70%，不列為問題）**
+- `_buildSayArgs`（execSync 路徑）與 `_buildSayArgsArray`（spawn 路徑）並存。前者因歷史設計使用字串拼接，若未來有需求可統一改為 spawn，但目前功能正確，不構成問題。
+- `docs/status.md` 未提及 TTS 新增的三個模組，但 status.md 的更新職責屬於 doc-updater 階段，不在此回顧範圍內。
+Keywords: templates, strategy, hook, agent, stop, handler, session, notification, catch, fire
+
+---
+## 2026-03-06 | doc-updater:DOCS Context
+更新 tts-voice-system 功能的所有文件，確保文件與實作一致。本次變更包括：
+- 新增 3 個模組：`plugins/overtone/scripts/os/tts.js`、`tts-templates.js`、`tts-strategy.js`
+- 新增 3 個測試檔，共 64 個新測試
+- Hook 整合：agent-stop-handler + session-stop-handler + on-notification
+- 64 個新測試 → 總測試數 4381（對應 194 個測試檔）
+Keywords: voice, system, plugins, overtone, scripts, templates, strategy, hook, agent, stop
 

@@ -276,3 +276,22 @@ Keywords: domain, research, feature, agent, claude
    - workflow-core domain：自動同步歸檔
 Keywords: docs, status, forge, quality, calibration, changelog, skill, feature, plugin, json
 
+---
+## 2026-03-06 | doc-updater:DOCS Findings
+根據 Handoff 中 Files Modified 清單，完成以下同步：
+
+1. **docs/status.md**
+   - 版本狀態：加入「TTS 語音通知」到 V1 核心能力說明
+   - 版本號：0.28.66 → 0.28.67
+   - 核心指標：4316 pass → 4381 pass；191 檔 → 194 檔
+   - scripts/lib 模組：64 → 66（加註 tts 相關 2 個模組）
+   - 近期變更：新增 [0.28.67] tts 功能項目，對齊最新 3 筆變更順序
+
+2. **docs/roadmap.md**
+   - L2.6 聽說能力層級：tts.js 狀態 ⬜ → ✅
+   - Layer 整體狀態維持（Layer 2 仍為 ✅ 完成）
+
+3. **plugin.json**
+   - 版本號 0.28.66 → 0.28.67（透過 manage-component.js bump-version 更新）
+Keywords: handoff, files, modified, docs, status, pass, scripts, roadmap, layer, plugin
+

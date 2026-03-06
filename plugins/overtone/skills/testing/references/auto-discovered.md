@@ -1,29 +1,5 @@
 ---
 ## 2026-03-04 | tester:TEST Findings
-測試結果：**3083 passed, 0 failed**（全套 132 個測試檔）
-
-本次 feature 新增的測試檔案：
-- `tests/unit/state-sanitize.test.js`：11 個測試，涵蓋 sanitize() 函式的 7 個 Scenario
-- `tests/integration/hook-contract.test.js`：8 個測試，涵蓋 pre-task → on-stop 全鏈路和 PreCompact 恢復鏈路
-- `tests/integration/session-start.test.js` 場景 8：3 個測試，涵蓋 on-start.js 呼叫 sanitize() 的端對端行為
-
-所有 Scenario 均有測試覆蓋，測試品質良好（包含 happy path、邊界條件、複合情況、錯誤路徑）。
-Keywords: passed, failed, feature, tests, unit, state, sanitize, test, scenario, integration
-
----
-## 2026-03-04 | tester:TEST Findings
-測試結果：**61 passed, 0 failed**
-
-- `tests/unit/queue-cli.test.js`：12 pass（queue-cli CLI 功能全覆蓋）
-- `tests/unit/state-invariants.test.js`：部分（含於 49 pass 總計中）
-- `tests/unit/state-sanitize.test.js`：部分（含於 49 pass 總計中）
-- `tests/unit/execution-queue.test.js`：部分（含於 49 pass 總計中）
-
-所有指定的測試 scenario 均通過，state.js 修改無回歸。
-Keywords: passed, failed, tests, unit, queue, test, pass, state, invariants, sanitize
-
----
-## 2026-03-04 | tester:TEST Findings
 測試結果摘要 — **29 passed, 0 failed**
 
 | 檔案 | 結果 | 測試數 |
@@ -629,4 +605,24 @@ Keywords: forge, quality, calibration, tests, unit, skill, test, forgeskill, dom
 
 無任何被註解掉的程式碼，無需清理。
 Keywords: dead, exports, health, check, passed, true, findingscount, test, helpers, tests
+
+---
+## 2026-03-06 | tester:TEST Context
+模式：verify
+BDD spec 目錄（`specs/features/in-progress/tts-voice-system/bdd.md`）不存在，根據慣例直接對現有測試進行驗證執行。
+三個測試檔案（tts.test.js、tts-templates.test.js、tts-strategy.test.js）均由 developer 撰寫完畢。
+Keywords: verify, spec, specs, features, progress, voice, system, test, templates, strategy
+
+---
+## 2026-03-06 | tester:TEST:2 Findings
+測試結果：**64 pass / 0 fail**（150 expect() calls）
+
+| 檔案 | 狀態 |
+|------|------|
+| tests/unit/tts.test.js | PASS |
+| tests/unit/tts-templates.test.js | PASS |
+| tests/unit/tts-strategy.test.js | PASS |
+
+判定：**PASS**
+Keywords: pass, fail, expect, calls, tests, unit, test, templates, strategy
 

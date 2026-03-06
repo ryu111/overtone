@@ -1,12 +1,12 @@
 # Overtone 現況
 
-> 最後更新：2026-03-06 | Plugin 版本：0.28.66
+> 最後更新：2026-03-06 | Plugin 版本：0.28.67
 
 ## 版本狀態
 
 | 版本 | 狀態 | 說明 |
 |------|------|------|
-| V1 | 進行中 | 4316 pass，0 fail。核心能力：BDD 工作流自動化（18 個 agent + 18 個模板）+ 守衛強化（11 個 hook + 19 項 health-check）+ 自我進化引擎（gap detection / auto-fix / skill forge / internalization）+ OS 控制能力（截圖 + 視窗 + 系統層）+ 心跳引擎（跨 session 任務自主執行）+ 深度 PM 多輪訪談（領域研究 + 5 面向訪談）|
+| V1 | 進行中 | 4381 pass，0 fail。核心能力：BDD 工作流自動化（18 個 agent + 18 個模板）+ 守衛強化（11 個 hook + 19 項 health-check）+ 自我進化引擎（gap detection / auto-fix / skill forge / internalization）+ OS 控制能力（截圖 + 視窗 + 系統層 + TTS 語音通知）+ 心跳引擎（跨 session 任務自主執行）+ 深度 PM 多輪訪談（領域研究 + 5 面向訪談）|
 | V2 | 規劃中 | 延後 |
 
 ## 核心指標
@@ -16,11 +16,11 @@
 | Agent 數量 | 18（含 grader） |
 | Stage 數量 | 16 |
 | Workflow 模板 | 18 |
-| 測試通過 | 4316 pass / 0 fail（191 個測試檔）|
-| 測試檔案 | 191 個 |
+| 測試通過 | 4381 pass / 0 fail（194 個測試檔）|
+| 測試檔案 | 194 個 |
 | Hook 數量 | 11 個 |
 | Skill 數量 | 24（15 knowledge domain + orchestrator + pm + specs + 4 utility-with-refs + instinct） |
-| scripts/lib 模組 | 64（含 analyzers/ 7 + knowledge/ 9 + remote/ 4 + dashboard/ 2 子目錄模組） |
+| scripts/lib 模組 | 66（含 analyzers/ 7 + knowledge/ 9 + remote/ 4 + dashboard/ 2 子目錄模組 + tts 相關 2） |
 | Knowledge Domain 數 | 15（testing、workflow-core、security-kb、database、dead-code、commit-convention、code-review、wording、debugging、architecture、build-system、os-control、autonomous-control、craft、claude-dev） |
 | Command 數量 | 28（14 stage shortcut + 7 workflow pipeline + 7 utility） |
 | Telegram 命令 | 6（/start、/status、/stop、/run、/sessions、/help） |
@@ -28,9 +28,9 @@
 
 ## 近期變更（最近 3 筆）
 
+- **[0.28.67] 2026-03-06**：feat(tts)——L2.6 TTS 語音通知系統完成：macOS say 封裝 + 13 鍵事件口語模板 + 三級策略引擎 + Hook 整合（64 個新測試）
 - **[0.28.66] 2026-03-06**：chore(pruning)——清理空檔案 + 歸檔中斷 specs：刪除空 auto-discovered.md + 歸檔 3 個 in-progress specs（acid-test-scenario-design、health-check-zero-warnings、smoke-test-all-flows）
 - **[0.28.66] 2026-03-06**：feat(evolution)——統一 CLI help 格式與 error 訊息：所有子命令 help 統一為 exit 0 + 明確列出 exit 1 條件 + 錯誤訊息對齐格式化
-- **[0.28.65] 2026-03-06**：docs(interview-ux)——訪談 UX 改進 + specs 歸檔：nextQuestion 進度指示器 + getProgress facet 完成度 + getAnswerSummary 答案預覽（36 個新測試）
 
 ## Phase 3 規劃狀態（✅ 完成）
 

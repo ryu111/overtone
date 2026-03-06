@@ -7,3 +7,7 @@
 - 測試計數斷言同步更新：`DOMAIN_KEYWORDS 有 12 個 domain` → `DOMAIN_KEYWORDS 有 15 個 domain`
 - 模組 JSDoc 中的 `12/15` 說明更新為 `15`，移除「留待後續迭代」備注
 Keywords: domain, control, process, clipboard, screenshot, window, notification, applescript, autonomous, heartbeat
+---
+## 2026-03-06 | architect:ARCH Context
+TTS Voice System 採三層模組架構：OS 封裝層（tts.js）、模板層（tts-templates.js）、策略層（tts-strategy.js），再整合至三個 Hook 觸發點。全面對齊現有 OS 腳本慣例（notification.js、screenshot.js 的 `_deps` 注入 + `{ ok, error, message }` 回傳）。
+Keywords: voice, system, templates, strategy, hook, notification, screenshot, error, message
