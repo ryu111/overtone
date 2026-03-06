@@ -47,7 +47,7 @@ Phase 3 目標：Layer 2 完整 OS 能力，達到 Phase 4 Ready。
 | P3.2 | 心跳引擎 | Heartbeat daemon（start/stop/status）+ session-spawner.js + autonomous-control Skill | ✅ |
 | P3.3 | 管得住 | Process + 剪貼簿 + 系統資訊 + 通知 + 檔案監控 | ✅ |
 | P3.4 | 動得了 | keyboard.js + mouse.js + applescript.js + computer-use.js | ⬜ |
-| P3.5 | 聽說能力 | WebSocket ✅ + TTS ⬜ + STT ⬜ | 🟡 部分完成 |
+| P3.5 | 聽說能力 | WebSocket ✅ + TTS ✅ + STT ❌（Claude Code /voice 覆蓋） | ✅ |
 | P3.6 | 安全整合 | Guard 精鍊 + E2E 驗證 + health-check 擴展 | ✅ |
 
 > 詳細計劃見 `docs/roadmap.md` Phase 3 章節。

@@ -136,7 +136,7 @@
 |------|------|:----:|
 | websocket.js | WebSocket client（Bun 原生） | ✅ |
 | tts.js | 文字轉語音 | ✅ |
-| stt.js | 語音轉文字 | ⬜ |
+| stt.js | 語音轉文字 | ❌ 不需要（Claude Code `/voice` 已覆蓋） |
 
 ### L2.7 安全整合（守衛層）
 
