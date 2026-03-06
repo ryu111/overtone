@@ -1,5 +1,9 @@
 # 深度訪談引擎操作指引
 
+> **注意**：interview.js 引擎僅用於**無人值守場景**（使用者明確要求自動完成）或明確要求深度訪談/完整 Project Spec 時。
+> 互動式產品訪談 📋 MUST 使用「研究先行 + AskUserQuestion」行為模式，不使用此引擎。
+> 詳見 `SKILL.md` 的「研究先行原則」與 `product-manager.md` 的「Advisory 模式流程」。
+
 PM agent 執行多輪結構化訪談的完整操作手冊。
 
 ---
@@ -145,20 +149,45 @@ ProjectSpec：{ feature, generatedAt, facets: { functional, flow, ui, edgeCases,
 
 ## 訪談流程
 
-### 標準流程
+### 研究先行（📋 MUST）
+
+訪談開始前，PM 📋 MUST 先做研究，再提問。
+
+**反模式**（⛔ 嚴禁）：什麼都不了解就直接問使用者「你想要什麼功能？」
+
+**研究先行流程**：
+```
+1. 聆聽使用者描述想做什麼產品、有什麼參考
+        ↓
+2. PM 自己做研究（WebSearch）
+   - 搜尋競品：市場上有哪些類似產品？差異在哪？
+   - 搜尋市場：目標市場規模、用戶痛點、常見需求
+   - 搜尋產業：法規、技術標準、業界慣例
+        ↓
+3. 向使用者報告研究發現（競品差異、市場概況、關鍵決策點）
+        ↓
+4. 基於研究，提出具體決策問題（商品類型、付費模式、技術選型等）
+   而不是泛泛的「你想要什麼功能？」
+```
+
+### 標準訪談流程
 
 ```
-1. 領域研究（新領域時）
+1. 研究先行（WebSearch 競品/市場/痛點）— 📋 MUST，不可省略
         ↓
-2. 初始化 session（init）
+2. 向使用者報告研究發現
         ↓
-3. 取得下一個問題（nextQuestion）→ null 時跳到步驟 6
+3. 領域研究（新領域時，用 researchDomain API）
         ↓
-4. 向使用者提問，收集回答
+4. 初始化 session（init）
         ↓
-5. 記錄回答（recordAnswer）→ 儲存進度（saveSession）→ 回到步驟 3
+5. 取得下一個問題（nextQuestion）→ null 時跳到步驟 8
         ↓
-6. 完成判斷（isComplete）
+6. 向使用者提問，收集回答
+        ↓
+7. 記錄回答（recordAnswer）→ 儲存進度（saveSession）→ 回到步驟 5
+        ↓
+8. 完成判斷（isComplete）
    - 通過 → 產生規格（generateSpec）
    - 未通過 → 繼續追問必問題
 ```

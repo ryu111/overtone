@@ -22,3 +22,11 @@ Keywords: domain, keywords, fragment, solid, refactor, design, pattern, content,
 ## 2026-03-05 | developer:DEV Context
 在 `knowledge-gap-detector.js` 的 `detectKnowledgeGaps` 中加入歧義詞處理，對齊 `skill-router.js` v2 的機制，防止通用詞（refactor、solid、design pattern）造成 gap 誤判。
 Keywords: knowledge, detector, detectknowledgegaps, skill, router, refactor, solid, design, pattern
+---
+## 2026-03-06 | planner:PLAN Context
+md-blog 是一個輕量 CLI 工具，將 Markdown 文件轉換為靜態 HTML 部落格網站。使用者執行 `md-blog build ./posts`，產出 `./dist/` 目錄（index.html + posts/*.html）。
+
+這是 Overtone Layer 3 Acid Test 的驗證媒介，重點不在 md-blog 的完整性，而在驗證系統自我進化全鏈路（PM 訪談已完成，Project Spec 已產出 13 個 BDD 場景）。
+
+技術約束：Bun runtime、純 JavaScript、零外部依賴（或最小依賴）、不依賴 Overtone 任何模組、放在 `projects/md-blog/` 獨立子目錄。
+Keywords: blog, markdown, html, build, posts, dist, index, overtone, layer, acid

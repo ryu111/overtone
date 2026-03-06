@@ -3,8 +3,6 @@ name: pm
 description: 產品探索與需求釐清。引導 Main Agent 以 PM 角色探索需求、定義範圍、比較方案。三種模式：discovery（純探索）、product（PM + standard pipeline）、product-full（PM + full pipeline）。
 ---
 
-# 產品經理（PM）
-
 ## 初始化
 
 根據需求選擇對應 workflow 初始化：
@@ -36,19 +34,38 @@ Main Agent 解析 `/ot:pm` 的 ARGUMENTS：
 - **產出**：Product Brief — 問題陳述 + 方案比較 + MVP 範圍 + BDD 驗收標準
 - PM 是 advisory 角色，結果預設為 pass
 
+## 研究先行原則（📋 MUST）
+
+📋 MUST：PM agent 在提出任何問題前，必須先自行做研究。
+
+**反模式**（⛔ 嚴禁）：什麼都不了解就對使用者亂問泛泛的問題（「你想要什麼功能？」「你的目標用戶是誰？」）
+
+**正確順序**：
+1. **先聽使用者說** — 了解使用者想做什麼產品、有什麼參考
+2. **PM 自己做研究** — 用 WebSearch 搜尋競品、市場現況、產業痛點、法規風險
+3. **帶著理解提問** — 基於研究結果，用 AskUserQuestion 問具體決策問題
+
+**研究完後**：📋 MUST 先向使用者報告研究發現（競品差異、市場概況、關鍵痛點），再開始提問。
+
+**正面範例**：
+- PM 研究了競品差異（如 oripa vs 傳統一番賞）、台灣市場競品、法規風險
+- 然後問具體決策：「商品類型是卡牌 oripa 還是傳統公仔一番賞？」「付費模式要點數制還是直接付費？」
+
 ## 四階段流程（agent 內部執行）
 
-1. **Discovery**：五層追問法（表面需求 → 情境 → 現有方案 → 痛點 → 成功定義）
+1. **Discovery**：先研究（WebSearch 競品/市場/痛點）→ 向使用者報告研究發現 → 基於研究用五層追問法提出具體決策問題
 2. **Definition**：MoSCoW 分類、標記假設和風險、定義成功指標
 3. **Options**：2-3 個方案 + RICE 評分 + 比較表格 + 推薦理由
 4. **Decision**：確認方向 → 產出 Product Brief → 建議 workflow 類型
 
 ## 多輪訪談模式
 
-適用情境（product-manager agent 判斷）：
-- **複雜功能**：涉及多個系統或領域的新功能
-- **新領域**：PM 對使用者業務知識不足，需深入挖掘
-- **無人值守**：使用者預期 PM 自主完成完整需求分析，不即時互動
+interview.js 引擎是**可選工具**，不是預設訪談方式。預設互動式訪談使用「研究先行 + AskUserQuestion」行為模式。
+
+**interview.js 適用情境**（product-manager agent 判斷）：
+- **無人值守**：使用者預期 PM 自主完成完整需求分析，不即時互動（主要使用場景）
+- **複雜功能**：涉及多個系統或領域，需要結構化五面向全覆蓋
+- **新領域**：PM 對使用者業務知識不足，需要系統性深入挖掘
 
 啟用後，product-manager 使用 `interview.js` 引擎執行結構化訪談：
 - **五面向問題庫**：功能定義 / 操作流程 / UI 設計 / 邊界條件 / 驗收標準
@@ -61,6 +78,7 @@ Main Agent 解析 `/ot:pm` 的 ARGUMENTS：
 
 | 反模式 | 偵測信號 | 應對 |
 |--------|---------|------|
+| 未研究先問 | 直接問使用者泛泛問題而未做任何研究 | 先做 WebSearch 再提問 |
 | 方案先行 | 直接描述技術實作 | 退回追問「要解決什麼問題？」 |
 | Scope Creep | Must 清單持續增長 | 提醒確認 MVP 核心 |
 | 缺少指標 | 無法回答「怎樣算成功」 | 要求定義可衡量指標 |
@@ -75,6 +93,7 @@ Task prompt 📋 MUST 包含：
 (1) agent 名稱：product-manager
 (2) 任務描述：產品分析 + 使用者需求
 (3) 專案 context：相關檔案路徑、現有功能描述
+(4) 研究指示：MUST 先用 WebSearch 研究競品/市場/產業痛點，再向使用者提問
 ```
 
 ## PM 完成後 — 後續 pipeline
@@ -192,7 +211,7 @@ node -e "require('${CLAUDE_PLUGIN_ROOT}/scripts/lib/execution-queue').completeCu
 - 反模式指南：`${CLAUDE_PLUGIN_ROOT}/skills/pm/references/anti-patterns.md`
 - Product Brief 範本：`${CLAUDE_PLUGIN_ROOT}/skills/pm/references/product-brief-template.md`
 - Drift 偵測：`${CLAUDE_PLUGIN_ROOT}/skills/pm/references/drift-detection.md`
-- 訪談引擎操作指引：`${CLAUDE_PLUGIN_ROOT}/skills/pm/references/interview-guide.md`（五面向結構化訪談 + interview.js API + 中斷恢復）
+- 訪談引擎操作指引：`${CLAUDE_PLUGIN_ROOT}/skills/pm/references/interview-guide.md`（五面向結構化訪談 + interview.js API + 中斷恢復，僅無人值守場景使用）
 - Discovery 實戰範例：`${CLAUDE_PLUGIN_ROOT}/skills/pm/examples/discovery-session-walkthrough.md`
 
 ## 完成條件

@@ -89,6 +89,15 @@ if (featureName) {
   }
 }
 
+// 重置 loop 狀態（清除前一個 session/workflow 遺留的 stopped: true）
+const loop = require('./lib/loop');
+loop.writeLoop(sessionId, {
+  iteration: 0,
+  stopped: false,
+  consecutiveErrors: 0,
+  startedAt: new Date().toISOString(),
+});
+
 // 初始化 workflow 狀態
 const newState = state.initState(sessionId, workflowType, workflow.stages, {
   featureName: featureName || null,

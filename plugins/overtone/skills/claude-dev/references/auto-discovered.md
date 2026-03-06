@@ -295,3 +295,67 @@ Keywords: docs, status, forge, quality, calibration, changelog, skill, feature, 
    - 版本號 0.28.66 → 0.28.67（透過 manage-component.js bump-version 更新）
 Keywords: handoff, files, modified, docs, status, pass, scripts, roadmap, layer, plugin
 
+---
+## 2026-03-06 | product-manager:PM Findings
+**目標用戶**：個人開發者和技術寫作者，在本地撰寫 Markdown 文章後需要快速發佈為靜態網站。
+
+**成功指標**：
+- dist/ 目錄包含完整的 index.html 和所有文章 HTML
+- 瀏覽器可正常開啟，所有內部連結不 404
+- Markdown 內容正確渲染（標題、段落、列表、程式碼塊、連結、圖片）
+- 100 篇文章 build < 5 秒
+
+**方案比較**：
+
+本案需求明確且範圍已收斂，不需要多方案比較。單一方案：內建 HTML 字串插值 + 最小 CSS 內嵌 + YAML Front Matter + `/posts/slug.html` 路由。
+
+**推薦方案**：零依賴 CLI 工具（Bun runtime），理由：最小複雜度、與專案技術棧一致、符合「輕量替代 Hugo/Jekyll」定位。
+
+**MVP 範圍（MoSCoW）**：
+- **Must**: Front Matter 解析（title/date 必填）、Markdown -> HTML 轉換、index.html 文章清單（按日期降冪）、posts/slug.html 獨立文章頁、內嵌最小 CSS、錯誤處理（目錄不存在/缺少欄位/格式錯誤）、CLI 入口 `md-blog build <dir>`
+- **Should**: 程式碼塊 language-xxx class 標記、返回首頁連結、檔名 slugify（中文/特殊字元）、日期格式容錯
+- **Could**: CLI 輸出美化（色彩/檔案清單）、效能指標追蹤
+- **Won't**: 分類/標籤、RSS、搜尋、評論、多語系、增量 build、live reload、外部模板引擎、主題/外掛系統
+
+**驗收標準（BDD）**：
+- Given 3 篇有效 .md 文件 When 執行 build Then dist/ 包含 index.html + 3 個 HTML 且按日期排序
+- Given 1 篇缺少 title 欄位 When 執行 build Then 跳過該文件、stderr 報錯、其他正常、exit code 1
+- Given 空目錄 When 執行 build Then 空 index.html、警告、exit code 0
+- Given 目錄不存在 When 執行 build Then 錯誤訊息、exit code 1
+- Given Markdown 含標題/列表/程式碼塊 When build Then HTML 正確渲染含 language-xxx class
+- Given index.html 連結 When 點擊 Then 導航到文章頁、有返回首頁連結、不 404
+- 完整 13 個 BDD 場景見 project-spec.md
+
+**假設 & 風險**：
+
+| 假設/風險 | 影響 | 緩解方案 |
+|-----------|------|----------|
+| Bun 內建能力足以解析 Markdown | 中 | 可用輕量 Markdown parser 函式（正規表達式），不需要完整套件 |
+| Front Matter 解析不需要 gray-matter 外部依賴 | 低 | 簡單的 YAML 解析（只需 title/date 兩欄位）可用正規表達式 |
+| 使用者的 .md 檔案都是 UTF-8 | 低 | 非 UTF-8 時盡力讀取，報告警告 |
+| 系統能自主 forge static-site-generation 和 cli-tooling skills | 中 | Acid Test 可接受的失敗點，手動補充 references 即可 |
+Keywords: markdown, dist, index, html, build, yaml, front, matter, posts, slug
+
+---
+## 2026-03-06 | planner:PLAN Findings
+**需求分解**：
+
+1. T0：專案結構初始化 | agent: developer | files: `projects/md-blog/package.json`, `projects/md-blog/README.md`
+2. T1：Front Matter 解析器 + slugify | agent: developer | files: `projects/md-blog/src/parser.js`, `projects/md-blog/src/slugify.js`, `tests/unit/md-blog/parser.test.js`
+3. T2：Markdown 轉 HTML 轉換器 (parallel) | agent: developer | files: `projects/md-blog/src/markdown.js`, `tests/unit/md-blog/markdown.test.js`
+4. T3：HTML 頁面產生器 (parallel with T2) | agent: developer | files: `projects/md-blog/src/templates.js`, `tests/unit/md-blog/templates.test.js`
+5. T4：CLI 入口與整合 | agent: developer | files: `projects/md-blog/md-blog.js`, `tests/integration/md-blog/build.test.js`
+
+**優先順序**：
+
+```
+T0（先行）→ T1 → T2 + T3（並行）→ T4
+```
+
+T0 和 T1 必須序列，因為 T1 是 T2/T3 的輸入介面定義。T2 和 T3 邏輯獨立（一個轉換內容，一個產生模板），可並行。T4 整合所有模組，必須最後執行。
+
+**範圍邊界**：
+
+明確不做：分類/標籤、RSS feed、搜尋、評論、多語系、增量 build、開發伺服器、外部模板引擎、自訂主題、XSS 過濾、JS 語法高亮 runtime。
+Keywords: agent, developer, files, projects, blog, package, json, readme, front, matter
+
