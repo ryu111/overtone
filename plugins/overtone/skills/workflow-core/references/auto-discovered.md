@@ -1,9 +1,4 @@
 ---
-## 2026-03-05 | developer:DEV Context
-完成 `skill-router-tune`（opt-7）：調優 `skill-router.js` 路由演算法，提升 agent 知識路由的精準度，減少歧義詞造成的 false positive。
-Keywords: skill, router, tune, agent, false, positive
-
----
 ## 2026-03-05 | developer:DEV Findings
 - **格式 2 跨 skill 引用問題**：最初的 regex 錯誤地把跨 skill 引用（如 `auto` skill 引用 `workflow-core/references/handoff-protocol.md`）解析為當前 skill 的路徑，導致 9 個假陽性 error。修正方式：格式 2 改用捕捉完整三部分（`targetSkill`、`type`、`file`），驗證 `skills/{targetSkill}/{type}/{file}` 的實際存在
 - **`crossRefs` Set 無效問題**：物件在 Set 中比對引用而非值，需改用字串 key 去重（`${targetSkill}/${type}/${file}`）
@@ -618,4 +613,20 @@ Keywords: timeline, emit, type, category, label, data, spread, agent, enforceinv
 ## 2026-03-06 | doc-updater:DOCS Context
 掃描工作流最後的 DOCS 階段變更。發現本次改動為純測試補強（agent-stop-handler.test.js / pre-task-handler.test.js），未涉及任何設計文件、規格、API、hook、skill 等核心模組。
 Keywords: docs, agent, stop, handler, test, task, hook, skill
+
+---
+## 2026-03-06 | developer:DEV Findings
+**實作方式：**
+- 純函數測試：直接 require handler 模組，測試 `buildCompactMessage`、`buildCompletionSummary`、`calcDuration`、`buildContinueMessage`、`_isRelatedQueueItem`、`resolveSessionResult` 的各種輸入組合
+- 整合測試：建立真實 session 目錄（`~/.overtone/sessions/test_xxx/`），呼叫 `handleSessionStop`、`handlePreCompact`、`handleSessionEnd` 驗證副作用
+
+**關鍵修正：**
+1. `loopDefaults.maxIterations` 實際值是 100，不是 20
+2. `buildCompletionSummary` 在所有 `allCompleted` 路徑都會呼叫（包含 hasFailedStage），所以 `🎉` 在有失敗 stage 時仍顯示
+3. `pendingAction type` 值（如 `fix-reject`）不直接顯示在訊息中，只顯示對應的中文指示
+
+**測試分配模式：**
+- `describe` + `test` 用於純函數測試
+- `describeI` + `testI`（aliased）用於整合測試（避免 `afterAll` 衝突）
+Keywords: require, handler, buildcompactmessage, buildcompletionsummary, calcduration, buildcontinuemessage, resolvesessionresult, session, overtone, sessions
 
