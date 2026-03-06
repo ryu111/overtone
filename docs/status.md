@@ -1,6 +1,6 @@
 # Overtone 現況
 
-> 最後更新：2026-03-06 | Plugin 版本：0.28.67
+> 最後更新：2026-03-06 | Plugin 版本：0.28.68
 
 ## 版本狀態
 
@@ -16,7 +16,7 @@
 | Agent 數量 | 18（含 grader） |
 | Stage 數量 | 16 |
 | Workflow 模板 | 18 |
-| 測試通過 | 4381 pass / 0 fail（194 個測試檔）|
+| 測試通過 | 4397 pass / 0 fail（194 個測試檔）|
 | 測試檔案 | 194 個 |
 | Hook 數量 | 11 個 |
 | Skill 數量 | 24（15 knowledge domain + orchestrator + pm + specs + 4 utility-with-refs + instinct） |
@@ -28,9 +28,9 @@
 
 ## 近期變更（最近 3 筆）
 
+- **[0.28.68] 2026-03-06**：feat(pm-architect)——PM-Architect 深度改進：PM 訪談 flow 新增 flow-6/7/8 探索 + architect 決策點 DO/DON'T 清單 + state-sync patterns 知識萃取 + pre-task-handler MoSCoW 優先級注入（16 個新測試）
 - **[0.28.67] 2026-03-06**：feat(tts)——L2.6 TTS 語音通知系統完成：macOS say 封裝 + 13 鍵事件口語模板 + 三級策略引擎 + Hook 整合（64 個新測試）
 - **[0.28.66] 2026-03-06**：chore(pruning)——清理空檔案 + 歸檔中斷 specs：刪除空 auto-discovered.md + 歸檔 3 個 in-progress specs（acid-test-scenario-design、health-check-zero-warnings、smoke-test-all-flows）
-- **[0.28.66] 2026-03-06**：feat(evolution)——統一 CLI help 格式與 error 訊息：所有子命令 help 統一為 exit 0 + 明確列出 exit 1 條件 + 錯誤訊息對齐格式化
 
 ## Phase 3 規劃狀態（✅ 完成）
 
