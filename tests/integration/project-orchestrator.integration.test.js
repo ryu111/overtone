@@ -136,12 +136,12 @@ describe('Feature 5: evolution.js orchestrate 子命令', () => {
   });
 
   test('Scenario 5-2: CLI --execute 真實執行，寫入佇列', () => {
-    // 使用 temp dir 隔離 projectRoot，透過環境變數覆蓋
+    // 使用隔離的 projectRoot 避免汙染生產佇列
     const execTempDir = mkdtempSync('orch-exec-');
     try {
-      // evolution.js orchestrate 使用 projectRoot，我們無法直接注入環境變數給 paths.js
-      // 但可以驗證 exit 0 且 stdout 不含 dry-run
-      const { stdout, exitCode } = runEvolution(['orchestrate', specFilePath, '--execute']);
+      const { stdout, exitCode } = runEvolution([
+        'orchestrate', specFilePath, '--execute', '--project-root', execTempDir,
+      ]);
 
       // 主要驗證：exit 0 且無 dry-run 提示
       expect(exitCode).toBe(0);
