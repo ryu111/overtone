@@ -135,6 +135,31 @@ function handleAgentStop(input, sessionId) {
 
     if (result.verdict === 'fail') s.failCount = (s.failCount || 0) + 1;
     else if (result.verdict === 'reject') s.rejectCount = (s.rejectCount || 0) + 1;
+
+    // 寫入結構化 pendingAction（確保 context 壓縮後仍可恢復決策）
+    if (result.verdict === 'fail') {
+      s.pendingAction = {
+        type: 'fix-fail',
+        stage: actualStageKey,
+        agent: agentName,
+        reason: result.reason || null,
+        count: s.failCount,
+        createdAt: new Date().toISOString(),
+      };
+    } else if (result.verdict === 'reject') {
+      s.pendingAction = {
+        type: 'fix-reject',
+        stage: actualStageKey,
+        agent: agentName,
+        reason: result.reason || null,
+        count: s.rejectCount,
+        createdAt: new Date().toISOString(),
+      };
+    } else if (result.verdict === 'pass' && s.pendingAction) {
+      // 修復成功，清除 pendingAction
+      s.pendingAction = null;
+    }
+
     return s;
   });
 

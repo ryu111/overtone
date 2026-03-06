@@ -161,6 +161,21 @@ function buildCompactMessage(ctx) {
     if (currentState.featureName) {
       lines.push(`Feature：${currentState.featureName}`);
     }
+
+    // 結構化待執行動作（確保 context 壓縮後不遺失 reject/fail 的修復指令）
+    if (currentState.pendingAction) {
+      const pa = currentState.pendingAction;
+      lines.push('');
+      if (pa.type === 'fix-reject') {
+        lines.push(`⚠️ 待執行：REVIEW 被拒絕（${pa.count}/3），必須委派 DEVELOPER 修復後重新 REVIEW`);
+        if (pa.reason) lines.push(`拒絕原因：${pa.reason}`);
+        lines.push('📋 MUST：委派 developer agent（帶入拒絕原因）→ 修復完成後委派 code-reviewer 再審');
+      } else if (pa.type === 'fix-fail') {
+        lines.push(`⚠️ 待執行：${pa.stage} 失敗（${pa.count}/3），必須委派 DEBUGGER 診斷後 DEVELOPER 修復`);
+        if (pa.reason) lines.push(`失敗原因：${pa.reason}`);
+        lines.push('📋 MUST：委派 debugger agent 分析根因 → developer 修復 → tester 驗證');
+      }
+    }
   }
 
   if (pendingMsg) {

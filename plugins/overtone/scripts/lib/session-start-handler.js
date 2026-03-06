@@ -463,11 +463,32 @@ function handleSessionStart(input, sessionId, hookTimer) {
 
   const pluginContextMsg = buildPluginContext();
 
+  // ── pendingAction 恢復 ──
+  // 結構化待執行動作（reject/fail 後的修復指令），確保跨 session 不遺失
+  let pendingActionMsg = null;
+  const currentState = sessionId ? state.readState(sessionId) : null;
+  if (currentState && currentState.pendingAction) {
+    const pa = currentState.pendingAction;
+    const lines = ['## ⚠️ 待執行動作（上次 session 未完成）', ''];
+    if (pa.type === 'fix-reject') {
+      lines.push(`**REVIEW 被拒絕**（${pa.count}/3）— 階段：${pa.stage}`);
+      if (pa.reason) lines.push(`拒絕原因：${pa.reason}`);
+      lines.push('');
+      lines.push('📋 MUST：委派 developer agent（帶入拒絕原因）修復 → 完成後委派 code-reviewer 再審');
+    } else if (pa.type === 'fix-fail') {
+      lines.push(`**${pa.stage} 失敗**（${pa.count}/3）`);
+      if (pa.reason) lines.push(`失敗原因：${pa.reason}`);
+      lines.push('');
+      lines.push('📋 MUST：委派 debugger agent 分析根因 → developer 修復 → tester 驗證');
+    }
+    pendingActionMsg = lines.join('\n');
+  }
+
   // ── 組裝輸出 ──
 
   const output = buildStartOutput(input, {
     banner,
-    msgs: [pluginContextMsg, pendingTasksMsg, globalObservationsMsg, recentIntentsMsg, baselineSummaryMsg, scoreSummaryMsg, failureSummaryMsg, queueMsg].filter(Boolean),
+    msgs: [pluginContextMsg, pendingActionMsg, pendingTasksMsg, globalObservationsMsg, recentIntentsMsg, baselineSummaryMsg, scoreSummaryMsg, failureSummaryMsg, queueMsg].filter(Boolean),
   });
 
   // ── hook:timing — 記錄 SessionStart 執行耗時 ──

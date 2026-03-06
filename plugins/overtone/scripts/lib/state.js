@@ -75,6 +75,7 @@ function initState(sessionId, workflowType, stageList, options = {}) {
     rejectCount: 0,
     retroCount: 0,
     featureName: options.featureName || null,
+    pendingAction: null, // 結構化待執行動作（reject/fail 時寫入，修復後清除）
   };
 
   writeState(sessionId, state);
