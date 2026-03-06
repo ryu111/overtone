@@ -205,3 +205,141 @@ describe('Feature 4: intent_journal 記錄（handleOnSubmit）', () => {
     expect(journals).toHaveLength(0);
   });
 });
+
+// ════════════════════════════════════════════════════════
+// Feature 5: handleOnSubmit — workflow 覆寫語法
+// ════════════════════════════════════════════════════════
+
+describe('Feature 5: handleOnSubmit — workflow 覆寫語法', () => {
+  let session;
+
+  beforeEach(() => {
+    session = makeSession('f5');
+    mkdirSync(session.dir, { recursive: true });
+  });
+
+  afterEach(() => {
+    rmSync(session.dir, { recursive: true, force: true });
+  });
+
+  test('Scenario 5-1: [workflow:quick] 覆寫語法回傳指定 workflow 指引', () => {
+    const result = handleOnSubmit({
+      session_id: session.id,
+      prompt: '幫我開發新功能 [workflow:quick]',
+      cwd: process.cwd(),
+    });
+    expect(result.systemMessage).toBeDefined();
+    expect(result.systemMessage).toContain('quick');
+    expect(result.systemMessage).toContain('/ot:quick');
+  });
+
+  test('Scenario 5-2: [workflow:invalid] 使用無效 key 時退回 /ot:auto 引導', () => {
+    const result = handleOnSubmit({
+      session_id: session.id,
+      prompt: '幫我開發功能 [workflow:invalid_xyz]',
+      cwd: process.cwd(),
+    });
+    // 無效 workflow key → validWorkflowOverride 為 null → 回傳 /ot:auto 引導
+    expect(result.systemMessage).toContain('/ot:auto');
+  });
+
+  test('Scenario 5-3: /ot: 指令提早返回，result 為空字串', () => {
+    const result = handleOnSubmit({
+      session_id: session.id,
+      prompt: '/ot:standard',
+      cwd: process.cwd(),
+    });
+    expect(result.result).toBe('');
+    expect(result.systemMessage).toBeUndefined();
+  });
+
+  test('Scenario 5-4: 無 sessionId 時仍回傳 systemMessage', () => {
+    const result = handleOnSubmit({
+      prompt: '一般使用者需求',
+      cwd: process.cwd(),
+    });
+    // 無 sessionId 時仍能回傳 systemMessage（/ot:auto 引導）
+    expect(result.result).toBe('');
+    expect(result.systemMessage).toBeDefined();
+  });
+
+  test('Scenario 5-5: user_prompt 欄位（舊格式）也能正常處理', () => {
+    const result = handleOnSubmit({
+      session_id: session.id,
+      user_prompt: '使用舊格式的 prompt',
+      cwd: process.cwd(),
+    });
+    expect(result.result).toBe('');
+    expect(result.systemMessage).toBeDefined();
+  });
+});
+
+// ════════════════════════════════════════════════════════
+// Feature 6: buildSystemMessage — 進階邊界測試
+// ════════════════════════════════════════════════════════
+
+describe('Feature 6: buildSystemMessage — 進階邊界', () => {
+  test('Scenario 6-1: validWorkflowOverride 的 workflow 指引包含 TaskCreate 提示', () => {
+    const result = buildSystemMessage({
+      validWorkflowOverride: 'standard',
+      currentState: null,
+      activeFeatureContext: '',
+      workflows,
+    });
+    expect(result).toContain('TaskCreate');
+  });
+
+  test('Scenario 6-2: 無進行中 workflow 時指引包含 TaskCreate 提示', () => {
+    const result = buildSystemMessage({
+      validWorkflowOverride: null,
+      currentState: null,
+      activeFeatureContext: '',
+      workflows,
+    });
+    expect(result).toContain('TaskCreate');
+  });
+
+  test('Scenario 6-3: 進行中 workflow 的訊息包含 /ot:auto 查詢提示', () => {
+    const result = buildSystemMessage({
+      validWorkflowOverride: null,
+      currentState: { currentStage: 'REVIEW', workflowType: 'standard' },
+      activeFeatureContext: '',
+      workflows,
+    });
+    expect(result).toContain('/ot:auto');
+    expect(result).toContain('standard（REVIEW）');
+  });
+
+  test('Scenario 6-4: 進行中 workflow 但 activeFeatureContext 為空時結果不含空行', () => {
+    const result = buildSystemMessage({
+      validWorkflowOverride: null,
+      currentState: { currentStage: 'DEV', workflowType: 'quick' },
+      activeFeatureContext: '',
+      workflows,
+    });
+    // 過濾後不應有兩個連續換行（空 context 被過濾）
+    expect(result).not.toMatch(/\n\n\n/);
+  });
+
+  test('Scenario 6-5: workflows 為空物件時 validWorkflowOverride 回傳無 label 的版本', () => {
+    const result = buildSystemMessage({
+      validWorkflowOverride: 'myflow',
+      currentState: null,
+      activeFeatureContext: '',
+      workflows: { myflow: {} },
+    });
+    expect(result).toContain('myflow');
+    expect(result).toContain('/ot:myflow');
+  });
+
+  test('Scenario 6-6: workflows 傳入時 validWorkflowOverride 顯示正確 label', () => {
+    const result = buildSystemMessage({
+      validWorkflowOverride: 'quick',
+      currentState: null,
+      activeFeatureContext: '',
+      workflows,
+    });
+    // quick workflow 的 label 應出現在訊息中
+    expect(result).toContain(workflows.quick.label || 'quick');
+  });
+});

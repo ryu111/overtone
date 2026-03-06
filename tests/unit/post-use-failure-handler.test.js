@@ -81,4 +81,130 @@ describe('CRITICAL_TOOLS', () => {
     expect(CRITICAL_TOOLS).toContain('Write');
     expect(CRITICAL_TOOLS).toContain('Edit');
   });
+
+  it('共有 3 個重大工具（Task、Write、Edit）', () => {
+    expect(CRITICAL_TOOLS).toHaveLength(3);
+  });
+});
+
+describe('handlePostUseFailure — 進階行為', () => {
+  it('Scenario 8: error 超過 120 字元時截斷至 120 字元', () => {
+    const longError = 'E'.repeat(200);
+    const result = handlePostUseFailure({
+      session_id: 'test-sess-trunc',
+      tool_name: 'Task',
+      error: longError,
+      is_interrupt: false,
+    });
+    // 回傳訊息中的錯誤摘要應截斷（120 字）
+    expect(result.output.result).toContain('E'.repeat(120));
+    expect(result.output.result).not.toContain('E'.repeat(200));
+  });
+
+  it('Scenario 9: error 為空字串時 Task 失敗仍回傳提示訊息', () => {
+    const result = handlePostUseFailure({
+      session_id: 'test-sess-empty-err',
+      tool_name: 'Task',
+      error: '',
+      is_interrupt: false,
+    });
+    expect(result.output.result).toContain('agent 委派失敗');
+  });
+
+  it('Scenario 10: Bash 失敗也記錄（Instinct emit）— 回傳空 result', () => {
+    // Bash 屬於 shouldEmitTimeline 但不屬於 CRITICAL_TOOLS → 不注入 systemMessage
+    const result = handlePostUseFailure({
+      session_id: 'test-sess-bash-fail',
+      tool_name: 'Bash',
+      error: 'command not found: xyz',
+      is_interrupt: false,
+    });
+    // 重要：回傳空 result（不注入訊息）
+    expect(result.output.result).toBe('');
+  });
+
+  it('Scenario 11: tool_name 為空字串時不注入（非 CRITICAL_TOOLS）', () => {
+    const result = handlePostUseFailure({
+      session_id: 'test-sess-notool',
+      tool_name: '',
+      error: 'some error',
+      is_interrupt: false,
+    });
+    expect(result.output.result).toBe('');
+  });
+
+  it('Scenario 12: Write 失敗訊息包含路徑相關提示', () => {
+    const result = handlePostUseFailure({
+      session_id: 'test-sess-write',
+      tool_name: 'Write',
+      error: 'EACCES: permission denied, open "/protected/file.txt"',
+      is_interrupt: false,
+    });
+    expect(result.output.result).toContain('Write');
+    expect(result.output.result).toContain('路徑');
+  });
+
+  it('Scenario 13: Edit 失敗訊息包含磁碟空間提示', () => {
+    const result = handlePostUseFailure({
+      session_id: 'test-sess-edit',
+      tool_name: 'Edit',
+      error: 'ENOSPC: no space left on device',
+      is_interrupt: false,
+    });
+    expect(result.output.result).toContain('磁碟空間');
+  });
+
+  it('Scenario 14: Task 失敗訊息包含重試建議', () => {
+    const result = handlePostUseFailure({
+      session_id: 'test-sess-retry',
+      tool_name: 'Task',
+      error: 'timeout waiting for subagent',
+      is_interrupt: false,
+    });
+    expect(result.output.result).toContain('重試');
+  });
+
+  it('Scenario 15: is_interrupt 未傳（undefined）時視為 false，正常處理', () => {
+    const result = handlePostUseFailure({
+      session_id: 'test-sess-no-interrupt',
+      tool_name: 'Task',
+      error: 'unknown failure',
+      // is_interrupt 未傳
+    });
+    // 應正常處理（不因缺少 is_interrupt 而靜默退出）
+    expect(result.output.result).toContain('agent 委派失敗');
+  });
+
+  it('Scenario 16: 重複相同工具失敗時仍正常處理（無爆炸）', () => {
+    const input = {
+      session_id: 'test-sess-repeat',
+      tool_name: 'Task',
+      error: 'repeated failure',
+      is_interrupt: false,
+    };
+    expect(() => {
+      handlePostUseFailure(input);
+      handlePostUseFailure(input);
+    }).not.toThrow();
+  });
+
+  it('Scenario 17: 非重大工具（Grep）不產生 systemMessage', () => {
+    const result = handlePostUseFailure({
+      session_id: 'test-sess-grep',
+      tool_name: 'Grep',
+      error: 'pattern too complex',
+      is_interrupt: false,
+    });
+    expect(result.output.result).toBe('');
+  });
+
+  it('Scenario 18: Read 工具失敗 → 回傳空 result', () => {
+    const result = handlePostUseFailure({
+      session_id: 'test-sess-read',
+      tool_name: 'Read',
+      error: 'file not found',
+      is_interrupt: false,
+    });
+    expect(result.output.result).toBe('');
+  });
 });

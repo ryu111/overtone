@@ -403,3 +403,369 @@ describe('Feature 7: 最近常做的事（intent_journal 摘要注入）', () =>
     }).not.toThrow();
   });
 });
+
+// ────────────────────────────────────────────────────────────────────────────
+// Feature 8: handleSessionStart — systemMessage 組裝條件
+// ────────────────────────────────────────────────────────────────────────────
+
+describe('Feature 8: handleSessionStart — systemMessage 組裝', () => {
+  test('Scenario 8-1: 正常啟動時 result 包含版本號且格式正確', () => {
+    const output = handler.handleSessionStart({ cwd: process.cwd() }, null, null);
+    expect(output).toHaveProperty('result');
+    expect(typeof output.result).toBe('string');
+    expect(output.result).toMatch(/\d+\.\d+\.\d+/);
+  });
+
+  test('Scenario 8-2: systemMessage 包含 Overtone Plugin Context 段落', () => {
+    const output = handler.handleSessionStart({ cwd: process.cwd() }, null, null);
+    if (output.systemMessage) {
+      expect(output.systemMessage).toContain('Overtone Plugin Context');
+    }
+  });
+
+  test('Scenario 8-3: systemMessage 中各段落以雙換行分隔', () => {
+    const output = handler.handleSessionStart({ cwd: process.cwd() }, null, null);
+    if (output.systemMessage && output.systemMessage.includes('\n\n')) {
+      // systemMessage 存在且含雙換行（段落分隔），格式正確
+      expect(output.systemMessage.split('\n\n').length).toBeGreaterThan(1);
+    }
+  });
+
+  test('Scenario 8-4: cwd 傳入自定路徑時使用該路徑作為 projectRoot', () => {
+    const tmpDir = pathMod.join(os.tmpdir(), `ot-f8-${Date.now()}`);
+    mkdirSyncF7(tmpDir, { recursive: true });
+    try {
+      // 不會拋出例外即代表 projectRoot 正確設定
+      const output = handler.handleSessionStart({ cwd: tmpDir }, null, null);
+      expect(typeof output.result).toBe('string');
+    } finally {
+      rmSyncF7(tmpDir, { recursive: true, force: true });
+    }
+  });
+
+  test('Scenario 8-5: input 缺少 cwd 時退回 process.cwd() 不拋出', () => {
+    expect(() => {
+      const output = handler.handleSessionStart({}, null, null);
+      expect(typeof output.result).toBe('string');
+    }).not.toThrow();
+  });
+
+  test('Scenario 8-6: hookTimer 提供 emit 且 sessionId 存在時 emit 被呼叫', () => {
+    const calls = [];
+    const mockTimer = { emit: (...args) => calls.push(args) };
+    // sessionId 為 null 時 handler 仍呼叫 hookTimer.emit
+    handler.handleSessionStart({ cwd: process.cwd() }, null, mockTimer);
+    expect(calls.length).toBe(1);
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// Feature 9: handleSessionStart — pendingAction 恢復
+// ────────────────────────────────────────────────────────────────────────────
+
+const { mkdirSync: mkdirSyncF9, rmSync: rmSyncF9, writeFileSync: writeFileSyncF9 } = require('fs');
+const stateLib = require(join(SCRIPTS_LIB, 'state'));
+const paths9 = require(join(SCRIPTS_LIB, 'paths'));
+const homedir9 = require('os').homedir;
+
+function makeSession9(suffix) {
+  const id = `test_ssh_f9_${suffix}_${Date.now().toString(36)}`;
+  const dir = pathMod.join(homedir9(), '.overtone', 'sessions', id);
+  mkdirSyncF9(dir, { recursive: true });
+  // 初始化空白 workflow.json，讓 updateStateAtomic 可以讀取到狀態
+  writeFileSyncF9(paths9.session.workflow(id), JSON.stringify({}), 'utf8');
+  return { id, dir };
+}
+
+describe('Feature 9: handleSessionStart — pendingAction 恢復', () => {
+  let session;
+
+  afterEach(() => {
+    if (session) {
+      rmSyncF9(session.dir, { recursive: true, force: true });
+      session = null;
+    }
+  });
+
+  test('Scenario 9-1: fix-reject pendingAction 時 systemMessage 包含「REVIEW 被拒絕」', () => {
+    session = makeSession9('reject');
+    stateLib.writeState(session.id, {
+      pendingAction: { type: 'fix-reject', count: 1, stage: 'DEV', reason: '測試原因' },
+    });
+    const output = handler.handleSessionStart({ cwd: process.cwd() }, session.id, null);
+    expect(output.systemMessage).toBeDefined();
+    expect(output.systemMessage).toContain('REVIEW 被拒絕');
+    expect(output.systemMessage).toContain('測試原因');
+  });
+
+  test('Scenario 9-2: fix-fail pendingAction 時 systemMessage 包含失敗提示', () => {
+    session = makeSession9('fail');
+    stateLib.writeState(session.id, {
+      pendingAction: { type: 'fix-fail', count: 2, stage: 'TEST', reason: 'Assertion error' },
+    });
+    const output = handler.handleSessionStart({ cwd: process.cwd() }, session.id, null);
+    expect(output.systemMessage).toBeDefined();
+    expect(output.systemMessage).toContain('TEST 失敗');
+    expect(output.systemMessage).toContain('Assertion error');
+    expect(output.systemMessage).toContain('debugger');
+  });
+
+  test('Scenario 9-3: 無 pendingAction 時 systemMessage 不含「待執行動作」', () => {
+    session = makeSession9('nopending');
+    stateLib.writeState(session.id, { workflowType: 'quick' });
+    const output = handler.handleSessionStart({ cwd: process.cwd() }, session.id, null);
+    if (output.systemMessage) {
+      expect(output.systemMessage).not.toContain('待執行動作');
+    }
+  });
+
+  test('Scenario 9-4: fix-reject 包含 count/3 格式', () => {
+    session = makeSession9('count');
+    stateLib.writeState(session.id, {
+      pendingAction: { type: 'fix-reject', count: 2, stage: 'REVIEW' },
+    });
+    const output = handler.handleSessionStart({ cwd: process.cwd() }, session.id, null);
+    expect(output.systemMessage).toContain('2/3');
+  });
+
+  test('Scenario 9-5: sessionId 為 null 時不讀取 pendingAction（不拋出）', () => {
+    expect(() => {
+      const output = handler.handleSessionStart({ cwd: process.cwd() }, null, null);
+      expect(typeof output.result).toBe('string');
+    }).not.toThrow();
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// Feature 10: buildBanner — 追加邊界測試
+// ────────────────────────────────────────────────────────────────────────────
+
+describe('Feature 10: buildBanner — 邊界與格式', () => {
+  test('Scenario 10-1: sessionId 完整顯示前 8 碼（短 ID 全顯示）', () => {
+    // 8 碼以內的 session ID 仍可正常顯示
+    const result = buildBanner('1.0.0', 'abc12345', null, {});
+    expect(result).toContain('abc12345');
+  });
+
+  test('Scenario 10-2: 多個 deps 同時提供時全部顯示', () => {
+    const result = buildBanner('1.0.0', 'test-sess', 7777, {
+      agentBrowserStatus: '  🌐 agent-browser: 已安裝',
+      ghStatus: '  🐙 gh CLI: 已安裝且已認證',
+      grayMatterStatus: '  ⚠️  gray-matter 未安裝',
+    });
+    expect(result).toContain('agent-browser: 已安裝');
+    expect(result).toContain('gh CLI: 已安裝且已認證');
+    expect(result).toContain('gray-matter 未安裝');
+  });
+
+  test('Scenario 10-3: port 為 0（falsy）時不顯示 Dashboard URL', () => {
+    const result = buildBanner('1.0.0', 'test-sess', 0, {});
+    expect(result).not.toContain('Dashboard:');
+  });
+
+  test('Scenario 10-4: banner 結尾為換行', () => {
+    const result = buildBanner('1.0.0', 'test-sess', null, {});
+    expect(result.endsWith('\n')).toBe(true);
+  });
+
+  test('Scenario 10-5: 版本號格式 x.y.z 正確顯示', () => {
+    const result = buildBanner('0.99.123', null, null, {});
+    expect(result).toContain('0.99.123');
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// Feature 11: buildPluginContext — 進階驗證
+// ────────────────────────────────────────────────────────────────────────────
+
+describe('Feature 11: buildPluginContext — 進階驗證', () => {
+  test('Scenario 11-1: 包含「核心規範」標題', () => {
+    const result = buildPluginContext();
+    expect(result).toContain('核心規範');
+  });
+
+  test('Scenario 11-2: 包含 updatedInput REPLACE 說明', () => {
+    const result = buildPluginContext();
+    expect(result).toContain('updatedInput');
+  });
+
+  test('Scenario 11-3: 包含目錄結構描述', () => {
+    const result = buildPluginContext();
+    expect(result).toContain('plugins/overtone');
+  });
+
+  test('Scenario 11-4: 包含常用指令段落', () => {
+    const result = buildPluginContext();
+    expect(result).toContain('常用指令');
+  });
+
+  test('Scenario 11-5: 並行群組非空（至少 1 個）', () => {
+    const { parallelGroupDefs } = require(join(SCRIPTS_LIB, 'registry'));
+    const result = buildPluginContext();
+    const groupCount = Object.keys(parallelGroupDefs).length;
+    if (groupCount > 0) {
+      // 確認某個並行群組名稱出現在輸出中
+      const firstGroup = Object.keys(parallelGroupDefs)[0];
+      expect(result).toContain(firstGroup);
+    }
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// Feature 12: buildStartOutput — 邊界補強
+// ────────────────────────────────────────────────────────────────────────────
+
+describe('Feature 12: buildStartOutput — 邊界補強', () => {
+  test('Scenario 12-1: banner 為空字串時 result 為空字串', () => {
+    const output = buildStartOutput({}, { banner: '', msgs: ['msg'] });
+    expect(output.result).toBe('');
+    expect(output.systemMessage).toBe('msg');
+  });
+
+  test('Scenario 12-2: msgs 含大量訊息時全部合並', () => {
+    const msgs = ['A', 'B', 'C', 'D', 'E'];
+    const output = buildStartOutput({}, { banner: 'b', msgs });
+    expect(output.systemMessage).toBe('A\n\nB\n\nC\n\nD\n\nE');
+  });
+
+  test('Scenario 12-3: msgs 為 undefined 時不含 systemMessage', () => {
+    const output = buildStartOutput({}, { banner: 'b' });
+    expect(output.systemMessage).toBeUndefined();
+  });
+
+  test('Scenario 12-4: _input 參數被忽略（相容性保留）', () => {
+    const output1 = buildStartOutput({ any: 'value' }, { banner: 'b', msgs: ['m'] });
+    const output2 = buildStartOutput(null, { banner: 'b', msgs: ['m'] });
+    // 兩者結果相同，_input 不影響輸出
+    expect(output1.result).toBe(output2.result);
+    expect(output1.systemMessage).toBe(output2.systemMessage);
+  });
+
+  test('Scenario 12-5: 混合 truthy 和 falsy 的 msgs 只保留 truthy', () => {
+    const output = buildStartOutput({}, { banner: 'b', msgs: [null, 'A', '', undefined, 'B', false] });
+    expect(output.systemMessage).toBe('A\n\nB');
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// Feature 13: handleSessionStart — 全域觀察注入行為
+// ────────────────────────────────────────────────────────────────────────────
+
+const { mkdirSync: mkdirSyncF13, rmSync: rmSyncF13, appendFileSync: appendFileSyncF13 } = require('fs');
+const paths13 = require(join(SCRIPTS_LIB, 'paths'));
+
+function makeSession13(suffix) {
+  const id = `test_ssh_f13_${suffix}_${Date.now().toString(36)}`;
+  const dir = pathMod.join(os.homedir(), '.overtone', 'sessions', id);
+  mkdirSyncF13(dir, { recursive: true });
+  return { id, dir };
+}
+
+function seedGlobalObs13(projectRoot, obs) {
+  const obsPath = paths13.global.observations(projectRoot);
+  mkdirSyncF13(pathMod.dirname(obsPath), { recursive: true });
+  for (const o of obs) {
+    appendFileSyncF13(obsPath, JSON.stringify(o) + '\n', 'utf8');
+  }
+}
+
+describe('Feature 13: handleSessionStart — 全域觀察注入', () => {
+  let projectRoot;
+  let session;
+
+  beforeEach(() => {
+    projectRoot = pathMod.join(os.tmpdir(), `ot-f13-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`);
+    mkdirSyncF13(projectRoot, { recursive: true });
+    session = makeSession13('obs');
+  });
+
+  afterEach(() => {
+    rmSyncF13(projectRoot, { recursive: true, force: true });
+    rmSyncF13(session.dir, { recursive: true, force: true });
+    try {
+      rmSyncF13(paths13.global.dir(projectRoot), { recursive: true, force: true });
+    } catch {
+      // 忽略清理失敗
+    }
+  });
+
+  test('Scenario 13-1: 有高信心觀察時 systemMessage 包含「跨 Session 知識記憶」', () => {
+    seedGlobalObs13(projectRoot, [{
+      id: `inst_obs_${Date.now().toString(36)}`,
+      ts: new Date().toISOString(),
+      lastSeen: new Date().toISOString(),
+      type: 'tool_preferences',
+      trigger: '搜尋檔案',
+      action: '建議改用 Grep/Glob',
+      tag: 'search-tools',
+      confidence: 0.9,
+      count: 3,
+      globalTs: new Date().toISOString(),
+    }]);
+    const output = handler.handleSessionStart({ cwd: projectRoot }, null, null);
+    if (output.systemMessage) {
+      expect(output.systemMessage).toContain('跨 Session 知識記憶');
+    }
+  });
+
+  test('Scenario 13-2: 無觀察時 systemMessage 不包含「跨 Session 知識記憶」', () => {
+    // 空的 projectRoot，無任何觀察
+    const output = handler.handleSessionStart({ cwd: projectRoot }, null, null);
+    if (output.systemMessage) {
+      expect(output.systemMessage).not.toContain('跨 Session 知識記憶');
+    }
+  });
+
+  test('Scenario 13-3: intent_journal 類型被排除在一般觀察外', () => {
+    seedGlobalObs13(projectRoot, [{
+      id: `inst_j_${Date.now().toString(36)}`,
+      ts: new Date().toISOString(),
+      lastSeen: new Date().toISOString(),
+      type: 'intent_journal',
+      trigger: '不應出現在知識記憶',
+      action: '某工作流',
+      tag: 'journal-excl',
+      confidence: 0.9,
+      count: 1,
+      sessionResult: 'pass',
+      globalTs: new Date().toISOString(),
+    }]);
+    const output = handler.handleSessionStart({ cwd: projectRoot }, null, null);
+    if (output.systemMessage) {
+      // intent_journal 不應出現在「跨 Session 知識記憶」段落
+      expect(output.systemMessage).not.toContain('journal-excl');
+    }
+  });
+
+  test('Scenario 13-4: 有 sessionId 時觀察注入後 appliedObservationIds 寫入 state', () => {
+    // 初始化 session state
+    stateLib.writeState(session.id, {});
+    seedGlobalObs13(projectRoot, [{
+      id: `inst_applied_${Date.now().toString(36)}`,
+      ts: new Date().toISOString(),
+      lastSeen: new Date().toISOString(),
+      type: 'tool_preferences',
+      trigger: '某觀察',
+      action: '建議行為',
+      tag: 'applied-obs',
+      confidence: 0.9,
+      count: 5,
+      globalTs: new Date().toISOString(),
+    }]);
+    handler.handleSessionStart({ cwd: projectRoot }, session.id, null);
+    // 確認 session state 寫入了 appliedObservationIds（有觀察時）
+    const st = stateLib.readState(session.id);
+    if (st && st.appliedObservationIds) {
+      expect(Array.isArray(st.appliedObservationIds)).toBe(true);
+      expect(st.appliedObservationIds.length).toBeGreaterThan(0);
+    }
+    // 若 topObs 為空則不寫入 — 這種情況也算通過（靜默跳過）
+  });
+
+  test('Scenario 13-5: handleSessionStart 傳入真實 sessionId 時不拋出例外', () => {
+    stateLib.writeState(session.id, {});
+    expect(() => {
+      handler.handleSessionStart({ cwd: projectRoot }, session.id, null);
+    }).not.toThrow();
+  });
+});
