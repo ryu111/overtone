@@ -8,9 +8,10 @@
  *   3. clear 子命令：清除佇列
  *   4. --project-root / --source 選項
  *   5. 錯誤處理
+ *   6. Discovery 模式守衛
  */
 
-const { test, expect, describe, afterAll, beforeEach, spyOn } = require('bun:test');
+const { test, expect, describe, afterAll, beforeEach, afterEach, spyOn } = require('bun:test');
 const { rmSync } = require('fs');
 const { join } = require('path');
 const { homedir } = require('os');
@@ -256,5 +257,87 @@ describe('PM 整合流程', () => {
     const next = executionQueue.getNext(TEST_PROJECT);
     expect(next).not.toBeNull();
     expect(next.item.name).toBe('doc-drift-precision');
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// 6. Discovery 模式守衛
+// ────────────────────────────────────────────────────────────────────────────
+
+describe('Discovery 模式守衛', () => {
+  const stateModule = require(join(SCRIPTS_LIB, 'state'));
+  let origReadState;
+
+  beforeEach(() => {
+    origReadState = stateModule.readState;
+  });
+
+  afterEach(() => {
+    stateModule.readState = origReadState;
+    delete process.env.CLAUDE_SESSION_ID;
+  });
+
+  test('discovery workflow 時 add 被阻擋（exit 1）', () => {
+    process.env.CLAUDE_SESSION_ID = 'test-discovery-guard';
+    stateModule.readState = () => ({ workflowType: 'discovery' });
+
+    const { errors, exitCode } = runCli([
+      'add', '--project-root', TEST_PROJECT,
+      'should-block', 'quick',
+    ]);
+
+    expect(exitCode).toBe(1);
+    expect(errors[0]).toContain('Discovery');
+  });
+
+  test('discovery workflow 時 append 被阻擋（exit 1）', () => {
+    process.env.CLAUDE_SESSION_ID = 'test-discovery-guard';
+    stateModule.readState = () => ({ workflowType: 'discovery' });
+
+    const { errors, exitCode } = runCli([
+      'append', '--project-root', TEST_PROJECT,
+      'should-block', 'quick',
+    ]);
+
+    expect(exitCode).toBe(1);
+    expect(errors[0]).toContain('Discovery');
+  });
+
+  test('discovery workflow + --force 時允許寫入', () => {
+    process.env.CLAUDE_SESSION_ID = 'test-discovery-guard';
+    stateModule.readState = () => ({ workflowType: 'discovery' });
+
+    const { logs, exitCode } = runCli([
+      'add', '--project-root', TEST_PROJECT, '--force',
+      'should-pass', 'quick',
+    ]);
+
+    expect(exitCode).not.toBe(1);
+    expect(logs[0]).toContain('已建立佇列');
+  });
+
+  test('非 discovery workflow 時正常寫入', () => {
+    process.env.CLAUDE_SESSION_ID = 'test-discovery-guard';
+    stateModule.readState = () => ({ workflowType: 'product' });
+
+    const { logs, exitCode } = runCli([
+      'add', '--project-root', TEST_PROJECT,
+      'should-pass', 'quick',
+    ]);
+
+    expect(exitCode).not.toBe(1);
+    expect(logs[0]).toContain('已建立佇列');
+  });
+
+  test('無 CLAUDE_SESSION_ID 時正常寫入（非 session 環境）', () => {
+    delete process.env.CLAUDE_SESSION_ID;
+
+    const { logs, exitCode } = runCli([
+      'add', '--project-root', TEST_PROJECT,
+      'should-pass', 'quick',
+    ]);
+
+    expect(exitCode).not.toBe(1);
+    expect(logs[0]).toContain('已建立佇列');
   });
 });

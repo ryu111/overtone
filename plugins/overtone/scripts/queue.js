@@ -18,6 +18,26 @@
 
 const path = require('path');
 const executionQueue = require('./lib/execution-queue');
+const state = require('./lib/state');
+
+// ── Discovery 模式守衛 ──
+
+/**
+ * 檢查當前 workflow 是否為 discovery 模式
+ * Discovery 模式下不允許自動寫入佇列（需 --force）
+ */
+function guardDiscoveryMode(forceFlag) {
+  if (forceFlag) return; // --force 跳過檢查
+  const sessionId = process.env.CLAUDE_SESSION_ID;
+  if (!sessionId) return; // 非 session 環境不檢查
+  const wf = state.readState(sessionId);
+  if (wf && wf.workflowType === 'discovery') {
+    console.error('⛔ Discovery 模式下不允許自動寫入佇列。');
+    console.error('   使用者尚未確認方向前，佇列寫入必須由 Main Agent 在使用者確認後執行。');
+    console.error('   如需強制寫入，請加上 --force 旗標。');
+    process.exit(1);
+  }
+}
 
 // ── 子命令 ──
 
@@ -309,8 +329,9 @@ function main(argv) {
   const noAutoIdx = args.indexOf('--no-auto');
   const options = noAutoIdx !== -1 ? { autoExecute: false } : { autoExecute: true };
 
-  // 解析 --apply
+  // 解析 --apply / --force
   const applyFlag = args.includes('--apply');
+  const forceFlag = args.includes('--force');
 
   // 解析 --before 和 --after
   const beforeIdx = args.indexOf('--before');
@@ -320,7 +341,7 @@ function main(argv) {
   const flags = { '--before': beforeValue, '--after': afterValue };
 
   // 過濾掉 option 參數，取得 positional args
-  const optionKeys = ['--project-root', '--source', '--no-auto', '--apply', '--before', '--after'];
+  const optionKeys = ['--project-root', '--source', '--no-auto', '--apply', '--before', '--after', '--force'];
   const valueOptions = ['--project-root', '--source', '--before', '--after'];
   const positional = args.slice(1).filter((arg, i, arr) => {
     if (optionKeys.includes(arg)) return false;
@@ -330,9 +351,11 @@ function main(argv) {
 
   switch (command) {
     case 'add':
+      guardDiscoveryMode(forceFlag);
       cmdAdd(projectRoot, positional, source, options);
       break;
     case 'append':
+      guardDiscoveryMode(forceFlag);
       cmdAppend(projectRoot, positional, source, options);
       break;
     case 'list':
@@ -389,6 +412,7 @@ function main(argv) {
       console.log('  --apply                 套用建議排序（僅 suggest-order 有效）');
       console.log('  --before <anchor>       在指定項目之前（insert/move 使用）');
       console.log('  --after <anchor>        在指定項目之後（insert/move 使用）');
+      console.log('  --force                 強制寫入（跳過 discovery 模式檢查）');
       process.exit(1);
   }
 }
