@@ -31,7 +31,8 @@ user-invocable: false
   ├── 程式碼有壞味道要改善 → refactoring-catalog.md
   ├── 需要無副作用/可組合/不可變 → functional-patterns.md
   ├── Overtone 元件設計/審查/回顧 → overtone-principles.md
-  └── Acid Test / 跨領域開發六維度評估 → competitor-benchmark.md
+  ├── Acid Test / 跨領域開發六維度評估 → competitor-benchmark.md
+  └── UI/前端設計品味問題 → design-taste.md
 ```
 
 ## 資源索引
@@ -45,6 +46,7 @@ user-invocable: false
 | 💡 `${CLAUDE_PLUGIN_ROOT}/skills/craft/references/functional-patterns.md` | FP 核心模式：pure function、composition、immutability、pattern matching |
 | 💡 `${CLAUDE_PLUGIN_ROOT}/skills/craft/references/overtone-principles.md` | Overtone 製作原則 Checklist（完全閉環 / 自動修復 / 補全能力 / 驗證品質三信號）|
 | 💡 `${CLAUDE_PLUGIN_ROOT}/skills/craft/references/competitor-benchmark.md` | 競品基準矩陣（2026-03）：六維度 × Cursor/Windsurf/Devin/Claude Code+Overtone |
+| 💡 `${CLAUDE_PLUGIN_ROOT}/skills/craft/references/design-taste.md` | 設計品味指南：視覺層次、配色、動效、反模式、靈感範例 |
 
 ## 跨域引用
 
