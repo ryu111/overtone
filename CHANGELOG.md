@@ -2,6 +2,34 @@
 
 所有重要變更記錄於此文件。
 
+## [0.28.70] - 2026-03-06
+
+### 並行收斂 TEST:2 狀態修復（Parallel Convergence State Fix）
+
+#### 核心修復
+- **state.js `sanitize()`**：新增規則 4，修復被跳過的 pending stage
+  - 場景：並行群組收斂後，某成員（如 TEST:2）因 context 中斷未被標記 completed
+  - 條件：status=pending 且在 workflow 順序中排在 currentStage 之前
+  - 修正策略：→ completed，workflow 已推進代表此 stage 應已完成（保守推進）
+  - 具體邏輯：遍歷所有 stage，若 status=pending 且索引 < currentStage 索引，修正為 completed 並回填 completedAt、result
+
+#### 測試補強
+- 新增 4 個測試（state-sanitize-rule4.test.js）
+  - TEST:2 pending 且 currentStage 已推進 → 自動修正
+  - 並行群組邊界案例（TEST、TEST:2 同時檢測）
+  - completedAt 和 result 回填正確性
+  - 多 stage 鏈路驗證
+
+#### 文件同步
+- `docs/status.md`：測試 4407 → 4411（4 個新測試）、版本 0.28.69 → 0.28.70、近期變更更新
+- `CHANGELOG.md`：新增本條目
+- `specs/features/archive/2026-03-06_test2-state-sync-fix/`：規格文件已歸檔
+
+#### 測試
+- 測試 4411 pass / 0 fail（194 files）
+
+---
+
 ## [0.28.69] - 2026-03-06
 
 ### 外部專案知識過濾修復（Instinct Pollution Fix）

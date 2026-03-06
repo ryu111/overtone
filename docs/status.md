@@ -1,6 +1,6 @@
 # Overtone 現況
 
-> 最後更新：2026-03-06 | Plugin 版本：0.28.68
+> 最後更新：2026-03-06 | Plugin 版本：0.28.70
 
 ## 版本狀態
 
@@ -16,7 +16,7 @@
 | Agent 數量 | 18（含 grader） |
 | Stage 數量 | 16 |
 | Workflow 模板 | 18 |
-| 測試通過 | 4407 pass / 0 fail（194 個測試檔）|
+| 測試通過 | 4411 pass / 0 fail（194 個測試檔）|
 | 測試檔案 | 194 個 |
 | Hook 數量 | 11 個 |
 | Skill 數量 | 24（15 knowledge domain + orchestrator + pm + specs + 4 utility-with-refs + instinct） |
@@ -28,9 +28,9 @@
 
 ## 近期變更（最近 3 筆）
 
+- **[0.28.70] 2026-03-06**：fix(state)——並行收斂 TEST:2 狀態修復：state.js sanitize() 新增規則 4，修復並行 agent 收斂後 TEST:2 等帶編號 stage 遺留 pending 狀態（4 個新測試）
 - **[0.28.69] 2026-03-06**：fix(instinct)——外部專案知識過濾修復：knowledge-archiver.js 加入來源路徑過濾，過濾外部專案污染（non-Overtone 內容降級為 instinct gap-observation）+ auto-discovered.md 清理（5 個 domain 已清理）（10 個新測試）
 - **[L3.6] 2026-03-06**：feat(acid-test-md-blog)——Markdown 部落格生成器 CLI 完成：standard workflow 全通過（22 pass / 0 fail），BDD 20/20 場景驗證，三層分離架構（parser + renderer + builder），Catppuccin Mocha 配色，完整端到端功能
-- **[0.28.68] 2026-03-06**：feat(pm-architect)——PM-Architect 深度改進：PM 訪談 flow 新增 flow-6/7/8 探索 + architect 決策點 DO/DON'T 清單 + state-sync patterns 知識萃取 + pre-task-handler MoSCoW 優先級注入（16 個新測試）
 
 ## Phase 3 規劃狀態（✅ 完成）
 
