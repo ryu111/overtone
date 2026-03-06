@@ -143,6 +143,20 @@ function buildStopMessages(ctx) {
         type: 'parallel:converge',
         data: { group: convergence.group },
       });
+
+      // postdev 收斂後：檢查 RETRO result，決定是否附加 issues 提示
+      if (convergence.group === 'postdev') {
+        const retroResult = state.stages && state.stages['RETRO'] && state.stages['RETRO'].result;
+        if (retroResult === 'issues') {
+          const retroCount = state.retroCount || 0;
+          messages.push(`⚠️ RETRO 回顧發現改善建議（retroCount: ${retroCount}/3）`);
+          if (retroCount >= 3) {
+            messages.push('⛔ 已達迭代上限（3 次），工作流完成');
+          } else {
+            messages.push('💡 可選：觸發 /ot:auto 新一輪優化，或標記工作流完成');
+          }
+        }
+      }
     }
 
     // 評分建議（在 gradedStages 中的 stage PASS 時插入）

@@ -8,6 +8,8 @@
  *   Feature 3: REJECT 路徑（3 scenarios）
  *   Feature 4: ISSUES 路徑（2 scenarios）
  *   Feature 5: 附加條件（3 scenarios）
+ *   Feature 6: Grader 強制化
+ *   Feature 7: postdev 收斂提示（BDD Feature C，5 scenarios）
  */
 
 const { test, expect, describe } = require('bun:test');
@@ -430,5 +432,103 @@ describe('Feature 6: Grader 強制化 — workflowType 切換用詞', () => {
     expect(joined).not.toContain('grader');
     expect(joined).not.toContain('MUST 委派 grader');
     expect(joined).toContain('DEBUGGER');
+  });
+});
+
+// ════════════════════════════════════════════════════════════════
+// Feature 7: postdev 收斂提示（BDD Feature C）
+// ════════════════════════════════════════════════════════════════
+
+describe('Feature 7: postdev 收斂提示', () => {
+  // 建立 postdev 收斂場景的 ctx 工廠
+  function makePostdevCtx(retroResult, retroCount, overrides = {}) {
+    return makeCtx({
+      verdict: 'pass',
+      stageKey: 'DOCS',
+      actualStageKey: 'DOCS',
+      agentName: 'documenter',
+      convergence: { group: 'postdev' },
+      nextHint: null,
+      state: {
+        failCount: 0,
+        rejectCount: 0,
+        retroCount,
+        stages: {
+          RETRO: { status: 'completed', result: retroResult },
+          DOCS: { status: 'completed', result: 'pass' },
+        },
+      },
+      ...overrides,
+    });
+  }
+
+  // Scenario C-1: RETRO pass + DOCS pass — 無 issues 提示
+  test('Scenario C-1: RETRO result=pass — 收斂後不含 issues 提示', () => {
+    const result = buildStopMessages(makePostdevCtx('pass', 0));
+
+    const joined = result.messages.join('\n');
+    expect(joined).toContain('postdev');
+    expect(joined).not.toContain('RETRO 回顧發現改善建議');
+    expect(joined).not.toContain('可選：觸發');
+  });
+
+  // Scenario C-2: RETRO issues + DOCS pass + retroCount=1 — 含 issues 提示
+  test('Scenario C-2: RETRO result=issues + retroCount=1 — 含改善建議提示和可選操作', () => {
+    const result = buildStopMessages(makePostdevCtx('issues', 1));
+
+    const joined = result.messages.join('\n');
+    expect(joined).toContain('RETRO 回顧發現改善建議（retroCount: 1/3）');
+    expect(joined).toContain('可選：觸發 /ot:auto 新一輪優化，或標記工作流完成');
+    expect(joined).not.toContain('已達迭代上限');
+  });
+
+  // Scenario C-3: DOCS 先完成（convergence=null）— 無收斂提示
+  test('Scenario C-3: convergence=null（群組未收斂）— 無 postdev 提示', () => {
+    const result = buildStopMessages(makeCtx({
+      verdict: 'pass',
+      stageKey: 'DOCS',
+      convergence: null,
+      nextHint: null,
+      state: {
+        failCount: 0,
+        rejectCount: 0,
+        retroCount: 0,
+        stages: {
+          RETRO: { status: 'in_progress' },
+          DOCS: { status: 'completed', result: 'pass' },
+        },
+      },
+    }));
+
+    const joined = result.messages.join('\n');
+    expect(joined).not.toContain('postdev');
+    expect(joined).not.toContain('RETRO 回顧發現改善建議');
+  });
+
+  // Scenario C-4: RETRO 先完成（convergence=null）— 無收斂提示；DOCS 後完成觸發收斂
+  test('Scenario C-4: RETRO 先完成後 DOCS 觸發收斂 — 收斂後含 issues 提示', () => {
+    // RETRO 先完成，尚未收斂
+    const retroResult = buildStopMessages(makeCtx({
+      verdict: 'issues',
+      stageKey: 'RETRO',
+      convergence: null,
+      state: { failCount: 0, rejectCount: 0, retroCount: 0 },
+    }));
+    expect(retroResult.messages.join('\n')).not.toContain('postdev');
+
+    // DOCS 後完成，觸發收斂
+    const docsResult = buildStopMessages(makePostdevCtx('issues', 1));
+    const joined = docsResult.messages.join('\n');
+    expect(joined).toContain('RETRO 回顧發現改善建議');
+  });
+
+  // Scenario C-5: retroCount=3（達上限）— 顯示上限訊息
+  test('Scenario C-5: RETRO result=issues + retroCount=3 — 含上限訊息，不含可選提示', () => {
+    const result = buildStopMessages(makePostdevCtx('issues', 3));
+
+    const joined = result.messages.join('\n');
+    expect(joined).toContain('RETRO 回顧發現改善建議（retroCount: 3/3）');
+    expect(joined).toContain('已達迭代上限（3 次），工作流完成');
+    expect(joined).not.toContain('可選：觸發 /ot:auto');
   });
 });

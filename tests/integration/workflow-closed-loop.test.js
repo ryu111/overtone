@@ -207,9 +207,9 @@ describe('D. quick workflow 完整鏈路驗證', () => {
     }
   });
 
-  test('quick workflow 不使用並行群組（移除 TEST stage 後無需並行）', () => {
+  test('quick workflow 使用 postdev 並行群組（RETRO + DOCS 並行）', () => {
     const quick = workflows.quick;
-    expect(quick.parallelGroups).toEqual([]);
+    expect(quick.parallelGroups).toEqual(['postdev']);
   });
 });
 

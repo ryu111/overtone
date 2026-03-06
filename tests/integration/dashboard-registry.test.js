@@ -66,32 +66,36 @@ describe('1. Pipeline 可視化 — buildPipelineSegments 並行段落驗證', (
     workflowParallelGroups[name] = wf.parallelGroups;
   }
 
-  test('quick workflow：無並行 segment（移除 TEST stage 後 REVIEW 獨立執行）', () => {
+  test('quick workflow：有一個 postdev parallel segment（RETRO + DOCS 並行）', () => {
     const stagesObj = toStagesObj(['DEV', 'REVIEW', 'RETRO', 'DOCS']);
     const segments = buildPipelineSegments(stagesObj, 'quick', parallelGroupDefs, workflowParallelGroups);
     const parallelSegs = segments.filter(s => s.type === 'parallel');
-    expect(parallelSegs.length).toBe(0);
+    expect(parallelSegs.length).toBe(1);
+    expect(parallelSegs[0].groupName).toBe('postdev');
   });
 
-  test('standard workflow：DEV 後的 REVIEW + TEST 合為 quality parallel segment', () => {
+  test('standard workflow：有 quality 和 postdev 兩個 parallel segment', () => {
     const stagesObj = toStagesObj(['PLAN', 'ARCH', 'TEST', 'DEV', 'REVIEW', 'TEST', 'RETRO', 'DOCS']);
     const segments = buildPipelineSegments(stagesObj, 'standard', parallelGroupDefs, workflowParallelGroups);
     const parallelSegs = segments.filter(s => s.type === 'parallel');
-    expect(parallelSegs.length).toBe(1);
-    expect(parallelSegs[0].groupName).toBe('quality');
+    expect(parallelSegs.length).toBe(2);
+    const groupNames = parallelSegs.map(s => s.groupName);
+    expect(groupNames).toContain('quality');
+    expect(groupNames).toContain('postdev');
   });
 
-  test('full workflow：有兩個 parallel segment（quality + verify）', () => {
+  test('full workflow：有三個 parallel segment（quality + verify + postdev）', () => {
     const stagesObj = toStagesObj([
       'PLAN', 'ARCH', 'DESIGN', 'TEST', 'DEV',
       'REVIEW', 'TEST', 'QA', 'E2E', 'RETRO', 'DOCS',
     ]);
     const segments = buildPipelineSegments(stagesObj, 'full', parallelGroupDefs, workflowParallelGroups);
     const parallelSegs = segments.filter(s => s.type === 'parallel');
-    expect(parallelSegs.length).toBe(2);
+    expect(parallelSegs.length).toBe(3);
     const groupNames = parallelSegs.map(s => s.groupName);
     expect(groupNames).toContain('quality');
     expect(groupNames).toContain('verify');
+    expect(groupNames).toContain('postdev');
   });
 
   test('full workflow：quality 和 verify 是不同的獨立 parallel segment', () => {
@@ -113,15 +117,18 @@ describe('1. Pipeline 可視化 — buildPipelineSegments 並行段落驗證', (
     expect(verifyKeys).toContain('E2E');
   });
 
-  test('secure workflow：secure-quality parallel segment 包含 REVIEW、TEST、SECURITY', () => {
+  test('secure workflow：secure-quality 和 postdev 兩個 parallel segment', () => {
     const stagesObj = toStagesObj([
       'PLAN', 'ARCH', 'TEST', 'DEV', 'REVIEW', 'TEST', 'SECURITY', 'RETRO', 'DOCS',
     ]);
     const segments = buildPipelineSegments(stagesObj, 'secure', parallelGroupDefs, workflowParallelGroups);
     const parallelSegs = segments.filter(s => s.type === 'parallel');
-    expect(parallelSegs.length).toBe(1);
-    expect(parallelSegs[0].groupName).toBe('secure-quality');
-    const groupStageKeys = parallelSegs[0].stages.map(s => s.key.split(':')[0]);
+    expect(parallelSegs.length).toBe(2);
+    const groupNames = parallelSegs.map(s => s.groupName);
+    expect(groupNames).toContain('secure-quality');
+    expect(groupNames).toContain('postdev');
+    const secureQualitySeg = parallelSegs.find(s => s.groupName === 'secure-quality');
+    const groupStageKeys = secureQualitySeg.stages.map(s => s.key.split(':')[0]);
     expect(groupStageKeys).toContain('REVIEW');
     expect(groupStageKeys).toContain('TEST');
     expect(groupStageKeys).toContain('SECURITY');

@@ -9,6 +9,7 @@ const {
   agentModels,
   hookEvents,
   journalDefaults,
+  parallelGroupDefs,
 } = require('../../plugins/overtone/scripts/lib/registry');
 
 describe('registry.js 資料完整性', () => {
@@ -156,6 +157,35 @@ describe('registry.js 資料完整性', () => {
       for (const [model, level] of Object.entries(effortLevels)) {
         expect(validLevels.has(level)).toBe(true);
       }
+    });
+  });
+
+  // Feature A BDD: parallelGroupDefs + postdev 群組（retro-docs-parallel）
+  describe('parallelGroupDefs — postdev 群組（BDD Feature A）', () => {
+    // Scenario A-1: parallelGroupDefs 包含 postdev 群組
+    test('Scenario A-1: parallelGroupDefs 包含 postdev key', () => {
+      expect(parallelGroupDefs).toBeDefined();
+      expect(typeof parallelGroupDefs).toBe('object');
+      expect(Object.keys(parallelGroupDefs)).toContain('postdev');
+    });
+
+    // Scenario A-2: 含 RETRO + DOCS 的 6 個 workflow 的 parallelGroups 包含 postdev
+    test('Scenario A-2: quick/standard/full/secure/product/product-full 各 workflow 的 parallelGroups 包含 postdev', () => {
+      const targetWorkflows = ['quick', 'standard', 'full', 'secure', 'product', 'product-full'];
+      for (const wfName of targetWorkflows) {
+        expect(workflows[wfName]).toBeDefined();
+        expect(Array.isArray(workflows[wfName].parallelGroups)).toBe(true);
+        expect(workflows[wfName].parallelGroups).toContain('postdev');
+      }
+    });
+
+    // Scenario A-3: postdev 群組成員是 RETRO 和 DOCS
+    test('Scenario A-3: parallelGroupDefs[postdev] 包含 RETRO 和 DOCS，成員數量為 2', () => {
+      const postdev = parallelGroupDefs['postdev'];
+      expect(Array.isArray(postdev)).toBe(true);
+      expect(postdev).toContain('RETRO');
+      expect(postdev).toContain('DOCS');
+      expect(postdev.length).toBe(2);
     });
   });
 

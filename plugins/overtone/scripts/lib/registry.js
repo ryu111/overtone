@@ -46,10 +46,10 @@ const hookEvents = [
 const workflows = {
   // 基本模板（5 個）
   'single':        { label: '單步修改',   stages: ['DEV'],                                                                     parallelGroups: [] },
-  'quick':         { label: '快速開發',   stages: ['DEV', 'REVIEW', 'RETRO', 'DOCS'],                                          parallelGroups: [] },
-  'standard':      { label: '標準功能',   stages: ['PLAN', 'ARCH', 'TEST', 'DEV', 'REVIEW', 'TEST', 'RETRO', 'DOCS'],          parallelGroups: ['quality'] },
-  'full':          { label: '完整功能',   stages: ['PLAN', 'ARCH', 'DESIGN', 'TEST', 'DEV', 'REVIEW', 'TEST', 'QA', 'E2E', 'RETRO', 'DOCS'], parallelGroups: ['quality', 'verify'] },
-  'secure':        { label: '高風險',     stages: ['PLAN', 'ARCH', 'TEST', 'DEV', 'REVIEW', 'TEST', 'SECURITY', 'RETRO', 'DOCS'], parallelGroups: ['secure-quality'] },
+  'quick':         { label: '快速開發',   stages: ['DEV', 'REVIEW', 'RETRO', 'DOCS'],                                          parallelGroups: ['postdev'] },
+  'standard':      { label: '標準功能',   stages: ['PLAN', 'ARCH', 'TEST', 'DEV', 'REVIEW', 'TEST', 'RETRO', 'DOCS'],          parallelGroups: ['quality', 'postdev'] },
+  'full':          { label: '完整功能',   stages: ['PLAN', 'ARCH', 'DESIGN', 'TEST', 'DEV', 'REVIEW', 'TEST', 'QA', 'E2E', 'RETRO', 'DOCS'], parallelGroups: ['quality', 'verify', 'postdev'] },
+  'secure':        { label: '高風險',     stages: ['PLAN', 'ARCH', 'TEST', 'DEV', 'REVIEW', 'TEST', 'SECURITY', 'RETRO', 'DOCS'], parallelGroups: ['secure-quality', 'postdev'] },
 
   // 特化模板（7 個，來自 ECC）
   'tdd':           { label: '測試驅動',   stages: ['TEST', 'DEV', 'TEST'],                                                     parallelGroups: [] },
@@ -66,8 +66,8 @@ const workflows = {
   'db-review':     { label: 'DB審查',     stages: ['DB-REVIEW'],                                                               parallelGroups: [] },
 
   // 產品模板（3 個，PM agent 驅動）
-  'product':       { label: '產品功能',   stages: ['PM', 'PLAN', 'ARCH', 'TEST', 'DEV', 'REVIEW', 'TEST', 'RETRO', 'DOCS'],    parallelGroups: ['quality'] },
-  'product-full':  { label: '產品完整',   stages: ['PM', 'PLAN', 'ARCH', 'DESIGN', 'TEST', 'DEV', 'REVIEW', 'TEST', 'QA', 'E2E', 'RETRO', 'DOCS'], parallelGroups: ['quality', 'verify'] },
+  'product':       { label: '產品功能',   stages: ['PM', 'PLAN', 'ARCH', 'TEST', 'DEV', 'REVIEW', 'TEST', 'RETRO', 'DOCS'],    parallelGroups: ['quality', 'postdev'] },
+  'product-full':  { label: '產品完整',   stages: ['PM', 'PLAN', 'ARCH', 'DESIGN', 'TEST', 'DEV', 'REVIEW', 'TEST', 'QA', 'E2E', 'RETRO', 'DOCS'], parallelGroups: ['quality', 'verify', 'postdev'] },
   'discovery':     { label: '產品探索',   stages: ['PM'],                                                                      parallelGroups: [] },
 };
 
@@ -77,6 +77,7 @@ const parallelGroupDefs = {
   'quality':        ['REVIEW', 'TEST'],
   'verify':         ['QA', 'E2E'],
   'secure-quality': ['REVIEW', 'TEST', 'SECURITY'],
+  'postdev':        ['RETRO', 'DOCS'],
 };
 
 // 向後相容：parallelGroups 從 workflows 動態推導（所有唯一群組名對應的成員定義）
