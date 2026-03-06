@@ -86,22 +86,25 @@ function handleAgentStop(input, sessionId) {
   // emit agent:complete（即使沒有 stage 對應也要記錄）
   timeline.emit(sessionId, 'agent:complete', { agent: agentName, stage: stageKey, result: result.verdict, instanceId: resolvedInstanceId });
 
-  const actualStageKey = findActualStageKey(currentState, stageKey);
-
-  // statusline 狀態：pop agent（在 early exit 之前，避免並行 agent 殘留）
-  // 優先用 actualStageKey（精確匹配 TEST:2 等編號 key），fallback 用 stageKey（base key）
-  const statuslineState = require('./statusline-state');
-  statuslineState.update(sessionId, 'agent:stop', { stageKey: actualStageKey || stageKey });
-
-  if (!actualStageKey) {
-    return { output: { result: '' } };
-  }
-
   // 原子化更新 state（含收斂門邏輯）
+  // 方向 B 修復：findActualStageKey 移入 callback 內，使用最新 state 避免 TOCTOU 競爭
+  let resolvedActualStageKey = null;
   let isConvergedOrFailed = false;
   let finalResult = result.verdict;
 
   const updatedState = updateStateAtomic(sessionId, (s) => {
+    // 在 callback 內用最新 state 解析 actualStageKey，避免 TOCTOU 競爭條件
+    resolvedActualStageKey = findActualStageKey(s, stageKey);
+    if (!resolvedActualStageKey) {
+      // 後到者補位：找 completed+pass 的 stage（先到者已完成場景）
+      resolvedActualStageKey = Object.keys(s.stages).find(
+        (k) => (k === stageKey || k.startsWith(stageKey + ':')) &&
+          s.stages[k].status === 'completed' && s.stages[k].result === 'pass'
+      ) || null;
+    }
+    if (!resolvedActualStageKey) return s; // 安全 early exit，不修改 state
+
+    const actualStageKey = resolvedActualStageKey;
     if (s.stages[actualStageKey]) {
       const entry = s.stages[actualStageKey];
 
@@ -162,6 +165,18 @@ function handleAgentStop(input, sessionId) {
 
     return s;
   });
+
+  // statusline 狀態：pop agent（在 early exit 之前，避免並行 agent 殘留）
+  // 優先用 resolvedActualStageKey（精確匹配 TEST:2 等編號 key），fallback 用 stageKey（base key）
+  const statuslineState = require('./statusline-state');
+  statuslineState.update(sessionId, 'agent:stop', { stageKey: resolvedActualStageKey || stageKey });
+
+  if (!resolvedActualStageKey) {
+    return { output: { result: '' } };
+  }
+
+  // 為後續邏輯提供別名（與舊變數名稱相容）
+  const actualStageKey = resolvedActualStageKey;
 
   // 記錄失敗到全域 store（跨 session 失敗模式追蹤）
   const failureTracker = (() => { try { return require('./failure-tracker'); } catch { return null; } })();

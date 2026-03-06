@@ -268,6 +268,9 @@ function handlePreTask(input, sessionIdOverride) {
 
   // ── 通過 — 記錄 agent 委派（原子操作：setActiveAgent + updateStage）+ 組裝 updatedInput ──
 
+  // 方向 C：mid-session sanitize — 在寫入 activeAgents 之前修復孤兒 active stage
+  try { state.sanitize(sessionId); } catch { /* 靜默處理：sanitize 失敗不影響主流程 */ }
+
   const actualKey = stageKeys.find((k) => {
     const base = k.split(':')[0];
     if (base !== targetStage) return false;
