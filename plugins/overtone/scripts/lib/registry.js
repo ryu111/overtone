@@ -104,7 +104,7 @@ const retryDefaults = {
   maxRetries: 3,
 };
 
-// Timeline 事件類型（30 種，13 分類）
+// Timeline 事件類型（31 種，13 分類）
 // consumeMode: 'targeted'（需專屬 consumer）| 'broadcast'（全量消費者覆蓋）| 'fire-and-forget'（純記錄，無需 consumer）
 const timelineEvents = {
   // workflow 類（3）
@@ -117,10 +117,11 @@ const timelineEvents = {
   'stage:complete':     { label: '階段完成',   category: 'stage', consumeMode: 'targeted' },
   'stage:retry':        { label: '階段重試',   category: 'stage', consumeMode: 'broadcast' },
 
-  // agent 類（3）
-  'agent:delegate':     { label: '委派代理',   category: 'agent', consumeMode: 'broadcast' },
-  'agent:complete':     { label: '代理完成',   category: 'agent', consumeMode: 'broadcast' },
-  'agent:error':        { label: '代理錯誤',   category: 'agent', consumeMode: 'broadcast' },
+  // agent 類（4）
+  'agent:delegate':        { label: '委派代理',      category: 'agent', consumeMode: 'broadcast' },
+  'agent:complete':        { label: '代理完成',      category: 'agent', consumeMode: 'broadcast' },
+  'agent:error':           { label: '代理錯誤',      category: 'agent', consumeMode: 'broadcast' },
+  'agent:orphan-cleanup':  { label: '孤兒代理清理',  category: 'agent', consumeMode: 'broadcast' },
 
   // loop 類（3）
   'loop:start':         { label: '循環啟動',   category: 'loop', consumeMode: 'broadcast' },

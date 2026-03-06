@@ -190,17 +190,23 @@ function emit(sessionId, eventType, data = {}) {
 
 ## 8. 已知的並發風險與緩解
 
-### CAS fallback 強制寫入
+### G1: CAS fallback 強制寫入（execution-queue TOCTOU）
 - **風險**：3 次 retry 失敗後強制寫入，可能覆蓋其他 hook 的修改
-- **緩解**：enforceInvariants 確保基本一致性；實務中 3 次 retry 幾乎總是足夠
+- **緩解**：enforceInvariants 確保基本一致性；heartbeat activeSession guard 確保同一時間只有一個 session 存取 execution-queue，自然避免 TOCTOU；實務中 3 次 retry 幾乎總是足夠
 - **監控**：timeline 中的 `system:warning` 事件，source=state-invariant
+- **狀態**：已知風險，持續監控
 
-### 運行中 orphan agent 無 TTL
-- **風險**：agent crash 且 SubagentStop 未觸發 → activeAgents 殘留
-- **緩解**：sanitize 在下一個 session 啟動時清理；enforceInvariants 規則 4 在下次寫入時修正
-- **缺口**：同一 session 內若 orphan 不觸發任何 state 寫入，則持續殘留直到 session 結束
+### G2: 運行中 orphan agent TTL 偵測（✅ 已修復）
+- **風險**：agent crash 且 SubagentStop 未觸發 → activeAgents 殘留，getNextStageHint() 誤判為有 agent 在執行，造成 loop 卡在 soft-release
+- **緩解**：
+  1. `detectAndCleanOrphans()`（session-stop-handler.js）：在每次 Stop hook 觸發時掃描 activeAgents，超過 15 分鐘 TTL 的 entry 自動刪除並 emit `agent:orphan-cleanup` 事件
+  2. `sanitize()`：在 SessionStart 時清理跨 session 殘留
+  3. `enforceInvariants()` 規則 4：在下次 state 寫入時自動修正孤兒 active stage
+- **監控**：timeline 中的 `agent:orphan-cleanup` 事件
+- **狀態**：已修復（v0.28.68）
 
-### JSONL 截斷競爭
+### G3: JSONL 截斷競爭
 - **風險**：trimIfNeeded 讀取全部行 → 切片 → atomicWrite 期間，其他 hook 的 append 可能遺失
 - **緩解**：截斷只在每 100 次 emit 觸發一次，窗口極小；遺失的是最新事件，重新觸發即可
 - **實務影響**：極低（timeline 事件遺失不影響 workflow 狀態）
+- **狀態**：已知風險，可接受

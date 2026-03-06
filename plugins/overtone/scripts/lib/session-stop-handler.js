@@ -19,6 +19,67 @@ const { hookError, buildProgressBar } = require('./hook-utils');
 const { playSound, SOUNDS } = require('./sound');
 
 /**
+ * Orphan agent TTL（毫秒）
+ * agent 在 activeAgents 中存在超過此時間視為 orphan，自動清除
+ */
+const ORPHAN_TTL_MS = 15 * 60 * 1000; // 15 分鐘
+
+/**
+ * 偵測並清除超時的 orphan agent entry
+ *
+ * @param {string} sessionId - session ID
+ * @param {object} currentState - 目前 workflow state（含 activeAgents）
+ * @param {number} [ttlMs=ORPHAN_TTL_MS] - TTL 毫秒數
+ * @returns {{ cleaned: Array<{ instanceId: string, agentName: string, ageMs: number, ttlMs: number }> }}
+ */
+function detectAndCleanOrphans(sessionId, currentState, ttlMs = ORPHAN_TTL_MS) {
+  const activeAgents = currentState.activeAgents || {};
+  const now = Date.now();
+  const orphans = [];
+
+  for (const [instanceId, entry] of Object.entries(activeAgents)) {
+    // startedAt 缺失、null、undefined → 跳過（安全降級）
+    if (entry.startedAt == null) continue;
+    const parsed = new Date(entry.startedAt);
+    // 非法日期字串 → getTime() 回傳 NaN → 跳過
+    if (!Number.isFinite(parsed.getTime())) continue;
+    const ageMs = now - parsed.getTime();
+    if (!Number.isFinite(ageMs) || ageMs <= 0) continue;
+    if (ageMs > ttlMs) {
+      orphans.push({ instanceId, agentName: entry.agentName || instanceId, ageMs, ttlMs });
+    }
+  }
+
+  if (orphans.length === 0) {
+    return { cleaned: [] };
+  }
+
+  // CAS 刪除所有 orphan entry
+  const orphanIds = new Set(orphans.map((o) => o.instanceId));
+  try {
+    state.updateStateAtomic(sessionId, (s) => {
+      for (const id of orphanIds) {
+        delete s.activeAgents[id];
+      }
+      return s;
+    });
+  } catch {
+    // CAS 失敗靜默降級，不阻擋主流程
+  }
+
+  // 逐一 emit timeline 事件
+  for (const { instanceId, agentName, ageMs, ttlMs: ttl } of orphans) {
+    try {
+      timeline.emit(sessionId, 'agent:orphan-cleanup', { instanceId, agentName, ageMs, ttlMs: ttl });
+    } catch {
+      // emit 失敗不阻擋清除流程
+    }
+  }
+
+  return { cleaned: orphans };
+}
+
+/**
  * 主入口：處理 session stop 事件
  * @param {object} input - hook stdin 輸入（含 cwd 等欄位）
  * @param {string|null} sessionId - 當前 session ID
@@ -34,10 +95,18 @@ function handleSessionStop(input, sessionId) {
 
   // ── 讀取狀態 ──
 
-  const currentState = state.readState(sessionId);
+  let currentState = state.readState(sessionId);
   if (!currentState) {
     // 無 workflow → 不擋
     return { output: { result: '' } };
+  }
+
+  // ── Orphan agent TTL 偵測與清除 ──
+  // 在退出條件判斷之前執行，確保孤兒 agent 不卡住 soft-release 邏輯
+  const orphanResult = detectAndCleanOrphans(sessionId, currentState);
+  if (orphanResult.cleaned.length > 0) {
+    // 重新讀取 state（orphan 已被刪除，後續邏輯看到最新狀態）
+    currentState = state.readState(sessionId) || currentState;
   }
 
   // ── 讀取 loop 狀態 ──
@@ -381,4 +450,4 @@ function _isRelatedQueueItem(itemName, featureName) {
   return normalizedItem.includes(normalizedFeature) || normalizedFeature.includes(normalizedItem);
 }
 
-module.exports = { handleSessionStop, buildCompletionSummary, calcDuration, buildContinueMessage, _isRelatedQueueItem };
+module.exports = { handleSessionStop, detectAndCleanOrphans, ORPHAN_TTL_MS, buildCompletionSummary, calcDuration, buildContinueMessage, _isRelatedQueueItem };

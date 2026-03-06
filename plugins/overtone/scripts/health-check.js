@@ -3,7 +3,7 @@
 /**
  * health-check.js — Overtone 系統健康自動化偵測
  *
- * 執行 19 項確定性偵測：
+ * 執行 20 項確定性偵測：
  *   1. phantom-events              — registry 事件 vs 實際 emit 呼叫差異
  *   2. dead-exports                — scripts/lib 模組 export 但從未被 require 使用
  *   3. doc-code-drift              — docs 文件中的數量與程式碼實際值不符
@@ -23,6 +23,7 @@
  *  17. internalization-index       — experience-index.json 格式、域完整性與時效性偵測
  *  18. test-file-alignment         — scripts/lib 模組是否有對應 tests/unit/ 測試檔案
  *  19. skill-reference-integrity   — SKILL.md 引用的 references/ 檔案是否實際存在
+ *  20. concurrency-guards          — G1/G2/G3 並發風險文件完整性 + runtime orphan agent 偵測
  *
  * 輸出：JSON stdout（HealthCheckOutput schema）
  * Exit code：有 findings → 1；無 findings → 0
@@ -2001,6 +2002,118 @@ function checkSkillReferenceIntegrity(skillsDirOverride) {
   return findings;
 }
 
+// ── 20. Concurrency Guards 偵測 ──
+
+/**
+ * 偵測並發守衛的完整性：
+ *   1. 靜態掃描：filesystem-concurrency.md 是否涵蓋 G1/G2/G3 三類風險
+ *   2. Runtime 掃描：active sessions 的 activeAgents 是否有超過 15 分鐘的 orphan entry
+ *
+ * @param {string} [sessionsDirOverride] - 供測試使用的 sessions 目錄覆蓋
+ * @param {string} [fsConMdOverride] - 供測試使用的 filesystem-concurrency.md 路徑覆蓋
+ * @returns {Finding[]}
+ */
+function checkConcurrencyGuards({ sessionsDirOverride, fsConMdOverride } = {}) {
+  const { existsSync } = require('fs');
+  const ORPHAN_TTL_MS = 15 * 60 * 1000; // 15 分鐘
+
+  const findings = [];
+
+  // ── 靜態掃描：filesystem-concurrency.md 完整性 ──
+  const fsConMdPath = fsConMdOverride || path.join(
+    PLUGIN_ROOT, 'skills', 'workflow-core', 'references', 'filesystem-concurrency.md',
+  );
+
+  if (!existsSync(fsConMdPath)) {
+    findings.push({
+      check: 'concurrency-guards',
+      severity: 'info',
+      file: path.relative(PROJECT_ROOT, fsConMdPath),
+      message: 'filesystem-concurrency.md 不存在，並發風險文件缺失',
+      detail: 'G1/G2/G3 風險記錄無法驗證',
+    });
+  } else {
+    const content = safeRead(fsConMdPath);
+    const relPath = path.relative(PROJECT_ROOT, fsConMdPath);
+    const risks = ['G1', 'G2', 'G3'];
+    for (const risk of risks) {
+      if (!content.includes(risk)) {
+        findings.push({
+          check: 'concurrency-guards',
+          severity: 'info',
+          file: relPath,
+          message: `filesystem-concurrency.md 缺少 ${risk} 並發風險記錄`,
+          detail: `${risk} 風險尚未被記錄或緩解`,
+        });
+      }
+    }
+  }
+
+  // ── Runtime 掃描：掃描 active sessions 的 orphan activeAgents ──
+  let sessionsDir;
+  if (sessionsDirOverride) {
+    sessionsDir = sessionsDirOverride;
+  } else {
+    try {
+      const { SESSIONS_DIR } = require('./lib/paths');
+      sessionsDir = SESSIONS_DIR;
+    } catch {
+      return findings;
+    }
+  }
+
+  if (!existsSync(sessionsDir)) {
+    // sessions 目錄不存在（全新安裝）→ 靜默跳過
+    return findings;
+  }
+
+  let sessionDirs;
+  try {
+    sessionDirs = readdirSync(sessionsDir, { withFileTypes: true })
+      .filter((e) => e.isDirectory())
+      .map((e) => path.join(sessionsDir, e.name));
+  } catch {
+    return findings;
+  }
+
+  const now = Date.now();
+
+  for (const sessionDir of sessionDirs) {
+    const workflowPath = path.join(sessionDir, 'workflow.json');
+    if (!existsSync(workflowPath)) continue;
+
+    let state;
+    try {
+      state = JSON.parse(readFileSync(workflowPath, 'utf8'));
+    } catch {
+      // JSON 損壞 → 靜默跳過
+      continue;
+    }
+
+    const activeAgents = state.activeAgents;
+    if (!activeAgents || typeof activeAgents !== 'object') continue;
+
+    for (const [instanceId, entry] of Object.entries(activeAgents)) {
+      const ageMs = now - new Date(entry.startedAt).getTime();
+      if (!Number.isFinite(ageMs)) continue;
+      if (ageMs > ORPHAN_TTL_MS) {
+        const sessionName = path.basename(sessionDir);
+        const agentName = entry.agentName || instanceId;
+        const ageMin = Math.round(ageMs / 60000);
+        findings.push({
+          check: 'concurrency-guards',
+          severity: 'warning',
+          file: path.relative(PROJECT_ROOT, workflowPath),
+          message: `session "${sessionName}" 的 agent "${agentName}"（${instanceId}）已超時 ${ageMin} 分鐘，可能為 orphan`,
+          detail: `startedAt: ${entry.startedAt}, ageMs: ${ageMs}, ttlMs: ${ORPHAN_TTL_MS}`,
+        });
+      }
+    }
+  }
+
+  return findings;
+}
+
 /**
  * 執行所有健康檢查
  * @returns {{ checks: object[], findings: Finding[] }}
@@ -2026,6 +2139,7 @@ function runAllChecks() {
     { name: 'internalization-index',  fn: checkInternalizationIndex },
     { name: 'test-file-alignment',    fn: checkTestFileAlignment },
     { name: 'skill-reference-integrity', fn: checkSkillReferenceIntegrity },
+    { name: 'concurrency-guards',     fn: checkConcurrencyGuards },
   ];
 
   const allFindings = [];
@@ -2120,6 +2234,7 @@ module.exports = {
   checkInternalizationIndex,
   checkTestFileAlignment,
   checkSkillReferenceIntegrity,
+  checkConcurrencyGuards,
   runAllChecks,
   // 測試 DI 支援
   TEST_BASELINE,

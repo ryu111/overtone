@@ -93,12 +93,12 @@ describe('Feature 6：輸出格式驗證', () => {
     expect(output.summary).not.toBeNull();
   });
 
-  test('Scenario checks — checks 陣列長度為 19（含原本 12 項 + 製作原則 3 項 + dependency-sync + internalization-index + test-file-alignment + skill-reference-integrity）', () => {
+  test('Scenario checks — checks 陣列長度為 20（含原本 12 項 + 製作原則 3 項 + dependency-sync + internalization-index + test-file-alignment + skill-reference-integrity + concurrency-guards）', () => {
     const output = getParsed();
-    expect(output.checks.length).toBe(19);
+    expect(output.checks.length).toBe(20);
   });
 
-  test('Scenario checks — 包含所有 19 個偵測項目', () => {
+  test('Scenario checks — 包含所有 20 個偵測項目', () => {
     const output = getParsed();
     const names = output.checks.map((c) => c.name);
     expect(names).toContain('phantom-events');
@@ -120,6 +120,7 @@ describe('Feature 6：輸出格式驗證', () => {
     expect(names).toContain('internalization-index');
     expect(names).toContain('test-file-alignment');
     expect(names).toContain('skill-reference-integrity');
+    expect(names).toContain('concurrency-guards');
   });
 
   test('Scenario checks — 每個 check 包含 name、passed、findingsCount', () => {
@@ -140,6 +141,7 @@ describe('Feature 6：輸出格式驗證', () => {
       'closed-loop', 'recovery-strategy', 'completion-gap',
       'dependency-sync', 'internalization-index',
       'test-file-alignment', 'skill-reference-integrity',
+      'concurrency-guards',
     ]);
     const validSeverities = new Set(['error', 'warning', 'info']);
     for (const f of output.findings) {
@@ -253,10 +255,10 @@ describe('真實 codebase 執行驗證', () => {
     expect(() => JSON.parse(result.stdout)).not.toThrow();
   });
 
-  test('所有 19 個 check 都成功執行（findingsCount 為數字）', () => {
+  test('所有 20 個 check 都成功執行（findingsCount 為數字）', () => {
     const result = runHealthCheck();
     const output = JSON.parse(result.stdout);
-    expect(output.checks.length).toBe(19);
+    expect(output.checks.length).toBe(20);
     for (const c of output.checks) {
       expect(Number.isInteger(c.findingsCount)).toBe(true);
       expect(c.findingsCount).toBeGreaterThanOrEqual(0);
