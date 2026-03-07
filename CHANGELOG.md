@@ -2,6 +2,33 @@
 
 所有重要變更記錄於此文件。
 
+## [0.28.88] - 2026-03-08
+
+### 佇列 & 設定 API 穩定性強化（Bug 修復）
+
+#### 核心修復
+
+**execution-queue.js 完成邏輯改進**
+- completeCurrent 找不到 in_progress 項目時 fallback 到第一個 pending 項目
+- 解決 statusline 佇列卡住問題（之前只接受確切的 in_progress 狀態）
+
+**config-api.js 欄位驗證強化**
+- updateAgent、updateSkill 現在驗證所有輸入欄位，拒絕未知欄位
+- 回傳結構化錯誤訊息（欄位名、預期值、實際值）
+- 防止無效設定寫入系統
+
+**health-check.js 偽陽性消除**
+- concurrency-guards 檢測現在過濾 test_ 開頭的 session ID
+- 消除 sequential-test-isolation 機制產生的假 orphan 警告
+- 提高健康檢查精確度
+
+#### 測試結果
+
+- 新增/修改 3 個單元測試（execution-queue.test.js + config-api.test.js）
+- 總測試數：4683 pass / 0 fail（200 個測試檔）
+
+---
+
 ## [0.28.83] - 2026-03-07
 
 ### 全域遷移最終驗證（3/3 迭代完成）

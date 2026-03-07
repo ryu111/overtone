@@ -120,13 +120,14 @@ describe('completeCurrent', () => {
     expect(queue.items[0].completedAt).toBeDefined();
   });
 
-  test('無 in_progress 項目時回傳 false', () => {
+  test('無 in_progress 項目時 fallback 完成第一個 pending', () => {
     executionQueue.writeQueue(TEST_PROJECT, [
       { name: 'Pending', workflow: 'quick' },
     ], 'test');
 
+    // fallback: 找不到 in_progress → 完成第一個 pending
     const success = executionQueue.completeCurrent(TEST_PROJECT);
-    expect(success).toBe(false);
+    expect(success).toBe(true);
   });
 
   test('指定 name 驗證不匹配時回傳 false', () => {
@@ -212,18 +213,14 @@ describe('clearQueue', () => {
 // ────────────────────────────────────────────────────────────────────────────
 
 describe('防禦性推進：completeCurrent fallback', () => {
-  test('直接 completeCurrent pending 項目回傳 false', () => {
+  test('直接 completeCurrent pending 項目透過 fallback 成功', () => {
     executionQueue.writeQueue(TEST_PROJECT, [
       { name: 'no-advance', workflow: 'quick' },
     ], 'test');
 
-    // 不呼叫 advanceToNext → completeCurrent 應失敗
+    // 不呼叫 advanceToNext → completeCurrent fallback 找 pending 完成
     const success = executionQueue.completeCurrent(TEST_PROJECT);
-    expect(success).toBe(false);
-
-    // 項目仍為 pending
-    const queue = executionQueue.readQueue(TEST_PROJECT);
-    expect(queue.items[0].status).toBe('pending');
+    expect(success).toBe(true);
   });
 
   test('fallback 模式：advance + complete 可完成 pending 項目', () => {
