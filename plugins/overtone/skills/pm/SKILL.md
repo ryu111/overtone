@@ -199,7 +199,7 @@ bun ~/.claude/scripts/queue.js add \\
 
 每個迭代完成後，呼叫 `completeCurrent` 推進佇列：
 ```bash
-bun -e "require('~/.claude/scripts/lib/execution-queue').completeCurrent(process.cwd())"
+bun -e "require(require('os').homedir() + '/.claude/scripts/lib/execution-queue').completeCurrent(process.cwd())"
 ```
 
 
