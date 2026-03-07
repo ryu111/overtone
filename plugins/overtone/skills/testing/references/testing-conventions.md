@@ -105,25 +105,33 @@ developer 實作完成後，補全測試並執行：
 ### 4d. 執行測試
 
 ```bash
-# 在專案根目錄執行
+# 全套測試（多進程並行，~14s）— 提交前、verify 模式必用
 cd /Users/sbu/projects/overtone
-bun test
+bun scripts/test-parallel.js
+
+# 單檔快速驗證（~1-2s）— 只驗證單一檔案，不代替全套
+bun test tests/unit/registry.test.js
 ```
+
+> **場景區分**：開發中快速迭代用 `bun test <file>`；正式驗證（verify 模式、提交前）必須用 `bun scripts/test-parallel.js` 確保並行隔離下全套通過。
 
 ### 4e. 預期輸出格式
 
 ```
+# bun scripts/test-parallel.js 輸出
+[worker 1] tests/unit/registry.test.js: 15 pass
+[worker 2] tests/integration/specs.test.js: 8 pass
+...
+All 195 files passed. 4381 tests in 14.2s
+
+# bun test <file> 輸出（單檔）
 bun test v1.x.x
 
 tests/unit/registry.test.js:
 ✓ 包含所有 15 個 agent 定義 (2ms)
 
-tests/integration/specs.test.js:
-✓ initFeatureDir 建立正確目錄結構 (12ms)
-
- 63 tests passed
+ 15 tests passed
  0 tests failed
-Ran 63 tests across 13 files. [...]
 ```
 
 ---

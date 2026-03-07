@@ -1,54 +1,4 @@
 ---
-## 2026-03-04 | architect:ARCH Findings
-**Open Questions 回覆**：
-
-1. **OQ1（guard-coverage 移除後守衛鏈）**：test-quality-guard 無法接管，但可以完整刪除。兩者守衛的維度根本不同（存在性 vs 品質），移除存在性守衛對系統安全性影響可接受，其他機制（health-check、validate-agents）從不同角度保護。
-
-2. **OQ2（platform-alignment-agents 重構方式）**：直接修改，保留 describe 標題（BDD 追蹤性不受影響）。test body 從獨立 test() 改為迴圈內的多個 expect()，利用 Bun expect 第二參數提供 agent name 確保失敗可定位。
-
-3. **OQ3（計數硬編碼修正策略）**：混合策略。可增長清單（timelineEvents、stages、hookEvents、runAllChecks checks）改 `toBeGreaterThanOrEqual(N)`；固定設計規格（`quick.stages.length === 4`）保留 `toBe(4)`。
-
-**技術方案**：
-
-- 子任務 A（agents.test.js）：53 個 test → 約 18 個，每個 Scenario 改為 1 個 test + 迴圈 assertions
-- 子任務 B（guard-coverage.test.js）：完整刪除，約節省 30 個 test
-- 子任務 C（3 個檔案計數硬編碼）：4 個 `toBe(精確數)` 改為 `toBeGreaterThanOrEqual(N)`
-
-**關鍵技術決策**：
-
-- guard-coverage 完整刪除而非降級為 smoke test（降級只節省 ~29 個 test，代價不合理）
-- `quick.stages` 計數保留 `toBe(4)`（固定設計規格，精確計數是正確守衛）
-- Bun `expect(value, message)` 第二參數是合法 API，確保迴圈內失敗可定位
-
-**API 介面**：N/A（純測試重構）
-
-**資料模型**：N/A
-
-**檔案結構**：
-
-```
-修改：
-  tests/unit/platform-alignment-agents.test.js    ← 展開 → 迴圈 assertions（53→18 tests）
-  tests/unit/platform-alignment-registry.test.js  ← toBe(27) → toBeGreaterThanOrEqual(27)
-  tests/unit/registry.test.js                     ← toBe(16) toBe(11) → toBeGreaterThanOrEqual
-  tests/unit/health-check.test.js                 ← toBe(11) → toBeGreaterThanOrEqual(11)
-
-刪除：
-  tests/unit/guard-coverage.test.js               ← 完整刪除
-```
-
-**Dev Phases**：
-
-    ### Phase 1: 低價值測試移除（parallel）
-    - [ ] 合併 platform-alignment-agents.test.js 展開 test 為迴圈 assertions | files: tests/unit/platform-alignment-agents.test.js
-    - [ ] 刪除 guard-coverage.test.js | files: tests/unit/guard-coverage.test.js
-    - [ ] 修正計數硬編碼（platform-alignment-registry / registry / health-check） | files: tests/unit/platform-alignment-registry.test.js, tests/unit/registry.test.js, tests/unit/health-check.test.js
-
-    ### Phase 2: 驗收（sequential，依賴 Phase 1）
-    - [ ] 執行 bun test，確認全部 pass 且執行時間 < 40 秒
-Keywords: open, questions, guard, coverage, test, quality, health, check, validate, agents
-
----
 ## 2026-03-04 | architect:ARCH Context
 設計三個可並行執行的測試瘦身子任務，每個子任務針對一種 Anti-Pattern。核心發現：guard-coverage 和 test-quality-guard 功能完全不重疊，可以全刪；platform-alignment-agents 採用原地重構（保留 describe 標題）；計數硬編碼採混合策略，固定設計規格的計數保留 `toBe()`。
 
@@ -590,4 +540,38 @@ Keywords: tests, unit, compact, handler, test, pass, fail, health, check, freque
 
 執行 compact-quality-detect feature 的 TEST:verify 階段。對照 BDD spec 中 18 個 scenario，確認測試覆蓋完整並執行測試套件。
 Keywords: verify, compact, quality, detect, feature, test, spec, scenario
+
+---
+## 2026-03-06 | product-manager:PM Findings
+**目標用戶**：developer agent、tester agent（寫測試和跑測試的主要 agent）
+
+**成功指標**：
+- 所有 agent prompt 和 testing reference 中的測試執行指令統一為 `bun scripts/test-parallel.js`
+- developer agent 包含與 tester 同等的測試隔離要求
+
+**影響範圍和具體改動**：
+
+| # | 檔案 | 改動 | 工作量 |
+|---|------|------|--------|
+| 1 | `plugins/overtone/agents/tester.md` 第 108 行 | `bun test` → `bun scripts/test-parallel.js` | 1 行 |
+| 2 | `plugins/overtone/skills/testing/references/testing-conventions.md` 第 106-127 行 | 4d 節的 `bun test` → `bun scripts/test-parallel.js`，預期輸出格式同步更新 | 5 行 |
+| 3 | `plugins/overtone/agents/developer.md` DO 區塊 | 新增：(a) 測試執行用 `bun scripts/test-parallel.js`；(b) 測試隔離規範（引用 testing-conventions.md 第 7 節） | 3-5 行 |
+
+**不需改動的檔案**（佐證）：
+- **qa.md**：不寫測試、不跑 bun test（codebase 佐證）
+- **e2e-runner.md**：用 agent-browser，不跑 bun test（codebase 佐證）
+- **code-reviewer.md**：只審查測試覆蓋度，不執行測試（codebase 佐證）
+- **testing-conventions.md 第 7 節**：隔離規範已完整，不需改（codebase 佐證）
+- **test-strategy.md**：`bun test --repeat 3 <test-file>` 是單檔重跑場景，與全套執行不衝突，可保留（codebase 佐證）
+
+**推薦方案**：直接修改上述 3 個檔案，工作量約 0.5 人天。
+
+**MVP 範圍（MoSCoW）**：
+- **Must**：tester.md 改 `bun scripts/test-parallel.js`、testing-conventions.md 4d 節同步、developer.md 加隔離要求
+- **Should**：developer.md 加明確測試執行指令（`bun scripts/test-parallel.js`）
+- **Won't**：改動 qa/e2e-runner/code-reviewer（不涉及 bun test）
+
+**驗收標準（BDD）**：
+- Given tester agent 在 verify 模式執行測試 When 讀取 prompt 中的測試指令 Then 指令為 `bun scripts/test-parallel.js` 而非 `bun te
+Keywords: developer, agent, tester, prompt, testing, reference, scripts, test, parallel, plugins
 

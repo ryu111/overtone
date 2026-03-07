@@ -105,7 +105,8 @@ THEN ...
 - 📋 對照 BDD spec 逐條撰寫測試
 - 📋 單元測試存放於 `tests/unit/*.test.js`，整合測試存放於 `tests/integration/*.test.js`
 - 📋 使用 `tests/helpers/paths.js` 處理跨目錄 require 的路徑解析
-- 📋 執行完整測試套件：從根目錄執行 `bun test`
+- 📋 執行完整測試套件：從根目錄執行 `bun scripts/test-parallel.js`（多進程並行，~14s）
+  - 單檔快速驗證時可用 `bun test <file>`（只跑單一檔案，不代替全套）
 - 📋 verify 模式須讀取 developer Handoff 的 Test Scope，若有「待清理」標記，刪除對應的測試檔
 - 📋 報告所有失敗的 scenario 和錯誤訊息
 - 📋 **測試隔離（並行安全）**：所有測試必須能在 10 workers 並行下穩定通過

@@ -1,16 +1,4 @@
 ---
-## 2026-03-06 | retrospective:RETRO Findings
-**回顧摘要**：
-
-- `design-taste.md`（247 行）內容結構完整，涵蓋 6 個主題（視覺層次、配色、動效、反模式、靈感範例、Checklist），知識密度高且具體可操作
-- SKILL.md 決策樹已正確新增 `UI/前端設計品味問題 → design-taste.md` 分支，資源索引也同步加入對應條目，閉環完整
-- 指南定位清晰（developer/designer agent 在 UI 或前端元件實作時使用），不與現有 craft references 重疊（clean-code 管命名/格式，design-taste 管視覺品質）
-- 反模式章節（6 個反模式）與 Checklist 章節形成互補：前者教「為什麼錯」，後者提供「執行時快速驗證」，認知路徑合理
-- 靈感範例選用 Linear / Raycast / Arc / Vercel，均為 Developer Tool 領域標竿，與 Overtone 作為 CLI plugin 的定位相符
-- craft overtone-principles.md checklist 回顧：此次新增純文件，無程式碼改動，不涉及元件閉環（無新 agent/hook 需要同步）
-Keywords: design, taste, checklist, skill, developer, designer, agent, craft, references, clean
-
----
 ## 2026-03-06 | doc-updater:DOCS Findings
 - **新增文件**：`plugins/overtone/skills/craft/references/design-taste.md`（設計品味評估參考指南）
 - **更新文件**：`plugins/overtone/skills/craft/SKILL.md`（加入 design-taste reference）
@@ -581,4 +569,11 @@ Keywords: quality, compact, frequency, registry, agent, developer, files, plugin
 1. emit `quality:compact-frequency` timeline 事件（不阻擋 compaction）
 2. 在 health-check #21 `checkCompactFrequency` 中回報 warning finding
 Keywords: compact, quality, detect, auto, session, emit, frequency, timeline, compaction, health
+
+---
+## 2026-03-06 | product-manager:PM Context
+Overtone 內部開發流程優化：統一所有會寫測試或跑測試的 agent/skill，要求使用並行測試執行（`bun scripts/test-parallel.js`）並確保測試隔離規範一致覆蓋。
+
+目前 tester agent 明確指定 `bun test`（單進程 53 秒），而非 `bun scripts/test-parallel.js`（多進程 14 秒），效率差 4 倍。developer agent 寫測試時沒有隔離要求，可能導致並行執行時 flaky。
+Keywords: overtone, agent, skill, scripts, test, parallel, tester, developer, flaky
 
