@@ -69,61 +69,42 @@ bun scripts/test-parallel.js
 bun test
 
 # 啟動 Dashboard 監控面板（port 7777）
-bun scripts/server.js
+bun ~/.claude/scripts/server.js
 
-# 系統健康檢查（23 項偵測）— checkPhantomEvents/checkDeadExports/checkDocCodeDrift/checkUnusedPaths/checkDuplicateLogic/checkPlatformDrift/checkDocStaleness/checkOsTools/checkComponentChain/checkDataQuality/checkQualityTrends/checkTestGrowth/checkClosedLoop/checkRecoveryStrategy/checkCompletionGap/checkDependencySync/checkInternalizationIndex/checkTestFileAlignment/checkSkillReferenceIntegrity/checkConcurrencyGuards/checkCompactFrequency/checkSequentialMarkers/checkSpecsDirectoryStructure
-bun scripts/health-check.js
+# 系統健康檢查（23 項偵測）
+bun ~/.claude/scripts/health-check.js
 
-# 驗證所有元件設定（18 agents + 11 hooks + 24 skills + 29 commands）— agents/skills/hooks/commands 結構校驗
-bun scripts/validate-agents.js
+# 驗證所有元件設定（18 agents + 11 hooks + 24 skills + 29 commands）
+bun ~/.claude/scripts/validate-agents.js
 
 # 元件管理（建立/更新 agent、hook、skill + 版本更新）
-bun scripts/manage-component.js create agent '{"name":"...","model":"sonnet",...}'
-bun scripts/manage-component.js update agent developer '{"model":"opus"}'
-bun scripts/manage-component.js bump-version          # patch +1
-bun scripts/manage-component.js bump-version 1.0.0    # 指定版本
-bun scripts/manage-component.js --help  # 查看完整用法
+bun ~/.claude/scripts/manage-component.js --help
 
 # 心跳引擎管理（自主控制佇列）
-bun scripts/heartbeat.js start [--project-root <path>]  # 啟動常駐 daemon
-bun scripts/heartbeat.js stop                            # 停止 daemon
-bun scripts/heartbeat.js status                          # 查看狀態
+bun ~/.claude/scripts/heartbeat.js status
 
-# 進化引擎（gap detection / 自動修復 / skill forge / 內化飛輪）
-bun scripts/evolution.js --help                      # 顯示所有子命令說明（exit 0）
-bun scripts/evolution.js status                      # 快速顯示系統進化狀態（gap 摘要 + internalize + experience index）
-bun scripts/evolution.js analyze                     # 執行 gap 分析，輸出純文字報告
-bun scripts/evolution.js fix --execute               # 執行修復（真實更新檔案）
-bun scripts/evolution.js forge <domain> --execute    # 實際執行 forge，建立 skill（包含 SKILL.md + references/）
-bun scripts/evolution.js forge --auto --execute      # 實際執行自動 forge
-bun scripts/evolution.js orchestrate <specPath> --execute     # 執行協調，建立排程 + 佇列項目
-bun scripts/evolution.js internalize --execute       # 實際寫入 internalized.md + 更新 experience-index
+# 進化引擎
+bun ~/.claude/scripts/evolution.js --help
+bun ~/.claude/scripts/evolution.js status
+bun ~/.claude/scripts/evolution.js analyze
 
 # 依賴圖與一致性
-bun scripts/impact.js <path>                         # 查詢修改此檔案會影響哪些元件
-bun scripts/fix-consistency.js --fix                 # 自動修復消費者表缺漏
+bun ~/.claude/scripts/impact.js <path>
+bun ~/.claude/scripts/fix-consistency.js --fix
 
-# 資料查詢與管理（timeline/failures/scores/observations/baselines）
-bun scripts/data.js query timeline --session <id>   # 查詢 timeline 事件
-bun scripts/data.js stats --global                   # 全域統計摘要
-bun scripts/data.js recent --limit 5                 # 列出最近 session
+# 資料查詢
+bun ~/.claude/scripts/data.js stats --global
+bun ~/.claude/scripts/data.js recent --limit 5
 
 # 執行佇列管理
-bun scripts/queue.js add <name> <workflow> [...]                        # 新增項目（覆寫現有）
-bun scripts/queue.js append <name> <workflow> [...]                    # 累加到現有佇列
-bun scripts/queue.js list                                              # 列出佇列狀態
-bun scripts/queue.js enable-auto                                       # 啟用自動執行（規劃模式 → 執行模式）
-bun scripts/queue.js clear                                             # 清除佇列
-bun scripts/queue.js insert <name> <workflow> --before <anchor>        # 在指定項目之前插入新項目
-bun scripts/queue.js remove <name>                                     # 刪除 pending/failed 項目
-bun scripts/queue.js retry <name>                                      # 將 failed 項目重設為 pending
-# Flag: --no-auto（規劃模式）、--source <desc>（來源描述）、--project-root <path>
+bun ~/.claude/scripts/queue.js list
+bun ~/.claude/scripts/queue.js add <name> <workflow> [...]
 
-# 手動停止 Loop（需提供 sessionId）
-bun scripts/stop-loop.js {sessionId}
+# 手動停止 Loop
+bun ~/.claude/scripts/stop-loop.js {sessionId}
 
 # 初始化 workflow state（測試用）
-bun scripts/init-workflow.js {workflowType} [{sessionId}]
+bun ~/.claude/scripts/init-workflow.js {workflowType} [{sessionId}]
 ```
 
 ## 開發規範
