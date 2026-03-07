@@ -1,9 +1,4 @@
 ---
-## 2026-03-06 | product-manager:PM Context
-Overtone 的並行/併發/背景處理能力已有堅實基礎（6 層守衛 + CAS + 收斂門 + 3 個並行群組），但存在可量化的缺口：守衛層有 G2 孤兒 agent 無主動偵測、穩定層缺乏併發專項測試、效能層 RETRO+DOCS 未並行化、優化層缺少歷史數據驅動排程。用戶要求「全部都做，做好閉環，把所有會影響的地方一起優化」。
-Keywords: overtone, agent, retro, docs
-
----
 ## 2026-03-06 | planner:PLAN Context
 **需求**：強化 Overtone 並發守衛，補上 G2 orphan agent 主動偵測缺口。
 
@@ -573,4 +568,18 @@ global-migrate-move-files 是一次以「複製」為核心的搬移任務（源
 
 - plugin.json 版本不一致：~/.claude/plugin.json 為 0.28.81，status.md 顯示 0.28.82。這是功能實作先行、plugin.json 未即時跟進的版本漂移，屬既有問題，非本次搬移引入。
 Keywords: global, migrate, move, files, plugins, overtone, claude, agents, skills, hooks
+
+---
+## 2026-03-07 | code-reviewer:REVIEW Findings
+審查了以下面向，全部通過：
+
+1. **三層嵌套格式**：settings.json 的 hooks 欄位嚴格遵循 `事件 → [{ matcher?, hooks: [{ type, command }] }]` 格式
+2. **事件完整性**：11 個 hook 事件（SessionStart, SessionEnd, PreCompact, UserPromptSubmit, PreToolUse x4 matcher, SubagentStop, PostToolUse, PostToolUseFailure, Stop, TaskCompleted, Notification）全部遷移，14 個腳本路徑一一對應
+3. **路徑替換**：所有 `${CLAUDE_PLUGIN_ROOT}/hooks/scripts/` 正確替換為 `~/.claude/hooks/scripts/`
+4. **屬性保留**：TaskCompleted 的 `timeout: 60` 保留；PreToolUse Bash matcher 的 key 順序保持一致
+5. **既有欄位完整**：settings.json 的 env, permissions, statusLine, enabledPlugins, language, voiceEnabled, skipDangerousModePermissionPrompt 全部未受影響
+6. **hooks.json 未修改**：原始 plugin hooks.json 保留不動（不在 git diff 中）
+7. **版本 bump**：plugin.json 0.28.81 → 0.28.82，正常
+8. **auto-discovered.md**：清理過舊條目 + 新增本次知識歸檔，內容準確
+Keywords: settings, json, hooks, matcher, type, command, hook, sessionstart, sessionend, precompact
 

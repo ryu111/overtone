@@ -1,45 +1,4 @@
 ---
-## 2026-03-05 | product-manager:PM Findings
-**目標用戶**：開發者本人，個人 dogfooding 使用的 Claude Code plugin
-
----
-Keywords: dogfooding, claude, code, plugin
-
----
-## 2026-03-05 | retrospective:RETRO Context
-RETRO PASS — 回顧完成，無信心 ≥70% 的重要問題，整體品質達標。
-
-docs-sync 問題（status.md 版本 0.28.57 vs plugin.json 0.28.58）屬於已知待辦，由 DOCS 階段處理。
-Keywords: retro, pass, docs, sync, status, plugin, json
-
----
-## 2026-03-05 | doc-updater:DOCS Findings
-**文件更新摘要**：
-
-1. **plugin.json**：版本 0.28.59 → 0.28.60
-2. **docs/status.md**：
-   - 更新版本號 + 當前 Phase（P3 完成 → P4 開始）
-   - 核心指標更新：測試數量 3580 → 3632，測試檔案 158 → 160
-   - 近期變更新增 [0.28.60] 項（最新 3 筆按順序排列）
-   - 新增 Phase 4 規劃狀態區塊（P4.1 Gap Detection 標記 ✅，P4.2-5 標記進行中 / 未開始）
-
-3. **docs/roadmap.md**：
-   - 更新標題日期 + 當前 Phase（Phase 3 進行中 → Phase 4 開始）
-   - Phase 總覽表：Phase 3 改為 ✅ 完成，Phase 4 改為 📋 規劃完成
-   - 新增詳細的 Phase 4 架構說明 + P4.1 Gap Detection 完成項
-   - 預留 P4.2 Auto-Fix + P4.3-5 垂直切片的項目框架
-
-4. **CLAUDE.md**：
-   - 常用指令區塊新增「進化引擎」段落
-   - 加入 `bun scripts/evolution.js analyze [--json]` 說明
-Keywords: plugin, json, docs, status, phase, detection, roadmap, auto, claude, scripts
-
----
-## 2026-03-05 | developer:DEV Context
-審計所有 18 個 agent prompt 的品質，確認四模式規範（信心過濾 + 邊界清單 DO/DON'T + 誤判防護 + 停止條件）的符合狀況。
-Keywords: agent, prompt
-
----
 ## 2026-03-05 | doc-updater:DOCS Findings
 已更新文件：
 
@@ -619,4 +578,54 @@ Keywords: overtone, plugin, claude
 - 使用 plugins/overtone/scripts/manage-component.js bump-version 命令進行版本更新（避免 pre-edit-guard 攔截）
 - auto-discovered.md 自動生成，無需手動同步
 Keywords: plugin, json, docs, status, plugins, overtone, scripts, manage, component, bump
+
+---
+## 2026-03-07 | developer:DEV Findings
+- `~/.claude/hooks/hooks.json` 使用三層嵌套格式，包含 11 個事件、14 個 hook 腳本路徑
+- `settings.json` 原本 `hooks` 欄位為空物件 `{}`
+- 路徑替換：`${CLAUDE_PLUGIN_ROOT}/hooks/scripts/...` → `~/.claude/hooks/scripts/...`
+- `hooks.json` 保留不動（plugin 模式仍需要）
+- 所有其他 settings.json 欄位（statusLine、permissions、enabledPlugins、env、language 等）完整保留
+Keywords: claude, hooks, json, hook, settings, scripts, plugin, statusline, permissions, enabledplugins
+
+---
+## 2026-03-07 | developer:DEV Context
+將 Overtone hooks 配置從 plugin 的 `hooks.json` 遷移至全域 `~/.claude/settings.json` 的 `hooks` 欄位（global-migrate 第 4 步）。
+Keywords: overtone, hooks, plugin, json, claude, settings, global, migrate
+
+---
+## 2026-03-07 | code-reviewer:REVIEW Context
+程式碼審查通過。hooks 配置從 `~/.claude/hooks/hooks.json` 遷移至 `~/.claude/settings.json` 的 `hooks` 欄位，完整且正確。
+Keywords: hooks, claude, json, settings
+
+---
+## 2026-03-07 | doc-updater:DOCS Findings
+- git status 顯示：只有 auto-discovered.md 自動更新 + spec 追蹤目錄
+- 不符合任何文件同步條件（無 scripts/lib/、agents/、hooks/ 設定、plugin.json、CLAUDE.md 變更）
+Keywords: status, auto, discovered, spec, scripts, agents, hooks, plugin, json, claude
+
+---
+## 2026-03-07 | retrospective:RETRO Findings
+**回顧摘要**：
+
+功能目標：將 plugin 的 hooks.json（使用 `${CLAUDE_PLUGIN_ROOT}` 路徑）遷移為全域 `~/.claude/settings.json` 的 hooks 欄位（使用 `~/.claude/` 絕對路徑）。
+
+**確認的品質點**：
+
+1. **事件覆蓋完整**：settings.json 的 hooks 欄位包含全部 11 個事件（SessionStart、SessionEnd、PreCompact、UserPromptSubmit、PreToolUse × 4 matcher、SubagentStop、PostToolUse、PostToolUseFailure、Stop、TaskCompleted、Notification），與 hooks.json 完全對齊。
+
+2. **三層嵌套格式正確**：每個事件使用官方三層格式（event → [{hooks: [{type, command}]}]），符合 CLAUDE.md 規範。
+
+3. **Matcher 保留正確**：PreToolUse 的 Task、Write、Edit、Bash 四個 matcher 均正確遷移，順序一致。
+
+4. **TaskCompleted timeout 保留**：`"timeout": 60` 屬性正確複製，未遺漏。
+
+5. **路徑替換完整**：`${CLAUDE_PLUGIN_ROOT}/hooks/scripts/` 全部替換為 `~/.claude/hooks/scripts/`，無遺漏或混用。
+
+6. **既有欄位保留**：settings.json 的 env、permissions、statusLine、enabledPlugins、language、voiceEnabled、skipDangerousModePermissionPrompt 均完整保留，無損毀。
+
+**跨階段觀察**：
+- quick workflow 的 DEV + REVIEW 均 pass，無遺留問題。
+- 此為配置層遷移，無應用邏輯變動，風險低，實作乾淨。
+Keywords: plugin, hooks, json, claude, settings, sessionstart, sessionend, precompact, userpromptsubmit, pretooluse
 
