@@ -56,3 +56,7 @@ ISSUES — 發現 2 個值得優化的問題（信心 ≥70%）。
 
 ---
 Keywords: issues, handler, agent, memory, tests, code, reviewer, approve, review
+---
+## 2026-03-07 | code-reviewer:REVIEW Findings
+[n] 格式：`code-reviewer.md` frontmatter 後多了一個空行（第 20-21 行連續兩個空行）。不影響功能。
+Keywords: code, reviewer, frontmatter

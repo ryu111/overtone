@@ -1,50 +1,4 @@
 ---
-## 2026-03-05 | doc-updater:DOCS Findings
-- 版本號同步完成：plugin.json ↔ CHANGELOG ↔ status.md ↔ spec/overtone.md ↔ README 保持一致（0.28.53）
-- 測試指標同步完成：3446 pass / 0 fail、153 個測試檔一致
-- 近期變更更新：status.md 最新 3 筆摘要已更新（0.28.53、0.28.52、0.28.51）
-- 新功能文檔化完成：craft skill 的 SKILL.md 已包含 overtone-principles.md 參考
-Keywords: plugin, json, changelog, status, spec, overtone, readme, pass, fail, craft
----
-## 2026-03-05 | architect:ARCH Findings
-**技術方案**：
-- 透過 `manage-component.js update agent` 傳入 `body` 欄位做整段替換
-- `updateAgent` 保留 frontmatter，只替換正文；atomicWrite 確保原子操作；各 agent 操作獨立檔案，無 race condition
-- 14 個 agent 分三類：A 類（只加誤判防護 x6）、B/C 類（加信心過濾+誤判防護 x7）、D 類（極精簡補齊 grader x1）+ security-reviewer（只加信心過濾）
-
-**API 介面**：
-
-```bash
-bun plugins/overtone/scripts/manage-component.js update agent <name> '{"body":"<完整正文>"}'
-```
-
-- `body`：從 `# 標題` 開始的完整正文字串，整段替換
-- developer 必須先 Read 現有檔案，找到 DON'T 章節末尾，附加新章節後傳入完整 body
-
-**資料模型**：
-
-無新資料結構。修改對象是 14 個 `.md` 檔案的正文內容，每個修改：讀取現有正文 → 在 DON'T 後插入新章節 → 整段寫回。
-
-**檔案結構**：
-
-```
-修改的檔案（14 個，全在 plugins/overtone/agents/）：
-  architect.md, debugger.md, developer.md, planner.md, retrospective.md, tester.md
-  build-error-resolver.md, designer.md, doc-updater.md, e2e-runner.md
-  qa.md, refactor-cleaner.md, claude-developer.md, security-reviewer.md, grader.md
-```
-
-設計文件：
-- `/Users/sbu/projects/overtone/specs/features/in-progress/agent-prompt-four-modes/design.md`
-- `/Users/sbu/projects/overtone/specs/features/in-progress/agent-prompt-four-modes/tasks.md`
-
-**Dev Phases**：
-Keywords: manage, component, update, agent, body, updateagent, frontmatter, atomicwrite, race, condition
----
-## 2026-03-05 | architect:ARCH Context
-14 個 agent 的 prompt 四模式補齊設計完成。選擇以 `manage-component.js update agent <name> '{"body":"..."}'` 作為唯一修改路徑（agents/*.md 受 pre-edit guard 保護，Edit 工具被阻擋）。章節位置標準化為 database-reviewer 模式：DO → DON'T → 信心過濾（適用者）→ 誤判防護（適用者）→ 輸入 → 輸出 → 停止條件。
-Keywords: agent, prompt, manage, component, update, name, body, agents, edit, guard
----
 ## 2026-03-05 | tester:TEST Context
 模式：spec（TEST:spec）
 
@@ -309,7 +263,7 @@ Keywords: plugin, json, docs, status, pass, fail, files, specs, proposal, design
 convergence-gate-fix 的 DOCS 階段。四項文件同步任務已全部完成：
 
 1. ✅ **plugin.json version bump**：0.28.74 → 0.28.75（透過 manage-component.js bump-version）
-2. ✅ **Specs 歸檔**：`specs/features/in-progress/convergence-gate-fix/` → `specs/features/done/2026-03-06_convergence-gate-fix/`
+2. ✅ **Specs 歸檔**：`specs/features/in-progress/convergence-gate-fix/` → `specs/features/archive/2026-03-06_convergence-gate-fix/`
 3. ✅ **docs/status.md 更新**：
    - 版本號同步：0.28.74 → 0.28.75
    - 測試數量更新：4411 → 4417（新增 7 個測試，新增 1 個檔案）
@@ -614,4 +568,52 @@ Keywords: claude, health, check, test, pass, fail, handoff, status, scanner, doc
 - ✅ 所有時間引用一致（~21s）
 - ✅ 基線數據與 status.md 對齐
 Keywords: agent, performance, baselines, pass, prompt, testing, conventions, guide, auto, discovered
+
+---
+## 2026-03-07 | developer:DEV Findings
+1. **stop-message-builder.js 的 impactSummary 注入位置**：放在「評分建議」之後、「提示下一步」(nextHint) 之前。條件是 `stageKey === 'DEV'`（非 PASS 判斷，純靠分支位置確保只在 PASS 時出現），這樣 FAIL 分支完全不會觸發。
+
+2. **_computeImpactSummary 設計決策**：
+   - 使用 `execSync('git diff --name-only HEAD~1')` 取得最近一次 commit 修改清單
+   - 對 `plugins/overtone/` 路徑的檔案，呼叫 `buildGraph().getImpacted()` 查詢受影響元件
+   - 整個函數包在 try/catch，git 失敗（如無 commit history）回傳 null，不影響主流程
+   - `_computeImpactSummary` 匯出供測試直接呼叫（Humble Object 模式）
+
+3. **code-reviewer.md 更新**：pre-edit-guard 保護導致無法直接 Edit，最終透過先用 ESM script 組裝新 body 存至 `/tmp/reviewer-payload.json`，再用 `bun manage-component.js update agent code-reviewer "$PAYLOAD"` 完成更新。
+
+4. **並行安全**：`_computeImpactSummary` 是純函數（不寫狀態），測試使用獨立 tmpDir，符合並行安全要求。
+Keywords: stop, message, builder, impactsummary, nexthint, stagekey, pass, fail, execsync, diff
+
+---
+## 2026-03-07 | developer:DEV Context
+實作了 `impact-guard-sync` 功能 — DEV PASS 後自動計算影響範圍並注入到 stop message，提醒 Main Agent 同步 hardcoded 數值。同時在 code-reviewer 的 DO 清單加入相應的 checklist 項目。
+Keywords: impact, guard, sync, pass, stop, message, main, agent, hardcoded, code
+
+---
+## 2026-03-07 | doc-updater:DOCS Findings
+**已同步的文件：**
+
+1. **CLAUDE.md** — health-check 項數同步 22→23
+   - 已添加 `checkSpecsDirectoryStructure` 至 health-check 檢查清單
+   - 常用指令區段中的明文列示已更新
+
+2. **docs/status.md** — health-check 計數同步 22→23
+   - V1 版本狀態說明中的「23 項 health-check」已更新
+   - 版本號保持 0.28.80（plugin.json 未變更，由 developer 管理）
+
+3. **auto-discovered.md**（3 個 skill）— 知識參考已更新
+   - plugins/overtone/skills/claude-dev/references/auto-discovered.md
+   - plugins/overtone/skills/code-review/references/auto-discovered.md
+   - plugins/overtone/skills/craft/references/auto-discovered.md
+
+4. **specs/features 目錄結構** — 規整完成
+   - done/ 目錄（非法）已刪除並搬移至 archive/
+   - 新增 checkSpecsDirectoryStructure 驗證此結構合法性
+
+**未修改的項目：**
+- plugin.json：版本由 developer 透過 manage-component.js 管理，未進行 bump-version
+- README.md：無核心指標需要同步
+- docs/roadmap.md：無進度變更
+- 其他 spec 文件：無相關變更
+Keywords: claude, health, check, checkspecsdirectorystructure, docs, status, plugin, json, developer, auto
 

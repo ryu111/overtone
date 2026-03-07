@@ -3,7 +3,7 @@
 /**
  * health-check.js — Overtone 系統健康自動化偵測
  *
- * 執行 22 項確定性偵測：
+ * 執行 23 項確定性偵測：
  *   1. phantom-events              — registry 事件 vs 實際 emit 呼叫差異
  *   2. dead-exports                — scripts/lib 模組 export 但從未被 require 使用
  *   3. doc-code-drift              — docs 文件中的數量與程式碼實際值不符
@@ -26,6 +26,7 @@
  *  20. concurrency-guards          — G1/G2/G3 並發風險文件完整性 + runtime orphan agent 偵測
  *  21. compact-frequency           — 偵測各 session 的 auto-compact 頻率異常
  *  22. sequential-markers          — // @sequential marker 與 SEQUENTIAL_FILES 雙向一致性驗證
+ *  23. specs-directory-structure   — specs/features/ 只允許 in-progress/archive/backlog 三個子目錄
  *
  * 輸出：JSON stdout（HealthCheckOutput schema）
  * Exit code：有 findings → 1；無 findings → 0
@@ -2198,6 +2199,38 @@ function checkSequentialMarkers() {
 }
 
 /**
+ * specs/features/ 目錄結構驗證 — 只允許 in-progress/archive/backlog 三個子目錄
+ */
+function checkSpecsDirectoryStructure(projectRootOverride) {
+  const findings = [];
+  const root = projectRootOverride || PROJECT_ROOT;
+  const featuresDir = path.join(root, 'specs', 'features');
+
+  let entries;
+  try {
+    entries = readdirSync(featuresDir).filter(name => {
+      try { return statSync(path.join(featuresDir, name)).isDirectory(); } catch { return false; }
+    });
+  } catch {
+    return findings;
+  }
+
+  const ALLOWED = new Set(['in-progress', 'archive', 'backlog']);
+  for (const name of entries) {
+    if (!ALLOWED.has(name)) {
+      findings.push({
+        check: 'specs-directory-structure',
+        severity: 'error',
+        file: `specs/features/${name}/`,
+        message: `specs/features/ 下存在非法目錄 "${name}"，只允許 in-progress/archive/backlog。歸檔請使用 specs.archiveFeature()`,
+      });
+    }
+  }
+
+  return findings;
+}
+
+/**
  * 執行所有健康檢查
  * @returns {{ checks: object[], findings: Finding[] }}
  */
@@ -2225,6 +2258,7 @@ function runAllChecks() {
     { name: 'concurrency-guards',     fn: checkConcurrencyGuards },
     { name: 'compact-frequency',      fn: checkCompactFrequency },
     { name: 'sequential-markers',     fn: checkSequentialMarkers },
+    { name: 'specs-directory-structure', fn: checkSpecsDirectoryStructure },
   ];
 
   const allFindings = [];
@@ -2322,6 +2356,7 @@ module.exports = {
   checkConcurrencyGuards,
   checkCompactFrequency,
   checkSequentialMarkers,
+  checkSpecsDirectoryStructure,
   runAllChecks,
   // 測試 DI 支援
   TEST_BASELINE,

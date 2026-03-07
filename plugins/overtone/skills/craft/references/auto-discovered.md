@@ -55,3 +55,29 @@ Keywords: sequential, marker, health, check
 - smoke.test.js: 3009 → 2837ms（-6%）
 - guard-system: 1935 → 1953ms（+1%，在誤差範圍內）
 Keywords: pass, fail, health, check, passed, true, errors, warning, concurrency, guards
+---
+## 2026-03-07 | retrospective:RETRO Findings
+**回顧摘要**：
+
+這次迭代解決了一個潛藏已久的「specs 目錄污染」問題，並為此建立了完整的防護機制。實作覆蓋三個面向：事後偵測（health-check 第 23 項）、事後提醒（DEV PASS 的 impact guard）、事前引導（code-reviewer DO 清單）。三個面向形成完整的防護鏈。
+
+**確認的品質點**：
+
+1. `_computeImpactSummary` 的 try/catch 靜默降級設計正確 — git 命令失敗不影響主流程，且測試驗證了非 git 目錄和不存在路徑的邊界情況。
+
+2. `checkSpecsDirectoryStructure` 的 ALLOWED Set 設計乾淨，error severity 選擇正確（非法目錄不是警告，是結構性問題），且包含明確的修復指引（`specs.archiveFeature()`）。
+
+3. `buildStopMessages` 的 impactSummary 只在 `stageKey === 'DEV'` 時注入，且 Scenario 8-3（REVIEW PASS + impactSummary）和 Scenario 8-4（DEV FAIL + impactSummary）都有對應測試確認不誤觸發。
+
+4. 5 個測試情境（Scenario 8-1 到 8-5）覆蓋了完整的邊界條件，包括位置順序（8-5 確認 impactSummary 出現在 nextHint 之前）。
+
+5. `execSync` 的 `stdio: ['ignore', 'pipe', 'ignore']` 配置正確 — stderr 被抑制，避免 git 錯誤訊息污染輸出。
+
+**關於回顧重點的回應**（任務 prompt 中提出的三個問題）：
+
+**問題 1（`git diff HEAD~1` 只比對最後一個 commit 的限制）**：這個限制是真實的，但信心不到 70%需要立即處理。`git diff HEAD~1` 的語意是「比對最後一個 commit 與前一個」，若 DEV 多次 commit 確實只捕捉最後一次。然而：(a) 大多數情況下開發者在 DEV 階段 commit 一次；(b) 函式只是「提醒」而非「完整影響分析」，有提醒比沒有好；(c) 替代方案（`git diff origin/main...HEAD` 或記錄 DEV 開始時的 commit hash）各有複雜度代價。考慮到靜默降級保護已到位，此限制可接受，屬設計取捨而非缺陷。
+
+**問題 2（health-check 新增後需手動更新 6 個測試檔案的 hardcoded count）**：這正是此次功能要解決的問題之一（hardcoded count 同步）— 但工具本身也有同樣的問題，頗具反諷性。這個結構性問題信心 75%，但不算「新問題」（預先存在），且此次已做了正確的更新。改善方向是讓測試讀取 health-check 匯出的 check 數量而非硬編碼，但涉及多檔案改動，超出此次迭代範疇。
+
+**問題 3（閉環修復流程改善空間）**：此次修復流程本身是良好示範 — 根因分析（specs 目錄設計的語意錯誤）→ 即時修復（移動檔案）→ 預防機制（health-check）→ 提醒機制（impact guard）。閉環完整。
+Keywords: specs, health, check, pass, impact, guard, code, reviewer, catch, checkspecsdirectorystructure

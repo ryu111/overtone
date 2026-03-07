@@ -6,7 +6,7 @@
 
 | 版本 | 狀態 | 說明 |
 |------|------|------|
-| V1 | 進行中 | 4724 pass，0 fail。核心能力：BDD 工作流自動化（18 個 agent + 18 個模板）+ 守衛強化（11 個 hook + 22 項 health-check）+ 自我進化引擎（gap detection / auto-fix / skill forge / internalization）+ OS 控制能力（截圖 + 視窗 + 系統層 + TTS 語音通知）+ 心跳引擎（跨 session 任務自主執行）+ 深度 PM 多輪訪談（領域研究 + 5 面向訪談）+ DEV 並行任務拆分 + CAS 壓力測試 + compact 品質偵測 + postdev 並行群組|
+| V1 | 進行中 | 4724 pass，0 fail。核心能力：BDD 工作流自動化（18 個 agent + 18 個模板）+ 守衛強化（11 個 hook + 23 項 health-check）+ 自我進化引擎（gap detection / auto-fix / skill forge / internalization）+ OS 控制能力（截圖 + 視窗 + 系統層 + TTS 語音通知）+ 心跳引擎（跨 session 任務自主執行）+ 深度 PM 多輪訪談（領域研究 + 5 面向訪談）+ DEV 並行任務拆分 + CAS 壓力測試 + compact 品質偵測 + postdev 並行群組|
 | V2 | 規劃中 | 延後 |
 
 ## 核心指標

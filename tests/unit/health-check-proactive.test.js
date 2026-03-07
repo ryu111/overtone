@@ -319,9 +319,9 @@ describe('checkQualityTrends', () => {
 // ══════════════════════════════════════════════════════════════════
 
 describe('runAllChecks — 包含 F1/F2/F3 新增 check', () => {
-  test('checks 陣列長度為 22（新增 3 個製作原則偵測 + dependency-sync + internalization-index + test-file-alignment + skill-reference-integrity + concurrency-guards + compact-frequency + sequential-markers）', () => {
+  test('checks 陣列長度為 23（新增 3 個製作原則偵測 + dependency-sync + internalization-index + test-file-alignment + skill-reference-integrity + concurrency-guards + compact-frequency + sequential-markers + specs-directory-structure）', () => {
     const { checks } = cached(runAllChecks);
-    expect(checks.length).toBe(22);
+    expect(checks.length).toBe(23);
   });
 
   test('checks 包含所有偵測項目（含 3 個製作原則偵測）', () => {

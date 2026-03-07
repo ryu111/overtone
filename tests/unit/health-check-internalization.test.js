@@ -219,7 +219,7 @@ describe('runAllChecks — 第 17 項 internalization-index', () => {
     const { checks } = runAllChecks();
 
     expect(Array.isArray(checks)).toBe(true);
-    expect(checks.length).toBe(22);
+    expect(checks.length).toBe(23);
 
     const names = checks.map((c) => c.name);
     expect(names).toContain('internalization-index');

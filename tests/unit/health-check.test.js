@@ -22,6 +22,7 @@ const {
   checkDuplicateLogic,
   checkDocStaleness,
   checkTestGrowth,
+  checkSpecsDirectoryStructure,
   runAllChecks,
   collectJsFiles,
   collectMdFiles,
@@ -603,7 +604,7 @@ describe('runAllChecks', () => {
     }
   });
 
-  test('所有 finding 的 check 只能是已知 22 個 check 名稱之一', () => {
+  test('所有 finding 的 check 只能是已知 23 個 check 名稱之一', () => {
     const { findings } = cached(runAllChecks);
     const validChecks = new Set([
       'phantom-events', 'dead-exports', 'doc-code-drift', 'unused-paths',
@@ -612,6 +613,7 @@ describe('runAllChecks', () => {
       'closed-loop', 'recovery-strategy', 'completion-gap', 'dependency-sync',
       'internalization-index', 'test-file-alignment', 'skill-reference-integrity',
       'concurrency-guards', 'compact-frequency', 'sequential-markers',
+      'specs-directory-structure',
     ]);
     for (const f of findings) {
       expect(validChecks.has(f.check)).toBe(true);
@@ -736,5 +738,43 @@ describe('checkTestGrowth', () => {
 
   test('TEST_GROWTH_THRESHOLD 為 0.20', () => {
     expect(TEST_GROWTH_THRESHOLD).toBe(0.20);
+  });
+});
+
+// ══════════════════════════════════════════════════════════════════
+// checkSpecsDirectoryStructure
+// ══════════════════════════════════════════════════════════════════
+
+describe('checkSpecsDirectoryStructure', () => {
+  const tmpDir = path.join(os.tmpdir(), `hc-specs-dir-${Date.now()}`);
+  const featuresDir = path.join(tmpDir, 'specs', 'features');
+
+  test('合法目錄不產生 finding', () => {
+    mkdirSync(path.join(featuresDir, 'in-progress'), { recursive: true });
+    mkdirSync(path.join(featuresDir, 'archive'), { recursive: true });
+    mkdirSync(path.join(featuresDir, 'backlog'), { recursive: true });
+
+    const findings = checkSpecsDirectoryStructure(tmpDir);
+    expect(findings).toEqual([]);
+
+    rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  test('非法目錄 "done" 產生 error', () => {
+    mkdirSync(path.join(featuresDir, 'in-progress'), { recursive: true });
+    mkdirSync(path.join(featuresDir, 'done'), { recursive: true });
+
+    const findings = checkSpecsDirectoryStructure(tmpDir);
+    expect(findings.length).toBe(1);
+    expect(findings[0].severity).toBe('error');
+    expect(findings[0].message).toContain('done');
+
+    rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  test('specs/features 不存在時靜默回傳空陣列', () => {
+    const noExist = path.join(os.tmpdir(), `hc-no-specs-${Date.now()}`);
+    const findings = checkSpecsDirectoryStructure(noExist);
+    expect(findings).toEqual([]);
   });
 });
