@@ -105,7 +105,7 @@ developer 實作完成後，補全測試並執行：
 ### 4d. 執行測試
 
 ```bash
-# 全套測試（多進程並行，~14s）— 提交前、verify 模式必用
+# 全套測試（多進程並行，~21s）— 提交前、verify 模式必用
 cd /Users/sbu/projects/overtone
 bun scripts/test-parallel.js
 

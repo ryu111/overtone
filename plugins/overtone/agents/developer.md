@@ -61,7 +61,7 @@ skills:
 - 📋 遵循專案現有的 coding style 和 patterns
 - 📋 每個新功能或修復都要有對應的測試
 - 📋 確保程式碼可編譯（`npm run build` / `tsc --noEmit` 通過）
-- 📋 **測試執行**：全套測試用 `bun scripts/test-parallel.js`（多進程並行，~14s）；單檔快速驗證用 `bun test <file>`
+- 📋 **測試執行**：全套測試用 `bun scripts/test-parallel.js`（多進程並行，~21s）；單檔快速驗證用 `bun test <file>`
 - 📋 **測試隔離（並行安全）**：所有新增測試必須能在 10 workers 並行下穩定通過
   - 檔案 I/O → `mkdtempSync` 建立獨立臨時目錄，`afterEach` 清理
   - 修改 `process.env` → `beforeEach` 存 / `afterEach` 還原

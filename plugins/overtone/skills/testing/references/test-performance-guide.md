@@ -293,7 +293,7 @@ test('buildReport 從 readState 讀取狀態', () => {
 
 ### E-1：原生並行特性
 
-Bun test runner 預設以多 worker 並行執行測試檔案（`--max-concurrency=20`）。`bun scripts/test-parallel.js` 利用此特性將 195 個測試檔分散到 10 個 worker，從 ~53s 縮短到 ~14s。
+Bun test runner 預設以多 worker 並行執行測試檔案（`--max-concurrency=20`）。`bun scripts/test-parallel.js` 利用此特性將測試檔分散到 10 個 worker，從 ~53s（單進程）縮短到 ~21s（並行）。
 
 **善用方法**：
 - 確保每個測試檔完全隔離（參考 testing-conventions.md Section 7）
@@ -377,7 +377,7 @@ bun scripts/test-parallel.js  # 注意輸出中哪個 worker 最後 done
 ### F-4：何時觸發重新校準
 
 以下情況應重新執行 `--calibrate`：
-- 測試總時間增加超過 20%（如從 14s 升至 17s+）
+- 測試總時間增加超過 20%（如從 21s 升至 25s+）
 - 新增了 10 個以上的 integration test 檔
 - 重構了大量 spawn 測試（時間分配改變）
 
