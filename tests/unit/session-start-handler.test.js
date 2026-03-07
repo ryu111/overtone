@@ -148,7 +148,11 @@ describe('buildPluginContext', () => {
   });
 
   test('包含 plugin 版本號（動態計算）', () => {
-    const pkg = require(join(SCRIPTS_LIB, '../../.claude-plugin/plugin.json'));
+    // 支援兩種佈署格式：開發環境（.claude-plugin/plugin.json）vs 全域（plugin.json）
+    const { existsSync } = require('fs');
+    const devPath = join(SCRIPTS_LIB, '../../.claude-plugin/plugin.json');
+    const globalPath = join(SCRIPTS_LIB, '../../plugin.json');
+    const pkg = require(existsSync(devPath) ? devPath : globalPath);
     const result = cached(buildPluginContext);
     expect(result).toContain(pkg.version);
   });
@@ -611,7 +615,8 @@ describe('Feature 11: buildPluginContext — 進階驗證', () => {
 
   test('Scenario 11-3: 包含目錄結構描述', () => {
     const result = cached(buildPluginContext);
-    expect(result).toContain('plugins/overtone');
+    // 全域遷移後，目錄結構改為 ~/.claude/，不再含 plugins/overtone
+    expect(result).toContain('目錄結構');
   });
 
   test('Scenario 11-4: 包含常用指令段落', () => {

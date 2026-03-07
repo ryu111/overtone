@@ -370,17 +370,29 @@ function _computeImpactSummary(projectRoot) {
   const lines = [];
 
   // 對 plugin 相關檔案查詢受影響元件
-  const pluginFiles = changedFiles.filter(f => f.includes('plugins/overtone/'));
+  // 支援兩種路徑格式：
+  //   1. 開發環境（git diff 輸出）：plugins/overtone/agents/xxx.md
+  //   2. 全域環境（~/.claude/ 下）：agents/xxx.md（無 plugins/overtone/ 前綴）
+  const PLUGIN_SUBTREE = 'plugins/overtone/';
+  const pluginFiles = changedFiles.filter(f =>
+    f.includes(PLUGIN_SUBTREE) ||
+    /^(agents|skills|hooks|commands|scripts\/lib)\//.test(f)
+  );
   const impactedEntries = [];
 
   if (pluginFiles.length > 0) {
     try {
+      const path = require('path');
       const { buildGraph } = require('./dependency-graph');
-      const graph = buildGraph();
+      // pluginRoot 從此模組位置推算（scripts/lib/ 的上兩層）
+      const pluginRoot = path.resolve(__dirname, '..', '..');
+      const graph = buildGraph(pluginRoot);
 
       for (const relPath of pluginFiles) {
-        // buildGraph 使用 pluginRoot 為基礎，取 plugins/overtone/ 後面的部分
-        const pluginRelPath = relPath.replace(/^.*plugins\/overtone\//, '');
+        // 統一轉為相對於 pluginRoot 的路徑（去掉 plugins/overtone/ 前綴）
+        const pluginRelPath = relPath.includes(PLUGIN_SUBTREE)
+          ? relPath.replace(/^.*plugins\/overtone\//, '')
+          : relPath;
         const impacted = graph.getImpacted(pluginRelPath);
         for (const item of impacted) {
           impactedEntries.push({ source: pluginRelPath, file: item.file });

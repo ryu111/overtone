@@ -46,7 +46,7 @@ function buildSuggestion(type, file) {
       const parts = (file || '').split('/');
       const skillIdx = parts.indexOf('skills');
       const skillName = skillIdx >= 0 && parts[skillIdx + 1] ? parts[skillIdx + 1] : '<skillName>';
-      return `mkdir -p plugins/overtone/skills/${skillName}/references && echo '# References' > plugins/overtone/skills/${skillName}/references/README.md`;
+      return `mkdir -p skills/${skillName}/references && echo '# References' > skills/${skillName}/references/README.md`;
     }
     case 'sync-mismatch':
       return `bun scripts/fix-consistency.js --fix`;

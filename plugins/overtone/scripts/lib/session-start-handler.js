@@ -24,7 +24,16 @@ const { mkdirSync, appendFileSync, writeFileSync, readFileSync, chmodSync } = re
 const path = require('path');
 const os = require('os');
 
-const pkg = require('../../.claude-plugin/plugin.json');
+// plugin.json 路徑：支援兩種佈署格式
+//   開發環境：plugins/overtone/.claude-plugin/plugin.json
+//   全域安裝：~/.claude/plugin.json
+const { existsSync: _existsSync } = require('fs');
+const _pluginJsonPaths = [
+  path.resolve(__dirname, '../../.claude-plugin/plugin.json'),  // 開發環境（plugins/overtone/）
+  path.resolve(__dirname, '../../plugin.json'),                  // 全域安裝（~/.claude/）
+];
+const _pluginJsonPath = _pluginJsonPaths.find(_existsSync) || _pluginJsonPaths[0];
+const pkg = require(_pluginJsonPath);
 const paths = require('./paths');
 const timeline = require('./timeline');
 const { syncFeatureName } = require('./feature-sync');
@@ -127,7 +136,7 @@ function buildPluginContext() {
       '- updatedInput 是 REPLACE 語意：必須 { ...toolInput, prompt: newPrompt } 保留所有欄位',
       '- 不做向後相容：舊 API 直接改成新的，沒有地方用到直接刪除',
       '',
-      '**目錄結構**：plugins/overtone/{agents,skills,commands,hooks,scripts/lib,web}，測試在 tests/，文件在 docs/',
+      '**目錄結構**：~/.claude/{agents,skills,commands,hooks,scripts/lib,web}（全域元件），專案內 tests/（測試），docs/（文件）',
       '',
       '**常用指令**：`bun scripts/test-parallel.js`（測試）、`bun scripts/validate-agents.js`（驗證）、`bun scripts/manage-component.js`（元件管理）',
     ].join('\n');
@@ -297,7 +306,7 @@ function handleSessionStart(input, sessionId, hookTimer) {
     require.resolve('gray-matter', { paths: [path.join(__dirname, '../../')] });
     grayMatterStatus = null; // 已安裝不顯示
   } catch {
-    grayMatterStatus = '  ⚠️  gray-matter 未安裝 — cd plugins/overtone && bun add gray-matter';
+    grayMatterStatus = '  ⚠️  gray-matter 未安裝 — cd ~/.claude && bun add gray-matter';
   }
 
   let ghStatus;

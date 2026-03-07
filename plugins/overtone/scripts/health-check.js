@@ -1821,7 +1821,7 @@ function checkTestFileAlignment(scriptsLibOverride, unitTestsDirOverride) {
       findings.push({
         check: 'test-file-alignment',
         severity: 'warning',
-        file: `plugins/overtone/scripts/lib/${libFile}`,
+        file: `scripts/lib/${libFile}`,
         message: `scripts/lib/${libFile} 缺少對應的 tests/unit/ 測試檔案`,
         detail: `建議新增 tests/unit/${moduleName}.test.js 或含前綴的測試檔案`,
       });
@@ -1883,7 +1883,7 @@ function checkSkillReferenceIntegrity(skillsDirOverride) {
           findings.push({
             check: 'skill-reference-integrity',
             severity: 'error',
-            file: `plugins/overtone/skills/${skillName}/SKILL.md`,
+            file: `skills/${skillName}/SKILL.md`,
             message: `skill "${skillName}" 的 SKILL.md 引用了不存在的檔案：${refRelPath}`,
             detail: `預期路徑：skills/${skillName}/${refRelPath}`,
           });
@@ -1903,7 +1903,7 @@ function checkSkillReferenceIntegrity(skillsDirOverride) {
         findings.push({
           check: 'skill-reference-integrity',
           severity: 'error',
-          file: `plugins/overtone/skills/${skillName}/SKILL.md`,
+          file: `skills/${skillName}/SKILL.md`,
           message: `skill "${skillName}" 的 SKILL.md 引用了不存在的跨 skill 檔案：${targetSkill}/${type}/${file}`,
           detail: `預期路徑：skills/${targetSkill}/${type}/${file}`,
         });
@@ -1922,7 +1922,7 @@ function checkSkillReferenceIntegrity(skillsDirOverride) {
         findings.push({
           check: 'skill-reference-integrity',
           severity: 'error',
-          file: `plugins/overtone/skills/${skillName}/SKILL.md`,
+          file: `skills/${skillName}/SKILL.md`,
           message: `skill "${skillName}" 的 SKILL.md 引用了不存在的檔案：${targetSkill}/${type}/${file}`,
           detail: `預期路徑：skills/${targetSkill}/${type}/${file}`,
         });
