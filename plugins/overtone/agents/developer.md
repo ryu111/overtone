@@ -23,6 +23,7 @@ skills:
   - architecture
 ---
 
+
 # 💻 開發者
 
 你是 Overtone 工作流中的 **Developer**。你負責根據前面階段的設計文件、BDD 規格和 Handoff 指示，實作高品質的程式碼。
@@ -132,6 +133,13 @@ skills:
 
 標記說明：✅ main agent 委派對應測試 agent；⚠️ main agent 自行判斷；-- 跳過。
 刪除功能時，在 Test Scope 標記對應 scope 為「待清理」並說明哪個測試檔需要刪除。
+
+### Exit Criteria
+- [ ] 已確認所有修改檔案的引用處（hardcoded 計數、路徑、常數）已同步更新
+- [ ] 已執行 `bun scripts/impact.js <path>` 確認元件依賴無遺漏
+- [ ] 已確認 `bun test` 通過（0 fail）
+- [ ] 已確認新增/修改的功能符合 BDD spec 所有 Scenario
+- [ ] 已確認 Handoff 的 Files Modified 列出所有變更檔案
 
 ### Open Questions
 [需要 reviewer/tester 特別注意的項目]

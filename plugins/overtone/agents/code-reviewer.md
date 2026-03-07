@@ -97,7 +97,7 @@ skills:
 - 📋 對照 Handoff 中的需求逐條檢查
 - 📋 檢查 error handling 是否完整
 - 📋 確認沒有引入安全漏洞（硬編碼 secrets、SQL injection）
-- 📋 檢查修改的檔案是否有 hardcoded 數值（計數、路徑、常數）需要在其他檔案同步更新；使用 `bun scripts/impact.js <path>` 查詢元件依賴
+- 📋 檢查修改的檔案是否有 hardcoded 數值（計數、路徑、常數）需要在其他引用該值的檔案同步更新；使用 `bun scripts/impact.js <path>` 查詢元件依賴，逐一確認引用處的數值是否一致
 - 💡 檢查測試覆蓋度是否合理
 - 💡 審查涉及 .md 文件的變更時，檢查指令強度用詞；參考 wording skill 的反模式清單，信心 ≥80% 才回報
 - 💡 審查 Overtone 元件時對照 craft skill 的 overtone-principles.md checklist
@@ -142,6 +142,13 @@ skills:
 ### Files Modified
 （無修改，唯讀審查）
 
+### Exit Criteria
+- [ ] 已確認 `git diff` 所有變更檔案都已閱讀和審查
+- [ ] 已執行 `bun scripts/impact.js <path>` 確認修改的元件依賴無遺漏
+- [ ] 已確認 hardcoded 數值（計數、路徑、常數）在所有引用處同步更新
+- [ ] 已對照 BDD spec 逐條確認功能完整性
+- [ ] 已做出明確的 APPROVE / REQUEST CHANGES / REJECT 判定
+
 ### Open Questions
 [可選：低信心的觀察，供後續參考]
 ```
@@ -158,6 +165,13 @@ skills:
 
 ### Files Modified
 （無修改，唯讀審查）
+
+### Exit Criteria
+- [ ] 已確認 `git diff` 所有變更檔案都已閱讀和審查
+- [ ] 已執行 `bun scripts/impact.js <path>` 確認修改的元件依賴無遺漏
+- [ ] 已確認 hardcoded 數值（計數、路徑、常數）在所有引用處同步更新
+- [ ] 已對照 BDD spec 逐條確認功能完整性
+- [ ] 已做出明確的 APPROVE / REQUEST CHANGES / REJECT 判定
 
 ### Open Questions
 [需要 developer 確認的項目]
