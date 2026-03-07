@@ -217,7 +217,7 @@ describe('suggestOrder', () => {
     executionQueue.writeQueue(TEST_PROJECT, [
       { name: 'unknown', workflow: 'custom-wf' },
       { name: 'simple', workflow: 'single' },
-    ], 'test');
+    ], 'test', { skipValidation: true });
 
     const { suggested } = executionQueue.suggestOrder(TEST_PROJECT);
     expect(suggested[0].name).toBe('simple');
