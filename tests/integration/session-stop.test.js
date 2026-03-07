@@ -114,7 +114,7 @@ describe('Stop hook 場景 2：有未完成 stages → block', () => {
     state.initState(sessionId, 'quick', ['DEV', 'REVIEW', 'TEST', 'RETRO']);
 
     const { output, exitCode } = await runStopHook(
-      { stop_reason: 'end_turn', cwd: '' },
+      { stop_reason: 'end_turn', cwd: require('os').tmpdir() },
       sessionId
     );
 
@@ -139,7 +139,7 @@ describe('Stop hook 場景 2：有未完成 stages → block', () => {
     });
 
     const { output, exitCode } = await runStopHook(
-      { stop_reason: 'end_turn', cwd: '' },
+      { stop_reason: 'end_turn', cwd: require('os').tmpdir() },
       sessionId
     );
 
@@ -168,7 +168,7 @@ describe('Stop hook 場景 3：手動停止 → 允許退出', () => {
     loop.writeLoop(sessionId, loopState);
 
     const { output, exitCode } = await runStopHook(
-      { stop_reason: 'end_turn', cwd: '' },
+      { stop_reason: 'end_turn', cwd: require('os').tmpdir() },
       sessionId
     );
 
@@ -199,7 +199,7 @@ describe('Stop hook 場景 4：所有 stages 完成 → 允許退出', () => {
     });
 
     const { output, exitCode } = await runStopHook(
-      { stop_reason: 'end_turn', cwd: '' },
+      { stop_reason: 'end_turn', cwd: require('os').tmpdir() },
       sessionId
     );
 
@@ -225,7 +225,7 @@ describe('Stop hook 場景 5：無 workflow 狀態 → 允許退出', () => {
     mkdirSync(paths.sessionDir(sessionId), { recursive: true });
 
     const { output, exitCode } = await runStopHook(
-      { stop_reason: 'end_turn', cwd: '' },
+      { stop_reason: 'end_turn', cwd: require('os').tmpdir() },
       sessionId
     );
 
