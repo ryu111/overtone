@@ -15,7 +15,7 @@ disable-model-invocation: true
 用 Bash 執行：
 
 ```bash
-bun ${CLAUDE_PLUGIN_ROOT}/scripts/health-check.js
+bun ~/.claude/scripts/health-check.js
 ```
 
 收集 stdout 輸出（JSON 格式）和 exit code。

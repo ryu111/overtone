@@ -44,7 +44,7 @@ gh issue view <number> --json title,body,labels,assignees,state
 讀取映射表：
 
 ```
-${CLAUDE_PLUGIN_ROOT}/skills/issue/references/label-workflow-map.md
+./references/label-workflow-map.md
 ```
 
 根據 Issue 的 `labels` 陣列，按映射表選擇 workflow 類型：
@@ -76,7 +76,7 @@ git branch --list feat/issue-<number>-<slug>
 ### Step 6：初始化 workflow
 
 ```bash
-node ${CLAUDE_PLUGIN_ROOT}/scripts/init-workflow.js <workflowType> ${CLAUDE_SESSION_ID}
+bun ~/.claude/scripts/init-workflow.js <workflowType> ${CLAUDE_SESSION_ID}
 ```
 
 ### Step 7：注入 Issue context
@@ -129,8 +129,8 @@ try {
 ## 參考文件
 
 按需讀取：
-- Label 映射表：`${CLAUDE_PLUGIN_ROOT}/skills/issue/references/label-workflow-map.md`
-- Issue 分類決策樹：`${CLAUDE_PLUGIN_ROOT}/skills/issue/references/issue-triage.md`
+- Label 映射表：`./references/label-workflow-map.md`
+- Issue 分類決策樹：`./references/issue-triage.md`
 
 ## 完成條件
 

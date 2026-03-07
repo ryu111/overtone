@@ -83,7 +83,7 @@ function handlePostUse(input) {
         // Instinct emit 失敗靜默處理
       }
       // 輸出 systemMessage 警告
-      const result = `[Overtone 措詞檢查] 偵測到 emoji-關鍵詞不匹配（${filePath}）：\n${wordingWarnings.join('\n')}\n參考：${process.env.CLAUDE_PLUGIN_ROOT ?? 'plugins/overtone'}/skills/wording/references/wording-guide.md`;
+      const result = `[Overtone 措詞檢查] 偵測到 emoji-關鍵詞不匹配（${filePath}）：\n${wordingWarnings.join('\n')}\n參考：${process.env.CLAUDE_PLUGIN_ROOT ?? (require('os').homedir() + '/.claude')}/skills/wording/references/wording-guide.md`;
       emitPostUseTiming({ wordingMismatch: true });
       return { output: { result } };
     }

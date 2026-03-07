@@ -11,31 +11,31 @@ disable-model-invocation: true
 ### 列出所有 feature
 
 ```bash
-node ${CLAUDE_PLUGIN_ROOT}/scripts/specs-list.js
+bun ~/.claude/scripts/specs-list.js
 ```
 
 ### 暫停 feature（in-progress → backlog）
 
 ```bash
-node ${CLAUDE_PLUGIN_ROOT}/scripts/specs-pause.js <featureName>
+bun ~/.claude/scripts/specs-pause.js <featureName>
 ```
 
 ### 恢復 feature（backlog → in-progress）
 
 ```bash
-node ${CLAUDE_PLUGIN_ROOT}/scripts/specs-resume.js <featureName>
+bun ~/.claude/scripts/specs-resume.js <featureName>
 ```
 
 ### 新增 backlog
 
 ```bash
-node ${CLAUDE_PLUGIN_ROOT}/scripts/specs-backlog.js <featureName> <workflowType>
+bun ~/.claude/scripts/specs-backlog.js <featureName> <workflowType>
 ```
 
 ### 初始化 feature（隨 workflow 啟動）
 
 ```bash
-node ${CLAUDE_PLUGIN_ROOT}/scripts/init-workflow.js <workflowType> <sessionId> <featureName>
+bun ~/.claude/scripts/init-workflow.js <workflowType> <sessionId> <featureName>
 ```
 
 ## 目錄結構
@@ -65,13 +65,13 @@ specs/
 
 ## tasks.md 格式
 
-💡 格式範本：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/specs/examples/tasks-sample.md`
+💡 格式範本：讀取 `./examples/tasks-sample.md`
 
 ## 其他文件格式
 
-- 💡 proposal.md 範本：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/specs/examples/proposal-sample.md`
-- 💡 design.md 範本：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/specs/examples/design-sample.md`
-- 💡 Feature 生命週期完整說明：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/specs/references/feature-lifecycle.md`
+- 💡 proposal.md 範本：讀取 `./examples/proposal-sample.md`
+- 💡 design.md 範本：讀取 `./examples/design-sample.md`
+- 💡 Feature 生命週期完整說明：讀取 `./references/feature-lifecycle.md`
 
 ## Workflow 與 Specs 的對應
 

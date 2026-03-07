@@ -20,6 +20,6 @@ disable-model-invocation: true
 
 | 檔案 | 說明 |
 |------|------|
-| 💡 `${CLAUDE_PLUGIN_ROOT}/skills/build-system/references/typescript-errors.md` | TypeScript strict mode 錯誤查表：錯誤訊息 → 修復方式 lookup table |
-| 💡 `${CLAUDE_PLUGIN_ROOT}/skills/build-system/references/dependency-management.md` | npm/yarn/bun 依賴解析、semver 語意、peer dependency 衝突解決 |
-| 💡 `${CLAUDE_PLUGIN_ROOT}/skills/build-system/examples/ts-error-fix.md` | TypeScript 錯誤修復範例（nullable、型別不符、generic constraint）|
+| 💡 `./references/typescript-errors.md` | TypeScript strict mode 錯誤查表：錯誤訊息 → 修復方式 lookup table |
+| 💡 `./references/dependency-management.md` | npm/yarn/bun 依賴解析、semver 語意、peer dependency 衝突解決 |
+| 💡 `./examples/ts-error-fix.md` | TypeScript 錯誤修復範例（nullable、型別不符、generic constraint）|

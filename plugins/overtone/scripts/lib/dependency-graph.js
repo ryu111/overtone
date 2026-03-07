@@ -7,7 +7,7 @@
 //
 // 四類掃描器：
 //   1. Agent Skills：agents/*.md 的 frontmatter skills 欄位對應至 skills/X/SKILL.md
-//   2. Skill References：skills/*/SKILL.md 中的 ${CLAUDE_PLUGIN_ROOT}/... 路徑
+//   2. Skill References：skills/*/SKILL.md 中的路徑引用（舊格式 ${CLAUDE_PLUGIN_ROOT}、相對格式 ./ 和 ../）
 //   3. Registry Stages：registry-data.json stages 的 agent 欄位對應至 agents/X.md
 //   4. Hook Requires：hooks/scripts 下的相對 require 對應至 scripts/lib/*.js
 
@@ -93,24 +93,64 @@ function scanAgentSkills(pluginRoot, addEdge) {
 }
 
 /**
- * 掃描器 2：Skill References（SKILL.md ${CLAUDE_PLUGIN_ROOT}/... → reference 檔案）
+ * 掃描器 2：Skill References（SKILL.md 路徑引用 → reference 檔案）
+ *
+ * 支援三種格式（轉換期間新舊共存）：
+ *   1. 舊格式：`${CLAUDE_PLUGIN_ROOT}/skills/{skill}/references/{file}`
+ *   2. 新格式（同 skill）：`./references/{file}` 或 `./examples/{file}`
+ *   3. 新格式（跨 skill）：`../{otherSkill}/references/{file}`
  */
 function scanSkillReferences(pluginRoot, addEdge) {
   const skillsDir = path.join(pluginRoot, 'skills');
   const skillFiles = globRecursive(skillsDir, /^SKILL\.md$/);
 
-  // 比對 backtick 包圍的 ${CLAUDE_PLUGIN_ROOT}/... 路徑
-  const refRegex = /`\$\{CLAUDE_PLUGIN_ROOT\}\/([^`]+)`/g;
+  // 格式 1：舊格式 `${CLAUDE_PLUGIN_ROOT}/skills/xxx/references/yyy`
+  const oldRegex = /`\$\{CLAUDE_PLUGIN_ROOT\}\/([^`]+)`/g;
+  // 格式 2：同 skill 相對路徑 `./references/yyy` 或 `./examples/yyy`
+  const selfRelRegex = /`(\.\/(references|examples)\/[^`]+)`/g;
+  // 格式 3：跨 skill 相對路徑 `../otherSkill/references/yyy`
+  const crossRelRegex = /`(\.\.\/([\w-]+)\/(references|examples)\/[^`]+)`/g;
 
   for (const absPath of skillFiles) {
     const relPath = path.relative(pluginRoot, absPath);
+    // relPath 形如 skills/{skillName}/SKILL.md
+    const skillName = relPath.split('/')[1];
+    const seenEdges = new Set();
+
     try {
       const content = fs.readFileSync(absPath, 'utf8');
       let match;
-      refRegex.lastIndex = 0;
-      while ((match = refRegex.exec(content)) !== null) {
-        const refRel = match[1]; // 已是相對於 pluginRoot 的路徑
-        addEdge(relPath, refRel);
+
+      // 格式 1：舊格式
+      oldRegex.lastIndex = 0;
+      while ((match = oldRegex.exec(content)) !== null) {
+        const refRel = match[1]; // 已是相對於 pluginRoot 的路徑（e.g. skills/xxx/references/yyy.md）
+        if (!seenEdges.has(refRel)) {
+          seenEdges.add(refRel);
+          addEdge(relPath, refRel);
+        }
+      }
+
+      // 格式 2：同 skill 相對路徑（./references/yyy）
+      selfRelRegex.lastIndex = 0;
+      while ((match = selfRelRegex.exec(content)) !== null) {
+        const subPath = match[1].slice(2); // 去掉開頭的 "./"
+        const refRel = `skills/${skillName}/${subPath}`;
+        if (!seenEdges.has(refRel)) {
+          seenEdges.add(refRel);
+          addEdge(relPath, refRel);
+        }
+      }
+
+      // 格式 3：跨 skill 相對路徑（../otherSkill/references/yyy）
+      crossRelRegex.lastIndex = 0;
+      while ((match = crossRelRegex.exec(content)) !== null) {
+        const subPath = match[1].slice(3); // 去掉開頭的 "../"
+        const refRel = `skills/${subPath}`;
+        if (!seenEdges.has(refRel)) {
+          seenEdges.add(refRel);
+          addEdge(relPath, refRel);
+        }
       }
     } catch (_) {
       // 靜默跳過

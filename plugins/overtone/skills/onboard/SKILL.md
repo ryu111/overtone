@@ -16,5 +16,5 @@ disable-model-invocation: false
 
 | 檔案 | 說明 |
 |------|------|
-| 💡 `${CLAUDE_PLUGIN_ROOT}/skills/onboard/references/claudemd-skeleton.md` | CLAUDE.md 骨架模板：區段結構 + 填寫指引 |
-| 💡 `${CLAUDE_PLUGIN_ROOT}/skills/onboard/references/stack-detection.md` | 技術棧偵測策略：package.json / Gemfile 等框架識別模式 |
+| 💡 `./references/claudemd-skeleton.md` | CLAUDE.md 骨架模板：區段結構 + 填寫指引 |
+| 💡 `./references/stack-detection.md` | 技術棧偵測策略：package.json / Gemfile 等框架識別模式 |

@@ -14,16 +14,16 @@ disable-model-invocation: true
 
 同時讀取以下檔案：
 
-- `${CLAUDE_PLUGIN_ROOT}/.claude-plugin/plugin.json` → `version` 欄位
-- `${CLAUDE_PLUGIN_ROOT}/scripts/lib/registry.js` → 計算 `stages`、`workflows`、`agentModels` 的 key 數量
-- `${CLAUDE_PLUGIN_ROOT}/hooks/hooks.json` → 計算 `hooks` 陣列長度
+- `~/.claude/.claude-plugin/plugin.json` → `version` 欄位
+- `~/.claude/scripts/lib/registry.js` → 計算 `stages`、`workflows`、`agentModels` 的 key 數量
+- `~/.claude/hooks/hooks.json` → 計算 `hooks` 陣列長度
 - `${HOME}/.overtone/.current-session-id` → 當前 session ID（失敗則顯示「無活躍 session」）
 - `docs/status.md`（相對專案根目錄）→ 測試通過數、fail 數、測試檔數量
 
 同時執行 Bash 指令：
 
 ```bash
-ls ${CLAUDE_PLUGIN_ROOT}/skills/ | wc -l
+ls ~/.claude/skills/ | wc -l
 ```
 
 取得 Skill 數量。

@@ -35,24 +35,24 @@ user-invocable: false
 
 ## 按需讀取
 
-💡 BDD 語法與最佳實踐：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/testing/references/bdd-spec-guide.md`
+💡 BDD 語法與最佳實踐：讀取 `./references/bdd-spec-guide.md`
 
-💡 Test Scope 動態調度規則：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/testing/references/test-scope-dispatch.md`
+💡 Test Scope 動態調度規則：讀取 `./references/test-scope-dispatch.md`
 
-💡 BDD 完整方法論：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/testing/references/bdd-methodology.md`
+💡 BDD 完整方法論：讀取 `./references/bdd-methodology.md`
 
-💡 測試操作規範與慣例：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/testing/references/testing-conventions.md`
+💡 測試操作規範與慣例：讀取 `./references/testing-conventions.md`
 
-💡 五階段測試策略：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/testing/references/test-strategy.md`
+💡 五階段測試策略：讀取 `./references/test-strategy.md`
 
-💡 BDD spec 完整範例：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/testing/examples/bdd-spec-samples.md`
+💡 BDD spec 完整範例：讀取 `./examples/bdd-spec-samples.md`
 
-💡 測試反模式（避免低品質/重複測試）：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/testing/references/test-anti-patterns.md`
+💡 測試反模式（避免低品質/重複測試）：讀取 `./references/test-anti-patterns.md`
 
-💡 E2E 測試模式（POM、Fixtures、Locator 策略）：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/testing/references/e2e-patterns.md`
+💡 E2E 測試模式（POM、Fixtures、Locator 策略）：讀取 `./references/e2e-patterns.md`
 
-💡 並發測試策略（CAS 壓力、競爭條件）：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/testing/references/concurrency-testing-guide.md`
+💡 並發測試策略（CAS 壓力、競爭條件）：讀取 `./references/concurrency-testing-guide.md`
 
-💡 任務拆分決策（DEV 並行評估）：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/testing/references/task-splitting-guide.md`
+💡 任務拆分決策（DEV 並行評估）：讀取 `./references/task-splitting-guide.md`
 
-💡 測試效能優化（lazy cache、shared fixture、重量級 I/O）：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/testing/references/test-performance-guide.md`
+💡 測試效能優化（lazy cache、shared fixture、重量級 I/O）：讀取 `./references/test-performance-guide.md`

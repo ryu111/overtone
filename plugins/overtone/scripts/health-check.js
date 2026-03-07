@@ -1836,9 +1836,10 @@ function checkTestFileAlignment(scriptsLibOverride, unitTestsDirOverride) {
 /**
  * 確認 SKILL.md 中引用的 references/ 和 examples/ 檔案實際存在。
  *
- * 掃描兩種引用格式：
- *   1. 表格中的相對路徑：`references/some-file.md` 或 `examples/some-file.md`
- *   2. 按需讀取行：`${CLAUDE_PLUGIN_ROOT}/skills/{skill}/references/{file}.md`（取 references/ 後的部分）
+ * 掃描三種引用格式：
+ *   1. 同 skill 相對路徑：`./references/some-file.md` 或裸 `references/some-file.md`
+ *   2. 跨 skill 相對路徑：`../{otherSkill}/references/{file}.md`
+ *   3. 舊格式（保留相容）：`${CLAUDE_PLUGIN_ROOT}/skills/{skill}/references/{file}.md`
  *
  * @param {string} [skillsDirOverride] — 供測試覆蓋 skills 目錄
  * @returns {Finding[]}
@@ -1862,53 +1863,68 @@ function checkSkillReferenceIntegrity(skillsDirOverride) {
     const content = safeRead(skillMdPath);
     if (!content) continue;
 
-    // 格式 1：表格欄位中的相對路徑 `references/xxx.md` 或 `examples/xxx.md`
-    // 這類路徑相對於當前 skill 目錄
-    // 只在不含 ${CLAUDE_PLUGIN_ROOT} 的行中匹配，避免與格式 2 重疊
-    const relativePathRe = /\b(references|examples)\/([^\s|`'"]+\.md)\b/g;
-    const selfRefs = new Set();
+    const seenRefs = new Set(); // 全域去重（避免重複 finding）
+
+    // 格式 1：同 skill 路徑
+    //   - 裸格式（表格欄位）：`references/xxx.md` 或 `examples/xxx.md`
+    //   - 相對前綴格式：`./references/xxx.md` 或 `./examples/xxx.md`
+    // 排除含 `${CLAUDE_PLUGIN_ROOT}`（格式 3）和含 `../`（格式 2）的行
+    const selfRelRe = /\b(references|examples)\/([^\s|`'"]+\.md)\b/g;
     for (const line of content.split('\n')) {
-      if (line.includes('${CLAUDE_PLUGIN_ROOT}')) continue; // 由格式 2 處理
-      for (const m of line.matchAll(relativePathRe)) {
-        selfRefs.add(`${m[1]}/${m[2]}`);
+      if (line.includes('${CLAUDE_PLUGIN_ROOT}')) continue; // 由格式 3 處理
+      if (line.includes('../')) continue; // 跨 skill 相對路徑由格式 2 處理
+      if (line.includes('~/.claude/')) continue; // 全域路徑，跳過
+      for (const m of line.matchAll(selfRelRe)) {
+        const refRelPath = `${m[1]}/${m[2]}`;
+        if (seenRefs.has(`${skillName}::${refRelPath}`)) continue;
+        seenRefs.add(`${skillName}::${refRelPath}`);
+        const fullPath = path.join(skillsDir, skillName, refRelPath);
+        if (!existsSync(fullPath)) {
+          findings.push({
+            check: 'skill-reference-integrity',
+            severity: 'error',
+            file: `plugins/overtone/skills/${skillName}/SKILL.md`,
+            message: `skill "${skillName}" 的 SKILL.md 引用了不存在的檔案：${refRelPath}`,
+            detail: `預期路徑：skills/${skillName}/${refRelPath}`,
+          });
+        }
       }
     }
 
-    for (const refRelPath of selfRefs) {
-      const fullPath = path.join(skillsDir, skillName, refRelPath);
+    // 格式 2：跨 skill 相對路徑 `../{otherSkill}/references/{file}.md`
+    const crossRelRe = /`\.\.\/([\w-]+)\/(references|examples)\/([^\s`'"]+\.md)`/g;
+    for (const m of content.matchAll(crossRelRe)) {
+      const [, targetSkill, type, file] = m;
+      const key = `cross::${targetSkill}/${type}/${file}`;
+      if (seenRefs.has(key)) continue;
+      seenRefs.add(key);
+      const fullPath = path.join(skillsDir, targetSkill, type, file);
       if (!existsSync(fullPath)) {
         findings.push({
           check: 'skill-reference-integrity',
           severity: 'error',
           file: `plugins/overtone/skills/${skillName}/SKILL.md`,
-          message: `skill "${skillName}" 的 SKILL.md 引用了不存在的檔案：${refRelPath}`,
-          detail: `預期路徑：skills/${skillName}/${refRelPath}`,
+          message: `skill "${skillName}" 的 SKILL.md 引用了不存在的跨 skill 檔案：${targetSkill}/${type}/${file}`,
+          detail: `預期路徑：skills/${targetSkill}/${type}/${file}`,
         });
       }
     }
 
-    // 格式 2：${CLAUDE_PLUGIN_ROOT}/skills/{targetSkill}/{type}/{file}.md
-    // 這類路徑跨 skill 引用，需要驗證目標 skill 目錄中的檔案
+    // 格式 3：舊格式（保留相容）${CLAUDE_PLUGIN_ROOT}/skills/{targetSkill}/{type}/{file}.md
     const pluginRootRe = /\$\{CLAUDE_PLUGIN_ROOT\}\/skills\/([^/\s`'"]+)\/(references|examples)\/([^\s`'"]+\.md)/g;
-    const crossRefKeys = new Set(); // 用字串 key 去重
-    const crossRefs = [];
     for (const m of content.matchAll(pluginRootRe)) {
-      const key = `${m[1]}/${m[2]}/${m[3]}`;
-      if (!crossRefKeys.has(key)) {
-        crossRefKeys.add(key);
-        crossRefs.push({ targetSkill: m[1], type: m[2], file: m[3] });
-      }
-    }
-
-    for (const ref of crossRefs) {
-      const fullPath = path.join(skillsDir, ref.targetSkill, ref.type, ref.file);
+      const [, targetSkill, type, file] = m;
+      const key = `cross::${targetSkill}/${type}/${file}`;
+      if (seenRefs.has(key)) continue;
+      seenRefs.add(key);
+      const fullPath = path.join(skillsDir, targetSkill, type, file);
       if (!existsSync(fullPath)) {
         findings.push({
           check: 'skill-reference-integrity',
           severity: 'error',
           file: `plugins/overtone/skills/${skillName}/SKILL.md`,
-          message: `skill "${skillName}" 的 SKILL.md 引用了不存在的檔案：${ref.targetSkill}/${ref.type}/${ref.file}`,
-          detail: `預期路徑：skills/${ref.targetSkill}/${ref.type}/${ref.file}`,
+          message: `skill "${skillName}" 的 SKILL.md 引用了不存在的檔案：${targetSkill}/${type}/${file}`,
+          detail: `預期路徑：skills/${targetSkill}/${type}/${file}`,
         });
       }
     }

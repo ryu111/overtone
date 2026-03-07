@@ -16,5 +16,5 @@ user-invocable: false
 
 | 檔案 | 說明 |
 |------|------|
-| 💡 `${CLAUDE_PLUGIN_ROOT}/skills/instinct/references/README.md` | 內化知識參考索引（自動生成） |
-| 💡 `${CLAUDE_PLUGIN_ROOT}/skills/instinct/internalized.md` | 通用化後的永久知識條目 |
+| 💡 `./references/README.md` | 內化知識參考索引（自動生成） |
+| 💡 `./internalized.md` | 通用化後的永久知識條目 |

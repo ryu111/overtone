@@ -9,7 +9,7 @@ description: 重構工作流。ARCH → TEST:spec → DEV → [REVIEW + TEST:ver
 
 使用 Bash 執行：
 ```bash
-node ${CLAUDE_PLUGIN_ROOT}/scripts/init-workflow.js refactor ${CLAUDE_SESSION_ID} {featureName}
+bun ~/.claude/scripts/init-workflow.js refactor ${CLAUDE_SESSION_ID} {featureName}
 ```
 # {featureName} 必須是 kebab-case（如 add-user-auth）
 
@@ -77,13 +77,13 @@ REVIEW + TEST:verify 屬於 `quality` 並行群組，📋 MUST 同時委派。
 
 📋 MUST 在 DEV 前執行 TEST:spec。重構的 BDD spec 聚焦在「行為不變」的驗證。
 
-💡 BDD 語法與最佳實踐：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/testing/references/bdd-spec-guide.md`
+💡 BDD 語法與最佳實踐：讀取 `~/.claude/skills/testing/references/bdd-spec-guide.md`
 
 ## 失敗處理
 
 TEST FAIL → debugger → developer → tester 迴圈（上限 3 次）。REVIEW REJECT → developer → code-reviewer 再審（上限 3 次）。
 
-💡 完整流程與 retry 邏輯：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/workflow-core/references/failure-handling.md`
+💡 完整流程與 retry 邏輯：讀取 `~/.claude/skills/workflow-core/references/failure-handling.md`
 
 ## 完成條件
 

@@ -286,16 +286,61 @@ describe('Feature: Skill 引用完整性驗證', () => {
   }
 
   // 共用輔助：收集 skills/ 引用（相對於 skills/）
+  // 支援三種格式：
+  //   1. 舊格式：${CLAUDE_PLUGIN_ROOT}/skills/{skill}/references/{file}
+  //   2. 新格式（同 skill）：./references/{file} 或 ./examples/{file}（需結合 source 推算 skillName）
+  //   3. 新格式（跨 skill）：../{otherSkill}/references/{file}
   function collectSkillRefs() {
-    const refPattern = /\$\{CLAUDE_PLUGIN_ROOT\}\/skills\/([^\`\s]+)/g;
     const refs = new Set();
 
-    for (const { content } of collectAllMdContents()) {
+    // 格式 1：舊格式（保留相容）
+    const oldPattern = /\$\{CLAUDE_PLUGIN_ROOT\}\/skills\/([^\`\s]+)/g;
+    // 格式 2：同 skill 相對路徑 ./references/xxx 或 ./examples/xxx（在 SKILL.md 中）
+    const selfRelPattern = /`\.\/(references|examples)\/([^\s`'"]+\.md)`/g;
+    // 格式 3：跨 skill 相對路徑 ../otherSkill/references/xxx（在 SKILL.md 中）
+    const crossRelPattern = /`\.\.\/([\w-]+)\/(references|examples)\/([^\s`'"]+\.md)`/g;
+    // 格式 4：全域路徑 ~/.claude/skills/xxx/references/yyy（在 command .md 中）
+    const globalPattern = /~\/\.claude\/skills\/([^\s`'"]+)/g;
+
+    for (const { source, content } of collectAllMdContents()) {
       let m;
-      while ((m = refPattern.exec(content)) !== null) {
+
+      // 格式 1
+      oldPattern.lastIndex = 0;
+      while ((m = oldPattern.exec(content)) !== null) {
         const refPath = m[1];
         if (!refPath.includes('<') && !refPath.includes('{')) {
           refs.add(refPath);
+        }
+      }
+
+      // 格式 4
+      globalPattern.lastIndex = 0;
+      while ((m = globalPattern.exec(content)) !== null) {
+        const refPath = m[1];
+        if (!refPath.includes('<') && !refPath.includes('{')) {
+          refs.add(refPath);
+        }
+      }
+
+      // 格式 2/3：只在 SKILL.md 中使用相對路徑
+      if (source.includes('/SKILL.md') || source.endsWith('SKILL.md')) {
+        // 從 source 推算 skillName（e.g. "skills/craft/SKILL.md" → "craft"）
+        const skillMatch = source.match(/skills\/([^/]+)\/SKILL\.md/);
+        const skillName = skillMatch ? skillMatch[1] : null;
+
+        if (skillName) {
+          // 格式 2：同 skill
+          selfRelPattern.lastIndex = 0;
+          while ((m = selfRelPattern.exec(content)) !== null) {
+            refs.add(`${skillName}/${m[1]}/${m[2]}`);
+          }
+
+          // 格式 3：跨 skill
+          crossRelPattern.lastIndex = 0;
+          while ((m = crossRelPattern.exec(content)) !== null) {
+            refs.add(`${m[1]}/${m[2]}/${m[3]}`);
+          }
         }
       }
     }
@@ -305,12 +350,23 @@ describe('Feature: Skill 引用完整性驗證', () => {
 
   // 共用輔助：收集 commands/ 引用（相對於 commands/）
   function collectCommandRefs() {
-    const refPattern = /\$\{CLAUDE_PLUGIN_ROOT\}\/commands\/([^\`\s]+)/g;
+    const oldPattern = /\$\{CLAUDE_PLUGIN_ROOT\}\/commands\/([^\`\s]+)/g;
+    const globalPattern = /~\/\.claude\/commands\/([^\s`'"]+)/g;
     const refs = new Set();
 
     for (const { content } of collectAllMdContents()) {
       let m;
-      while ((m = refPattern.exec(content)) !== null) {
+
+      oldPattern.lastIndex = 0;
+      while ((m = oldPattern.exec(content)) !== null) {
+        const refPath = m[1];
+        if (!refPath.includes('<') && !refPath.includes('{')) {
+          refs.add(refPath);
+        }
+      }
+
+      globalPattern.lastIndex = 0;
+      while ((m = globalPattern.exec(content)) !== null) {
         const refPath = m[1];
         if (!refPath.includes('<') && !refPath.includes('{')) {
           refs.add(refPath);

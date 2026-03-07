@@ -9,7 +9,7 @@ description: 修構建錯誤工作流。只委派 build-error-resolver agent 用
 
 使用 Bash 執行：
 ```bash
-node ${CLAUDE_PLUGIN_ROOT}/scripts/init-workflow.js build-fix ${CLAUDE_SESSION_ID}
+bun ~/.claude/scripts/init-workflow.js build-fix ${CLAUDE_SESSION_ID}
 ```
 
 ## Stages

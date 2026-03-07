@@ -33,7 +33,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/your-hook.js"
+            "command": "~/.claude/hooks/scripts/your-hook.js"
           }
         ]
       }

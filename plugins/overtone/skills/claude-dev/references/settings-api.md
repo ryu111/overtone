@@ -238,27 +238,28 @@ Plugin manifest 位於 `.claude-plugin/plugin.json`（相對 plugin 根目錄）
 
 ---
 
-## 4. ${CLAUDE_PLUGIN_ROOT} 變數
+## 4. 全域路徑 `~/.claude/`
 
-Plugin 根目錄的可攜式路徑參考，在以下環境可用：
+Plugin 遷移至全域位置 `~/.claude/`，路徑參考方式：
 
-- hook 腳本（`process.env.CLAUDE_PLUGIN_ROOT`）
-- hooks.json 的 command 欄位
-- 元件 .md 文件中的路徑參考
+- hook 腳本：使用 `process.env.CLAUDE_PLUGIN_ROOT` 環境變數（fallback 為 `os.homedir() + '/.claude'`）
+- hooks.json 的 command 欄位：使用 `~/.claude/` 全域路徑
+- 元件 .md 文件：使用全域路徑或相對路徑
 
 ```json
 {
-  "command": "node ${CLAUDE_PLUGIN_ROOT}/hooks/scripts/my-hook.js"
+  "command": "node ~/.claude/hooks/scripts/my-hook.js"
 }
 ```
 
 ```javascript
 // hook 腳本中
-const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT;
+const os = require('os');
+const pluginRoot = process.env.CLAUDE_PLUGIN_ROOT ?? (os.homedir() + '/.claude');
 const stateLib = require(`${pluginRoot}/scripts/lib/state.js`);
 ```
 
-**禁止**使用絕對路徑或 `~/` 縮寫（跨環境不可移植）。
+> 歷史說明：舊格式使用 `${CLAUDE_PLUGIN_ROOT}` 環境變數作為路徑前綴，現已統一使用全域路徑 `~/.claude/`，本地開發時 `process.env.CLAUDE_PLUGIN_ROOT` 仍可覆寫。
 
 **Overtone 實際路徑**（本機）：`/Users/sbu/projects/overtone/plugins/overtone`
 

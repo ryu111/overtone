@@ -58,7 +58,7 @@ Guard test 自動驗證 hooks.json 格式，勿繞過。
 
 ```bash
 # 建立 agent
-bun ${CLAUDE_PLUGIN_ROOT}/scripts/manage-component.js create agent '{
+bun ~/.claude/scripts/manage-component.js create agent '{
   "name": "my-agent",
   "description": "角色描述",
   "model": "sonnet",
@@ -71,13 +71,13 @@ bun ${CLAUDE_PLUGIN_ROOT}/scripts/manage-component.js create agent '{
 }'
 
 # 建立 hook
-bun ${CLAUDE_PLUGIN_ROOT}/scripts/manage-component.js create hook '{
+bun ~/.claude/scripts/manage-component.js create hook '{
   "event": "CustomEvent",
-  "command": "${CLAUDE_PLUGIN_ROOT}/hooks/scripts/custom.js"
+  "command": "~/.claude/hooks/scripts/custom.js"
 }'
 
 # 建立 skill
-bun ${CLAUDE_PLUGIN_ROOT}/scripts/manage-component.js create skill '{
+bun ~/.claude/scripts/manage-component.js create skill '{
   "name": "my-skill",
   "description": "知識域描述",
   "user-invocable": false,
@@ -85,22 +85,22 @@ bun ${CLAUDE_PLUGIN_ROOT}/scripts/manage-component.js create skill '{
 }'
 
 # 更新 agent（只需傳要改的欄位）
-bun ${CLAUDE_PLUGIN_ROOT}/scripts/manage-component.js update agent developer '{"model":"opus"}'
+bun ~/.claude/scripts/manage-component.js update agent developer '{"model":"opus"}'
 
 # 更新 hook
-bun ${CLAUDE_PLUGIN_ROOT}/scripts/manage-component.js update hook SessionStart '{"command":"new-path.js"}'
+bun ~/.claude/scripts/manage-component.js update hook SessionStart '{"command":"new-path.js"}'
 
 # 更新 skill
-bun ${CLAUDE_PLUGIN_ROOT}/scripts/manage-component.js update skill my-skill '{"description":"新描述"}'
+bun ~/.claude/scripts/manage-component.js update skill my-skill '{"description":"新描述"}'
 
 # 更新版本號（patch +1）
-bun ${CLAUDE_PLUGIN_ROOT}/scripts/manage-component.js bump-version
+bun ~/.claude/scripts/manage-component.js bump-version
 
 # 指定版本號
-bun ${CLAUDE_PLUGIN_ROOT}/scripts/manage-component.js bump-version 1.2.0
+bun ~/.claude/scripts/manage-component.js bump-version 1.2.0
 
 # 查看完整說明
-bun ${CLAUDE_PLUGIN_ROOT}/scripts/manage-component.js --help
+bun ~/.claude/scripts/manage-component.js --help
 ```
 
 ### skills 欄位是 replace 語意
@@ -117,7 +117,7 @@ bun ... update agent developer '{"skills": ["testing", "workflow-core"]}'
 
 查詢 Agent 現有 skills，先讀 agent 檔案：
 ```bash
-head -20 ${CLAUDE_PLUGIN_ROOT}/agents/developer.md
+head -20 ~/.claude/agents/developer.md
 ```
 
 ### command 不受保護
@@ -168,7 +168,7 @@ const {
   WORKFLOWS,       // workflow name → stage 清單
   TIMELINE_EVENTS, // event type → event 資訊
   effortLevels,    // effort level 映射
-} = require('${CLAUDE_PLUGIN_ROOT}/scripts/lib/registry');
+} = require(`${process.env.CLAUDE_PLUGIN_ROOT ?? (require('os').homedir() + '/.claude')}/scripts/lib/registry`);
 ```
 
 ### 反模式（禁止）
@@ -206,7 +206,7 @@ Agent 間交接使用固定格式，確保 context 完整傳遞：
 Handoff 只存在於 Main Agent 的 context window，不寫入磁碟。
 
 > 完整欄位填寫規範 + Chaining 規則 + Agent → Agent 傳遞表格：
-> `${CLAUDE_PLUGIN_ROOT}/skills/workflow-core/references/handoff-protocol.md`
+> `~/.claude/skills/workflow-core/references/handoff-protocol.md`
 
 ---
 
@@ -280,10 +280,10 @@ Stage key 使用大寫縮寫，可帶 instance suffix：
 
 ```bash
 # patch +1（最常見，修復或小功能）
-bun ${CLAUDE_PLUGIN_ROOT}/scripts/manage-component.js bump-version
+bun ~/.claude/scripts/manage-component.js bump-version
 
 # 指定版本（重大變更）
-bun ${CLAUDE_PLUGIN_ROOT}/scripts/manage-component.js bump-version 1.0.0
+bun ~/.claude/scripts/manage-component.js bump-version 1.0.0
 ```
 
 ### 什麼時候更新版本

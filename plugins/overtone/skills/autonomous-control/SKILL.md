@@ -21,6 +21,6 @@ user-invocable: false
 
 | 檔案 | 說明 |
 |------|------|
-| 💡 `${CLAUDE_PLUGIN_ROOT}/skills/autonomous-control/references/heartbeat.md` | Heartbeat daemon 使用指引：start/stop/status + 常駐模式 |
-| 💡 `${CLAUDE_PLUGIN_ROOT}/skills/autonomous-control/references/queue-management.md` | 執行佇列管理：CLI 操作 + API 參考 + 生命週期 + 錯誤處理決策樹 |
-| 💡 `${CLAUDE_PLUGIN_ROOT}/skills/autonomous-control/references/session-spawner.md` | Session Spawner：spawnSession API + 三層安全防護 + timeout 機制 |
+| 💡 `./references/heartbeat.md` | Heartbeat daemon 使用指引：start/stop/status + 常駐模式 |
+| 💡 `./references/queue-management.md` | 執行佇列管理：CLI 操作 + API 參考 + 生命週期 + 錯誤處理決策樹 |
+| 💡 `./references/session-spawner.md` | Session Spawner：spawnSession API + 三層安全防護 + timeout 機制 |

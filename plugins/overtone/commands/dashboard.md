@@ -16,7 +16,7 @@ Dashboard 在 SessionStart 時自動啟動並開啟瀏覽器。
 若未自動啟動，手動執行：
 
 ```bash
-bun run ${CLAUDE_PLUGIN_ROOT}/scripts/server.js
+bun ~/.claude/scripts/server.js
 ```
 
 然後開啟：`http://localhost:7777/`

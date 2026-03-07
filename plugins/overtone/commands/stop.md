@@ -9,7 +9,7 @@ disable-model-invocation: true
 執行以下命令停止 Overtone Loop：
 
 ```bash
-node ${CLAUDE_PLUGIN_ROOT}/scripts/stop-loop.js ${CLAUDE_SESSION_ID}
+bun ~/.claude/scripts/stop-loop.js ${CLAUDE_SESSION_ID}
 ```
 
 Loop 已標記為停止。下次回覆結束時將允許退出。

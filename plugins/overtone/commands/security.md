@@ -9,7 +9,7 @@ description: 純安全掃描工作流。只委派 security-reviewer agent 執行
 
 使用 Bash 執行：
 ```bash
-node ${CLAUDE_PLUGIN_ROOT}/scripts/init-workflow.js security-only ${CLAUDE_SESSION_ID}
+bun ~/.claude/scripts/init-workflow.js security-only ${CLAUDE_SESSION_ID}
 ```
 
 ## Stages
@@ -21,8 +21,8 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/init-workflow.js security-only ${CLAUDE_SESSI
 - **輸入**：使用者指定的掃描範圍（預設全專案）
 - **產出**：PASS / REJECT（含安全問題嚴重程度分級：Critical/High/Medium/Low）
 
-💡 OWASP Top 10 完整清單與修復指引：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/security-kb/references/owasp-top10-checklist.md`
-💡 報告格式範例：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/security-kb/examples/security-report.md`
+💡 OWASP Top 10 完整清單與修復指引：讀取 `~/.claude/skills/security-kb/references/owasp-top10-checklist.md`
+💡 報告格式範例：讀取 `~/.claude/skills/security-kb/examples/security-report.md`
 
 ## 失敗處理
 

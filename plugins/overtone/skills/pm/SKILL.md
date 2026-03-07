@@ -9,13 +9,13 @@ description: 產品探索與需求釐清。引導 Main Agent 以 PM 角色探索
 
 ```bash
 # 純探索（PM only）
-node ${CLAUDE_PLUGIN_ROOT}/scripts/init-workflow.js discovery ${CLAUDE_SESSION_ID}
+bun ~/.claude/scripts/init-workflow.js discovery ${CLAUDE_SESSION_ID}
 
 # 產品功能（PM → standard pipeline）
-node ${CLAUDE_PLUGIN_ROOT}/scripts/init-workflow.js product ${CLAUDE_SESSION_ID}
+bun ~/.claude/scripts/init-workflow.js product ${CLAUDE_SESSION_ID}
 
 # 產品完整（PM → full pipeline）
-node ${CLAUDE_PLUGIN_ROOT}/scripts/init-workflow.js product-full ${CLAUDE_SESSION_ID}
+bun ~/.claude/scripts/init-workflow.js product-full ${CLAUDE_SESSION_ID}
 ```
 
 ## 模式判斷
@@ -72,7 +72,7 @@ interview.js 引擎是**可選工具**，不是預設訪談方式。預設互動
 - **中斷恢復**：訪談進度持久化，session 中斷後可從上次進度繼續
 - **自動產出**：訪談完成後引擎自動彙整回答，產出完整 Project Spec
 
-> 操作細節與 interview.js API：`${CLAUDE_PLUGIN_ROOT}/skills/pm/references/interview-guide.md`
+> 操作細節與 interview.js API：`./references/interview-guide.md`
 
 ## 反模式即時偵測
 
@@ -102,9 +102,9 @@ PM stage 完成後，依據 workflow 類型讀取對應 skill 繼續執行：
 
 | Workflow | 後續 pipeline | 讀取 |
 |----------|-------------|------|
-| `discovery` | PM 建議 workflow → 使用者確認 → 啟動對應 workflow | 按確認結果選擇：`${CLAUDE_PLUGIN_ROOT}/commands/{workflow}.md` |
-| `product` | PLAN → ARCH → TEST:spec → DEV → [R+T] → RETRO → DOCS | `${CLAUDE_PLUGIN_ROOT}/commands/standard.md`（從 PLAN 開始） |
-| `product-full` | PLAN → ARCH → DESIGN → TEST:spec → DEV → [R+T] → [QA+E2E] → RETRO → DOCS | `${CLAUDE_PLUGIN_ROOT}/commands/full.md`（從 PLAN 開始） |
+| `discovery` | PM 建議 workflow → 使用者確認 → 啟動對應 workflow | 按確認結果選擇：`~/.claude/commands/{workflow}.md` |
+| `product` | PLAN → ARCH → TEST:spec → DEV → [R+T] → RETRO → DOCS | `~/.claude/commands/standard.md`（從 PLAN 開始） |
+| `product-full` | PLAN → ARCH → DESIGN → TEST:spec → DEV → [R+T] → [QA+E2E] → RETRO → DOCS | `~/.claude/commands/full.md`（從 PLAN 開始） |
 
 PM 的 Product Brief 作為 planner 的輸入（取代使用者原始需求）。
 
@@ -148,7 +148,7 @@ PM 完成後：
 5. 使用者可用 `bun scripts/queue.js enable-auto` 啟動自動執行
 
 ```bash
-bun ${CLAUDE_PLUGIN_ROOT}/scripts/queue.js append \\
+bun ~/.claude/scripts/queue.js append \\
   --no-auto \\
   --source "PM Plan $(date +%Y-%m-%d)" \\
   "<迭代1名稱>" "<workflow1>" \\
@@ -188,7 +188,7 @@ PM 產出多次迭代計畫（如「3 次迭代分層精鍊」）且使用者批
 使用者確認後，在開始第一次迭代前寫入：
 
 ```bash
-bun ${CLAUDE_PLUGIN_ROOT}/scripts/queue.js add \\
+bun ~/.claude/scripts/queue.js add \\
   --source "PM Discovery $(date +%Y-%m-%d)" \\
   "<迭代1名稱>" "<workflow1>" \\
   "<迭代2名稱>" "<workflow2>" \\
@@ -199,20 +199,20 @@ bun ${CLAUDE_PLUGIN_ROOT}/scripts/queue.js add \\
 
 每個迭代完成後，呼叫 `completeCurrent` 推進佇列：
 ```bash
-node -e "require('${CLAUDE_PLUGIN_ROOT}/scripts/lib/execution-queue').completeCurrent(process.cwd())"
+bun -e "require('~/.claude/scripts/lib/execution-queue').completeCurrent(process.cwd())"
 ```
 
 
 ## 參考文件
 
 詳細框架與模板（按需讀取）：
-- Discovery 框架：`${CLAUDE_PLUGIN_ROOT}/skills/pm/references/discovery-frameworks.md`
-- 選項模板：`${CLAUDE_PLUGIN_ROOT}/skills/pm/references/options-template.md`
-- 反模式指南：`${CLAUDE_PLUGIN_ROOT}/skills/pm/references/anti-patterns.md`
-- Product Brief 範本：`${CLAUDE_PLUGIN_ROOT}/skills/pm/references/product-brief-template.md`
-- Drift 偵測：`${CLAUDE_PLUGIN_ROOT}/skills/pm/references/drift-detection.md`
-- 訪談引擎操作指引：`${CLAUDE_PLUGIN_ROOT}/skills/pm/references/interview-guide.md`（五面向結構化訪談 + interview.js API + 中斷恢復，僅無人值守場景使用）
-- Discovery 實戰範例：`${CLAUDE_PLUGIN_ROOT}/skills/pm/examples/discovery-session-walkthrough.md`
+- Discovery 框架：`./references/discovery-frameworks.md`
+- 選項模板：`./references/options-template.md`
+- 反模式指南：`./references/anti-patterns.md`
+- Product Brief 範本：`./references/product-brief-template.md`
+- Drift 偵測：`./references/drift-detection.md`
+- 訪談引擎操作指引：`./references/interview-guide.md`（五面向結構化訪談 + interview.js API + 中斷恢復，僅無人值守場景使用）
+- Discovery 實戰範例：`./examples/discovery-session-walkthrough.md`
 
 ## 完成條件
 

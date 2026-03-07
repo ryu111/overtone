@@ -6,7 +6,7 @@
 
 ## 1. Skill 結構概覽
 
-每個 skill 是一個獨立目錄，位於 `${CLAUDE_PLUGIN_ROOT}/skills/{skill-name}/`：
+每個 skill 是一個獨立目錄，位於 `~/.claude/skills/{skill-name}/`：
 
 ```
 skill-name/
@@ -213,7 +213,7 @@ user-invocable: false
 
 | 檔案 | 說明 |
 |------|------|
-| 💡 `${CLAUDE_PLUGIN_ROOT}/skills/{name}/references/guide.md` | ... |
+| 💡 `~/.claude/skills/{name}/references/guide.md` | ... |
 ```
 
 ### 關鍵 Frontmatter 設定
@@ -227,11 +227,20 @@ user-invocable: false            # 使用者不能直接 /domain-name 觸發
 
 ### 路徑前綴慣例
 
-References 路徑使用 `${CLAUDE_PLUGIN_ROOT}` 前綴（不硬編碼絕對路徑）：
+References 路徑使用全域路徑 `~/.claude/` 或同 skill 相對路徑：
 
 ```markdown
-💡 `${CLAUDE_PLUGIN_ROOT}/skills/craft/references/clean-code-rules.md`
+# 全域路徑（Command .md 或跨 skill 引用）
+💡 `~/.claude/skills/craft/references/clean-code-rules.md`
+
+# 同 skill 相對路徑（SKILL.md 中引用自身 references）
+💡 `./references/clean-code-rules.md`
+
+# 跨 skill 相對路徑（SKILL.md 中引用其他 skill）
+💡 `../architecture/references/architectural-patterns.md`
 ```
+
+> 歷史說明：舊格式使用 `${CLAUDE_PLUGIN_ROOT}/skills/xxx/references/` 路徑前綴，已全面替換為上述格式。
 
 ---
 
@@ -250,7 +259,7 @@ bun scripts/manage-component.js create skill '{
 ```
 
 這會：
-1. 在 `${CLAUDE_PLUGIN_ROOT}/skills/my-skill/` 建立目錄
+1. 在 `~/.claude/skills/my-skill/` 建立目錄
 2. 寫入 SKILL.md（frontmatter + body）
 3. 更新 plugin.json 版本
 
@@ -275,7 +284,7 @@ References 目錄**不受** pre-edit-guard 保護，可直接操作：
 mkdir -p plugins/overtone/skills/my-skill/references/
 
 # 直接用 Write 工具建立 .md 檔案
-# Write 工具路徑：${CLAUDE_PLUGIN_ROOT}/skills/my-skill/references/guide.md
+# Write 工具路徑：~/.claude/skills/my-skill/references/guide.md
 ```
 
 ### 版本管理

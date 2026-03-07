@@ -16,5 +16,5 @@ disable-model-invocation: true
 
 | 檔案 | 說明 |
 |------|------|
-| 💡 `${CLAUDE_PLUGIN_ROOT}/skills/verify/references/language-commands.md` | 語言別驗證命令索引（Bun/Node/Python/Go/Rust）|
-| 💡 `${CLAUDE_PLUGIN_ROOT}/skills/verify/references/verification-strategies.md` | 驗證策略決策樹：syntax → unit → integration → e2e + 降級策略 |
+| 💡 `./references/language-commands.md` | 語言別驗證命令索引（Bun/Node/Python/Go/Rust）|
+| 💡 `./references/verification-strategies.md` | 驗證策略決策樹：syntax → unit → integration → e2e + 降級策略 |

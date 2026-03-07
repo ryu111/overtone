@@ -19,6 +19,6 @@ user-invocable: false
 
 | 檔案 | 說明 |
 |------|------|
-| 💡 `${CLAUDE_PLUGIN_ROOT}/skills/wording/references/wording-guide.md` | 措詞正確性決策樹 + 反模式清單 + 場景範例 |
-| 💡 `${CLAUDE_PLUGIN_ROOT}/skills/wording/references/tone-calibration.md` | 語氣校準指南：技術文件 / commit / agent prompt / 對話的用詞密度和正式度 |
-| 💡 `${CLAUDE_PLUGIN_ROOT}/skills/wording/references/zh-tw-conventions.md` | 繁體中文技術寫作慣例：中英混排、標點、術語保留 |
+| 💡 `./references/wording-guide.md` | 措詞正確性決策樹 + 反模式清單 + 場景範例 |
+| 💡 `./references/tone-calibration.md` | 語氣校準指南：技術文件 / commit / agent prompt / 對話的用詞密度和正式度 |
+| 💡 `./references/zh-tw-conventions.md` | 繁體中文技術寫作慣例：中英混排、標點、術語保留 |

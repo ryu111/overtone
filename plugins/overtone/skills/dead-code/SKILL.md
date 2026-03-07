@@ -13,6 +13,6 @@ user-invocable: false
 
 | # | 檔案 | 用途 |
 |---|------|------|
-| 1 | 💡 `${CLAUDE_PLUGIN_ROOT}/skills/dead-code/references/dead-code-tools-guide.md` | knip/depcheck 工具選擇與安全刪除策略 |
-| 2 | 💡 `${CLAUDE_PLUGIN_ROOT}/skills/dead-code/references/manual-cleanup-strategies.md` | 手動清理決策樹、grep patterns、false positive 判斷 |
-| 3 | 💡 `${CLAUDE_PLUGIN_ROOT}/skills/dead-code/examples/cleanup-walkthrough.md` | 完整死碼清理範例 |
+| 1 | 💡 `./references/dead-code-tools-guide.md` | knip/depcheck 工具選擇與安全刪除策略 |
+| 2 | 💡 `./references/manual-cleanup-strategies.md` | 手動清理決策樹、grep patterns、false positive 判斷 |
+| 3 | 💡 `./examples/cleanup-walkthrough.md` | 完整死碼清理範例 |

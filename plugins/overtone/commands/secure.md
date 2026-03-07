@@ -9,7 +9,7 @@ description: 高風險功能開發工作流。PLAN → ARCH → TEST:spec → DE
 
 使用 Bash 執行：
 ```bash
-node ${CLAUDE_PLUGIN_ROOT}/scripts/init-workflow.js secure ${CLAUDE_SESSION_ID} {featureName}
+bun ~/.claude/scripts/init-workflow.js secure ${CLAUDE_SESSION_ID} {featureName}
 ```
 # {featureName} 必須是 kebab-case（如 add-user-auth）
 
@@ -104,13 +104,13 @@ RETRO + DOCS 屬於 `postdev` 並行群組，📋 MUST 同時委派。
 
 📋 MUST 在 DEV 前執行 TEST:spec。安全功能的 BDD spec 應涵蓋正常認證流程、無效 token 處理、注入攻擊防護、權限越界嘗試。
 
-💡 安全 BDD spec 要求與範例：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/testing/references/bdd-spec-guide.md`
+💡 安全 BDD spec 要求與範例：讀取 `~/.claude/skills/testing/references/bdd-spec-guide.md`
 
 ## 失敗處理
 
 TEST FAIL → debugger → developer → tester 迴圈（上限 3 次）。REVIEW REJECT → developer → code-reviewer 再審（上限 3 次）。SECURITY REJECT（Critical/High）→ 📋 MUST 修復後重審，不可忽略。
 
-💡 完整流程與 retry 邏輯：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/workflow-core/references/failure-handling.md`
+💡 完整流程與 retry 邏輯：讀取 `~/.claude/skills/workflow-core/references/failure-handling.md`
 
 ## 完成條件
 

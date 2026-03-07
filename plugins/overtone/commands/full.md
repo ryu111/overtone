@@ -9,7 +9,7 @@ description: 完整功能開發工作流。PLAN → ARCH → DESIGN → TEST:spe
 
 使用 Bash 執行：
 ```bash
-node ${CLAUDE_PLUGIN_ROOT}/scripts/init-workflow.js full ${CLAUDE_SESSION_ID} {featureName}
+bun ~/.claude/scripts/init-workflow.js full ${CLAUDE_SESSION_ID} {featureName}
 ```
 # {featureName} 必須是 kebab-case（如 add-user-auth）
 
@@ -123,13 +123,13 @@ node ${CLAUDE_PLUGIN_ROOT}/scripts/init-workflow.js full ${CLAUDE_SESSION_ID} {f
 
 📋 MUST 在 DEV 前執行 TEST:spec。含 DESIGN 階段的 BDD spec 應涵蓋 UI 行為。
 
-💡 BDD 語法與最佳實踐：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/testing/references/bdd-spec-guide.md`
+💡 BDD 語法與最佳實踐：讀取 `~/.claude/skills/testing/references/bdd-spec-guide.md`
 
 ## 失敗處理
 
 TEST/QA/E2E FAIL → debugger → developer → 重驗（上限 3 次）。REVIEW REJECT → developer 帶原因修復 → code-reviewer 再審（上限 3 次）。
 
-💡 完整流程與 retry 邏輯：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/workflow-core/references/failure-handling.md`
+💡 完整流程與 retry 邏輯：讀取 `~/.claude/skills/workflow-core/references/failure-handling.md`
 
 ## 完成條件
 

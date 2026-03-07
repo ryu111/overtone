@@ -16,5 +16,5 @@ disable-model-invocation: false
 
 | 檔案 | 說明 |
 |------|------|
-| 💡 `${CLAUDE_PLUGIN_ROOT}/skills/evolve/references/confidence-scoring.md` | 信心分數計算方法：觀察頻率 + 一致性 + 跨 session 驗證 |
-| 💡 `${CLAUDE_PLUGIN_ROOT}/skills/evolve/references/evolution-patterns.md` | 進化模式：Instinct→Skill→Agent 進化決策樹 + 時機判斷 |
+| 💡 `./references/confidence-scoring.md` | 信心分數計算方法：觀察頻率 + 一致性 + 跨 session 驗證 |
+| 💡 `./references/evolution-patterns.md` | 進化模式：Instinct→Skill→Agent 進化決策樹 + 時機判斷 |

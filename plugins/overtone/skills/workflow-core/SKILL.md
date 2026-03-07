@@ -36,16 +36,16 @@ user-invocable: false
 
 ## 按需讀取
 
-💡 失敗處理流程：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/workflow-core/references/failure-handling.md`
+💡 失敗處理流程：讀取 `./references/failure-handling.md`
 
-💡 並行群組規則：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/workflow-core/references/parallel-groups.md`
+💡 並行群組規則：讀取 `./references/parallel-groups.md`
 
-💡 Handoff 交接協定：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/workflow-core/references/handoff-protocol.md`
+💡 Handoff 交接協定：讀取 `./references/handoff-protocol.md`
 
-💡 完成信號定義：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/workflow-core/references/completion-signals.md`
+💡 完成信號定義：讀取 `./references/completion-signals.md`
 
-💡 檔案系統並發模式：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/workflow-core/references/filesystem-concurrency.md`
+💡 檔案系統並發模式：讀取 `./references/filesystem-concurrency.md`
 
 ## Examples
 
-💡 Standard workflow 完整執行軌跡：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/workflow-core/examples/standard-workflow-walkthrough.md`
+💡 Standard workflow 完整執行軌跡：讀取 `./examples/standard-workflow-walkthrough.md`

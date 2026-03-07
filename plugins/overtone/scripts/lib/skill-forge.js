@@ -348,7 +348,7 @@ ${contextNote}
 
 | 檔案 | 說明 |
 |------|------|
-| 💡 \`\${CLAUDE_PLUGIN_ROOT}/skills/${domainName}/references/README.md\` | （待補充）${domainName} 參考資料 |
+| 💡 \`./references/README.md\` | （待補充）${domainName} 參考資料 |
 
 ## 按需讀取
 

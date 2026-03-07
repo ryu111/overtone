@@ -11,4 +11,4 @@ user-invocable: false
 
 hooks→hooks-api · agent→agent-api · skill→skill-api · command→command-api · overtone→conventions · statusline→statusline-api · settings→settings-api · parallel→parallel-and-background
 
-`${CLAUDE_PLUGIN_ROOT}/skills/claude-dev/references/hooks-api.md` `${CLAUDE_PLUGIN_ROOT}/skills/claude-dev/references/agent-api.md` `${CLAUDE_PLUGIN_ROOT}/skills/claude-dev/references/skill-api.md` `${CLAUDE_PLUGIN_ROOT}/skills/claude-dev/references/command-api.md` `${CLAUDE_PLUGIN_ROOT}/skills/claude-dev/references/overtone-conventions.md` `${CLAUDE_PLUGIN_ROOT}/skills/claude-dev/references/statusline-api.md` `${CLAUDE_PLUGIN_ROOT}/skills/claude-dev/references/settings-api.md` `${CLAUDE_PLUGIN_ROOT}/skills/claude-dev/references/parallel-and-background.md`
+`./references/hooks-api.md` `./references/agent-api.md` `./references/skill-api.md` `./references/command-api.md` `./references/overtone-conventions.md` `./references/statusline-api.md` `./references/settings-api.md` `./references/parallel-and-background.md`

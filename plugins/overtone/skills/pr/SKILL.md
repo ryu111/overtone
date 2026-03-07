@@ -16,5 +16,5 @@ disable-model-invocation: false
 
 | 檔案 | 說明 |
 |------|------|
-| 💡 `${CLAUDE_PLUGIN_ROOT}/skills/pr/references/pr-body-template.md` | PR body 模板：Summary + Changes + Test Results 結構 |
-| 💡 `${CLAUDE_PLUGIN_ROOT}/skills/pr/references/pr-quality-checklist.md` | PR 品質檢查清單：title format / diff size / 合併策略決策樹 |
+| 💡 `./references/pr-body-template.md` | PR body 模板：Summary + Changes + Test Results 結構 |
+| 💡 `./references/pr-quality-checklist.md` | PR 品質檢查清單：title format / diff size / 合併策略決策樹 |
