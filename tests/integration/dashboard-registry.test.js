@@ -170,8 +170,9 @@ describe('2. Timeline 事件完整性', () => {
     timelineEvents = TIMELINE_EVENTS_SNAPSHOT;
   });
 
-  test('registry 中共有 31 種 timelineEvents', () => {
-    expect(Object.keys(timelineEvents).length).toBe(31);
+  test('registry 中 timelineEvents 數量與 counts helper 一致', () => {
+    const { TIMELINE_EVENT_COUNT } = require('../helpers/counts');
+    expect(Object.keys(timelineEvents).length).toBe(TIMELINE_EVENT_COUNT);
   });
 
   test('每個 timelineEvent 都有 label 和 category', () => {
@@ -185,9 +186,10 @@ describe('2. Timeline 事件完整性', () => {
     }
   });
 
-  test('共有 14 種 category 類型', () => {
+  test('category 種類數量與 counts helper 一致', () => {
+    const { TIMELINE_CATEGORY_COUNT } = require('../helpers/counts');
     const categories = [...new Set(Object.values(timelineEvents).map(e => e.category))];
-    expect(categories.length).toBe(14);
+    expect(categories.length).toBe(TIMELINE_CATEGORY_COUNT);
   });
 
   test('14 個 category 每個至少有一個事件', () => {

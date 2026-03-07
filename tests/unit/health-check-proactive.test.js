@@ -321,9 +321,10 @@ describe('checkQualityTrends', () => {
 // ══════════════════════════════════════════════════════════════════
 
 describe('runAllChecks — 包含 F1/F2/F3 新增 check', () => {
-  test('checks 陣列長度為 25（新增 3 個製作原則偵測 + dependency-sync + internalization-index + test-file-alignment + skill-reference-integrity + concurrency-guards + compact-frequency + sequential-markers + specs-directory-structure + orphan-queues + skill-quality）', () => {
+  test('checks 陣列長度與 runAllChecks 定義一致', () => {
+    const { HEALTH_CHECK_COUNT } = require('../helpers/counts');
     const { checks } = cached(runAllChecks);
-    expect(checks.length).toBe(25);
+    expect(checks.length).toBe(HEALTH_CHECK_COUNT);
   });
 
   test('checks 包含所有偵測項目（含 3 個製作原則偵測）', () => {

@@ -16,6 +16,10 @@ const { describe, test, expect } = require('bun:test');
 const { join } = require('path');
 const fs = require('fs');
 const { PROJECT_ROOT, PLUGIN_ROOT, SCRIPTS_LIB } = require('../helpers/paths');
+const {
+  AGENT_COUNT, SKILL_COUNT, COMMAND_COUNT, HOOK_COUNT,
+  STAGE_COUNT, WORKFLOW_COUNT,
+} = require('../helpers/counts');
 
 // ── 路徑常數 ──────────────────────────────────────────────────────────────
 
@@ -140,34 +144,34 @@ describe('1. docs/status.md 核心指標數字', () => {
   const metrics = extractStatusMetrics(statusContent);
   const actual = getActualCounts();
 
-  test('Agent 數量：status.md 與 agents/ 目錄一致（應為 18）', () => {
+  test('Agent 數量：status.md 與 agents/ 目錄一致', () => {
     expect(metrics['Agent 數量']).toBe(actual.agentCount);
-    expect(actual.agentCount).toBe(18);
+    expect(actual.agentCount).toBe(AGENT_COUNT);
   });
 
-  test('Stage 數量：status.md 與 registry-data.json stages 一致（應為 16）', () => {
+  test('Stage 數量：status.md 與 registry-data.json stages 一致', () => {
     expect(metrics['Stage 數量']).toBe(actual.stageCount);
-    expect(actual.stageCount).toBe(16);
+    expect(actual.stageCount).toBe(STAGE_COUNT);
   });
 
-  test('Workflow 模板：status.md 與 registry.js workflows 一致（應為 18）', () => {
+  test('Workflow 模板：status.md 與 registry.js workflows 一致', () => {
     expect(metrics['Workflow 模板']).toBe(actual.workflowCount);
-    expect(actual.workflowCount).toBe(18);
+    expect(actual.workflowCount).toBe(WORKFLOW_COUNT);
   });
 
-  test('Hook 數量：status.md 與 hooks.json hooks 陣列一致（應為 11）', () => {
+  test('Hook 數量：status.md 與 hooks.json hooks 陣列一致', () => {
     expect(metrics['Hook 數量']).toBe(actual.hookCount);
-    expect(actual.hookCount).toBe(11);
+    expect(actual.hookCount).toBe(HOOK_COUNT);
   });
 
-  test('Skill 數量：status.md 與含 SKILL.md 的 skills/ 子目錄一致（應為 26）', () => {
+  test('Skill 數量：status.md 與含 SKILL.md 的 skills/ 子目錄一致', () => {
     expect(metrics['Skill 數量']).toBe(actual.skillCount);
-    expect(actual.skillCount).toBe(26);
+    expect(actual.skillCount).toBe(SKILL_COUNT);
   });
 
-  test('Command 數量：status.md 與 commands/ 目錄 .md 檔案一致（應為 29）', () => {
+  test('Command 數量：status.md 與 commands/ 目錄 .md 檔案一致', () => {
     expect(metrics['Command 數量']).toBe(actual.commandCount);
-    expect(actual.commandCount).toBe(29);
+    expect(actual.commandCount).toBe(COMMAND_COUNT);
   });
 });
 

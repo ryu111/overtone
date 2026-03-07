@@ -67,7 +67,8 @@ describe('A. Workflow 模板 stage 序列有效性', () => {
     for (const name of expectedWorkflows) {
       expect(workflows[name]).toBeDefined();
     }
-    expect(Object.keys(workflows).length).toBe(18);
+    const { WORKFLOW_COUNT } = require('../helpers/counts');
+    expect(Object.keys(workflows).length).toBe(WORKFLOW_COUNT);
   });
 
   // 針對每個 workflow 的每個 stage 都在 registry.stages 中

@@ -137,8 +137,9 @@ describe('2. Registry Workflows ↔ Stages 一致性', () => {
     }
   });
 
-  test('registry 共有 18 個 workflow', () => {
-    expect(Object.keys(workflows).length).toBe(18);
+  test('registry workflow 數量與 counts helper 一致', () => {
+    const { WORKFLOW_COUNT } = require('../helpers/counts');
+    expect(Object.keys(workflows).length).toBe(WORKFLOW_COUNT);
   });
 });
 
@@ -192,8 +193,9 @@ describe('4. specsConfig 涵蓋所有 18 個 workflow', () => {
   const workflowKeys = Object.keys(workflows);
   const specsConfigKeys = new Set(Object.keys(specsConfig));
 
-  test('specsConfig 中的 key 數量等於 workflow 數量（18 個）', () => {
-    expect(Object.keys(specsConfig).length).toBe(18);
+  test('specsConfig 中的 key 數量等於 workflow 數量', () => {
+    const { WORKFLOW_COUNT } = require('../helpers/counts');
+    expect(Object.keys(specsConfig).length).toBe(WORKFLOW_COUNT);
   });
 
   test('每個 workflow key 都在 specsConfig 中有對應設定', () => {
@@ -297,8 +299,9 @@ describe('6. hookEvents 與 hooks.json 一致性', () => {
     }
   });
 
-  test('hooks.json 共有 11 個事件定義（對應 11 個 hook 腳本）', () => {
-    expect(Object.keys(hooksJson.hooks).length).toBe(11);
+  test('hooks.json 事件定義數量與 counts helper 一致', () => {
+    const { HOOK_COUNT } = require('../helpers/counts');
+    expect(Object.keys(hooksJson.hooks).length).toBe(HOOK_COUNT);
   });
 
   test('hooks.json 中的事件數量不超過 hookEvents 總數', () => {

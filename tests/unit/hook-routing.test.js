@@ -93,16 +93,18 @@ describe('Auto SKILL.md 路由表完整性', () => {
     expect(commandRoutes.length).toBeGreaterThanOrEqual(16);
   });
 
-  test('Auto SKILL.md 中的 18 個 workflow 由 registry.workflows 支撐', () => {
+  test('Auto SKILL.md 中的 workflow 由 registry.workflows 支撐', () => {
+    const { WORKFLOW_COUNT } = require('../helpers/counts');
     const { workflows } = require(path.join(SCRIPTS_LIB, 'registry'));
-    expect(Object.keys(workflows).length).toBe(18);
+    expect(Object.keys(workflows).length).toBe(WORKFLOW_COUNT);
   });
 
-  test('Auto SKILL.md 中提及的 workflow 數量描述（18 個）與 registry 一致', () => {
+  test('Auto SKILL.md 中提及的 workflow 數量描述與 registry 一致', () => {
+    const { WORKFLOW_COUNT } = require('../helpers/counts');
     const content = fs.readFileSync(AUTO_SKILL_PATH, 'utf8');
     const { workflows } = require(path.join(SCRIPTS_LIB, 'registry'));
     const registryCount = Object.keys(workflows).length;
-    expect(registryCount).toBe(18);
+    expect(registryCount).toBe(WORKFLOW_COUNT);
     const routeTableLines = content.split('\n').filter(
       line => line.match(/^\| .+`\/ot:[a-z]/)
     );
@@ -129,14 +131,15 @@ describe('UserPromptSubmit Hook 路由鏈', () => {
     }
   });
 
-  test('on-submit.js 的 systemMessage 中「18 個 workflow 模板」與 registry 計數一致', () => {
+  test('on-submit.js 的 systemMessage 中 workflow 模板數量與 registry 計數一致', () => {
+    const { WORKFLOW_COUNT } = require('../helpers/counts');
     const content = fs.readFileSync(ON_SUBMIT_PATH, 'utf8');
     const { workflows } = require(path.join(SCRIPTS_LIB, 'registry'));
 
-    expect(content).toContain('18 個 workflow 模板');
+    expect(content).toContain(`${WORKFLOW_COUNT} 個 workflow 模板`);
 
     const registryCount = Object.keys(workflows).length;
-    expect(registryCount).toBe(18);
+    expect(registryCount).toBe(WORKFLOW_COUNT);
   });
 
   test('on-submit.js 的 [workflow:xxx] 正規式能解析所有 18 個 workflow key 格式', () => {

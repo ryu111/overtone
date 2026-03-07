@@ -94,9 +94,10 @@ describe('Feature 6：輸出格式驗證', () => {
     expect(output.summary).not.toBeNull();
   });
 
-  test('Scenario checks — checks 陣列長度為 25（含原本 12 項 + 製作原則 3 項 + dependency-sync + internalization-index + test-file-alignment + skill-reference-integrity + concurrency-guards + compact-frequency + sequential-markers + specs-directory-structure + orphan-queues + skill-quality）', () => {
+  test('Scenario checks — checks 陣列長度與 runAllChecks 定義一致', () => {
+    const { HEALTH_CHECK_COUNT } = require('../helpers/counts');
     const output = getParsed();
-    expect(output.checks.length).toBe(25);
+    expect(output.checks.length).toBe(HEALTH_CHECK_COUNT);
   });
 
   test('Scenario checks — 包含所有 25 個偵測項目', () => {
@@ -274,10 +275,11 @@ describe('真實 codebase 執行驗證', () => {
     expect(() => JSON.parse(result.stdout)).not.toThrow();
   });
 
-  test('所有 25 個 check 都成功執行（findingsCount 為數字）', () => {
+  test('所有 check 都成功執行（findingsCount 為數字）', () => {
+    const { HEALTH_CHECK_COUNT } = require('../helpers/counts');
     const result = getRealResult();
     const output = JSON.parse(result.stdout);
-    expect(output.checks.length).toBe(25);
+    expect(output.checks.length).toBe(HEALTH_CHECK_COUNT);
     for (const c of output.checks) {
       expect(Number.isInteger(c.findingsCount)).toBe(true);
       expect(c.findingsCount).toBeGreaterThanOrEqual(0);
