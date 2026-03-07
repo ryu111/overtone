@@ -1,24 +1,4 @@
 ---
-## 2026-03-05 | tester:TEST Context
-模式：verify
-
-執行 `bun test tests/unit/websocket.test.js`，16 個測試全部通過。
-全量測試（3553 pass）中 `post-use-failure-handler.test.js` 偶發 1 fail，為既有並行隔離問題，與 websocket-realtime 無關（單獨執行通過）。
-Keywords: verify, test, tests, unit, websocket, pass, post, failure, handler, fail
-
----
-## 2026-03-05 | tester:TEST Context
-模式：verify
-
-security-integration feature 的 BDD spec 驗證已完成。三個目標測試檔案全部存在且通過：
-- `tests/integration/pre-bash-guard.test.js`
-- `tests/unit/health-check-os-tools.test.js`
-- `tests/integration/os-scripts.test.js`
-
-另外發現 `docs/status.md` 版本號（0.28.58）與 `plugin.json`（0.28.59）不一致，導致 `tests/unit/docs-sync.test.js` 測試失敗。已修正 status.md 版本號，全量測試恢復 3580 pass, 0 fail。
-Keywords: verify, security, integration, feature, spec, tests, bash, guard, test, unit
-
----
 ## 2026-03-05 | tester:TEST:2 Findings
 所有測試通過，無 regression：
 
@@ -532,4 +512,34 @@ Keywords: paths, test, parallel, pass, tests, helpers, fallback, scripts, docs, 
 
 然而，跨模組審視發現 scripts/lib 內有 3 個模組仍未遷移至 paths.js 常數，屬於本次 feature 目標（「所有 Overtone 路徑從 paths.js 取得」）的殘留缺口。
 Keywords: global, migrate, test, adapt, feature, paths, tests, helpers, parallel, homedir
+
+---
+## 2026-03-07 | code-reviewer:REVIEW Findings
+審查了 4 個檔案的變更：
+- `tests/unit/docs-sync.test.js`：SOURCE_PLUGIN_ROOT 概念正確，區分 source vs installed 目錄
+- `CLAUDE.md`：精簡化合理，移除內容已存在於全域 CLAUDE.md，所有路徑引用已驗證存在
+- `auto-discovered.md`：舊 findings 清理
+- `tasks.md` 刪除：前 feature 殘留清理
+- 無 Critical 或 Major 問題
+Keywords: tests, unit, docs, sync, test, source, installed, claude, auto, discovered
+
+---
+## 2026-03-07 | retrospective:RETRO Findings
+**回顧摘要**：
+
+整體遷移成果良好。DEV 階段修正了 SOURCE_PLUGIN_ROOT 的正確用法，REVIEW 已 APPROVE。tests/unit/docs-sync.test.js 的設計清晰，SOURCE_PLUGIN_ROOT vs PLUGIN_ROOT 的概念區分到位，避免了使用者個人全域 command 干擾計數。
+
+**已確認的品質點**：
+- 測試框架完整（4683 pass / 0 fail）
+- SOURCE_PLUGIN_ROOT 概念正確，與 PLUGIN_ROOT（安裝目錄）明確區分
+- docs-sync.test.js 的豁免清單設計合理（archive 目錄、歷史快照文件）
+- CLAUDE.md 精簡化方向正確（開發 repo 專注開發指引，全域 CLAUDE.md 專注使用）
+
+**發現的問題**：
+
+status.md 第 9 行（V1 版本狀態描述）與第 19 行（核心指標表）自我矛盾：
+- 第 9 行：`4724 pass，0 fail`（舊數字，來自迭代 9 前的 0.28.80）
+- 第 19 行：`4683 pass / 0 fail`（正確數字，與實際測試執行結果一致）
+- 實際執行結果：`4683 pass, 0 fail`
+Keywords: review, approve, tests, unit, docs, sync, test, command, pass, fail
 

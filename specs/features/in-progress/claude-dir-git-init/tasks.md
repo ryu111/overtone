@@ -1,15 +1,15 @@
 ---
-feature: project-claude-md-slim
+feature: claude-dir-git-init
 status: in-progress
 workflow: quick
-created: 2026-03-07T07:35:32.234Z
+created: 2026-03-07T08:20:38.062Z
 ---
 
 ## Stages
 
 - [x] DEV
 - [x] REVIEW
-- [ ] RETRO
-- [ ] DOCS
+- [x] RETRO
+- [x] DOCS
 
 ## Tasks

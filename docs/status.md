@@ -1,6 +1,6 @@
 # Overtone 現況
 
-> 最後更新：2026-03-07 | Plugin 版本：0.28.82 | Build：4683 pass
+> 最後更新：2026-03-07 | Plugin 版本：0.28.83 | Build：4683 pass
 
 ## 版本狀態
 
@@ -28,9 +28,9 @@
 
 ## 近期變更（最近 3 筆）
 
+- **[0.28.83] 2026-03-07**：infra(claude-dir-git-init)——在 ~/.claude/ 初始化 git repo：新增 .gitignore（whitelist 策略）進行版本控制，刪除 ~360 個暫存 JSON/JSONL，Overtone 全域元件實現 git 管理
 - **[0.28.82] 2026-03-07**：refactor(global-migrate)——第 2 步批量路徑遷移：56 個檔案修改（24 個 SKILL.md + 19 個 Command + 3 個 JS 模組 + 5 個 claude-dev references + 1 個測試 + 1 個 health-check），將 `${CLAUDE_PLUGIN_ROOT}` 替換為相對路徑（`./references/` 或 `../{domain}/references/` 或 `bun ~/.claude/scripts/`）
 - **[0.28.81] 2026-03-07**：feat(handoff)——四個核心 stage agent 加入 Exit Criteria checklist（developer/architect/planner/code-reviewer），handoff-protocol.md 新增欄位定義與 Main Agent 未勾選處理規則，強化交接品質防止 hardcoded 數值遺漏同步
-- **[0.28.80] 2026-03-07**：feat(fs-scanner)——提取共用檔案掃描模組：scripts/lib 新增 fs-scanner.js（第 67 個模組），health-check 和 dead-code-scanner 改造消費，11 個測試新增（tests/unit/fs-scanner.test.js），總計 4724 pass / 200 檔
 
 ## Phase 3 規劃狀態（✅ 完成）
 

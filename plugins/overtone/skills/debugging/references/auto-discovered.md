@@ -90,3 +90,19 @@ SKILL.md 閉環驗證失敗。REVIEW 補上了 `architecture/SKILL.md` 和 `debu
 
 這意味著 agent 查詢 claude-dev skill 時不會被引導讀取 `parallel-and-background.md`，filesystem-concurrency 對 workflow-core 消費者也不可見。
 Keywords: reference, parallel, background, concurrency, patterns, tradeoff, overtone, debugging, race, condition
+---
+## 2026-03-07 | retrospective:RETRO Findings
+**回顧摘要**：
+
+- .gitignore whitelist 策略正確有效：`*` 預設拒絕，6 個 Overtone 目錄 + 5 個根檔案精確 whitelist
+- 平台自動產生目錄（agent-memory、backups、cache、chrome、daemon、debug、file-history）全部被 `*` 規則擋下，`git check-ignore` 確認
+- JSON/JSONL 追蹤限縮在 4 個必要檔案：`hooks/hooks.json`、`package.json`、`scripts/lib/registry-data.json`、`settings.json`，無多餘暫存 JSON 混入
+- `git ls-files --others --exclude-standard` 回傳 0 — 無任何未被 ignore 的遊離檔案
+- `heartbeat-*.json` 等暫存 pattern 已逐條列在 .gitignore，可防止未來在 whitelist 目錄外產生的暫存污染
+- `git status` 乾淨，305 個檔案在初始 commit 中，working tree clean
+
+**一個觀察（信心 60%，低於門檻，僅供參考）**：
+
+`agent-memory-local/` 目錄（各 agent 的 persistent memory，如本次對話中的 retrospective/MEMORY.md）目前未在 whitelist 內。若日後希望 memory 跨機器同步，需補上 `!agent-memory-local/` 和 `!agent-memory-local/**`。目前的設計是否刻意不追蹤，由使用者決定。
+Keywords: gitignore, whitelist, overtone, agent, memory, backups, cache, chrome, daemon, debug
+

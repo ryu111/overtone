@@ -1,18 +1,4 @@
 ---
-## 2026-03-06 | architect:ARCH Context
-選用最小侵入性方案：在現有 `parallelGroupDefs` 新增 `postdev: ['RETRO', 'DOCS']`，讓這兩個 stage 透過已驗證的並行收斂機制並行執行。RETRO `issues` verdict 改為標記 stage completed（與 pass 相同），讓 `checkParallelConvergence` 正常偵測收斂；收斂後由 stop-message-builder 讀取 `state.stages.RETRO.result` 決定是否附加 issues 提示。不引入新欄位，state 最小化。
-Keywords: parallelgroupdefs, postdev, retro, docs, stage, issues, verdict, completed, pass, checkparallelconvergence
-
----
-## 2026-03-06 | developer:DEV Findings
-- `parallelGroupDefs` 新增 `'postdev': ['RETRO', 'DOCS']`
-- 6 個 workflow 的 `parallelGroups` 陣列加入 `'postdev'`：quick、standard、full、secure、product、product-full
-- 其餘 workflow（tdd、debug、refactor、review-only 等）不含 RETRO+DOCS 階段，不適合加入
-- 由於 registry.js 受 PreToolUse hook 保護，使用 `bun -e` 腳本進行修改
-- 驗證腳本輸出與預期完全一致
-Keywords: parallelgroupdefs, postdev, retro, docs, workflow, parallelgroups, quick, standard, full, secure
-
----
 ## 2026-03-06 | developer:DEV Findings
 - 現有 convergence 處理區塊在 PASS 路徑，已處理 `parallel:converge` timeline event
 - 新增邏輯掛在 convergence 區塊內部（group === 'postdev' 時），讀取 `state.stages['RETRO'].result`
@@ -614,4 +600,71 @@ Keywords: agent, status, line, hook, plugins, overtone, skills, references, clau
 
 ---
 Keywords: claude, skills, hook, plugins, overtone, repo, wording, guide, approve, minor
+
+---
+## 2026-03-07 | developer:DEV Findings
+**驗證結果：全部通過**
+- 測試套件：4683 pass / 0 fail（修復前 4681 pass / 2 fail）
+- Health check：errors=0，passed=true（62 warnings 為舊 test session orphan，無害）
+- validate-agents：18 agents + 11 hooks + 24 skills 全部正確
+- 殘留 `${CLAUDE_PLUGIN_ROOT}`：僅存在於相容性處理程式碼（非功能性誤用）
+- 全域安裝：`~/.claude/` 下 agents/skills/commands/hooks/scripts 全部存在
+- settings.json：11 個 hook event 配置完整
+- gray-matter：`~/.claude/package.json` 存在，版本 ^4.0.3
+
+**修復根因（docs-sync.test.js 5 fail）：**
+- `PLUGIN_ROOT = ~/.claude` 是安裝目錄，含使用者個人全域 command（ask.md），導致 commandCount=29 但 Overtone 只有 28
+- PLUGIN_JSON 路徑 `~/.claude/.claude-plugin/plugin.json` 不存在（plugin.json 在 source 的 `.claude-plugin/` 下）
+- CLAUDE.md Hook 區段標題和 workflow 模板描述格式不符 regex 期望
+
+**修復方式（治本）：**
+- `docs-sync.test.js` 新增 `SOURCE_PLUGIN_ROOT = plugins/overtone`，讓 AGENTS_DIR、SKILLS_DIR、COMMANDS_DIR、HOOKS_JSON、PLUGIN_JSON 都指向 source 目錄
+- CLAUDE.md `## Hook 開發注意事項` → `## Hook 架構（11 個）`
+- CLAUDE.md commands 行補充 `18 個模板` 描述
+Keywords: pass, fail, health, check, errors, passed, true, warnings, test, session
+
+---
+## 2026-03-07 | product-manager:PM Findings
+**目標用戶**：Overtone 開發者（目前僅使用者本人），未來可能有需要在多台機器上同步 `~/.claude/` 配置的場景。
+
+**成功指標**：
+- 改壞 `~/.claude/` 可以在 30 秒內回滾
+- 開發 repo 的修改可以可靠地同步到 `~/.claude/`（不遺漏、不衝突）
+- 不增加日常開發的摩擦（改一次不需要跑兩步）
+- session 暫存資料不污染版本控制
+
+**現況問題量化**：
+- `~/.claude/` 有 93 個 session 暫存檔散落在根目錄（barrier-state/classified-reads/heartbeat）
+- 27 個子目錄中，6 個是 Overtone 元件、14 個是 Claude Code 平台原生、其餘混合
+- settings.json 和 hooks/hooks.json 存在兩份近乎重複的 hooks 配置（路徑前綴不同）
+- 用戶自建的 commands/ask.md 不在 dev repo 中，屬於個人配置
+
+**方案比較**：
+
+| 維度 | A: 單 repo + deploy script | B: 雙 repo | C: Symlink 農場 | D: 直接在 ~/.claude/ 開發 |
+|------|---------------------------|------------|-----------------|--------------------------|
+| 概述 | overtone repo 加一個 deploy.sh 把 plugins/overtone/ 複製到 ~/.claude/ | ~/.claude/ 本身是獨立 git repo，overtone 開發完 deploy 過去 | ~/.claude/{agents,skills,...} symlink 指向 overtone/plugins/overtone/{agents,skills,...} | 把 overtone repo 搬進 ~/.claude/ 或等價重組 |
+| 回滾能力 | 中 -- 可重新 deploy 舊版，但 ~/.claude/ 本身無 git history | 高 -- 兩邊都有 git history | 低 -- symlink target 的歷史在 overtone repo | 高 -- 就是同一個 repo |
+| 同步可靠性 | 中 -- 需記得跑 deploy；可加 git hook 自動化 | 低 -- 兩個 repo 需手動保持一致，容易忘 | 高 -- 零延遲，改了立即生效 | 最高 -- 不存在同步問題 |
+| 開發摩擦 | 中 -- 每次改完跑一次 deploy | 高 -- 兩個 repo 各自 commit/push | 低 -- 改一處即生效 | 最低 -- 無額外步驟 |
+| 測試相容性 | 高 -- 測試繼續跑在 overtone repo | 高 -- 同上 | 中 -- Node.js require 會 resolve realpath，需驗證所有相對路徑 | 低 -- tests/ 在 ~/.claude/ 下，與平台檔案混雜 |
+| 跨機器同步 | 中 -- clone repo + deploy | 高 -- clone ~/.claude/ repo 即可 | 低 -- 需要在每台機器重建 symlink | 高 -- clone 即用 |
+| 乾淨度 | 高 -- 兩個世界分明 | 中 -- ~/.claude/ repo 需 .gitignore 大量平台檔案 | 中 -- 混合真實檔案和 symlink | 低 -- 開發資產和平台檔案混雜 |
+| 實作複雜度 | 1-2 人天 | 2-3 人天 | 0.5-1 人天 | 3-5 人天（重組目錄） |
+| RICE | (8x2x0.8)/1.5 = **8.5** | (8x2x0.5)/2.5 = **3.2** | (8x2x0.8)/0.75 = **17.1** | (8x3x0.5)/4 = **3.0** |
+
+**推薦方案**：**方案 C: Symlink 農場**（搭配方案 A 的 deploy script 作為 setup 工具），理由：
+
+1. **零同步摩擦**：改了 dev repo 的 agents/skills/commands/hooks/scripts 就是改了 `~/.claude/` 的，不存在忘記 deploy 的問題
+2. **技術可行性已驗證**：Node.js 的 `require()` 會 resolve realpath，現有的相對路徑 `require('../../../scripts/lib/...')` 在 symlink 場景下會正確解析到 dev repo 的檔案
+3. **分離度好**：`~/.claude/` 的平台原生檔案（debug/logs/sessions 等）不會進入 overtone repo；overtone repo 的測試/文件也不會進入 `~/.claude/`
+4. **需要一個 setup script**（方案 A 的精髓）：用於首次設置 symlink + 處理 settings.json 和 CLAUDE.md 等「不能 symlink」的檔案
+5. **社群佐證**：Claude Code 官方文件確認「Claude Code follows symlinks transparently」
+
+**風險與緩解**：settings.json、CLAUDE.md、package.json 不能用 symlink（它們包含非 Overtone 的用戶配置），需要 deploy script 處理這部分的同步。
+
+**MVP 範圍（MoSCoW）**：
+- **Must**:
+  - setu
+Keywords: overtone, claude, repo, session, barrier, state, classified, reads, heartbeat, code
 

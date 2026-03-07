@@ -2,6 +2,28 @@
 
 所有重要變更記錄於此文件。
 
+## [0.28.83] - 2026-03-07
+
+### ~/.claude/ Git 管理
+
+#### 基礎設施變更
+
+**在 ~/.claude/ 初始化 git repo，實現全域 Overtone 元件版本控制**
+
+#### 實現細節
+
+- ~/.claude/.gitignore：whitelist 策略（tracks agent/skill/command/hook/script，ignores sessions/caches）
+- 清理 ~360 個暫存檔案（session 狀態、快取、臨時 JSON/JSONL）
+- 全域元件納入版本控制（agents/skills/commands/hooks 完整追蹤，sessions 隔離）
+
+#### 目的
+
+- 全域 Overtone 核心元件版本化
+- 跨專案環境一致性保證
+- 變更歷史可追蹤
+
+---
+
 ## [0.28.81] - 2026-03-07
 
 ### Exit Criteria 強化（Handoff 品質防護）

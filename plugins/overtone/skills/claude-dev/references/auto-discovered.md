@@ -1,23 +1,5 @@
 ---
 ## 2026-03-05 | doc-updater:DOCS Findings
-- skill-forge.js 升級：內部優化，無 public API 變更
-- 測試新增 8 個：測試檔案變更，無文件更新需求
-- 前面提交已同步所有文件（CLAUDE.md、roadmap.md、status.md）
-- plugin.json 版本保持 0.28.63（前序提交已更新）
-Keywords: skill, forge, public, claude, roadmap, status, plugin, json
-
----
-## 2026-03-05 | doc-updater:DOCS Context
-檢視最近 DEV 階段提交（e8e833c），skill-forge.js 升級了 extractWebKnowledge 函式的內部實現（prompt 結構、timeout、--allowedTools flag、品質驗證、快取機制）。核心邏輯優化無涉及 public interface 或文件內容的變更。前序提交（61337d3、01904a9）已完成 CLAUDE.md 和相關文件同步。
-Keywords: skill, forge, extractwebknowledge, prompt, timeout, allowedtools, flag, public, interface, claude
-
----
-## 2026-03-05 | developer:DEV Context
-實作了 PM 訪談前領域自主研究能力（pm-domain-research feature），讓 PM agent 在進入陌生領域時，可以先用 `claude -p` 自主研究基本概念，再進行深度訪談。
-Keywords: domain, research, feature, agent, claude
-
----
-## 2026-03-05 | doc-updater:DOCS Findings
 **同步變更：**
 
 1. **docs/status.md** 
@@ -637,4 +619,25 @@ Keywords: commit, global, migrate, handler, agent, stop, session, start, analyze
 
 `agent-stop-handler.js` 的 `input.cwd || process.cwd()` 沒有 `CLAUDE_PROJECT_ROOT` 的 fallback（相較 session-start-handler 多一層保護），但由於 stop hook 永遠在有 `input.cwd` 的 hook 環境中執行，實際上不會走到 fallback，信心不足以報告為問題。
 Keywords: global, migrate, tools, update, projectroot, health, check, findprojectroot, claude, session
+
+---
+## 2026-03-07 | product-manager:PM Context
+Overtone 是一個以 `~/projects/overtone/` 為開發 repo 的 Claude Code plugin 專案，安裝目標是 `~/.claude/`。目前 `~/.claude/` **沒有版本控制**，改壞無法回滾。兩個位置之間沒有自動同步機制，source of truth 分散。使用者提出的核心問題是：**`~/.claude/` 是否需要一個獨立的 GitHub repo？**
+Keywords: overtone, projects, repo, claude, code, plugin, source, truth, github
+
+---
+## 2026-03-07 | developer:DEV Context
+在 `~/.claude/` 建立 git repo，追蹤 Overtone plugin 元件。清理了大量平台產生的暫存 JSON/JSONL 檔案。
+Keywords: claude, repo, overtone, plugin, json, jsonl
+
+---
+## 2026-03-07 | code-reviewer:REVIEW Findings
+在 ~/.claude/ 建立 git repo 的變更已審查完畢，涵蓋以下面向：
+- .gitignore whitelist 策略正確：預設 `*` + 6 目錄 + 5 根檔案 whitelist + 暫存模式排除
+- 305 個入庫檔案全部在 whitelist 範圍內，無多餘檔案
+- settings.json 無敏感資料（無 API keys/tokens/passwords）
+- 20+ 個非 Overtone 目錄（node_modules/、cache/、sessions/ 等）正確被排除
+- git status 乾淨，暫存檔案全部被忽略
+- 判定：**APPROVE**（乾淨通過）
+Keywords: claude, repo, gitignore, whitelist, settings, json, keys, tokens, passwords, overtone
 
