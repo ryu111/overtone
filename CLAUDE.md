@@ -1,8 +1,12 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+# Overtone — 開發 Repo
 
-# Overtone — 開發 Repo 規則
+**使命**：推進 `~/.claude/` 達到 Layer 1-4 能力，打造通用自主代理核心。
+
+此 repo 提供 tests、docs、specs 支撐開發品質。實際的 agent、skill、hook、command、script 程式碼存放在 `~/.claude/`（唯一 SoT）。
+
+當前進度：L1 ✅ L2 ✅ L3 🟡（L3.6 Acid Test 待執行）L4 ⬜
 
 > Overtone 定位、架構概要、工作流觸發方式詳見全域 `~/.claude/CLAUDE.md`。
 
@@ -71,7 +75,7 @@ bun test
 # 啟動 Dashboard 監控面板（port 7777）
 bun ~/.claude/scripts/server.js
 
-# 系統健康檢查（23 項偵測）
+# 系統健康檢查（24 項偵測）
 bun ~/.claude/scripts/health-check.js
 
 # 驗證所有元件設定（18 agents + 11 hooks + 24 skills + 29 commands）
