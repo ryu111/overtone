@@ -49,6 +49,7 @@ const SEQUENTIAL_FILES = new Set([
   'tests/integration/session-id-bridge.test.js',
   'tests/unit/health-check-os-tools.test.js',
   'tests/integration/dashboard-pid.test.js',
+  'tests/integration/health-check.test.js',
 ]);
 
 // ── 參數解析 ──
