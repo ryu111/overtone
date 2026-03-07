@@ -22,3 +22,7 @@ Keywords: registry, edit, guard, date, null, gettime, startedat, unix, epoch, ag
 
 然而發現 **1 個 regression 測試失敗** 和 **1 個文件數字過時**：
 Keywords: scenario, compact, health, check, suggestorder, postdev, docs, regression
+---
+## 2026-03-07 | developer:DEV Context
+實作 `// @sequential` marker 機制與 health-check 雙向驗證閉環。
+Keywords: sequential, marker, health, check

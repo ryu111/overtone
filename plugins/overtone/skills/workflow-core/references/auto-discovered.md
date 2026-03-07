@@ -1,35 +1,4 @@
 ---
-## 2026-03-06 | doc-updater:DOCS Findings
-- **新增文件**：`plugins/overtone/skills/craft/references/design-taste.md`（設計品味評估參考指南）
-- **更新文件**：`plugins/overtone/skills/craft/SKILL.md`（加入 design-taste reference）
-- **版本更新**：0.28.73 → 0.28.74
-- **狀態同步**：`docs/status.md` 版本號和近期變更已更新
-Keywords: plugins, overtone, skills, craft, references, design, taste, skill, reference, docs
-
----
-## 2026-03-06 | planner:PLAN Findings
-**需求分解**：
-
-1. **[修復 B] stage key 查找移入 updateStateAtomic callback** | agent: developer | files: `plugins/overtone/scripts/lib/agent-stop-handler.js`, `plugins/overtone/scripts/lib/state.js`
-
-   具體位置：第 89 行的 `findActualStageKey(currentState, stageKey)` 需改為在第 104 行的 `updateStateAtomic` callback 內執行，傳入最新的 `s` 而非舊快照。`actualStageKey` 透過 closure 變數傳出。第 91-98 行的 statusline 更新和 early exit 判斷也依賴 `actualStageKey`，執行順序需重組。
-
-2. **[修復 C] pre-task 委派前觸發 sanitize** | agent: developer | files: `plugins/overtone/scripts/lib/pre-task-handler.js`
-
-   在 `handlePreTask` 通過路徑（第 286 行 `state.updateStateAtomic` 之前）插入 `state.sanitize(sessionId)`，靜默降級（try/catch）。
-
-3. **[測試] 並行收斂場景 + pre-task sanitize 觸發測試** | agent: developer | files: `tests/unit/agent-stop-handler.test.js`, `tests/unit/pre-task-handler.test.js`
-
-**優先順序**：B 和 C 可並行（修改不同檔案），測試依賴 B+C 完成後同步進行（但可預先撰寫測試框架）。
-
-**範圍邊界**：
-- 不改動 `sanitize()` 函式本身（Rule 4 邏輯已正確）
-- 不調整 `updateStateAtomic` 的 CAS retry 機制
-- 不審查其他 handler 的潛在 stale snapshot 問題
-- 不新增 timeline event 追蹤修復觸發
-Keywords: stage, updatestateatomic, callback, agent, developer, files, plugins, overtone, scripts, stop
-
----
 ## 2026-03-06 | planner:PLAN Context
 **問題**：`agent-stop-handler.js` 的 `handleAgentStop` 存在並行競爭條件。核心問題是第 57 行讀取 state 快照（`currentState`），第 69-84 行透過 `updateStateAtomic` 清除 activeAgents（寫入磁碟），然後第 89 行用**舊快照**呼叫 `findActualStageKey`。
 
@@ -576,4 +545,16 @@ Overtone 內部開發流程優化：統一所有會寫測試或跑測試的 agen
 
 目前 tester agent 明確指定 `bun test`（單進程 53 秒），而非 `bun scripts/test-parallel.js`（多進程 14 秒），效率差 4 倍。developer agent 寫測試時沒有隔離要求，可能導致並行執行時 flaky。
 Keywords: overtone, agent, skill, scripts, test, parallel, tester, developer, flaky
+
+---
+## 2026-03-07 | developer:DEV Context
+統一 Overtone 內部所有寫測試或跑測試的 agent/skill，要求使用並行測試執行並確保測試隔離。
+Keywords: overtone, agent, skill
+
+---
+## 2026-03-07 | doc-updater:DOCS Findings
+- Commit 249accc 僅修改測試執行程式碼（test-parallel.js、health-check.test.js）
+- 不涉及 plugin、agent、skill、hook、spec 等需文件同步的層級
+- 效能改進無須更新文件基線（已定義的警告閾值仍有效）
+Keywords: commit, test, parallel, health, check, plugin, agent, skill, hook, spec
 

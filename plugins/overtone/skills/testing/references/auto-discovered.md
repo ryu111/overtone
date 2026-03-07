@@ -1,93 +1,4 @@
 ---
-## 2026-03-04 | architect:ARCH Context
-設計三個可並行執行的測試瘦身子任務，每個子任務針對一種 Anti-Pattern。核心發現：guard-coverage 和 test-quality-guard 功能完全不重疊，可以全刪；platform-alignment-agents 採用原地重構（保留 describe 標題）；計數硬編碼採混合策略，固定設計規格的計數保留 `toBe()`。
-
-設計文件已寫入：`/Users/sbu/projects/overtone/specs/features/in-progress/test-suite-slimdown/design.md`
-Dev Phases 已追加至：`/Users/sbu/projects/overtone/specs/features/in-progress/test-suite-slimdown/tasks.md`
-Keywords: anti, pattern, guard, coverage, test, quality, platform, alignment, agents, describe
-
----
-## 2026-03-04 | tester:TEST Findings
-定義了 4 個 Feature 群組，共 14 個 Scenario：
-
-**子任務 A — platform-alignment-agents 合併**（4 Scenarios）
-- A-1：合併後迴圈 assertions 仍完整驗證所有 agent
-- A-2：test 數量從 53 降至 ≤ 18，describe 標題保留
-- A-3：17 個 agent 的 disallowedTools 分類覆蓋不漏失
-- A-4：新增 agent 到無限制清單後測試自動覆蓋（不需修改）
-
-**子任務 B — 刪除 guard-coverage.test.js**（3 Scenarios）
-- B-1：檔案不再存在
-- B-2：其他測試不受影響，test-quality-guard 繼續正常
-- B-3：被監控的 7 個守衛模組測試仍然存在
-
-**子任務 C — 修正計數硬編碼**（6 Scenarios）
-- C-1 ~ C-2：platform-alignment-registry.test.js（timelineEvents）
-- C-3 ~ C-4：registry.test.js（stages + hookEvents，quick.stages 保留 toBe(4)）
-- C-5 ~ C-6：health-check.test.js（checks 長度）
-
-**整合驗收**（4 Scenarios）
-- D-1：全量 0 fail
-- D-2：test 數量 ≤ 3170
-- D-3：執行時間 < 40 秒
-- D-4：不誤刪高價值測試
-Keywords: feature, scenario, platform, alignment, agents, scenarios, assertions, agent, test, describe
-
----
-## 2026-03-04 | developer:DEV Findings
-- **子任務 A**：把 8 個 describe 底下的展開式 test 合併成 1 個 test + for loop。保留所有 describe 標題和 BDD 追蹤性。從 53 tests 降至 19 tests，`expect()` 呼叫次數保持不變（還是覆蓋所有 17 agents 的相同驗證邏輯）。
-
-- **子任務 B**：刪除 `tests/unit/guard-coverage.test.js` 後，`tests/e2e/guard-system-e2e.test.js` 的 Layer C 有 3 個 test 引用了 `guard-coverage.test.js` 的存在性，一併修正（移除引用）。
-
-- **子任務 C**：
-  - `platform-alignment-registry.test.js`：`timelineEvents.length` 的 `toBe(27)` → `toBeGreaterThanOrEqual(27)`
-  - `registry.test.js`：`stages` 的 `toBe(16)` → `toBeGreaterThanOrEqual(16)`；`hookEvents.length` 的 `toBe(11)` → `toBeGreaterThanOrEqual(11)`
-  - `health-check.test.js`：`checks.length` 的 `toBe(11)` → `toBeGreaterThanOrEqual(11)`
-  - 注意：`quick.stages.length === 4` 保持 `toBe(4)`（固定設計規格，符合架構師指示）
-
-- **執行結果**：3113 pass / 0 fail，執行時間 55.92 秒（目標 < 40 秒未達到，但已移除大量冗餘 test）
-Keywords: describe, test, loop, tests, expect, agents, unit, guard, coverage, system
-
----
-## 2026-03-04 | developer:DEV Context
-實作 test-suite-slimdown 的三個子任務：
-1. 合併 `platform-alignment-agents.test.js` 的展開式 test() 改為迴圈 assertions（53→19 tests）
-2. 刪除 `guard-coverage.test.js` 整個檔案
-3. 修正三個檔案的精確計數硬編碼（`toBe(N)` → `toBeGreaterThanOrEqual(N)`）
-Keywords: test, suite, slimdown, platform, alignment, agents, assertions, tests, guard, coverage
-
----
-## 2026-03-04 | tester:TEST:2 Findings
-測試結果摘要：3113 passed, 0 failed, 7313 expect() calls
-
-各 BDD Scenario 驗證結果：
-- Scenario 1（全部測試 pass）：PASS — 3113 pass / 0 fail
-- Scenario 2（guard-coverage.test.js 已刪除）：PASS — 檔案確認不存在
-- Scenario 3（platform-alignment-agents 覆蓋 17 agents，數量 ≤ 19）：PASS — 19 個測試，全部通過
-- Scenario 4（計數 >= 比較）：PASS — registry.test.js、health-check.test.js、platform-alignment-registry.test.js 全部使用 `toBeGreaterThanOrEqual`
-- Scenario 5（執行時間）：FAIL（軟）— 實際 56.11 秒，超出 BDD 寬鬆標準 < 50 秒
-
-唯一未達標項目：執行時間 56 秒，超出 BDD spec 設定的 < 50 秒寬鬆標準。此為環境/硬體因素，非程式碼邏輯問題。核心目標（測試瘦身、移除重複覆蓋、>=比較改善脆弱性）全部達成。
-Keywords: passed, failed, expect, calls, scenario, pass, fail, guard, coverage, test
-
----
-## 2026-03-04 | retrospective:RETRO Findings
-**回顧摘要**：
-
-**子任務 A（測試合併）**：完全對齊 BDD spec。19 個 tests（Scenario A-2 要求 ≤ 18，但 spec 頭部有 Feature 1b 和 S10 兩個 describe 區，最終 19 個屬於設計範圍內，且所有 expect 均有第二參數提供 agent 名稱定位）。
-
-**子任務 B（刪除 guard-coverage.test.js）**：完全對齊。檔案已刪除，e2e 引用已清理，全量測試 0 fail。
-
-**子任務 C（計數硬編碼修正）**：部分對齊。`registry.test.js` 和 `health-check.test.js` 已改為 `toBeGreaterThanOrEqual`，`platform-alignment-registry.test.js` 也已修正。
-
-**整合驗收（Scenario D）**：
-- D-1（全量 pass）：通過 — 3113 pass, 0 fail
-- D-2（測試數量 ≤ 3170）：通過 — 3235 → 3113（減少 122）
-- D-3（執行時間 < 40 秒）：**未達標** — 56.9 秒（已知，瓶頸在 integration/ spawn，不在本次 scope）
-- D-4（不誤刪高價值測試）：通過
-Keywords: spec, tests, scenario, feature, describe, expect, agent, guard, coverage, test
-
----
 ## 2026-03-04 | tester:TEST:2 Context
 模式：verify（DEV 後）
 
@@ -574,4 +485,88 @@ Keywords: verify, compact, quality, detect, feature, test, spec, scenario
 **驗收標準（BDD）**：
 - Given tester agent 在 verify 模式執行測試 When 讀取 prompt 中的測試指令 Then 指令為 `bun scripts/test-parallel.js` 而非 `bun te
 Keywords: developer, agent, tester, prompt, testing, reference, scripts, test, parallel, plugins
+
+---
+## 2026-03-07 | retrospective:RETRO Findings
+**回顧摘要**：
+
+- **跨文件一致性**：三個文件（tester.md / developer.md / testing-conventions.md）的並行測試指令已統一為 `bun scripts/test-parallel.js`，與 CLAUDE.md 中的「常用指令」章節一致，跨文件對齊正確
+- **引用閉環**：developer.md 新增的隔離要求引用 `testing/references/testing-conventions.md §7`，與實際 §7 節標題 `## 7. 測試隔離（並行安全）` 完全對應，引用有效
+- **場景區分明確**：testing-conventions.md §4d 新增的場景說明（開發中快速迭代 vs. 正式驗證）邏輯清晰，避免了原本的歧義
+- **knowledge 清理合規**：兩個 auto-discovered.md 的舊 Findings 清理符合 knowledge archiving 規則，新 PM Context 條目格式正確
+- **overtone-principles.md checklist**：純文件改動，無新元件，checklist 所有維度 N/A 或通過
+
+**觀察（信心未達 70%，僅記錄）**：
+- `tester.md` 末行缺少換行符（diff 顯示 `\ No newline at end of file`），屬輕微文件衛生問題，對功能無影響
+Keywords: tester, developer, testing, conventions, scripts, test, parallel, claude, references, knowledge
+
+---
+## 2026-03-07 | debugger:DEBUG Findings
+**根因**：兩個測試檔案使用「備份/還原」（backup/restore）模式操作**唯一的全域共享單一檔案**，多進程並行時若兩進程同時備份，後備份者會把「已被前者修改的值」當作原始值存入，還原時結果不可預期。
+
+**證據**：
+
+- `/Users/sbu/projects/overtone/tests/unit/health-check-os-tools.test.js`（L73-200）：在每個 test 內以 `let originalContent = readFileSync(HEARTBEAT_PID_FILE)` 備份，try/finally 還原，操作路徑為 `~/.overtone/heartbeat.pid`。三個 test 各自備份/還原，並行時互相污染。
+- `/Users/sbu/projects/overtone/tests/integration/dashboard-pid.test.js`（L21-41）：以 module-level 的 `let backup = null` 在 `beforeEach` 備份 `~/.overtone/dashboard.json`，`afterEach` 還原。多個 worker 同時執行 beforeEach 時，備份互相覆蓋。
+
+**假設驗證記錄**：
+
+1. ❌ 假設 A：測試套件中大量測試缺少 tmpdir 隔離，需要全面修復。被排除，因為掃描後發現 138 個有 write 的檔案中，大多數使用 TIMESTAMP prefix session id（如 `test_state_${Date.now()}`）+ afterEach rmSync，這是正確的隔離策略。只有 2 個真正有 race condition 問題。
+
+2. ✅ 假設 B：操作單一全域共享檔案的備份/還原模式是 race condition 根因。確認，`health-check-os-tools.test.js` 和 `dashboard-pid.test.js` 都操作**唯一路徑**（非每 session 獨立），且不在 SEQUENTIAL_FILES 中。Race condition 路徑：進程 A 備份 X → 進程 B 備份（進程 A 已改的值 Y）→ 進程 A 還原 X → 進程 B 還原 Y（錯誤）。
+
+**建議修復方式**：
+
+選項一（推薦）：加入 `SEQUENTIAL_FILES`
+```js
+const SEQUENTIAL_FILES = new Set([
+  'tests/integration/session-id-bridge.test.js',
+  'tests/unit/health-check-os-tools.test.js',
+  'tests/integration/dashboard-pid.test.js',
+]);
+```
+最低侵入性，不需改測試程式碼，代價是這兩個檔案串行執行（執行時間：health-check-os-tools 約 300ms，dashboard-pid 約 300ms，可接受）。
+
+選項二：改用環境變數覆蓋路徑（若 paths.js 支援 `OVERTONE_HOME`）
+在每個 test 前設定 `process.env.OVERTONE_HOME` 指向 tmpdir，讓 heartbeat.pid / dashboard.json 寫入 tmpdir 而非真實路徑。需要先確認 paths.js 是否支援此覆蓋機制。
+
+選項三：mock `require('fs')` 的 write 相關方法，完全不寫磁碟。侵入性最大。
+
+---
+
+**附：已確認正確隔離的主要模式（供參考，無需修復）**
+
+- session dir 測試（state、loop、instinct、feedback-loop 等）：`TEST_SESSION = \`test_xxx_${Date.now()}\`` + afterEach rmSync — 隔離正確
+- project root 測試（failure-tracker、trend-analysis、queue-cli-enhancement 等）：`~/.overtone/test-xxx-TIMESTAMP` + afterAll rmSync — 隔離正確
+- statusline.test.js：完全使用 tmpdir — 隔離最佳
+- cross-session-memory.test.js：project root 用 tmpdir，session dir 用 timestamp id + afterEach rmSync — 隔離正確
+- session-id-bridge.test.js：已在 SEQUENTIAL_FILES — 已隔離
+Keywords: backup, restore, users, projects, overtone, tests, unit, health, check, tools
+
+---
+## 2026-03-07 | developer:DEV Findings
+- `tests/unit/health-check-os-tools.test.js` 操作 `~/.overtone/heartbeat.pid`
+- `tests/integration/dashboard-pid.test.js` 操作 `~/.overtone/dashboard.json`
+- 兩者皆為全域共享路徑，多進程並行時會發生 race condition
+- 修復方式：最低侵入性 — 只改 `SEQUENTIAL_FILES` 集合，不動測試程式碼本身
+- 測試結果：4657 pass, 0 fail，30.5s（12 workers，含 3 個串行測試）
+Keywords: tests, unit, health, check, tools, test, overtone, heartbeat, integration, dashboard
+
+---
+## 2026-03-07 | developer:DEV Context
+實作兩個測試執行效能優化：
+
+**任務 A**：`scripts/test-parallel.js` — sequential 檔案從逐一串行改為在 parallel 完成後並行啟動（`Promise.all`）。整體測試從 ~42s 降到 ~28s（-33%）。
+
+**任務 B**：`tests/integration/health-check.test.js` — Feature 7 和「真實 codebase 執行驗證」加入 lazy 快取（`getF7Result()` / `getRealResult()`），從 12 次 `spawnSync` 降到 3 次。單檔從 ~24s 降到 ~4s（-83%）。
+Keywords: scripts, test, parallel, sequential, promise, tests, integration, health, check, feature
+
+---
+## 2026-03-07 | code-reviewer:REVIEW Findings
+審查了 commit 249accc 的兩個檔案變更：
+- `scripts/test-parallel.js`：sequential for-loop 改為 Promise.all 並行啟動。驗證了四個 sequential 檔案各自存取不同共享資源，並行安全。結果收集邏輯（parallelResults + seqResults 合併）完整無遺漏。
+- `tests/integration/health-check.test.js`：Feature 7 和真實 codebase 區塊各加 lazy 快取函式，共用同步 spawnSync 結果。語意上同 describe 內的測試驗證同一次執行的不同面向，共用結果正確。
+
+[n] 第 247 行 verbose label 仍用「串行」，與新的「隔離並行」行為略有術語不一致，不阻擋。
+Keywords: commit, scripts, test, parallel, sequential, loop, promise, parallelresults, seqresults, tests
 
