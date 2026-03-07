@@ -23,8 +23,10 @@ const { SCRIPTS_LIB, SCRIPTS_DIR, HOOKS_DIR, PROJECT_ROOT } = require('../helper
 
 // ── 路徑常數 ──
 
+const pathsMod = require(path.join(SCRIPTS_LIB, 'paths'));
 const OVERTONE_HOME = path.join(os.homedir(), '.overtone');
 const CURRENT_SESSION_FILE = path.join(OVERTONE_HOME, '.current-session-id');
+const PER_PROJECT_SESSION_FILE = pathsMod.currentSessionFile(PROJECT_ROOT);
 const SESSIONS_DIR = path.join(OVERTONE_HOME, 'sessions');
 
 // ── 工具函式 ──
@@ -65,7 +67,16 @@ describe('Session ID Bridge — init-workflow.js fallback 讀取', () => {
       }
     } catch { /* 忽略清理錯誤 */ }
 
-    // 清理 .current-session-id（若我們寫入了）
+    // 清理 per-project .current-session-id（若我們寫入了）
+    try {
+      if (existsSync(PER_PROJECT_SESSION_FILE)) {
+        const current = readFileSync(PER_PROJECT_SESSION_FILE, 'utf8').trim();
+        if (current === testSessionId) {
+          rmSync(PER_PROJECT_SESSION_FILE, { force: true });
+        }
+      }
+    } catch { /* 忽略清理錯誤 */ }
+    // 清理舊全域文件（若存在）
     try {
       if (existsSync(CURRENT_SESSION_FILE)) {
         const current = readFileSync(CURRENT_SESSION_FILE, 'utf8').trim();
@@ -77,8 +88,10 @@ describe('Session ID Bridge — init-workflow.js fallback 讀取', () => {
   });
 
   test('寫入假 session ID 後執行 init-workflow.js（無 sessionId 參數）應成功讀取', () => {
-    // 寫入假 session ID 到共享文件
-    writeFileSync(CURRENT_SESSION_FILE, testSessionId, 'utf8');
+    // 寫入假 session ID 到 per-project 共享文件
+    const dir = path.dirname(PER_PROJECT_SESSION_FILE);
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(PER_PROJECT_SESSION_FILE, testSessionId, 'utf8');
 
     // 執行 init-workflow.js，不傳 sessionId（只傳 workflowType）
     const { stdout, stderr, exitCode } = runCLI(
@@ -113,10 +126,12 @@ describe('Session ID Bridge — init-workflow.js fallback 讀取', () => {
     mkdirSync(testSessionDir, { recursive: true });
 
     let previousId = null;
-    if (existsSync(CURRENT_SESSION_FILE)) {
-      previousId = readFileSync(CURRENT_SESSION_FILE, 'utf8').trim();
-      rmSync(CURRENT_SESSION_FILE, { force: true });
+    if (existsSync(PER_PROJECT_SESSION_FILE)) {
+      previousId = readFileSync(PER_PROJECT_SESSION_FILE, 'utf8').trim();
+      rmSync(PER_PROJECT_SESSION_FILE, { force: true });
     }
+    // 也清理舊全域文件
+    if (existsSync(CURRENT_SESSION_FILE)) rmSync(CURRENT_SESSION_FILE, { force: true });
 
     try {
       const { exitCode } = runCLI(
@@ -129,7 +144,10 @@ describe('Session ID Bridge — init-workflow.js fallback 讀取', () => {
     } finally {
       // 清理測試 session 和 workflow.json
       rmSync(testSessionDir, { recursive: true, force: true });
-      if (previousId) writeFileSync(CURRENT_SESSION_FILE, previousId, 'utf8');
+      if (previousId) {
+        mkdirSync(path.dirname(PER_PROJECT_SESSION_FILE), { recursive: true });
+        writeFileSync(PER_PROJECT_SESSION_FILE, previousId, 'utf8');
+      }
     }
   });
 
@@ -168,13 +186,23 @@ describe('Session ID Bridge — init-workflow.js fallback 讀取', () => {
 
 // ── 測試 B：CURRENT_SESSION_FILE 路徑在 paths.js 中已正確 export ──
 
-describe('paths.js — CURRENT_SESSION_FILE 已正確 export', () => {
-  test('CURRENT_SESSION_FILE 應被 export 且指向正確路徑', () => {
+describe('paths.js — session ID 路徑已正確 export', () => {
+  test('CURRENT_SESSION_FILE（舊全域）應被 export 且指向正確路徑', () => {
     const paths = require(path.join(SCRIPTS_LIB, 'paths'));
 
     expect(paths.CURRENT_SESSION_FILE).toBeDefined();
     expect(paths.CURRENT_SESSION_FILE).toContain('.overtone');
     expect(paths.CURRENT_SESSION_FILE).toContain('.current-session-id');
+  });
+
+  test('currentSessionFile（per-project）應被 export 且回傳含 projectHash 的路徑', () => {
+    const paths = require(path.join(SCRIPTS_LIB, 'paths'));
+
+    expect(typeof paths.currentSessionFile).toBe('function');
+    const result = paths.currentSessionFile('/tmp/test-project');
+    expect(result).toContain('.overtone');
+    expect(result).toContain('global');
+    expect(result).toContain('.current-session-id');
   });
 
   test('OVERTONE_HOME 應被 export', () => {
@@ -190,18 +218,18 @@ describe('on-submit.js — sessionId 橋接邏輯', () => {
   const bridgeSessionId = `bridge-test-${Date.now()}`;
 
   afterEach(() => {
-    // 清理測試寫入的 session ID
+    // 清理測試寫入的 per-project session ID
     try {
-      if (existsSync(CURRENT_SESSION_FILE)) {
-        const current = readFileSync(CURRENT_SESSION_FILE, 'utf8').trim();
+      if (existsSync(PER_PROJECT_SESSION_FILE)) {
+        const current = readFileSync(PER_PROJECT_SESSION_FILE, 'utf8').trim();
         if (current === bridgeSessionId) {
-          rmSync(CURRENT_SESSION_FILE, { force: true });
+          rmSync(PER_PROJECT_SESSION_FILE, { force: true });
         }
       }
     } catch { /* 忽略 */ }
   });
 
-  test('on-submit.js 傳入 CLAUDE_SESSION_ID 環境變數時應寫入 .current-session-id', () => {
+  test('on-submit.js 傳入 CLAUDE_SESSION_ID 環境變數時應寫入 per-project .current-session-id', () => {
     // 模擬 UserPromptSubmit hook 傳入的 stdin（on-submit.js 從 stdin 讀 hook input）
     const hookInput = JSON.stringify({
       user_prompt: '請幫我新增功能',
@@ -226,9 +254,9 @@ describe('on-submit.js — sessionId 橋接邏輯', () => {
     // on-submit.js 應成功執行（exit code 0）
     expect(proc.exitCode).toBe(0);
 
-    // .current-session-id 應包含我們傳入的 session ID
-    expect(existsSync(CURRENT_SESSION_FILE)).toBe(true);
-    const writtenId = readFileSync(CURRENT_SESSION_FILE, 'utf8').trim();
+    // per-project .current-session-id 應包含我們傳入的 session ID
+    expect(existsSync(PER_PROJECT_SESSION_FILE)).toBe(true);
+    const writtenId = readFileSync(PER_PROJECT_SESSION_FILE, 'utf8').trim();
     expect(writtenId).toBe(bridgeSessionId);
 
     // stdout 應為有效的 JSON（systemMessage 格式）
@@ -243,8 +271,8 @@ describe('on-submit.js — sessionId 橋接邏輯', () => {
     });
 
     // 記錄執行前的文件狀態
-    const beforeExists = existsSync(CURRENT_SESSION_FILE);
-    const beforeContent = beforeExists ? readFileSync(CURRENT_SESSION_FILE, 'utf8').trim() : null;
+    const beforeExists = existsSync(PER_PROJECT_SESSION_FILE);
+    const beforeContent = beforeExists ? readFileSync(PER_PROJECT_SESSION_FILE, 'utf8').trim() : null;
 
     const proc = Bun.spawnSync(
       ['node', path.join(HOOKS_DIR, 'prompt', 'on-submit.js')],
@@ -265,7 +293,7 @@ describe('on-submit.js — sessionId 橋接邏輯', () => {
 
     // 文件內容不應改變（因為 sessionId 為空，不應寫入）
     if (beforeExists) {
-      const afterContent = readFileSync(CURRENT_SESSION_FILE, 'utf8').trim();
+      const afterContent = readFileSync(PER_PROJECT_SESSION_FILE, 'utf8').trim();
       expect(afterContent).toBe(beforeContent);
     }
     // 若文件不存在且 sessionId 為空，文件仍不應被建立
