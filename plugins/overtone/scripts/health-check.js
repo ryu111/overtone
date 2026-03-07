@@ -50,7 +50,10 @@ const TESTS_DIR = path.join(PROJECT_ROOT, 'tests');
 
 // ── 工具函式 ──
 
-const { collectJsFiles, collectMdFiles, safeRead } = fsScanner;
+const { collectJsFiles, collectMdFiles, safeRead, parseExportKeys } = fsScanner;
+
+// 向後相容 alias — health-check.test.js 直接引用此名稱
+const parseModuleExportKeys = parseExportKeys;
 
 /**
  * 從當前目錄往上找含 CLAUDE.md 的專案根目錄
@@ -183,36 +186,6 @@ function checkPhantomEvents() {
 }
 
 // ── 2. Dead Exports 偵測 ──
-
-/**
- * 解析 module.exports = { ... } 中的 key 名稱
- * 支援：module.exports = { a, b, c } 和 module.exports = { a: ..., b: ... }
- * @param {string} content
- * @returns {string[]}
- */
-function parseModuleExportKeys(content) {
-  // 找 module.exports = { ... } 區塊
-  const exportMatch = content.match(/module\.exports\s*=\s*\{([^}]+)\}/s);
-  if (!exportMatch) return [];
-
-  const body = exportMatch[1];
-  const keys = [];
-
-  // 匹配 export key，支援兩種格式：
-  // 1. shorthand: { a, b, c } → a 在行首/逗號後，後跟 , 或行尾
-  // 2. key:value: { key: val } → key 在逗號/行首後，後跟 :
-  // (?:^|[,\n]) 確保只匹配每個 entry 的第一個 identifier（即 key）
-  const keyRe = /(?:^|[,\n])\s*([a-zA-Z_$][a-zA-Z0-9_$]*)\s*(?=:|,|\n|$|\s*\})/gm;
-  for (const m of body.matchAll(keyRe)) {
-    const k = m[1];
-    // 排除保留字
-    if (k && !['true', 'false', 'null', 'undefined'].includes(k)) {
-      keys.push(k);
-    }
-  }
-
-  return [...new Set(keys)];
-}
 
 /**
  * @returns {Finding[]}

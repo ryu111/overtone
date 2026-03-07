@@ -124,6 +124,45 @@ function clearCache() {
   _mdCache.clear();
 }
 
+// ── Export 解析 ────────────────────────────────────────────────────────────
+
+/**
+ * 解析 module.exports = { ... } 中的 key 名稱。
+ * 支援：
+ *   - shorthand：module.exports = { a, b, c }
+ *   - key-value：module.exports = { a: ..., b: ... }
+ *   - module.exports.x = ... 形式
+ *
+ * @param {string} content
+ * @returns {string[]} 去重後的 export key 清單
+ */
+function parseExportKeys(content) {
+  const keys = [];
+
+  // 模式 1：module.exports = { ... } 物件形式
+  const objectExportMatch = content.match(/module\.exports\s*=\s*\{([^}]+)\}/s);
+  if (objectExportMatch) {
+    const body = objectExportMatch[1];
+    // 匹配每個 entry 的 key，支援 shorthand 和 key: value 兩種格式
+    const keyRe = /(?:^|[,\n])\s*([a-zA-Z_$][a-zA-Z0-9_$]*)\s*(?=:|,|\n|$|\s*\})/gm;
+    for (const m of body.matchAll(keyRe)) {
+      const k = m[1];
+      // 排除 JS 保留字
+      if (k && !['true', 'false', 'null', 'undefined', 'return'].includes(k)) {
+        keys.push(k);
+      }
+    }
+  }
+
+  // 模式 2：module.exports.xxx = ... 逐個賦值形式
+  const dotExportRe = /module\.exports\.([a-zA-Z_$][a-zA-Z0-9_$]*)\s*=/g;
+  for (const m of content.matchAll(dotExportRe)) {
+    keys.push(m[1]);
+  }
+
+  return [...new Set(keys)];
+}
+
 // ── 匯出 ──────────────────────────────────────────────────────────────────
 
 module.exports = {
@@ -131,4 +170,5 @@ module.exports = {
   collectMdFiles,
   safeRead,
   clearCache,
+  parseExportKeys,
 };

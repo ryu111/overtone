@@ -230,25 +230,28 @@ describe('buildPluginContext', () => {
 // ────────────────────────────────────────────────────────────────────────────
 
 describe('handleSessionStart — 基本回傳結構', () => {
+  // lazy getter：同一 describe 中所有 test 共用同一次呼叫結果
+  let _sharedResult;
+  function sharedResult() {
+    if (!_sharedResult) {
+      _sharedResult = handler.handleSessionStart({ cwd: process.cwd() }, null, null);
+    }
+    return _sharedResult;
+  }
+
   test('回傳物件含 result 欄位（字串）', () => {
-    // 傳入無 session 環境（避免 I/O 副作用）
-    const result = handler.handleSessionStart(
-      { cwd: process.cwd() },
-      null,  // sessionId 為 null，跳過目錄建立和 timeline emit
-      null   // hookTimer 為 null，跳過 timing emit
-    );
+    const result = sharedResult();
     expect(typeof result).toBe('object');
     expect(typeof result.result).toBe('string');
   });
 
   test('result 字串包含版本號（來自 plugin.json）', () => {
-    const result = handler.handleSessionStart({ cwd: process.cwd() }, null, null);
     // 版本號格式為 x.y.z，確認 result 中包含合理的版本字串
-    expect(result.result).toMatch(/\d+\.\d+\.\d+/);
+    expect(sharedResult().result).toMatch(/\d+\.\d+\.\d+/);
   });
 
   test('hookTimer 為 null 時不拋出例外', () => {
-    expect(() => handler.handleSessionStart({ cwd: process.cwd() }, null, null)).not.toThrow();
+    expect(() => sharedResult()).not.toThrow();
   });
 
   test('hookTimer 提供 emit 時會被呼叫（sessionId 為 null 時跳過）', () => {
@@ -416,22 +419,31 @@ describe('Feature 7: 最近常做的事（intent_journal 摘要注入）', () =>
 // ────────────────────────────────────────────────────────────────────────────
 
 describe('Feature 8: handleSessionStart — systemMessage 組裝', () => {
+  // lazy getter：8-1、8-2、8-3、8-5 共用同一次呼叫（相同參數）
+  let _f8Output;
+  function f8Output() {
+    if (!_f8Output) {
+      _f8Output = handler.handleSessionStart({ cwd: process.cwd() }, null, null);
+    }
+    return _f8Output;
+  }
+
   test('Scenario 8-1: 正常啟動時 result 包含版本號且格式正確', () => {
-    const output = handler.handleSessionStart({ cwd: process.cwd() }, null, null);
+    const output = f8Output();
     expect(output).toHaveProperty('result');
     expect(typeof output.result).toBe('string');
     expect(output.result).toMatch(/\d+\.\d+\.\d+/);
   });
 
   test('Scenario 8-2: systemMessage 包含 Overtone Plugin Context 段落', () => {
-    const output = handler.handleSessionStart({ cwd: process.cwd() }, null, null);
+    const output = f8Output();
     if (output.systemMessage) {
       expect(output.systemMessage).toContain('Overtone Plugin Context');
     }
   });
 
   test('Scenario 8-3: systemMessage 中各段落以雙換行分隔', () => {
-    const output = handler.handleSessionStart({ cwd: process.cwd() }, null, null);
+    const output = f8Output();
     if (output.systemMessage && output.systemMessage.includes('\n\n')) {
       // systemMessage 存在且含雙換行（段落分隔），格式正確
       expect(output.systemMessage.split('\n\n').length).toBeGreaterThan(1);
@@ -451,6 +463,7 @@ describe('Feature 8: handleSessionStart — systemMessage 組裝', () => {
   });
 
   test('Scenario 8-5: input 缺少 cwd 時退回 process.cwd() 不拋出', () => {
+    // 使用不同 input（{}），不能共用 f8Output
     expect(() => {
       const output = handler.handleSessionStart({}, null, null);
       expect(typeof output.result).toBe('string');

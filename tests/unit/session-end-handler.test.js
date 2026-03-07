@@ -27,9 +27,15 @@ describe('session-end-handler 模組介面', () => {
 // ── handleSessionEnd 邊界情況 ────────────────────────────────────────────
 
 describe('handleSessionEnd 邊界情況', () => {
+  // lazy getter：null sessionId 的回傳結果（三個 test 共用）
+  let _nullResult;
+  function nullResult() {
+    if (!_nullResult) _nullResult = handleSessionEnd({ reason: 'other' }, null);
+    return _nullResult;
+  }
+
   test('無 sessionId → 回傳 { output: { result: "" } }', () => {
-    const result = handleSessionEnd({ reason: 'other' }, null);
-    expect(result).toEqual({ output: { result: '' } });
+    expect(nullResult()).toEqual({ output: { result: '' } });
   });
 
   test('sessionId 為空字串 → 回傳 { output: { result: "" } }', () => {
@@ -38,13 +44,13 @@ describe('handleSessionEnd 邊界情況', () => {
   });
 
   test('回傳值有 output.result 欄位（無 sessionId 情況）', () => {
-    const result = handleSessionEnd({}, null);
+    const result = nullResult();
     expect(typeof result.output).toBe('object');
     expect(result.output.result).toBe('');
   });
 
   test('回傳值可 JSON 序列化', () => {
-    const result = handleSessionEnd({ reason: 'clear' }, null);
+    const result = nullResult();
     expect(() => JSON.stringify(result)).not.toThrow();
     const parsed = JSON.parse(JSON.stringify(result));
     expect(typeof parsed.output).toBe('object');
