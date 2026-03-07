@@ -35,6 +35,13 @@ const {
   PROJECT_ROOT,
 } = require('../../plugins/overtone/scripts/health-check');
 
+// ── 效能：lazy cache 避免重複目錄掃描 ──
+const _cache = new Map();
+function cached(fn) {
+  if (!_cache.has(fn)) _cache.set(fn, fn());
+  return _cache.get(fn);
+}
+
 // ══════════════════════════════════════════════════════════════════
 // 工具函式測試
 // ══════════════════════════════════════════════════════════════════
@@ -143,19 +150,19 @@ describe('parsePathsExports', () => {
 
 describe('checkPhantomEvents', () => {
   test('回傳陣列', () => {
-    const findings = checkPhantomEvents();
+    const findings = cached(checkPhantomEvents);
     expect(Array.isArray(findings)).toBe(true);
   });
 
   test('所有 finding 的 check 欄位為 "phantom-events"', () => {
-    const findings = checkPhantomEvents();
+    const findings = cached(checkPhantomEvents);
     for (const f of findings) {
       expect(f.check).toBe('phantom-events');
     }
   });
 
   test('finding severity 只能是 error 或 warning', () => {
-    const findings = checkPhantomEvents();
+    const findings = cached(checkPhantomEvents);
     const validSeverities = new Set(['error', 'warning']);
     for (const f of findings) {
       expect(validSeverities.has(f.severity)).toBe(true);
@@ -163,7 +170,7 @@ describe('checkPhantomEvents', () => {
   });
 
   test('每個 finding 包含必要欄位', () => {
-    const findings = checkPhantomEvents();
+    const findings = cached(checkPhantomEvents);
     for (const f of findings) {
       expect(typeof f.check).toBe('string');
       expect(typeof f.severity).toBe('string');
@@ -175,7 +182,7 @@ describe('checkPhantomEvents', () => {
   test('registry 沒有定義的 emit 事件會產生 error finding', () => {
     // 此測試驗證邏輯：registry 未定義 → error
     // 由於無法直接注入 mock，改為確認實際結果中 error 的 finding 確實來自未定義事件
-    const findings = checkPhantomEvents();
+    const findings = cached(checkPhantomEvents);
     const errors = findings.filter((f) => f.severity === 'error');
     for (const e of errors) {
       // error finding 的 message 應說明 emit 了未定義的事件
@@ -184,7 +191,7 @@ describe('checkPhantomEvents', () => {
   });
 
   test('warning finding 的 file 指向 registry.js', () => {
-    const findings = checkPhantomEvents();
+    const findings = cached(checkPhantomEvents);
     const warnings = findings.filter((f) => f.severity === 'warning');
     for (const w of warnings) {
       expect(w.file).toContain('registry.js');
@@ -194,14 +201,14 @@ describe('checkPhantomEvents', () => {
   // 驗證真實 codebase 不產生假陽性（warning = 0）
   // 已知 7 個事件曾被誤報：含 hyphen 的 event、物件字面量 type 欄位、bash printf 寫入的事件
   test('真實 codebase 不產生 phantom-events warning（false positive 為 0）', () => {
-    const findings = checkPhantomEvents();
+    const findings = cached(checkPhantomEvents);
     const warnings = findings.filter((f) => f.severity === 'warning');
     expect(warnings.length).toBe(0);
   });
 
   // 驗證含 hyphen 的 registry 事件不被誤報
   test('含 hyphen 的 registry 事件（specs:tasks-missing 等）不產生 warning', () => {
-    const findings = checkPhantomEvents();
+    const findings = cached(checkPhantomEvents);
     const hyphenEvents = [
       'specs:tasks-missing',
       'specs:archive-skipped',
@@ -216,7 +223,7 @@ describe('checkPhantomEvents', () => {
 
   // 驗證物件字面量 type 欄位的事件不被誤報（stop-message-builder 回傳模式）
   test('物件字面量 type 欄位的事件（stage:retry、error:fatal、parallel:converge）不產生 warning', () => {
-    const findings = checkPhantomEvents();
+    const findings = cached(checkPhantomEvents);
     const literalEvents = ['stage:retry', 'error:fatal', 'parallel:converge'];
     const warnings = findings.filter((f) => f.severity === 'warning');
     for (const evt of literalEvents) {
@@ -227,7 +234,7 @@ describe('checkPhantomEvents', () => {
 
   // 驗證 bash printf 寫入 timeline 的事件（grader:score）不被誤報
   test('bash printf 寫入 timeline 的事件（grader:score）不產生 warning', () => {
-    const findings = checkPhantomEvents();
+    const findings = cached(checkPhantomEvents);
     const warnings = findings.filter((f) => f.severity === 'warning');
     const found = warnings.some((w) => w.message.includes('grader:score'));
     expect(found).toBe(false);
@@ -240,26 +247,26 @@ describe('checkPhantomEvents', () => {
 
 describe('checkDeadExports', () => {
   test('回傳陣列', () => {
-    const findings = checkDeadExports();
+    const findings = cached(checkDeadExports);
     expect(Array.isArray(findings)).toBe(true);
   });
 
   test('所有 finding 的 check 欄位為 "dead-exports"', () => {
-    const findings = checkDeadExports();
+    const findings = cached(checkDeadExports);
     for (const f of findings) {
       expect(f.check).toBe('dead-exports');
     }
   });
 
   test('finding severity 為 warning', () => {
-    const findings = checkDeadExports();
+    const findings = cached(checkDeadExports);
     for (const f of findings) {
       expect(f.severity).toBe('warning');
     }
   });
 
   test('每個 finding 包含 export key 資訊', () => {
-    const findings = checkDeadExports();
+    const findings = cached(checkDeadExports);
     for (const f of findings) {
       expect(f.message).toBeTruthy();
       expect(f.file).toBeTruthy();
@@ -267,7 +274,7 @@ describe('checkDeadExports', () => {
   });
 
   test('instinct.js（class instance export）不被納入檢查', () => {
-    const findings = checkDeadExports();
+    const findings = cached(checkDeadExports);
     // instinct.js 使用 module.exports = new Instinct()，應被排除
     // 注意：過濾條件精確匹配 instinct.js，不含 global-instinct.js
     const instinctFindings = findings.filter((f) => f.file.endsWith('lib/instinct.js'));
@@ -275,7 +282,7 @@ describe('checkDeadExports', () => {
   });
 
   test('registry.js 的 stages export 不被標記為 dead', () => {
-    const findings = checkDeadExports();
+    const findings = cached(checkDeadExports);
     // stages 在多個地方被使用，不應被標記
     const stagesDeadFindings = findings.filter(
       (f) => f.file.includes('registry.js') && f.message.includes('"stages"')
@@ -290,26 +297,26 @@ describe('checkDeadExports', () => {
 
 describe('checkDocCodeDrift', () => {
   test('回傳陣列', () => {
-    const findings = checkDocCodeDrift();
+    const findings = cached(checkDocCodeDrift);
     expect(Array.isArray(findings)).toBe(true);
   });
 
   test('所有 finding 的 check 欄位為 "doc-code-drift"', () => {
-    const findings = checkDocCodeDrift();
+    const findings = cached(checkDocCodeDrift);
     for (const f of findings) {
       expect(f.check).toBe('doc-code-drift');
     }
   });
 
   test('finding severity 為 warning', () => {
-    const findings = checkDocCodeDrift();
+    const findings = cached(checkDocCodeDrift);
     for (const f of findings) {
       expect(f.severity).toBe('warning');
     }
   });
 
   test('每個 finding 的 message 包含實際值與 docs 記載值', () => {
-    const findings = checkDocCodeDrift();
+    const findings = cached(checkDocCodeDrift);
     for (const f of findings) {
       // message 應說明 docs 記載的值與實際不符
       expect(f.message).toMatch(/docs 記載 \d+ 個.+，但程式碼實際有 \d+ 個/);
@@ -319,7 +326,7 @@ describe('checkDocCodeDrift', () => {
   test('複合短語不應被視為計數聲明（假陽性排除）', () => {
     // 「8 個 agent 消費」「14 stage shortcut」「8 個 hook 合約」等複合短語
     // 後面緊跟另一個詞，應被 checkDocCodeDrift 排除，不產生 finding
-    const findings = checkDocCodeDrift();
+    const findings = cached(checkDocCodeDrift);
     // 已知複合短語：8 個 agent 消費、14 stage shortcut、7 workflow pipeline、8 個 hook 合約等
     // 這些不應出現在 findings 中
     const compositeMatches = findings.filter(
@@ -341,7 +348,7 @@ describe('checkDocCodeDrift', () => {
   test('grader 豁免：agent 數為 actual+1 時不產生 finding', () => {
     // grader.md 存在於 agents/ 目錄但不計入 registry stages，
     // 所以文件中的「17 個 Agents」（16 stage agents + grader）應被豁免
-    const findings = checkDocCodeDrift();
+    const findings = cached(checkDocCodeDrift);
     const graderFalsePositives = findings.filter(
       (f) => f.detail && /docs: 17/.test(f.detail) && /actual: 16/.test(f.detail) && /agent/i.test(f.detail)
     );
@@ -350,7 +357,7 @@ describe('checkDocCodeDrift', () => {
 
   test('當前 codebase 無 doc-code-drift finding', () => {
     // 確保所有文件中的計數描述與程式碼真值一致（含複合短語排除後）
-    const findings = checkDocCodeDrift();
+    const findings = cached(checkDocCodeDrift);
     expect(findings.length).toBe(0);
   });
 });
@@ -361,33 +368,33 @@ describe('checkDocCodeDrift', () => {
 
 describe('checkUnusedPaths', () => {
   test('回傳陣列', () => {
-    const findings = checkUnusedPaths();
+    const findings = cached(checkUnusedPaths);
     expect(Array.isArray(findings)).toBe(true);
   });
 
   test('所有 finding 的 check 欄位為 "unused-paths"', () => {
-    const findings = checkUnusedPaths();
+    const findings = cached(checkUnusedPaths);
     for (const f of findings) {
       expect(f.check).toBe('unused-paths');
     }
   });
 
   test('finding severity 為 info', () => {
-    const findings = checkUnusedPaths();
+    const findings = cached(checkUnusedPaths);
     for (const f of findings) {
       expect(f.severity).toBe('info');
     }
   });
 
   test('finding 的 file 指向 paths.js', () => {
-    const findings = checkUnusedPaths();
+    const findings = cached(checkUnusedPaths);
     for (const f of findings) {
       expect(f.file).toContain('paths.js');
     }
   });
 
   test('每個 finding 包含 export 名稱', () => {
-    const findings = checkUnusedPaths();
+    const findings = cached(checkUnusedPaths);
     for (const f of findings) {
       expect(f.message).toBeTruthy();
       expect(f.detail).toBeTruthy();
@@ -401,33 +408,33 @@ describe('checkUnusedPaths', () => {
 
 describe('checkDuplicateLogic', () => {
   test('回傳陣列', () => {
-    const findings = checkDuplicateLogic();
+    const findings = cached(checkDuplicateLogic);
     expect(Array.isArray(findings)).toBe(true);
   });
 
   test('所有 finding 的 check 欄位為 "duplicate-logic"', () => {
-    const findings = checkDuplicateLogic();
+    const findings = cached(checkDuplicateLogic);
     for (const f of findings) {
       expect(f.check).toBe('duplicate-logic');
     }
   });
 
   test('finding severity 為 info', () => {
-    const findings = checkDuplicateLogic();
+    const findings = cached(checkDuplicateLogic);
     for (const f of findings) {
       expect(f.severity).toBe('info');
     }
   });
 
   test('finding 的 detail 包含出現的檔案清單', () => {
-    const findings = checkDuplicateLogic();
+    const findings = cached(checkDuplicateLogic);
     for (const f of findings) {
       expect(f.detail).toContain('出現於：');
     }
   });
 
   test('finding 的 message 包含 pattern 名稱', () => {
-    const findings = checkDuplicateLogic();
+    const findings = cached(checkDuplicateLogic);
     const knownPatterns = ['agentToStage', 'calcDuration', 'findActualStageKey'];
     for (const f of findings) {
       const matchesAnyPattern = knownPatterns.some((p) => f.message.includes(p));
@@ -468,27 +475,27 @@ describe('checkDocStaleness', () => {
     setup();
     // 直接呼叫實際函式（docs/reference 存在且有檔案的話才有 finding）
     // 本測試驗證：若 reference 目錄不存在，回傳空陣列
-    const findings = checkDocStaleness();
+    const findings = cached(checkDocStaleness);
     expect(Array.isArray(findings)).toBe(true);
     teardown();
   });
 
   test('所有 finding 的 check 欄位為 "doc-staleness"', () => {
-    const findings = checkDocStaleness();
+    const findings = cached(checkDocStaleness);
     for (const f of findings) {
       expect(f.check).toBe('doc-staleness');
     }
   });
 
   test('finding severity 為 warning', () => {
-    const findings = checkDocStaleness();
+    const findings = cached(checkDocStaleness);
     for (const f of findings) {
       expect(f.severity).toBe('warning');
     }
   });
 
   test('每個 finding 包含必要欄位', () => {
-    const findings = checkDocStaleness();
+    const findings = cached(checkDocStaleness);
     for (const f of findings) {
       expect(typeof f.check).toBe('string');
       expect(typeof f.severity).toBe('string');
@@ -499,14 +506,14 @@ describe('checkDocStaleness', () => {
   });
 
   test('finding message 包含天數和「建議歸檔或刪除」', () => {
-    const findings = checkDocStaleness();
+    const findings = cached(checkDocStaleness);
     for (const f of findings) {
       expect(f.message).toMatch(/\d+ 天未更新，建議歸檔或刪除/);
     }
   });
 
   test('finding detail 包含「最後更新」和「無引用」', () => {
-    const findings = checkDocStaleness();
+    const findings = cached(checkDocStaleness);
     for (const f of findings) {
       expect(f.detail).toContain('最後更新：');
       expect(f.detail).toContain('無引用');
@@ -514,14 +521,14 @@ describe('checkDocStaleness', () => {
   });
 
   test('finding file 路徑以 docs/reference/ 開頭', () => {
-    const findings = checkDocStaleness();
+    const findings = cached(checkDocStaleness);
     for (const f of findings) {
       expect(f.file).toMatch(/^docs\/reference\//);
     }
   });
 
   test('回傳陣列（真實 codebase）', () => {
-    const findings = checkDocStaleness();
+    const findings = cached(checkDocStaleness);
     expect(Array.isArray(findings)).toBe(true);
   });
 });
@@ -532,19 +539,19 @@ describe('checkDocStaleness', () => {
 
 describe('runAllChecks', () => {
   test('回傳 { checks, findings } 物件', () => {
-    const result = runAllChecks();
+    const result = cached(runAllChecks);
     expect(result).toBeDefined();
     expect(Array.isArray(result.checks)).toBe(true);
     expect(Array.isArray(result.findings)).toBe(true);
   });
 
   test('checks 陣列長度至少為 12（含 F1/F2/F3 三個主動偵測）', () => {
-    const { checks } = runAllChecks();
+    const { checks } = cached(runAllChecks);
     expect(checks.length).toBeGreaterThanOrEqual(12);
   });
 
   test('checks 包含所有 12 個偵測項目名稱', () => {
-    const { checks } = runAllChecks();
+    const { checks } = cached(runAllChecks);
     const names = checks.map((c) => c.name);
     expect(names).toContain('phantom-events');
     expect(names).toContain('dead-exports');
@@ -561,7 +568,7 @@ describe('runAllChecks', () => {
   });
 
   test('每個 check 項目包含 name、passed、findingsCount', () => {
-    const { checks } = runAllChecks();
+    const { checks } = cached(runAllChecks);
     for (const c of checks) {
       expect(typeof c.name).toBe('string');
       expect(typeof c.passed).toBe('boolean');
@@ -570,7 +577,7 @@ describe('runAllChecks', () => {
   });
 
   test('check.findingsCount 與實際 findings 數量一致', () => {
-    const { checks, findings } = runAllChecks();
+    const { checks, findings } = cached(runAllChecks);
     for (const c of checks) {
       const actual = findings.filter((f) => f.check === c.name).length;
       expect(c.findingsCount).toBe(actual);
@@ -578,7 +585,7 @@ describe('runAllChecks', () => {
   });
 
   test('check.passed 當且僅當 findingsCount === 0 時為 true', () => {
-    const { checks } = runAllChecks();
+    const { checks } = cached(runAllChecks);
     for (const c of checks) {
       if (c.findingsCount === 0) {
         expect(c.passed).toBe(true);
@@ -589,7 +596,7 @@ describe('runAllChecks', () => {
   });
 
   test('所有 finding 的 severity 只能是 error/warning/info', () => {
-    const { findings } = runAllChecks();
+    const { findings } = cached(runAllChecks);
     const valid = new Set(['error', 'warning', 'info']);
     for (const f of findings) {
       expect(valid.has(f.severity)).toBe(true);
@@ -597,7 +604,7 @@ describe('runAllChecks', () => {
   });
 
   test('所有 finding 的 check 只能是已知 22 個 check 名稱之一', () => {
-    const { findings } = runAllChecks();
+    const { findings } = cached(runAllChecks);
     const validChecks = new Set([
       'phantom-events', 'dead-exports', 'doc-code-drift', 'unused-paths',
       'duplicate-logic', 'platform-drift', 'doc-staleness', 'os-tools',
@@ -618,26 +625,26 @@ describe('runAllChecks', () => {
 
 describe('checkTestGrowth', () => {
   test('回傳陣列', () => {
-    const findings = checkTestGrowth();
+    const findings = cached(checkTestGrowth);
     expect(Array.isArray(findings)).toBe(true);
   });
 
   test('所有 finding 的 check 欄位為 "test-growth"', () => {
-    const findings = checkTestGrowth();
+    const findings = cached(checkTestGrowth);
     for (const f of findings) {
       expect(f.check).toBe('test-growth');
     }
   });
 
   test('finding severity 為 warning', () => {
-    const findings = checkTestGrowth();
+    const findings = cached(checkTestGrowth);
     for (const f of findings) {
       expect(f.severity).toBe('warning');
     }
   });
 
   test('每個 finding 包含必要欄位', () => {
-    const findings = checkTestGrowth();
+    const findings = cached(checkTestGrowth);
     for (const f of findings) {
       expect(typeof f.check).toBe('string');
       expect(typeof f.severity).toBe('string');

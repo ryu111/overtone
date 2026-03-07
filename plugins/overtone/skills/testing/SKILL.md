@@ -1,6 +1,6 @@
 ---
 name: testing
-description: 測試知識領域。BDD 方法論、測試策略、測試慣例、並行測試隔離、scope 調度規則。供 tester 和 qa agent 消費。
+description: 測試知識領域。BDD 方法論、測試策略、測試慣例、並行測試隔離、scope 調度規則、效能優化。供 tester 和 qa agent 消費。
 disable-model-invocation: true
 user-invocable: false
 ---
@@ -27,10 +27,11 @@ user-invocable: false
 | 4 | references/testing-conventions.md | 測試目錄結構、paths.js 用法、spec/verify 操作流程、並行測試隔離 | verify 模式執行時 |
 | 5 | references/test-strategy.md | 五階段測試流程（Assess→Run→Improve→Validate→Report） | verify 模式規劃策略時 |
 | 6 | examples/bdd-spec-samples.md | BDD spec 範例 | spec 模式參考範例時 |
-| 7 | references/test-anti-patterns.md | 6 種測試反模式 + 壞例/好例/判斷準則 | verify 模式撰寫測試時 / code review 時 |
+| 7 | references/test-anti-patterns.md | 7 種測試反模式 + 壞例/好例/判斷準則 | verify 模式撰寫測試時 / code review 時 |
 | 8 | references/e2e-patterns.md | E2E 測試核心模式（POM、Locator 策略、Anti-Flakiness） | E2E 測試設計時 |
 | 9 | references/concurrency-testing-guide.md | 並發測試策略（CAS 壓力測試、競爭條件驗證、JSONL 並發寫入） | 並發功能測試設計時 |
 | 10 | references/task-splitting-guide.md | 任務拆分決策指南（DEV 階段並行拆分評估） | 並行開發任務拆分時 |
+| 11 | references/test-performance-guide.md | 測試效能優化（lazy cache、shared fixture、spawn reduction、量測方法） | verify 模式撰寫測試時 / 優化現有測試時 |
 
 ## 按需讀取
 
@@ -53,3 +54,5 @@ user-invocable: false
 💡 並發測試策略（CAS 壓力、競爭條件）：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/testing/references/concurrency-testing-guide.md`
 
 💡 任務拆分決策（DEV 並行評估）：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/testing/references/task-splitting-guide.md`
+
+💡 測試效能優化（lazy cache、shared fixture、重量級 I/O）：讀取 `${CLAUDE_PLUGIN_ROOT}/skills/testing/references/test-performance-guide.md`

@@ -199,3 +199,53 @@ it('包含 fail 關鍵字時 parseResult 應回傳 fail status', () => {
   expect(result.status).toBe('fail');
 });
 ```
+
+---
+
+## Anti-Pattern 7：重複初始化重量級物件
+
+**定義**：每個 test case 都獨立呼叫昂貴的初始化操作（目錄掃描、子進程 spawn、大型物件建構），
+即使多個 test 驗證的是同一次操作的不同面向。
+
+### 判斷準則
+
+若同一 `describe` 內多個 `it` 各自呼叫相同的純函式/spawn 操作，且結果完全相同 — 即為此反模式。
+
+### 壞例（DON'T）
+
+```js
+describe('checkPhantomEvents', () => {
+  it('不應有未註冊的事件', () => {
+    const result = checkPhantomEvents(); // 掃描整個目錄樹
+    expect(result.length).toBe(0);
+  });
+  it('結果格式正確', () => {
+    const result = checkPhantomEvents(); // 又掃描一次，完全相同的結果
+    expect(result.every(r => r.file)).toBe(true);
+  });
+});
+```
+
+### 好例（DO）
+
+```js
+const _cache = new Map();
+function cached(fn) {
+  if (!_cache.has(fn)) _cache.set(fn, fn());
+  return _cache.get(fn);
+}
+
+describe('checkPhantomEvents', () => {
+  it('不應有未註冊的事件', () => {
+    const result = cached(checkPhantomEvents); // 第一次掃描
+    expect(result.length).toBe(0);
+  });
+  it('結果格式正確', () => {
+    const result = cached(checkPhantomEvents); // 快取命中
+    expect(result.every(r => r.file)).toBe(true);
+  });
+});
+```
+
+> 詳細策略（Per-Scenario Shared Fixture、Subprocess Spawn Reduction、Humble Object 遷移）
+> 見 `references/test-performance-guide.md`

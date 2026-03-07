@@ -21,6 +21,14 @@ const {
   PLUGIN_ROOT,
 } = require('../../plugins/overtone/scripts/health-check');
 
+// ── 效能：lazy cache 避免重複目錄掃描 ──
+const _cache = new Map();
+function cached(fn, ...args) {
+  const key = args.length ? `${fn.name}:${args[0]}` : fn.name;
+  if (!_cache.has(key)) _cache.set(key, fn(...args));
+  return _cache.get(key);
+}
+
 // ══════════════════════════════════════════════════════════════════
 // Feature F1: component-chain 偵測
 // ══════════════════════════════════════════════════════════════════
@@ -63,7 +71,7 @@ describe('checkComponentChain', () => {
 
   // Scenario F1-1: 正常鏈（agent 存在、skill 存在）→ 無 finding
   test('Scenario F1-1: 正常鏈無 finding', () => {
-    const findings = checkComponentChain(PLUGIN_ROOT);
+    const findings = cached(checkComponentChain, PLUGIN_ROOT);
     // 真實 codebase 是完整的，不應有 error finding
     expect(Array.isArray(findings)).toBe(true);
     // 所有 finding 的 check 欄位必須正確
@@ -81,7 +89,7 @@ describe('checkComponentChain', () => {
     // 由於 checkComponentChain 從 registry 取 stages，無法 inject mock stages
     // 改為驗證 finding 格式：若有 error finding，必須有正確欄位
 
-    const findings = checkComponentChain(PLUGIN_ROOT);
+    const findings = cached(checkComponentChain, PLUGIN_ROOT);
     for (const f of findings) {
       if (f.severity === 'error') {
         expect(typeof f.check).toBe('string');
@@ -102,7 +110,7 @@ describe('checkComponentChain', () => {
 
     // 直接使用 tmpDir 覆蓋，但 registry 仍從真實路徑取 stages
     // 為了可控測試，改用另一種方式：確認真實 codebase 的 warning finding 格式正確
-    const findings = checkComponentChain(PLUGIN_ROOT);
+    const findings = cached(checkComponentChain, PLUGIN_ROOT);
     for (const f of findings) {
       if (f.severity === 'warning') {
         expect(f.check).toBe('component-chain');
@@ -115,7 +123,7 @@ describe('checkComponentChain', () => {
 
   // Scenario F1-4: 多 agent 正常 → finding 數量可統計
   test('Scenario F1-4: 回傳陣列且每個 finding 包含必要欄位', () => {
-    const findings = checkComponentChain(PLUGIN_ROOT);
+    const findings = cached(checkComponentChain, PLUGIN_ROOT);
     expect(Array.isArray(findings)).toBe(true);
     for (const f of findings) {
       expect(typeof f.check).toBe('string');
@@ -128,7 +136,7 @@ describe('checkComponentChain', () => {
 
   // Scenario F1-5: severity 只能是 error 或 warning（component-chain 不輸出 info）
   test('Scenario F1-5: finding severity 只有 error 或 warning', () => {
-    const findings = checkComponentChain(PLUGIN_ROOT);
+    const findings = cached(checkComponentChain, PLUGIN_ROOT);
     const validSeverities = new Set(['error', 'warning']);
     for (const f of findings) {
       expect(validSeverities.has(f.severity)).toBe(true);
@@ -137,7 +145,7 @@ describe('checkComponentChain', () => {
 
   // Scenario F1-6: 真實 codebase — 所有 stage agent .md 必須存在（error finding 數為 0）
   test('Scenario F1-6: 真實 codebase 無 agent 缺失（error finding 為 0）', () => {
-    const findings = checkComponentChain(PLUGIN_ROOT);
+    const findings = cached(checkComponentChain, PLUGIN_ROOT);
     const errors = findings.filter((f) => f.severity === 'error');
     expect(errors.length).toBe(0);
   });
@@ -256,7 +264,7 @@ describe('checkDataQuality', () => {
 describe('checkQualityTrends', () => {
   // Scenario F3-1: 無異常 → 回傳空陣列（或無 warning）
   test('Scenario F3-1: 回傳陣列且 check 欄位正確', () => {
-    const findings = checkQualityTrends();
+    const findings = cached(checkQualityTrends);
     expect(Array.isArray(findings)).toBe(true);
     for (const f of findings) {
       expect(f.check).toBe('quality-trends');
@@ -268,7 +276,7 @@ describe('checkQualityTrends', () => {
 
   // Scenario F3-2: 高失敗率場景 → warning finding 含 stage 資訊
   test('Scenario F3-2: warning finding 包含 stage 相關資訊', () => {
-    const findings = checkQualityTrends();
+    const findings = cached(checkQualityTrends);
     const warnings = findings.filter((f) => f.severity === 'warning');
     for (const w of warnings) {
       // warning 應說明 stage 名稱或具體資訊
@@ -280,7 +288,7 @@ describe('checkQualityTrends', () => {
 
   // Scenario F3-3: severity 只能是 warning
   test('Scenario F3-3: finding severity 只有 warning', () => {
-    const findings = checkQualityTrends();
+    const findings = cached(checkQualityTrends);
     for (const f of findings) {
       expect(f.severity).toBe('warning');
     }
@@ -299,7 +307,7 @@ describe('checkQualityTrends', () => {
 
   // Scenario F3-5: detail 欄位存在於每個 warning finding
   test('Scenario F3-5: 每個 finding 包含 detail 欄位', () => {
-    const findings = checkQualityTrends();
+    const findings = cached(checkQualityTrends);
     for (const f of findings) {
       expect(typeof f.detail).toBe('string');
     }
@@ -312,12 +320,12 @@ describe('checkQualityTrends', () => {
 
 describe('runAllChecks — 包含 F1/F2/F3 新增 check', () => {
   test('checks 陣列長度為 22（新增 3 個製作原則偵測 + dependency-sync + internalization-index + test-file-alignment + skill-reference-integrity + concurrency-guards + compact-frequency + sequential-markers）', () => {
-    const { checks } = runAllChecks();
+    const { checks } = cached(runAllChecks);
     expect(checks.length).toBe(22);
   });
 
   test('checks 包含所有偵測項目（含 3 個製作原則偵測）', () => {
-    const { checks } = runAllChecks();
+    const { checks } = cached(runAllChecks);
     const names = checks.map((c) => c.name);
     expect(names).toContain('component-chain');
     expect(names).toContain('data-quality');
@@ -328,7 +336,7 @@ describe('runAllChecks — 包含 F1/F2/F3 新增 check', () => {
   });
 
   test('所有 finding 的 check 欄位包含所有 check 名稱', () => {
-    const { findings } = runAllChecks();
+    const { findings } = cached(runAllChecks);
     const validChecks = new Set([
       'phantom-events', 'dead-exports', 'doc-code-drift', 'unused-paths',
       'duplicate-logic', 'platform-drift', 'doc-staleness', 'os-tools',
@@ -344,7 +352,7 @@ describe('runAllChecks — 包含 F1/F2/F3 新增 check', () => {
   });
 
   test('check.findingsCount 與實際 findings 數量一致（含新 check）', () => {
-    const { checks, findings } = runAllChecks();
+    const { checks, findings } = cached(runAllChecks);
     for (const c of checks) {
       const actual = findings.filter((f) => f.check === c.name).length;
       expect(c.findingsCount).toBe(actual);

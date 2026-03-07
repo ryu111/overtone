@@ -99,73 +99,62 @@ describe('Feature 1d: SessionEnd hook（on-session-end.js）', () => {
 
   // Scenario 1d-1: 正常 session 結束時 emit session:end 事件
   describe('Scenario 1d-1: 正常結束時 emit session:end 事件', () => {
+    let _sid, _result, _events;
+    function getScenario() {
+      if (!_sid) {
+        _sid = newSessionId();
+        initSessionDir(_sid);
+        writeLoopJson(_sid, { stopped: false, iterations: 2 });
+        _result = runHook({ session_id: _sid, reason: 'prompt_input_exit' }, _sid);
+        _events = readTimeline(_sid);
+      }
+      return { result: _result, events: _events };
+    }
+
     test('timeline.jsonl 新增 session:end 事件', () => {
-      const sessionId = newSessionId();
-      initSessionDir(sessionId);
-      writeLoopJson(sessionId, { stopped: false, iterations: 2 });
-
-      const { exitCode } = runHook(
-        { session_id: sessionId, reason: 'prompt_input_exit' },
-        sessionId
-      );
-
-      expect(exitCode).toBe(0);
-      const events = readTimeline(sessionId);
+      const { result, events } = getScenario();
+      expect(result.exitCode).toBe(0);
       const sessionEndEvent = events.find(e => e.type === 'session:end');
       expect(sessionEndEvent).toBeDefined();
     });
 
     test('session:end 事件包含 reason: prompt_input_exit', () => {
-      const sessionId = newSessionId();
-      initSessionDir(sessionId);
-      writeLoopJson(sessionId, { stopped: false });
-
-      runHook({ session_id: sessionId, reason: 'prompt_input_exit' }, sessionId);
-
-      const events = readTimeline(sessionId);
+      const { events } = getScenario();
       const sessionEndEvent = events.find(e => e.type === 'session:end');
       expect(sessionEndEvent).toBeDefined();
-      // timeline.emit 將 data 欄位 spread 至頂層，reason 直接在事件物件上
       expect(sessionEndEvent.reason).toBe('prompt_input_exit');
     });
 
     test('session:end 事件包含有效的 ts（ISO 8601 格式）', () => {
-      const sessionId = newSessionId();
-      initSessionDir(sessionId);
-      writeLoopJson(sessionId, { stopped: false });
-
-      runHook({ session_id: sessionId, reason: 'prompt_input_exit' }, sessionId);
-
-      const events = readTimeline(sessionId);
+      const { events } = getScenario();
       const sessionEndEvent = events.find(e => e.type === 'session:end');
       expect(sessionEndEvent).toBeDefined();
-      // ISO 8601 格式：包含 T 和 Z 或時區偏移
       expect(sessionEndEvent.ts).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/);
     });
   });
 
   // Scenario 1d-2: emit 後重置 loop.json 為 stopped: true
   describe('Scenario 1d-2: hook 執行後 loop.json stopped 為 true', () => {
+    let _sid, _loopData;
+    function getScenario() {
+      if (!_sid) {
+        _sid = newSessionId();
+        initSessionDir(_sid);
+        writeLoopJson(_sid, { stopped: false, iterations: 5 });
+        runHook({ session_id: _sid, reason: 'prompt_input_exit' }, _sid);
+        _loopData = readLoopJson(_sid);
+      }
+      return { loopData: _loopData };
+    }
+
     test('loop.json stopped 欄位被設為 true', () => {
-      const sessionId = newSessionId();
-      initSessionDir(sessionId);
-      writeLoopJson(sessionId, { stopped: false, iterations: 3 });
-
-      runHook({ session_id: sessionId, reason: 'prompt_input_exit' }, sessionId);
-
-      const loopData = readLoopJson(sessionId);
+      const { loopData } = getScenario();
       expect(loopData).not.toBeNull();
       expect(loopData.stopped).toBe(true);
     });
 
     test('loop.json 其他欄位（iterations）不被清除', () => {
-      const sessionId = newSessionId();
-      initSessionDir(sessionId);
-      writeLoopJson(sessionId, { stopped: false, iterations: 5 });
-
-      runHook({ session_id: sessionId, reason: 'prompt_input_exit' }, sessionId);
-
-      const loopData = readLoopJson(sessionId);
+      const { loopData } = getScenario();
       expect(loopData.iterations).toBe(5);
     });
   });
@@ -187,28 +176,28 @@ describe('Feature 1d: SessionEnd hook（on-session-end.js）', () => {
 
   // Scenario 1d-5: clear reason 正常執行清理
   describe('Scenario 1d-5: clear reason 觸發時正常清理', () => {
+    let _sid, _events, _loopData;
+    function getScenario() {
+      if (!_sid) {
+        _sid = newSessionId();
+        initSessionDir(_sid);
+        writeLoopJson(_sid, { stopped: false });
+        runHook({ session_id: _sid, reason: 'clear' }, _sid);
+        _events = readTimeline(_sid);
+        _loopData = readLoopJson(_sid);
+      }
+      return { events: _events, loopData: _loopData };
+    }
+
     test('reason=clear 時 emit session:end 事件', () => {
-      const sessionId = newSessionId();
-      initSessionDir(sessionId);
-      writeLoopJson(sessionId, { stopped: false });
-
-      runHook({ session_id: sessionId, reason: 'clear' }, sessionId);
-
-      const events = readTimeline(sessionId);
+      const { events } = getScenario();
       const sessionEndEvent = events.find(e => e.type === 'session:end');
       expect(sessionEndEvent).toBeDefined();
-      // timeline.emit 將 data 欄位 spread 至頂層
       expect(sessionEndEvent.reason).toBe('clear');
     });
 
     test('reason=clear 時 loop.json 被設為 stopped: true', () => {
-      const sessionId = newSessionId();
-      initSessionDir(sessionId);
-      writeLoopJson(sessionId, { stopped: false });
-
-      runHook({ session_id: sessionId, reason: 'clear' }, sessionId);
-
-      const loopData = readLoopJson(sessionId);
+      const { loopData } = getScenario();
       expect(loopData.stopped).toBe(true);
     });
   });
@@ -233,18 +222,20 @@ describe('Feature 1d: SessionEnd hook（on-session-end.js）', () => {
 
   // Scenario 1d-7: 無 sessionId 時靜默退出
   describe('Scenario 1d-7: 無 sessionId 時靜默退出', () => {
+    let _result;
+    function getResult() {
+      if (!_result) _result = runHook({ reason: 'prompt_input_exit' }, undefined);
+      return _result;
+    }
+
     test('stdin 無 session_id 且無環境變數時輸出 { result: "" }', () => {
-      // 不設定 sessionId 環境變數
-      const { exitCode, parsed } = runHook(
-        { reason: 'prompt_input_exit' },
-        undefined
-      );
+      const { exitCode, parsed } = getResult();
       expect(exitCode).toBe(0);
       expect(parsed.result).toBe('');
     });
 
     test('process exit code 為 0', () => {
-      const { exitCode } = runHook({ reason: 'prompt_input_exit' }, undefined);
+      const { exitCode } = getResult();
       expect(exitCode).toBe(0);
     });
   });
@@ -276,29 +267,25 @@ describe('Feature 1d: SessionEnd hook（on-session-end.js）', () => {
 
   // Scenario 1d-9: loop.json 不存在時跳過重置並繼續
   describe('Scenario 1d-9: loop.json 不存在時跳過重置', () => {
+    let _sid, _result, _events;
+    function getScenario() {
+      if (!_sid) {
+        _sid = newSessionId();
+        initSessionDir(_sid);
+        _result = runHook({ session_id: _sid, reason: 'prompt_input_exit' }, _sid);
+        _events = readTimeline(_sid);
+      }
+      return { result: _result, events: _events };
+    }
+
     test('無 loop.json 時 hook 正常執行不拋錯', () => {
-      const sessionId = newSessionId();
-      initSessionDir(sessionId);
-      // 不建立 loop.json
-
-      const { exitCode, parsed } = runHook(
-        { session_id: sessionId, reason: 'prompt_input_exit' },
-        sessionId
-      );
-
-      expect(exitCode).toBe(0);
-      expect(parsed.result).toBe('');
+      const { result } = getScenario();
+      expect(result.exitCode).toBe(0);
+      expect(result.parsed.result).toBe('');
     });
 
     test('無 loop.json 時 emit session:end 仍正常執行', () => {
-      const sessionId = newSessionId();
-      initSessionDir(sessionId);
-      // 不建立 loop.json（stopped 預設視為 false）
-
-      runHook({ session_id: sessionId, reason: 'prompt_input_exit' }, sessionId);
-
-      // session:end 應仍被 emit（因無 loop.json 等同 stopped=false）
-      const events = readTimeline(sessionId);
+      const { events } = getScenario();
       const sessionEndEvent = events.find(e => e.type === 'session:end');
       expect(sessionEndEvent).toBeDefined();
     });

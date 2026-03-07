@@ -19,6 +19,13 @@ const { SCRIPTS_LIB } = require('../helpers/paths');
 const handler = require(join(SCRIPTS_LIB, 'session-start-handler'));
 const { buildBanner, buildStartOutput, buildPluginContext } = handler;
 
+// ── 效能：lazy cache ──
+const _cache = new Map();
+function cached(fn) {
+  if (!_cache.has(fn)) _cache.set(fn, fn());
+  return _cache.get(fn);
+}
+
 // ────────────────────────────────────────────────────────────────────────────
 // buildBanner
 // ────────────────────────────────────────────────────────────────────────────
@@ -135,19 +142,19 @@ describe('buildStartOutput', () => {
 
 describe('buildPluginContext', () => {
   test('回傳非空字串', () => {
-    const result = buildPluginContext();
+    const result = cached(buildPluginContext);
     expect(typeof result).toBe('string');
     expect(result.length).toBeGreaterThan(0);
   });
 
   test('包含 plugin 版本號（動態計算）', () => {
     const pkg = require(join(SCRIPTS_LIB, '../../.claude-plugin/plugin.json'));
-    const result = buildPluginContext();
+    const result = cached(buildPluginContext);
     expect(result).toContain(pkg.version);
   });
 
   test('包含 Agent 數量（大於 0 的數字）', () => {
-    const result = buildPluginContext();
+    const result = cached(buildPluginContext);
     // 應含有 "N agents" 格式的描述
     expect(result).toMatch(/\d+ agents/);
     const match = result.match(/(\d+) agents/);
@@ -155,43 +162,43 @@ describe('buildPluginContext', () => {
   });
 
   test('包含 Stage 數量（大於 0 的數字）', () => {
-    const result = buildPluginContext();
+    const result = cached(buildPluginContext);
     expect(result).toMatch(/\d+ stages/);
     const match = result.match(/(\d+) stages/);
     expect(parseInt(match[1], 10)).toBeGreaterThan(0);
   });
 
   test('包含 Workflow 數量（大於 0 的數字）', () => {
-    const result = buildPluginContext();
+    const result = cached(buildPluginContext);
     expect(result).toMatch(/\d+ workflow 模板/);
     const match = result.match(/(\d+) workflow 模板/);
     expect(parseInt(match[1], 10)).toBeGreaterThan(0);
   });
 
   test('包含 Timeline events 數量（大於 0 的數字）', () => {
-    const result = buildPluginContext();
+    const result = cached(buildPluginContext);
     expect(result).toMatch(/\d+ timeline events/);
     const match = result.match(/(\d+) timeline events/);
     expect(parseInt(match[1], 10)).toBeGreaterThan(0);
   });
 
   test('包含 Hook events 清單（含 SessionStart）', () => {
-    const result = buildPluginContext();
+    const result = cached(buildPluginContext);
     expect(result).toContain('SessionStart');
   });
 
   test('包含核心規範 — registry.js SoT', () => {
-    const result = buildPluginContext();
+    const result = cached(buildPluginContext);
     expect(result).toContain('registry.js 是 SoT');
   });
 
   test('包含 Handoff 格式說明', () => {
-    const result = buildPluginContext();
+    const result = cached(buildPluginContext);
     expect(result).toContain('Handoff 格式');
   });
 
   test('包含並行群組定義（含 quality）', () => {
-    const result = buildPluginContext();
+    const result = cached(buildPluginContext);
     expect(result).toContain('quality');
   });
 
@@ -203,7 +210,7 @@ describe('buildPluginContext', () => {
     }
     const expectedCount = agentSet.size;
 
-    const result = buildPluginContext();
+    const result = cached(buildPluginContext);
     const match = result.match(/(\d+) agents/);
     expect(parseInt(match[1], 10)).toBe(expectedCount);
   });
@@ -212,7 +219,7 @@ describe('buildPluginContext', () => {
     const registry = require(join(SCRIPTS_LIB, 'registry'));
     const expectedCount = Object.keys(registry.workflows).length;
 
-    const result = buildPluginContext();
+    const result = cached(buildPluginContext);
     const match = result.match(/(\d+) workflow 模板/);
     expect(parseInt(match[1], 10)).toBe(expectedCount);
   });
@@ -580,28 +587,28 @@ describe('Feature 10: buildBanner — 邊界與格式', () => {
 
 describe('Feature 11: buildPluginContext — 進階驗證', () => {
   test('Scenario 11-1: 包含「核心規範」標題', () => {
-    const result = buildPluginContext();
+    const result = cached(buildPluginContext);
     expect(result).toContain('核心規範');
   });
 
   test('Scenario 11-2: 包含 updatedInput REPLACE 說明', () => {
-    const result = buildPluginContext();
+    const result = cached(buildPluginContext);
     expect(result).toContain('updatedInput');
   });
 
   test('Scenario 11-3: 包含目錄結構描述', () => {
-    const result = buildPluginContext();
+    const result = cached(buildPluginContext);
     expect(result).toContain('plugins/overtone');
   });
 
   test('Scenario 11-4: 包含常用指令段落', () => {
-    const result = buildPluginContext();
+    const result = cached(buildPluginContext);
     expect(result).toContain('常用指令');
   });
 
   test('Scenario 11-5: 並行群組非空（至少 1 個）', () => {
     const { parallelGroupDefs } = require(join(SCRIPTS_LIB, 'registry'));
-    const result = buildPluginContext();
+    const result = cached(buildPluginContext);
     const groupCount = Object.keys(parallelGroupDefs).length;
     if (groupCount > 0) {
       // 確認某個並行群組名稱出現在輸出中
