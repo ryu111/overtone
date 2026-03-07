@@ -94,12 +94,12 @@ describe('Feature 6：輸出格式驗證', () => {
     expect(output.summary).not.toBeNull();
   });
 
-  test('Scenario checks — checks 陣列長度為 23（含原本 12 項 + 製作原則 3 項 + dependency-sync + internalization-index + test-file-alignment + skill-reference-integrity + concurrency-guards + compact-frequency + sequential-markers + specs-directory-structure）', () => {
+  test('Scenario checks — checks 陣列長度為 25（含原本 12 項 + 製作原則 3 項 + dependency-sync + internalization-index + test-file-alignment + skill-reference-integrity + concurrency-guards + compact-frequency + sequential-markers + specs-directory-structure + orphan-queues + skill-quality）', () => {
     const output = getParsed();
-    expect(output.checks.length).toBe(23);
+    expect(output.checks.length).toBe(25);
   });
 
-  test('Scenario checks — 包含所有 23 個偵測項目', () => {
+  test('Scenario checks — 包含所有 25 個偵測項目', () => {
     const output = getParsed();
     const names = output.checks.map((c) => c.name);
     expect(names).toContain('phantom-events');
@@ -146,6 +146,7 @@ describe('Feature 6：輸出格式驗證', () => {
       'dependency-sync', 'internalization-index',
       'test-file-alignment', 'skill-reference-integrity',
       'concurrency-guards', 'compact-frequency', 'sequential-markers',
+      'specs-directory-structure', 'orphan-queues', 'skill-quality',
     ]);
     const validSeverities = new Set(['error', 'warning', 'info']);
     for (const f of output.findings) {
@@ -273,10 +274,10 @@ describe('真實 codebase 執行驗證', () => {
     expect(() => JSON.parse(result.stdout)).not.toThrow();
   });
 
-  test('所有 23 個 check 都成功執行（findingsCount 為數字）', () => {
+  test('所有 25 個 check 都成功執行（findingsCount 為數字）', () => {
     const result = getRealResult();
     const output = JSON.parse(result.stdout);
-    expect(output.checks.length).toBe(23);
+    expect(output.checks.length).toBe(25);
     for (const c of output.checks) {
       expect(Number.isInteger(c.findingsCount)).toBe(true);
       expect(c.findingsCount).toBeGreaterThanOrEqual(0);

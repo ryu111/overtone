@@ -1,6 +1,6 @@
 # Overtone 現況
 
-> 最後更新：2026-03-07 | Plugin 版本：0.28.85 | Build：4683 pass
+> 最後更新：2026-03-08 | Plugin 版本：0.28.87 | Build：4683 pass
 > **使命**：推進 `~/.claude/` 達到 Layer 1-4（通用自主代理核心）。願景詳見 `docs/vision.md`。
 
 ## 版本狀態
@@ -20,7 +20,7 @@
 | 測試通過 | 4683 pass / 0 fail（200 個測試檔）|
 | 測試檔案 | 200 個 |
 | Hook 數量 | 11 個 |
-| Skill 數量 | 25（15 knowledge domain + orchestrator + pm + specs + 4 utility-with-refs + instinct + skill-judge） |
+| Skill 數量 | 26（15 knowledge domain + thinking + orchestrator + pm + specs + 4 utility-with-refs + instinct + skill-judge） |
 | scripts/lib 模組 | 68（含 analyzers/ 7 + knowledge/ 9 + remote/ 4 + dashboard/ 2 子目錄模組 + tts 相關 2） |
 | Knowledge Domain 數 | 15（testing、workflow-core、security-kb、database、dead-code、commit-convention、code-review、wording、debugging、architecture、build-system、os-control、autonomous-control、craft、claude-dev） |
 | Command 數量 | 29（14 stage shortcut + 7 workflow pipeline + 8 utility） |
@@ -29,9 +29,9 @@
 
 ## 近期變更（最近 3 筆）
 
+- **[0.28.87] 2026-03-08**：feat(skills)——Skill 生態系升級（25 → 26 個 Skill）：新增 thinking Skill + 7 個 reference 檔案，security-kb/code-review/testing/claude-dev 四個 SKILL.md 內容擴展，developer/architect/code-reviewer/tester/planner 五個 agent 加入 thinking skill 呼叫
 - **[0.28.83] 2026-03-07**：infra(cross-repo-verify)——全域遷移最終驗證（3/3 迭代完成）：~/.claude/ git 初始化 + gitignore whitelist 策略 + ~360 個暫存清理，knowledge-archiver.js pluginRoot 修復，CLAUDE.md 命令路徑統一為 `bun ~/.claude/scripts/...`，確保全域 SoT 完整性
 - **[0.28.82] 2026-03-07**：refactor(global-migrate)——第 2 步批量路徑遷移：56 個檔案修改（24 個 SKILL.md + 19 個 Command + 3 個 JS 模組 + 5 個 claude-dev references + 1 個測試 + 1 個 health-check），將 `${CLAUDE_PLUGIN_ROOT}` 替換為相對路徑（`./references/` 或 `../{domain}/references/` 或 `bun ~/.claude/scripts/`）
-- **[0.28.81] 2026-03-07**：feat(handoff)——四個核心 stage agent 加入 Exit Criteria checklist（developer/architect/planner/code-reviewer），handoff-protocol.md 新增欄位定義與 Main Agent 未勾選處理規則，強化交接品質防止 hardcoded 數值遺漏同步
 
 ## Phase 3 規劃狀態（✅ 完成）
 
