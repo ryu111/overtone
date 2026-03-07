@@ -1,102 +1,4 @@
 ---
-## 2026-03-06 | tester:TEST Findings
-定義了 3 個 Feature，共 6 個 Scenario：
-
-**Feature A — 收斂門根因修復（方向 B）**
-- A-1: 兩個並行 agent 依序完成，parallelDone 累計正確，stage 標記 completed
-- A-2: 後到者補位場景 — 先到者已將 stage 標記 completed+pass，補位邏輯正確遞增 parallelDone
-- A-3: callback 內無匹配 stage，安全 early exit，state 不被修改
-
-**Feature B — Mid-session sanitize（方向 C）**
-- B-1: PreToolUse(Task) 委派前觸發 sanitize，孤兒 active stage 被修復
-- B-2: workflow.json 不存在時 sanitize 靜默處理，不中斷委派流程
-
-**Feature C — 退化場景**
-- C-1: parallelTotal=1（未設定）時正常完成，收斂邏輯不受影響
-Keywords: feature, scenario, agent, paralleldone, stage, completed, pass, callback, early, exit
-
----
-## 2026-03-06 | developer:DEV Findings
-1. **舊架構的競爭窗口**：原本 `findActualStageKey(currentState, stageKey)` 用的是 `readState` 讀取的快照，與第二個 `updateStateAtomic` 執行之間存在窗口。若先到者在此期間標記 stage 為 `completed`，後到者的 `actualStageKey` 會變成 `null`（`findActualStageKey` 找不到 active/pending stage），導致 early exit 且 `parallelDone` 未遞增。
-
-2. **補位邏輯設計**：後到者場景（先到者已 `completed+pass`），`findActualStageKey` 在新 state 內仍找不到（函式不搜尋 `completed+pass`），因此加入顯式補位：`Object.keys(s.stages).find(k => ... completed && pass)`。
-
-3. **closure 變數傳出**：`resolvedActualStageKey` 以 closure 變數形式在 callback 外使用，`actualStageKey` 作為後續邏輯的別名。
-
-4. **`sanitize` 已是公開 API**，無需新增任何 `state.js` 匯出。
-
-5. **`stageKeys` 重新讀取問題**：`pre-task-handler.js` 中 `stageKeys` 在 `sanitize` 之前已從 `currentState` 取得，`sanitize` 後修復的狀態透過 `updateStateAtomic` 內的重新讀取生效，不影響 `checkSkippedStages` 邏輯（因 `sanitize` 是修復孤兒 active stage，不會讓跳過邏輯誤判）。
-Keywords: findactualstagekey, currentstate, stagekey, readstate, updatestateatomic, stage, completed, actualstagekey, null, active
-
----
-## 2026-03-06 | developer:DEV Context
-實作 convergence-gate-fix 的兩個方向：
-- **方向 B**：修復 `agent-stop-handler.js` 的 TOCTOU 競爭條件，將 `findActualStageKey` 移入第二個 `updateStateAtomic` callback 內執行，確保使用最新 state 解析 actualStageKey。加入後到者補位邏輯（搜尋 `completed+pass` stage）。`statusline.update` 移至 `updateStateAtomic` 之後。
-- **方向 C**：在 `pre-task-handler.js` 的 `updateStateAtomic` 之前插入 `try { state.sanitize(sessionId); } catch {}`，修復可能殘留的孤兒 active stage。
-Keywords: convergence, gate, agent, stop, handler, toctou, findactualstagekey, updatestateatomic, callback, state
-
----
-## 2026-03-06 | retrospective:RETRO Findings
-**回顧摘要**：
-
-convergence-gate-fix 實作了兩個方向的修復：方向 B 將 `findActualStageKey` 移入 `updateStateAtomic` callback 內，消除 TOCTOU 競爭條件；方向 C 在 `handlePreTask` 委派前觸發 `state.sanitize()`，主動修復孤兒 active stage。實作與 BDD spec 完整對齊，7 個 test 通過。
-
-**Overtone Principles Checklist 評估**：
-
-- 完全閉環：activeAgents cleanup 在 early exit 前執行，resolved/unresolved 都有 timeline emit，statusline 也在 early exit 前更新。事件 consumer 鏈完整。
-- 自動修復：sanitize() 呼叫用 try/catch 靜默降級，不會中斷主流程。updateStateAtomic callback 有安全 early exit（`if (!resolvedActualStageKey) return s`）。
-- 補全能力：修復的是既有核心模組，不涉及新 Skill/Agent 建立。新增測試 7 個，完整對應 BDD spec 所有 scenario。
-Keywords: convergence, gate, findactualstagekey, updatestateatomic, callback, toctou, handlepretask, state, sanitize, active
-
----
-## 2026-03-06 | developer:DEV Context
-實作了 `retro-threshold` 功能：在 retrospective agent 的六維度評估中加入分數門檻機制，任何維度 <3/5 時自動觸發 ISSUES（僅限 standard/full/secure workflow）。
-Keywords: retro, threshold, retrospective, agent, issues, standard, full, secure, workflow
-
----
-## 2026-03-06 | doc-updater:DOCS Context
-此次 Handoff 涉及在 `plugins/overtone/agents/retrospective.md` 中加入六維度分數門檻機制：任何維度評分 <3/5 時自動觸發 ISSUES flag（僅適用 standard/full/secure workflow，quick workflow 除外）。
-Keywords: handoff, plugins, overtone, agents, retrospective, issues, flag, standard, full, secure
-
----
-## 2026-03-06 | developer:DEV Findings
-**實作過程中的關鍵決策：**
-
-1. **timeline 事件格式**：timeline.emit 使用 `{ ts, type, category, label, ...data }` 直接 spread，不是 `{ data: {...} }`。現有測試中用 `.data.agent` 的寫法是錯的，補強測試全部改為 `.agent`。
-
-2. **enforceInvariants 規則 4 與並行收斂門測試的交互**：規則 4 會將 active stage（無對應 activeAgents）自動改回 pending，所以測試並行場景時必須設置至少一個 activeAgents entry 才能維持 active 狀態。
-
-3. **mid-session sanitize() 行為**：pre-task-handler 在每次委派前呼叫 `state.sanitize()`，會將 active stage（無 activeAgents）改回 pending，導致 `actualKey` 又能找到 pending stage 並 emit `stage:start`。因此「stage 已 active 不重複 emit stage:start」的測試需設置 activeAgents 才有效。
-
-4. **`_parseQueueTable` 的 break 行為**：遇到非表格行即停止掃描，不繼續尋找後續佇列區塊。這是設計意圖（取第一個佇列），測試預期改為符合此行為。
-
-**覆蓋範圍完整性：**
-- agent-stop-handler：邊界情況（7）、pass/fail/reject verdict（9）、activeAgents 清理（3）、並行收斂門（3）、timeline 事件（3）、tasks.md checkbox（3）、currentStage 推進（1）、PM queue 寫入（1）、RETRO issues（2）、retry 計數（2）、_parseQueueTable（7）
-- pre-task-handler：checkSkippedStages（10）、早期返回（5）、agent 辨識（4）、跳階阻擋（3）、updatedInput 組裝（3）、instanceId 生成（3）、PARALLEL_TOTAL 注入（3）、retry 場景（2）、timeline 事件（3）、state 寫入（2）、MoSCoW 警告（10）、穩定性（3）
-Keywords: timeline, emit, type, category, label, data, spread, agent, enforceinvariants, active
-
----
-## 2026-03-06 | doc-updater:DOCS Context
-掃描工作流最後的 DOCS 階段變更。發現本次改動為純測試補強（agent-stop-handler.test.js / pre-task-handler.test.js），未涉及任何設計文件、規格、API、hook、skill 等核心模組。
-Keywords: docs, agent, stop, handler, test, task, hook, skill
-
----
-## 2026-03-06 | developer:DEV Findings
-**實作方式：**
-- 純函數測試：直接 require handler 模組，測試 `buildCompactMessage`、`buildCompletionSummary`、`calcDuration`、`buildContinueMessage`、`_isRelatedQueueItem`、`resolveSessionResult` 的各種輸入組合
-- 整合測試：建立真實 session 目錄（`~/.overtone/sessions/test_xxx/`），呼叫 `handleSessionStop`、`handlePreCompact`、`handleSessionEnd` 驗證副作用
-
-**關鍵修正：**
-1. `loopDefaults.maxIterations` 實際值是 100，不是 20
-2. `buildCompletionSummary` 在所有 `allCompleted` 路徑都會呼叫（包含 hasFailedStage），所以 `🎉` 在有失敗 stage 時仍顯示
-3. `pendingAction type` 值（如 `fix-reject`）不直接顯示在訊息中，只顯示對應的中文指示
-
-**測試分配模式：**
-- `describe` + `test` 用於純函數測試
-- `describeI` + `testI`（aliased）用於整合測試（避免 `afterAll` 衝突）
-Keywords: require, handler, buildcompactmessage, buildcompletionsummary, calcduration, buildcontinuemessage, resolvesessionresult, session, overtone, sessions
-
----
 ## 2026-03-06 | code-reviewer:REVIEW Context
 程式碼審查通過。10 個 agent 的 BDD 驗收標準範例品質良好，精準對應各 agent 職責。
 Keywords: agent
@@ -541,4 +443,110 @@ Keywords: overtone, tests, files, testing, skill, agent, health, check
 **同步原則應用**：
 根據「信心過濾」規則，只更新有直接對應變更的段落。此次變更完全隔離在 testing skill 內部，無跨檔案計數依賴。
 Keywords: plugins, overtone, skills, testing, skill, description, reference, anti, patterns, test
+
+---
+## 2026-03-07 | planner:PLAN Findings
+**需求分解**：
+
+1. 更新 handoff-protocol.md — 定義 Exit Criteria 欄位規範 | agent: developer | files: `plugins/overtone/skills/workflow-core/references/handoff-protocol.md`
+
+2. 更新 developer.md — 加入 DEV Exit Criteria | agent: developer | files: `plugins/overtone/agents/developer.md`
+
+3. 更新 code-reviewer.md — 加入 REVIEW Checklist (parallel) | agent: developer | files: `plugins/overtone/agents/code-reviewer.md`
+
+4. 更新 architect.md — 加入 ARCH Exit Criteria (parallel) | agent: developer | files: `plugins/overtone/agents/architect.md`
+
+5. 更新 planner.md — 加入 PLAN Exit Criteria (parallel) | agent: developer | files: `plugins/overtone/agents/planner.md`
+
+**優先順序**：
+- 任務 1（handoff-protocol.md）先做，定義格式規範作為後續任務的參考
+- 任務 2-5 依賴任務 1 完成的格式定義，但四個任務彼此無依賴可並行
+
+**範圍邊界**：
+- 不改 hook 邏輯（stop-message-builder.js、agent-stop-handler.js）
+- 不修改 tester、debugger、doc-updater 等其他 agent（遺漏風險較低）
+- 不做 hook 層自動驗證 Exit Criteria 存在性（留到後續迭代）
+Keywords: handoff, protocol, exit, criteria, agent, developer, files, plugins, overtone, skills
+
+---
+## 2026-03-07 | planner:PLAN Context
+用戶痛點是 agent 交接時常遺漏副作用同步（典型案例：health-check 計數 22→23，但 6 個測試檔案 hardcoded 數值沒同步）。現有的 impact-guard-sync 是「事後提醒」機制，本功能要從 Handoff protocol 層面強化，讓每個 agent 在輸出 Handoff 前有明確的 stage-specific exit checklist。
+
+分析後確認此功能：
+1. **不需要改 hook 邏輯**（stop-message-builder.js / agent-stop-handler.js）— 純 prompt 層修改
+2. **就地修改**5 個現有檔案，不引入新抽象層
+3. DEV + REVIEW 是遺漏風險最高的兩個 stage（優先強化）
+4. 子任務 2-5 均可並行（同 agent 但操作不同檔案且無邏輯依賴）
+Keywords: agent, health, check, hardcoded, impact, guard, sync, handoff, protocol, stage
+
+---
+## 2026-03-07 | architect:ARCH Context
+純 prompt 修改方案：為 4 個 stage agent（developer、code-reviewer、architect、planner）的 Handoff 輸出格式加入 stage-specific Exit Criteria checklist，並在 handoff-protocol.md 中定義欄位規範和 Main Agent 處理規則。選擇 AI 自我聲明而非 hook 格式強制，因為後者超出本次範圍且問題根源是「沒提醒到」而非「故意跳過」。
+Keywords: prompt, stage, agent, developer, code, reviewer, architect, planner, handoff, specific
+
+---
+## 2026-03-07 | developer:DEV Findings
+**實作決策**：
+- handoff-protocol.md 直接 Edit（不受 pre-edit guard 保護），無需透過 manage-component.js
+- 四個 agent .md 使用臨時 `.mjs` 腳本呼叫 `config-api.js` 的 `updateAgent()`，並明確傳入 `pluginRoot`（避免 `path.join(undefined, ...)` 錯誤）
+- updateAgent 會自動 bump plugin.json 版本 0.28.80 → 0.28.81，同步更新 docs/status.md 避免 docs-sync 測試失敗
+
+**BDD spec 對照**：
+- Scenario 1-1/1-2/1-3：handoff-protocol.md 包含 `- [x]`/`- [ ]` 說明、MUST 規則、Exit Criteria 在 Open Questions 前 ✅
+- Scenario 2-1~2-7：developer.md 5 項 checklist，位於 Test Scope 後、Open Questions 前，確定性動詞開頭，`- [ ]` 格式 ✅
+- Scenario 3-1~3-9：code-reviewer.md PASS/REJECT 兩個格式都有 5 項 Review Checklist；DO 區塊 hardcoded 數值審查指引更具體（加入「逐一確認引用處的數值是否一致」）✅
+- Scenario 4-1~4-5：architect.md 3 項 checklist，位於 Open Questions 前 ✅
+- Scenario 5-1~5-5：planner.md 3 項 checklist，位於 Open Questions 前 ✅
+- Scenario 6-1/6-2/6-3：所有 checklist 使用 `- [ ]`，位置正確，確定性動詞開頭 ✅
+
+**測試結果**：4683 pass, 0 fail（含 docs-sync、config-api、config-validator 等相關測試）
+Keywords: handoff, protocol, edit, guard, manage, component, agent, config, updateagent, pluginroot
+
+---
+## 2026-03-07 | developer:DEV Context
+實作 handoff-quality-strengthen 功能。純 prompt 修改，分兩個 Phase：Phase 1 更新 handoff-protocol.md 新增 Exit Criteria 欄位定義；Phase 2 並行更新四個 stage agent（developer、architect、planner、code-reviewer）加入 stage-specific checklist。
+Keywords: handoff, quality, strengthen, prompt, phase, protocol, exit, criteria, stage, agent
+
+---
+## 2026-03-07 | retrospective:RETRO Findings
+**回顧摘要**：
+
+本次實作為 standard workflow，針對 4 個核心 stage agent 加入 Exit Criteria checklist，強化 Handoff 交接品質。回顧從以下角度評估：
+
+1. **命名一致性**：REVIEW 抓到 code-reviewer.md 的 "Review Checklist" 命名問題（與 handoff-protocol.md 定義的 "Exit Criteria" 不一致），DEV fix 已修正。最終所有檔案一致使用 "Exit Criteria"。
+2. **範圍對齊**：PLAN 設計範圍為 handoff-protocol + 4 agent（developer/code-reviewer/architect/planner），tester/doc-updater/security-reviewer 等其他 agent 未加 Exit Criteria，屬刻意的範圍邊界，非遺漏。
+3. **handoff-protocol.md 新增規則完整性**：新增了 Exit Criteria 欄位定義、`[x]/[ ]` 語法說明、位置規定（Open Questions 之前）、Main Agent 處理未勾選項目的 MUST 規則。協定文件與 4 個 agent 的 Handoff 輸出格式對齊。
+4. **checklist 內容品質**：各 agent 的 Exit Criteria 聚焦在 stage-specific 的核心驗證點（developer：impact.js + bun test + BDD spec；code-reviewer：git diff + impact.js + hardcoded 數值；architect：codebase pattern 一致 + Edge Cases；planner：INVEST + 依賴關係 + 範圍邊界）。
+5. **docs/status.md**：版本已同步至 0.28.81，近期變更條目清楚記錄。
+
+**不確定項目（信心 <70%，不回報）**：
+- BDD spec 目錄已不存在（`specs/features/in-progress/handoff-quality-strengthen/`），無法對照 27 Scenario 逐條驗證。因 tester 在 TEST:verify 階段已確認 27/27 通過，信心不足以當作問題。
+- Developer 使用臨時 .mjs 腳本呼叫 config-api 的 pattern 是否值得標準化：屬 process 改善，信心不足。
+
+---
+Keywords: standard, workflow, stage, agent, exit, criteria, checklist, handoff, review, code
+
+---
+## 2026-03-07 | doc-updater:DOCS Findings
+**更新完成的文件**：
+- ✅ **CHANGELOG.md**：新增 0.28.81、0.28.80、0.28.79 三個版本條目（自 status.md 近期變更提取），詳述核心增強與文件同步項目
+- ✅ **docs/spec/overtone.md**：版本號與日期同步至最新（v0.28.81 | 2026-03-07）
+- ✅ **docs/status.md**：已由 developer 同步至 0.28.81，近期變更、核心指標、測試數量均正確
+
+**驗證完成的文件**：
+- ✅ **plugin.json**：版本已為 0.28.81（by developer）
+- ✅ **CLAUDE.md**：SubagentStop hook 職責描述完整，無需更新（Exit Criteria 是 agent 層級實作，不影響架構層級描述）
+
+**檢查結論**：
+- handoff-protocol.md 的 Exit Criteria 欄位新增不需要同步至其他文件（這是 workflow-core skill reference 的內容更新）
+- 所有數據一致性檢查 ✅（版本號、測試數、模組計數、知識域數量）
+Keywords: changelog, status, docs, spec, overtone, developer, plugin, json, claude, subagentstop
+
+---
+## 2026-03-07 | doc-updater:DOCS Context
+針對 handoff-quality-strengthen feature 的 DEV/REVIEW 完成後，同步所有文件變更並更新版本記錄。修改範圍：
+1. CHANGELOG.md — 新增 3 個版本記錄（0.28.81、0.28.80、0.28.79）
+2. docs/spec/overtone.md — 版本同步 v0.28.56 → v0.28.81，日期更新為 2026-03-07
+3. 驗證 docs/status.md、plugin.json 已由 developer 同步完成
+Keywords: handoff, quality, strengthen, feature, review, changelog, docs, spec, overtone, status
 

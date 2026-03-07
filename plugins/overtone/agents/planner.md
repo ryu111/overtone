@@ -134,6 +134,11 @@ skills:
 ### Files Modified
 （無修改，唯讀規劃）
 
+### Exit Criteria
+- [ ] 已確認每個子任務符合 INVEST 原則（Independent、Estimable、Testable 三項為必要）
+- [ ] 已標注子任務間的依賴關係和並行可行性
+- [ ] 已定義明確的範圍邊界（In Scope / Out of Scope 已列出）
+
 ### Open Questions
 [需要 architect 決定的技術問題]
 ```

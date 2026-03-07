@@ -1,6 +1,6 @@
 # Overtone 現況
 
-> 最後更新：2026-03-07 | Plugin 版本：0.28.80
+> 最後更新：2026-03-07 | Plugin 版本：0.28.81
 
 ## 版本狀態
 
@@ -28,6 +28,7 @@
 
 ## 近期變更（最近 3 筆）
 
+- **[0.28.81] 2026-03-07**：feat(handoff)——四個核心 stage agent 加入 Exit Criteria checklist（developer/architect/planner/code-reviewer），handoff-protocol.md 新增欄位定義與 Main Agent 未勾選處理規則，強化交接品質防止 hardcoded 數值遺漏同步
 - **[0.28.80] 2026-03-07**：feat(fs-scanner)——提取共用檔案掃描模組：scripts/lib 新增 fs-scanner.js（第 67 個模組），health-check 和 dead-code-scanner 改造消費，11 個測試新增（tests/unit/fs-scanner.test.js），總計 4724 pass / 200 檔
 - **[0.28.79] 2026-03-07**：docs(testing)——全局文件同步閉環：testing SKILL.md 補齊兩個孤立 reference（concurrency-testing-guide + task-splitting-guide），timeline events 計數更新（30→31），4 個完成 spec 歸檔，auto-discovered.md 批次提交
 - **[0.28.78] 2026-03-07**：fix(sound)——音效通知時機修正：佇列接續時不播 Hero + integration test mock 通知

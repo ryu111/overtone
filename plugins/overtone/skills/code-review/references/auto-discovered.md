@@ -60,3 +60,73 @@ Keywords: issues, handler, agent, memory, tests, code, reviewer, approve, review
 ## 2026-03-07 | code-reviewer:REVIEW Findings
 [n] 格式：`code-reviewer.md` frontmatter 後多了一個空行（第 20-21 行連續兩個空行）。不影響功能。
 Keywords: code, reviewer, frontmatter
+---
+## 2026-03-07 | architect:ARCH Findings
+**技術方案**：
+- 純文字/Markdown 修改，5 個檔案，無程式碼變動
+- 新增欄位「Exit Criteria」置於 Open Questions 之前（符合現有語意流）
+- DEV/REVIEW 各 5 項（最高風險 stage），ARCH/PLAN 各 3 項（精簡）
+- Main Agent 對未勾選項目規則：📋 MUST 以 AskUserQuestion 詢問使用者是否繼續或退回（與 Open Questions 處理邏輯對齊）
+
+**關鍵技術決策**：
+- Exit Criteria 強制程度：AI 自我聲明（非 hook 強制）
+- checklist 措詞：「已確認 X」開頭（確定性動詞），不用語意模糊的「是否」
+- code-reviewer.md 兩種格式（APPROVE/REJECT）都加 Review Checklist，確保格式一致且審查覆蓋面可追溯
+
+**API 介面**：無（純 Markdown 格式定義）
+
+**資料模型**：無新增資料模型
+
+**檔案結構**：
+- 修改：`plugins/overtone/skills/workflow-core/references/handoff-protocol.md` — 新增 Exit Criteria 欄位定義 + Main Agent 規則
+- 修改：`plugins/overtone/agents/developer.md` — Test Scope 後加入 5 項 DEV Exit Criteria
+- 修改：`plugins/overtone/agents/code-reviewer.md` — 兩種輸出格式加入 5 項 Review Checklist + 強化 DO 區塊
+- 修改：`plugins/overtone/agents/architect.md` — Open Questions 前加入 3 項 ARCH Exit Criteria
+- 修改：`plugins/overtone/agents/planner.md` — Open Questions 前加入 3 項 PLAN Exit Criteria
+
+**Dev Phases**：
+
+    ### Phase 1: handoff-protocol 欄位定義 (sequential)
+    - [ ] 更新 handoff-protocol.md：新增 Exit Criteria 欄位規範 + Main Agent 未勾選項目處理規則 | files: plugins/overtone/skills/workflow-core/references/handoff-protocol.md
+
+    ### Phase 2: 四個 agent 加入 Exit Criteria (parallel)
+    - [ ] 更新 developer.md：DEV Exit Criteria 5 項 | files: plugins/overtone/agents/developer.md
+    - [ ] 更新 code-reviewer.md：Review Checklist 5 項 + DO 強化 | files: plugins/overtone/agents/code-reviewer.md
+    - [ ] 更新 architect.md：ARCH Exit Criteria 3 項 | files: plugins/overtone/agents/architect.md
+    - [ ] 更新 planner.md：PLAN Exit Criteria 3 項 | files: plugins/overtone/agents/planner.md
+
+**Edge Cases to Handle**：
+- agent .md 受 pre-edit guard 保護，developer 必須用 `manage-component.js update agent <name>` 路徑修改，直接 Edit 會被 hook 阻擋 — 語意陷阱（看起來是普通 md 編輯，實際上受保護）
+- handoff-protocol.md 是 `skills/workflow-core/references/` 下的檔案，pre-edit guard 保護的是 `skills/*/SKILL.md`（不含 references 子目錄），所以可直接 Edit — 需 developer 先確認保護範圍再決定路徑 — 語意陷阱
+- code-reviewer.md 有兩個輸出格式區塊（APPROVE/REJECT），兩者都要加入 Review Checklist；若只加其中一個，格式不一致會造成 Main Agent 無法統一處理 — 資料邊界
+- Exit Criteria 的「ARCH 版本」是 architect.md 本身的自我需求（也就是本次修改的目標之一），developer 修改 architect.md 時需確保加入的 checklist 與 design.md 中定義的 ARCH 3 項完全一致 — 狀態組合
+Keywords: markdown, exit, criteria, open, questions, review, stage, arch, plan, main
+
+---
+## 2026-03-07 | tester:TEST:2 Findings
+靜態驗證結果：27 passed, 0 failed
+
+全量測試套件：4683 pass, 0 fail（20.5s，12 workers）— 無 regression
+
+關鍵驗證項目確認：
+
+1. **Exit Criteria 位置**：全部 5 個修改檔案中，Exit Criteria（或 Review Checklist）均在 Open Questions 之前 ✅
+2. **checklist 格式**：所有 `- [ ]` 格式正確 ✅
+3. **確定性動詞**：所有 checklist 項目以「已確認」「已執行」「已標注」「已定義」「已對照」「已做出」開頭 ✅
+4. **code-reviewer.md 兩種格式**：PASS 和 REJECT 兩種輸出格式都有 Review Checklist，且 checklist 項目一致 ✅
+Keywords: passed, failed, pass, fail, workers, regression, exit, criteria, review, checklist
+
+---
+## 2026-03-07 | developer:DEV Findings
+1. **code-reviewer.md 兩處 `### Review Checklist` 改為 `### Exit Criteria`** — 透過 `manage-component.js` 的 `updateAgent` API 更新，符合 pre-edit-guard 的保護規則。同步後與 handoff-protocol.md、developer.md、architect.md、planner.md 命名一致。
+
+2. **developer.md 結尾換行符修復** — 末尾原本缺少 `\n`，透過相同 API 修復（末尾現為 `0a`）。
+
+3. **技術細節**：`updateAgent()` 是同步函數，不是 Promise — 不能用 `.then()`，直接接收返回值。
+Keywords: code, reviewer, review, checklist, exit, criteria, manage, component, updateagent, edit
+
+---
+## 2026-03-07 | developer:DEV Context
+修復 code-reviewer.md 的命名不一致問題，並修復 developer.md 的結尾換行符。這是 code-reviewer REJECT 回饋中的 [M] 等級問題修復。
+Keywords: code, reviewer, developer, reject
+

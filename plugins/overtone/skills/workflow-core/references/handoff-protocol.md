@@ -18,6 +18,10 @@
 ### Files Modified
 [修改的檔案清單：每個檔案附簡要說明]
 
+### Exit Criteria
+- [x] 已確認 [具體驗證項目]
+- [ ] 跳過 [無法確認的項目]
+
 ### Open Questions
 [未解決的問題：需要後續 agent 或使用者注意的事項]
 ```
@@ -44,11 +48,24 @@
 - 新建檔案標注 `[新建]`
 - 刪除檔案標注 `[刪除]`
 
+### Exit Criteria
+
+- 使用 `- [x]` 表示 agent 已驗證完成，`- [ ]` 表示跳過或無法確認
+- Exit Criteria 位於 Open Questions 之前（倒數第二個欄位）
+- 各 stage agent 有 stage-specific 的 checklist 項目，每項以「已確認」、「已完成」、「已執行」等確定性動詞開頭
+
 ### Open Questions
 
 - 列出不確定或需要後續注意的問題
 - 無問題時寫：`（無）`
 - 每個問題附建議的處理方式
+
+### Main Agent 處理 Exit Criteria 和 Open Questions（📋 MUST）
+
+Handoff 的 Exit Criteria 含未勾選項目（`- [ ]`）時，Main Agent MUST 以 **AskUserQuestion** 詢問使用者是否繼續或退回重做：
+- 列出所有未勾選項目，讓使用者了解跳過了什麼
+- 提供「繼續」和「退回重做」選項
+- ⛔ 不可忽略未勾選項目直接繼續
 
 ### Main Agent 處理 Open Questions（📋 MUST）
 

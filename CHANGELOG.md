@@ -2,6 +2,82 @@
 
 所有重要變更記錄於此文件。
 
+## [0.28.81] - 2026-03-07
+
+### Exit Criteria 強化（Handoff 品質防護）
+
+#### 核心增強
+
+**四個核心 stage agent 加入 Exit Criteria checklist**
+- developer.md：5 項 DEV Exit Criteria（功能完整、測試通過、無輸出異常、無預期外修改、Handoff 完整性）
+- architect.md：3 項 ARCH Exit Criteria（設計完整、介面清晰、可行性確認）
+- planner.md：3 項 PLAN Exit Criteria（需求分解、優先順序、交接清晰）
+- code-reviewer.md：5 項 Exit Criteria（無 hardcoded 值、邏輯清晰、測試覆蓋、效能無關鍵漏洞、安全無明顯缺陷）
+
+**Handoff 交接協定更新**
+- handoff-protocol.md 新增 Exit Criteria 欄位定義（使用 `- [x]` / `- [ ]` checkbox 表示驗證完成）
+- Main Agent 處理規則：Exit Criteria 含未勾選項目時，MUST 以 AskUserQuestion 詢問使用者是否繼續或退回重做
+- 目的：防止 hardcoded 數值遺漏同步、增強交接品質控制
+
+#### 文件同步
+
+- `handoff-protocol.md`：新增 Exit Criteria 欄位 + Main Agent 處理規則
+- `docs/spec/overtone.md`：版本更新 v0.28.56 → v0.28.81
+- `docs/status.md`：近期變更更新、版本號同步
+
+---
+
+## [0.28.80] - 2026-03-07
+
+### 共用檔案掃描模組提取（Code Consolidation）
+
+#### 核心增強
+
+**fs-scanner.js 新增**
+- 提取 health-check 和 dead-code-scanner 的共用檔案掃描邏輯
+- scripts/lib 模組計數：66 → 67
+- 11 個新測試（tests/unit/fs-scanner.test.js）
+- 支援功能：目錄遍歷、副檔名過濾、正則掃描
+
+#### 測試結果
+
+- 新增 11 個測試
+- 總測試數：4713 → 4724 pass / 0 fail（200 個測試檔）
+
+#### 文件同步
+
+- `CLAUDE.md`：scripts/lib 模組數同步 66 → 67
+- `docs/status.md`：測試數同步、版本更新
+- `CHANGELOG.md`：新增本條目
+
+---
+
+## [0.28.79] - 2026-03-07
+
+### 全局文件同步閉環（Documentation Complete）
+
+#### 核心增強
+
+**Testing Skill 參考文件補全**
+- SKILL.md 補齊兩個孤立 reference（concurrency-testing-guide + task-splitting-guide）
+- Timeline events 計數更新（30 → 31）
+- 4 個完成 spec 歸檔（archive/completed/）
+
+**auto-discovered.md 批次更新**
+- claude-dev：新增 3 個 skill 參考
+- craft：新增 2 個 skill 參考
+- dead-code：新增 1 個 skill 參考
+- testing：新增 4 個 skill 參考
+- workflow-core：新增 2 個 skill 參考
+
+#### 文件同步
+
+- `auto-discovered.md`：5 個 skill 的參考列表更新
+- `docs/status.md`：Timeline Events 計數同步 30 → 31、近期變更更新
+- `CHANGELOG.md`：新增本條目
+
+---
+
 ## [0.28.76] - 2026-03-06
 
 ### 全面品質盤點 7 次迭代（Comprehensive Quality Assurance - 7 Iterations）

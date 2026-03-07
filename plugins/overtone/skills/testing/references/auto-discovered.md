@@ -1,27 +1,4 @@
 ---
-## 2026-03-05 | developer:DEV Findings
-**實作決策**：
-- Phase 1（architect/debugger/developer/planner/retrospective/tester）：在 DON'T 章節後插入 `## 誤判防護` 章節
-- Phase 2（build-error-resolver/designer/doc-updater/e2e-runner/qa/refactor-cleaner）：在 DON'T 章節後插入 `## 信心過濾` + `## 誤判防護` 兩個章節
-- claude-developer：原有誤判防護 → 補加信心過濾（移至 DON'T 後，信心過濾在誤判防護前）
-- grader：原精簡格式 `⛔ **DON'T**：` → 改為標準 `## DON'T（⛔ NEVER）` 格式（原有 pattern 不符合 validate-agents.js 的邊界清單偵測 patterns）
-- security-reviewer：已有誤判防護表格 → 補加信心過濾章節
-- designer：body 開頭無 `#` 標題行（原本如此）→ 保持原有格式，只在 DON'T 後插入新章節
-
-**驗證結果**：
-- `validate-agents.js`：所有 agent prompt 包含四模式要素 ✅（0 warnings）
-- `bun test`：3455 pass / 0 fail ✅
-Keywords: phase, architect, debugger, developer, planner, retrospective, tester, build, error, resolver
-
----
-## 2026-03-05 | developer:DEV Findings
-- `setup.js` 設 `OVERTONE_TEST=1` 後，現有的 `recordFailure` unit tests（1-1 等）會因保護機制而無法寫入，需要在對應的 `describe` 塊中加 `beforeEach`/`afterEach` 暫時清除 env
-- integration test 子進程繼承父進程 env，因此 `OVERTONE_TEST=1` 也會傳播到子進程，有效防止污染
-- `getFailurePatterns` 中 resolved 過濾在 window 截取之前執行（先過濾後截取），確保 window 大小計算基於有效失敗記錄
-- `formatFailureSummary` 重用了 `_readAll` + resolved 過濾邏輯（沒有抽取函式，保持扁平）
-Keywords: setup, recordfailure, unit, tests, describe, beforeeach, aftereach, integration, test, getfailurepatterns
-
----
 ## 2026-03-05 | developer:DEV Context
 實作了 `failure-tracker-precision` 功能的三個精確度修復：
 
@@ -551,4 +528,20 @@ Keywords: scanner, scripts, health, check, dead, code, tests, unit, test
 - health-check 版的 `parseModuleExportKeys` 比 dead-code-scanner 版少一個模式（不支援 `module.exports.xxx = ...`）。統一後兩者都用更完整的版本，功能提升。
 - `parseModuleExportKeys` 仍在 health-check.js 的 `module.exports` 中匯出（透過 alias），因為 `tests/unit/health-check.test.js` 直接解構引用它。
 Keywords: session, handler, test, beforeeach, mkdirsync, integration, lazy, getter, mock, handoff
+
+---
+## 2026-03-07 | tester:TEST Context
+模式：spec（TEST:spec）
+
+為 `handoff-quality-strengthen` 功能撰寫了完整的 BDD 行為規格，涵蓋架構師設計中指定的 5 個修改檔案和所有驗收面向。
+Keywords: spec, test, handoff, quality, strengthen
+
+---
+## 2026-03-07 | tester:TEST:2 Context
+模式：verify（TEST:verify）
+
+對 handoff-quality-strengthen 功能的 5 個修改檔案進行靜態驗證（純 prompt 修改，無程式碼邏輯）。驗證方式：逐條對照 BDD spec 描述的 27 個 Scenario，檢閱各 .md 檔案的實際內容。
+
+注意：specs/features/in-progress/handoff-quality-strengthen/ 目錄不存在（無 bdd.md），根據驗證要求直接依照 Handoff 中描述的 27 個 Scenario 進行驗證。
+Keywords: verify, test, handoff, quality, strengthen, prompt, spec, scenario, specs, features
 
