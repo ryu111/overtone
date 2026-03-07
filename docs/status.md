@@ -1,13 +1,13 @@
 # Overtone 現況
 
-> 最後更新：2026-03-07 | Plugin 版本：0.28.83 | Build：4683 pass
+> 最後更新：2026-03-07 | Plugin 版本：0.28.85 | Build：4683 pass
 > **使命**：推進 `~/.claude/` 達到 Layer 1-4（通用自主代理核心）。願景詳見 `docs/vision.md`。
 
 ## 版本狀態
 
 | 版本 | 狀態 | 說明 |
 |------|------|------|
-| V1 | 進行中 | 4683 pass，0 fail。核心能力：BDD 工作流自動化（18 個 agent + 18 個模板）+ 守衛強化（11 個 hook + 24 項 health-check）+ 自我進化引擎（gap detection / auto-fix / skill forge / internalization）+ OS 控制能力（截圖 + 視窗 + 系統層 + TTS 語音通知）+ 心跳引擎（跨 session 任務自主執行）+ 深度 PM 多輪訪談（領域研究 + 5 面向訪談）+ DEV 並行任務拆分 + CAS 壓力測試 + compact 品質偵測 + postdev 並行群組|
+| V1 | 進行中 | 4683 pass，0 fail。核心能力：BDD 工作流自動化（18 個 agent + 18 個模板）+ 守衛強化（11 個 hook + 25 項 health-check）+ 自我進化引擎（gap detection / auto-fix / skill forge / internalization）+ OS 控制能力（截圖 + 視窗 + 系統層 + TTS 語音通知）+ 心跳引擎（跨 session 任務自主執行）+ 深度 PM 多輪訪談（領域研究 + 5 面向訪談）+ DEV 並行任務拆分 + CAS 壓力測試 + compact 品質偵測 + postdev 並行群組|
 | V2 | 規劃中 | 延後 |
 
 ## 核心指標
@@ -20,8 +20,8 @@
 | 測試通過 | 4683 pass / 0 fail（200 個測試檔）|
 | 測試檔案 | 200 個 |
 | Hook 數量 | 11 個 |
-| Skill 數量 | 24（15 knowledge domain + orchestrator + pm + specs + 4 utility-with-refs + instinct） |
-| scripts/lib 模組 | 67（含 analyzers/ 7 + knowledge/ 9 + remote/ 4 + dashboard/ 2 子目錄模組 + tts 相關 2） |
+| Skill 數量 | 25（15 knowledge domain + orchestrator + pm + specs + 4 utility-with-refs + instinct + skill-judge） |
+| scripts/lib 模組 | 68（含 analyzers/ 7 + knowledge/ 9 + remote/ 4 + dashboard/ 2 子目錄模組 + tts 相關 2） |
 | Knowledge Domain 數 | 15（testing、workflow-core、security-kb、database、dead-code、commit-convention、code-review、wording、debugging、architecture、build-system、os-control、autonomous-control、craft、claude-dev） |
 | Command 數量 | 29（14 stage shortcut + 7 workflow pipeline + 8 utility） |
 | Telegram 命令 | 6（/start、/status、/stop、/run、/sessions、/help） |

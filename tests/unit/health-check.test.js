@@ -606,7 +606,7 @@ describe('runAllChecks', () => {
     }
   });
 
-  test('所有 finding 的 check 只能是已知 24 個 check 名稱之一', () => {
+  test('所有 finding 的 check 只能是已知 25 個 check 名稱之一', () => {
     const { findings } = cached(runAllChecks);
     const validChecks = new Set([
       'phantom-events', 'dead-exports', 'doc-code-drift', 'unused-paths',
@@ -615,7 +615,7 @@ describe('runAllChecks', () => {
       'closed-loop', 'recovery-strategy', 'completion-gap', 'dependency-sync',
       'internalization-index', 'test-file-alignment', 'skill-reference-integrity',
       'concurrency-guards', 'compact-frequency', 'sequential-markers',
-      'specs-directory-structure', 'orphan-queues',
+      'specs-directory-structure', 'orphan-queues', 'skill-quality',
     ]);
     for (const f of findings) {
       expect(validChecks.has(f.check)).toBe(true);
