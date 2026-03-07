@@ -592,13 +592,9 @@ describeC('Feature C: timeline event emit', () => {
   itC('Scenario C-3: pre-compact-handler 的頻率 emit 包在 try/catch 內（原始碼驗證）', () => {
     // 驗證 pre-compact-handler.js 的頻率 emit 包在 try/catch 中
     // 此為靜態驗證：讀取原始碼確認 try/catch 包覆
-    const handlerPath = joinPc3(
-      homedirPc3(), '..', '..', 'Users', 'sbu', 'projects', 'overtone',
-      'plugins', 'overtone', 'scripts', 'lib', 'pre-compact-handler.js',
-    );
-    const src = fsPc3.readFileSync(
-      require.resolve('../../plugins/overtone/scripts/lib/pre-compact-handler'),
-    ).toString();
+    const { SCRIPTS_LIB: _SCRIPTS_LIB } = require('../helpers/paths');
+    const handlerPath = joinPc3(_SCRIPTS_LIB, 'pre-compact-handler.js');
+    const src = fsPc3.readFileSync(handlerPath).toString();
     // 確認 quality:compact-frequency emit 被包在 try/catch 內
     expectC(src).toContain('quality:compact-frequency');
     expectC(src).toContain('// emit 失敗不阻擋 compaction');

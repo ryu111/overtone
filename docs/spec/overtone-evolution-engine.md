@@ -21,7 +21,7 @@
 
 ### 1. gap-analyzer.js
 
-- **位置**：`plugins/overtone/scripts/lib/gap-analyzer.js`
+- **位置**：`~/.claude/scripts/lib/gap-analyzer.js`
 - **職責**：組合 health-check 的四個 check，將 findings 轉換為標準化 Gap 物件
 - **來源 checks**：`component-chain` / `closed-loop` / `completion-gap` / `dependency-sync`
 - **輸出 GapType**：`broken-chain` / `missing-skill` / `missing-consumer` / `no-references` / `sync-mismatch`
@@ -54,7 +54,7 @@ Gap: {
 
 ### 2. gap-fixer.js
 
-- **位置**：`plugins/overtone/scripts/lib/gap-fixer.js`
+- **位置**：`~/.claude/scripts/lib/gap-fixer.js`
 - **職責**：對可修復缺口執行自動修復，目前支援兩種修復策略
 - **可修復 GapType**：
   - `sync-mismatch` → 呼叫 `fix-consistency.js --fix`（批次，一次呼叫處理全部）
@@ -81,7 +81,7 @@ FixResult: {
 
 ### 3. skill-forge.js
 
-- **位置**：`plugins/overtone/scripts/lib/skill-forge.js`
+- **位置**：`~/.claude/scripts/lib/skill-forge.js`
 - **職責**：從 codebase 萃取與指定 domain 相關的知識，建立完整 Skill 目錄結構
 - **萃取來源**：
   - 現有 `skills/*/SKILL.md` 提取結構模板
@@ -117,7 +117,7 @@ ForgeResult: {
 
 ### 4. knowledge/knowledge-gap-detector.js
 
-- **位置**：`plugins/overtone/scripts/lib/knowledge/knowledge-gap-detector.js`
+- **位置**：`~/.claude/scripts/lib/knowledge/knowledge-gap-detector.js`
 - **職責**：分析 prompt 文字中出現的關鍵詞，偵測 agent 尚未具備的知識 domain
 - **靜態知識表**：`DOMAIN_KEYWORDS`，覆蓋 15 個 knowledge domain（testing / security-kb / commit-convention / wording / code-review / database / dead-code / workflow-core / debugging / architecture / build-system / os-control / autonomous-control / craft / claude-dev）
 - **消費者**：`pre-task-handler.js`（hook 注入 gap 警告）、`project-orchestrator.js`（能力盤點）
@@ -140,7 +140,7 @@ autoForge(gaps, options) → void
 
 ### 5. project-orchestrator.js
 
-- **位置**：`plugins/overtone/scripts/lib/project-orchestrator.js`
+- **位置**：`~/.claude/scripts/lib/project-orchestrator.js`
 - **職責**：從 ProjectSpec（Markdown 或物件）到填充佇列的端到端協調，串聯 gap 偵測 → skill forge → 佇列排程
 - **流程**：
   1. 解析 spec → 純文字
@@ -176,7 +176,7 @@ extractFeatureList(projectSpec) → string[]
 
 ### 6. knowledge/skill-evaluator.js
 
-- **位置**：`plugins/overtone/scripts/lib/knowledge/skill-evaluator.js`
+- **位置**：`~/.claude/scripts/lib/knowledge/skill-evaluator.js`
 - **職責**：評估 `auto-discovered.md` 中的知識條目是否達到內化門檻
 - **評估維度**（三軸）：
   - `usageCount`：domain 相關 agent 使用次數（來自 observations.jsonl）
@@ -201,10 +201,10 @@ EvaluationResult: {
 
 ### 7. knowledge/skill-generalizer.js
 
-- **位置**：`plugins/overtone/scripts/lib/knowledge/skill-generalizer.js`
+- **位置**：`~/.claude/scripts/lib/knowledge/skill-generalizer.js`
 - **職責**：移除知識條目中的專案特定內容，使其可通用化後跨專案複用
 - **策略**：段落級移除（包含專案特定 pattern 的段落整段刪除）
-- **偵測 pattern**：絕對路徑 / 相對路徑（`plugins/overtone/`）/ require 路徑 / 版本號 / Session ID
+- **偵測 pattern**：絕對路徑 / 相對路徑（`~/.claude/`）/ require 路徑 / 版本號 / Session ID
 - **主要 API**：
 
 ```
@@ -225,7 +225,7 @@ generalizeEntries(evaluatedEntries) → GeneralizeResult[]
 
 ### 8. knowledge/experience-index.js
 
-- **位置**：`plugins/overtone/scripts/lib/knowledge/experience-index.js`
+- **位置**：`~/.claude/scripts/lib/knowledge/experience-index.js`
 - **職責**：維護「什麼專案需要哪些 skill domain」的全域索引，讓 project-orchestrator 能根據歷史經驗加速能力盤點
 - **資料路徑**：`~/.overtone/global/{projectHash}/experience-index.json`
 - **主要 API**：
@@ -302,7 +302,7 @@ ExperienceEntry: {
    │   ・CLAUDE.md 相關段落            │
    └─────────────┬────────────────────┘
                  │
-   plugins/overtone/skills/{domain}/
+   ~/.claude/skills/{domain}/
       ├── SKILL.md
       └── references/
 
@@ -363,7 +363,7 @@ ExperienceEntry: {
 
 ## CLI 入口（evolution.js）
 
-`plugins/overtone/scripts/evolution.js` 統一作為所有子命令的 CLI 入口。
+`~/.claude/scripts/evolution.js` 統一作為所有子命令的 CLI 入口。
 
 | 子命令 | 功能 | 核心模組 | 預設行為 |
 |--------|------|----------|----------|
@@ -417,10 +417,10 @@ ExperienceEntry: {
 
 | 資料 | 路徑 | 格式 | 管理模組 |
 |------|------|------|----------|
-| 自動發現的知識條目 | `plugins/overtone/skills/instinct/auto-discovered.md` | Markdown | instinct.js |
-| 內化後的通用知識 | `plugins/overtone/skills/instinct/internalized.md` | Markdown（含 frontmatter） | evolution.js runInternalize() |
+| 自動發現的知識條目 | `~/.claude/skills/instinct/auto-discovered.md` | Markdown | instinct.js |
+| 內化後的通用知識 | `~/.claude/skills/instinct/internalized.md` | Markdown（含 frontmatter） | evolution.js runInternalize() |
 | 全域專案索引 | `~/.overtone/global/{projectHash}/experience-index.json` | JSON | experience-index.js |
-| Skill 目錄 | `plugins/overtone/skills/{domain}/` | 目錄 + SKILL.md | skill-forge.js |
+| Skill 目錄 | `~/.claude/skills/{domain}/` | 目錄 + SKILL.md | skill-forge.js |
 
 ---
 

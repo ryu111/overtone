@@ -7,9 +7,11 @@
  */
 
 const { describe, it, expect, afterEach } = require('bun:test');
+const { join } = require('path');
+const { SCRIPTS_DIR } = require('../helpers/paths');
 
 // ── 路徑 ──
-const SYSTEM_INFO_MODULE = '../../plugins/overtone/scripts/os/system-info';
+const SYSTEM_INFO_MODULE = join(SCRIPTS_DIR, 'os', 'system-info');
 
 // ── 平台覆寫工具 ──
 let originalPlatformDesc;

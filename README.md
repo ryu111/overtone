@@ -9,7 +9,7 @@
 ### 步驟一：安裝
 
 ```bash
-git clone <repo-url> ~/.claude/plugins/overtone
+git clone <repo-url> ~/projects/overtone
 ```
 
 重啟 Claude Code，plugin 自動載入。

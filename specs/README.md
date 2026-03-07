@@ -30,19 +30,19 @@ Feature 名稱使用 **kebab-case**（全小寫 + 連字號），例如：
 
 ```bash
 # 列出所有 feature
-node plugins/overtone/scripts/specs-list.js
+bun ~/.claude/scripts/specs-list.js
 
 # 暫停正在進行的 feature（移至 backlog）
-node plugins/overtone/scripts/specs-pause.js <featureName>
+bun ~/.claude/scripts/specs-pause.js <featureName>
 
 # 恢復 backlog feature（移至 in-progress）
-node plugins/overtone/scripts/specs-resume.js <featureName>
+bun ~/.claude/scripts/specs-resume.js <featureName>
 
 # 新增 backlog feature
-node plugins/overtone/scripts/specs-backlog.js <featureName> <workflowType>
+bun ~/.claude/scripts/specs-backlog.js <featureName> <workflowType>
 
 # 啟動 workflow 並建立 feature
-node plugins/overtone/scripts/init-workflow.js <workflowType> <sessionId> <featureName>
+bun ~/.claude/scripts/init-workflow.js <workflowType> <sessionId> <featureName>
 ```
 
 ## tasks.md 格式

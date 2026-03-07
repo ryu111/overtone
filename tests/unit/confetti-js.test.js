@@ -2,6 +2,7 @@
 const { test, expect, describe } = require('bun:test');
 const fs = require('fs');
 const path = require('path');
+const { PLUGIN_ROOT } = require('../helpers/paths');
 
 // ── 載入 confetti.js（瀏覽器端 IIFE，透過 new Function 注入依賴） ──
 //
@@ -18,7 +19,7 @@ const path = require('path');
 // 避免在 test 呼叫 fireConfetti 時因 globalThis 已還原而 "window is not defined"。
 
 const confettiSource = fs.readFileSync(
-  path.join(__dirname, '../../plugins/overtone/web/js/confetti.js'),
+  path.join(PLUGIN_ROOT, 'web', 'js', 'confetti.js'),
   'utf8'
 );
 

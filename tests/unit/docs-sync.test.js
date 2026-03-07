@@ -19,17 +19,14 @@ const { PROJECT_ROOT, PLUGIN_ROOT, SCRIPTS_LIB } = require('../helpers/paths');
 
 // ── 路徑常數 ──────────────────────────────────────────────────────────────
 
-// SOURCE_PLUGIN_ROOT：plugin 原始碼目錄（用於統計 Overtone 自身元件數量）
-// 與 PLUGIN_ROOT（~/.claude 安裝目錄）區分，避免受使用者個人全域 command 干擾
-const SOURCE_PLUGIN_ROOT = join(PROJECT_ROOT, 'plugins', 'overtone');
-
-const AGENTS_DIR    = join(SOURCE_PLUGIN_ROOT, 'agents');
-const SKILLS_DIR    = join(SOURCE_PLUGIN_ROOT, 'skills');
-const COMMANDS_DIR  = join(SOURCE_PLUGIN_ROOT, 'commands');
-const HOOKS_JSON    = join(SOURCE_PLUGIN_ROOT, 'hooks', 'hooks.json');
+// PLUGIN_ROOT（~/.claude）是唯一 SoT，所有元件從此讀取
+const AGENTS_DIR    = join(PLUGIN_ROOT, 'agents');
+const SKILLS_DIR    = join(PLUGIN_ROOT, 'skills');
+const COMMANDS_DIR  = join(PLUGIN_ROOT, 'commands');
+const HOOKS_JSON    = join(PLUGIN_ROOT, 'hooks', 'hooks.json');
 const REGISTRY_DATA = join(SCRIPTS_LIB, 'registry-data.json');
 const REGISTRY_JS   = join(SCRIPTS_LIB, 'registry.js');
-const PLUGIN_JSON   = join(SOURCE_PLUGIN_ROOT, '.claude-plugin', 'plugin.json');
+const PLUGIN_JSON   = join(PLUGIN_ROOT, 'plugin.json');
 const STATUS_MD     = join(PROJECT_ROOT, 'docs', 'status.md');
 const CLAUDE_MD     = join(PROJECT_ROOT, 'CLAUDE.md');
 const DOCS_DIR      = join(PROJECT_ROOT, 'docs');
@@ -168,9 +165,9 @@ describe('1. docs/status.md 核心指標數字', () => {
     expect(actual.skillCount).toBe(24);
   });
 
-  test('Command 數量：status.md 與 commands/ 目錄 .md 檔案一致（應為 28）', () => {
+  test('Command 數量：status.md 與 commands/ 目錄 .md 檔案一致（應為 29）', () => {
     expect(metrics['Command 數量']).toBe(actual.commandCount);
-    expect(actual.commandCount).toBe(28);
+    expect(actual.commandCount).toBe(29);
   });
 });
 
@@ -235,8 +232,8 @@ describe('3. 關鍵文件路徑存在性', () => {
       { label: 'docs/spec/overtone.md', path: join(PROJECT_ROOT, 'docs/spec/overtone.md') },
       { label: 'docs/status.md', path: join(PROJECT_ROOT, 'docs/status.md') },
       // scripts/lib/registry.js 在 CLAUDE.md 中以短路徑描述，實際在 plugins/overtone/scripts/lib/
-      { label: 'plugins/overtone/scripts/lib/registry.js（CLAUDE.md 中作為 SoT 標注）', path: REGISTRY_JS },
-      { label: 'plugins/overtone/skills/wording/references/wording-guide.md', path: join(PLUGIN_ROOT, 'skills/wording/references/wording-guide.md') },
+      { label: '~/.claude/scripts/lib/registry.js（CLAUDE.md 中作為 SoT 標注）', path: REGISTRY_JS },
+      { label: '~/.claude/skills/wording/references/wording-guide.md', path: join(PLUGIN_ROOT, 'skills/wording/references/wording-guide.md') },
     ];
 
     for (const { label, path } of claudeKeyDocs) {

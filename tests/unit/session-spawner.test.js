@@ -75,8 +75,8 @@ describe('Feature 1: session-spawner.js — Claude Code session 啟動封裝', (
     expect(idx).toBeGreaterThanOrEqual(0);
     const pluginDirValue = args[idx + 1];
     expect(pluginDirValue).toBeTruthy();
-    // 自動偵測路徑應包含 plugins/overtone
-    expect(pluginDirValue).toContain('plugins/overtone');
+    // 自動偵測路徑應包含 .claude
+    expect(pluginDirValue).toContain('.claude');
   });
 
   // Scenario 1-3: spawnSession 成功 — stream-json 回傳 success 事件

@@ -77,7 +77,7 @@ describe('buildBanner', () => {
 
   test('有 grayMatterStatus 時顯示', () => {
     const result = buildBanner('1.0.0', 'test-session', null, {
-      grayMatterStatus: '  ⚠️  gray-matter 未安裝 — cd plugins/overtone && bun add gray-matter',
+      grayMatterStatus: '  ⚠️  gray-matter 未安裝 — cd ~/.claude && bun add gray-matter',
     });
     expect(result).toContain('gray-matter 未安裝');
   });

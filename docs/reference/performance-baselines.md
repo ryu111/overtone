@@ -83,7 +83,7 @@ health-check 執行時間較長的原因：
 | 執行時間 | <100ms | <100ms |
 | 呼叫頻率 | 每次 Claude Code 渲染 status bar | — |
 
-效能要求來源：`plugins/overtone/scripts/statusline.js` 第 18 行。
+效能要求來源：`~/.claude/scripts/statusline.js` 第 18 行。
 
 statusline.js 設計約束：
 - 純本地讀取，無網路呼叫

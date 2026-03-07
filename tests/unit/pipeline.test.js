@@ -2,10 +2,11 @@
 const { test, expect, describe, beforeAll } = require('bun:test');
 const fs = require('fs');
 const path = require('path');
+const { PLUGIN_ROOT } = require('../helpers/paths');
 
 // pipeline.js 是 browser-global script，透過模擬 window 環境載入
 const pipelineSource = fs.readFileSync(
-  path.join(__dirname, '../../plugins/overtone/web/js/pipeline.js'),
+  path.join(PLUGIN_ROOT, 'web', 'js', 'pipeline.js'),
   'utf8'
 );
 

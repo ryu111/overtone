@@ -74,18 +74,9 @@ bun test
 
 `bunfig.toml` 設定 `[test] root = "./tests"` 讓 bun 掃描 `tests/` 下所有 `.test.js`。
 
-### 入口二：Plugin 目錄（CI 相容入口）
-
-```bash
-# 在 /Users/sbu/projects/overtone/plugins/overtone/ 執行
-bun test
-```
-
-`package.json` 的 test script 應設定為 `bun test ../../tests`，確保指向同一套測試。
-
 ### 預期結果
 
-兩個入口應產出完全一致的結果：2300 pass、0 fail（v0.28.17，99 個測試檔）。
+4683 pass、0 fail（v0.28.83，196 個測試檔）。
 
 ---
 
@@ -111,7 +102,7 @@ const { SCRIPTS_LIB, HOOKS_DIR } = require('../helpers/paths.js');
 const registry = require(path.join(SCRIPTS_LIB, 'registry.js'));
 ```
 
-詳見 `plugins/overtone/skills/testing/references/testing-conventions.md`。
+詳見 `~/.claude/skills/testing/references/testing-conventions.md`。
 
 ---
 
@@ -128,7 +119,7 @@ const registry = require(path.join(SCRIPTS_LIB, 'registry.js'));
 
 ⛔ 不可寫入共享路徑（`~/.overtone/`、專案目錄內的非 tmp 路徑）。
 
-詳細規範與程式碼範例見 `plugins/overtone/skills/testing/references/testing-conventions.md` §7。
+詳細規範與程式碼範例見 `~/.claude/skills/testing/references/testing-conventions.md` §7。
 
 ---
 
@@ -140,5 +131,5 @@ const registry = require(path.join(SCRIPTS_LIB, 'registry.js'));
 | `tests/helpers/hook-runner.js` | Hook 執行 helper（runPreTask、runSubagentStop 等） |
 | `tests/helpers/frontmatter.js` | Frontmatter 解析 helper |
 | `bunfig.toml` | bun test 根目錄設定 |
-| `plugins/overtone/skills/testing/references/testing-conventions.md` | tester agent 操作規範 |
-| `plugins/overtone/skills/auto/references/test-scope-dispatch.md` | Main Agent 調度規則 |
+| `~/.claude/skills/testing/references/testing-conventions.md` | tester agent 操作規範 |
+| `~/.claude/skills/auto/references/test-scope-dispatch.md` | Main Agent 調度規則 |

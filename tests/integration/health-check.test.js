@@ -193,7 +193,7 @@ describe('Feature 6：輸出格式驗證', () => {
 
   test('Scenario summary — version 與 plugin.json 一致', () => {
     const { readFileSync } = require('fs');
-    const pluginJsonPath = path.join(SCRIPTS_DIR, '..', '.claude-plugin', 'plugin.json');
+    const pluginJsonPath = path.join(SCRIPTS_DIR, '..', 'plugin.json');
     const pluginJson = JSON.parse(readFileSync(pluginJsonPath, 'utf8'));
     const output = getParsed();
     expect(output.version).toBe(pluginJson.version);

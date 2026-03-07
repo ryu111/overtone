@@ -7,9 +7,11 @@
  */
 
 const { describe, it, expect, afterEach } = require('bun:test');
+const { join } = require('path');
+const { SCRIPTS_DIR } = require('../helpers/paths');
 
 // ── 路徑 ──
-const PROCESS_MODULE = '../../plugins/overtone/scripts/os/process';
+const PROCESS_MODULE = join(SCRIPTS_DIR, 'os', 'process');
 
 // ── 平台覆寫工具 ──
 let originalPlatformDesc;

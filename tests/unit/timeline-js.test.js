@@ -2,11 +2,12 @@
 const { test, expect, describe, beforeAll } = require('bun:test');
 const fs = require('fs');
 const path = require('path');
+const { PLUGIN_ROOT } = require('../helpers/paths');
 
 // ── 載入 timeline.js（瀏覽器端 IIFE，透過 global.window 模擬） ──
 
 const timelineSource = fs.readFileSync(
-  path.join(__dirname, '../../plugins/overtone/web/js/timeline.js'),
+  path.join(PLUGIN_ROOT, 'web', 'js', 'timeline.js'),
   'utf8'
 );
 

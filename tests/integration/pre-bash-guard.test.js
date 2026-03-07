@@ -225,8 +225,8 @@ describe('PreBashGuard: 正常命令放行', () => {
     expect(isAllowed(result.parsed)).toBe(true);
   });
 
-  test('bun plugins/overtone/scripts/os/screenshot.js → allow', () => {
-    const result = runPreBashGuard({ command: 'bun plugins/overtone/scripts/os/screenshot.js' });
+  test('bun ~/.claude/scripts/os/screenshot.js → allow', () => {
+    const result = runPreBashGuard({ command: 'bun ~/.claude/scripts/os/screenshot.js' });
     expect(result.exitCode).toBe(0);
     expect(isAllowed(result.parsed)).toBe(true);
   });

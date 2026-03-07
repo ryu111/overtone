@@ -18,7 +18,7 @@
 - **觸發條件**：`discovery` workflow 的 PM stage 完成（product-manager agent 輸出分析結果後）
 - **觸發時機**：PM stage pass → Main Agent 在 SubagentStop 之後讀取 pm SKILL.md，執行 Discovery 後續流程
 - **呈現方式**：AskUserQuestion 多選項
-- **Handler 位置**：`plugins/overtone/skills/pm/SKILL.md` L84-98（Discovery 模式導流規則）
+- **Handler 位置**：`~/.claude/skills/pm/SKILL.md` L84-98（Discovery 模式導流規則）
 - **使用者看到的選項**：
   - 各建議方案（每個方案附 workflow 類型 + 簡述會做什麼）
   - 「繼續討論」（回到 PM 深入探索）
@@ -40,7 +40,7 @@
 - **觸發條件**：`/ot:pm` 指令的 ARGUMENTS 包含 `plan` 關鍵字
 - **觸發時機**：Main Agent 解析 `/ot:pm` 指令時，偵測到 `plan` 關鍵字
 - **呈現方式**：停止（非 AskUserQuestion）— PM 分析完成後寫佇列並停止，等待使用者手動啟動
-- **Handler 位置**：`plugins/overtone/skills/pm/SKILL.md` L108-115（規劃模式導流規則）
+- **Handler 位置**：`~/.claude/skills/pm/SKILL.md` L108-115（規劃模式導流規則）
 - **使用者看到的選項**：無互動選項；PM 輸出「已加入佇列」訊息後停止
   - 使用者可用 `bun scripts/queue.js list` 查看
   - 使用者可用 `bun scripts/queue.js enable-auto` 啟動自動執行
@@ -60,7 +60,7 @@
 - **觸發條件**：`failCount >= 3`（workflow state 累積失敗次數）
 - **觸發時機**：tester agent 第 3 次回報 FAIL，agent-stop-handler 遞增 failCount 並標記 stage 為 fail，session-stop-handler 在下一輪 loop 計算 allCompleted + hasFailedStage 時走 abort 分支
 - **呈現方式**：停止 Loop，顯示錯誤摘要並等待人工處理（非 AskUserQuestion）
-- **Handler 位置**：`plugins/overtone/skills/workflow-core/references/failure-handling.md` L30-48（TEST FAIL 重試上限規則）
+- **Handler 位置**：`~/.claude/skills/workflow-core/references/failure-handling.md` L30-48（TEST FAIL 重試上限規則）
 - **使用者看到的選項**：無互動選項；停止後使用者需自行介入
   - 建議步驟：檢查失敗測試是否合理 → 手動分析根因 → 調整測試或程式碼後重新啟動
 - **Decision tree**：
@@ -81,7 +81,7 @@
 - **觸發條件**：`rejectCount >= 3`（workflow state 累積 reject 次數）
 - **觸發時機**：code-reviewer agent 第 3 次回報 REJECT，agent-stop-handler 遞增 rejectCount 並標記 stage 為 reject，session-stop-handler 在下一輪 loop 計算 allCompleted + hasFailedStage 時走 abort 分支
 - **呈現方式**：停止 Loop，顯示錯誤摘要並等待人工處理（非 AskUserQuestion）
-- **Handler 位置**：`plugins/overtone/skills/workflow-core/references/failure-handling.md` L70-74（REVIEW REJECT 重試上限規則）
+- **Handler 位置**：`~/.claude/skills/workflow-core/references/failure-handling.md` L70-74（REVIEW REJECT 重試上限規則）
 - **使用者看到的選項**：無互動選項；停止後使用者需自行介入
 - **Decision tree**：
   ```
@@ -101,7 +101,7 @@
 - **觸發條件**：`retroCount >= 3`（workflow state 累積回顧迭代次數）
 - **觸發時機**：retrospective agent 第 3 次回報 ISSUES 時，Main Agent 評估 retroCount >= 3
 - **呈現方式**：停止 RETRO 迭代（非完全停止 — 不同於 UG-03/04），繼續完成剩餘 stages（如 DOCS）
-- **Handler 位置**：`plugins/overtone/skills/workflow-core/references/failure-handling.md` L119-125（RETRO ISSUES 上限規則）
+- **Handler 位置**：`~/.claude/skills/workflow-core/references/failure-handling.md` L119-125（RETRO ISSUES 上限規則）
 - **使用者看到的選項**：無互動選項；系統自動繼續執行後續 stages
 - **Decision tree**：
   ```
@@ -125,7 +125,7 @@
 
 ### 2.1 PreToolUse(Task) 決策
 
-> 來源：`plugins/overtone/scripts/lib/pre-task-handler.js` L73-422
+> 來源：`~/.claude/scripts/lib/pre-task-handler.js` L73-422
 
 | 決策點 | 條件 | 結果 | Handler |
 |--------|------|------|---------|
@@ -152,7 +152,7 @@
 
 ### 2.2 SubagentStop 收斂決策
 
-> 來源：`plugins/overtone/scripts/lib/agent-stop-handler.js` L100-138
+> 來源：`~/.claude/scripts/lib/agent-stop-handler.js` L100-138
 
 | 決策點 | 條件 | 結果 | Handler |
 |--------|------|------|---------|
@@ -174,7 +174,7 @@
 
 ### 2.3 Stop hook 退出決策
 
-> 來源：`plugins/overtone/scripts/lib/session-stop-handler.js` L149-271
+> 來源：`~/.claude/scripts/lib/session-stop-handler.js` L149-271
 > 優先順序：依照 if 判斷執行順序，先命中者優先
 
 | 優先順序 | 條件 | 結果 | 程式碼位置 |
@@ -196,7 +196,7 @@
 
 ### 2.4 佇列控制流
 
-> 來源：`plugins/overtone/scripts/lib/agent-stop-handler.js` L177-187 + `plugins/overtone/scripts/lib/session-stop-handler.js` L193-220
+> 來源：`~/.claude/scripts/lib/agent-stop-handler.js` L177-187 + `~/.claude/scripts/lib/session-stop-handler.js` L193-220
 
 **前置步驟（PM stage 完成時）**：
 
@@ -228,7 +228,7 @@ PM stage pass
 
 ## 三、Stage 轉場摘要
 
-> 來源：`plugins/overtone/scripts/lib/registry.js` L46-72
+> 來源：`~/.claude/scripts/lib/registry.js` L46-72
 
 ### 3.1 基本模板（5 個）
 
@@ -270,7 +270,7 @@ PM stage pass
 
 ### 3.5 並行群組定義
 
-> 來源：`plugins/overtone/scripts/lib/registry.js` L76-80
+> 來源：`~/.claude/scripts/lib/registry.js` L76-80
 
 | 群組名稱 | 成員 Stage |
 |---------|-----------|

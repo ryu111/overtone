@@ -276,12 +276,12 @@ describe('listen — 監聽指定時間的訊息', () => {
 // --- Feature 4: CLI 入口 ---
 
 describe('CLI 入口 — 參數驗證', () => {
-  const PLUGIN_ROOT = '/Users/sbu/projects/overtone/plugins/overtone';
-  const WS_SCRIPT = `${PLUGIN_ROOT}/scripts/os/websocket.js`;
+  const { PLUGIN_ROOT: _PLUGIN_ROOT, SCRIPTS_DIR: _SCRIPTS_DIR } = require('../helpers/paths');
+  const WS_SCRIPT = join(_SCRIPTS_DIR, 'os', 'websocket.js');
 
   it('Scenario: 無效子命令 → stderr 包含錯誤訊息 + exit code 非零', async () => {
     const proc = Bun.spawn(['bun', WS_SCRIPT, 'invalid-cmd', 'ws://localhost:8080'], {
-      cwd: PLUGIN_ROOT,
+      cwd: _PLUGIN_ROOT,
       stderr: 'pipe',
       stdout: 'pipe',
     });
@@ -294,7 +294,7 @@ describe('CLI 入口 — 參數驗證', () => {
 
   it('Scenario: 缺少 URL 參數 → stderr + exit code 非零', async () => {
     const proc = Bun.spawn(['bun', WS_SCRIPT, 'connect'], {
-      cwd: PLUGIN_ROOT,
+      cwd: _PLUGIN_ROOT,
       stderr: 'pipe',
       stdout: 'pipe',
     });
@@ -307,7 +307,7 @@ describe('CLI 入口 — 參數驗證', () => {
 
   it('Scenario: send 缺少 message 參數 → stderr + exit code 非零', async () => {
     const proc = Bun.spawn(['bun', WS_SCRIPT, 'send', 'ws://localhost:8080'], {
-      cwd: PLUGIN_ROOT,
+      cwd: _PLUGIN_ROOT,
       stderr: 'pipe',
       stdout: 'pipe',
     });

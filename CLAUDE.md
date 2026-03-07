@@ -37,11 +37,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ```
 tests/              # 測試（unit / integration / e2e / helpers）⚠️ 不在 plugin 下
 docs/               # 文件（spec / reference / archive / status.md）⚠️ 不在 plugin 下
-plugins/overtone/   # Plugin 根目錄（開發中的 source）
+~/.claude/          # Plugin 根目錄（唯一 SoT）
 ├── agents/         # 18 個 agent .md（WHO — 角色）
 ├── skills/         # 24 個 Skill（WHAT — 知識域 + orchestrator + utilities-with-refs + instinct）
 │   # 15 knowledge domains: testing, workflow-core, security-kb, database, dead-code, commit-convention, code-review, wording, debugging, architecture, build-system, os-control, autonomous-control, craft, claude-dev
-├── commands/       # 28 個 Command（DO — stage shortcuts + 18 個模板 workflow pipelines + utilities）
+├── commands/       # 29 個 Command（DO — stage shortcuts + 18 個模板 workflow pipelines + utilities）
 ├── hooks/          # hooks.json + scripts/（HOW — 守衛）
 ├── scripts/lib/    # 共用庫（67 個模組：registry, state, timeline, specs, config-api, hook-timing, feature-sync, fs-scanner, specs-archive-scanner, statusline-state, 9x handler + analyzers/ + knowledge/ + remote/ + dashboard/ 子目錄 + tts 相關）
 └── web/            # Dashboard 前端
@@ -53,7 +53,7 @@ plugins/overtone/   # Plugin 根目錄（開發中的 source）
 ## Hook 架構（11 個）
 
 ⚠️ **hooks.json 必須使用官方三層嵌套格式**（三層嵌套）。扁平陣列格式會導致部分 hook 無法觸發。
-> 詳細格式規範 + updatedInput REPLACE 語意：`plugins/overtone/skills/claude-dev/references/hooks-api.md`
+> 詳細格式規範 + updatedInput REPLACE 語意：`~/.claude/skills/claude-dev/references/hooks-api.md`
 
 **薄殼化架構**（v0.28.49）：
 - Hook 本體（hooks/scripts/）：初始化 + handler 調用 + 錯誤處理（~29 行標準）
@@ -74,7 +74,7 @@ bun scripts/server.js
 # 系統健康檢查（23 項偵測）— checkPhantomEvents/checkDeadExports/checkDocCodeDrift/checkUnusedPaths/checkDuplicateLogic/checkPlatformDrift/checkDocStaleness/checkOsTools/checkComponentChain/checkDataQuality/checkQualityTrends/checkTestGrowth/checkClosedLoop/checkRecoveryStrategy/checkCompletionGap/checkDependencySync/checkInternalizationIndex/checkTestFileAlignment/checkSkillReferenceIntegrity/checkConcurrencyGuards/checkCompactFrequency/checkSequentialMarkers/checkSpecsDirectoryStructure
 bun scripts/health-check.js
 
-# 驗證所有元件設定（18 agents + 11 hooks + 24 skills + 28 commands）— agents/skills/hooks/commands 結構校驗
+# 驗證所有元件設定（18 agents + 11 hooks + 24 skills + 29 commands）— agents/skills/hooks/commands 結構校驗
 bun scripts/validate-agents.js
 
 # 元件管理（建立/更新 agent、hook、skill + 版本更新）
@@ -128,7 +128,7 @@ bun scripts/init-workflow.js {workflowType} [{sessionId}]
 
 ## 開發規範
 
-- **文件位置**：Overtone 所有設計文件、研究文件寫在 `docs/`（專案根目錄），⚠️ 不要寫在 `plugins/overtone/` 下
+- **文件位置**：Overtone 所有設計文件、研究文件寫在 `docs/`（專案根目錄），⚠️ 不要寫在 `~/.claude/` 下
 - 功能需驗證測試
 - commit 涉及 plugin 變更時更新 plugin.json version
 - **Agent prompt 四模式**：信心過濾 + 邊界清單(DO/DON'T) + 誤判防護 + 停止條件
@@ -147,5 +147,5 @@ bun scripts/init-workflow.js {workflowType} [{sessionId}]
 | `docs/spec/overtone.md` | 完整規格索引（v0.6，55 個決策） |
 | `docs/spec/overtone-decision-points.md` | 控制流決策點快查（30 秒找到任意決策點） |
 | `docs/status.md` | 現況快讀（版本狀態、核心指標、近期變更） |
-| `plugins/overtone/scripts/lib/registry.js` | SoT — 所有映射定義 |
+| `~/.claude/scripts/lib/registry.js` | SoT — 所有映射定義 |
 | `~/.claude/skills/wording/references/wording-guide.md` | 措詞正確性指南（決策樹 + 反模式 + 場景範例） |

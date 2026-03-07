@@ -7,9 +7,11 @@
  */
 
 const { describe, it, expect, afterEach } = require('bun:test');
+const { join } = require('path');
+const { SCRIPTS_DIR } = require('../helpers/paths');
 
 // ── 路徑 ──
-const CLIPBOARD_MODULE = '../../plugins/overtone/scripts/os/clipboard';
+const CLIPBOARD_MODULE = join(SCRIPTS_DIR, 'os', 'clipboard');
 
 // ── 平台覆寫工具 ──
 let originalPlatformDesc;

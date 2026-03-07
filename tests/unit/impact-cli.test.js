@@ -6,18 +6,20 @@
  */
 
 const { describe, it, expect } = require('bun:test');
+const { join } = require('path');
+const { PLUGIN_ROOT, SCRIPTS_DIR } = require('../helpers/paths');
 
 // CLI 所在的絕對路徑
-const IMPACT_CLI = '/Users/sbu/projects/overtone/plugins/overtone/scripts/impact.js';
+const IMPACT_CLI = join(SCRIPTS_DIR, 'impact.js');
 
 /**
  * 執行 CLI 並回傳 { stdout, stderr, exitCode }
  * @param {string[]} args CLI 引數
  * @param {object} opts
- * @param {string} [opts.cwd] 工作目錄（預設 plugin root 的 scripts 目錄上層）
+ * @param {string} [opts.cwd] 工作目錄（預設 plugin root）
  */
 async function runCLI(args, opts = {}) {
-  const cwd = opts.cwd || '/Users/sbu/projects/overtone/plugins/overtone';
+  const cwd = opts.cwd || PLUGIN_ROOT;
   const proc = Bun.spawn(
     ['bun', IMPACT_CLI, ...args],
     { cwd, stdout: 'pipe', stderr: 'pipe' },
@@ -92,7 +94,7 @@ describe('Feature 9: impact.js CLI', () => {
   it('Scenario 9-6: pluginRoot 自動偵測 — 無需指定 pluginRoot 即可執行', async () => {
     // 從 scripts/ 子目錄執行，確認自動偵測機制能正常 buildGraph
     const { exitCode, stderr } = await runCLI(['agents/developer.md'], {
-      cwd: '/Users/sbu/projects/overtone/plugins/overtone/scripts',
+      cwd: join(SCRIPTS_DIR),
     });
     // 不應有 "pluginRoot 不存在" 錯誤
     expect(stderr).not.toContain('pluginRoot 不存在');

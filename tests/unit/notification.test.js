@@ -14,8 +14,10 @@
  */
 
 const { describe, it, expect, afterEach } = require('bun:test');
+const { join } = require('path');
+const { SCRIPTS_DIR } = require('../helpers/paths');
 
-const NOTIFICATION_MODULE = '../../plugins/overtone/scripts/os/notification';
+const NOTIFICATION_MODULE = join(SCRIPTS_DIR, 'os', 'notification');
 
 // ── 平台覆寫工具 ──
 let originalPlatformDesc;

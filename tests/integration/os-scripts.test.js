@@ -11,8 +11,9 @@
 const { test, expect, describe } = require('bun:test');
 const path = require('path');
 const { existsSync, unlinkSync } = require('fs');
+const { SCRIPTS_DIR } = require('../helpers/paths');
 
-const OS_SCRIPTS_DIR = path.resolve(__dirname, '../../plugins/overtone/scripts/os');
+const OS_SCRIPTS_DIR = path.join(SCRIPTS_DIR, 'os');
 
 const isMac = process.platform === 'darwin';
 
