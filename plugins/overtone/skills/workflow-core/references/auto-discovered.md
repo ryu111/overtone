@@ -1,72 +1,4 @@
 ---
-## 2026-03-06 | planner:PLAN Findings
-**需求分解**：
-
-1. **新增 `postdev` parallelGroupDef 並更新 workflow 引用**
-   | agent: developer | files: `plugins/overtone/scripts/lib/registry.js`
-   在 `parallelGroupDefs` 新增 `'postdev': ['RETRO', 'DOCS']`。更新含 RETRO+DOCS 結尾的 workflow parallelGroups 欄位引用此群組：`quick`、`standard`、`full`、`secure`、`product`、`product-full`（6 個 workflow）。
-   注意：`registry-data.json` 不含 parallelGroups，不需修改。
-
-2. **實作 RETRO issues 攔截邏輯** (依賴任務 1)
-   | agent: developer | files: `plugins/overtone/scripts/lib/agent-stop-handler.js`, `plugins/overtone/scripts/lib/stop-message-builder.js`
-   當 RETRO verdict 為 `issues` 且處於 `postdev` 群組並行情境時，在 state 寫入 `pendingRetroIssues`（含 issues 描述）。當 DOCS stop 觸發後偵測到 `pendingRetroIssues` 存在，輸出提示 Main Agent 觸發修復流程（developer → RETRO → DOCS 重跑）。需確認 DOCS 已完成才觸發（避免 DOCS 還在跑時就提示）。
-
-3. **更新 command 文件（standard/quick/full/secure 說明中的 RETRO→DOCS 說明）** (parallel，依賴任務 1 確認 workflow 名稱)
-   | agent: developer | files: `plugins/overtone/commands/standard.md`, `plugins/overtone/commands/quick.md`, `plugins/overtone/commands/full.md`, `plugins/overtone/commands/secure.md`
-   stage 說明從「7. RETRO → 8. DOCS（序列）」改為「7-8. [RETRO + DOCS]（並行）」，並加入 RETRO ISSUES 時的處理說明。
-
-4. **更新 workflow-core skill 文件** (parallel，依賴任務 1)
-   | agent: developer | files: `plugins/overtone/skills/workflow-core/references/parallel-groups.md`, `plugins/overtone/skills/auto/SKILL.md`
-   parallel-groups.md 新增 `postdev` 群組說明表格條目 + 執行範例。auto/SKILL.md 的工作流選擇表格更新 RETRO+DOCS 欄位標示並行符號（如 `[RETRO + DOCS]`）。
-
-5. **新增 postdev 並行群組測試** (依賴任務 1+2)
-   | agent: developer | files: `tests/integration/parallel-convergence-gate.test.js`, `tests/unit/agent-stop-handler.test.js`, `tests/unit/stop-message-builder.test.js`
-   覆蓋：RETRO+DOCS 並行收斂（兩者都 pass）、RETRO issues 時 pendingRetroIssues 寫入、DOCS 完成後觸發 issues 提示、RETRO issues + DOCS fail 的邊界情況。
-
-**優先順序**：
-
-- 任務 1 最先（其他所有任務依賴 parallelGroupDef 確立）
-- 任務 2 在任務 1 完成後（需要知道群組名稱和收斂機制）
-- 任務 3、4 可在任務 1 完成後並行執行
-- 任務 5 在任務 1+2 完成後執行
-
-**範圍邊界**：
-
-不在此次範圍：
-- RETRO issues 導致的 developer 修復路徑本身（修復流程已存在，只新增觸發提示）
-- tasks.md checkbox 的 RETRO/DOCS 並行勾選邏輯（目前 checkbox 機制用 baseStage 比對，應自動相容）
-- Dashboard 顯示層的並行狀態（現有並行顯示機制應自動處理）
-- 任務 1 原始需求提到的 `registry-data.json` 修改（確認 parallelGroups 不在該檔案中，只需改 registry.js）
-
----
-Keywords: postdev, parallelgroupdef, workflow, agent, developer, files, plugins, overtone, scripts, registry
-
----
-## 2026-03-06 | architect:ARCH Findings
-**技術方案**：
-- `parallelGroupDefs` 新增 `postdev: ['RETRO', 'DOCS']`，6 個 workflow（quick/standard/full/secure/product/product-full）的 parallelGroups 陣列加入 `'postdev'`
-- `agent-stop-handler.js` 的 updateStateAtomic callback：`issues` verdict 改為與 `pass` 相同路徑（`status: completed, result: 'issues'`），設定 `isConvergedOrFailed = true, finalResult = 'issues'`
-- `stop-message-builder.js` 的 PASS branch：`convergence.group === 'postdev'` 時，讀取 `state.stages` 找 RETRO result，若為 `issues` 則插入回顧提示
-- RETRO `issues` 不阻擋 workflow 繼續，收斂後提示 Main Agent 決策（不自動觸發修復）
-
-**API 介面**：
-- 無新的 exported 函式；stop-message-builder 的 `buildStopMessages` 介面不變（`ctx.state` 已存在）
-- `parallelGroupDefs` 新增一個 key，`parallelGroups` export 自動推導
-
-**資料模型**：
-- 無新欄位；利用既有 `state.stages[RETRO].result = 'issues'` 和 `state.retroCount`
-- `checkParallelConvergence` 只看 `status === 'completed'`，issues 改為 completed 後自動兼容
-
-**檔案結構**：
-- 修改：`registry.js`、`agent-stop-handler.js`、`stop-message-builder.js`
-- 修改（command 文件）：`quick.md`、`standard.md`、`full.md`、`secure.md`（需透過 manage-component.js）
-- 修改（skill 文件）：`parallel-groups.md`（需透過 manage-component.js）
-- 新增測試：`tests/unit/registry-postdev.test.js`、`tests/unit/agent-stop-postdev.test.js`、`tests/unit/stop-message-postdev.test.js`
-
-**Dev Phases**：
-Keywords: parallelgroupdefs, postdev, retro, docs, workflow, quick, standard, full, secure, product
-
----
 ## 2026-03-06 | architect:ARCH Context
 選用最小侵入性方案：在現有 `parallelGroupDefs` 新增 `postdev: ['RETRO', 'DOCS']`，讓這兩個 stage 透過已驗證的並行收斂機制並行執行。RETRO `issues` verdict 改為標記 stage completed（與 pass 相同），讓 `checkParallelConvergence` 正常偵測收斂；收斂後由 stop-message-builder 讀取 `state.stages.RETRO.result` 決定是否附加 issues 提示。不引入新欄位，state 最小化。
 Keywords: parallelgroupdefs, postdev, retro, docs, stage, issues, verdict, completed, pass, checkparallelconvergence
@@ -661,4 +593,25 @@ Keywords: claude, plugin, json, overtone, plugins, symlink, enabledplugins, sett
 
 - [m] 數據一致性：全域 CLAUDE.md L82 寫「28 個 Command」，但 `~/.claude/commands/` 實際有 29 個（多了 `ask.md`，該檔案未同步回 `plugins/overtone/commands/`）。L106 寫「22 項偵測」，專案 CLAUDE.md 已更新為 23 項。這些是文件數字過時，作者可自行決定是否修正。
 Keywords: claude, overtone, context, plugins, commit, minor, command, commands
+
+---
+## 2026-03-07 | developer:DEV Findings
+- 原始 230 行精簡至 113 行（-51%），但開發必要資訊完整保留
+- 移除：三層架構、Agent 配置、工作流模板列表、Status Line 說明、重複的語言/行為規則
+- 保留：設計原則、並行委派、技術棧、目錄結構、Hook 開發注意事項、完整指令、開發規範、關鍵文件
+- 路徑引用已更新：`plugins/overtone/skills/*/references/` → `~/.claude/skills/*/references/`
+- registry.js 路徑修正：原本 `scripts/lib/registry.js`（模糊），改為 `plugins/overtone/scripts/lib/registry.js`（完整相對路徑）
+- 常用指令中刪除了一些較少用的 evolution.js 子命令選項（dry-run 預覽、--json flags），保留核心 --execute 版本，減少重複
+Keywords: agent, status, line, hook, plugins, overtone, skills, references, claude, registry
+
+---
+## 2026-03-07 | code-reviewer:REVIEW Findings
+**[m] 路徑引用風格不一致**：開發規範中 3 處引用改為 `~/.claude/skills/...` 全域路徑（第 135、138、141 行），但 Hook 開發注意事項（第 56 行）仍用 `plugins/overtone/skills/...` repo 相對路徑。關鍵文件表（第 151 行）的 wording-guide 也用了 `~/.claude/` 而非 repo 路徑。應統一為一種風格。信心：85%。
+
+**判定：APPROVE**
+
+只有 Minor 級別的路徑風格不一致，不影響功能，不阻擋合併。
+
+---
+Keywords: claude, skills, hook, plugins, overtone, repo, wording, guide, approve, minor
 
