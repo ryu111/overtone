@@ -627,6 +627,23 @@ describe('updateAgent', () => {
     expect(content).toContain('model: sonnet');
     expect(content).toContain('color: yellow');
   });
+
+  it('傳入未知 key 時回傳 success:false 且 errors 含未知欄位名稱', () => {
+    const originalContent = readFileSync(join(pluginRoot, 'agents', 'developer.md'), 'utf8');
+    const result = updateAgent('developer', { skills_add: 'auto' }, pluginRoot);
+    expect(result.success).toBe(false);
+    expect(result.errors.some((e) => e.includes('skills_add'))).toBe(true);
+    // 確認檔案未被修改
+    expect(readFileSync(join(pluginRoot, 'agents', 'developer.md'), 'utf8')).toBe(originalContent);
+  });
+
+  it('傳入合法 key 時仍正常更新', () => {
+    const result = updateAgent('developer', { description: '新描述', maxTurns: 20 }, pluginRoot);
+    expect(result.success).toBe(true);
+    const content = readFileSync(join(pluginRoot, 'agents', 'developer.md'), 'utf8');
+    expect(content).toContain('description: 新描述');
+    expect(content).toContain('maxTurns: 20');
+  });
 });
 
 // ── createHook 測試 ──
@@ -838,6 +855,23 @@ describe('updateSkill', () => {
     expect(result.success).toBe(false);
     expect(result.errors.some((e) => e.includes('disable-model-invocation') && e.includes('boolean'))).toBe(true);
     expect(readFileSync(join(pluginRoot, 'skills', 'auto', 'SKILL.md'), 'utf8')).toBe(originalContent);
+  });
+
+  it('傳入未知 key 時回傳 success:false 且 errors 含未知欄位名稱', () => {
+    const originalContent = readFileSync(join(pluginRoot, 'skills', 'auto', 'SKILL.md'), 'utf8');
+    const result = updateSkill('auto', { unknown_field: 'value', descriptiion: '拼錯' }, pluginRoot);
+    expect(result.success).toBe(false);
+    expect(result.errors.some((e) => e.includes('unknown_field') || e.includes('descriptiion'))).toBe(true);
+    // 確認檔案未被修改
+    expect(readFileSync(join(pluginRoot, 'skills', 'auto', 'SKILL.md'), 'utf8')).toBe(originalContent);
+  });
+
+  it('傳入合法 key 時仍正常更新 skill', () => {
+    const result = updateSkill('auto', { description: '更新後描述', 'user-invocable': true }, pluginRoot);
+    expect(result.success).toBe(true);
+    const content = readFileSync(join(pluginRoot, 'skills', 'auto', 'SKILL.md'), 'utf8');
+    expect(content).toContain('description: 更新後描述');
+    expect(content).toContain('user-invocable: true');
   });
 });
 
