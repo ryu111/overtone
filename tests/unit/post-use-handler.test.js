@@ -4,7 +4,9 @@
  */
 
 const { describe, it, expect, beforeEach, afterEach } = require('bun:test');
-const { observeBashError, extractCommandTag } = require('../../plugins/overtone/scripts/lib/post-use-handler');
+const { join } = require('path');
+const { SCRIPTS_LIB } = require('../helpers/paths');
+const { observeBashError, extractCommandTag } = require(join(SCRIPTS_LIB, 'post-use-handler'));
 
 // ── extractCommandTag 測試 ──
 
@@ -161,7 +163,7 @@ describe('observeBashError', () => {
 const { mkdirSync, rmSync, writeFileSync } = require('fs');
 const path = require('path');
 const os = require('os');
-const { handlePostUse, detectWordingMismatch, WORDING_RULES } = require('../../plugins/overtone/scripts/lib/post-use-handler');
+const { handlePostUse, detectWordingMismatch, WORDING_RULES } = require(join(SCRIPTS_LIB, 'post-use-handler'));
 
 function makeTestSession(suffix) {
   const id = `test_puh_${suffix}_${Date.now().toString(36)}`;

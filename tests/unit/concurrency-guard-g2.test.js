@@ -13,22 +13,24 @@
 const { describe, test, expect, beforeAll, afterAll } = require('bun:test');
 const fs = require('fs');
 const path = require('path');
+const { join } = path;
 const os = require('os');
 const { homedir } = require('os');
+const { SCRIPTS_LIB, SCRIPTS_DIR } = require('../helpers/paths');
 
-const stateLib = require('../../plugins/overtone/scripts/lib/state');
-const loopLib = require('../../plugins/overtone/scripts/lib/loop');
-const paths = require('../../plugins/overtone/scripts/lib/paths');
+const stateLib = require(join(SCRIPTS_LIB, 'state'));
+const loopLib = require(join(SCRIPTS_LIB, 'loop'));
+const paths = require(join(SCRIPTS_LIB, 'paths'));
 
 const {
   detectAndCleanOrphans,
   ORPHAN_TTL_MS,
   handleSessionStop,
-} = require('../../plugins/overtone/scripts/lib/session-stop-handler');
+} = require(join(SCRIPTS_LIB, 'session-stop-handler'));
 
 const {
   checkConcurrencyGuards,
-} = require('../../plugins/overtone/scripts/health-check');
+} = require(join(SCRIPTS_DIR, 'health-check'));
 
 // ── session 管理 ──
 

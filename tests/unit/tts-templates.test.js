@@ -6,7 +6,9 @@
  */
 
 const { describe, test, expect } = require('bun:test');
-const { getTemplate, getDefinedKeys } = require('../../plugins/overtone/scripts/lib/tts-templates');
+const { join } = require('path');
+const { SCRIPTS_LIB } = require('../helpers/paths');
+const { getTemplate, getDefinedKeys } = require(join(SCRIPTS_LIB, 'tts-templates'));
 
 describe('getTemplate()', () => {
   test('已知事件鍵取得插值後模板', () => {

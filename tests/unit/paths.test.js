@@ -1,11 +1,13 @@
 'use strict';
 const { test, expect, describe } = require('bun:test');
+const { join } = require('path');
+const { SCRIPTS_LIB } = require('../helpers/paths');
 const {
   OVERTONE_HOME,
   SESSIONS_DIR,
   CURRENT_SESSION_FILE,
   sessionDir,
-} = require('../../plugins/overtone/scripts/lib/paths');
+} = require(join(SCRIPTS_LIB, 'paths'));
 
 describe('paths.js 路徑解析', () => {
   describe('OVERTONE_HOME', () => {

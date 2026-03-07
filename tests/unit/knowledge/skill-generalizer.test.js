@@ -6,11 +6,13 @@
  */
 
 const { describe, it, expect, beforeAll } = require('bun:test');
+const { join } = require('path');
+const { SCRIPTS_LIB } = require('../../helpers/paths');
 const {
   PROJECT_SPECIFIC_PATTERNS,
   generalizeEntry,
   generalizeEntries,
-} = require('../../../plugins/overtone/scripts/lib/knowledge/skill-generalizer');
+} = require(join(SCRIPTS_LIB, 'knowledge/skill-generalizer'));
 
 describe('Feature 2: skill-generalizer — 移除專案特定內容', () => {
   // Scenario 2-1: 包含檔案路徑的段落被移除

@@ -9,6 +9,7 @@ const { describe, it, expect, beforeEach, afterEach } = require('bun:test');
 const { mkdirSync, writeFileSync, rmSync, existsSync, readFileSync } = require('fs');
 const { join } = require('path');
 const { tmpdir } = require('os');
+const { SCRIPTS_LIB } = require('../helpers/paths');
 const {
   resolveCommand,
   readAgentFile,
@@ -19,7 +20,7 @@ const {
   writeRegistryData,
   readPluginJson,
   writePluginJson,
-} = require('../../plugins/overtone/scripts/lib/config-io');
+} = require(join(SCRIPTS_LIB, 'config-io'));
 
 // ── 輔助函式 ──
 

@@ -9,9 +9,9 @@ const { describe, it, test, expect, beforeEach, afterEach } = require('bun:test'
 const { mkdirSync, rmSync } = require('fs');
 const { join } = require('path');
 const { homedir } = require('os');
-const { buildSystemMessage, handleOnSubmit } = require('../../plugins/overtone/scripts/lib/on-submit-handler');
-const { workflows } = require('../../plugins/overtone/scripts/lib/registry');
 const { SCRIPTS_LIB } = require('../helpers/paths');
+const { buildSystemMessage, handleOnSubmit } = require(join(SCRIPTS_LIB, 'on-submit-handler'));
+const { workflows } = require(join(SCRIPTS_LIB, 'registry'));
 const instinct = require(join(SCRIPTS_LIB, 'knowledge/instinct'));
 
 describe('buildSystemMessage', () => {

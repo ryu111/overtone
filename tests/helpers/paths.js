@@ -3,20 +3,22 @@
 // 使用 __dirname 計算絕對路徑，確保在任何工作目錄下呼叫結果一致。
 
 const { join } = require('path');
+const { homedir } = require('os');
 
 // 專案根目錄（overtone/）
 const PROJECT_ROOT = join(__dirname, '..', '..');
 
-// Plugin 根目錄（plugins/overtone/）
-const PLUGIN_ROOT = join(PROJECT_ROOT, 'plugins', 'overtone');
+// Plugin 根目錄
+// 優先使用環境變數（支援 CI 和全域安裝場景），fallback 到 homedir()/.claude
+const PLUGIN_ROOT = process.env.OVERTONE_PLUGIN_ROOT || join(homedir(), '.claude');
 
-// 核心函式庫目錄（plugins/overtone/scripts/lib/）
+// 核心函式庫目錄（{PLUGIN_ROOT}/scripts/lib/）
 const SCRIPTS_LIB = join(PLUGIN_ROOT, 'scripts', 'lib');
 
-// Scripts 目錄（plugins/overtone/scripts/）
+// Scripts 目錄（{PLUGIN_ROOT}/scripts/）
 const SCRIPTS_DIR = join(PLUGIN_ROOT, 'scripts');
 
-// Hooks 腳本目錄（plugins/overtone/hooks/scripts/）
+// Hooks 腳本目錄（{PLUGIN_ROOT}/hooks/scripts/）
 const HOOKS_DIR = join(PLUGIN_ROOT, 'hooks', 'scripts');
 
 module.exports = { PROJECT_ROOT, PLUGIN_ROOT, SCRIPTS_LIB, SCRIPTS_DIR, HOOKS_DIR };

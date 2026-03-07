@@ -4,7 +4,9 @@
  */
 
 const { describe, it, expect } = require('bun:test');
-const { handlePostUseFailure, CRITICAL_TOOLS } = require('../../plugins/overtone/scripts/lib/post-use-failure-handler');
+const { join } = require('path');
+const { SCRIPTS_LIB } = require('../helpers/paths');
+const { handlePostUseFailure, CRITICAL_TOOLS } = require(join(SCRIPTS_LIB, 'post-use-failure-handler'));
 
 describe('handlePostUseFailure', () => {
   it('Scenario 1: 無 sessionId 時回傳空 result', () => {

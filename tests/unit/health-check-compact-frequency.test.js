@@ -13,12 +13,14 @@
 
 const { describe, it, expect, beforeEach, afterEach } = require('bun:test');
 const path = require('path');
+const { join } = path;
 const os = require('os');
 const { mkdirSync, writeFileSync, rmSync } = require('fs');
+const { SCRIPTS_DIR, SCRIPTS_LIB } = require('../helpers/paths');
 
-const { checkCompactFrequency } = require('../../plugins/overtone/scripts/health-check');
+const { checkCompactFrequency } = require(join(SCRIPTS_DIR, 'health-check'));
 const { COMPACT_FREQ_WINDOW_MS, COMPACT_FREQ_THRESHOLD } =
-  require('../../plugins/overtone/scripts/lib/pre-compact-handler');
+  require(join(SCRIPTS_LIB, 'pre-compact-handler'));
 
 // ── 輔助函式 ─────────────────────────────────────────────────────────────────
 

@@ -12,8 +12,8 @@ const { describe, test, expect, beforeEach, afterEach } = require('bun:test');
 const { mkdirSync, rmSync } = require('fs');
 const { join } = require('path');
 const { homedir } = require('os');
-const { handleSessionEnd, resolveSessionResult } = require('../../plugins/overtone/scripts/lib/session-end-handler');
 const { SCRIPTS_LIB } = require('../helpers/paths');
+const { handleSessionEnd, resolveSessionResult } = require(join(SCRIPTS_LIB, 'session-end-handler'));
 const instinct = require(join(SCRIPTS_LIB, 'knowledge/instinct'));
 
 // ── 模組介面 ──────────────────────────────────────────────────────────────
@@ -231,9 +231,9 @@ describe('Feature 6: resolveSessionResult 補充', () => {
 
 const { describe: describeE, test: testE, expect: expectE, beforeEach: beforeEachE, afterEach: afterEachE } = require('bun:test');
 const fsE = require('fs');
-const pathsE = require('../../plugins/overtone/scripts/lib/paths');
-const stateLibE = require('../../plugins/overtone/scripts/lib/state');
-const timelineE = require('../../plugins/overtone/scripts/lib/timeline');
+const pathsE = require(join(SCRIPTS_LIB, 'paths'));
+const stateLibE = require(join(SCRIPTS_LIB, 'state'));
+const timelineE = require(join(SCRIPTS_LIB, 'timeline'));
 
 function makeSehSession(suffix) {
   const id = `test_seh_${suffix}_${Date.now()}`;

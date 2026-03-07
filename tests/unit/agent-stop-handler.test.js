@@ -22,13 +22,15 @@
 
 const { describe, test, expect, beforeAll, afterAll, beforeEach } = require('bun:test');
 const path = require('path');
+const { join } = path;
 const fs = require('fs');
 const os = require('os');
+const { SCRIPTS_LIB } = require('../helpers/paths');
 
-const { handleAgentStop, _parseQueueTable } = require('../../plugins/overtone/scripts/lib/agent-stop-handler');
-const stateLib = require('../../plugins/overtone/scripts/lib/state');
-const paths = require('../../plugins/overtone/scripts/lib/paths');
-const timeline = require('../../plugins/overtone/scripts/lib/timeline');
+const { handleAgentStop, _parseQueueTable } = require(join(SCRIPTS_LIB, 'agent-stop-handler'));
+const stateLib = require(join(SCRIPTS_LIB, 'state'));
+const paths = require(join(SCRIPTS_LIB, 'paths'));
+const timeline = require(join(SCRIPTS_LIB, 'timeline'));
 
 // ── Session 管理工具 ─────────────────────────────────────────────────────────
 
@@ -988,7 +990,7 @@ describe('handleAgentStop — RETRO stage issues verdict', () => {
 // ── _computeImpactSummary ────────────────────────────────────────────────────
 
 describe('_computeImpactSummary', () => {
-  const { _computeImpactSummary } = require('../../plugins/overtone/scripts/lib/agent-stop-handler');
+  const { _computeImpactSummary } = require(join(SCRIPTS_LIB, 'agent-stop-handler'));
   const os = require('os');
   const path = require('path');
 

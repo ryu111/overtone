@@ -10,8 +10,10 @@
 const { test, expect, describe } = require('bun:test');
 const os = require('os');
 const path = require('path');
+const { join } = path;
 const { writeFileSync, mkdirSync, unlinkSync, existsSync } = require('fs');
-const { checkOsTools } = require('../../plugins/overtone/scripts/health-check');
+const { SCRIPTS_DIR } = require('../helpers/paths');
+const { checkOsTools } = require(join(SCRIPTS_DIR, 'health-check'));
 
 // heartbeat PID 檔路徑（與 paths.js 一致）
 const HEARTBEAT_PID_FILE = path.join(os.homedir(), '.overtone', 'heartbeat.pid');
@@ -201,7 +203,7 @@ describe('checkOsTools: heartbeat daemon 狀態偵測', () => {
   });
 
   test('Feature 5 Scenario 4: health-check 的 check 項目數量為 23 項（含 test-file-alignment + skill-reference-integrity + concurrency-guards + compact-frequency + sequential-markers + specs-directory-structure）', () => {
-    const { runAllChecks } = require('../../plugins/overtone/scripts/health-check');
+    const { runAllChecks } = require(join(SCRIPTS_DIR, 'health-check'));
     const { checks } = runAllChecks();
     expect(checks.length).toBe(23);
     // screencapture 和 heartbeat 屬於 checkOsTools 內部擴展，不增加 check item

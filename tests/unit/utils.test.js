@@ -8,7 +8,9 @@ const { test, expect, describe, beforeAll, afterAll } = require('bun:test');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const { atomicWrite, formatSize } = require('../../plugins/overtone/scripts/lib/utils');
+const { join } = require('path');
+const { SCRIPTS_LIB } = require('../helpers/paths');
+const { atomicWrite, formatSize } = require(join(SCRIPTS_LIB, 'utils'));
 
 let tmpDir;
 beforeAll(() => {

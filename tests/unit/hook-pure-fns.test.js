@@ -20,8 +20,7 @@ const { describe, test, expect, beforeAll, afterAll } = require('bun:test');
 const path = require('path');
 const { mkdirSync, rmSync, writeFileSync } = require('fs');
 const { tmpdir } = require('os');
-
-const HOOKS_ROOT = path.resolve(__dirname, '../../plugins/overtone/hooks/scripts');
+const { HOOKS_DIR: HOOKS_ROOT } = require('../helpers/paths');
 
 // ── require.main 守衛驗證 ──────────────────────────────────────────────────
 

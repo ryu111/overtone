@@ -6,7 +6,9 @@
  */
 
 const { describe, test, expect } = require('bun:test');
-const { shouldSpeak, buildSpeakArgs, readTtsConfig, TTS_LEVELS, LEVEL_EVENTS } = require('../../plugins/overtone/scripts/lib/tts-strategy');
+const { join } = require('path');
+const { SCRIPTS_LIB } = require('../helpers/paths');
+const { shouldSpeak, buildSpeakArgs, readTtsConfig, TTS_LEVELS, LEVEL_EVENTS } = require(join(SCRIPTS_LIB, 'tts-strategy'));
 
 // ── shouldSpeak() 測試 ──
 

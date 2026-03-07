@@ -15,6 +15,7 @@ const { describe, it, expect, beforeEach, afterEach } = require('bun:test');
 const { mkdirSync, writeFileSync, rmSync } = require('fs');
 const { join } = require('path');
 const { tmpdir } = require('os');
+const { SCRIPTS_LIB } = require('../helpers/paths');
 const {
   validateAgent,
   validateHook,
@@ -22,7 +23,7 @@ const {
   validateAll,
   validateAgentFrontmatter,
   validateSkillFrontmatter,
-} = require('../../plugins/overtone/scripts/lib/config-validator');
+} = require(join(SCRIPTS_LIB, 'config-validator'));
 
 // ── 輔助函式 ──
 

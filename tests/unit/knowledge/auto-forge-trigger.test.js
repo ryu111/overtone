@@ -11,11 +11,11 @@ const { describe, it, expect, beforeAll, afterAll } = require('bun:test');
 const { join } = require('path');
 const { mkdirSync, writeFileSync, rmSync, existsSync } = require('fs');
 const { tmpdir } = require('os');
-
+const { SCRIPTS_LIB } = require('../../helpers/paths');
 const {
   shouldAutoForge,
   autoForge,
-} = require('../../../plugins/overtone/scripts/lib/knowledge/knowledge-gap-detector');
+} = require(join(SCRIPTS_LIB, 'knowledge/knowledge-gap-detector'));
 
 // ── 測試環境設置 ──
 

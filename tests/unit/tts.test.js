@@ -7,7 +7,9 @@
  */
 
 const { describe, test, expect, beforeEach } = require('bun:test');
-const { speak, speakBackground, listVoices } = require('../../plugins/overtone/scripts/os/tts');
+const { join } = require('path');
+const { SCRIPTS_DIR } = require('../helpers/paths');
+const { speak, speakBackground, listVoices } = require(join(SCRIPTS_DIR, 'os/tts'));
 
 // ── speak() 測試 ──
 

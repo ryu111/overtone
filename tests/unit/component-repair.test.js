@@ -18,6 +18,7 @@ const { describe, test, expect, beforeEach, afterEach } = require('bun:test');
 const fs = require('fs');
 const { join } = require('path');
 const os = require('os');
+const { SCRIPTS_LIB } = require('../helpers/paths');
 
 const {
   scanInconsistencies,
@@ -30,7 +31,7 @@ const {
   listAgentFiles,
   extractAgentFilenames,
   parseFrontmatterContent,
-} = require('../../plugins/overtone/scripts/lib/analyzers/component-repair');
+} = require(join(SCRIPTS_LIB, 'analyzers/component-repair'));
 
 // ── 沙盒工具 ──────────────────────────────────────────────────────────────
 

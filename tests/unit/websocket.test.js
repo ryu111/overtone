@@ -6,7 +6,9 @@
  */
 
 const { describe, it, expect, beforeEach } = require('bun:test');
-const { connect, send, listen } = require('../../plugins/overtone/scripts/os/websocket');
+const { join } = require('path');
+const { SCRIPTS_DIR } = require('../helpers/paths');
+const { connect, send, listen } = require(join(SCRIPTS_DIR, 'os/websocket'));
 
 // Mock WebSocket 工廠
 // 建立可控制的 mock WebSocket，模擬各種行為

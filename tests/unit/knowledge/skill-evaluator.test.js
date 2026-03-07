@@ -9,8 +9,8 @@ const { describe, it, expect, beforeEach, afterEach, beforeAll, afterAll } = req
 const { join } = require('path');
 const { mkdirSync, writeFileSync, rmSync, existsSync } = require('fs');
 const { tmpdir } = require('os');
-
-const { evaluateEntries } = require('../../../plugins/overtone/scripts/lib/knowledge/skill-evaluator');
+const { SCRIPTS_LIB } = require('../../helpers/paths');
+const { evaluateEntries } = require(join(SCRIPTS_LIB, 'knowledge/skill-evaluator'));
 
 // ── 測試環境設置 ──
 

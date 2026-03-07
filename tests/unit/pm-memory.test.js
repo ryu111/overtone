@@ -12,7 +12,9 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 
-const { queryPastInterviews, extractInsights, QUESTION_BANK } = require('../../plugins/overtone/scripts/lib/interview');
+const { join } = require('path');
+const { SCRIPTS_LIB } = require('../helpers/paths');
+const { queryPastInterviews, extractInsights, QUESTION_BANK } = require(join(SCRIPTS_LIB, 'interview'));
 
 // ── 測試輔助 ──
 

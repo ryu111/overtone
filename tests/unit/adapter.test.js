@@ -1,6 +1,8 @@
 'use strict';
 const { test, expect, describe } = require('bun:test');
-const Adapter = require('../../plugins/overtone/scripts/lib/remote/adapter');
+const { join } = require('path');
+const { SCRIPTS_LIB } = require('../helpers/paths');
+const Adapter = require(join(SCRIPTS_LIB, 'remote/adapter'));
 
 describe('Adapter 基類', () => {
   describe('建立實例後可正常存取 name 屬性', () => {

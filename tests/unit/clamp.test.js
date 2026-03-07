@@ -1,6 +1,8 @@
 'use strict';
 const { test, expect, describe } = require('bun:test');
-const { clamp } = require('../../plugins/overtone/scripts/lib/utils');
+const { join } = require('path');
+const { SCRIPTS_LIB } = require('../helpers/paths');
+const { clamp } = require(join(SCRIPTS_LIB, 'utils'));
 
 describe('clamp', () => {
   test('在範圍內 → 回傳原值', () => {

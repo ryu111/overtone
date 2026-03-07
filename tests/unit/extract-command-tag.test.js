@@ -5,7 +5,9 @@
  */
 
 const { describe, it, expect } = require('bun:test');
-const { extractCommandTag } = require('../../plugins/overtone/hooks/scripts/tool/post-use');
+const { join } = require('path');
+const { HOOKS_DIR } = require('../helpers/paths');
+const { extractCommandTag } = require(join(HOOKS_DIR, 'tool/post-use'));
 
 describe('extractCommandTag', () => {
   // Scenario 1: npm install → 'npm'

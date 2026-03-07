@@ -3,7 +3,8 @@ const { test, expect, describe, beforeAll, afterAll } = require('bun:test');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const { WORDING_RULES, detectWordingMismatch } = require('../../plugins/overtone/scripts/lib/wording');
+const { SCRIPTS_LIB } = require('../helpers/paths');
+const { WORDING_RULES, detectWordingMismatch } = require(path.join(SCRIPTS_LIB, 'wording'));
 
 // 建立臨時 .md 檔案的輔助函式
 let tmpDir;

@@ -10,8 +10,10 @@
 
 const { test, expect, describe, beforeEach, afterEach } = require('bun:test');
 const path = require('path');
+const { join } = path;
 const os = require('os');
 const { mkdirSync, writeFileSync, rmSync } = require('fs');
+const { SCRIPTS_DIR } = require('../helpers/paths');
 
 const {
   checkComponentChain,
@@ -19,7 +21,7 @@ const {
   checkQualityTrends,
   runAllChecks,
   PLUGIN_ROOT,
-} = require('../../plugins/overtone/scripts/health-check');
+} = require(join(SCRIPTS_DIR, 'health-check'));
 
 // ── 效能：lazy cache 避免重複目錄掃描 ──
 const _cache = new Map();

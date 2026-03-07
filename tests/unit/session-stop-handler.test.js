@@ -9,12 +9,14 @@
  */
 
 const { describe, test, expect } = require('bun:test');
+const { join } = require('path');
+const { SCRIPTS_LIB } = require('../helpers/paths');
 const {
   calcDuration,
   buildCompletionSummary,
   buildContinueMessage,
   _isRelatedQueueItem,
-} = require('../../plugins/overtone/scripts/lib/session-stop-handler');
+} = require(join(SCRIPTS_LIB, 'session-stop-handler'));
 
 // ── calcDuration ────────────────────────────────────────────────────────────
 
@@ -252,10 +254,10 @@ const { describe: describeI, test: testI, expect: expectI, beforeAll, afterAll }
 const fs = require('fs');
 const path = require('path');
 const { homedir } = require('os');
-const stateLib = require('../../plugins/overtone/scripts/lib/state');
-const loopLib = require('../../plugins/overtone/scripts/lib/loop');
-const paths = require('../../plugins/overtone/scripts/lib/paths');
-const { handleSessionStop } = require('../../plugins/overtone/scripts/lib/session-stop-handler');
+const stateLib = require(join(SCRIPTS_LIB, 'state'));
+const loopLib = require(join(SCRIPTS_LIB, 'loop'));
+const paths = require(join(SCRIPTS_LIB, 'paths'));
+const { handleSessionStop } = require(join(SCRIPTS_LIB, 'session-stop-handler'));
 
 const SID_PREFIX = `test_ssh_${Date.now()}`;
 let sidCounter = 0;

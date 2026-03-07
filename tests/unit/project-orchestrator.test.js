@@ -7,14 +7,16 @@
 
 const { describe, it, expect, beforeEach, mock, afterEach } = require('bun:test');
 const path = require('path');
+const { join } = path;
 const fs = require('fs');
 const os = require('os');
+const { SCRIPTS_LIB } = require('../helpers/paths');
 
 const {
   parseSpecToText,
   extractFeatureList,
   orchestrate,
-} = require('../../plugins/overtone/scripts/lib/project-orchestrator');
+} = require(join(SCRIPTS_LIB, 'project-orchestrator'));
 
 // ── 測試用 ProjectSpec 工廠 ──
 
@@ -295,7 +297,7 @@ describe('Feature 4: orchestrate — execute 模式', () => {
       },
     });
     // 先寫入一個佇列
-    const { writeQueue: wq } = require('../../plugins/overtone/scripts/lib/execution-queue');
+    const { writeQueue: wq } = require(join(SCRIPTS_LIB, 'execution-queue'));
     wq(tempDir, [{ name: '舊功能', workflow: 'standard' }], '舊來源');
 
     // overwrite 模式
@@ -424,13 +426,13 @@ describe('Feature 5: orchestrate — experienceHints 整合', () => {
 
   it('Scenario 5-1: experience-index 有資料時回傳 experienceHints 欄位', () => {
     // 在 tempDir 寫入一個 experience-index.json（模擬相似專案）
-    const { buildIndex } = require('../../plugins/overtone/scripts/lib/knowledge/experience-index');
+    const { buildIndex } = require(join(SCRIPTS_LIB, 'knowledge/experience-index'));
     // 建立一個不同的 projectRoot 模擬「其他專案」的索引
     const otherDir = fs.mkdtempSync(path.join(os.tmpdir(), 'orch-other-'));
     try {
       // 先在 tempDir 建立索引（模擬 otherDir 曾用過 testing, database domains）
       // 直接寫入 experience-index.json 到 global 路徑
-      const paths = require('../../plugins/overtone/scripts/lib/paths');
+      const paths = require(join(SCRIPTS_LIB, 'paths'));
       const indexPath = paths.global.experienceIndex(tempDir);
       const indexDir = path.dirname(indexPath);
       fs.mkdirSync(indexDir, { recursive: true });

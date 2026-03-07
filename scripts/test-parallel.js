@@ -22,6 +22,14 @@ const { cpus } = require('os');
 const PROJECT_ROOT = join(__dirname, '..');
 const TEST_DIRS = ['tests/unit', 'tests/integration', 'tests/e2e'];
 
+// 確保子進程繼承正確的 OVERTONE_PLUGIN_ROOT（指向本地 plugins/overtone）
+// 若外部已設定則保留（CI 環境可能指向全域安裝路徑）
+// 注意：Bun.spawn 不自動繼承 process.env 動態賦值，需在 spawn options.env 中明確傳遞
+const CHILD_ENV = {
+  ...process.env,
+  OVERTONE_PLUGIN_ROOT: process.env.OVERTONE_PLUGIN_ROOT || join(PROJECT_ROOT, 'plugins', 'overtone'),
+};
+
 // 已知重量級檔案（ms，來自實測）——定期用 --calibrate 更新
 const KNOWN_WEIGHTS = {
   'tests/unit/session-start-handler.test.js': 10302,
@@ -117,6 +125,7 @@ async function runCalibrate() {
     const start = performance.now();
     const proc = Bun.spawnSync(['bun', 'test', file], {
       cwd: PROJECT_ROOT,
+      env: CHILD_ENV,
       stdout: 'ignore',
       stderr: 'ignore',
     });
@@ -199,6 +208,7 @@ async function runParallel() {
     .map((w, i) => {
       const proc = Bun.spawn(['bun', 'test', ...w.files], {
         cwd: PROJECT_ROOT,
+        env: CHILD_ENV,
         stdout: 'pipe',
         stderr: 'pipe',
       });
@@ -217,6 +227,7 @@ async function runParallel() {
   const seqPromises = sequentialFiles.map((f, i) => {
     const proc = Bun.spawn(['bun', 'test', '--max-concurrency=1', f], {
       cwd: PROJECT_ROOT,
+      env: CHILD_ENV,
       stdout: 'pipe',
       stderr: 'pipe',
     });

@@ -13,9 +13,10 @@ const { describe, it, expect, beforeEach } = require('bun:test');
 const { mkdirSync, writeFileSync } = require('fs');
 const { join } = require('path');
 const { tmpdir } = require('os');
+const { SCRIPTS_DIR } = require('../helpers/paths');
 
-// 從 plugin 目錄直接 require，確保 gray-matter 路徑可被解析
-const { checkPlatformDrift } = require('../../plugins/overtone/scripts/health-check');
+// 從 SCRIPTS_DIR require，確保 gray-matter 路徑可被解析
+const { checkPlatformDrift } = require(join(SCRIPTS_DIR, 'health-check'));
 
 // ── 輔助函式 ──
 

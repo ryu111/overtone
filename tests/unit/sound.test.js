@@ -6,30 +6,32 @@
  */
 
 const { describe, it, expect } = require('bun:test');
+const { join } = require('path');
+const { SCRIPTS_LIB } = require('../helpers/paths');
 
 // ── 測試 SOUNDS 常數 ──
 
 describe('SOUNDS 常數', () => {
   it('包含 2 個音效常數（HERO, GLASS）', () => {
-    const { SOUNDS } = require('../../plugins/overtone/scripts/lib/sound');
+    const { SOUNDS } = require(join(SCRIPTS_LIB, 'sound'));
     expect(SOUNDS.HERO).toBe('Hero.aiff');
     expect(SOUNDS.GLASS).toBe('Glass.aiff');
   });
 
   it('不包含已移除的 TINK 和 BASSO', () => {
-    const { SOUNDS } = require('../../plugins/overtone/scripts/lib/sound');
+    const { SOUNDS } = require(join(SCRIPTS_LIB, 'sound'));
     expect(SOUNDS.TINK).toBeUndefined();
     expect(SOUNDS.BASSO).toBeUndefined();
   });
 
   it('導出 playSound 函式和 SOUNDS 常數', () => {
-    const sound = require('../../plugins/overtone/scripts/lib/sound');
+    const sound = require(join(SCRIPTS_LIB, 'sound'));
     expect(typeof sound.playSound).toBe('function');
     expect(typeof sound.SOUNDS).toBe('object');
   });
 
   it('不導出已移除的 error flag 函式', () => {
-    const sound = require('../../plugins/overtone/scripts/lib/sound');
+    const sound = require(join(SCRIPTS_LIB, 'sound'));
     expect(sound.writeErrorFlag).toBeUndefined();
     expect(sound.readAndClearErrorFlag).toBeUndefined();
     expect(sound.clearErrorFlag).toBeUndefined();
@@ -44,7 +46,7 @@ describe('playSound', () => {
     Object.defineProperty(process, 'platform', { value: 'linux', configurable: true });
 
     try {
-      const { playSound, SOUNDS } = require('../../plugins/overtone/scripts/lib/sound');
+      const { playSound, SOUNDS } = require(join(SCRIPTS_LIB, 'sound'));
       expect(() => playSound(SOUNDS.GLASS)).not.toThrow();
     } finally {
       if (originalPlatform) {
@@ -58,7 +60,7 @@ describe('playSound', () => {
     Object.defineProperty(process, 'platform', { value: 'darwin', configurable: true });
 
     try {
-      const { playSound } = require('../../plugins/overtone/scripts/lib/sound');
+      const { playSound } = require(join(SCRIPTS_LIB, 'sound'));
       expect(() => playSound('NotExist.aiff')).not.toThrow();
     } finally {
       if (originalPlatform) {

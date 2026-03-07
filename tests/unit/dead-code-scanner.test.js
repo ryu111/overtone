@@ -16,6 +16,7 @@ const { describe, test, expect, beforeEach, afterEach } = require('bun:test');
 const fs = require('fs');
 const { join } = require('path');
 const os = require('os');
+const { SCRIPTS_LIB } = require('../helpers/paths');
 
 const {
   parseExportKeys,
@@ -25,7 +26,7 @@ const {
   scanOrphanFiles,
   runDeadCodeScan,
   collectJsFiles,
-} = require('../../plugins/overtone/scripts/lib/analyzers/dead-code-scanner');
+} = require(join(SCRIPTS_LIB, 'analyzers/dead-code-scanner'));
 
 // ── 沙盒工具 ──────────────────────────────────────────────────────────────
 

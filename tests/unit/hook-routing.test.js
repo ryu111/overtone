@@ -13,7 +13,7 @@
 const { describe, test, expect } = require('bun:test');
 const path = require('path');
 const fs = require('fs');
-const { PLUGIN_ROOT } = require('../helpers/paths');
+const { PLUGIN_ROOT, SCRIPTS_LIB } = require('../helpers/paths');
 
 const SKILLS_DIR = path.join(PLUGIN_ROOT, 'skills');
 const COMMANDS_DIR = path.join(PLUGIN_ROOT, 'commands');
@@ -94,13 +94,13 @@ describe('Auto SKILL.md 路由表完整性', () => {
   });
 
   test('Auto SKILL.md 中的 18 個 workflow 由 registry.workflows 支撐', () => {
-    const { workflows } = require('../../plugins/overtone/scripts/lib/registry');
+    const { workflows } = require(path.join(SCRIPTS_LIB, 'registry'));
     expect(Object.keys(workflows).length).toBe(18);
   });
 
   test('Auto SKILL.md 中提及的 workflow 數量描述（18 個）與 registry 一致', () => {
     const content = fs.readFileSync(AUTO_SKILL_PATH, 'utf8');
-    const { workflows } = require('../../plugins/overtone/scripts/lib/registry');
+    const { workflows } = require(path.join(SCRIPTS_LIB, 'registry'));
     const registryCount = Object.keys(workflows).length;
     expect(registryCount).toBe(18);
     const routeTableLines = content.split('\n').filter(
@@ -118,7 +118,7 @@ describe('Auto SKILL.md 路由表完整性', () => {
 describe('UserPromptSubmit Hook 路由鏈', () => {
 
   test('on-submit.js 的 workflow 覆寫解析可覆蓋所有 18 個 workflow key', () => {
-    const { workflows } = require('../../plugins/overtone/scripts/lib/registry');
+    const { workflows } = require(path.join(SCRIPTS_LIB, 'registry'));
 
     for (const key of Object.keys(workflows)) {
       const workflowDef = workflows[key];
@@ -131,7 +131,7 @@ describe('UserPromptSubmit Hook 路由鏈', () => {
 
   test('on-submit.js 的 systemMessage 中「18 個 workflow 模板」與 registry 計數一致', () => {
     const content = fs.readFileSync(ON_SUBMIT_PATH, 'utf8');
-    const { workflows } = require('../../plugins/overtone/scripts/lib/registry');
+    const { workflows } = require(path.join(SCRIPTS_LIB, 'registry'));
 
     expect(content).toContain('18 個 workflow 模板');
 
@@ -141,7 +141,7 @@ describe('UserPromptSubmit Hook 路由鏈', () => {
 
   test('on-submit.js 的 [workflow:xxx] 正規式能解析所有 18 個 workflow key 格式', () => {
     const pattern = /\[workflow:([a-z0-9_-]+)\]/i;
-    const { workflows } = require('../../plugins/overtone/scripts/lib/registry');
+    const { workflows } = require(path.join(SCRIPTS_LIB, 'registry'));
 
     for (const key of Object.keys(workflows)) {
       const input = `[workflow:${key}]`;
@@ -152,7 +152,7 @@ describe('UserPromptSubmit Hook 路由鏈', () => {
   });
 
   test('on-submit.js 的 workflow 覆寫邏輯能區分合法與非合法 key', () => {
-    const { workflows } = require('../../plugins/overtone/scripts/lib/registry');
+    const { workflows } = require(path.join(SCRIPTS_LIB, 'registry'));
 
     const invalidKeys = ['invalid-workflow', 'xyz', 'nonexistent'];
     for (const key of invalidKeys) {

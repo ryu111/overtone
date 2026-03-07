@@ -14,8 +14,8 @@ const { describe, test, expect, beforeEach, afterEach } = require('bun:test');
 const { join } = require('path');
 const { mkdirSync, rmSync, readFileSync, existsSync } = require('fs');
 const { tmpdir } = require('os');
-
-const TelegramAdapter = require('../../plugins/overtone/scripts/lib/remote/telegram-adapter');
+const { SCRIPTS_LIB } = require('../helpers/paths');
+const TelegramAdapter = require(join(SCRIPTS_LIB, 'remote/telegram-adapter'));
 
 // mock _sendMessage 收集發送的訊息
 function createAdapter(options = {}) {

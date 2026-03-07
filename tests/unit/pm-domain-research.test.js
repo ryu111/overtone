@@ -12,6 +12,7 @@ const { test, expect, describe, afterEach } = require('bun:test');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+const { SCRIPTS_LIB } = require('../helpers/paths');
 
 const {
   researchDomain,
@@ -20,7 +21,7 @@ const {
   init,
   saveSession,
   loadSession,
-} = require('../../plugins/overtone/scripts/lib/interview');
+} = require(path.join(SCRIPTS_LIB, 'interview'));
 
 // ── researchDomain 測試 ──
 

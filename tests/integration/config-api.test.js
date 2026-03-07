@@ -10,6 +10,7 @@ const { describe, it, expect, beforeEach } = require('bun:test');
 const { mkdirSync, writeFileSync, readFileSync, existsSync } = require('fs');
 const { join } = require('path');
 const { tmpdir } = require('os');
+const { SCRIPTS_LIB } = require('../helpers/paths');
 const {
   createAgent,
   updateAgent,
@@ -19,7 +20,7 @@ const {
   updateSkill,
   validateAll,
   bumpVersion,
-} = require('../../plugins/overtone/scripts/lib/config-api');
+} = require(join(SCRIPTS_LIB, 'config-api'));
 
 // ── 輔助函式 ──
 

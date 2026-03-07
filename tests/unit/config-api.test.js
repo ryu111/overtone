@@ -9,6 +9,7 @@ const { describe, it, expect, beforeEach, afterEach } = require('bun:test');
 const { mkdirSync, writeFileSync, existsSync, readFileSync } = require('fs');
 const { join } = require('path');
 const { tmpdir } = require('os');
+const { SCRIPTS_LIB } = require('../helpers/paths');
 const {
   validateAgent,
   validateHook,
@@ -20,7 +21,7 @@ const {
   updateHook,
   createSkill,
   updateSkill,
-} = require('../../plugins/overtone/scripts/lib/config-api');
+} = require(join(SCRIPTS_LIB, 'config-api'));
 
 // ── 輔助函式 ──
 
@@ -844,25 +845,21 @@ describe('updateSkill', () => {
 
 describe('registry-data.json 抽離與同步', () => {
   it('registry.js 匯出的 stages 與 registry-data.json 一致', () => {
-    const registry = require('../../plugins/overtone/scripts/lib/registry');
-    const dataPath = require('path').join(
-      __dirname, '../../plugins/overtone/scripts/lib/registry-data.json'
-    );
+    const registry = require(join(SCRIPTS_LIB, 'registry'));
+    const dataPath = join(SCRIPTS_LIB, 'registry-data.json');
     const data = JSON.parse(require('fs').readFileSync(dataPath, 'utf8'));
     expect(Object.keys(registry.stages)).toEqual(Object.keys(data.stages));
   });
 
   it('registry.js 匯出的 agentModels 與 registry-data.json 一致', () => {
-    const registry = require('../../plugins/overtone/scripts/lib/registry');
-    const dataPath = require('path').join(
-      __dirname, '../../plugins/overtone/scripts/lib/registry-data.json'
-    );
+    const registry = require(join(SCRIPTS_LIB, 'registry'));
+    const dataPath = join(SCRIPTS_LIB, 'registry-data.json');
     const data = JSON.parse(require('fs').readFileSync(dataPath, 'utf8'));
     expect(registry.agentModels).toEqual(data.agentModels);
   });
 
   it('registry.js 匯出 knownTools 陣列含 Read、Write、Bash 等', () => {
-    const registry = require('../../plugins/overtone/scripts/lib/registry');
+    const registry = require(join(SCRIPTS_LIB, 'registry'));
     expect(Array.isArray(registry.knownTools)).toBe(true);
     expect(registry.knownTools).toContain('Read');
     expect(registry.knownTools).toContain('Write');
@@ -874,7 +871,7 @@ describe('registry-data.json 抽離與同步', () => {
   });
 
   it('registry.js 匯出 hookEvents 陣列含所有合法 event', () => {
-    const registry = require('../../plugins/overtone/scripts/lib/registry');
+    const registry = require(join(SCRIPTS_LIB, 'registry'));
     expect(Array.isArray(registry.hookEvents)).toBe(true);
     expect(registry.hookEvents).toContain('SessionStart');
     expect(registry.hookEvents).toContain('SessionEnd');

@@ -4,7 +4,9 @@
  */
 
 const { describe, it, expect } = require('bun:test');
-const { buildCompactMessage } = require('../../plugins/overtone/scripts/lib/pre-compact-handler');
+const { join } = require('path');
+const { SCRIPTS_LIB } = require('../helpers/paths');
+const { buildCompactMessage } = require(join(SCRIPTS_LIB, 'pre-compact-handler'));
 
 describe('buildCompactMessage', () => {
   it('Scenario 1: 基本狀態摘要包含必要欄位', () => {
@@ -292,9 +294,9 @@ const { describe: describeI, it: itI, expect: expectI, beforeEach, afterEach } =
 const fsPc = require('fs');
 const { homedir: homedirPc } = require('os');
 const { join: joinPc } = require('path');
-const stateLibPc = require('../../plugins/overtone/scripts/lib/state');
-const pathsPc = require('../../plugins/overtone/scripts/lib/paths');
-const { handlePreCompact } = require('../../plugins/overtone/scripts/lib/pre-compact-handler');
+const stateLibPc = require(join(SCRIPTS_LIB, 'state'));
+const pathsPc = require(join(SCRIPTS_LIB, 'paths'));
+const { handlePreCompact } = require(join(SCRIPTS_LIB, 'pre-compact-handler'));
 
 function makePcSession(suffix) {
   const id = `test_pch_${suffix}_${Date.now()}`;
@@ -374,7 +376,7 @@ describeI('handlePreCompact', () => {
 
 const { describe: describeA, it: itA, expect: expectA } = require('bun:test');
 const { detectFrequencyAnomaly, COMPACT_FREQ_WINDOW_MS, COMPACT_FREQ_THRESHOLD } =
-  require('../../plugins/overtone/scripts/lib/pre-compact-handler');
+  require(join(SCRIPTS_LIB, 'pre-compact-handler'));
 
 describeA('detectFrequencyAnomaly', () => {
   function recent(offsetMs = 0) {
@@ -439,8 +441,8 @@ const { describe: describeB, it: itB, expect: expectB, beforeEach: beforeEachB, 
 const fsPc2 = require('fs');
 const { homedir: homedirPc2 } = require('os');
 const { join: joinPc2 } = require('path');
-const stateLibPc2 = require('../../plugins/overtone/scripts/lib/state');
-const pathsPc2 = require('../../plugins/overtone/scripts/lib/paths');
+const stateLibPc2 = require(join(SCRIPTS_LIB, 'state'));
+const pathsPc2 = require(join(SCRIPTS_LIB, 'paths'));
 
 function makePcSession2(suffix) {
   const id = `test_pch2_${suffix}_${Date.now()}`;
@@ -522,8 +524,8 @@ const { describe: describeC, it: itC, expect: expectC, beforeEach: beforeEachC, 
 const fsPc3 = require('fs');
 const { homedir: homedirPc3 } = require('os');
 const { join: joinPc3 } = require('path');
-const stateLibPc3 = require('../../plugins/overtone/scripts/lib/state');
-const pathsPc3 = require('../../plugins/overtone/scripts/lib/paths');
+const stateLibPc3 = require(join(SCRIPTS_LIB, 'state'));
+const pathsPc3 = require(join(SCRIPTS_LIB, 'paths'));
 
 function makePcSession3(suffix) {
   const id = `test_pch3_${suffix}_${Date.now()}`;

@@ -1,5 +1,7 @@
 'use strict';
 const { test, expect, describe } = require('bun:test');
+const { join } = require('path');
+const { SCRIPTS_LIB } = require('../helpers/paths');
 const {
   stages,
   workflows,
@@ -10,7 +12,7 @@ const {
   hookEvents,
   journalDefaults,
   parallelGroupDefs,
-} = require('../../plugins/overtone/scripts/lib/registry');
+} = require(join(SCRIPTS_LIB, 'registry'));
 
 describe('registry.js 資料完整性', () => {
   describe('所有 16 個 agent 名稱符合 kebab-case 格式', () => {
