@@ -1,50 +1,4 @@
 ---
-## 2026-03-05 | developer:DEV Context
-實作了 `failure-tracker-precision` 功能的三個精確度修復：
-
-1. **測試污染隔離**：`recordFailure` 和 `recordResolution` 在 `OVERTONE_TEST` 或 `BUN_TEST` 環境變數存在時不寫入；`tests/helpers/setup.js` 全域設置 `OVERTONE_TEST=1`，確保 bun test 子進程（integration test）不會污染真實 `failures.jsonl`
-2. **retry 成功清除**：新增 `recordResolution()` 函式，`agent-stop-handler.js` 在 pass verdict 且本 session 曾有失敗時呼叫；`getFailurePatterns()` 讀取時建立 resolved Set，排除同 sessionId+stage 的所有 fail/reject 記錄
-3. **時間範圍顯示**：`formatFailureSummary` 從最近失敗記錄中計算最早和最晚時間，輸出 `（M/DD - M/DD）` 或 `（M/DD）`
-Keywords: failure, tracker, precision, recordfailure, recordresolution, tests, helpers, setup, test, integration
-
----
-## 2026-03-05 | tester:TEST Findings
-**測試結果：PASS**
-
-| 測試檔案 | 測試數 | 結果 |
-|---------|--------|------|
-| `tests/unit/dependency-graph.test.js` | 46 | 46 pass |
-| `tests/unit/impact-cli.test.js` | 7（新增） | 7 pass |
-| 全量套件 | 3533 | 3533 pass |
-
-BDD Spec 對照覆蓋狀況：
-
-- Feature 1（buildGraph）：Scenario 1-1 至 1-4 — 全部覆蓋
-- Feature 2（Agent Skills）：Scenario 2-1 至 2-4 — 全部覆蓋
-- Feature 3（Skill References）：Scenario 3-1 至 3-5 — 全部覆蓋
-- Feature 4（Registry Stages）：Scenario 4-1 至 4-4 — 全部覆蓋
-- Feature 5（Hook Requires）：Scenario 5-1 至 5-5 — 全部覆蓋
-- Feature 6（getImpacted）：Scenario 6-1 至 6-5 — 全部覆蓋
-- Feature 7（getDependencies）：Scenario 7-1 至 7-4 — 全部覆蓋
-- Feature 8（getRawGraph）：Scenario 8-1 至 8-2 — 全部覆蓋
-- Feature 9（CLI）：Scenario 9-1 至 9-6 — 新增 7 個測試覆蓋
-- Feature 10（邊界條件）：Scenario 10-1 至 10-5 — 全部覆蓋（10-1 已在 Feature 5 describe 中）
-Keywords: pass, tests, unit, dependency, graph, test, impact, spec, feature, buildgraph
-
----
-## 2026-03-05 | developer:DEV Findings
-1. **Mock WebSocket 設計**：BDD Scenario 中「伺服器拒絕連線」在 mock 環境難以準確模擬（真實 `ws://localhost:19999` 需要真實連線），改用 `closeImmediately` 行為模擬同等效果（open 未觸發就 close），符合規格意圖。
-
-2. **send Scenario 的 response 結構**：BDD spec 寫 `response: "hello"`，但 Architect Handoff 明確定義 `response: MessageEntry`（`{ data, receivedAt }`）。實作以 Architect 定義為準，response 是完整 MessageEntry，`responseAt` 獨立欄位。
-
-3. **NeverOpenWS**：Scenario「open 事件永遠不觸發」需要特殊 mock（不能用 createMockWS 工廠），因為 createMockWS 的 `_init()` 會在 `setImmediate` 後呼叫，導致事件已被設置。改用手動 class 定義確保 setter 是 no-op。
-
-4. **listen durationMs**：回傳值是 `Date.now() - startTime`（實際測量），不是傳入的 `opts.duration`，連線提前斷開時可正確反映真實持續時間。
-
-5. **post-use-failure-handler.test.js 偶發失敗**：並行測試中 1 個 fail，單獨執行時 8 pass / 0 fail，確認是既有的 flaky 測試問題，與本次修改無關。
-Keywords: mock, websocket, scenario, localhost, closeimmediately, open, close, send, response, spec
-
----
 ## 2026-03-05 | tester:TEST Context
 模式：verify
 
@@ -544,4 +498,38 @@ Keywords: spec, test, handoff, quality, strengthen
 
 注意：specs/features/in-progress/handoff-quality-strengthen/ 目錄不存在（無 bdd.md），根據驗證要求直接依照 Handoff 中描述的 27 個 Scenario 進行驗證。
 Keywords: verify, test, handoff, quality, strengthen, prompt, spec, scenario, specs, features
+
+---
+## 2026-03-07 | developer:DEV Context
+實作 `global-migrate-test-adapt` feature：將所有測試檔的硬編碼 `plugins/overtone` 路徑改為使用 `tests/helpers/paths.js` 常數，並讓 `paths.js` 支援 `OVERTONE_PLUGIN_ROOT` 環境變數 override。
+Keywords: global, migrate, test, adapt, feature, plugins, overtone, tests, helpers, paths
+
+---
+## 2026-03-07 | doc-updater:DOCS Findings
+**變更分析**：
+- 提交類型：環境變數支援機制（paths.js 新增 OVERTONE_PLUGIN_ROOT 環境變數 + test-parallel.js 新增 CHILD_ENV）
+- 測試數量變化：4724 → 4683 pass（41 個測試減少，測試結構調整）
+- 受影響文件：
+  1. tests/helpers/paths.js — 新增環境變數 fallback
+  2. scripts/test-parallel.js — 新增 CHILD_ENV 機制
+  3. 39 個測試檔 — 路徑適配
+
+**文件同步**：
+1. **docs/status.md** — 核心指標表更新
+   - 測試通過：4724 → 4683 pass
+   - Header 新增 Build 狀態標籤
+
+2. **CLAUDE.md** — 測試指令補充
+   - 新增環境變數說明區塊（OVERTONE_PLUGIN_ROOT 用途 + 範例）
+   - 軟建議形式，標記為可選（CI/全域安裝場景）
+Keywords: paths, test, parallel, pass, tests, helpers, fallback, scripts, docs, status
+
+---
+## 2026-03-07 | retrospective:RETRO Findings
+**回顧摘要**：
+
+本次 `global-migrate-test-adapt` feature 的核心目標是統一路徑管理。DEV 完成了 paths.js 模組建立、39 個測試檔遷移至 `tests/helpers/paths.js`、test-parallel.js CHILD_ENV 機制。整體架構決策正確（環境變數優先 + homedir fallback），且 4683 pass / 0 fail 驗證通過。
+
+然而，跨模組審視發現 scripts/lib 內有 3 個模組仍未遷移至 paths.js 常數，屬於本次 feature 目標（「所有 Overtone 路徑從 paths.js 取得」）的殘留缺口。
+Keywords: global, migrate, test, adapt, feature, paths, tests, helpers, parallel, homedir
 

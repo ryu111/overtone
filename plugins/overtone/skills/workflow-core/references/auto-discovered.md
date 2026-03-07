@@ -1,22 +1,4 @@
 ---
-## 2026-03-06 | planner:PLAN Context
-**需求**：強化 Overtone 並發守衛，補上 G2 orphan agent 主動偵測缺口。
-
-**根因分析**：目前 `activeAgents` 的清理路徑全為被動：
-- `sanitize()`：下一個 session 啟動時清理（跨 session）
-- `enforceInvariants() 規則 4`：下次 state 寫入時修正（運行中，但需有其他 hook 觸發寫入）
-
-在同一 session 內，若 agent crash 且後續無任何 state 寫入，orphan 持續殘留 → `getNextStageHint()` 永遠回傳「等待並行 agent 完成」→ Stop hook soft-release 路徑一直觸發 → workflow 無法推進。
-
-**技術確認**：`activeAgents` entry 格式（來自 `pre-task-handler.js:291-294`）包含 `startedAt: new Date().toISOString()`，可直接用於 TTL 計算，無需新增欄位。
-Keywords: overtone, orphan, agent, activeagents, sanitize, session, enforceinvariants, state, hook, crash
-
----
-## 2026-03-06 | architect:ARCH Context
-G2 修復分兩個正交部分：(1) session-stop-handler.js 新增主動 orphan 清理函式，在每次 Stop hook 執行時掃描 TTL 超時的 activeAgents；(2) health-check.js 新增第 20 項靜態+runtime 雙軌偵測。三個 Open Questions 均已決策（詳見 design.md）。
-Keywords: session, stop, handler, orphan, hook, activeagents, health, check, runtime, open
-
----
 ## 2026-03-06 | developer:DEV Context
 實作 concurrency-guard-g2 功能：G2 orphan agent TTL 偵測修復 + health-check #20 checkConcurrencyGuards。
 
@@ -582,4 +564,64 @@ Keywords: global, migrate, move, files, plugins, overtone, claude, agents, skill
 7. **版本 bump**：plugin.json 0.28.81 → 0.28.82，正常
 8. **auto-discovered.md**：清理過舊條目 + 新增本次知識歸檔，內容準確
 Keywords: settings, json, hooks, matcher, type, command, hook, sessionstart, sessionend, precompact
+
+---
+## 2026-03-07 | architect:ARCH Findings
+**技術方案**：
+- `tests/helpers/paths.js` 的 `PLUGIN_ROOT` 改為 `process.env.OVERTONE_PLUGIN_ROOT || join(homedir(), '.claude')`
+- 所有直接 hardcode `plugins/overtone` 的 63 個測試檔統一改為 paths.js 常數模式
+- 不允許混用模式，確保 paths.js 是 single source of truth
+- 例外：`skill-generalizer.test.js` 中的 `plugins/overtone/` 字串是測試資料（不是 require 路徑），不修改
+
+**API 介面**：
+- paths.js 匯出介面維持不變：`{ PROJECT_ROOT, PLUGIN_ROOT, SCRIPTS_LIB, SCRIPTS_DIR, HOOKS_DIR }`
+- 消費端（147 個間接引用檔）自動生效，無需逐一修改
+
+**資料模型**：N/A — 純路徑常數變更
+
+**檔案結構**：
+- 修改：`tests/helpers/paths.js`（核心變更）
+- 修改：`tests/unit/*.test.js`（39 個 A 類）
+- 修改：`tests/unit/knowledge/`（3 個 B 類）
+- 修改：`tests/unit/hook-pure-fns.test.js`、`extract-command-tag.test.js`、`paths.test.js`（C 類）
+
+**Dev Phases**：
+
+    ### Phase 1: 更新 paths.js (sequential)
+    - [ ] T1：更新 paths.js | files: tests/helpers/paths.js
+
+    ### Phase 2: 修復直接硬編碼 (parallel)
+    - [ ] T2：A 類 39 個 unit/ 檔案 | files: tests/unit/*.test.js
+    - [ ] T3：B 類 3 個 knowledge/ 檔案 | files: tests/unit/knowledge/*.test.js
+    - [ ] T4：C 類 hooks + paths.test.js | files: 3 個特定檔案
+
+    ### Phase 3: 驗證 (sequential)
+    - [ ] T5：bun scripts/test-parallel.js | files: 無
+
+**Edge Cases to Handle**：
+- `skill-generalizer.test.js` 測試資料誤改 — 語意陷阱（第 18-31、73-74、193-194 行 `plugins/overtone/` 是輸入字串，不是 require 路徑，批次替換會破壞測試語意）
+- `hook-pure-fns.test.js` 第 494-514 行假路徑誤改 — 語意陷阱（`/path/to/plugins/overtone` 是 checkProtected 測試入參，不是真實路徑）
+- `OVERTONE_PLUGIN_ROOT` CI 未設定 — 資料邊界（CI 需確保環境變數存在或預裝 plugin，否則 MODULE_NOT_FOUND）
+- `paths.test.js` 雙重引用 — 語意陷阱（同時引用 helpers/paths 和 scripts/lib/paths，只改後者的 require）
+Keywords: tests, helpers, paths, process, join, homedir, claude, hardcode, plugins, overtone
+
+---
+## 2026-03-07 | code-reviewer:REVIEW Findings
+審查了以下面向：
+
+**1. paths.js 核心改動** -- 正確。`PLUGIN_ROOT` 從 `join(PROJECT_ROOT, 'plugins', 'overtone')` 改為 `process.env.OVERTONE_PLUGIN_ROOT || join(homedir(), '.claude')`，環境變數優先、homedir fallback，符合全域安裝場景需求。
+
+**2. test-parallel.js CHILD_ENV 機制** -- 正確且完整。`CHILD_ENV` 以 `...process.env` 展開加上 `OVERTONE_PLUGIN_ROOT` override，覆蓋了所有 3 個 Bun.spawn/spawnSync 呼叫點（calibrate、parallel workers、sequential files）。註解清楚說明 Bun.spawn 不自動繼承動態賦值的行為。
+
+**3. 43 個測試檔路徑替換** -- 模式一致，全部改為 `require(join(SCRIPTS_LIB/SCRIPTS_DIR/HOOKS_DIR, 'module-name'))` 形式。
+
+**4. Edge case 正確保留**：
+- `skill-generalizer.test.js`：`plugins/overtone/` 字串是測試資料（generalizeEntry 輸入），正確未修改
+- `hook-pure-fns.test.js`：`/path/to/plugins/overtone` 是 checkProtected 假路徑，正確未修改
+- `knowledge-archiver.test.js`：同為測試資料字串，正確未修改
+
+**5. Minor 觀察（不阻擋）**：
+- [m] 不一致：`tests/unit/pre-compact-handler.test.js:600` 的 `require.resolve('../../plugins/overtone/scripts/lib/pre-compact-handler')` 是該檔案中唯一未替換的 require 路徑（同檔案其餘 6 處 require 都已改為 `join(SCRIPTS_LIB, ...)` 形式）。另外第 595-598 行的 `handlerPath` 變數被計算但未使用（dead code）。
+- [n] Scope：約 12 個測試檔（`scripts/os/` 和 `web/js/` 相關）仍使用硬編碼路徑，但 paths.js 目前未提供對應常數（`OS_SCRIPTS_DIR`、`WEB_DIR`），屬於後續迭代範圍。
+Keywords: paths, join, plugins, overtone, process, homedir, claude, fallback, test, parallel
 
