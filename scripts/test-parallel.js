@@ -43,8 +43,9 @@ const KNOWN_WEIGHTS = {
 // 預設權重（未知檔案）
 const DEFAULT_WEIGHT = 300;
 
-// 需要串行執行的檔案（fallback 白名單，向下相容）
+// 需要隔離執行的檔案（fallback 白名單，向下相容）
 // 主要靠 // @sequential marker 偵測（見 hasSequentialMarker）
+// 注意：health-check.test.js 曾因重量級子進程列於此，優化後已透過 @sequential marker 管理
 const SEQUENTIAL_FILES = new Set([
   'tests/integration/session-id-bridge.test.js',
   'tests/unit/health-check-os-tools.test.js',
@@ -170,7 +171,7 @@ async function runParallel() {
     console.log(`偵測到 @sequential marker: ${markerCount} 個`);
   }
   if (sequentialFiles.length > 0) {
-    console.log(`串行測試: ${sequentialFiles.length} 個（依賴全域共享狀態，在並行完成後執行）`);
+    console.log(`隔離測試: ${sequentialFiles.length} 個（parallel 完成後並行啟動）`);
   }
 
   if (verbose) {
@@ -201,21 +202,26 @@ async function runParallel() {
       })();
     });
 
-  const results = await Promise.all(promises);
+  const parallelResults = await Promise.all(promises);
 
-  // 並行完成後，串行執行需要隔離的測試
-  for (let i = 0; i < sequentialFiles.length; i++) {
-    const f = sequentialFiles[i];
+  // sequential 檔案各自作為獨立進程，在 parallel 完成後並行啟動（彼此存取不同共享資源）
+  const seqPromises = sequentialFiles.map((f, i) => {
     const proc = Bun.spawn(['bun', 'test', '--max-concurrency=1', f], {
       cwd: PROJECT_ROOT,
       stdout: 'pipe',
       stderr: 'pipe',
     });
-    const stdout = await new Response(proc.stdout).text();
-    const stderr = await new Response(proc.stderr).text();
-    const exitCode = await proc.exited;
-    results.push({ index: workers.length + i, stdout, stderr, exitCode, files: [f], sequential: true });
-  }
+
+    return (async () => {
+      const stdout = await new Response(proc.stdout).text();
+      const stderr = await new Response(proc.stderr).text();
+      const exitCode = await proc.exited;
+      return { index: workers.length + i, stdout, stderr, exitCode, files: [f], sequential: true };
+    })();
+  });
+
+  const seqResults = await Promise.all(seqPromises);
+  const results = [...parallelResults, ...seqResults];
 
   const elapsed = Math.round(performance.now() - start);
 

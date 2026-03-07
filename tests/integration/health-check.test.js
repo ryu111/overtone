@@ -203,9 +203,16 @@ describe('Feature 6：輸出格式驗證', () => {
 // Feature 7: Exit code 行為
 // ══════════════════════════════════════════════════════════════════
 
+// Feature 7 lazy 快取（只執行一次 spawn）
+let f7Result;
+function getF7Result() {
+  if (!f7Result) f7Result = runHealthCheck();
+  return f7Result;
+}
+
 describe('Feature 7：Exit code 行為', () => {
   test('Scenario — exit code 與 summary.passed 一致', () => {
-    const result = runHealthCheck();
+    const result = getF7Result();
     const output = JSON.parse(result.stdout);
 
     if (output.summary.passed) {
@@ -216,7 +223,7 @@ describe('Feature 7：Exit code 行為', () => {
   });
 
   test('Scenario — 只有 error 級別的 finding 才導致 exit 1', () => {
-    const result = runHealthCheck();
+    const result = getF7Result();
     const output = JSON.parse(result.stdout);
 
     const hasErrors = output.findings.some(f => f.severity === 'error');
@@ -229,7 +236,7 @@ describe('Feature 7：Exit code 行為', () => {
   });
 
   test('Scenario — exit code 0 時 passed 為 true 且無 error', () => {
-    const result = runHealthCheck();
+    const result = getF7Result();
     if (result.exitCode === 0) {
       const output = JSON.parse(result.stdout);
       expect(output.summary.passed).toBe(true);
@@ -242,7 +249,7 @@ describe('Feature 7：Exit code 行為', () => {
   });
 
   test('Scenario — stdout 不為空（即使有錯誤也有輸出）', () => {
-    const result = runHealthCheck();
+    const result = getF7Result();
     expect(result.stdout.length).toBeGreaterThan(0);
   });
 });
@@ -251,15 +258,22 @@ describe('Feature 7：Exit code 行為', () => {
 // 真實 codebase 執行驗證
 // ══════════════════════════════════════════════════════════════════
 
+// 真實 codebase lazy 快取（只執行一次 spawn）
+let realResult;
+function getRealResult() {
+  if (!realResult) realResult = runHealthCheck();
+  return realResult;
+}
+
 describe('真實 codebase 執行驗證', () => {
   test('在真實 codebase 執行不拋出非預期例外', () => {
-    const result = runHealthCheck();
+    const result = getRealResult();
     // 無論有無 findings，stdout 都應是合法 JSON
     expect(() => JSON.parse(result.stdout)).not.toThrow();
   });
 
   test('所有 22 個 check 都成功執行（findingsCount 為數字）', () => {
-    const result = runHealthCheck();
+    const result = getRealResult();
     const output = JSON.parse(result.stdout);
     expect(output.checks.length).toBe(22);
     for (const c of output.checks) {
@@ -269,7 +283,7 @@ describe('真實 codebase 執行驗證', () => {
   });
 
   test('phantom-events check 有執行（存在於 checks 陣列中）', () => {
-    const result = runHealthCheck();
+    const result = getRealResult();
     const output = JSON.parse(result.stdout);
     const check = output.checks.find((c) => c.name === 'phantom-events');
     expect(check).toBeDefined();
@@ -277,35 +291,35 @@ describe('真實 codebase 執行驗證', () => {
   });
 
   test('dead-exports check 有執行', () => {
-    const result = runHealthCheck();
+    const result = getRealResult();
     const output = JSON.parse(result.stdout);
     const check = output.checks.find((c) => c.name === 'dead-exports');
     expect(check).toBeDefined();
   });
 
   test('doc-code-drift check 有執行', () => {
-    const result = runHealthCheck();
+    const result = getRealResult();
     const output = JSON.parse(result.stdout);
     const check = output.checks.find((c) => c.name === 'doc-code-drift');
     expect(check).toBeDefined();
   });
 
   test('unused-paths check 有執行', () => {
-    const result = runHealthCheck();
+    const result = getRealResult();
     const output = JSON.parse(result.stdout);
     const check = output.checks.find((c) => c.name === 'unused-paths');
     expect(check).toBeDefined();
   });
 
   test('duplicate-logic check 有執行', () => {
-    const result = runHealthCheck();
+    const result = getRealResult();
     const output = JSON.parse(result.stdout);
     const check = output.checks.find((c) => c.name === 'duplicate-logic');
     expect(check).toBeDefined();
   });
 
   test('doc-staleness check 有執行', () => {
-    const result = runHealthCheck();
+    const result = getRealResult();
     const output = JSON.parse(result.stdout);
     const check = output.checks.find((c) => c.name === 'doc-staleness');
     expect(check).toBeDefined();
