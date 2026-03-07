@@ -234,12 +234,13 @@ describe('防禦性推進：completeCurrent fallback', () => {
     // 模擬 session-stop-handler 的 fallback 邏輯
     if (!executionQueue.completeCurrent(TEST_PROJECT)) {
       executionQueue.advanceToNext(TEST_PROJECT);
-      executionQueue.completeCurrent(TEST_PROJECT);
+      const success = executionQueue.completeCurrent(TEST_PROJECT);
+      expect(success).toBe(true);
     }
 
+    // 全部完成後佇列會被自動清理
     const queue = executionQueue.readQueue(TEST_PROJECT);
-    expect(queue.items[0].status).toBe('completed');
-    expect(queue.items[0].completedAt).toBeDefined();
+    expect(queue).toBeNull();
   });
 
   test('fallback 模式：多項佇列只完成第一個 pending', () => {
@@ -270,8 +271,9 @@ describe('防禦性推進：completeCurrent fallback', () => {
     const success = executionQueue.completeCurrent(TEST_PROJECT);
     expect(success).toBe(true);
 
+    // 全部完成後佇列會被自動清理
     const queue = executionQueue.readQueue(TEST_PROJECT);
-    expect(queue.items[0].status).toBe('completed');
+    expect(queue).toBeNull();
   });
 });
 
@@ -386,8 +388,10 @@ describe('appendQueue 累加到既有佇列', () => {
   });
 
   test('appendQueue 保留已完成項目', () => {
+    // 用 2 個項目確保 completeCurrent 不會自動清理（還有 pending 項目）
     executionQueue.writeQueue(TEST_PROJECT, [
       { name: 'done-task', workflow: 'quick' },
+      { name: 'placeholder', workflow: 'quick' },
     ], 'PM Discovery');
     executionQueue.advanceToNext(TEST_PROJECT);
     executionQueue.completeCurrent(TEST_PROJECT);
@@ -397,9 +401,10 @@ describe('appendQueue 累加到既有佇列', () => {
     ], 'PM Plan');
 
     const queue = executionQueue.readQueue(TEST_PROJECT);
-    expect(queue.items.length).toBe(2);
+    expect(queue.items.length).toBe(3);
     expect(queue.items[0].status).toBe('completed');
     expect(queue.items[1].status).toBe('pending');
+    expect(queue.items[2].status).toBe('pending');
   });
 
   test('appendQueue 不存在時等同 writeQueue', () => {
@@ -481,11 +486,12 @@ describe('完整流程（8）', () => {
     expect(executionQueue.getCurrent(TEST_PROJECT).item.name).toBe('C');
     executionQueue.completeCurrent(TEST_PROJECT);
 
-    // 全部完成
+    // 全部完成 → 佇列自動清理
     expect(executionQueue.getNext(TEST_PROJECT)).toBeNull();
     expect(executionQueue.getCurrent(TEST_PROJECT)).toBeNull();
 
+    // completeCurrent 在最後一個項目完成時自動刪除佇列
     const queue = executionQueue.readQueue(TEST_PROJECT);
-    expect(queue.items.every(i => i.status === 'completed')).toBe(true);
+    expect(queue).toBeNull();
   });
 });
