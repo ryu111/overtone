@@ -50,3 +50,39 @@ Keywords: phase, sequential, agent, developer, files, package, json, schema, arc
 - `filesystem-concurrency.md` 不存在（Handoff 中引用了一個不存在的文件），指南改為直接描述三種策略並從現有測試中引用程式碼範例
 - 7 個測試全數通過，執行時間 80ms（因使用 Bun 快取，子進程 spawn 很快）
 Keywords: test, retry, timeout, stress, strict, mode, pragma, filesystem, concurrency, handoff
+---
+## 2026-03-07 | architect:ARCH Findings
+**技術方案**：
+
+- 相對路徑（`./references/xxx.md`）在搬移前後都能正確解析，中間狀態無斷裂風險，迭代不需合併
+- health-check.js 的 `checkSkillReferenceIntegrity` 已內建格式1（相對路徑 regex）偵測，**不需改動**
+- dependency-graph.js 需同步更新，否則替換後 `bun scripts/impact.js` 和依賴圖功能失效
+- config-io.js 的 `resolveCommand` 由呼叫方傳入 pluginRoot，**本迭代不動**（屬 move-files 迭代範疇）
+- manage-component.js 說明文字排除在外，不在本迭代範圍
+
+**API 介面**：
+
+`dependency-graph.js` 更新後新增內部輔助函式 `resolveSkillRef(skillRelPath, refPath) => string | null`，`scanSkillReferences` 介面不變（對外 API 不破壞）。
+
+**替換規則**：
+
+| 類別 | 原格式 | 替換為 |
+|------|--------|--------|
+| A | `` `${CLAUDE_PLUGIN_ROOT}/skills/{self}/references/` `` | `` `./references/` `` |
+| B | `` `${CLAUDE_PLUGIN_ROOT}/skills/{other}/references/` `` | `` `../{other}/references/` `` |
+| C/D | `node/bun ${CLAUDE_PLUGIN_ROOT}/scripts/` | `bun ~/.claude/scripts/` |
+| E | `${CLAUDE_PLUGIN_ROOT}/skills/xxx/references/` | `~/.claude/skills/xxx/references/` |
+| F | `${CLAUDE_PLUGIN_ROOT}/hooks/scripts/` | `~/.claude/hooks/scripts/` |
+| G1 | post-use-handler.js fallback `'plugins/overtone'` | `os.homedir() + '/.claude'` |
+| G2 | dependency-graph.js refRegex | 支援三種格式 |
+| G4 | skill-forge.js 範本 | 生成 `./references/` |
+
+**檔案結構**：
+
+- Phase 1 新增/修改（並行）：`dependency-graph.js`、`post-use-handler.js`、`hook-diagnostic.js`、`skill-forge.js`
+- Phase 2 修改（並行）：26 個 `skills/*/SKILL.md`
+- Phase 3 修改（並行）：14 個 `commands/*.md`
+- Phase 4 修改（並行）：5 個 `claude-dev/references/*.md`
+
+**Dev Phases**：
+Keywords: references, health, check, checkskillreferenceintegrity, regex, dependency, graph, scripts, impact, config

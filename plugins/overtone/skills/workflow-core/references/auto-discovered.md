@@ -1,56 +1,4 @@
 ---
-## 2026-03-06 | developer:DEV Findings
-- 格式對齊同目錄的 `hooks-api.md` 和 `agent-api.md`：標題層級、表格、程式碼區塊、警告標記（⚠️ / ⛔）風格一致
-- 在第 5 節詳述 Overtone 的並行收斂門機制（activeAgents instanceId + parallelDone/parallelTotal），連結到現有 on-stop.js 實作
-- 第 7 節提供快速決策樹，讓 agent 能在 30 秒內找到正確的並行策略
-- run_in_background 的 tmp log 路徑以 `{agentId}` 佔位，實際路徑由平台提供，符合目前文件風格（不硬編碼不確定的細節）
-Keywords: hooks, agent, overtone, activeagents, instanceid, paralleldone, paralleltotal, stop, agentid
-
----
-## 2026-03-06 | developer:DEV Findings
-- 決策樹涵蓋 6 個分支：只讀 / JSONL Append / Atomic Write / 分割策略 / CAS / Advisory File Lock
-- 每個模式都有：原理、適用場景、Overtone 實作參照、Tradeoff、反模式警告
-- Overtone 特定場景表格完整涵蓋 7 個關鍵檔案（workflow.json / timeline.jsonl / observations.jsonl / statusline-state.json / loop.json / compact-count.json / .current-session-id）
-- SKILL.md 透過 manage-component.js 正確更新（description + body + developer 消費者），並通過 fix-consistency 修復 4 個 SKILL.md 消費者表同步問題
-- developer agent frontmatter 已加入 architecture skill
-Keywords: jsonl, append, atomic, write, advisory, file, lock, overtone, tradeoff, workflow
-
----
-## 2026-03-06 | developer:DEV Context
-新增 `plugins/overtone/skills/architecture/references/concurrency-patterns.md`，為 architect/developer agent 提供並發策略選擇的系統性決策框架。
-Keywords: plugins, overtone, skills, architecture, references, concurrency, patterns, architect, developer, agent
-
----
-## 2026-03-06 | developer:DEV Findings
-1. **基於實際程式碼**：直接讀取 `utils.js`、`state.js`、`timeline.js` 後描述，所有細節（tmp 命名欄位、MAX_RETRIES=3、jitter 1-5ms、MAX_EVENTS=2000、PIPE_BUF 4KB）均來自程式碼。
-
-2. **強調「為什麼」**：每個設計決策都說明了原因——為何用 rename（POSIX 原子性）、為何有 jitter（避免永久碰撞）、為何 fallback 強制寫入（避免卡死）、為何 enforceInvariants 執行順序重要（規則 2 先於規則 4）。
-
-3. **sanitize 與 enforceInvariants 的區別**：用表格清楚對比兩者的觸發時機、操作對象、目的，解釋它們互補而非重複。
-
-4. **HFS+ mtime 1s 精度限制**：在 mtime CAS 機制的限制段落中明確說明，APFS 環境不受影響。
-
-5. **格式對齊**：參考 `parallel-groups.md` 的寫作風格（表格、程式碼區塊、粗體強調），保持一致。
-Keywords: utils, state, timeline, jitter, rename, posix, fallback, enforceinvariants, sanitize, mtime
-
----
-## 2026-03-06 | developer:DEV Context
-建立了 `plugins/overtone/skills/workflow-core/references/filesystem-concurrency.md`，系統性說明 Overtone 檔案系統並發設計的原理、適用場景和限制。
-Keywords: plugins, overtone, skills, workflow, core, references, filesystem, concurrency
-
----
-## 2026-03-06 | retrospective:RETRO Context
-ISSUES — 發現 1 個重要品質問題（信心 90%）。REVIEW Handoff 聲稱「SKILL.md 閉環缺口已補上索引」，但實際驗證顯示只補了 2 個（architecture + debugging），另外 2 個 SKILL.md 索引仍然缺失。
-Keywords: issues, review, handoff, skill, architecture, debugging
-
----
-## 2026-03-06 | product-manager:PM Context
-Overtone 在並行、多線程、背景運行方面已有 6 層守衛（atomicWrite / CAS / enforceInvariants / sanitize / JSONL append / session-cleanup），但在四個面向存在可改進的缺口。經過四輪互動式討論（守衛 → 穩定 → 效能 → 優化），確認了 12 個項目的完整執行計畫。
-
-核心要求：**閉環原則** -- 每個迭代的產出都要確保 Skill → Agent 消費 → Hook 注入 → Guard 保護 → 自動偵測。
-Keywords: overtone, atomicwrite, enforceinvariants, sanitize, jsonl, append, session, cleanup, skill, agent
-
----
 ## 2026-03-06 | product-manager:PM Findings
 **目標用戶**：Overtone 開發者（dogfooding），在多 agent 並行工作流中需要更高穩定性和效率。
 
@@ -553,4 +501,88 @@ Keywords: plugins, overtone, agents, developer, agent, tool, calls
 - `plugins/overtone/skills/workflow-core/references/auto-discovered.md` -- 正常的知識歸檔輪替（刪除 2 舊條目、新增 2 條 DEV 記錄）。
 - 全套測試 4683 pass / 0 fail，validate-agents 18 agents + 11 hooks + 24 skills 全部通過。
 Keywords: plugins, overtone, agents, developer, skills, workflow, core, references, auto, discovered
+
+---
+## 2026-03-07 | product-manager:PM Context
+Overtone 目前是專案級 Claude Code plugin（`~/projects/overtone/plugins/overtone/`），透過 symlink 安裝到 `~/.claude/plugins/overtone`。使用者希望將 Overtone 從 plugin 身分「融入」Claude Code 全域設定 -- agents/skills/hooks/commands/scripts 直接放在 `~/.claude/` 下，不再是一個可安裝/可卸載的 plugin。開發產物（tests/docs/specs）留在 `~/projects/overtone/` 作為開發 repo。
+
+**動機**：Overtone 是個人 dogfooding 工具，全域共享能力（heartbeat daemon、佇列、OS 控制）理應是全域的。去除 plugin 中間層，直接成為 Claude Code 的「原生」全域配置，跨專案可攜。
+Keywords: overtone, claude, code, plugin, projects, plugins, symlink, agents, skills, hooks
+
+---
+## 2026-03-07 | tester:TEST Findings
+定義了以下 Feature 和 Scenario：
+
+| # | Scenario | 涵蓋類別 |
+|---|----------|---------|
+| 1 | SKILL.md 同 skill 引用替換為相對路徑 | A |
+| 2 | SKILL.md 跨 skill 引用替換為跨目錄相對路徑 | B |
+| 3 | SKILL.md 腳本呼叫替換為全域路徑 | C |
+| 4 | Command .md 腳本呼叫替換 | D |
+| 5 | Command .md 中的 skill reference 引用替換 | E |
+| 6 | 批量替換後無殘留的 `${CLAUDE_PLUGIN_ROOT}` | 完整性驗證 |
+| 7 | dependency-graph.js 同時支援三種路徑格式 | G2 |
+| 8 | 轉換期間新舊格式共存不重複計邊 | G2 Edge Case |
+| 9 | post-use-handler.js fallback 使用 os.homedir() | G1 |
+| 10 | skill-forge.js 生成新 SKILL.md 使用相對路徑 | G4 |
+| 11 | claude-dev references 範例路徑更新 | F |
+| 12 | 類別 A/B 邊界不混淆（auto/SKILL.md 雙類型） | Edge Case |
+| 13 | health-check 替換後仍能正常執行 | 回歸驗證 |
+| 14 | validate-agents 替換後仍能正常執行 | 回歸驗證 |
+| 15 | manage-component.js 和測試檔案不在替換範圍 | 範圍邊界 |
+Keywords: feature, scenario, skill, command, reference, dependency, graph, edge, case, post
+
+---
+## 2026-03-07 | developer:DEV Findings
+**Phase 1（JS 程式碼）：**
+- `dependency-graph.js scanSkillReferences`：從只支援舊格式，擴展為支援三種格式並存（舊格式 + 同 skill 相對 + 跨 skill 相對），使用 Set 去重避免重複建邊
+- `post-use-handler.js`：fallback 從 `'plugins/overtone'` 改為 `os.homedir() + '/.claude'`（使用 `require('os').homedir()` 跨平台）
+- `skill-forge.js` 範本：`${CLAUDE_PLUGIN_ROOT}/skills/{domain}/references/README.md` 改為 `./references/README.md`
+
+**Phase 2/3/4（批量替換）：**
+- 24 個 SKILL.md、19 個 Command .md、5 個 claude-dev references 全部替換
+- 使用 Bash sed/perl 批量處理，類別 A（同 skill）、B（跨 skill）、C/D（腳本）、E（skill ref）、F（hooks）分別處理
+- pm/SKILL.md 和 auto/SKILL.md 的 commands/ 引用額外替換為 `~/.claude/commands/`
+
+**關鍵配套修改（避免測試失敗）：**
+- `health-check.js checkSkillReferenceIntegrity`：重寫以支援三種路徑格式，格式 1 的 regex 改回 `\b(references|examples)\/` 並用逐行過濾代替 lookbehind
+- `tests/unit/platform-alignment-skills.test.js` 的 `collectSkillRefs()`：從只支援舊格式，擴展為同時支援相對路徑和 `~/.claude/` 全域路徑
+
+**驗收結果：**
+- `grep -r '${CLAUDE_PLUGIN_ROOT}' plugins/overtone/skills/ plugins/overtone/commands/` → 零殘留
+- `bun scripts/validate-agents.js` → 18 agents + 11 hooks + 24 skills 全通過
+- `bun scripts/health-check.js skill-reference-integrity` → passed: true, findingsCount: 0
+- `bun test-parallel.js` → 4683 pass, 0 fail
+Keywords: phase, dependency, graph, scanskillreferences, skill, post, handler, fallback, plugins, overtone
+
+---
+## 2026-03-07 | developer:DEV Context
+完成 global-migrate-batch-replace 功能的完整實作。批量將所有 `${CLAUDE_PLUGIN_ROOT}` 路徑引用替換為相對路徑或全域絕對路徑，涵蓋 SKILL.md、Command .md、JS 程式碼、claude-dev references 四大類型。
+Keywords: global, migrate, batch, replace, skill, command, claude, references
+
+---
+## 2026-03-07 | developer:DEV Findings
+- 全域搜尋 `plugins/overtone/skills/` 和 `plugins/overtone/commands/` 下所有 `.md` 檔，只有一處問題：`pm/SKILL.md:202`
+- 修復方式：`require('~/.claude/...')` → `require(require('os').homedir() + '/.claude/...')`
+- 驗收指令 `grep -rn "require.*~/" plugins/overtone/skills/ plugins/overtone/commands/` 回傳 clean
+- 測試 4683 pass，無回歸
+Keywords: plugins, overtone, skills, commands, skill, require, claude, homedir, grep, clean
+
+---
+## 2026-03-07 | developer:DEV Context
+修復 `plugins/overtone/skills/pm/SKILL.md` 第 202 行的 `require('~/.claude/...')` tilde 展開問題。JavaScript 的 `require()` 不支援 shell 的 `~` 展開，導致 MODULE_NOT_FOUND 錯誤。
+Keywords: plugins, overtone, skills, skill, require, claude, tilde, javascript, shell
+
+---
+## 2026-03-07 | retrospective:RETRO Findings
+**回顧摘要**：
+
+global-migrate-batch-replace 是一個高規格的批量文字替換迭代，涵蓋 56 個檔案（24 SKILL.md + 19 Command .md + 3 JS 模組 + 5 claude-dev references + 配套修改）。跨階段評估如下：
+
+- BDD Scenario 全數對齊：SKILL.md 和 Command .md 中 `${CLAUDE_PLUGIN_ROOT}` 零殘留，新格式（`./references/`、`../other/references/`、`~/.claude/scripts/`）正確出現於 24 個 SKILL.md 共 88 個引用點
+- 架構一致性良好：dependency-graph.js 三格式支援 + lastIndex 正確重置，確保 `bun scripts/impact.js` 和 `checkDependencySync` 健康檢查持續可用；skill-forge.js 模板更新確保新建 Skill 預設使用正確格式（前向一致）
+- 迭代流程完整：REVIEW 第 1 次 REJECT（tilde 問題）→ 修復 → 第 2 次 APPROVE，問題定位精準，修復徹底（`require('~/.claude/...')` → `require(require('os').homedir() + '/.claude/...')`，現存程式碼無殘留 tilde require）
+- post-use-handler.js fallback 改用 `os.homedir()` 而非 `process.env.HOME`，符合 design.md 的跨平台考量（edge case 3 正確處理）
+- Specs 歸檔正確（`specs/features/archive/2026-03-07_global-migrate-batch-replace/`）
+Keywords: global, migrate, batch, replace, skill, command, claude, references, scenario, other
 

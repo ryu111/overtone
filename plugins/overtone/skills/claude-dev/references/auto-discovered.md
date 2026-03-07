@@ -1,48 +1,5 @@
 ---
 ## 2026-03-05 | doc-updater:DOCS Findings
-**更新的文件：**
-
-1. **plugin.json** — 版本 bump：0.28.54 → 0.28.55（使用 manage-component.js bump-version）
-
-2. **docs/status.md** — 三部分更新：
-   - Header（第 3 行）：版本號更新、功能描述改為「Agent Prompt 四模式補齊」
-   - 版本狀態欄位（第 9 行）：V1 說明末尾加入「Agent Prompt 四模式補齊（15 個 agent 信心過濾 + 誤判防護 + 標準化章節排列）」
-   - 近期變更（第 30-32 行）：插入新版本 [0.28.55] 摘要為第一筆，內容包括 7 項重點變更
-
-3. **docs/spec/overtone-agents.md** — Agent 設計模式表格更新（第 76-83 行）：
-   - 標題改為「Agent 設計模式（ECC 全套，v0.28.55 全覆蓋）」
-   - 四模式覆蓋範圍更新：
-     * DO/DON'T：全部 18 個 agent
-     * 信心過濾：10 個 agent（code-reviewer、security-reviewer、claude-developer、build-error-resolver、designer、doc-updater、e2e-runner、qa、refactor-cleaner、grader）
-     * 誤判防護：14 個 agent（architect、debugger、developer、planner、retrospective、tester + 上述 8 個）
-     * 停止條件：全部 18 個 agent
-Keywords: plugin, json, bump, manage, component, version, docs, status, header, agent
----
-## 2026-03-05 | doc-updater:DOCS Findings
-**版本管理：**
-- Plugin 版本 bump：0.28.55 → 0.28.56
-- 使用 manage-component.js bump-version 工具更新（不直接編輯 plugin.json 以保持驗證機制）
-
-**CHANGELOG 新增記錄：**
-- [0.28.56] 版本記錄記錄了本次修復的 6 項重點：
-  - completeCurrent 提前，防止手動停止繞過佇列推進
-  - init-workflow 錯誤處理增強
-  - registry.js 事件加入 consumeMode（30 種事件，13 分類）
-  - checkClosedLoop 改用 registry consumeMode（warnings 27 → 3）
-  - checkCompletionGap 排除 orchestrator skill（warnings 3 → 1）
-  - config-validator 移除 4 個 dead exports
-
-**核心指標驗證：**
-- 測試數量確認：3455 pass / 0 fail（153 個測試檔）
-- 所有版本號保持一致（plugin.json、status.md、spec/overtone.md、spec/overtone-agents.md、README.md）
-
-**Health-Check 驗證：**
-- 通過全部檢查（warnings 4 個，其中 3 個有效 closed-loop 警告 + 1 個歷史資料警告）
-- 精確度提升：warnings 從 27 → 4
-Keywords: plugin, bump, manage, component, version, json, changelog, completecurrent, init, workflow
-
----
-## 2026-03-05 | doc-updater:DOCS Findings
 根據 Handoff 中提供的變更清單，確認以下文件需要更新：
 
 1. **CHANGELOG.md**：新增 v0.28.57 版本條目
@@ -615,4 +572,70 @@ Keywords: claude, health, check, checkspecsdirectorystructure, docs, status, plu
 ## 2026-03-07 | doc-updater:DOCS Context
 本次迭代（developer-efficiency-optimize）僅修改 developer.md agent prompt（4 個效率指引），無 doc-relevant 變更。
 Keywords: developer, efficiency, optimize, agent, prompt, relevant
+
+---
+## 2026-03-07 | product-manager:PM Findings
+**目標用戶**：開發者本人，所有專案共用同一套 Overtone 能力
+
+**成功指標**：
+- Overtone 所有功能在任何專案目錄下的 Claude Code session 中正常運作
+- 200 個測試全部通過（從開發 repo 引用 ~/.claude/ 下的模組）
+- 無需 symlink，無 plugin.json
+
+**方案比較**：
+
+| 維度 | 方案 A：融入全域（已選） | 方案 B：整個 repo 搬家 | 方案 C：反轉 symlink |
+|------|------------------------|----------------------|---------------------|
+| 概述 | 去掉 plugin 身分，元件散入 ~/.claude/ | 整個 repo 搬到 ~/.claude/overtone/ | 實體放 ~/.claude/plugins/overtone/，開發 repo 用 symlink |
+| 優點 | 結構最簡潔，完全融入全域 | 最低成本，幾乎只是 mv | plugin 身分保留 |
+| 缺點 | 需要改路徑引用，測試需要適配 | 仍是 plugin 結構 | git 追蹤 symlink 不完美 |
+| 工作量 | 2-3 人天 | 0.5 人天 | 0.5 人天 |
+| RICE | (10x3x0.8)/3 = 8.0 | (10x1x1.0)/0.5 = 20.0 | (10x1x0.8)/0.5 = 16.0 |
+
+**推薦方案**：方案 A（融入全域），使用者已確認。雖然工作量較高，但達成的目標最徹底 -- Overtone 不再是「外掛」而是 Claude Code 的「原生能力」。
+
+**MVP 範圍（MoSCoW）**：
+
+- **Must**:
+  - 搬移 agents/skills/hooks/commands/scripts 到 ~/.claude/
+  - 替換所有 `${CLAUDE_PLUGIN_ROOT}` 為相對路徑（.md 檔 203 處 / hooks.json 14 處 / .js 檔 13 處）
+  - 更新 ~/.claude/settings.json hooks 配置（14 條 hook 規則）
+  - 更新 tests/helpers/paths.js 指向 ~/.claude/
+  - 修復 64 個硬編碼 `plugins/overtone` 的測試檔（134 處）
+  - 修復 12 個硬編碼 `plugins/overtone` 的 scripts 檔（22 處）
+  - 移除 symlink `~/.claude/plugins/overtone`
+  - 移除 `.claude-plugin/plugin.json`
+  - 移除 enabledPlugins 中的 overtone 條目
+  - 200 個測試全部通過
+- **Should**:
+  - 更新 CLAUDE.md 所有路徑引用
+  - 更新 docs/status.md、docs/spec/ 路徑引用
+  - health-check.js 掃描邏輯適配新路徑
+  - manage-component.js 模板路徑更新
+  - dependency-graph.js 掃描路徑更新
+- **Could**:
+  - 建立遷移驗證腳本（自動檢查殘留的舊路徑引用）
+  - node_modules 依賴遷移（gray-matter 等）到 ~/.claude/ 或全域
+- **Won't**:
+  - 支援同時保留 plugin 結構（已確認融入，不保留雙軌）
+  - 向後相容舊路徑（已確認不做向後相容）
+
+**驗收標準（BDD）**：
+
+- Given agents 已搬到 ~/.claude/agents/ When 在任意專案啟動 Claude Code session Then 18 個 agent 全部可用且可被委派
+- Given skills 已搬到 ~/.claude/skills/ When agent 執行需要知識注入的任務 Then SKILL.md 正確載入且 references 相對路徑可讀取
+- Given hooks 配置已寫入 ~/.claude/settings.json When session 啟動 Then SessionStart hook 正常觸發且 banner 顯示
+- Given hooks scripts 已搬到 ~/.claude/hooks/scripts/ When 任意 hook 事件觸發 Then hook script 透過 `require('../../../scripts/lib/...')` 正確載入 handler
+- Given scripts/lib 已搬到 ~/.claude/scripts/lib/ When hook 或 CLI 工具執行 Then 67 個模組間的相對 require 全部正常
+- Given commands 已搬到 ~/.claude/commands/ When 使用者輸入 /ot:xxx Then command 正常執行
+- Given tests/helpers/paths.js 已更新 PLUGIN_ROOT When 執行 `bun test` Then 200 個測試全部通過
+- Given ~/.claude/plugins/overtone symlink 已移除 When 檢查 ~/.claude/plugins/ Then 無 overtone 相關條目
+- Given 全域 settings.json 的 enabledPlugins When 檢查 overtone 條目 Then 已移除
+- Give
+Keywords: overtone, claude, code, session, repo, symlink, plugin, json, plugins, rice
+
+---
+## 2026-03-07 | developer:DEV Context
+驗證了「將 Overtone plugin 融入全域 `~/.claude/`」的 4 個關鍵假設，確認可行性與需要的額外處理。
+Keywords: overtone, plugin, claude
 
