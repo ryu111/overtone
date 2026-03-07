@@ -215,11 +215,11 @@ describe('checkInternalizationIndex', () => {
 // ══════════════════════════════════════════════════════════════════
 
 describe('runAllChecks — 第 17 項 internalization-index', () => {
-  test('Scenario 6-6: runAllChecks 輸出包含 internalization-index，共 21 項偵測', () => {
+  test('Scenario 6-6: runAllChecks 輸出包含 internalization-index，共 22 項偵測', () => {
     const { checks } = runAllChecks();
 
     expect(Array.isArray(checks)).toBe(true);
-    expect(checks.length).toBe(21);
+    expect(checks.length).toBe(22);
 
     const names = checks.map((c) => c.name);
     expect(names).toContain('internalization-index');

@@ -1,3 +1,4 @@
+// @sequential
 'use strict';
 /**
  * dashboard-pid.test.js — 整合測試

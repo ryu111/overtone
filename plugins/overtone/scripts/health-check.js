@@ -3,7 +3,7 @@
 /**
  * health-check.js — Overtone 系統健康自動化偵測
  *
- * 執行 21 項確定性偵測：
+ * 執行 22 項確定性偵測：
  *   1. phantom-events              — registry 事件 vs 實際 emit 呼叫差異
  *   2. dead-exports                — scripts/lib 模組 export 但從未被 require 使用
  *   3. doc-code-drift              — docs 文件中的數量與程式碼實際值不符
@@ -24,7 +24,8 @@
  *  18. test-file-alignment         — scripts/lib 模組是否有對應 tests/unit/ 測試檔案
  *  19. skill-reference-integrity   — SKILL.md 引用的 references/ 檔案是否實際存在
  *  20. concurrency-guards          — G1/G2/G3 並發風險文件完整性 + runtime orphan agent 偵測
- *  21. compact-frequency            — 偵測各 session 的 auto-compact 頻率異常
+ *  21. compact-frequency           — 偵測各 session 的 auto-compact 頻率異常
+ *  22. sequential-markers          — // @sequential marker 與 SEQUENTIAL_FILES 雙向一致性驗證
  *
  * 輸出：JSON stdout（HealthCheckOutput schema）
  * Exit code：有 findings → 1；無 findings → 0
@@ -2193,6 +2194,97 @@ function checkCompactFrequency(sessionsDirOverride) {
   return findings;
 }
 
+// ── Check 22: sequential-markers ──
+
+/**
+ * 雙向驗證 // @sequential marker 與 test-parallel.js SEQUENTIAL_FILES 一致性
+ * a. 有 @sequential marker 的檔案必須在 SEQUENTIAL_FILES 中
+ * b. 在 SEQUENTIAL_FILES 中的檔案必須有 @sequential marker
+ * @returns {Finding[]}
+ */
+function checkSequentialMarkers() {
+  const findings = [];
+
+  // 讀取 test-parallel.js 取出 SEQUENTIAL_FILES 集合
+  const testParallelPath = path.join(PROJECT_ROOT, 'scripts', 'test-parallel.js');
+  let testParallelSrc;
+  try {
+    testParallelSrc = readFileSync(testParallelPath, 'utf8');
+  } catch {
+    findings.push({
+      check: 'sequential-markers',
+      severity: 'warning',
+      file: 'scripts/test-parallel.js',
+      message: 'test-parallel.js 不存在，無法執行 sequential-markers 驗證',
+    });
+    return findings;
+  }
+
+  // 從原始碼中擷取 SEQUENTIAL_FILES 清單（字串 literal）
+  const sequentialInCode = new Set();
+  const seqBlockMatch = testParallelSrc.match(/const SEQUENTIAL_FILES\s*=\s*new Set\(\[([\s\S]*?)\]\)/);
+  if (seqBlockMatch) {
+    const inner = seqBlockMatch[1];
+    const entries = inner.match(/'([^']+\.test\.js)'/g) || [];
+    for (const e of entries) {
+      sequentialInCode.add(e.replace(/'/g, ''));
+    }
+  }
+
+  // 掃描測試目錄，找出所有含 @sequential marker 的檔案
+  const testsDir = path.join(PROJECT_ROOT, 'tests');
+  const markerFiles = new Set();
+  const testDirs = ['unit', 'integration', 'e2e'];
+
+  for (const sub of testDirs) {
+    const dir = path.join(testsDir, sub);
+    let entries;
+    try {
+      entries = readdirSync(dir);
+    } catch {
+      continue;
+    }
+    for (const f of entries) {
+      if (!f.endsWith('.test.js')) continue;
+      const rel = path.join('tests', sub, f);
+      const fullPath = path.join(PROJECT_ROOT, rel);
+      try {
+        const content = readFileSync(fullPath, 'utf8');
+        const lines = content.split('\n').slice(0, 5);
+        if (lines.some(line => line.trim() === '// @sequential')) {
+          markerFiles.add(rel);
+        }
+      } catch { /* 跳過無法讀取的檔案 */ }
+    }
+  }
+
+  // 方向 a：有 marker 但不在 SEQUENTIAL_FILES 中
+  for (const f of markerFiles) {
+    if (!sequentialInCode.has(f)) {
+      findings.push({
+        check: 'sequential-markers',
+        severity: 'warning',
+        file: f,
+        message: `"${f}" 有 // @sequential marker，但不在 test-parallel.js SEQUENTIAL_FILES 中`,
+      });
+    }
+  }
+
+  // 方向 b：在 SEQUENTIAL_FILES 中但缺少 marker
+  for (const f of sequentialInCode) {
+    if (!markerFiles.has(f)) {
+      findings.push({
+        check: 'sequential-markers',
+        severity: 'warning',
+        file: f,
+        message: `"${f}" 在 SEQUENTIAL_FILES 中，但缺少 // @sequential marker`,
+      });
+    }
+  }
+
+  return findings;
+}
+
 /**
  * 執行所有健康檢查
  * @returns {{ checks: object[], findings: Finding[] }}
@@ -2220,6 +2312,7 @@ function runAllChecks() {
     { name: 'skill-reference-integrity', fn: checkSkillReferenceIntegrity },
     { name: 'concurrency-guards',     fn: checkConcurrencyGuards },
     { name: 'compact-frequency',      fn: checkCompactFrequency },
+    { name: 'sequential-markers',     fn: checkSequentialMarkers },
   ];
 
   const allFindings = [];
@@ -2316,6 +2409,7 @@ module.exports = {
   checkSkillReferenceIntegrity,
   checkConcurrencyGuards,
   checkCompactFrequency,
+  checkSequentialMarkers,
   runAllChecks,
   // 測試 DI 支援
   TEST_BASELINE,

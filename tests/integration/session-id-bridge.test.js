@@ -1,3 +1,4 @@
+// @sequential
 'use strict';
 /**
  * session-id-bridge.test.js — Session ID 橋接機制整合測試

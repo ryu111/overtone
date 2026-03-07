@@ -13,7 +13,7 @@
  * 用法：bun scripts/test-parallel.js [--workers N] [--verbose]
  */
 
-const { readdirSync } = require('fs');
+const { readdirSync, readFileSync } = require('fs');
 const { join } = require('path');
 const { cpus } = require('os');
 
@@ -43,14 +43,29 @@ const KNOWN_WEIGHTS = {
 // 預設權重（未知檔案）
 const DEFAULT_WEIGHT = 300;
 
-// 需要串行執行的檔案（依賴全域共享狀態，不能與其他測試並行）
-// 這些測試會讀寫 ~/.overtone/.current-session-id，必須獨立執行避免競爭條件
+// 需要串行執行的檔案（fallback 白名單，向下相容）
+// 主要靠 // @sequential marker 偵測（見 hasSequentialMarker）
 const SEQUENTIAL_FILES = new Set([
   'tests/integration/session-id-bridge.test.js',
   'tests/unit/health-check-os-tools.test.js',
   'tests/integration/dashboard-pid.test.js',
   'tests/integration/health-check.test.js',
 ]);
+
+/**
+ * 掃描檔案前 5 行是否含有 // @sequential 標記
+ * @param {string} relativePath 相對於 PROJECT_ROOT 的路徑
+ * @returns {boolean}
+ */
+function hasSequentialMarker(relativePath) {
+  try {
+    const content = readFileSync(join(PROJECT_ROOT, relativePath), 'utf8');
+    const lines = content.split('\n').slice(0, 5);
+    return lines.some(line => line.trim() === '// @sequential');
+  } catch {
+    return false;
+  }
+}
 
 // ── 參數解析 ──
 
@@ -142,13 +157,18 @@ function distributeFiles(files, numWorkers) {
 async function runParallel() {
   const allFiles = collectTestFiles();
 
-  // 分離串行檔案（依賴全域共享狀態）和並行檔案
-  const sequentialFiles = allFiles.filter(f => SEQUENTIAL_FILES.has(f));
-  const parallelFiles = allFiles.filter(f => !SEQUENTIAL_FILES.has(f));
+  // 分離串行檔案：優先靠 // @sequential marker，SEQUENTIAL_FILES 作 fallback
+  const markerFiles = allFiles.filter(f => hasSequentialMarker(f));
+  const markerCount = markerFiles.length;
+  const sequentialFiles = allFiles.filter(f => hasSequentialMarker(f) || SEQUENTIAL_FILES.has(f));
+  const parallelFiles = allFiles.filter(f => !sequentialFiles.includes(f));
 
   const workers = distributeFiles(parallelFiles, workerCount);
 
   console.log(`CPU: ${cpuCount} 核心 | Workers: ${workerCount} | 測試檔案: ${allFiles.length}`);
+  if (markerCount > 0) {
+    console.log(`偵測到 @sequential marker: ${markerCount} 個`);
+  }
   if (sequentialFiles.length > 0) {
     console.log(`串行測試: ${sequentialFiles.length} 個（依賴全域共享狀態，在並行完成後執行）`);
   }
