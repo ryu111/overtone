@@ -115,6 +115,10 @@ bun scripts/test-parallel.js
 # 執行所有測試（單進程，~53s）
 bun test
 
+# 環境變數（可選，CI/全域安裝場景）
+# OVERTONE_PLUGIN_ROOT — 指定 plugin 根目錄路徑（預設：~/.claude）
+# 例：OVERTONE_PLUGIN_ROOT=/path/to/plugins/overtone bun scripts/test-parallel.js
+
 # 啟動 Dashboard 監控面板（port 7777）
 bun scripts/server.js
 

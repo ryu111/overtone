@@ -1,6 +1,6 @@
 # Overtone 現況
 
-> 最後更新：2026-03-07 | Plugin 版本：0.28.82
+> 最後更新：2026-03-07 | Plugin 版本：0.28.82 | Build：4683 pass
 
 ## 版本狀態
 
@@ -16,7 +16,7 @@
 | Agent 數量 | 18（含 grader） |
 | Stage 數量 | 16 |
 | Workflow 模板 | 18 |
-| 測試通過 | 4724 pass / 0 fail（200 個測試檔）|
+| 測試通過 | 4683 pass / 0 fail（200 個測試檔）|
 | 測試檔案 | 200 個 |
 | Hook 數量 | 11 個 |
 | Skill 數量 | 24（15 knowledge domain + orchestrator + pm + specs + 4 utility-with-refs + instinct） |
