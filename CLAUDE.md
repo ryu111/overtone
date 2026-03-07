@@ -65,7 +65,7 @@ plugins/overtone/   # Plugin 根目錄
 │   # 15 knowledge domains: testing, workflow-core, security-kb, database, dead-code, commit-convention, code-review, wording, debugging, architecture, build-system, os-control, autonomous-control, craft, claude-dev
 ├── commands/       # 28 個 Command（DO — stage shortcuts + workflow pipelines + utilities）
 ├── hooks/          # hooks.json + scripts/（HOW — 守衛）
-├── scripts/lib/    # 共用庫（66 個模組：registry, state, timeline, specs, config-api, hook-timing, feature-sync, specs-archive-scanner, statusline-state, 9x handler + analyzers/ + knowledge/ + remote/ + dashboard/ 子目錄 + tts 相關）
+├── scripts/lib/    # 共用庫（67 個模組：registry, state, timeline, specs, config-api, hook-timing, feature-sync, fs-scanner, specs-archive-scanner, statusline-state, 9x handler + analyzers/ + knowledge/ + remote/ + dashboard/ 子目錄 + tts 相關）
 └── web/            # Dashboard 前端
 
 # Session 狀態：~/.overtone/sessions/{sessionId}/

@@ -71,7 +71,7 @@ Dashboard 在 SessionStart 自動啟動（`http://localhost:7777`），即時顯
 
 **核心指標：**
 
-- 4411 pass / 0 fail（194 個測試檔）
+- 4724 pass / 0 fail（200 個測試檔）
 - 18 個 agent + 11 個 hook + 24 個 skill + 28 個 command
 - 18 個 workflow 模板
 - 15 個 knowledge domain
