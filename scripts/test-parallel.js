@@ -65,10 +65,30 @@ const DEFAULT_WEIGHT = 300;
 // 主要靠 // @sequential marker 偵測（見 hasSequentialMarker）
 // 注意：health-check.test.js 曾因重量級子進程列於此，優化後已透過 @sequential marker 管理
 const SEQUENTIAL_FILES = new Set([
+  // integration
   'tests/integration/session-id-bridge.test.js',
-  'tests/unit/health-check-os-tools.test.js',
   'tests/integration/dashboard-pid.test.js',
   'tests/integration/health-check.test.js',
+  'tests/integration/platform-alignment-post-failure.test.js',
+  // unit (health-check 系列共用全域狀態)
+  'tests/unit/health-check.test.js',
+  'tests/unit/health-check-os-tools.test.js',
+  'tests/unit/health-check-compact-frequency.test.js',
+  'tests/unit/health-check-proactive.test.js',
+  'tests/unit/health-check-principles.test.js',
+  'tests/unit/health-check-internalization.test.js',
+  // e2e (Bun.spawnSync 子進程競爭共享 session 狀態)
+  'tests/e2e/smoke.test.js',
+  'tests/e2e/workflow-lifecycle.test.js',
+  'tests/e2e/quick-workflow.test.js',
+  'tests/e2e/standard-workflow.test.js',
+  'tests/e2e/full-workflow.test.js',
+  'tests/e2e/debug-workflow.test.js',
+  'tests/e2e/tdd-workflow.test.js',
+  'tests/e2e/refactor-workflow.test.js',
+  'tests/e2e/secure-workflow.test.js',
+  'tests/e2e/single-workflow.test.js',
+  'tests/e2e/fail-retry-path.test.js',
 ]);
 
 /**
