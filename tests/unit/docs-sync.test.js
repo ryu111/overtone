@@ -19,13 +19,17 @@ const { PROJECT_ROOT, PLUGIN_ROOT, SCRIPTS_LIB } = require('../helpers/paths');
 
 // ── 路徑常數 ──────────────────────────────────────────────────────────────
 
-const AGENTS_DIR    = join(PLUGIN_ROOT, 'agents');
-const SKILLS_DIR    = join(PLUGIN_ROOT, 'skills');
-const COMMANDS_DIR  = join(PLUGIN_ROOT, 'commands');
-const HOOKS_JSON    = join(PLUGIN_ROOT, 'hooks', 'hooks.json');
+// SOURCE_PLUGIN_ROOT：plugin 原始碼目錄（用於統計 Overtone 自身元件數量）
+// 與 PLUGIN_ROOT（~/.claude 安裝目錄）區分，避免受使用者個人全域 command 干擾
+const SOURCE_PLUGIN_ROOT = join(PROJECT_ROOT, 'plugins', 'overtone');
+
+const AGENTS_DIR    = join(SOURCE_PLUGIN_ROOT, 'agents');
+const SKILLS_DIR    = join(SOURCE_PLUGIN_ROOT, 'skills');
+const COMMANDS_DIR  = join(SOURCE_PLUGIN_ROOT, 'commands');
+const HOOKS_JSON    = join(SOURCE_PLUGIN_ROOT, 'hooks', 'hooks.json');
 const REGISTRY_DATA = join(SCRIPTS_LIB, 'registry-data.json');
 const REGISTRY_JS   = join(SCRIPTS_LIB, 'registry.js');
-const PLUGIN_JSON   = join(PLUGIN_ROOT, '.claude-plugin', 'plugin.json');
+const PLUGIN_JSON   = join(SOURCE_PLUGIN_ROOT, '.claude-plugin', 'plugin.json');
 const STATUS_MD     = join(PROJECT_ROOT, 'docs', 'status.md');
 const CLAUDE_MD     = join(PROJECT_ROOT, 'CLAUDE.md');
 const DOCS_DIR      = join(PROJECT_ROOT, 'docs');

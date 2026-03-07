@@ -41,7 +41,7 @@ plugins/overtone/   # Plugin 根目錄（開發中的 source）
 ├── agents/         # 18 個 agent .md（WHO — 角色）
 ├── skills/         # 24 個 Skill（WHAT — 知識域 + orchestrator + utilities-with-refs + instinct）
 │   # 15 knowledge domains: testing, workflow-core, security-kb, database, dead-code, commit-convention, code-review, wording, debugging, architecture, build-system, os-control, autonomous-control, craft, claude-dev
-├── commands/       # 28 個 Command（DO — stage shortcuts + workflow pipelines + utilities）
+├── commands/       # 28 個 Command（DO — stage shortcuts + 18 個模板 workflow pipelines + utilities）
 ├── hooks/          # hooks.json + scripts/（HOW — 守衛）
 ├── scripts/lib/    # 共用庫（67 個模組：registry, state, timeline, specs, config-api, hook-timing, feature-sync, fs-scanner, specs-archive-scanner, statusline-state, 9x handler + analyzers/ + knowledge/ + remote/ + dashboard/ 子目錄 + tts 相關）
 └── web/            # Dashboard 前端
@@ -50,7 +50,7 @@ plugins/overtone/   # Plugin 根目錄（開發中的 source）
 #   workflow.json / timeline.jsonl / loop.json / observations.jsonl / compact-count.json / statusline-state.json
 ```
 
-## Hook 開發注意事項
+## Hook 架構（11 個）
 
 ⚠️ **hooks.json 必須使用官方三層嵌套格式**（三層嵌套）。扁平陣列格式會導致部分 hook 無法觸發。
 > 詳細格式規範 + updatedInput REPLACE 語意：`plugins/overtone/skills/claude-dev/references/hooks-api.md`
