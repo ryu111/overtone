@@ -13,6 +13,7 @@
 
 const fs = require('fs');
 const { join, basename, relative } = require('path');
+const fsScanner = require('../fs-scanner');
 
 // ── 路徑常數 ──────────────────────────────────────────────────────────────
 
@@ -48,43 +49,7 @@ const ENTRY_POINT_BASENAMES = new Set([
 
 // ── 工具函式 ──────────────────────────────────────────────────────────────
 
-/**
- * 讀取檔案內容，失敗回傳空字串。
- * @param {string} filePath
- * @returns {string}
- */
-function safeRead(filePath) {
-  try {
-    return fs.readFileSync(filePath, 'utf8');
-  } catch {
-    return '';
-  }
-}
-
-/**
- * 遞迴收集目錄下所有 .js 檔案（排除 node_modules）。
- * @param {string} dir
- * @param {string[]} [result]
- * @returns {string[]}
- */
-function collectJsFiles(dir, result = []) {
-  let entries;
-  try {
-    entries = fs.readdirSync(dir, { withFileTypes: true });
-  } catch {
-    return result;
-  }
-  for (const entry of entries) {
-    if (entry.name === 'node_modules') continue;
-    const fullPath = join(dir, entry.name);
-    if (entry.isDirectory()) {
-      collectJsFiles(fullPath, result);
-    } else if (entry.isFile() && entry.name.endsWith('.js')) {
-      result.push(fullPath);
-    }
-  }
-  return result;
-}
+const { collectJsFiles, safeRead } = fsScanner;
 
 /**
  * 解析 module.exports = { ... } 中的 key 名稱。
@@ -214,12 +179,9 @@ function scanUnusedExports(libDir, searchDirs) {
   const libFiles = collectJsFiles(targetLibDir);
 
   // 收集搜尋目錄下的所有 .js 檔案（排除 libDir 本身的檔案，避免自我引用）
-  const searchFiles = [];
-  for (const dir of targetSearchDirs) {
-    collectJsFiles(dir, searchFiles);
-  }
-  // 去重
-  const uniqueSearchFiles = [...new Set(searchFiles)];
+  const uniqueSearchFiles = [...new Set(
+    targetSearchDirs.flatMap((dir) => collectJsFiles(dir))
+  )];
 
   const unusedExports = [];
 
@@ -298,11 +260,9 @@ function scanOrphanFiles(libDir, searchDirs) {
     .map((e) => join(targetLibDir, e.name));
 
   // 收集搜尋目錄下的所有 .js 檔案
-  const searchFiles = [];
-  for (const dir of targetSearchDirs) {
-    collectJsFiles(dir, searchFiles);
-  }
-  const uniqueSearchFiles = [...new Set(searchFiles)];
+  const uniqueSearchFiles = [...new Set(
+    targetSearchDirs.flatMap((dir) => collectJsFiles(dir))
+  )];
 
   const orphanFiles = [];
 

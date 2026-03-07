@@ -33,6 +33,7 @@
 
 const { readdirSync, readFileSync, statSync } = require('fs');
 const path = require('path');
+const fsScanner = require('./lib/fs-scanner');
 
 // ── 路徑常數 ──
 
@@ -48,6 +49,8 @@ const DOCS_DIR = path.join(PROJECT_ROOT, 'docs');
 const TESTS_DIR = path.join(PROJECT_ROOT, 'tests');
 
 // ── 工具函式 ──
+
+const { collectJsFiles, collectMdFiles, safeRead } = fsScanner;
 
 /**
  * 從當前目錄往上找含 CLAUDE.md 的專案根目錄
@@ -68,43 +71,6 @@ function findProjectRoot() {
   }
   // fallback：使用 process.cwd()
   return process.cwd();
-}
-
-/**
- * 遞迴收集目錄下所有符合條件的 .js 檔案
- * @param {string} dir
- * @param {string[]} [result]
- * @returns {string[]}
- */
-function collectJsFiles(dir, result = []) {
-  let entries;
-  try {
-    entries = readdirSync(dir, { withFileTypes: true });
-  } catch {
-    return result;
-  }
-  for (const entry of entries) {
-    const full = path.join(dir, entry.name);
-    if (entry.isDirectory()) {
-      collectJsFiles(full, result);
-    } else if (entry.isFile() && entry.name.endsWith('.js')) {
-      result.push(full);
-    }
-  }
-  return result;
-}
-
-/**
- * 讀取檔案內容，失敗回傳空字串
- * @param {string} filePath
- * @returns {string}
- */
-function safeRead(filePath) {
-  try {
-    return readFileSync(filePath, 'utf8');
-  } catch {
-    return '';
-  }
 }
 
 /**
@@ -129,7 +95,6 @@ function checkPhantomEvents() {
   const allJs = collectJsFiles(PLUGIN_ROOT).filter((f) => {
     return (
       f !== __filename &&
-      !f.includes('/node_modules/') &&
       !f.includes('health-check.js')
     );
   });
@@ -256,14 +221,12 @@ function checkDeadExports() {
   // 收集 scripts/lib 下所有 .js（含子目錄 dashboard/ remote/）
   const libFiles = collectJsFiles(SCRIPTS_LIB);
 
-  // 收集 plugin 下所有 .js（排除 lib 自身、health-check 自身、node_modules）
+  // 收集 plugin 下所有 .js（排除 lib 自身、health-check 自身）
   // 加入 tests/ 目錄，避免只在測試中使用的 exports 被誤報為 dead
   const allPluginJs = [
     ...collectJsFiles(PLUGIN_ROOT),
     ...collectJsFiles(TESTS_DIR),
-  ].filter((f) => {
-    return !f.includes('/node_modules/');
-  });
+  ];
 
   const findings = [];
 
@@ -360,24 +323,6 @@ function collectDocFiles() {
   if (safeRead(claudeMd)) files.push(claudeMd);
 
   return files;
-}
-
-function collectMdFiles(dir, result = []) {
-  let entries;
-  try {
-    entries = readdirSync(dir, { withFileTypes: true });
-  } catch {
-    return result;
-  }
-  for (const entry of entries) {
-    const full = path.join(dir, entry.name);
-    if (entry.isDirectory()) {
-      collectMdFiles(full, result);
-    } else if (entry.isFile() && entry.name.endsWith('.md')) {
-      result.push(full);
-    }
-  }
-  return result;
 }
 
 /**
@@ -509,17 +454,12 @@ function checkUnusedPaths() {
   const exportKeys = parsePathsExports(content);
   if (exportKeys.length === 0) return [];
 
-  // 收集 plugin 下所有 .js（排除 paths.js 自身、node_modules）
+  // 收集 plugin 下所有 .js（排除 paths.js 自身）
   // 加入 tests/ 目錄，避免只在測試中使用的 exports 被誤報為 dead
   const allPluginJs = [
     ...collectJsFiles(PLUGIN_ROOT),
     ...collectJsFiles(TESTS_DIR),
-  ].filter((f) => {
-    return (
-      f !== pathsFile &&
-      !f.includes('/node_modules/')
-    );
-  });
+  ].filter((f) => f !== pathsFile);
 
   const findings = [];
   const pathsRel = toRelative(pathsFile);
@@ -811,9 +751,9 @@ function checkDocStaleness() {
   // 掃描：plugin js + docs md + 專案根 md + CLAUDE.md
   const searchFiles = [];
 
-  // plugin 下所有 .js
+  // plugin 下所有 .js（排除 health-check.js 本身）
   searchFiles.push(...collectJsFiles(PLUGIN_ROOT).filter(f =>
-    !f.includes('/node_modules/') && !f.includes('health-check.js')
+    !f.includes('health-check.js')
   ));
 
   // docs/ 下所有 .md（排除 archive/ 和 reference/ 自身）
@@ -1416,11 +1356,10 @@ function checkClosedLoop() {
   // 從 registry 讀取 consumeMode，只檢查 targeted 事件（需專屬 consumer）
   // broadcast（全量消費者覆蓋）和 fire-and-forget（純記錄）不需要專屬 consumer
 
-  // 收集 plugin 目錄下所有 .js，排除 health-check.js 本身 + node_modules
+  // 收集 plugin 目錄下所有 .js，排除 health-check.js 本身
   const allJs = collectJsFiles(PLUGIN_ROOT).filter((f) => {
     return (
       f !== __filename &&
-      !f.includes('/node_modules/') &&
       !f.includes('health-check.js')
     );
   });
