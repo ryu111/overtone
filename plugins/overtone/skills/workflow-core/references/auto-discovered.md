@@ -1,47 +1,4 @@
 ---
-## 2026-03-06 | product-manager:PM Findings
-**目標用戶**：Overtone 開發者（dogfooding），在多 agent 並行工作流中需要更高穩定性和效率。
-
-**成功指標**：
-- health-check 從 19 項增至 20 項，新增 checkConcurrencyGuards 全綠
-- 併發專項測試覆蓋 CAS retry、多進程 stress、flaky tracking
-- quick/standard/full/secure/product/product-full workflow 的 RETRO+DOCS 並行化，縮短尾部等待
-- suggestOrder 整合 failure-tracker 歷史數據，高失敗率任務自動降優先級
-- compact 次數與品質評分關聯偵測，預警 context 品質退化
-- 所有變更通過 Skill → Agent → Hook → Guard 閉環驗證
-
-**推薦方案**：全量執行（用戶已確認），拆為 8 個迭代，按依賴順序排列。
-
-**MVP 範圍（MoSCoW）**：
-
-- **Must**：
-  - G2 孤兒 agent 15 分鐘 TTL 主動偵測（Stop hook）
-  - health-check #20 checkConcurrencyGuards
-  - S1 CAS retry 直接測試 + S2 多進程 stress test
-  - P1 RETRO+DOCS 並行群組（registry + 6 個消費者同步）
-  - O1 suggestOrder 整合 failure-tracker
-  - 所有文件同步（CLAUDE.md、status.md、spec 文件）
-  - 閉環驗證（每個迭代確認 Skill→Agent→Hook→Guard 鏈完整）
-
-- **Should**：
-  - S3 flaky test 自動偵測腳本
-  - S4 併發測試撰寫指南（testing skill reference）
-  - P2 任務拆分指引文件
-  - P3 health-check 效能監控（parallel test 時間基線）
-  - O3 compact 次數與評分品質關聯偵測
-
-- **Could**：
-  - evolution.js 自動追蹤新 gap 類型
-  - instinct 系統新增 concurrency 相關 observation type
-
-- **Won't**：
-  - G1 execution-queue TOCTOU（heartbeat activeSession guard 已足夠，記錄為已知風險）
-  - G3 JSONL trimIfNeeded race（可接受風險，事件重播可恢復）
-
----
-Keywords: overtone, dogfooding, agent, health, check, checkconcurrencyguards, retry, stress, flaky, tracking
-
----
 ## 2026-03-06 | product-manager:PM Context
 Overtone 的並行/併發/背景處理能力已有堅實基礎（6 層守衛 + CAS + 收斂門 + 3 個並行群組），但存在可量化的缺口：守衛層有 G2 孤兒 agent 無主動偵測、穩定層缺乏併發專項測試、效能層 RETRO+DOCS 未並行化、優化層缺少歷史數據驅動排程。用戶要求「全部都做，做好閉環，把所有會影響的地方一起優化」。
 Keywords: overtone, agent, retro, docs
@@ -585,4 +542,35 @@ global-migrate-batch-replace 是一個高規格的批量文字替換迭代，涵
 - post-use-handler.js fallback 改用 `os.homedir()` 而非 `process.env.HOME`，符合 design.md 的跨平台考量（edge case 3 正確處理）
 - Specs 歸檔正確（`specs/features/archive/2026-03-07_global-migrate-batch-replace/`）
 Keywords: global, migrate, batch, replace, skill, command, claude, references, scenario, other
+
+---
+## 2026-03-07 | code-reviewer:REVIEW Findings
+逐項驗證了以下面向，全部通過：
+- **搬移完整性**：agents(18)、skills(24)、commands(28+ask.md=29)、hooks(hooks.json+scripts)、scripts(22+llm-service-manager.sh)、scripts/lib(50 項+4 子目錄)、web(4 項)、plugin.json、package.json -- 源與目標完全一致
+- **既有檔案保留**：`ask.md` 和 `llm-service-manager.sh` 均保留在目標目錄
+- **源目錄未刪除**：`plugins/overtone/` 仍完整存在
+- **依賴安裝**：gray-matter 已透過 bun 安裝，bun.lock 已生成
+- **package.json 結構**：命名、版本、engines 欄位均正確
+Keywords: agents, skills, commands, hooks, json, scripts, service, manager, plugin, package
+
+---
+## 2026-03-07 | retrospective:RETRO Findings
+**回顧摘要**：
+
+global-migrate-move-files 是一次以「複製」為核心的搬移任務（源目錄保留），將 plugins/overtone/ 下所有元件複製到 ~/.claude/。跨階段回顧發現以下情況：
+
+**確認的品質點**：
+
+1. 元件完整性驗證通過：agents 18、skills 24、web 4、hooks 目錄結構一致，源與目標一一對應。
+
+2. 路徑替換乾淨：源目錄 skills 和 commands 中的 `${CLAUDE_PLUGIN_ROOT}` 殘留全部為文件說明類（歷史說明、程式碼範例），無實際功能性路徑引用遺留。
+
+3. 依賴搬移正確：gray-matter 已存在於 ~/.claude/node_modules/，scripts/lib（50 個模組）對齊無差異。
+
+4. commands 數量差異（源 28 vs 目標 29）有明確解釋：目標多出的 ask.md 是預先存在的全域 command（非本次搬移引入的異物），非錯誤。
+
+**已知但不構成阻擋的問題**（DEV 和 REVIEW 已標記）：
+
+- plugin.json 版本不一致：~/.claude/plugin.json 為 0.28.81，status.md 顯示 0.28.82。這是功能實作先行、plugin.json 未即時跟進的版本漂移，屬既有問題，非本次搬移引入。
+Keywords: global, migrate, move, files, plugins, overtone, claude, agents, skills, hooks
 
