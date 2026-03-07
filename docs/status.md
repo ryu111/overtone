@@ -28,7 +28,7 @@
 
 ## 近期變更（最近 3 筆）
 
-- **[0.28.83] 2026-03-07**：infra(claude-dir-git-init)——在 ~/.claude/ 初始化 git repo：新增 .gitignore（whitelist 策略）進行版本控制，刪除 ~360 個暫存 JSON/JSONL，Overtone 全域元件實現 git 管理
+- **[0.28.83] 2026-03-07**：infra(cross-repo-verify)——全域遷移最終驗證（3/3 迭代完成）：~/.claude/ git 初始化 + gitignore whitelist 策略 + ~360 個暫存清理，knowledge-archiver.js pluginRoot 修復，CLAUDE.md 命令路徑統一為 `bun ~/.claude/scripts/...`，確保全域 SoT 完整性
 - **[0.28.82] 2026-03-07**：refactor(global-migrate)——第 2 步批量路徑遷移：56 個檔案修改（24 個 SKILL.md + 19 個 Command + 3 個 JS 模組 + 5 個 claude-dev references + 1 個測試 + 1 個 health-check），將 `${CLAUDE_PLUGIN_ROOT}` 替換為相對路徑（`./references/` 或 `../{domain}/references/` 或 `bun ~/.claude/scripts/`）
 - **[0.28.81] 2026-03-07**：feat(handoff)——四個核心 stage agent 加入 Exit Criteria checklist（developer/architect/planner/code-reviewer），handoff-protocol.md 新增欄位定義與 Main Agent 未勾選處理規則，強化交接品質防止 hardcoded 數值遺漏同步
 

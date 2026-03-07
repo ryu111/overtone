@@ -4,23 +4,38 @@
 
 ## [0.28.83] - 2026-03-07
 
-### ~/.claude/ Git 管理
+### 全域遷移最終驗證（3/3 迭代完成）
 
-#### 基礎設施變更
+#### 步驟 1：Git 基礎設施 ✅
 
 **在 ~/.claude/ 初始化 git repo，實現全域 Overtone 元件版本控制**
-
-#### 實現細節
 
 - ~/.claude/.gitignore：whitelist 策略（tracks agent/skill/command/hook/script，ignores sessions/caches）
 - 清理 ~360 個暫存檔案（session 狀態、快取、臨時 JSON/JSONL）
 - 全域元件納入版本控制（agents/skills/commands/hooks 完整追蹤，sessions 隔離）
 
-#### 目的
+#### 步驟 2：pluginRoot 修復 ✅
+
+**修復 knowledge-archiver.js 路徑引用（刪除 plugins/overtone/ 後適配）**
+
+- ~/.claude/scripts/lib/knowledge/knowledge-archiver.js：`pluginRoot` 計算邏輯修正
+- 確保歸檔機制在全域模式下正確識別 Overtone 內部路徑
+- 防止外部專案知識污染（過濾 non-Overtone 內容）
+
+#### 步驟 3：命令路徑同步 ✅
+
+**CLAUDE.md 命令參考路徑更新**
+
+- 從 `bun scripts/...` 統一更新為 `bun ~/.claude/scripts/...`
+- 確保在任何專案目錄下執行全域命令時路徑正確
+- 適配全域 ~/.claude/ 成為 SoT 的新架構
+
+#### 迭代目的
 
 - 全域 Overtone 核心元件版本化
 - 跨專案環境一致性保證
 - 變更歷史可追蹤
+- 端對端驗證全域遷移完整性
 
 ---
 
