@@ -1,3 +1,4 @@
+// @sequential
 'use strict';
 /**
  * health-check-principles.test.js — 製作原則偵測單元測試

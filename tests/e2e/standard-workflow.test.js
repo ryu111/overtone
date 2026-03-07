@@ -1,3 +1,4 @@
+// @sequential
 'use strict';
 /**
  * standard-workflow.test.js — BDD F3：standard workflow 8-stage 全路徑 E2E 測試

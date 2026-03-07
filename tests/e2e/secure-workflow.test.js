@@ -1,3 +1,4 @@
+// @sequential
 'use strict';
 /**
  * secure-workflow.test.js — BDD：secure workflow 9-stage 全路徑 E2E 測試

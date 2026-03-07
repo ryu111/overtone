@@ -1,3 +1,4 @@
+// @sequential
 'use strict';
 /**
  * single-workflow.test.js — BDD F2：single workflow 完整狀態機 E2E 測試

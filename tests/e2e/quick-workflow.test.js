@@ -1,3 +1,4 @@
+// @sequential
 'use strict';
 /**
  * quick-workflow.test.js — BDD F4：quick workflow hook 驅動 state 轉移 E2E 測試

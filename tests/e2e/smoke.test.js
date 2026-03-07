@@ -1,3 +1,4 @@
+// @sequential
 'use strict';
 /**
  * smoke.test.js — 系統級冒煙測試

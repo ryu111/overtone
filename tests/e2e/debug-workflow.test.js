@@ -1,3 +1,4 @@
+// @sequential
 'use strict';
 /**
  * debug-workflow.test.js — BDD：debug workflow 3-stage 全路徑 E2E 測試

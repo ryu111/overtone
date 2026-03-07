@@ -1,3 +1,4 @@
+// @sequential
 'use strict';
 /**
  * health-check-proactive.test.js — 主動偵測功能單元測試

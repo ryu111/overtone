@@ -1,3 +1,4 @@
+// @sequential
 'use strict';
 /**
  * tdd-workflow.test.js — BDD：tdd workflow 3-stage 全路徑 E2E 測試

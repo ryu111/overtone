@@ -1,3 +1,4 @@
+// @sequential
 'use strict';
 /**
  * health-check-compact-frequency.test.js — checkCompactFrequency 單元測試

@@ -1,3 +1,4 @@
+// @sequential
 'use strict';
 /**
  * full-workflow.test.js — BDD：full workflow 11-stage 全路徑 E2E 測試

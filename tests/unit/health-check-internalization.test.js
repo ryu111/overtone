@@ -1,3 +1,4 @@
+// @sequential
 'use strict';
 /**
  * health-check-internalization.test.js — 內化索引偵測單元測試

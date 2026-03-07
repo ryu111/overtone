@@ -1,3 +1,4 @@
+// @sequential
 'use strict';
 /**
  * refactor-workflow.test.js — BDD：refactor workflow 5-stage 全路徑 E2E 測試

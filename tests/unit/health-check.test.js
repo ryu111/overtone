@@ -1,3 +1,4 @@
+// @sequential
 'use strict';
 /**
  * health-check.test.js — health-check.js 單元測試

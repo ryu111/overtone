@@ -129,6 +129,7 @@ function runSessionStop(sessionId, message = '') {
     session_id: sessionId,
     stop_hook_active: false,
     last_assistant_message: message,
+    cwd: require('os').tmpdir(), // 隔離佇列：避免命中真實專案的執行佇列
   };
   const proc = Bun.spawnSync(['node', SESSION_STOP_PATH], {
     stdin: Buffer.from(JSON.stringify(input)),

@@ -1,3 +1,4 @@
+// @sequential
 'use strict';
 /**
  * workflow-lifecycle.test.js — 完整 workflow 生命週期 E2E 測試
@@ -82,6 +83,7 @@ function runOnStop(sessionId, lastAssistantMessage = 'test') {
     session_id: sessionId,
     stop_hook_active: false,
     last_assistant_message: lastAssistantMessage,
+    cwd: require('os').tmpdir(), // 隔離佇列：避免命中真實專案的執行佇列
   };
   const proc = Bun.spawnSync(['node', ON_STOP_PATH], {
     stdin: Buffer.from(JSON.stringify(input)),
