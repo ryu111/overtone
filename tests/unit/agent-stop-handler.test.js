@@ -985,6 +985,57 @@ describe('handleAgentStop — RETRO stage issues verdict', () => {
   });
 });
 
+// ── _computeImpactSummary ────────────────────────────────────────────────────
+
+describe('_computeImpactSummary', () => {
+  const { _computeImpactSummary } = require('../../plugins/overtone/scripts/lib/agent-stop-handler');
+  const os = require('os');
+  const path = require('path');
+
+  test('匯出 _computeImpactSummary 函數', () => {
+    expect(typeof _computeImpactSummary).toBe('function');
+  });
+
+  test('傳入非 git 目錄時回傳 null（靜默降級）', () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ot-impact-test-'));
+    try {
+      const result = _computeImpactSummary(tmpDir);
+      expect(result).toBeNull();
+    } finally {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+
+  test('git 命令失敗時回傳 null，不拋出例外', () => {
+    // 傳入一個不存在的路徑，execSync 必然失敗
+    expect(() => {
+      const result = _computeImpactSummary('/nonexistent-path-xyz-abc');
+      expect(result).toBeNull();
+    }).not.toThrow();
+  });
+
+  test('在真實 git repo 中執行不拋出例外', () => {
+    // 使用專案根目錄（有 git history）
+    const projectRoot = path.resolve(__dirname, '../..');
+    expect(() => {
+      const result = _computeImpactSummary(projectRoot);
+      // result 可能是 null（無前一個 commit 或無修改）或字串
+      expect(result === null || typeof result === 'string').toBe(true);
+    }).not.toThrow();
+  });
+
+  test('回傳字串時包含修改檔案數量和固定提醒文字', () => {
+    const projectRoot = path.resolve(__dirname, '../..');
+    const result = _computeImpactSummary(projectRoot);
+    // 若有前一個 commit 且有修改檔案，應包含基本提醒
+    if (result !== null) {
+      expect(typeof result).toBe('string');
+      expect(result).toContain('修改了');
+      expect(result).toContain('hardcoded 數值');
+    }
+  });
+});
+
 // ── failCount / rejectCount 遞增 ──────────────────────────────────────────────
 
 describe('handleAgentStop — retry 計數機制', () => {

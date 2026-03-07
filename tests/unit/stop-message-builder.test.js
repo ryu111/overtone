@@ -532,3 +532,83 @@ describe('Feature 7: postdev 收斂提示', () => {
     expect(joined).not.toContain('可選：觸發 /ot:auto');
   });
 });
+
+// ════════════════════════════════════════════════════════════════
+// Feature 8: impactSummary 注入（DEV PASS）
+// ════════════════════════════════════════════════════════════════
+
+describe('Feature 8: impactSummary 注入', () => {
+  // Scenario 8-1: DEV PASS + impactSummary 存在 — 含影響範圍提醒
+  test('Scenario 8-1: DEV PASS + impactSummary — 訊息包含影響範圍分析區塊', () => {
+    const summary = '修改了 3 個檔案。\n- agents/developer.md（被 scripts/lib/state.js 影響）\n💡 建議執行 bun scripts/impact.js <path> 確認完整影響範圍\n💡 檢查是否有 hardcoded 數值需要同步更新';
+    const result = buildStopMessages(makeCtx({
+      verdict: 'pass',
+      stageKey: 'DEV',
+      impactSummary: summary,
+      nextHint: '委派 tester',
+    }));
+
+    const joined = result.messages.join('\n');
+    expect(joined).toContain('🔍 影響範圍分析：');
+    expect(joined).toContain('修改了 3 個檔案');
+    expect(joined).toContain('hardcoded 數值');
+  });
+
+  // Scenario 8-2: DEV PASS + impactSummary=null — 無影響範圍區塊
+  test('Scenario 8-2: DEV PASS + impactSummary=null — 不包含影響範圍區塊', () => {
+    const result = buildStopMessages(makeCtx({
+      verdict: 'pass',
+      stageKey: 'DEV',
+      impactSummary: null,
+      nextHint: '委派 tester',
+    }));
+
+    const joined = result.messages.join('\n');
+    expect(joined).not.toContain('🔍 影響範圍分析：');
+  });
+
+  // Scenario 8-3: 非 DEV stage PASS + impactSummary 存在 — 不注入（只限 DEV）
+  test('Scenario 8-3: REVIEW PASS + impactSummary — 不包含影響範圍區塊', () => {
+    const summary = '修改了 2 個檔案。';
+    const result = buildStopMessages(makeCtx({
+      verdict: 'pass',
+      stageKey: 'REVIEW',
+      impactSummary: summary,
+      nextHint: '委派 retro',
+    }));
+
+    const joined = result.messages.join('\n');
+    expect(joined).not.toContain('🔍 影響範圍分析：');
+  });
+
+  // Scenario 8-4: DEV FAIL + impactSummary 存在 — 不注入（只限 PASS）
+  test('Scenario 8-4: DEV FAIL + impactSummary — 不包含影響範圍區塊', () => {
+    const summary = '修改了 1 個檔案。';
+    const result = buildStopMessages(makeCtx({
+      verdict: 'fail',
+      stageKey: 'DEV',
+      impactSummary: summary,
+      state: { failCount: 1, rejectCount: 0, retroCount: 0 },
+    }));
+
+    const joined = result.messages.join('\n');
+    expect(joined).not.toContain('🔍 影響範圍分析：');
+  });
+
+  // Scenario 8-5: DEV PASS + impactSummary 在 nextHint 之前出現
+  test('Scenario 8-5: DEV PASS + impactSummary — 影響範圍區塊出現在 nextHint 之前', () => {
+    const summary = '修改了 2 個檔案。\n💡 建議執行 bun scripts/impact.js';
+    const result = buildStopMessages(makeCtx({
+      verdict: 'pass',
+      stageKey: 'DEV',
+      impactSummary: summary,
+      nextHint: '委派 tester 執行測試',
+    }));
+
+    const joined = result.messages.join('\n');
+    const impactIdx = joined.indexOf('🔍 影響範圍分析：');
+    const nextHintIdx = joined.indexOf('⏭️ 下一步：');
+    expect(impactIdx).toBeGreaterThanOrEqual(0);
+    expect(nextHintIdx).toBeGreaterThan(impactIdx);
+  });
+});

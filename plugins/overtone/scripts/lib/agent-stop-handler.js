@@ -10,6 +10,7 @@
  */
 
 const { readFileSync, existsSync } = require('fs');
+const { execSync } = require('child_process');
 const {
   readState,
   updateStateAtomic,
@@ -286,12 +287,21 @@ function handleAgentStop(input, sessionId) {
     }
   } catch { /* 靜默 */ }
 
+  // 計算影響範圍（DEV PASS 時才執行，整個邏輯包在 try/catch 靜默降級）
+  let impactSummary = null;
+  if (stageKey === 'DEV' && result.verdict === 'pass') {
+    try {
+      impactSummary = _computeImpactSummary(projectRoot);
+    } catch { /* 靜默降級 */ }
+  }
+
   const buildResult = buildStopMessages({
     verdict: result.verdict, stageKey, actualStageKey, agentName, sessionId,
     state: updatedState, stages, retryDefaults, parallelGroups,
     tasksCheckboxWarning, compactSuggestion, convergence, nextHint,
     featureName: updatedState.featureName, projectRoot, specsInfo,
     scoringConfig, lastScore, workflowType: updatedState.workflowType,
+    impactSummary,
   });
 
   // 執行 builder 回傳的副作用
@@ -330,6 +340,74 @@ function handleAgentStop(input, sessionId) {
   hookTimer.emit(sessionId, 'on-stop', 'SubagentStop', { agent: agentName, verdict: result.verdict });
 
   return { output: { result: buildResult.messages.join('\n') } };
+}
+
+/**
+ * 計算最近一次 commit 的影響範圍摘要
+ * 用於 DEV PASS 後提醒 Main Agent 同步相關元件
+ * @param {string} projectRoot - 專案根目錄
+ * @returns {string} 影響範圍摘要字串
+ */
+function _computeImpactSummary(projectRoot) {
+  // 取得最近一次 commit 修改的檔案清單
+  let changedFiles = [];
+  try {
+    const stdout = execSync('git diff --name-only HEAD~1', {
+      cwd: projectRoot,
+      encoding: 'utf8',
+      timeout: 5000,
+      stdio: ['ignore', 'pipe', 'ignore'],
+    });
+    changedFiles = stdout.trim().split('\n').filter(Boolean);
+  } catch {
+    // git 命令失敗（如沒有前一個 commit）→ 靜默降級
+    return null;
+  }
+
+  if (changedFiles.length === 0) return null;
+
+  const fileCount = changedFiles.length;
+  const lines = [];
+
+  // 對 plugin 相關檔案查詢受影響元件
+  const pluginFiles = changedFiles.filter(f => f.includes('plugins/overtone/'));
+  const impactedEntries = [];
+
+  if (pluginFiles.length > 0) {
+    try {
+      const { buildGraph } = require('./dependency-graph');
+      const graph = buildGraph();
+
+      for (const relPath of pluginFiles) {
+        // buildGraph 使用 pluginRoot 為基礎，取 plugins/overtone/ 後面的部分
+        const pluginRelPath = relPath.replace(/^.*plugins\/overtone\//, '');
+        const impacted = graph.getImpacted(pluginRelPath);
+        for (const item of impacted) {
+          impactedEntries.push({ source: pluginRelPath, file: item.file });
+        }
+      }
+    } catch { /* 靜默 — dependency-graph 失敗不影響其餘邏輯 */ }
+  }
+
+  lines.push(`修改了 ${fileCount} 個檔案。`);
+
+  if (impactedEntries.length > 0) {
+    lines.push('以下元件可能需要同步更新：');
+    // 去重（同一個 file 可能被多個 source 影響）
+    const seen = new Set();
+    for (const { source, file } of impactedEntries) {
+      const key = file;
+      if (!seen.has(key)) {
+        seen.add(key);
+        lines.push(`- ${file}（被 ${source} 影響）`);
+      }
+    }
+  }
+
+  lines.push('💡 建議在 REVIEW 前執行 `bun scripts/impact.js <path>` 確認完整影響範圍');
+  lines.push('💡 檢查是否有 hardcoded 數值（如計數、路徑、常數）需要同步更新');
+
+  return lines.join('\n');
 }
 
 /**
@@ -390,4 +468,4 @@ function _parseQueueTable(text) {
   return items;
 }
 
-module.exports = { handleAgentStop, _parseQueueTable };
+module.exports = { handleAgentStop, _parseQueueTable, _computeImpactSummary };

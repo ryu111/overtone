@@ -32,6 +32,7 @@
  * @param {object|null} [ctx.scoringConfig]    - registry.scoringConfig（gradedStages + lowScoreThreshold）
  * @param {object|null} [ctx.lastScore]        - ScoreSummary | null（最近 N 筆同 stage 的平均分）
  * @param {string|null} [ctx.workflowType]     - workflow 類型（用於 grader 評分提示）
+ * @param {string|null} [ctx.impactSummary]   - DEV PASS 後的影響範圍分析摘要（由 agent-stop-handler 傳入）
  *
  * @returns {{
  *   messages: string[],
@@ -58,6 +59,7 @@ function buildStopMessages(ctx) {
     scoringConfig,
     lastScore,
     workflowType,
+    impactSummary,
   } = ctx;
 
   const messages = [];
@@ -181,6 +183,11 @@ function buildStopMessages(ctx) {
           threshold: scoringConfig.lowScoreThreshold,
         });
       }
+    }
+
+    // 影響範圍分析（DEV PASS 時注入）
+    if (impactSummary && stageKey === 'DEV') {
+      messages.push(`🔍 影響範圍分析：\n${impactSummary}`);
     }
 
     // 提示下一步
