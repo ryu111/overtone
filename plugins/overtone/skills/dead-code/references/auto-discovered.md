@@ -163,3 +163,97 @@ Keywords: compact, handler, detectfrequencyanomaly, autotimestamps, export, heal
 - `health-check integration Feature 6` timeout — 並行子進程競爭（修改前 24 fail，修改後 16 fail）
 Keywords: detectfrequencyanomaly, side, effect, compact, handler, export, health, check, import, timeline
 
+---
+## 2026-03-07 | architect:ARCH Findings
+**技術方案**：
+- 新增 `scripts/lib/fs-scanner.js` — 獨立模組（非擴充 utils.js），職責單一
+- Cache 機制：module 層級 `_jsCache` / `_mdCache`（`Map`），支援 `clearCache()` 重置
+- node_modules 過濾：統一採 dead-code-scanner 的「遞迴層跳過」策略（效能較佳）
+- dead-code-scanner 用一行 `require('../fs-scanner')` 取代自有實作，並在 `module.exports` 保留 `collectJsFiles` re-export（向後相容現有測試）
+- health-check.js 刪除三個函式定義，改 require；呼叫端的 `!f.includes('/node_modules/')` filter 可移除（遞迴層已處理）；其餘業務邏輯 filter 保留
+
+**API 介面**：
+
+```javascript
+// scripts/lib/fs-scanner.js
+
+/**
+ * @typedef {Object} FsScannerOptions
+ * @property {boolean} [useCache=true]
+ */
+
+function collectJsFiles(dir, opts = {}): string[]
+function collectMdFiles(dir, opts = {}): string[]
+function safeRead(filePath): string
+function clearCache(): void
+
+module.exports = { collectJsFiles, collectMdFiles, safeRead, clearCache }
+```
+
+**資料模型**：
+- 無持久化，pure in-memory
+- `_jsCache = new Map()` — key: dir 絕對路徑，value: string[]
+- `_mdCache = new Map()` — key: dir 絕對路徑，value: string[]
+- `useCache: false` 時繞過 cache 讀寫，直接遞迴
+
+**檔案結構**：
+
+| 操作 | 路徑 |
+|------|------|
+| 新增 | `plugins/overtone/scripts/lib/fs-scanner.js` |
+| 修改 | `plugins/overtone/scripts/health-check.js` |
+| 修改 | `plugins/overtone/scripts/lib/analyzers/dead-code-scanner.js` |
+| 新增 | `tests/unit/fs-scanner.test.js` |
+
+**Dev Phases**：
+Keywords: scripts, scanner, utils, cache, module, clearcache, dead, code, require, exports
+
+---
+## 2026-03-07 | architect:ARCH Context
+抽取 `fs-scanner.js` 共用模組，消除 health-check.js 與 dead-code-scanner.js 的三個重複實作（`collectJsFiles`、`collectMdFiles`、`safeRead`），加入 module 層級 lazy cache 和 `clearCache()` API。設計方案為最小侵入：新增一個模組，兩個消費者各自做最小改動。
+Keywords: scanner, health, check, dead, code, collectjsfiles, collectmdfiles, saferead, module, lazy
+
+---
+## 2026-03-07 | code-reviewer:REVIEW Findings
+- fs-scanner.js：API 設計乾淨，cache 機制正確，遞迴掃描健壯
+- health-check.js：完整移除 3 個重複函式定義 + 5 處 node_modules filter，改用共用模組
+- dead-code-scanner.js：完整移除 2 個重複函式定義，flatMap + Set 重構語意等價
+- 測試：11 scenario 覆蓋完整，全域 4723 tests 通過無 regression
+- 無 Critical / Major / Minor 問題
+Keywords: scanner, cache, health, check, filter, dead, code, flatmap, scenario, tests
+
+---
+## 2026-03-07 | retrospective:RETRO Findings
+**回顧摘要**：
+
+本次迭代（fs-scanner 共用模組）完成了主要目標：將 health-check.js 和 dead-code-scanner.js 中重複的 `collectJsFiles` 實作抽取為共用模組，並為其建立 BDD 測試（11 個 scenario，全數通過）。整體架構清晰，模組設計合理（module-level cache + clearCache API、適當的 try-catch 錯誤處理）。
+
+然而，有一個跨階段問題未被捕獲：
+
+---
+Keywords: scanner, health, check, dead, code, collectjsfiles, scenario, module, level, cache
+
+---
+## 2026-03-07 | retrospective:RETRO Findings
+**回顧摘要**：
+
+**本次迭代目標**：handler 測試效能優化（lazy getter）+ parseExportKeys 統一至 fs-scanner.js。
+
+**確認的品質點**：
+
+1. **parseExportKeys 統一乾淨**：fs-scanner.js 是唯一實作位置（174 行），dead-code-scanner.js 正確 import 使用，health-check.js 保留 `parseModuleExportKeys` alias 以維持 health-check.test.js 相容性。
+
+2. **alias 保留是合理的技術決策**：`parseModuleExportKeys` alias（health-check.js L56）並非違反「不做向後相容」原則 — 對象是 test 檔而非 production API，且 alias 極輕（一行賦值），不引入維護負擔。信心低於 70%，不列為問題。
+
+3. **fs-scanner.js API 完整**：5 個函式（collectJsFiles/collectMdFiles/safeRead/clearCache/parseExportKeys），文件頭部 API 索引清晰，JSDoc 完整。
+
+4. **測試效能優化邏輯正確**：session-start-handler.test.js 的 `cached()` helper 跨 test 共用計算結果；session-end-handler.test.js 的 lazy getter 模式（`_nullResult` 閉包）符合 Humble Object 邊界。
+
+5. **測試數通過**：4670 pass / 0 fail。
+
+**跨階段觀察**：
+
+- 迭代 2 RETRO 指出的重複問題（parseExportKeys 在 health-check.js 和 dead-code-scanner.js 各有實作）已在本迭代完整修復，跨迭代改善閉環成功。
+- handler 測試 I/O 瓶頸（mkdirSync + session 目錄）是結構性限制，非程式碼問題，lazy getter 已做到可做的最大化優化。
+Keywords: handler, lazy, getter, parseexportkeys, scanner, dead, code, import, health, check
+

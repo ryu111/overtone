@@ -1,50 +1,4 @@
 ---
-## 2026-03-04 | developer:DEV Context
-實作了 claude-dev knowledge domain skill（第 15 個 knowledge domain），為 developer 和 architect 提供 Claude Code plugin 開發的完整 API 參考。
-Keywords: claude, knowledge, domain, skill, developer, architect, code, plugin
----
-## 2026-03-04 | developer:DEV Findings
-**重複內容識別與處理：**
-
-1. **hooks.json 三層嵌套格式**（CLAUDE.md → hooks-api.md）：
-   - 原本 CLAUDE.md 中有完整格式說明（兩個欄位的詳細說明）
-   - 精簡為一句摘要 + 引用 `hooks-api.md`
-   - 關鍵警告保留（扁平格式的後果）
-
-2. **Agent prompt 四模式**（CLAUDE.md → agent-api.md）：
-   - 原本 CLAUDE.md 只有「信心過濾 + 邊界清單 + 誤判防護 + 停止條件」四個名稱
-   - 加入引用 agent-api.md（詳細撰寫規範）
-
-3. **元件閉環規則 + manage-component.js**（CLAUDE.md → overtone-conventions.md）：
-   - 精簡摘要（Skill → Agent 消費 → Hook 注入 → Guard 保護）
-   - 加入引用 overtone-conventions.md
-
-4. **Handoff 格式**（CLAUDE.md → handoff-protocol.md）：
-   - 保留名稱和欄位清單
-   - 加入引用 handoff-protocol.md
-
-5. **overtone-conventions.md 第 5 節**（Handoff 格式）→ 加入引用 handoff-protocol.md：
-   - 保留四欄位格式模板（agent 開發者需要）
-   - 加入「完整欄位規範 + Chaining 規則」的引用
-
-**不需要處理的部分：**
-- workflow-core/references（failure-handling、completion-signals、parallel-groups）：內容定位不同（Main Agent 行為），不與 claude-dev 重複
-- evolve/references（confidence-scoring、evolution-patterns）：完全不與 claude-dev 重複
-
-**plugin-dev 覆蓋率評估：**
-- claude-dev 7 references 已完整覆蓋 Overtone 專屬 plugin 開發知識
-- 通用 MCP 整合知識不在 claude-dev 範圍內（Overtone 不依賴 MCP）
-- 結論：安裝 claude-dev skill 即可，不需額外 plugin-dev 套件
-
-**測試結果：**
-- 3206 pass, 1 fail（server.test.js：`GET /api/registry agents 涵蓋 16 個 agent`）
-- 失敗是預先存在的回歸（received 17，expected 16），與此次變更無關，未修改 server.test.js
-Keywords: hooks, json, claude, agent, prompt, manage, component, overtone, conventions, skill
----
-## 2026-03-05 | developer:DEV Context
-在 `session-start-handler.js` 新增 `buildPluginContext()` 函數，並透過 SessionStart systemMessage 將 plugin 上下文注入每個新 session。
-Keywords: session, start, handler, buildplugincontext, sessionstart, systemmessage, plugin
----
 ## 2026-03-05 | doc-updater:DOCS Findings
 - 版本號同步完成：plugin.json ↔ CHANGELOG ↔ status.md ↔ spec/overtone.md ↔ README 保持一致（0.28.53）
 - 測試指標同步完成：3446 pass / 0 fail、153 個測試檔一致
@@ -580,4 +534,84 @@ Keywords: commit, tester, developer, agent, prompt
 - 測試啟動輸出確認「串行測試: 3 個」，修復前為 1 個
 - 並行執行時間：30.4s（12 workers）
 Keywords: pass, fail, session, bridge, health, check, tools, dashboard, workers
+
+---
+## 2026-03-07 | developer:DEV Findings
+- `manage-component.js update skill <name> '<json>'` 的 CLI 模式不支援傳遞 `body` 欄位（只允許 frontmatter 欄位：description/disable-model-invocation/user-invocable）
+- 需要改用 `bun -e` 直接呼叫 `config-api.js` 的 `updateSkill(name, { body }, PLUGIN_ROOT)` 才能更新 skill body
+- SKILL.md 第 7 項的計數（「6 種 → 7 種」）在 body 更新時一併處理，不需要額外步驟
+Keywords: manage, component, update, skill, name, json, body, frontmatter, description, disable
+
+---
+## 2026-03-07 | doc-updater:DOCS Findings
+同步完成的文件：
+
+| 文件 | 變更 | 驗證 |
+|------|------|------|
+| CLAUDE.md | scripts/lib 計數 66→67，新增 fs-scanner 明文列示 | ✅ |
+| docs/status.md | 版本 0.28.79→0.28.80、測試 4710→4724、檔案 199→200、模組 66→67、近期變更添加頭條 | ✅ |
+| plugin.json | 版本同步（via manage-component.js bump-version） | ✅ |
+| README.md | 核心指標 4411→4724、194→200 個檔 | ✅ |
+
+無其他文件引用這些計數（grep 檢查）。
+Keywords: claude, scripts, scanner, docs, status, plugin, json, manage, component, bump
+
+---
+## 2026-03-07 | developer:DEV Context
+完成 DEV 迭代 3 兩個子任務：
+
+**子任務 A：handler 測試 shared setup 優化**
+- `session-start-handler.test.js`：在 `handleSessionStart — 基本回傳結構` 和 `Feature 8` 兩個 describe 中加入 lazy getter pattern，讓同一 describe 中使用相同參數呼叫的 test 共用一次 handler 執行。時間從 12.55s 降至 10.16s（-19%）
+- `session-end-handler.test.js`：在 `handleSessionEnd 邊界情況` describe 中加入 lazy getter 共用 null-sessionId 結果。時間無明顯變化（9.22s → 9.24s），因主要瓶頸在 I/O（mkdirSync + 檔案讀寫），而非 handler 呼叫次數本身
+
+**子任務 B：parseExportKeys 統一**
+- 將 `parseExportKeys` 函式移入 `/Users/sbu/projects/overtone/plugins/overtone/scripts/lib/fs-scanner.js`（新版比 health-check 版更完整，多了 `module.exports.xxx = ...` 模式）
+- `dead-code-scanner.js`：改為 `require` fs-scanner 的共用版，刪除本地函式定義
+- `health-check.js`：改為 `require` fs-scanner 的共用版，刪除原有 `parseModuleExportKeys` 實作，以 alias `const parseModuleExportKeys = parseExportKeys` 維持 module.exports 與既有測試相容
+Keywords: handler, shared, setup, session, start, test, handlesessionstart, feature, describe, lazy
+
+---
+## 2026-03-07 | doc-updater:DOCS Findings
+經過系統評估，迭代 3 的變更不涉及文件更新：
+
+- **變更性質**：代碼重構 + 測試優化，無新功能/模組/API 接口變更
+- **模組計數**：保持 67（fs-scanner 已在迭代 2 計入）
+- **測試計數**：保持 4724 pass / 200 files（與上次迭代同步）
+- **文件狀態**：status.md 已含 0.28.80 版本紀錄（迭代 2 fs-scanner 新增），CLAUDE.md 模組計數準確
+- **信心過濾**：該次重構無直接對應的文件段落需要更新
+Keywords: scanner, pass, files, status, claude
+
+---
+## 2026-03-07 | retrospective:RETRO Findings
+**回顧摘要**：
+
+- 本次迭代屬於純配置校準，風險極低：只有 KNOWN_WEIGHTS 數值和 CLAUDE.md 測試基線兩處變更
+- 效能改善目標達成：整體執行時間 28s → 21s（-25%），最大單檔改善 health-check.test.js 13.2s → 1.7s（-87%）
+- 穩定性驗證充分：3 次獨立驗證均為 4670 pass / 0 fail，波動 <1%
+- health-check 22 項全通過，無新增技術債
+- **注意**：Handoff 報告的 4670 pass 與 status.md 現有的 4724 pass 有差距（54 個）。這是因為 status.md 已包含後續提交（0.28.80 的 fs-scanner 等），DOCS 階段應將測試基線更新為實際運行數值（4670），除非此差距是測試套件在不同時間點自然增減的正常波動。doc-updater 需確認 status.md 測試數字與 CLAUDE.md 記錄的基線是否需要同步。
+Keywords: claude, health, check, test, pass, fail, handoff, status, scanner, docs
+
+---
+## 2026-03-07 | doc-updater:DOCS Findings
+**變更要點**：
+- 開發者和測試者 agent 的測試時間標準已更新（~14s → ~21s）
+- 測試效能基線文件同步（performance-baselines.md）
+- 警告閾值調整：>20s → >30s（因應新的基線 ~21s）
+- 測試數量同步：4613 → 4724 pass；194 → 200 個測試檔
+- 技術文件中的時間說明已更新，以反映當前並行優化成效（~53s 單進程 → ~21s 並行）
+- 效能重新校準的決策閾值同步
+
+**同步範圍**：
+- 所有向開發者和測試者提供的指引文件（agent prompt）
+- 技術參考文件（testing conventions、performance guide 等）
+- 效能基線和指標文件
+- auto-discovered.md 自動同步（manage-component.js）
+
+**驗證結果**：
+- ✅ 6 個核心文件手動更新完成
+- ✅ 10 個 auto-discovered.md 自動同步完成
+- ✅ 所有時間引用一致（~21s）
+- ✅ 基線數據與 status.md 對齐
+Keywords: agent, performance, baselines, pass, prompt, testing, conventions, guide, auto, discovered
 

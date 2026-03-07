@@ -1,69 +1,4 @@
 ---
-## 2026-03-06 | planner:PLAN Context
-**問題**：`agent-stop-handler.js` 的 `handleAgentStop` 存在並行競爭條件。核心問題是第 57 行讀取 state 快照（`currentState`），第 69-84 行透過 `updateStateAtomic` 清除 activeAgents（寫入磁碟），然後第 89 行用**舊快照**呼叫 `findActualStageKey`。
-
-若兩個並行 agent 幾乎同時完成：先到的 A 在 updateStateAtomic 裡完成了 parallelDone 遞增並標記 stage completed；後到的 B 在第 57 行讀到的快照中 stage 看起來 active，但 B 的 updateStateAtomic（清除 activeAgents）在磁碟寫入時，A 已經把 stage 標記為 completed。B 的 findActualStageKey 找不到 active/pending 匹配，返回 null，early exit 發生，parallelDone 不遞增，stage 永久卡住。
-
-**PM 決定修復方向 B + C**。
-Keywords: agent, stop, handler, handleagentstop, state, currentstate, updatestateatomic, activeagents, findactualstagekey, paralleldone
-
----
-## 2026-03-06 | architect:ARCH Findings
-**技術方案**：
-
-- 方向 B 的 closure pattern（`let resolvedActualStageKey = null`）與 L79 現有的 `resolvedInstanceId` pattern 完全一致，零新慣例
-- `findActualStageKey` 的 4 個搜尋條件缺少 `completed+pass` 場景（只有 fail/reject 安全網），需在 callback 內補位邏輯（< 10 行，不獨立函式）
-- statusline 更新和 early exit 依賴 `actualStageKey`，必須整體移到第二個 `updateStateAtomic` 之後
-- 方向 C 的 `sanitize()` 在正常情況只讀不寫（~1ms），不需要快速路徑優化
-- `state.js` 無需新增任何匯出
-
-**API 介面**：
-
-```javascript
-// agent-stop-handler.js：內部邏輯重組，對外 API 不變
-let resolvedActualStageKey = null;
-
-updateStateAtomic(sessionId, (s) => {
-  resolvedActualStageKey = findActualStageKey(s, stageKey);
-  if (!resolvedActualStageKey) {
-    // 補位：找 completed+pass（後到者場景）
-    resolvedActualStageKey = Object.keys(s.stages).find(
-      (k) => (k === stageKey || k.startsWith(stageKey + ':')) &&
-        s.stages[k].status === 'completed' && s.stages[k].result === 'pass'
-    ) || null;
-  }
-  if (!resolvedActualStageKey) return s;
-  // ... parallelDone 遞增和收斂邏輯 ...
-  return s;
-});
-
-// pre-task-handler.js：在 updateStateAtomic 之前插入
-try { state.sanitize(sessionId); } catch {}
-```
-
-**資料模型**：`workflow.json` schema 無變更。
-
-**檔案結構**：
-
-- 修改：`plugins/overtone/scripts/lib/agent-stop-handler.js`（方向 B）
-- 修改：`plugins/overtone/scripts/lib/pre-task-handler.js`（方向 C）
-- 新增測試：`tests/unit/agent-stop-handler.test.js`（並行收斂場景）
-- 新增測試：`tests/unit/pre-task-handler.test.js`（sanitize 觸發驗證）
-
-**Dev Phases**：
-
-Phase 1 和 Phase 2 必須依序（B 完成後 C 更清楚最終介面），Phase 3 兩個測試檔可並行。
-Keywords: closure, pattern, resolvedactualstagekey, null, resolvedinstanceid, findactualstagekey, completed, pass, fail, reject
-
----
-## 2026-03-06 | architect:ARCH Context
-分析了 `agent-stop-handler.js` 的 TOCTOU 競爭條件後，確認問題根因是 L89 的 `findActualStageKey` 使用 L57 的舊快照（S0），而此時另一個並行 agent 可能已透過自己的 `updateStateAtomic` 將 stage 改為 `completed`。修復採用 PM 決定的 B+C 雙層方案：
-
-- B：將 stage key 查找移入第二個 `updateStateAtomic` callback，使用 callback 拿到的最新 state
-- C：在 pre-task 委派前插入 `state.sanitize(sessionId)` 作為防禦層
-Keywords: agent, stop, handler, toctou, findactualstagekey, updatestateatomic, stage, completed, callback, state
-
----
 ## 2026-03-06 | tester:TEST Findings
 定義了 3 個 Feature，共 6 個 Scenario：
 
@@ -463,7 +398,7 @@ Keywords: retro, docs, parallel, phase, agent, stop, handler, stage, issues, ver
 - 合併條件和委派格式
 
 **P3**：`docs/reference/performance-baselines.md`
-- 測試套件執行時間基線（並行 ~14s、單進程 ~53s）
+- 測試套件執行時間基線（並行 ~21s、單進程 ~53s）
 - 重量級測試檔案基線（直接取自 test-parallel.js KNOWN_WEIGHTS）
 - health-check.js 目標 <5s、statusline.js 目標 <100ms
 - Hook 執行時間預算（直接讀取 hooks.json，TaskCompleted 是唯一明確設定 60s 的 hook）
@@ -557,4 +492,53 @@ Keywords: overtone, agent, skill
 - 不涉及 plugin、agent、skill、hook、spec 等需文件同步的層級
 - 效能改進無須更新文件基線（已定義的警告閾值仍有效）
 Keywords: commit, test, parallel, health, check, plugin, agent, skill, hook, spec
+
+---
+## 2026-03-07 | product-manager:PM Findings
+**目標用戶**：tester agent、developer agent（寫測試時）、health-check.js（生產碼效能）
+
+**成功指標**：
+- testing skill 新增效能相關知識後，新寫的測試遵循高效模式（lazy cache、shared fixture）
+- health-check.js 的 `collectJsFiles` / `collectMdFiles` 只掃描一次，結果快取後供所有 check 函式共用
+- 並行測試整體執行時間不退步（維持 <= 20.5s）
+
+**方案比較**：
+
+| 維度 | 方案 A：純知識補充 | 方案 B：知識 + 架構快取 | 方案 C：架構快取 + 測試重構 |
+|------|--------|--------|--------|
+| 概述 | 在 testing skill 新增 `test-performance-guide.md`，涵蓋 lazy cache、fixture sharing、subprocess spawn reduction 等知識 | 方案 A + health-check.js 引入模組級快取（scan-once pattern），消除重複目錄掃描 | 方案 B + 將 session-start/end handler 測試重構為 shared setup |
+| 優點 | 最低風險、最快交付、長期預防新增低效測試 | 治本治標兼顧、health-check 效能可量化提升、知識與架構一致 | 最徹底的效能改善、handler 測試耗時大幅下降 |
+| 缺點 | 不改善現有慢測試、不治根因 | 需要修改 health-check.js（2428 行大檔案）、需完整回歸測試 | 工作量最大、session handler 測試重構可能引入 regress
+Keywords: tester, agent, developer, health, check, testing, skill, lazy, cache, shared
+
+---
+## 2026-03-07 | product-manager:PM Context
+Overtone 測試套件目前約 4657 tests / 194 files，並行執行約 20.5s。使用者識別出兩個獨立的改善面向：(1) testing skill 缺乏效能寫法知識，導致 agent 寫出低效測試；(2) 生產碼（特別是 health-check.js）每個 check 函式獨立掃描目錄樹，重複 I/O 是根本原因。兩者互相獨立但都影響測試執行速度和長期可維護性。
+Keywords: overtone, tests, files, testing, skill, agent, health, check
+
+---
+## 2026-03-07 | doc-updater:DOCS Findings
+**已同步的文件**：
+- `plugins/overtone/skills/testing/SKILL.md` ✅
+  - description 新增「效能優化」關鍵詞
+  - Reference 索引更新：第 7 項 anti-patterns 計數從 6→7，新增第 11 項 test-performance-guide
+  - 按需讀取區塊新增第 11 項說明
+
+- `plugins/overtone/skills/testing/references/test-anti-patterns.md` ✅
+  - 新增 Anti-Pattern 7：重複初始化重量級物件（含壞例/好例/判斷準則）
+  - 新增交叉引用至 test-performance-guide.md
+
+- `plugins/overtone/skills/testing/references/test-performance-guide.md` ✅
+  - 新增完整指南（7 個優化維度 + 決策樹 + 附錄）
+  - 標準化格式與 testing skill 其他 reference 一致
+
+**無需同步的文件**：
+- `docs/status.md`：無計數提及此 skill 的 reference 或 anti-pattern 數量
+- `docs/roadmap.md`：無相關變更
+- `CLAUDE.md`：無相關變更
+- 其他文件：雖 developer.md 和 tester.md 有提及 test-anti-patterns.md，但只是功能引用，無計數需同步
+
+**同步原則應用**：
+根據「信心過濾」規則，只更新有直接對應變更的段落。此次變更完全隔離在 testing skill 內部，無跨檔案計數依賴。
+Keywords: plugins, overtone, skills, testing, skill, description, reference, anti, patterns, test
 

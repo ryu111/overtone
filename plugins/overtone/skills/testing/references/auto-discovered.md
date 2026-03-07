@@ -1,39 +1,4 @@
 ---
-## 2026-03-04 | tester:TEST:2 Context
-模式：verify（DEV 後）
-
-Hook Humble Object 重構的測試驗證完成。驗證了以下 3 個層面：
-
-1. **純函數測試**：`tests/unit/hook-pure-fns.test.js` — 61 個測試全部通過
-2. **全套回歸測試**：3202 pass / 0 fail（138 個測試檔案）
-3. **CLI 行為不變**：5 個 hook 子進程 stdin/stdout 協定驗證通過
-Keywords: verify, hook, humble, object, tests, unit, pure, test, pass, fail
-
----
-## 2026-03-05 | code-reviewer:REVIEW Findings
-**審查範圍**：6 個業務邏輯檔案 + 6 個測試檔案，共 14 個變更檔案、+953/-69 行。
-
-**審查維度**：
-
-1. **功能完整性 vs BDD spec**：7 個 Feature、33 個 Scenario 全部有對應實作。測試覆蓋 40+ test cases，140 tests all pass。
-
-2. **架構合理性**：
-   - `emit()` 的 options object 設計具擴展性，向後相容（不傳 options 行為不變）
-   - `excludeTypes` 使用 Set 做 O(1) lookup，效能合理
-   - `resolveSessionResult` 抽為獨立函式並匯出供測試，符合 Humble Object 模式
-   - `recentIntentsMsg` 插入位置在 msgs 陣列中合理（全域觀察之後、效能基線之前）
-   - 所有新增邏輯都包在 try-catch 中，不影響主流程
-
-3. **Error handling**：完整。intent_journal 記錄（on-submit-handler）、配對（session-end-handler）、摘要載入（session-start-handler）三處都有 try-catch 靜默失敗。
-
-4. **安全性**：無硬編碼 secrets、無 SQL injection 風險、無外部輸入直接執行的路徑。prompt 截斷（500 字）防止過大寫入。
-
-5. **[m] 測試標籤不對齊**：`on-submit-handler.test.js` 的 Scenario 4-6 實際測試的是 "/ot: 指令不記錄 intent_journal"（早期 return 行為），但 BDD spec 的 Scenario 4-6 定義為 "intent_journal 記錄失敗時不影響主流程（靜默失敗）"。實作中 try-catch 靜默失敗已存在但未被測試覆蓋。BDD Scenario 5-8 同理（_readAll/_writeAll 例外時靜默失敗）。兩者都是 Minor 等級，不阻擋合併。
-
-6. **[n] extraFields 可覆蓋標準欄位**：`...extraFields` 在物件建構式最後展開，理論上可覆蓋 `id`/`ts` 等標準欄位。當前使用場景安全（只傳 `sessionResult`），屬 Nitpick。
-Keywords: spec, feature, scenario, test, cases, tests, pass, emit, options, object
-
----
 ## 2026-03-05 | developer:DEV Findings
 **實作決策**：
 - Phase 1（architect/debugger/developer/planner/retrospective/tester）：在 DON'T 章節後插入 `## 誤判防護` 章節
@@ -569,4 +534,21 @@ Keywords: scripts, test, parallel, sequential, promise, tests, integration, heal
 
 [n] 第 247 行 verbose label 仍用「串行」，與新的「隔離並行」行為略有術語不一致，不阻擋。
 Keywords: commit, scripts, test, parallel, sequential, loop, promise, parallelresults, seqresults, tests
+
+---
+## 2026-03-07 | doc-updater:DOCS Context
+fs-scanner.js 新增（scripts/lib 第 67 個模組），帶來 4 個測試相關變更：
+- 新增 fs-scanner.js 共用模組（提取檔案掃描邏輯）
+- 改造 health-check.js 消費 fs-scanner
+- 改造 dead-code-scanner.js 消費 fs-scanner
+- 新增 tests/unit/fs-scanner.test.js（11 個測試）
+- 總測試數 4710→4724、測試檔 199→200
+Keywords: scanner, scripts, health, check, dead, code, tests, unit, test
+
+---
+## 2026-03-07 | developer:DEV Findings
+- session-end-handler 的瓶頸不在 handler 呼叫次數，而在每個 test 的 beforeEach 都要 mkdirSync 建立真實 session 目錄。這是 integration 性質的 I/O，無法靠 lazy getter 消除。要再加速需改為 mock，但那超出本次 Handoff 範圍。
+- health-check 版的 `parseModuleExportKeys` 比 dead-code-scanner 版少一個模式（不支援 `module.exports.xxx = ...`）。統一後兩者都用更完整的版本，功能提升。
+- `parseModuleExportKeys` 仍在 health-check.js 的 `module.exports` 中匯出（透過 alias），因為 `tests/unit/health-check.test.js` 直接解構引用它。
+Keywords: session, handler, test, beforeeach, mkdirsync, integration, lazy, getter, mock, handoff
 

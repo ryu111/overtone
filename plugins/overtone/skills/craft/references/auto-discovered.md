@@ -26,3 +26,32 @@ Keywords: scenario, compact, health, check, suggestorder, postdev, docs, regress
 ## 2026-03-07 | developer:DEV Context
 實作 `// @sequential` marker 機制與 health-check 雙向驗證閉環。
 Keywords: sequential, marker, health, check
+---
+## 2026-03-07 | developer:DEV Findings
+**穩定性驗證**：
+- 第 1 次：4670 pass, 0 fail | 20.5s
+- 第 2 次：4670 pass, 0 fail | 20.6s
+- 第 3 次：4670 pass, 0 fail | 20.7s
+- 波動率：<1%（遠低於 20% 門檻）
+
+**health-check 狀態**：
+- 22 項全部 passed: true（errors: 0）
+- 3 個 warning 類項目（concurrency-guards 孤兒 session 來自測試殘留 + dead-exports 1 個 warning + os-tools heartbeat 未執行）
+- warnings 不影響 passed 判定
+
+**效能改善摘要（4 次迭代）**：
+
+| 項目 | 優化前 | 優化後 | 改善 |
+|------|--------|--------|------|
+| 並行測試總耗時 | ~28s | ~21s | -25% |
+| health-check.test.js | 13.2s | 1.7s | -87% |
+| health-check-proactive.test.js | 5.1s | 1.3s | -75% |
+| session-start-handler.test.js | 11.2s | 10.3s | -8% |
+| platform-alignment-session-end.test.js | 6.5s | 3.6s | -45% |
+
+**KNOWN_WEIGHTS 主要變化**：
+- session-start-handler: 11169 → 10302ms（-8%）
+- health-check (integration): 3906 → 3743ms（-4%）
+- smoke.test.js: 3009 → 2837ms（-6%）
+- guard-system: 1935 → 1953ms（+1%，在誤差範圍內）
+Keywords: pass, fail, health, check, passed, true, errors, warning, concurrency, guards
