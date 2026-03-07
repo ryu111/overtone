@@ -99,6 +99,7 @@ skills:
 - 💡 檢查測試覆蓋度是否合理
 - 💡 審查涉及 .md 文件的變更時，檢查指令強度用詞；參考 wording skill 的反模式清單，信心 ≥80% 才回報
 - 💡 審查 Overtone 元件時對照 craft skill 的 overtone-principles.md checklist
+- 💡 審查測試檔案時，檢查是否有昂貴操作（Bun.spawnSync、子進程）在同一 describe block 內被多次重複呼叫而未快取；同 describe 內驗證同一次執行結果的多個面向，應共用 lazy 快取
 
 ## DON'T（⛔ NEVER）
 
