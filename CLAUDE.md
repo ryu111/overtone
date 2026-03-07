@@ -6,6 +6,17 @@
 
 此 repo 提供 tests、docs、specs 支撐開發品質。實際的 agent、skill、hook、command、script 程式碼存放在 `~/.claude/`（唯一 SoT）。
 
+## 雙 Repo 管理
+
+本專案負責管理兩個 GitHub repo 的 commit 和 push：
+
+| Repo | 路徑 | GitHub | 內容 |
+|------|------|--------|------|
+| **nova** | `~/.claude/` | `ryu111/nova` | Plugin 元件 SoT（agents/skills/hooks/scripts） |
+| **overtone** | `~/projects/overtone/` | `ryu111/overtone` | 開發輔助（tests/docs/specs） |
+
+每次迭代完成後，📋 MUST commit 並 push 兩個 repo 的變更。
+
 當前進度：L1 ✅ L2 ✅ L3 🟡（L3.6 Acid Test 待執行）L4 ⬜
 
 > Overtone 定位、架構概要、工作流觸發方式詳見全域 `~/.claude/CLAUDE.md`。
