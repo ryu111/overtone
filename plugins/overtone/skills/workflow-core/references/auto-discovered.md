@@ -1,11 +1,4 @@
 ---
-## 2026-03-06 | developer:DEV Context
-完成 S3（flaky 偵測）和 S4（並發測試指南）兩個任務：
-- S3：為 `stress-concurrency.test.js` 加入 `// @stress-test` 標記和 `STRESS_TEST_OPTIONS`（`retry: 1, timeout: 30000`），所有原有 async 壓力測試改用此選項
-- S4：建立 `plugins/overtone/skills/testing/references/concurrency-testing-guide.md`，涵蓋三種並發模式、測試策略、已知限制和 flaky 處理
-Keywords: flaky, stress, concurrency, test, retry, timeout, async, plugins, overtone, skills
-
----
 ## 2026-03-06 | planner:PLAN Findings
 **需求分解**：
 
@@ -651,4 +644,21 @@ Keywords: plugins, overtone, buildgraph, throw, pluginroot, plugin, json, fallba
 
 **注意：** 所有變更都在 `~/.claude/` 下，不在 git repo 範圍內，無 git commit 需要。`plugins/overtone/` 下的所有內容保持不變。
 Keywords: claude, plugin, json, overtone, plugins, symlink, enabledplugins, settings, agents, skills
+
+---
+## 2026-03-07 | code-reviewer:REVIEW Findings
+審查了全域 `~/.claude/CLAUDE.md` 的重整變更，檢查了以下四個面向：
+
+**1. 原有規則完整性** -- 通過。L1-65 的原有全域規則（語言設定、核心原則、並行執行、衛生習慣、任務管理、指令強度用詞、優先順序）完全保留，無遺漏或改動。
+
+**2. 與專案 CLAUDE.md 的重複度** -- 可接受。新增的「Overtone 全域能力」區塊（L69-153）是專案 CLAUDE.md 內容的**精簡摘要版**，專注「如何使用」而非「如何開發」，符合全域 vs 專案的分工定位。核心哲學一句重複是刻意的 context 提供。
+
+**3. 路徑正確性** -- 通過。所有路徑一律使用 `~/.claude/` 前綴（架構概要、常用指令、關鍵文件表），未出現 `plugins/overtone/` 路徑。
+
+**4. 全域定位適當性** -- 通過。新增內容聚焦於「工作流觸發」、「管理指令」、「設計規則」三塊，都是跨專案通用的操作知識，不含專案特定的開發規範（如 commit 規則、測試覆蓋要求等）。
+
+**附帶觀察（[m] Minor，不阻擋合併）：**
+
+- [m] 數據一致性：全域 CLAUDE.md L82 寫「28 個 Command」，但 `~/.claude/commands/` 實際有 29 個（多了 `ask.md`，該檔案未同步回 `plugins/overtone/commands/`）。L106 寫「22 項偵測」，專案 CLAUDE.md 已更新為 23 項。這些是文件數字過時，作者可自行決定是否修正。
+Keywords: claude, overtone, context, plugins, commit, minor, command, commands
 
