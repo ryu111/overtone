@@ -1,10 +1,4 @@
 ---
-## 2026-03-05 | tester:TEST Context
-模式：spec（TEST:spec）
-
-為「Agent Prompt 四模式補齊」功能撰寫完整的 BDD 行為規格。根據 design.md 和 tasks.md 的設計，定義了 10 個 Scenario 涵蓋：結構驗證、內容驗證、章節順序、frontmatter 不變性、回歸驗證等面向。
-Keywords: spec, test, agent, prompt, design, tasks, scenario, frontmatter
----
 ## 2026-03-05 | doc-updater:DOCS Findings
 **更新的文件：**
 
@@ -616,4 +610,9 @@ Keywords: impact, guard, sync, pass, stop, message, main, agent, hardcoded, code
 - docs/roadmap.md：無進度變更
 - 其他 spec 文件：無相關變更
 Keywords: claude, health, check, checkspecsdirectorystructure, docs, status, plugin, json, developer, auto
+
+---
+## 2026-03-07 | doc-updater:DOCS Context
+本次迭代（developer-efficiency-optimize）僅修改 developer.md agent prompt（4 個效率指引），無 doc-relevant 變更。
+Keywords: developer, efficiency, optimize, agent, prompt, relevant
 

@@ -1,21 +1,4 @@
 ---
-## 2026-03-06 | code-reviewer:REVIEW Context
-程式碼審查通過。10 個 agent 的 BDD 驗收標準範例品質良好，精準對應各 agent 職責。
-Keywords: agent
-
----
-## 2026-03-06 | developer:DEV Context
-消除 2 個 placeholder reference 檔案，填入實質內容：
-1. `plugins/overtone/skills/instinct/references/README.md` — 從 13 bytes 的空殼擴充為 instinct 系統完整參考索引
-2. `plugins/overtone/skills/os-control/references/control.md` — 從 P3.2 placeholder 更新為 L2.5 狀態說明
-Keywords: placeholder, reference, plugins, overtone, skills, instinct, references, readme, bytes, control
-
----
-## 2026-03-06 | code-reviewer:REVIEW Findings
-審查了 10 個檔案的變更（6 個 agent prompt + 3 個 skill reference + 1 個 auto-discovered 維護）。所有新增內容品質良好，決策樹邏輯正確，貼合各 agent 職責，未修改現有語意。validate-agents 驗證通過。唯一觀察為 5 個 agent 標題 emoji 移除造成風格不一致（Minor，不阻擋）。
-Keywords: agent, prompt, skill, reference, auto, discovered, validate, agents, emoji, minor
-
----
 ## 2026-03-06 | developer:DEV Findings
 - 格式對齊同目錄的 `hooks-api.md` 和 `agent-api.md`：標題層級、表格、程式碼區塊、警告標記（⚠️ / ⛔）風格一致
 - 在第 5 節詳述 Overtone 的並行收斂門機制（activeAgents instanceId + parallelDone/parallelTotal），連結到現有 on-stop.js 實作
@@ -549,4 +532,25 @@ Keywords: changelog, status, docs, spec, overtone, developer, plugin, json, clau
 2. docs/spec/overtone.md — 版本同步 v0.28.56 → v0.28.81，日期更新為 2026-03-07
 3. 驗證 docs/status.md、plugin.json 已由 developer 同步完成
 Keywords: handoff, quality, strengthen, feature, review, changelog, docs, spec, overtone, status
+
+---
+## 2026-03-07 | developer:DEV Findings
+- developer.md 受 pre-edit guard 保護，透過 `config-api.js` 的 `updateAgent()` 更新（pluginRoot 必須指向 `plugins/overtone`）
+- 插入位置：`💡 參考 architect Handoff 的 Edge Cases to Handle 區塊，對照實作` 之後（第 80 行）
+- 4 個指引全部使用 `💡` 軟引導格式，不使用 `📋` 強制
+- backtick 格式需留意轉義問題（在 node -e 中雙重轉義），已修正
+Keywords: developer, edit, guard, config, updateagent, pluginroot, plugins, overtone, architect, handoff
+
+---
+## 2026-03-07 | developer:DEV Context
+修改 `plugins/overtone/agents/developer.md`，在 DO 清單的末尾插入 4 個效率優化指引，降低 developer agent 在 DEV 階段的冗餘 tool calls。
+Keywords: plugins, overtone, agents, developer, agent, tool, calls
+
+---
+## 2026-03-07 | code-reviewer:REVIEW Findings
+審查了 2 個檔案的變更：
+- `plugins/overtone/agents/developer.md` -- 新增 4 個效率優化指引（第 81-84 行），措辭清晰可操作，均使用 💡 軟引導（恰當），插入位置合理（DO 區塊末尾），與既有項目無衝突。第 82 行與第 65 行有輕微語意重疊（測試指令 vs 測試策略），但互補而非重複，不構成問題。
+- `plugins/overtone/skills/workflow-core/references/auto-discovered.md` -- 正常的知識歸檔輪替（刪除 2 舊條目、新增 2 條 DEV 記錄）。
+- 全套測試 4683 pass / 0 fail，validate-agents 18 agents + 11 hooks + 24 skills 全部通過。
+Keywords: plugins, overtone, agents, developer, skills, workflow, core, references, auto, discovered
 
