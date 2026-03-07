@@ -1,22 +1,4 @@
 ---
-## 2026-03-06 | developer:DEV Context
-實作 concurrency-guard-g2 功能：G2 orphan agent TTL 偵測修復 + health-check #20 checkConcurrencyGuards。
-
-主要修復問題：activeAgents 中殘留的孤兒 agent entry 導致 getNextStageHint() 誤判為有 agent 在執行，造成 loop 卡在 soft-release 狀態。
-Keywords: concurrency, guard, orphan, agent, health, check, checkconcurrencyguards, activeagents, entry, getnextstagehint
-
----
-## 2026-03-06 | doc-updater:DOCS Context
-DOCS 階段檢查發現阻擋問題：
-
-1. ✅ **status.md 已同步**：Timeline Events 29 → 30（第 27 行）
-2. ❌ **2 個測試失敗**：
-   - `build-skill-context.test.js` (Scenario 1-1)：預期 skill context 包含 commit-convention 和 wording 區塊標頭
-   - `pre-task.test.js` (場景 7)：gapWarnings 注入測試失敗
-3. ⚠️ **registry.js 註解無法修正**：pre-edit-guard 保護禁止直接編輯，第 107 行「31 種」應改為「30 種」但技術上受限
-Keywords: docs, status, timeline, events, build, skill, context, test, scenario, commit
-
----
 ## 2026-03-06 | tester:TEST Context
 模式：spec（DEV 前撰寫行為規格）
 
@@ -624,4 +606,30 @@ Keywords: tests, helpers, paths, process, join, homedir, claude, hardcode, plugi
 - [m] 不一致：`tests/unit/pre-compact-handler.test.js:600` 的 `require.resolve('../../plugins/overtone/scripts/lib/pre-compact-handler')` 是該檔案中唯一未替換的 require 路徑（同檔案其餘 6 處 require 都已改為 `join(SCRIPTS_LIB, ...)` 形式）。另外第 595-598 行的 `handlerPath` 變數被計算但未使用（dead code）。
 - [n] Scope：約 12 個測試檔（`scripts/os/` 和 `web/js/` 相關）仍使用硬編碼路徑，但 paths.js 目前未提供對應常數（`OS_SCRIPTS_DIR`、`WEB_DIR`），屬於後續迭代範圍。
 Keywords: paths, join, plugins, overtone, process, homedir, claude, fallback, test, parallel
+
+---
+## 2026-03-07 | developer:DEV Findings
+1. **`health-check.js` finding.file 硬編碼**：`checkTestFileAlignment` 和 `checkSkillReferenceIntegrity` 的 `finding.file` 欄位硬編碼了 `plugins/overtone/` 前綴，從全域執行時路徑錯誤。改為 `scripts/lib/...` 和 `skills/...` 相對格式。
+
+2. **`agent-stop-handler.js` buildGraph() 缺少參數**：`_computeImpactSummary` 呼叫 `buildGraph()` 未傳 `pluginRoot`，會 throw（被 catch 靜默吞掉）。同時更新 plugin 檔案過濾邏輯，兼容開發環境（`plugins/overtone/...`）和全域環境（`agents/...`）兩種路徑格式。
+
+3. **`session-start-handler.js` plugin.json 路徑**：原本硬編碼 `require('../../.claude-plugin/plugin.json')`，全域環境中該路徑不存在（`~/.claude/.claude-plugin/plugin.json`）。改為動態偵測，優先找 `.claude-plugin/plugin.json`，fallback 到 `plugin.json`（全域格式）。
+
+4. **`gap-analyzer.js` 建議命令**：`no-references` 的修復建議包含 `plugins/overtone/skills/...`，改為相對格式 `skills/...`。
+
+5. **剩餘合理例外**：純文字說明（`// 此檔位於...`）、`OVERTONE_PLUGIN` 常數（動態計算）等，不需要修改。
+Keywords: health, check, finding, file, checktestfilealignment, checkskillreferenceintegrity, plugins, overtone, scripts, skills
+
+---
+## 2026-03-07 | code-reviewer:REVIEW Findings
+審查了 6 個變更檔案，涵蓋以下面向：
+- **路徑格式一致性**：4 個模組的硬編碼 `plugins/overtone/` 前綴已統一改為相對格式或動態偵測
+- **buildGraph() 必要參數**：修正了原本會 throw 的無參數呼叫，pluginRoot 從 `__dirname` 正確推算
+- **plugin.json 動態偵測**：雙路徑 fallback 邏輯正確，開發環境優先
+- **雙格式路徑過濾**：regex 涵蓋 agents/skills/hooks/commands/scripts/lib 五個子目錄
+- **測試對齊**：plugin.json 讀取與 Scenario 11-3 斷言已對齊新行為
+- **Error handling**：buildGraph try/catch 保持不變，plugin.json 找不到時 require 會報清楚錯誤
+
+沒有發現高信心問題。
+Keywords: plugins, overtone, buildgraph, throw, pluginroot, plugin, json, fallback, regex, agents
 

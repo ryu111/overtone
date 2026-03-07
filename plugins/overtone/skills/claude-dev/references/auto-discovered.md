@@ -1,34 +1,5 @@
 ---
 ## 2026-03-05 | doc-updater:DOCS Findings
-已更新文件：
-
-1. **docs/status.md**
-   - 版本號同步至 0.28.63
-   - 測試通過數更新：3753 → 4035（+282 tests）
-   - 測試檔案數更新：166 → 180（+14 files）
-   - 「近期變更」第一項新增 queue-cli-enhancement 記錄
-
-2. **plugin.json**
-   - 版本號更新：0.28.62 → 0.28.63（via manage-component.js）
-
-3. **CLAUDE.md**
-   - 已確認：queue.js 指令列表已包含五個新子命令（insert、remove、move、info、retry），commit 0a4f24d 時已同步
-Keywords: docs, status, tests, files, queue, enhancement, plugin, json, manage, component
-
----
-## 2026-03-05 | doc-updater:DOCS Findings
-- **CLAUDE.md**：evolution.js 常用指令區塊已新增 `forge --auto` 三個變體（dry-run / --execute / --json）
-- **docs/status.md**：
-  - 更新版本號至 0.28.64
-  - 近期變更第一筆改為 auto-forge-trigger 功能說明
-  - 核心指標「測試通過」更新為 4054 pass（+19 tests）
-- **docs/roadmap.md**：
-  - L3.3 Skill Forge 的「能力缺口偵測」任務狀態從 ⬜ 改為 ✅
-  - 補充具體實作說明：shouldAutoForge() + autoForge() + forge --auto 機制
-Keywords: claude, evolution, forge, auto, execute, json, docs, status, trigger, pass
-
----
-## 2026-03-05 | doc-updater:DOCS Findings
 - skill-forge.js 升級：內部優化，無 public API 變更
 - 測試新增 8 個：測試檔案變更，無文件更新需求
 - 前面提交已同步所有文件（CLAUDE.md、roadmap.md、status.md）
@@ -628,4 +599,42 @@ Keywords: status, auto, discovered, spec, scripts, agents, hooks, plugin, json, 
 - quick workflow 的 DEV + REVIEW 均 pass，無遺留問題。
 - 此為配置層遷移，無應用邏輯變動，風險低，實作乾淨。
 Keywords: plugin, hooks, json, claude, settings, sessionstart, sessionend, precompact, userpromptsubmit, pretooluse
+
+---
+## 2026-03-07 | doc-updater:DOCS Findings
+- Commit `7dc8f72`：global-migrate 第 5 步——更新掃描工具支援全域路徑
+- 變更內容：4 個 handler/工具檔案的路徑邏輯適配（agent-stop-handler.js、session-start-handler.js、gap-analyzer.js、health-check.js）
+- 變更性質：內部實作適配，無新功能、無 API 改動、無核心指標變化
+- 信心過濾：不符合任何文件同步條件
+Keywords: commit, global, migrate, handler, agent, stop, session, start, analyzer, health
+
+---
+## 2026-03-07 | retrospective:RETRO Findings
+**回顧摘要**：
+
+本次迭代（global-migrate-tools-update）目標是讓 5 個掃描工具支援全域安裝路徑。從跨階段視角評估：
+
+1. **路徑解析一致性確認**：三個核心模組的 projectRoot 取得方式各有合理差異：
+   - `health-check.js`：靜態 `findProjectRoot()`（往上找 CLAUDE.md），適合直接執行場景
+   - `session-start-handler.js`：`input.cwd || process.env.CLAUDE_PROJECT_ROOT || process.cwd()`，優先使用 hook 注入的 cwd，有全域安裝 fallback
+   - `agent-stop-handler.js`：`input.cwd || process.cwd()`，依賴 hook runtime 注入
+   
+   三種方式在各自使用場景下均正確，無跨模組不一致問題。
+
+2. **文件同步確認（此次良好）**：
+   - CLAUDE.md 已更新為「23 項偵測」（含新增的 specs-directory-structure）
+   - status.md 已更新至 0.28.82，4683 pass 紀錄正確
+   - CLAUDE.md 的 health-check 說明列出全部 23 個 check 名稱，與程式碼一致
+
+3. **測試覆蓋**：4683 pass / 0 fail，gap-analyzer.test.js 存在且有覆蓋，整體健全。
+
+4. **OvertOne 製作原則 checklist 確認**：
+   - 完全閉環：health-check findings 有對應的 actionable 建議
+   - 自動修復：主入口有 try-catch，停止條件定義完整
+   - 補全能力：所有 skill 有 references/ 目錄（22 項 health-check 持續偵測）
+
+**值得注意（信心不足 70%，不觸發 ISSUES）**：
+
+`agent-stop-handler.js` 的 `input.cwd || process.cwd()` 沒有 `CLAUDE_PROJECT_ROOT` 的 fallback（相較 session-start-handler 多一層保護），但由於 stop hook 永遠在有 `input.cwd` 的 hook 環境中執行，實際上不會走到 fallback，信心不足以報告為問題。
+Keywords: global, migrate, tools, update, projectroot, health, check, findprojectroot, claude, session
 
