@@ -47,6 +47,8 @@ const DEFAULT_WEIGHT = 300;
 // 這些測試會讀寫 ~/.overtone/.current-session-id，必須獨立執行避免競爭條件
 const SEQUENTIAL_FILES = new Set([
   'tests/integration/session-id-bridge.test.js',
+  'tests/unit/health-check-os-tools.test.js',
+  'tests/integration/dashboard-pid.test.js',
 ]);
 
 // ── 參數解析 ──
