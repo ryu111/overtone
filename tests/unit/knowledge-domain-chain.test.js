@@ -56,7 +56,6 @@ const AGENT_DOMAIN_PAIRS = [
   ['debugger',          'debugging'],
   ['architect',         'architecture'],
   ['build-error-resolver', 'build-system'],
-  ['developer',         'os-control'],
   ['architect',         'os-control'],
   ['tester',            'os-control'],
   ['debugger',          'os-control'],

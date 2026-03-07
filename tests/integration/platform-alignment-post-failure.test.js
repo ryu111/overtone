@@ -1,4 +1,5 @@
 'use strict';
+// @sequential — Bun.spawnSync 子進程競爭共享 session 狀態
 /**
  * platform-alignment-post-failure.test.js
  *

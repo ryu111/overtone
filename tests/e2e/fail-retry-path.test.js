@@ -1,4 +1,5 @@
 'use strict';
+// @sequential — Bun.spawnSync 子進程競爭共享 session 狀態
 /**
  * fail-retry-path.test.js — BDD F5：fail-retry 完整路徑 E2E 測試
  *

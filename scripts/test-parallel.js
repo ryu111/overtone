@@ -80,7 +80,7 @@ function hasSequentialMarker(relativePath) {
   try {
     const content = readFileSync(join(PROJECT_ROOT, relativePath), 'utf8');
     const lines = content.split('\n').slice(0, 5);
-    return lines.some(line => line.trim() === '// @sequential');
+    return lines.some(line => line.trim().startsWith('// @sequential'));
   } catch {
     return false;
   }

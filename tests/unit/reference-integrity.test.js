@@ -220,7 +220,7 @@ describe('Feature D：Agent Skills 雙向引用', () => {
 
   // user-invocable skills — 不需 agent 引用
   const USER_INVOCABLE_SKILLS = new Set([
-    'auto', 'pm', 'evolve', 'issue', 'onboard', 'pr', 'specs', 'verify',
+    'auto', 'pm', 'evolve', 'issue', 'onboard', 'pr', 'specs', 'verify', 'skill-judge',
   ]);
 
   // 特殊豁免：有獨立設計理由的 knowledge domain skill

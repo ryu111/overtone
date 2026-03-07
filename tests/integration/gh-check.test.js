@@ -38,6 +38,7 @@ function runHook(input, extraEnv = {}) {
       ...process.env,
       CLAUDE_SESSION_ID: '',
       OVERTONE_NO_DASHBOARD: '1',
+      OVERTONE_TEST: '1',
       ...extraEnv,
     },
     stdout: 'pipe',
