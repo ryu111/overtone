@@ -7,7 +7,7 @@ const { test, expect, describe } = require('bun:test');
 const { join } = require('path');
 const { SCRIPTS_LIB } = require('../helpers/paths');
 
-const { projectHash } = require(join(SCRIPTS_LIB, 'paths'));
+const { projectHash, resolveProjectRoot } = require(join(SCRIPTS_LIB, 'paths'));
 
 // ── Feature: projectHash 路徑正規化 ──
 
@@ -68,6 +68,36 @@ describe('Feature: projectHash 路徑正規化', () => {
     // THEN 結果完全一致
     expect(h1).toBe(h2);
     expect(h2).toBe(h3);
+  });
+});
+
+// ── Feature: resolveProjectRoot 統一解析 ──
+
+describe('Feature: resolveProjectRoot 統一解析', () => {
+  test('Scenario 1: input.cwd 優先使用', () => {
+    const result = resolveProjectRoot({ cwd: '/Users/sbu/projects/overtone' });
+    expect(result).toBe('/Users/sbu/projects/overtone');
+  });
+
+  test('Scenario 2: input.cwd 為空時 fallback 至 process.cwd()', () => {
+    const result = resolveProjectRoot({});
+    expect(result).toBe(process.cwd());
+  });
+
+  test('Scenario 3: input 為 null 時 fallback 至 process.cwd()', () => {
+    const result = resolveProjectRoot(null);
+    expect(result).toBe(process.cwd());
+  });
+
+  test('Scenario 4: 回傳路徑經 path.resolve() 正規化（去除 trailing slash）', () => {
+    const result = resolveProjectRoot({ cwd: '/Users/sbu/projects/overtone/' });
+    expect(result).toBe('/Users/sbu/projects/overtone');
+  });
+
+  test('Scenario 5: 相同路徑不同寫法產生相同 projectHash', () => {
+    const r1 = resolveProjectRoot({ cwd: '/Users/sbu/projects/overtone' });
+    const r2 = resolveProjectRoot({ cwd: '/Users/sbu/projects/overtone/' });
+    expect(projectHash(r1)).toBe(projectHash(r2));
   });
 });
 
