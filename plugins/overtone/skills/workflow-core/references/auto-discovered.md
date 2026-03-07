@@ -1,11 +1,4 @@
 ---
-## 2026-03-06 | tester:TEST Context
-模式：spec（DEV 前撰寫行為規格）
-
-針對 Overtone 並發寫入機制（`atomicWrite` + `updateStateAtomic` CAS）撰寫完整的 BDD 行為規格。
-Keywords: spec, overtone, atomicwrite, updatestateatomic
-
----
 ## 2026-03-06 | developer:DEV Context
 完成 S3（flaky 偵測）和 S4（並發測試指南）兩個任務：
 - S3：為 `stress-concurrency.test.js` 加入 `// @stress-test` 標記和 `STRESS_TEST_OPTIONS`（`retry: 1, timeout: 30000`），所有原有 async 壓力測試改用此選項
@@ -632,4 +625,30 @@ Keywords: health, check, finding, file, checktestfilealignment, checkskillrefere
 
 沒有發現高信心問題。
 Keywords: plugins, overtone, buildgraph, throw, pluginroot, plugin, json, fallback, regex, agents
+
+---
+## 2026-03-07 | developer:DEV Findings
+**已完成的清理項目：**
+
+1. **刪除 `~/.claude/plugin.json`** — 已刪除。此檔案是舊 plugin 模式的殘留，Overtone 已融入全域後不再需要。
+
+2. **移除 `~/.claude/plugins/overtone` symlink** — 已移除。此 symlink 指向 `plugins/overtone/`，遷移後不再需要通過此路徑載入。
+
+3. **`~/.claude/.claude-plugin/`** — 不存在，跳過。
+
+4. **`enabledPlugins` in `settings.json`** — 現有欄位只含其他非 overtone 的 plugin，無需修改。
+
+5. **`~/.claude/plugins/installed_plugins.json`**（位於 plugins 目錄下）— 無 overtone 條目，無需修改。
+
+**全域結構驗證：**
+- agents: 18 個
+- skills: 24 個
+- commands: 29 個
+- hooks/scripts: 結構正確（11 個 hook script）
+- scripts/lib: 67 個模組（`find` 含子目錄計算）
+
+**測試：** 4683 pass, 0 fail（21s）
+
+**注意：** 所有變更都在 `~/.claude/` 下，不在 git repo 範圍內，無 git commit 需要。`plugins/overtone/` 下的所有內容保持不變。
+Keywords: claude, plugin, json, overtone, plugins, symlink, enabledplugins, settings, agents, skills
 

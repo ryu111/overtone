@@ -257,3 +257,8 @@ Keywords: scanner, health, check, dead, code, collectjsfiles, scenario, module, 
 - handler 測試 I/O 瓶頸（mkdirSync + session 目錄）是結構性限制，非程式碼問題，lazy getter 已做到可做的最大化優化。
 Keywords: handler, lazy, getter, parseexportkeys, scanner, dead, code, import, health, check
 
+---
+## 2026-03-07 | developer:DEV Context
+執行 global-migrate-cleanup 最終清理，完成全域遷移第 7 步。移除所有 plugin 殘留，驗證全域結構完整性。
+Keywords: global, migrate, cleanup, plugin
+
