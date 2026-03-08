@@ -911,7 +911,7 @@ describe('Feature 6: queryGlobal excludeTypes 過濾', () => {
     expect(result.some(o => o.type === 'user_corrections')).toBe(true);
   });
 
-  // Scenario 6-5
+  // Scenario 6-5 (excludeTypes)
   test('Scenario 6-5: excludeTypes 與 type filter 可同時使用（雙重過濾）', () => {
     seedGlobal([
       makeObs({ tag: 'j1', type: 'intent_journal', confidence: 0.8, globalTs: new Date().toISOString() }),
@@ -927,5 +927,187 @@ describe('Feature 6: queryGlobal excludeTypes 過濾', () => {
     expect(result).toHaveLength(1);
     expect(result[0].type).toBe('tool_preferences');
     expect(result.some(o => o.type === 'intent_journal')).toBe(false);
+  });
+});
+
+// ════════════════════════════════════════════════════════════════════
+// Feature 10: 關鍵詞相關性排序（relevanceTo）
+// ════════════════════════════════════════════════════════════════════
+
+describe('Feature 10: 關鍵詞相關性排序（relevanceTo）', () => {
+  // ── 10A: _extractKeywords 單元測試 ──
+
+  describe('_extractKeywords', () => {
+    test('提取英文關鍵詞，過濾停用詞', () => {
+      const kw = globalInstinct._extractKeywords('the bug is in the handler code');
+      expect(kw.has('bug')).toBe(true);
+      expect(kw.has('handler')).toBe(true);
+      expect(kw.has('code')).toBe(true);
+      expect(kw.has('the')).toBe(false);
+      expect(kw.has('is')).toBe(false);
+      expect(kw.has('in')).toBe(false);
+    });
+
+    test('提取 CJK bigram', () => {
+      const kw = globalInstinct._extractKeywords('並行收斂偵測');
+      expect(kw.has('並行')).toBe(true);
+      expect(kw.has('收斂')).toBe(true);
+      expect(kw.has('偵測')).toBe(true);
+    });
+
+    test('中英混合文本', () => {
+      const kw = globalInstinct._extractKeywords('修復 registry 錯誤');
+      expect(kw.has('registry')).toBe(true);
+      expect(kw.has('修復')).toBe(true);
+      expect(kw.has('錯誤')).toBe(true);
+    });
+
+    test('空字串回傳空 Set', () => {
+      expect(globalInstinct._extractKeywords('').size).toBe(0);
+      expect(globalInstinct._extractKeywords(null).size).toBe(0);
+      expect(globalInstinct._extractKeywords(undefined).size).toBe(0);
+    });
+
+    test('過濾過短的英文詞（< 2 字元）', () => {
+      const kw = globalInstinct._extractKeywords('a b cd ef');
+      expect(kw.has('a')).toBe(false);
+      expect(kw.has('b')).toBe(false);
+      expect(kw.has('cd')).toBe(true);
+      expect(kw.has('ef')).toBe(true);
+    });
+  });
+
+  // ── 10B: _calcRelevance 單元測試 ──
+
+  describe('_calcRelevance', () => {
+    test('完全無重疊回傳 0', () => {
+      expect(globalInstinct._calcRelevance('apple banana', 'cherry grape')).toBe(0);
+    });
+
+    test('完全相同文本回傳高分（接近 1）', () => {
+      const score = globalInstinct._calcRelevance('registry stage workflow', 'registry stage workflow');
+      expect(score).toBeGreaterThan(0.8);
+    });
+
+    test('部分重疊回傳中間值', () => {
+      const score = globalInstinct._calcRelevance('registry 錯誤處理', 'registry 型別檢查和錯誤');
+      expect(score).toBeGreaterThan(0);
+      expect(score).toBeLessThan(1);
+    });
+
+    test('空字串回傳 0', () => {
+      expect(globalInstinct._calcRelevance('', 'something')).toBe(0);
+      expect(globalInstinct._calcRelevance('something', '')).toBe(0);
+    });
+  });
+
+  // ── 10C: queryGlobal relevanceTo 整合測試 ──
+
+  describe('queryGlobal with relevanceTo', () => {
+    let projectRoot;
+
+    beforeEach(() => {
+      projectRoot = makeTmpProject('relevance');
+    });
+
+    afterEach(() => {
+      rmSync(projectRoot, { recursive: true, force: true });
+      rmSync(paths.global.dir(projectRoot), { recursive: true, force: true });
+    });
+
+    function seedGlobal(observations) {
+      const obsPath = paths.global.observations(projectRoot);
+      mkdirSync(path.dirname(obsPath), { recursive: true });
+      for (const o of observations) {
+        appendFileSync(obsPath, JSON.stringify(o) + '\n', 'utf8');
+      }
+    }
+
+    test('relevanceTo 模式下依 finalScore 排序（非純 confidence）', () => {
+      seedGlobal([
+        makeObs({ tag: 'high-conf-irrelevant', type: 'pattern', confidence: 0.95,
+          action: '烹飪食譜建議', trigger: '料理問題', globalTs: new Date().toISOString() }),
+        makeObs({ tag: 'low-conf-relevant', type: 'pattern', confidence: 0.7,
+          action: 'registry 型別檢查修復', trigger: 'registry 錯誤', globalTs: new Date().toISOString() }),
+      ]);
+
+      const resultWithRelevance = globalInstinct.queryGlobal(projectRoot, {
+        relevanceTo: '修復 registry 錯誤',
+      });
+
+      expect(resultWithRelevance[0].tag).toBe('low-conf-relevant');
+      expect(resultWithRelevance[0]._finalScore).toBeDefined();
+      expect(resultWithRelevance[0]._relevance).toBeGreaterThan(0);
+    });
+
+    test('無 relevanceTo 時仍按純 confidence 排序', () => {
+      seedGlobal([
+        makeObs({ tag: 'high', type: 'pattern', confidence: 0.95,
+          action: '任何內容', globalTs: new Date().toISOString() }),
+        makeObs({ tag: 'low', type: 'pattern', confidence: 0.7,
+          action: 'registry 修復', globalTs: new Date().toISOString() }),
+      ]);
+
+      const result = globalInstinct.queryGlobal(projectRoot, {});
+      expect(result[0].tag).toBe('high');
+      expect(result[0]._finalScore).toBeUndefined();
+    });
+
+    test('relevanceTo + limit 截取 finalScore 前 N', () => {
+      seedGlobal([
+        makeObs({ tag: 'a', type: 'p1', confidence: 0.9,
+          action: '不相關的烹飪', globalTs: new Date().toISOString() }),
+        makeObs({ tag: 'b', type: 'p2', confidence: 0.8,
+          action: '不相關的音樂', globalTs: new Date().toISOString() }),
+        makeObs({ tag: 'c', type: 'p3', confidence: 0.7,
+          action: 'workflow stage 處理', globalTs: new Date().toISOString() }),
+        makeObs({ tag: 'd', type: 'p4', confidence: 0.75,
+          action: 'workflow 收斂偵測', globalTs: new Date().toISOString() }),
+      ]);
+
+      const result = globalInstinct.queryGlobal(projectRoot, {
+        relevanceTo: 'workflow stage 收斂',
+        limit: 2,
+      });
+
+      expect(result).toHaveLength(2);
+      const tags = result.map(r => r.tag);
+      expect(tags).toContain('c');
+      expect(tags).toContain('d');
+    });
+
+    test('relevanceTo 與其他 filter 組合使用', () => {
+      seedGlobal([
+        makeObs({ tag: 'match', type: 'pattern', confidence: 0.8,
+          action: 'registry 設定管理', globalTs: new Date().toISOString() }),
+        makeObs({ tag: 'excluded', type: 'intent_journal', confidence: 0.9,
+          action: 'registry 完整分析', globalTs: new Date().toISOString() }),
+      ]);
+
+      const result = globalInstinct.queryGlobal(projectRoot, {
+        relevanceTo: 'registry',
+        excludeTypes: ['intent_journal'],
+      });
+
+      expect(result).toHaveLength(1);
+      expect(result[0].tag).toBe('match');
+    });
+
+    test('全部觀察都不相關時退化為 confidence * 0.6 排序', () => {
+      seedGlobal([
+        makeObs({ tag: 'high', type: 'pattern', confidence: 0.9,
+          action: '烹飪食譜', globalTs: new Date().toISOString() }),
+        makeObs({ tag: 'low', type: 'pattern', confidence: 0.7,
+          action: '音樂播放', globalTs: new Date().toISOString() }),
+      ]);
+
+      const result = globalInstinct.queryGlobal(projectRoot, {
+        relevanceTo: 'registry workflow stage 並行收斂',
+      });
+
+      expect(result[0]._relevance).toBe(0);
+      expect(result[1]._relevance).toBe(0);
+      expect(result[0].tag).toBe('high');
+    });
   });
 });

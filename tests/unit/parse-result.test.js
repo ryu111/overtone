@@ -151,15 +151,35 @@ describe('parseResult — 其他 stages', () => {
     expect(parseResult('Implemented the feature', 'DEV')).toEqual({ verdict: 'pass' });
   });
 
-  test('PLAN → 預設 pass', () => {
-    expect(parseResult('Plan complete', 'PLAN')).toEqual({ verdict: 'pass' });
+  test('PLAN → 缺少必要結構時回傳 insufficient（L1.5.2 充分性檢查）', () => {
+    // 純文字無 checklist 結構 → insufficient
+    const result = parseResult('Plan complete', 'PLAN');
+    expect(result.verdict).toBe('insufficient');
+    expect(result.gaps.length).toBeGreaterThan(0);
   });
 
-  test('ARCH → 預設 pass（即使含 fail 也是 pass）', () => {
-    expect(parseResult('Architecture handles failure scenarios', 'ARCH')).toEqual({ verdict: 'pass' });
+  test('PLAN → 含必要結構時 pass', () => {
+    const output = '## Plan\n- [ ] Task 1\n- [x] Task 2\n\n依賴順序：先 A 後 B';
+    expect(parseResult(output, 'PLAN')).toEqual({ verdict: 'pass' });
   });
 
-  test('PM → 預設 pass（advisory 角色，即使含 fail 也是 pass）', () => {
-    expect(parseResult('Product discovery complete. Some features may fail market fit.', 'PM')).toEqual({ verdict: 'pass' });
+  test('ARCH → 缺少必要結構時回傳 insufficient', () => {
+    const result = parseResult('Architecture handles failure scenarios', 'ARCH');
+    expect(result.verdict).toBe('insufficient');
+  });
+
+  test('ARCH → 含 API 定義和檔案結構時 pass', () => {
+    const output = '## Architecture\nAPI endpoint: /api/v1/users\n目錄結構：src/lib/';
+    expect(parseResult(output, 'ARCH')).toEqual({ verdict: 'pass' });
+  });
+
+  test('PM → 缺少必要結構時回傳 insufficient', () => {
+    const result = parseResult('Product discovery complete. Some features may fail market fit.', 'PM');
+    expect(result.verdict).toBe('insufficient');
+  });
+
+  test('PM → 含 MoSCoW + 方案比較 + BDD 時 pass', () => {
+    const output = 'Must: 核心功能\nShould: 擴展\n方案 A vs 方案 B 比較\nGiven user logged in When click Then see dashboard';
+    expect(parseResult(output, 'PM')).toEqual({ verdict: 'pass' });
   });
 });

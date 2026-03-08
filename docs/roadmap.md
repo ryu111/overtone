@@ -8,10 +8,10 @@
 
 | Layer | 名稱 | 目標 | 狀態 |
 |:-----:|------|------|:----:|
-| 1 | 核心大腦 | 工作流引擎 + 持續學習 + 守衛系統 | ✅ 完成 |
+| 1 | 核心大腦 | 工作流引擎 + 持續學習 + 守衛系統 + 引擎強化 | ✅ 完成 |
 | 2 | 感知操控 | OS 感知 + 心跳引擎 + 系統管理 + 安全守衛 | ✅ 完成 |
 | 3 | 自我進化 | Gap 偵測修復 + Skill Forge + 深度 PM + Project Orchestrator + Acid Test + 飛輪內化 | 🟡 L3.6 待執行 |
-| 4 | 通用代理人 | 跨領域自主運作 + 場景泛化 + 多專案並行 + 經驗遷移 | ⬜ 待開始 |
+| 4 | 通用代理人 | 動態 MCP 工具組合 + 跨領域自主運作 + 場景泛化 + 經驗遷移 | ⬜ 待開始 |
 | 5 | 產品 | 使用者面向的最終產品（由 L1-L4 組合而成） | ⬜ 待開始 |
 
 > **質變定義**：
@@ -59,6 +59,43 @@
 | 效能基線追蹤 | baseline-tracker.js + 趨勢分析 | ✅ v0.28.26 |
 
 **完成標準**：系統能展示「第 10 次做同類任務比第 1 次更快更好」的量化數據。
+
+### L1.5 引擎強化（✅ 完成）
+
+> 基於 awesome-llm-apps 生態研究（2026-03-08）：三項核心引擎能力補強。
+
+**L1.5.1 Handoff Persistence（斷點恢復）✅**
+
+> Workflow 中斷後從最後完成的 stage 恢復，而非重頭開始。
+> 參考：LangGraph 內建 checkpointing — crash 後從最後斷點恢復。
+
+| 任務 | 說明 | 狀態 |
+|------|------|:----:|
+| Stage 完成快照 | 每個 stage 完成時持久化 handoff + state 快照 | ✅ |
+| 恢復偵測 | session-start 偵測未完成 workflow → 提示從斷點繼續 | ✅ |
+| Heartbeat 整合 | daemon spawn 新 session 時自動載入 checkpoint 繼續 | ✅ |
+
+**L1.5.2 Evidence Sufficiency Loop（驗證回退迴圈）✅**
+
+> Agent 研究結果不充分時自動回退補充，而非直接交付低品質產出。
+> 參考：AG2 Adaptive Research Team — 分類→研究→驗證→(不足?)→備用查詢→合成。
+
+| 任務 | 說明 | 狀態 |
+|------|------|:----:|
+| 充分性檢查 | Agent 產出後評估證據充分性（confidence score） | ✅ |
+| 自動補查 | confidence 低於門檻時觸發備用資料源查詢 | ✅ |
+| 迴圈上限 | 最多 N 次回退（防無限迴圈），超過標記 low-confidence 交付 | ✅ |
+
+**L1.5.3 Keyword Relevance（關鍵詞相關性檢索）✅**
+
+> Instinct 知識條目超過 500+ 時，從文字搜尋升級為向量化語意檢索。
+> 參考：awesome-llm-apps Multi-LLM Shared Memory — Mem0 + Qdrant 向量 DB，記憶與 LLM 解耦。
+
+| 任務 | 說明 | 狀態 |
+|------|------|:----:|
+| 關鍵詞相關性排序 | queryGlobal() 新增 `relevanceTo` 參數，依關鍵詞相關性排序 instinct 觀察 | ✅ |
+| 加權評分公式 | finalScore = confidence × 0.6 + relevance × 0.4 | ✅ |
+| 預填充上下文 | pre-task-handler.js 整合，傳入 `originalPrompt` 計算相關性 | ✅ |
 
 ---
 
@@ -260,6 +297,17 @@
 > 像一個超級智慧家居的終極進化版：不只控制家電，而是理解意圖、自主行動、跨領域完成任務。
 > 核心職責：接收 L5 需求，運用 L1-3 能力完成。
 
+### L4.1 動態 MCP 工具組合
+
+> Agent 按任務需求動態選擇和組合 MCP 工具，而非固定工具集。
+> 參考：awesome-llm-apps Multi-MCP Agent Router — 意圖分類→Agent 選擇→多 MCP server 組合。
+
+| 任務 | 說明 | 狀態 |
+|------|------|:----:|
+| MCP 工具註冊表 | 可用 MCP server 清單 + 能力描述 + 啟動配置 | ⬜ |
+| 意圖→工具映射 | 根據任務意圖自動選擇所需 MCP 工具組合 | ⬜ |
+| 連接生命週期 | MCP server 按需啟動/關閉，避免資源浪費 | ⬜ |
+
 ## Layer 5：產品/專業代理人（⬜ 待開始）
 
 > L5 是 L4 的產出，是**開放集合**——幾乎什麼都能做。
@@ -299,6 +347,7 @@
 | S20 | Hook → Agent 遷移 | SubagentStop 核心邏輯抽出為專職 agent | ✅ v0.28.20 |
 | S21 | thinking Skill | 結構化思維注入 5 個 agent + 7 reference 檔案 | ✅ v0.28.87 |
 | S22 | 系統衛生強化 | PM 多專案隔離 + 靜默失敗清除 + 佇列驗證統一 + 效能優化 | ✅ v0.28.88-89 |
+| S23 | 異構模型分配 | 不同 Agent 按任務特性使用不同模型（API vs 本地 MLX），降低成本 30-50%。參考：awesome-llm-apps Multimodal Coding Agent Team | ⬜ |
 
 ---
 
