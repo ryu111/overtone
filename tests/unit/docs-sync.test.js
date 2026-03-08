@@ -5,11 +5,9 @@
  * 文件同步 + 邊界掃描
  *
  * 驗證以下項目：
- * 1. docs/status.md 核心指標數字與實際結構一致
- * 2. CLAUDE.md 中提到的組件數量與實際一致
- * 3. docs/spec/ 和 CLAUDE.md 關鍵文件引用的路徑存在
- * 4. docs/ 中活躍文件不含已廢棄術語（排除歷史快照/歸檔/設計過渡文件）
- * 5. plugin.json 版本與 docs/status.md 版本一致
+ * 1. CLAUDE.md 中提到的組件數量與實際一致
+ * 2. docs/spec/ 和 CLAUDE.md 關鍵文件引用的路徑存在
+ * 3. docs/ 中活躍文件不含已廢棄術語（排除歷史快照/歸檔/設計過渡文件）
  */
 
 const { describe, test, expect } = require('bun:test');
@@ -31,7 +29,6 @@ const HOOKS_JSON    = join(PLUGIN_ROOT, 'hooks', 'hooks.json');
 const REGISTRY_DATA = join(SCRIPTS_LIB, 'registry-data.json');
 const REGISTRY_JS   = join(SCRIPTS_LIB, 'registry.js');
 const PLUGIN_JSON   = join(PLUGIN_ROOT, 'plugin.json');
-const STATUS_MD     = join(PROJECT_ROOT, 'docs', 'status.md');
 const CLAUDE_MD     = join(PROJECT_ROOT, 'CLAUDE.md');
 const DOCS_DIR      = join(PROJECT_ROOT, 'docs');
 
@@ -53,25 +50,6 @@ function countSkillsWithSkillMd() {
   return fs.readdirSync(SKILLS_DIR).filter(dir => {
     return fs.existsSync(join(SKILLS_DIR, dir, 'SKILL.md'));
   }).length;
-}
-
-/**
- * 從 status.md 提取核心指標表中的數字
- * 格式：| 指標 | 數值 |
- */
-function extractStatusMetrics(content) {
-  const metrics = {};
-  const lines = content.split('\n');
-  for (const line of lines) {
-    // 比對 | Agent 數量 | 17（含 grader） | 這類格式
-    const match = line.match(/^\|\s*([^|]+?)\s*\|\s*(\d+)[^\|]*\|/);
-    if (match) {
-      const key = match[1].trim();
-      const value = parseInt(match[2], 10);
-      metrics[key] = value;
-    }
-  }
-  return metrics;
 }
 
 /**
@@ -136,50 +114,10 @@ function getActualCounts() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 1. docs/status.md 核心指標數字準確性
+// 1. CLAUDE.md 專案指令數量準確性
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('1. docs/status.md 核心指標數字', () => {
-  const statusContent = fs.readFileSync(STATUS_MD, 'utf8');
-  const metrics = extractStatusMetrics(statusContent);
-  const actual = getActualCounts();
-
-  test('Agent 數量：status.md 與 agents/ 目錄一致', () => {
-    expect(metrics['Agent 數量']).toBe(actual.agentCount);
-    expect(actual.agentCount).toBe(AGENT_COUNT);
-  });
-
-  test('Stage 數量：status.md 與 registry-data.json stages 一致', () => {
-    expect(metrics['Stage 數量']).toBe(actual.stageCount);
-    expect(actual.stageCount).toBe(STAGE_COUNT);
-  });
-
-  test('Workflow 模板：status.md 與 registry.js workflows 一致', () => {
-    expect(metrics['Workflow 模板']).toBe(actual.workflowCount);
-    expect(actual.workflowCount).toBe(WORKFLOW_COUNT);
-  });
-
-  test('Hook 數量：status.md 與 hooks.json hooks 陣列一致', () => {
-    expect(metrics['Hook 數量']).toBe(actual.hookCount);
-    expect(actual.hookCount).toBe(HOOK_COUNT);
-  });
-
-  test('Skill 數量：status.md 與含 SKILL.md 的 skills/ 子目錄一致', () => {
-    expect(metrics['Skill 數量']).toBe(actual.skillCount);
-    expect(actual.skillCount).toBe(SKILL_COUNT);
-  });
-
-  test('Command 數量：status.md 與 commands/ 目錄 .md 檔案一致', () => {
-    expect(metrics['Command 數量']).toBe(actual.commandCount);
-    expect(actual.commandCount).toBe(COMMAND_COUNT);
-  });
-});
-
-// ─────────────────────────────────────────────────────────────────────────────
-// 2. CLAUDE.md 專案指令數量準確性
-// ─────────────────────────────────────────────────────────────────────────────
-
-describe('2. CLAUDE.md 專案指令數量', () => {
+describe('1. CLAUDE.md 專案指令數量', () => {
   const claudeContent = fs.readFileSync(CLAUDE_MD, 'utf8');
   const actual = getActualCounts();
 
@@ -225,18 +163,17 @@ describe('2. CLAUDE.md 專案指令數量', () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 3. 關鍵文件路徑存在性
+// 2. 關鍵文件路徑存在性
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('3. 關鍵文件路徑存在性', () => {
+describe('2. 關鍵文件路徑存在性', () => {
 
-  describe('3a. CLAUDE.md 關鍵文件表格中引用的路徑', () => {
+  describe('2a. CLAUDE.md 關鍵文件表格中引用的路徑', () => {
     // CLAUDE.md「關鍵文件」區段引用的路徑（相對於專案根目錄）
     const claudeKeyDocs = [
       { label: 'docs/spec/overtone.md', path: join(PROJECT_ROOT, 'docs/spec/overtone.md') },
-      { label: 'docs/status.md', path: join(PROJECT_ROOT, 'docs/status.md') },
       // scripts/lib/registry.js 在 CLAUDE.md 中以短路徑描述，實際在 plugins/overtone/scripts/lib/
-      { label: '~/.claude/scripts/lib/registry.js（CLAUDE.md 中作為 SoT 標注）', path: REGISTRY_JS },
+      { label: '~/.claude/scripts/lib/registry.js（CLAUDE.md 中作為 SoT 標注）', path: join(SCRIPTS_LIB, 'registry.js') },
       { label: '~/.claude/skills/wording/references/wording-guide.md', path: join(PLUGIN_ROOT, 'skills/wording/references/wording-guide.md') },
     ];
 
@@ -247,9 +184,8 @@ describe('3. 關鍵文件路徑存在性', () => {
     }
   });
 
-  describe('3b. docs/status.md 文件索引中引用的路徑', () => {
-    // status.md「文件索引」表格中引用的路徑（相對於專案根目錄）
-    const statusDocPaths = [
+  describe('2b. docs/ 核心文件存在性', () => {
+    const coreDocs = [
       'docs/vision.md',
       'docs/roadmap.md',
       'docs/spec/overtone.md',
@@ -261,7 +197,7 @@ describe('3. 關鍵文件路徑存在性', () => {
       'docs/spec/overtone-驗證品質.md',
     ];
 
-    for (const relPath of statusDocPaths) {
+    for (const relPath of coreDocs) {
       test(`${relPath} 存在`, () => {
         expect(fs.existsSync(join(PROJECT_ROOT, relPath))).toBe(true);
       });
@@ -270,10 +206,10 @@ describe('3. 關鍵文件路徑存在性', () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 4. 舊術語掃描（排除歷史快照與設計過渡文件）
+// 3. 舊術語掃描（排除歷史快照與設計過渡文件）
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('4. 舊術語掃描（活躍文件）', () => {
+describe('3. 舊術語掃描（活躍文件）', () => {
   /**
    * 豁免清單說明：
    * - docs/archive/：歷史歸檔文件，保留原始記錄
@@ -410,26 +346,5 @@ describe('4. 舊術語掃描（活躍文件）', () => {
         violations.join('\n\n')
       );
     }
-  });
-});
-
-// ─────────────────────────────────────────────────────────────────────────────
-// 5. Plugin 版本一致性
-// ─────────────────────────────────────────────────────────────────────────────
-
-describe('5. Plugin 版本一致性', () => {
-  test('plugin.json 版本與 docs/status.md 標題版本一致', () => {
-    // 讀取 plugin.json 版本
-    const pluginJson = JSON.parse(fs.readFileSync(PLUGIN_JSON, 'utf8'));
-    const pluginVersion = pluginJson.version;
-    expect(pluginVersion).toBeTruthy();
-
-    // 從 status.md 提取版本（格式：> 最後更新：YYYY-MM-DD | Plugin 版本：X.Y.Z）
-    const statusContent = fs.readFileSync(STATUS_MD, 'utf8');
-    const versionMatch = statusContent.match(/Plugin\s+版本[：:]\s*([\d.]+)/);
-    expect(versionMatch).not.toBeNull();
-    const statusVersion = versionMatch[1];
-
-    expect(statusVersion).toBe(pluginVersion);
   });
 });

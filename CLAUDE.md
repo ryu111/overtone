@@ -51,7 +51,7 @@
 
 ```
 tests/              # 測試（unit / integration / e2e / helpers）⚠️ 不在 plugin 下
-docs/               # 文件（spec / reference / archive / status.md）⚠️ 不在 plugin 下
+docs/               # 文件（spec / reference / archive）⚠️ 不在 plugin 下
 ~/.claude/          # Plugin 根目錄（唯一 SoT）
 ├── agents/         # 18 個 agent .md（WHO — 角色）
 ├── skills/         # 26 個 Skill（WHAT — 知識域 + thinking + orchestrator + pm + specs + utilities-with-refs + instinct + skill-judge）
@@ -146,6 +146,5 @@ bun ~/.claude/scripts/skill-score.js --all
 |------|------|
 | `docs/spec/overtone.md` | 完整規格索引（v0.6，55 個決策） |
 | `docs/spec/overtone-decision-points.md` | 控制流決策點快查（30 秒找到任意決策點） |
-| `docs/status.md` | 現況快讀（版本狀態、核心指標、近期變更） |
 | `~/.claude/scripts/lib/registry.js` | SoT — 所有映射定義 |
 | `~/.claude/skills/wording/references/wording-guide.md` | 措詞正確性指南（決策樹 + 反模式 + 場景範例） |

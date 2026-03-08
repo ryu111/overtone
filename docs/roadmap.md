@@ -1,6 +1,6 @@
 # Overtone Roadmap
 
-> 最後更新：2026-03-06 | 當前進度：Layer 3 完成開發驗證（L3.1-L3.7 ✅，L3.6 Acid Test standard workflow 完成，含 Skill Forge + Internalization 驗證待執行）
+> 最後更新：2026-03-08 | 當前進度：Layer 3 完成開發驗證（L3.1-L3.7 ✅，L3.6 Acid Test standard workflow 完成，Skill Forge + Internalization 驗證待執行）| Plugin v0.28.89 | 4748 pass
 
 ## Layer 總覽
 
@@ -297,6 +297,8 @@
 | S18 | CI 環境感知 | 個人 dogfooding 無 PR 流程 | ❌ 不需要 |
 | S19 | Agent 專一化精鍊 | agent 拆分機會 + Model 降級空間量化 | ✅ |
 | S20 | Hook → Agent 遷移 | SubagentStop 核心邏輯抽出為專職 agent | ✅ v0.28.20 |
+| S21 | thinking Skill | 結構化思維注入 5 個 agent + 7 reference 檔案 | ✅ v0.28.87 |
+| S22 | 系統衛生強化 | PM 多專案隔離 + 靜默失敗清除 + 佇列驗證統一 + 效能優化 | ✅ v0.28.88-89 |
 
 ---
 
@@ -315,7 +317,7 @@
 
 | 指標 | 當前值 | 上限 |
 |------|--------|------|
-| auto/SKILL.md 行數 | 105 行 | ≤ 120 行 |
+| auto/SKILL.md 行數 | 142 行 | ≤ 150 行 |
 | Workflow 模板數 | 18 個 | ≤ 20 個 |
 | Agent 數量 | 18 個 | 按需增減（需佐證） |
 
