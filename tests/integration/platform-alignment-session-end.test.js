@@ -216,7 +216,7 @@ describe('Feature 1d: SessionEnd hook（on-session-end.js）', () => {
 
       expect(exitCode).toBe(0);
       expect(parsed).not.toBeNull();
-      expect(typeof parsed.result).toBe('string');
+      expect(parsed).toEqual({});
     });
   });
 
@@ -228,10 +228,10 @@ describe('Feature 1d: SessionEnd hook（on-session-end.js）', () => {
       return _result;
     }
 
-    test('stdin 無 session_id 且無環境變數時輸出 { result: "" }', () => {
+    test('stdin 無 session_id 且無環境變數時輸出 {}', () => {
       const { exitCode, parsed } = getResult();
       expect(exitCode).toBe(0);
-      expect(parsed.result).toBe('');
+      expect(parsed).toEqual({});
     });
 
     test('process exit code 為 0', () => {
@@ -242,7 +242,7 @@ describe('Feature 1d: SessionEnd hook（on-session-end.js）', () => {
 
   // Scenario 1d-8: stdin 為畸形 JSON 時安全退出
   describe('Scenario 1d-8: 畸形 JSON 時安全退出', () => {
-    test('畸形 JSON 時輸出 { result: "" }', () => {
+    test('畸形 JSON 時輸出 {}', () => {
       const envConfig = {
         ...process.env,
         OVERTONE_NO_DASHBOARD: '1',
@@ -261,7 +261,7 @@ describe('Feature 1d: SessionEnd hook（on-session-end.js）', () => {
 
       expect(proc.exitCode).toBe(0);
       expect(parsed).not.toBeNull();
-      expect(parsed.result).toBe('');
+      expect(parsed).toEqual({});
     });
   });
 
@@ -281,7 +281,7 @@ describe('Feature 1d: SessionEnd hook（on-session-end.js）', () => {
     test('無 loop.json 時 hook 正常執行不拋錯', () => {
       const { result } = getScenario();
       expect(result.exitCode).toBe(0);
-      expect(result.parsed.result).toBe('');
+      expect(result.parsed).toEqual({});
     });
 
     test('無 loop.json 時 emit session:end 仍正常執行', () => {

@@ -34,19 +34,19 @@ describe('handleSessionEnd 邊界情況', () => {
     return _nullResult;
   }
 
-  test('無 sessionId → 回傳 { output: { result: "" } }', () => {
-    expect(nullResult()).toEqual({ output: { result: '' } });
+  test('無 sessionId → 回傳 { output: {} }', () => {
+    expect(nullResult()).toEqual({ output: {} });
   });
 
-  test('sessionId 為空字串 → 回傳 { output: { result: "" } }', () => {
+  test('sessionId 為空字串 → 回傳 { output: {} }', () => {
     const result = handleSessionEnd({ reason: 'other' }, '');
-    expect(result).toEqual({ output: { result: '' } });
+    expect(result).toEqual({ output: {} });
   });
 
-  test('回傳值有 output.result 欄位（無 sessionId 情況）', () => {
+  test('回傳值有 output 欄位（無 sessionId 情況）', () => {
     const result = nullResult();
     expect(typeof result.output).toBe('object');
-    expect(result.output.result).toBe('');
+    expect(result.output.result).toBeUndefined();
   });
 
   test('回傳值可 JSON 序列化', () => {
@@ -54,7 +54,6 @@ describe('handleSessionEnd 邊界情況', () => {
     expect(() => JSON.stringify(result)).not.toThrow();
     const parsed = JSON.parse(JSON.stringify(result));
     expect(typeof parsed.output).toBe('object');
-    expect(typeof parsed.output.result).toBe('string');
   });
 });
 
@@ -252,18 +251,18 @@ describeE('Feature 7: handleSessionEnd 有 sessionId', () => {
     fsE.rmSync(sess.dir, { recursive: true, force: true });
   });
 
-  testE('有 sessionId（無 workflow）→ 回傳 { output: { result: "" } }', () => {
+  testE('有 sessionId（無 workflow）→ 回傳 { output: {} }', () => {
     const result = handleSessionEnd({ reason: 'other' }, sess.id);
-    expectE(result).toEqual({ output: { result: '' } });
+    expectE(result).toEqual({ output: {} });
   });
 
-  testE('有 sessionId + loop.json（stopped: false）→ emit session:end 並回傳 result: ""', () => {
+  testE('有 sessionId + loop.json（stopped: false）→ emit session:end 並回傳空 output', () => {
     // 建立 loop.json
     const loopPath = pathsE.session.loop(sess.id);
     fsE.writeFileSync(loopPath, JSON.stringify({ iteration: 1, stopped: false, consecutiveErrors: 0, startedAt: new Date().toISOString() }), 'utf8');
 
     const result = handleSessionEnd({ reason: 'clear' }, sess.id);
-    expectE(result.output.result).toBe('');
+    expectE(result.output.result).toBeUndefined();
 
     // loop.json 應被設 stopped: true
     const loopData = JSON.parse(fsE.readFileSync(loopPath, 'utf8'));
@@ -276,7 +275,7 @@ describeE('Feature 7: handleSessionEnd 有 sessionId', () => {
 
     expect(() => handleSessionEnd({ reason: 'other' }, sess.id)).not.toThrow();
     const result = handleSessionEnd({ reason: 'other' }, sess.id);
-    expectE(result.output.result).toBe('');
+    expectE(result.output.result).toBeUndefined();
   });
 
   testE('loop.json 不存在 → 不拋出例外', () => {
@@ -294,18 +293,19 @@ describeE('Feature 7: handleSessionEnd 有 sessionId', () => {
     stateLibE.initState(sess.id, 'quick', ['DEV', 'REVIEW']);
     expect(() => handleSessionEnd({ reason: 'other' }, sess.id)).not.toThrow();
     const result = handleSessionEnd({ reason: 'other' }, sess.id);
-    expectE(result.output.result).toBe('');
+    expectE(result.output.result).toBeUndefined();
   });
 
   testE('input 無 reason 欄位 → 不拋出例外', () => {
     expect(() => handleSessionEnd({}, sess.id)).not.toThrow();
   });
 
-  testE('回傳值結構正確（有 output.result）', () => {
+  testE('回傳值結構正確（有 output 物件）', () => {
     const result = handleSessionEnd({ reason: 'clear' }, sess.id);
     expectE(typeof result).toBe('object');
     expectE(typeof result.output).toBe('object');
-    expectE(typeof result.output.result).toBe('string');
+    // SessionEnd 僅 side effects，不注入 result 欄位
+    expectE(result.output.result).toBeUndefined();
   });
 
   testE('loop.json 有效且 stopped: false → session 結束後 loop.json stopped 為 true', () => {
@@ -362,10 +362,10 @@ describeE('Feature 8: resolveSessionResult 整合', () => {
     expectE(['fail', 'abort']).toContain(result);
   });
 
-  testE('handleSessionEnd 有 workflow state → 不拋出且回傳 result', () => {
+  testE('handleSessionEnd 有 workflow state → 不拋出且回傳空 output', () => {
     stateLibE.initState(sess2.id, 'quick', ['DEV', 'REVIEW']);
     const result = handleSessionEnd({ reason: 'clear' }, sess2.id);
-    expectE(result.output.result).toBe('');
+    expectE(result.output.result).toBeUndefined();
   });
 
   testE('reason=clear 與 reason=other 都能正常處理', () => {
@@ -377,10 +377,10 @@ describeE('Feature 8: resolveSessionResult 整合', () => {
 
   testE('handleSessionEnd 回傳 output 結構符合 hook 規格', () => {
     const result = handleSessionEnd({ reason: 'other' }, sess2.id);
-    // hook 規格：{ output: { result: string } }
+    // hook 規格（SessionEnd）：{ output: {} }，僅 side effects，無 result 注入
     expectE(typeof result).toBe('object');
     expectE(typeof result.output).toBe('object');
-    expectE(typeof result.output.result).toBe('string');
+    expectE(result.output.result).toBeUndefined();
     // 不應有 decision 欄位（session-end-handler 不阻擋）
     expectE(result.output.decision).toBeUndefined();
   });

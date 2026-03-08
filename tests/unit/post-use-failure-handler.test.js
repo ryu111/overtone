@@ -9,19 +9,19 @@ const { SCRIPTS_LIB } = require('../helpers/paths');
 const { handlePostUseFailure, CRITICAL_TOOLS } = require(join(SCRIPTS_LIB, 'post-use-failure-handler'));
 
 describe('handlePostUseFailure', () => {
-  it('Scenario 1: 無 sessionId 時回傳空 result', () => {
+  it('Scenario 1: 無 sessionId 時回傳空 output', () => {
     const result = handlePostUseFailure({ tool_name: 'Task', error: 'some error' });
-    expect(result).toEqual({ output: { result: '' } });
+    expect(result).toEqual({ output: {} });
   });
 
-  it('Scenario 2: is_interrupt=true 時回傳空 result（使用者手動中斷）', () => {
+  it('Scenario 2: is_interrupt=true 時回傳空 output（使用者手動中斷）', () => {
     const result = handlePostUseFailure({
       session_id: 'test-sess',
       tool_name: 'Task',
       error: 'interrupted',
       is_interrupt: true,
     });
-    expect(result).toEqual({ output: { result: '' } });
+    expect(result).toEqual({ output: {} });
   });
 
   it('Scenario 3: Task 失敗 → 回傳 agent 委派失敗提示', () => {
@@ -31,8 +31,8 @@ describe('handlePostUseFailure', () => {
       error: 'subagent not found',
       is_interrupt: false,
     });
-    expect(result.output.result).toContain('agent 委派失敗');
-    expect(result.output.result).toContain('subagent_type');
+    expect(result.output.hookSpecificOutput?.additionalContext).toContain('agent 委派失敗');
+    expect(result.output.hookSpecificOutput?.additionalContext).toContain('subagent_type');
   });
 
   it('Scenario 4: Write 失敗 → 回傳檔案操作失敗提示', () => {
@@ -42,8 +42,8 @@ describe('handlePostUseFailure', () => {
       error: 'permission denied',
       is_interrupt: false,
     });
-    expect(result.output.result).toContain('檔案操作失敗');
-    expect(result.output.result).toContain('寫入權限');
+    expect(result.output.hookSpecificOutput?.additionalContext).toContain('檔案操作失敗');
+    expect(result.output.hookSpecificOutput?.additionalContext).toContain('寫入權限');
   });
 
   it('Scenario 5: Edit 失敗 → 回傳檔案操作失敗提示', () => {
@@ -53,27 +53,27 @@ describe('handlePostUseFailure', () => {
       error: 'file not found',
       is_interrupt: false,
     });
-    expect(result.output.result).toContain('檔案操作失敗');
+    expect(result.output.hookSpecificOutput?.additionalContext).toContain('檔案操作失敗');
   });
 
-  it('Scenario 6: Bash 失敗 → 只記錄，回傳空 result', () => {
+  it('Scenario 6: Bash 失敗 → 只記錄，回傳空 output', () => {
     const result = handlePostUseFailure({
       session_id: 'test-sess',
       tool_name: 'Bash',
       error: 'command not found',
       is_interrupt: false,
     });
-    expect(result).toEqual({ output: { result: '' } });
+    expect(result).toEqual({ output: {} });
   });
 
-  it('Scenario 7: 未知工具失敗 → 只記錄，回傳空 result', () => {
+  it('Scenario 7: 未知工具失敗 → 只記錄，回傳空 output', () => {
     const result = handlePostUseFailure({
       session_id: 'test-sess',
       tool_name: 'Grep',
       error: 'internal error',
       is_interrupt: false,
     });
-    expect(result).toEqual({ output: { result: '' } });
+    expect(result).toEqual({ output: {} });
   });
 });
 
@@ -99,8 +99,8 @@ describe('handlePostUseFailure — 進階行為', () => {
       is_interrupt: false,
     });
     // 回傳訊息中的錯誤摘要應截斷（120 字）
-    expect(result.output.result).toContain('E'.repeat(120));
-    expect(result.output.result).not.toContain('E'.repeat(200));
+    expect(result.output.hookSpecificOutput?.additionalContext).toContain('E'.repeat(120));
+    expect(result.output.hookSpecificOutput?.additionalContext).not.toContain('E'.repeat(200));
   });
 
   it('Scenario 9: error 為空字串時 Task 失敗仍回傳提示訊息', () => {
@@ -110,10 +110,10 @@ describe('handlePostUseFailure — 進階行為', () => {
       error: '',
       is_interrupt: false,
     });
-    expect(result.output.result).toContain('agent 委派失敗');
+    expect(result.output.hookSpecificOutput?.additionalContext).toContain('agent 委派失敗');
   });
 
-  it('Scenario 10: Bash 失敗也記錄（Instinct emit）— 回傳空 result', () => {
+  it('Scenario 10: Bash 失敗也記錄（Instinct emit）— 回傳空 output', () => {
     // Bash 屬於 shouldEmitTimeline 但不屬於 CRITICAL_TOOLS → 不注入 systemMessage
     const result = handlePostUseFailure({
       session_id: 'test-sess-bash-fail',
@@ -121,8 +121,9 @@ describe('handlePostUseFailure — 進階行為', () => {
       error: 'command not found: xyz',
       is_interrupt: false,
     });
-    // 重要：回傳空 result（不注入訊息）
-    expect(result.output.result).toBe('');
+    // 重要：回傳空 output（不注入訊息，無 hookSpecificOutput）
+    expect(result.output.hookSpecificOutput?.additionalContext).toBeUndefined();
+    expect(result.output.hookSpecificOutput).toBeUndefined();
   });
 
   it('Scenario 11: tool_name 為空字串時不注入（非 CRITICAL_TOOLS）', () => {
@@ -132,7 +133,7 @@ describe('handlePostUseFailure — 進階行為', () => {
       error: 'some error',
       is_interrupt: false,
     });
-    expect(result.output.result).toBe('');
+    expect(result.output.hookSpecificOutput?.additionalContext).toBeUndefined();
   });
 
   it('Scenario 12: Write 失敗訊息包含路徑相關提示', () => {
@@ -142,8 +143,8 @@ describe('handlePostUseFailure — 進階行為', () => {
       error: 'EACCES: permission denied, open "/protected/file.txt"',
       is_interrupt: false,
     });
-    expect(result.output.result).toContain('Write');
-    expect(result.output.result).toContain('路徑');
+    expect(result.output.hookSpecificOutput?.additionalContext).toContain('Write');
+    expect(result.output.hookSpecificOutput?.additionalContext).toContain('路徑');
   });
 
   it('Scenario 13: Edit 失敗訊息包含磁碟空間提示', () => {
@@ -153,7 +154,7 @@ describe('handlePostUseFailure — 進階行為', () => {
       error: 'ENOSPC: no space left on device',
       is_interrupt: false,
     });
-    expect(result.output.result).toContain('磁碟空間');
+    expect(result.output.hookSpecificOutput?.additionalContext).toContain('磁碟空間');
   });
 
   it('Scenario 14: Task 失敗訊息包含重試建議', () => {
@@ -163,7 +164,7 @@ describe('handlePostUseFailure — 進階行為', () => {
       error: 'timeout waiting for subagent',
       is_interrupt: false,
     });
-    expect(result.output.result).toContain('重試');
+    expect(result.output.hookSpecificOutput?.additionalContext).toContain('重試');
   });
 
   it('Scenario 15: is_interrupt 未傳（undefined）時視為 false，正常處理', () => {
@@ -174,7 +175,7 @@ describe('handlePostUseFailure — 進階行為', () => {
       // is_interrupt 未傳
     });
     // 應正常處理（不因缺少 is_interrupt 而靜默退出）
-    expect(result.output.result).toContain('agent 委派失敗');
+    expect(result.output.hookSpecificOutput?.additionalContext).toContain('agent 委派失敗');
   });
 
   it('Scenario 16: 重複相同工具失敗時仍正常處理（無爆炸）', () => {
@@ -197,17 +198,18 @@ describe('handlePostUseFailure — 進階行為', () => {
       error: 'pattern too complex',
       is_interrupt: false,
     });
-    expect(result.output.result).toBe('');
+    expect(result.output.hookSpecificOutput?.additionalContext).toBeUndefined();
+    expect(result.output.hookSpecificOutput).toBeUndefined();
   });
 
-  it('Scenario 18: Read 工具失敗 → 回傳空 result', () => {
+  it('Scenario 18: Read 工具失敗 → 回傳空 output', () => {
     const result = handlePostUseFailure({
       session_id: 'test-sess-read',
       tool_name: 'Read',
       error: 'file not found',
       is_interrupt: false,
     });
-    expect(result.output.result).toBe('');
+    expect(result.output.hookSpecificOutput?.additionalContext).toBeUndefined();
   });
 });
 
@@ -234,15 +236,16 @@ describe('handlePostUseFailure — hookSpecificOutput 格式驗證', () => {
     expect(result.output.hookSpecificOutput.hookEventName).toBe('PostToolUseFailure');
   });
 
-  // HO-3: additionalContext 等於 result message
-  it('HO-3: hookSpecificOutput.additionalContext 與 result 相同', () => {
+  // HO-3: additionalContext 是非空字串（包含錯誤提示訊息）
+  it('HO-3: hookSpecificOutput.additionalContext 為非空字串', () => {
     const result = handlePostUseFailure({
       session_id: 'test-sess-ho3',
       tool_name: 'Edit',
       error: 'file locked',
       is_interrupt: false,
     });
-    expect(result.output.hookSpecificOutput.additionalContext).toBe(result.output.result);
+    expect(typeof result.output.hookSpecificOutput.additionalContext).toBe('string');
+    expect(result.output.hookSpecificOutput.additionalContext.length).toBeGreaterThan(0);
   });
 
   // HO-4: 非 CRITICAL_TOOLS 不含 hookSpecificOutput

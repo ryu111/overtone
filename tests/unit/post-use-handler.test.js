@@ -183,29 +183,29 @@ describe('handlePostUse — 整合行為', () => {
     rmSync(session.dir, { recursive: true, force: true });
   });
 
-  it('Scenario H-1: 無 sessionId 時回傳空 result', () => {
+  it('Scenario H-1: 無 sessionId 時回傳空 output', () => {
     const result = handlePostUse({ tool_name: 'Bash', tool_input: { command: 'ls' } });
-    expect(result).toEqual({ output: { result: '' } });
+    expect(result).toEqual({ output: {} });
   });
 
-  it('Scenario H-2: 非 Bash/Write/Edit 工具 → 回傳空 result', () => {
+  it('Scenario H-2: 非 Bash/Write/Edit 工具 → 回傳空 output', () => {
     const result = handlePostUse({
       session_id: session.id,
       tool_name: 'Read',
       tool_input: { file_path: '/some/file.md' },
       tool_response: {},
     });
-    expect(result).toEqual({ output: { result: '' } });
+    expect(result).toEqual({ output: {} });
   });
 
-  it('Scenario H-3: Bash exit_code=0 → 回傳空 result（無錯誤守衛）', () => {
+  it('Scenario H-3: Bash exit_code=0 → 回傳空 output（無錯誤守衛）', () => {
     const result = handlePostUse({
       session_id: session.id,
       tool_name: 'Bash',
       tool_input: { command: 'echo hello' },
       tool_response: { exit_code: 0, stderr: '' },
     });
-    expect(result).toEqual({ output: { result: '' } });
+    expect(result).toEqual({ output: {} });
   });
 
   it('Scenario H-4: Bash 重大失敗 → 回傳錯誤守衛 result', () => {
@@ -235,7 +235,7 @@ describe('handlePostUse — 整合行為', () => {
     }
   });
 
-  it('Scenario H-6: Write .md 檔案無 wording 問題 → 回傳空 result', () => {
+  it('Scenario H-6: Write .md 檔案無 wording 問題 → 回傳空 output', () => {
     const tmpFile = path.join(os.tmpdir(), `ot-wording-ok-${Date.now()}.md`);
     writeFileSync(tmpFile, '# 正常標題\n\n📋 MUST 完成此任務。\n');
     try {
@@ -245,7 +245,7 @@ describe('handlePostUse — 整合行為', () => {
         tool_input: { file_path: tmpFile },
         tool_response: {},
       });
-      expect(result).toEqual({ output: { result: '' } });
+      expect(result).toEqual({ output: {} });
     } finally {
       rmSync(tmpFile, { force: true });
     }

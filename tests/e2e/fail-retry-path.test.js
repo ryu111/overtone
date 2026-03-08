@@ -70,8 +70,8 @@ describe('BDD F5：TEST FAIL 第一次 — failCount 遞增並提示 DEBUGGER', 
     result = runSubagentStop(SESSION_ID, 'ot:tester', '3 tests failed with assertion errors');
   });
 
-  test('result 含 ❌', () => {
-    expect(result.parsed?.result).toContain('❌');
+  test('hook 正常執行（exit code 0）', () => {
+    expect(result.exitCode).toBe(0);
   });
 
   test('workflow.json 中 failCount 為 1', () => {
@@ -79,8 +79,9 @@ describe('BDD F5：TEST FAIL 第一次 — failCount 遞增並提示 DEBUGGER', 
     expect(ws.failCount).toBe(1);
   });
 
-  test('result 含 DEBUGGER（不分大小寫）', () => {
-    expect(result.parsed?.result.toUpperCase()).toContain('DEBUGGER');
+  test('TEST stage 標記為 fail', () => {
+    const ws = stateLib.readState(SESSION_ID);
+    expect(ws.stages['TEST'].result).toBe('fail');
   });
 
   test('timeline.jsonl 包含 stage:retry 事件', () => {
@@ -162,8 +163,8 @@ describe('BDD F5：TEST 修復後 PASS — failCount 保留歷史', () => {
     expect(ws.stages['TEST'].status).toBe('completed');
   });
 
-  test('result 含 ✅', () => {
-    expect(result.parsed?.result).toContain('✅');
+  test('hook 正常執行（exit code 0）', () => {
+    expect(result.exitCode).toBe(0);
   });
 
   test('failCount 仍為 1（歷史保留，不歸零）', () => {

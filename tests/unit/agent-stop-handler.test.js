@@ -72,27 +72,27 @@ describe('agent-stop-handler 模組介面', () => {
 // ── handleAgentStop 邊界情況 ─────────────────────────────────────────────
 
 describe('handleAgentStop 邊界情況', () => {
-  test('無 sessionId → 回傳 { output: { result: "" } }', () => {
+  test('無 sessionId → 回傳 { output: {} }', () => {
     const result = handleAgentStop({ agent_type: 'developer', last_assistant_message: '' }, null);
-    expect(result).toEqual({ output: { result: '' } });
+    expect(result).toEqual({ output: {} });
   });
 
-  test('sessionId 為空字串 → 回傳 { output: { result: "" } }', () => {
+  test('sessionId 為空字串 → 回傳 { output: {} }', () => {
     const result = handleAgentStop({ agent_type: 'developer', last_assistant_message: '' }, '');
-    expect(result).toEqual({ output: { result: '' } });
+    expect(result).toEqual({ output: {} });
   });
 
-  test('agentName 不在 stages 清單中 → 回傳 { output: { result: "" } }', () => {
+  test('agentName 不在 stages 清單中 → 回傳 { output: {} }', () => {
     const result = handleAgentStop(
       { agent_type: 'unknown-agent', last_assistant_message: 'some output' },
       'fake-session-id'
     );
-    expect(result).toEqual({ output: { result: '' } });
+    expect(result).toEqual({ output: {} });
   });
 
-  test('agentName 為空字串 → 回傳 { output: { result: "" } }', () => {
+  test('agentName 為空字串 → 回傳 { output: {} }', () => {
     const result = handleAgentStop({ agent_type: '', last_assistant_message: '' }, 'fake-session-id');
-    expect(result).toEqual({ output: { result: '' } });
+    expect(result).toEqual({ output: {} });
   });
 
   test('回傳值有 output 欄位且可 JSON 序列化', () => {
@@ -108,7 +108,7 @@ describe('handleAgentStop 邊界情況', () => {
       { agent_type: 'developer', last_assistant_message: 'HANDOFF: developer → code-reviewer' },
       'nonexistent-session-xyz'
     );
-    expect(result).toEqual({ output: { result: '' } });
+    expect(result).toEqual({ output: {} });
   });
 
   test('agent_type 帶 ot: 前綴時正確解析 agentName', () => {
@@ -119,7 +119,7 @@ describe('handleAgentStop 邊界情況', () => {
       'nonexistent-session-xyz'
     );
     // 無 state → 靜默退出，但不因前綴失敗
-    expect(result).toEqual({ output: { result: '' } });
+    expect(result).toEqual({ output: {} });
   });
 });
 
@@ -145,7 +145,8 @@ describe('handleAgentStop — 正常 pass 流程', () => {
     );
 
     expect(result.output).toBeDefined();
-    expect(typeof result.output.result).toBe('string');
+    // SubagentStop handler 回傳 { output: {} }，result 欄位不存在
+    expect(result.output.result).toBeUndefined();
 
     const state = stateLib.readState(sid);
     expect(state.stages['DEV'].status).toBe('completed');
@@ -174,7 +175,7 @@ describe('handleAgentStop — 正常 pass 流程', () => {
     const state = stateLib.readState(sid);
     expect(state.stages['REVIEW'].status).toBe('completed');
     expect(state.stages['REVIEW'].result).toBe('pass');
-    expect(typeof result.output.result).toBe('string');
+    expect(result.output.result).toBeUndefined();
   });
 
   test('pass 後 pendingAction 清除（若原本有 fail pendingAction）', () => {
@@ -224,7 +225,7 @@ describe('handleAgentStop — fail verdict', () => {
     expect(state.stages['TEST'].status).toBe('completed');
     expect(state.stages['TEST'].result).toBe('fail');
     expect(state.failCount).toBeGreaterThan(0);
-    expect(typeof result.output.result).toBe('string');
+    expect(result.output.result).toBeUndefined();
   });
 
   test('fail 後 pendingAction 寫入 fix-fail', () => {

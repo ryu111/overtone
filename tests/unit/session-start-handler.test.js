@@ -97,10 +97,11 @@ describe('buildBanner', () => {
 // ────────────────────────────────────────────────────────────────────────────
 
 describe('buildStartOutput', () => {
-  test('回傳含 result 欄位的物件', () => {
+  test('回傳物件（banner 不再輸出至 result）', () => {
     const output = buildStartOutput({}, { banner: 'some banner', msgs: [] });
-    expect(output).toHaveProperty('result');
-    expect(output.result).toBe('some banner');
+    expect(typeof output).toBe('object');
+    // banner 不在 schema 中，不輸出
+    expect(output.result).toBeUndefined();
   });
 
   test('msgs 為空時不包含 systemMessage', () => {
@@ -129,10 +130,9 @@ describe('buildStartOutput', () => {
     expect(output.systemMessage).toBeUndefined();
   });
 
-  test('options 為 undefined 時回傳預設結構', () => {
+  test('options 為 undefined 時回傳空物件', () => {
     const output = buildStartOutput({}, undefined);
-    expect(output.result).toBe('');
-    expect(output.systemMessage).toBeUndefined();
+    expect(output).toEqual({});
   });
 });
 
@@ -243,15 +243,19 @@ describe('handleSessionStart — 基本回傳結構', () => {
     return _sharedResult;
   }
 
-  test('回傳物件含 result 欄位（字串）', () => {
+  test('回傳物件（無 result 欄位）', () => {
     const result = sharedResult();
     expect(typeof result).toBe('object');
-    expect(typeof result.result).toBe('string');
+    // result 不在 schema，已移除
+    expect(result.result).toBeUndefined();
   });
 
-  test('result 字串包含版本號（來自 plugin.json）', () => {
-    // 版本號格式為 x.y.z，確認 result 中包含合理的版本字串
-    expect(sharedResult().result).toMatch(/\d+\.\d+\.\d+/);
+  test('systemMessage 包含版本號（來自 plugin.json）', () => {
+    // 版本號格式為 x.y.z，確認 systemMessage 中包含版本資訊
+    const output = sharedResult();
+    if (output.systemMessage) {
+      expect(output.systemMessage).toMatch(/\d+\.\d+\.\d+/);
+    }
   });
 
   test('hookTimer 為 null 時不拋出例外', () => {
@@ -413,7 +417,7 @@ describe('Feature 7: 最近常做的事（intent_journal 摘要注入）', () =>
     // 不填充任何資料，直接執行（空全域 store → queryGlobal 回傳 [] → 不注入）
     expect(() => {
       const output = handler.handleSessionStart({ cwd: projectRoot }, null, null);
-      expect(typeof output.result).toBe('string');
+      expect(typeof output).toBe('object');
     }).not.toThrow();
   });
 });
@@ -432,11 +436,11 @@ describe('Feature 8: handleSessionStart — systemMessage 組裝', () => {
     return _f8Output;
   }
 
-  test('Scenario 8-1: 正常啟動時 result 包含版本號且格式正確', () => {
+  test('Scenario 8-1: 正常啟動時回傳有效物件', () => {
     const output = f8Output();
-    expect(output).toHaveProperty('result');
-    expect(typeof output.result).toBe('string');
-    expect(output.result).toMatch(/\d+\.\d+\.\d+/);
+    expect(typeof output).toBe('object');
+    // result 不在 schema，已移除
+    expect(output.result).toBeUndefined();
   });
 
   test('Scenario 8-2: systemMessage 包含 Overtone Plugin Context 段落', () => {
@@ -460,7 +464,7 @@ describe('Feature 8: handleSessionStart — systemMessage 組裝', () => {
     try {
       // 不會拋出例外即代表 projectRoot 正確設定
       const output = handler.handleSessionStart({ cwd: tmpDir }, null, null);
-      expect(typeof output.result).toBe('string');
+      expect(typeof output).toBe('object');
     } finally {
       rmSyncF7(tmpDir, { recursive: true, force: true });
     }
@@ -470,7 +474,7 @@ describe('Feature 8: handleSessionStart — systemMessage 組裝', () => {
     // 使用不同 input（{}），不能共用 f8Output
     expect(() => {
       const output = handler.handleSessionStart({}, null, null);
-      expect(typeof output.result).toBe('string');
+      expect(typeof output).toBe('object');
     }).not.toThrow();
   });
 
@@ -555,7 +559,7 @@ describe('Feature 9: handleSessionStart — pendingAction 恢復', () => {
   test('Scenario 9-5: sessionId 為 null 時不讀取 pendingAction（不拋出）', () => {
     expect(() => {
       const output = handler.handleSessionStart({ cwd: process.cwd() }, null, null);
-      expect(typeof output.result).toBe('string');
+      expect(typeof output).toBe('object');
     }).not.toThrow();
   });
 });
@@ -641,9 +645,9 @@ describe('Feature 11: buildPluginContext — 進階驗證', () => {
 // ────────────────────────────────────────────────────────────────────────────
 
 describe('Feature 12: buildStartOutput — 邊界補強', () => {
-  test('Scenario 12-1: banner 為空字串時 result 為空字串', () => {
+  test('Scenario 12-1: banner 為空字串時不輸出 result', () => {
     const output = buildStartOutput({}, { banner: '', msgs: ['msg'] });
-    expect(output.result).toBe('');
+    expect(output.result).toBeUndefined();
     expect(output.systemMessage).toBe('msg');
   });
 
@@ -662,7 +666,6 @@ describe('Feature 12: buildStartOutput — 邊界補強', () => {
     const output1 = buildStartOutput({ any: 'value' }, { banner: 'b', msgs: ['m'] });
     const output2 = buildStartOutput(null, { banner: 'b', msgs: ['m'] });
     // 兩者結果相同，_input 不影響輸出
-    expect(output1.result).toBe(output2.result);
     expect(output1.systemMessage).toBe(output2.systemMessage);
   });
 

@@ -136,7 +136,7 @@ describe('Feature 1e: PostToolUseFailure hook（post-use-failure.js）', () => {
       expect(failureEvent.error).toBeDefined();
     });
 
-    test('stdout 包含 result 欄位（systemMessage 文字）', () => {
+    test('stdout 包含 hookSpecificOutput.additionalContext', () => {
       const sessionId = newSessionId();
       initSessionDir(sessionId);
 
@@ -148,12 +148,12 @@ describe('Feature 1e: PostToolUseFailure hook（post-use-failure.js）', () => {
       }, sessionId);
 
       expect(parsed).not.toBeNull();
-      expect(typeof parsed.result).toBe('string');
-      // Task 失敗時應有 systemMessage（非空字串）
-      expect(parsed.result.length).toBeGreaterThan(0);
+      expect(parsed.hookSpecificOutput).toBeDefined();
+      // Task 失敗時應有 additionalContext（非空字串）
+      expect(parsed.hookSpecificOutput.additionalContext.length).toBeGreaterThan(0);
     });
 
-    test('systemMessage 說明 agent 委派失敗並建議重試', () => {
+    test('additionalContext 說明 agent 委派失敗並建議重試', () => {
       const sessionId = newSessionId();
       initSessionDir(sessionId);
 
@@ -164,8 +164,8 @@ describe('Feature 1e: PostToolUseFailure hook（post-use-failure.js）', () => {
         is_interrupt: false,
       }, sessionId);
 
-      // systemMessage 應包含 Task 失敗相關說明
-      expect(parsed.result).toContain('Task');
+      // additionalContext 應包含 Task 失敗相關說明
+      expect(parsed.hookSpecificOutput?.additionalContext).toContain('Task');
     });
   });
 
@@ -189,7 +189,7 @@ describe('Feature 1e: PostToolUseFailure hook（post-use-failure.js）', () => {
       expect(failureEvent.toolName).toBe('Write');
     });
 
-    test('stdout result 包含 systemMessage（非空）', () => {
+    test('stdout hookSpecificOutput.additionalContext 非空', () => {
       const sessionId = newSessionId();
       initSessionDir(sessionId);
 
@@ -200,7 +200,7 @@ describe('Feature 1e: PostToolUseFailure hook（post-use-failure.js）', () => {
         is_interrupt: false,
       }, sessionId);
 
-      expect(parsed.result.length).toBeGreaterThan(0);
+      expect(parsed.hookSpecificOutput?.additionalContext?.length).toBeGreaterThan(0);
     });
   });
 
@@ -222,7 +222,7 @@ describe('Feature 1e: PostToolUseFailure hook（post-use-failure.js）', () => {
       expect(failureEvent).toBeDefined();
     });
 
-    test('stdout result 包含 systemMessage（非空）', () => {
+    test('stdout hookSpecificOutput.additionalContext 非空', () => {
       const sessionId = newSessionId();
       initSessionDir(sessionId);
 
@@ -233,7 +233,7 @@ describe('Feature 1e: PostToolUseFailure hook（post-use-failure.js）', () => {
         is_interrupt: false,
       }, sessionId);
 
-      expect(parsed.result.length).toBeGreaterThan(0);
+      expect(parsed.hookSpecificOutput?.additionalContext?.length).toBeGreaterThan(0);
     });
   });
 
@@ -255,7 +255,7 @@ describe('Feature 1e: PostToolUseFailure hook（post-use-failure.js）', () => {
       expect(failureEvent).toBeDefined();
     });
 
-    test('stdout result 為空字串（不注入 systemMessage）', () => {
+    test('stdout 輸出空物件（不注入 context）', () => {
       const sessionId = newSessionId();
       initSessionDir(sessionId);
 
@@ -266,13 +266,13 @@ describe('Feature 1e: PostToolUseFailure hook（post-use-failure.js）', () => {
         is_interrupt: false,
       }, sessionId);
 
-      expect(parsed.result).toBe('');
+      expect(parsed).toEqual({});
     });
   });
 
   // Scenario 1e-5: 其他工具失敗時只記錄 Instinct 不 emit timeline
   describe('Scenario 1e-5: Grep 工具失敗時只記錄 Instinct 不 emit timeline', () => {
-    test('stdout result 為空字串', () => {
+    test('stdout 輸出空物件', () => {
       const sessionId = newSessionId();
       initSessionDir(sessionId);
 
@@ -283,7 +283,7 @@ describe('Feature 1e: PostToolUseFailure hook（post-use-failure.js）', () => {
         is_interrupt: false,
       }, sessionId);
 
-      expect(parsed.result).toBe('');
+      expect(parsed).toEqual({});
     });
 
     test('timeline.jsonl 不新增 tool:failure 事件（Grep 只記 Instinct）', () => {
@@ -306,7 +306,7 @@ describe('Feature 1e: PostToolUseFailure hook（post-use-failure.js）', () => {
 
   // Scenario 1e-6: is_interrupt=true 時不記錄
   describe('Scenario 1e-6: is_interrupt=true 時跳過所有記錄', () => {
-    test('is_interrupt=true 時 stdout 輸出 { result: "" }', () => {
+    test('is_interrupt=true 時 stdout 輸出 {}', () => {
       const sessionId = newSessionId();
       initSessionDir(sessionId);
 
@@ -317,7 +317,7 @@ describe('Feature 1e: PostToolUseFailure hook（post-use-failure.js）', () => {
         is_interrupt: true,
       }, sessionId);
 
-      expect(parsed.result).toBe('');
+      expect(parsed).toEqual({});
     });
 
     test('is_interrupt=true 時 timeline.jsonl 不新增事件', () => {
@@ -338,19 +338,19 @@ describe('Feature 1e: PostToolUseFailure hook（post-use-failure.js）', () => {
 
   // Scenario 1e-8: 無 sessionId 時靜默退出
   describe('Scenario 1e-8: 無 sessionId 時靜默退出', () => {
-    test('無 session_id 時輸出 { result: "" }', () => {
+    test('無 session_id 時輸出 {}', () => {
       const { exitCode, parsed } = runHook(
         { tool_name: 'Task', error: 'some error', is_interrupt: false },
         undefined
       );
       expect(exitCode).toBe(0);
-      expect(parsed.result).toBe('');
+      expect(parsed).toEqual({});
     });
   });
 
   // Scenario 1e-9: stdin 為畸形 JSON 時安全退出
   describe('Scenario 1e-9: 畸形 JSON 時安全退出', () => {
-    test('畸形 JSON 時輸出 { result: "" } 且 exit 0', () => {
+    test('畸形 JSON 時輸出 {} 且 exit 0', () => {
       const envConfig = {
         ...process.env,
         OVERTONE_NO_DASHBOARD: '1',
@@ -369,7 +369,7 @@ describe('Feature 1e: PostToolUseFailure hook（post-use-failure.js）', () => {
 
       expect(proc.exitCode).toBe(0);
       expect(parsed).not.toBeNull();
-      expect(parsed.result).toBe('');
+      expect(parsed).toEqual({});
     });
   });
 
@@ -386,8 +386,8 @@ describe('Feature 1e: PostToolUseFailure hook（post-use-failure.js）', () => {
     });
   });
 
-  // Scenario 1e-12: 任何例外都 fallback 到空 result
-  describe('Scenario 1e-12: 例外時 fallback 到 { result: "" }', () => {
+  // Scenario 1e-12: 任何例外都 fallback 到空物件
+  describe('Scenario 1e-12: 例外時 fallback 到 {}', () => {
     test('exit code 永遠為 0', () => {
       const envConfig = {
         ...process.env,

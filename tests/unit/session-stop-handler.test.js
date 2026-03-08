@@ -285,19 +285,19 @@ afterAll(() => {
 // ── handleSessionStop：邊界情況 ──────────────────────────────────────────────
 
 describeI('handleSessionStop 邊界情況', () => {
-  testI('無 sessionId → 回傳 { output: { result: "" } }', () => {
+  testI('無 sessionId → 回傳 { output: {} }', () => {
     const result = handleSessionStop({ cwd: '/tmp' }, null);
-    expectI(result).toEqual({ output: { result: '' } });
+    expectI(result).toEqual({ output: {} });
   });
 
-  testI('sessionId 為空字串 → 回傳 { output: { result: "" } }', () => {
+  testI('sessionId 為空字串 → 回傳 { output: {} }', () => {
     const result = handleSessionStop({ cwd: '/tmp' }, '');
-    expectI(result).toEqual({ output: { result: '' } });
+    expectI(result).toEqual({ output: {} });
   });
 
-  testI('無 workflow state（session 目錄不存在）→ 回傳 { output: { result: "" } }', () => {
+  testI('無 workflow state（session 目錄不存在）→ 回傳 { output: {} }', () => {
     const result = handleSessionStop({ cwd: '/tmp' }, 'nonexistent-session-xyz');
-    expectI(result).toEqual({ output: { result: '' } });
+    expectI(result).toEqual({ output: {} });
   });
 
   testI('回傳值可 JSON 序列化', () => {
@@ -434,15 +434,15 @@ describeI('handleSessionStop loop:start 事件', () => {
 // ── handleSessionStop：PM stage ──────────────────────────────────────────────
 
 describeI('handleSessionStop PM stage', () => {
-  testI('currentStage 為 PM → 回傳 result: "" 不強制 loop', () => {
+  testI('currentStage 為 PM → 不強制 loop（result 為 undefined）', () => {
     const sid = newSid();
     const s = setupSession(sid, ['PM', 'DEV']);
     loopLib.writeLoop(sid, { iteration: 1, stopped: false, consecutiveErrors: 0, startedAt: new Date().toISOString() });
 
     const result = handleSessionStop({ cwd: '/tmp' }, sid);
-    expectI(result.output).toHaveProperty('result');
-    // PM 模式不應 block loop
-    expectI(result.output.result).toBe('');
+    // PM 模式不應 block loop，回傳 { output: {} }
+    expectI(result.output.result).toBeUndefined();
+    expectI(result.output.decision).toBeUndefined();
   });
 });
 
@@ -464,9 +464,8 @@ describeI('handleSessionStop 背景 agent soft-release', () => {
     loopLib.writeLoop(sid, { iteration: 1, stopped: false, consecutiveErrors: 0, startedAt: new Date().toISOString() });
 
     const result = handleSessionStop({ cwd: '/tmp' }, sid);
-    // 應 soft-release 而非 block
-    expectI(result.output).toHaveProperty('result');
-    expectI(result.output.result).toBe('');
+    // 應 soft-release 而非 block，回傳 { output: {} }
+    expectI(result.output.result).toBeUndefined();
     expectI(result.output.decision).toBeUndefined();
   });
 
