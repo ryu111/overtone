@@ -361,7 +361,7 @@ describe('Scenario 1：超過閾值 + 非最後 stage → 建議 + emit timeline
     const result = runOnStop({
       session_id: SESSION_ABOVE,
       agent_type: 'ot:planner',
-      last_assistant_message: 'PASS',
+      last_assistant_message: 'PASS\n- [x] 任務完成\n依賴順序確認',
       transcript_path: transcriptPath,
     }, {
       OVERTONE_COMPACT_THRESHOLD_MB: '5',

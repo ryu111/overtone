@@ -217,12 +217,24 @@ describe('PreEditGuard: 非受保護檔案放行', () => {
 
 describe('PreEditGuard: Plugin 目錄外放行', () => {
 
-  test('專案根目錄的檔案 → allow', () => {
+  test('專案根目錄的 CLAUDE.md → allow（附精簡原則提醒）', () => {
     const result = runPreEditGuard('Write', {
       file_path: '/Users/sbu/projects/overtone/CLAUDE.md',
     });
     expect(result.exitCode).toBe(0);
-    expect(isAllowed(result.parsed)).toBe(true);
+    // CLAUDE.md 不阻擋但注入精簡原則提醒
+    expect(result.parsed.result).toContain('CLAUDE.md 精簡原則提醒');
+    // 確認不是 deny（沒有 permissionDecision）
+    expect(result.parsed.hookSpecificOutput?.permissionDecision).toBeUndefined();
+  });
+
+  test('全域 CLAUDE.md → allow（附精簡原則提醒）', () => {
+    const result = runPreEditGuard('Edit', {
+      file_path: `${PLUGIN_ROOT}/CLAUDE.md`,
+    });
+    expect(result.exitCode).toBe(0);
+    expect(result.parsed.result).toContain('CLAUDE.md 精簡原則提醒');
+    expect(result.parsed.hookSpecificOutput?.permissionDecision).toBeUndefined();
   });
 
   test('tests/ 目錄的檔案 → allow', () => {

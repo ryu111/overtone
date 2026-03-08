@@ -95,11 +95,11 @@ describe('BDD full：前半 sequential — PLAN → ARCH → DESIGN → TEST(spe
   beforeAll(() => {
     // PLAN
     runPreTask(SESSION_ID, { description: '委派 planner 規劃功能' });
-    runSubagentStop(SESSION_ID, 'ot:planner', 'VERDICT: pass 規劃完成');
+    runSubagentStop(SESSION_ID, 'ot:planner', 'VERDICT: pass 規劃完成\n- [x] 實作功能\n- [x] 撰寫測試\n依賴：先完成 API 再寫測試');
 
     // ARCH
     runPreTask(SESSION_ID, { description: '委派 architect 設計架構' });
-    runSubagentStop(SESSION_ID, 'ot:architect', 'VERDICT: pass 架構完成');
+    runSubagentStop(SESSION_ID, 'ot:architect', 'VERDICT: pass 架構完成\nAPI 介面設計：POST /api/feature\n檔案結構：src/lib/feature.js');
 
     // DESIGN
     runPreTask(SESSION_ID, { description: '委派 designer 設計 UI' });

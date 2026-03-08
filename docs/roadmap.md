@@ -1,6 +1,6 @@
 # Overtone Roadmap
 
-> 最後更新：2026-03-08 | 當前進度：Layer 3 完成開發驗證（L3.1-L3.7 ✅，L3.6 Acid Test standard workflow 完成，Skill Forge + Internalization 驗證待執行）| Plugin v0.28.89 | 4748 pass
+> 最後更新：2026-03-08 | 當前進度：Layer 3 完成開發驗證（L3.1-L3.7 ✅，L3.6 Acid Test standard workflow 完成，Skill Forge + Internalization 驗證待執行）| Plugin v0.28.89 | 4755 pass
 
 ## Layer 總覽
 
@@ -347,7 +347,7 @@
 | S20 | Hook → Agent 遷移 | SubagentStop 核心邏輯抽出為專職 agent | ✅ v0.28.20 |
 | S21 | thinking Skill | 結構化思維注入 5 個 agent + 7 reference 檔案 | ✅ v0.28.87 |
 | S22 | 系統衛生強化 | PM 多專案隔離 + 靜默失敗清除 + 佇列驗證統一 + 效能優化 | ✅ v0.28.88-89 |
-| S23 | 異構模型分配 | 不同 Agent 按任務特性使用不同模型（API vs 本地 MLX），降低成本 30-50%。參考：awesome-llm-apps Multimodal Coding Agent Team | ⬜ |
+| S23 | 異構模型分配 | model-router.js（port 3456）路由：haiku→本地 MLX(Qwen3.5-35B-4bit)、sonnet/opus→Claude API + 離線自動 fallback + launchd 自啟動 + fast-fail 健康檢查 | ✅ |
 
 ---
 

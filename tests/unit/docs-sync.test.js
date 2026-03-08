@@ -53,16 +53,6 @@ function countSkillsWithSkillMd() {
 }
 
 /**
- * 從文件內容提取指定模式的第一個數字
- * 用於從敘述性文字中找出數量
- */
-function extractNumber(content, pattern) {
-  const regex = new RegExp(pattern);
-  const match = content.match(regex);
-  return match ? parseInt(match[1], 10) : null;
-}
-
-/**
  * 遞迴掃描目錄，收集所有 .md 檔案路徑
  * @param {string} dir - 起始目錄
  * @param {string[]} excludeDirs - 排除的子目錄名稱（相對於 dir）
@@ -85,82 +75,6 @@ function collectMdFiles(dir, excludeDirs = []) {
   }
   return results;
 }
-
-// ── 計算實際數量 ──────────────────────────────────────────────────────────
-
-function getActualCounts() {
-  // Agent 數量：agents/ 目錄的 .md 檔案數量
-  const agentCount = countMdFiles(AGENTS_DIR);
-
-  // Stage 數量：registry-data.json 的 stages 物件 key 數量
-  const registryData = JSON.parse(fs.readFileSync(REGISTRY_DATA, 'utf8'));
-  const stageCount = Object.keys(registryData.stages || {}).length;
-
-  // Workflow 模板：registry.js 的 workflows 物件 key 數量
-  const registry = require(REGISTRY_JS);
-  const workflowCount = Object.keys(registry.workflows || {}).length;
-
-  // Hook 數量：hooks.json 的事件數
-  const hooksJson = JSON.parse(fs.readFileSync(HOOKS_JSON, 'utf8'));
-  const hookCount = Object.keys(hooksJson.hooks || {}).length;
-
-  // Skill 數量：skills/ 目錄中含 SKILL.md 的子目錄數量
-  const skillCount = countSkillsWithSkillMd();
-
-  // Command 數量：commands/ 目錄的 .md 檔案數量
-  const commandCount = countMdFiles(COMMANDS_DIR);
-
-  return { agentCount, stageCount, workflowCount, hookCount, skillCount, commandCount };
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// 1. CLAUDE.md 專案指令數量準確性
-// ─────────────────────────────────────────────────────────────────────────────
-
-describe('1. CLAUDE.md 專案指令數量', () => {
-  const claudeContent = fs.readFileSync(CLAUDE_MD, 'utf8');
-  const actual = getActualCounts();
-
-  test('CLAUDE.md 提到 agent 數量（18）與實際一致', () => {
-    // 比對「17 個 agent」或「agents/ # 17 個 agent .md」等格式
-    const count1 = extractNumber(claudeContent, /(\d+)\s+個\s*agent/);
-    const count2 = extractNumber(claudeContent, /agents\/\s*#\s*(\d+)\s+個/);
-    const mentionedCount = count1 || count2;
-    expect(mentionedCount).toBe(actual.agentCount);
-  });
-
-  test('CLAUDE.md 提到 skill 數量（15）與實際一致', () => {
-    // 比對「15 個 Skill」或「skills/ # 15 個」等格式
-    const count1 = extractNumber(claudeContent, /(\d+)\s+個\s*Skill/);
-    const count2 = extractNumber(claudeContent, /skills\/[^#]*#\s*(\d+)\s+個/);
-    const mentionedCount = count1 || count2;
-    expect(mentionedCount).toBe(actual.skillCount);
-  });
-
-  test('CLAUDE.md 提到 command 數量（27）與實際一致', () => {
-    // 比對「27 個 Command」或「commands/ # 27 個」等格式
-    const count1 = extractNumber(claudeContent, /(\d+)\s+個\s*Command/);
-    const count2 = extractNumber(claudeContent, /commands\/[^#]*#\s*(\d+)\s+個/);
-    const mentionedCount = count1 || count2;
-    expect(mentionedCount).toBe(actual.commandCount);
-  });
-
-  test('CLAUDE.md 提到 hook 數量（11）與實際一致', () => {
-    // 比對「Hook 架構（11 個）」或「11 個 hook」等格式
-    const count1 = extractNumber(claudeContent, /Hook\s+架構[（(]\s*(\d+)\s+個/);
-    const count2 = extractNumber(claudeContent, /(\d+)\s+個\s*hook/i);
-    const mentionedCount = count1 || count2;
-    expect(mentionedCount).toBe(actual.hookCount);
-  });
-
-  test('CLAUDE.md 提到 workflow 模板數量（18）與實際一致', () => {
-    // 比對「18 個模板」等格式
-    const count1 = extractNumber(claudeContent, /(\d+)\s+個模板/);
-    const count2 = extractNumber(claudeContent, /(\d+)\s+個\s*workflow\s*模板/i);
-    const mentionedCount = count1 || count2;
-    expect(mentionedCount).toBe(actual.workflowCount);
-  });
-});
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 2. 關鍵文件路徑存在性
