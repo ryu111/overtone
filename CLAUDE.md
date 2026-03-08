@@ -48,6 +48,16 @@ bun test                         # 單進程測試（~53s）
 - **元件閉環**：新增/修改 Skill、Agent、Hook 時檢查三者依賴
   > 詳見 `~/.claude/skills/claude-dev/references/overtone-conventions.md`
 
+## Hook 改動驗收
+
+Hook/config 改動只在新 session 生效，驗收方式：
+- **單元測試**：`require()` handler 驗證 output 格式
+- **Hook stdout 驗收**：pipe stdin 到 hook 腳本，檢查 JSON 有 `hookSpecificOutput.additionalContext`
+
+```bash
+echo '{"prompt":"test","cwd":"'$PWD'"}' | bun ~/.claude/hooks/scripts/prompt/on-submit.js
+```
+
 ## 關鍵文件
 
 | 文件 | 用途 |
