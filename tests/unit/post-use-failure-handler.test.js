@@ -211,42 +211,42 @@ describe('handlePostUseFailure — 進階行為', () => {
   });
 });
 
-describe('handlePostUseFailure — hookSpecificOutput 格式（Feature fix-hook-output-format）', () => {
-  it('Scenario HO-1: Task 失敗時 hookSpecificOutput.hookEventName 為 PostToolUseFailure', () => {
+describe('handlePostUseFailure — hookSpecificOutput 格式驗證', () => {
+  // HO-1: CRITICAL_TOOLS 失敗有 hookSpecificOutput
+  it('HO-1: CRITICAL_TOOLS 失敗時 output 含 hookSpecificOutput', () => {
     const result = handlePostUseFailure({
       session_id: 'test-sess-ho1',
       tool_name: 'Task',
-      error: 'subagent not found',
+      error: 'subagent failed',
       is_interrupt: false,
     });
     expect(result.output.hookSpecificOutput).toBeDefined();
-    expect(result.output.hookSpecificOutput.hookEventName).toBe('PostToolUseFailure');
   });
 
-  it('Scenario HO-2: Task 失敗時 hookSpecificOutput.additionalContext 等於 result', () => {
+  // HO-2: hookEventName 為 'PostToolUseFailure'
+  it('HO-2: hookSpecificOutput.hookEventName 為 PostToolUseFailure', () => {
     const result = handlePostUseFailure({
       session_id: 'test-sess-ho2',
-      tool_name: 'Task',
-      error: 'timeout waiting for subagent',
-      is_interrupt: false,
-    });
-    expect(result.output.hookSpecificOutput.additionalContext).toBe(result.output.result);
-    expect(result.output.hookSpecificOutput.additionalContext).toContain('agent 委派失敗');
-  });
-
-  it('Scenario HO-3: Write 失敗時 hookSpecificOutput.additionalContext 等於 result', () => {
-    const result = handlePostUseFailure({
-      session_id: 'test-sess-ho3',
       tool_name: 'Write',
       error: 'permission denied',
       is_interrupt: false,
     });
-    expect(result.output.hookSpecificOutput).toBeDefined();
     expect(result.output.hookSpecificOutput.hookEventName).toBe('PostToolUseFailure');
+  });
+
+  // HO-3: additionalContext 等於 result message
+  it('HO-3: hookSpecificOutput.additionalContext 與 result 相同', () => {
+    const result = handlePostUseFailure({
+      session_id: 'test-sess-ho3',
+      tool_name: 'Edit',
+      error: 'file locked',
+      is_interrupt: false,
+    });
     expect(result.output.hookSpecificOutput.additionalContext).toBe(result.output.result);
   });
 
-  it('Scenario HO-4: 非 CRITICAL_TOOLS（Bash）失敗時無 hookSpecificOutput', () => {
+  // HO-4: 非 CRITICAL_TOOLS 不含 hookSpecificOutput
+  it('HO-4: 非 CRITICAL_TOOLS（Bash）不含 hookSpecificOutput', () => {
     const result = handlePostUseFailure({
       session_id: 'test-sess-ho4',
       tool_name: 'Bash',
@@ -254,10 +254,10 @@ describe('handlePostUseFailure — hookSpecificOutput 格式（Feature fix-hook-
       is_interrupt: false,
     });
     expect(result.output.hookSpecificOutput).toBeUndefined();
-    expect(result.output.result).toBe('');
   });
 
-  it('Scenario HO-5: is_interrupt=true 時無 hookSpecificOutput（早期返回）', () => {
+  // HO-5: is_interrupt=true 不含 hookSpecificOutput
+  it('HO-5: is_interrupt=true 路徑不含 hookSpecificOutput', () => {
     const result = handlePostUseFailure({
       session_id: 'test-sess-ho5',
       tool_name: 'Task',

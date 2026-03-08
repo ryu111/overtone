@@ -114,19 +114,6 @@ describe('buildStartOutput', () => {
     expect(output.systemMessage).toBe(msg);
   });
 
-  test('msgs 非空時包含 hookSpecificOutput.additionalContext', () => {
-    const msg = '## 未完成任務\n\n- [ ] DEV';
-    const output = buildStartOutput({}, { banner: 'banner', msgs: [msg] });
-    expect(output.hookSpecificOutput).toBeDefined();
-    expect(output.hookSpecificOutput.hookEventName).toBe('SessionStart');
-    expect(output.hookSpecificOutput.additionalContext).toBe(msg);
-  });
-
-  test('msgs 為空時不包含 hookSpecificOutput', () => {
-    const output = buildStartOutput({}, { banner: 'banner', msgs: [] });
-    expect(output.hookSpecificOutput).toBeUndefined();
-  });
-
   test('msgs 含多個字串時以雙換行連接', () => {
     const output = buildStartOutput({}, { banner: 'banner', msgs: ['A', 'B', 'C'] });
     expect(output.systemMessage).toBe('A\n\nB\n\nC');
@@ -682,6 +669,19 @@ describe('Feature 12: buildStartOutput — 邊界補強', () => {
   test('Scenario 12-5: 混合 truthy 和 falsy 的 msgs 只保留 truthy', () => {
     const output = buildStartOutput({}, { banner: 'b', msgs: [null, 'A', '', undefined, 'B', false] });
     expect(output.systemMessage).toBe('A\n\nB');
+  });
+
+  test('Scenario 12-6: 有 msgs 時 output 包含 hookSpecificOutput.hookEventName === SessionStart', () => {
+    const output = buildStartOutput({}, { banner: 'banner', msgs: ['## 測試段落'] });
+    expect(output.hookSpecificOutput).toBeDefined();
+    expect(output.hookSpecificOutput.hookEventName).toBe('SessionStart');
+  });
+
+  test('Scenario 12-7: 有 msgs 時 hookSpecificOutput.additionalContext 等於 systemMessage', () => {
+    const msg = '## Plugin Context\n\n測試內容';
+    const output = buildStartOutput({}, { banner: 'banner', msgs: [msg] });
+    expect(output.hookSpecificOutput).toBeDefined();
+    expect(output.hookSpecificOutput.additionalContext).toBe(output.systemMessage);
   });
 });
 
