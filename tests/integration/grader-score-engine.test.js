@@ -289,7 +289,7 @@ describe('Feature 7: 低分閾值觸發 instinct quality_signal', () => {
     // on-stop.js 不崩潰，輸出合法 JSON
     expect(() => JSON.parse(output)).not.toThrow();
     const parsed = JSON.parse(output);
-    expect(typeof parsed.result).toBe('string');
+    expect(typeof parsed).toBe('object');
 
     // 清理
     try { rmSync(sessionDir, { recursive: true, force: true }); } catch { /* 靜默 */ }

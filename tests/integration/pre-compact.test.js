@@ -166,7 +166,7 @@ describe('Feature 1：無 sessionId 時靜默退出', () => {
   test('stdin 無 session_id 且無環境變數時輸出 {"result":""}', () => {
     const result = runHook({}, { CLAUDE_SESSION_ID: '' });
     expect(result.exitCode).toBe(0);
-    expect(JSON.parse(result.stdout)).toEqual({ result: '' });
+    expect(JSON.parse(result.stdout)).toEqual({});
     expect(JSON.parse(result.stdout).systemMessage).toBeUndefined();
   });
 
@@ -180,7 +180,7 @@ describe('Feature 1：無 sessionId 時靜默退出', () => {
     });
     const stdout = proc.stdout ? new TextDecoder().decode(proc.stdout) : '';
     expect(proc.exitCode).toBe(0);
-    expect(JSON.parse(stdout)).toEqual({ result: '' });
+    expect(JSON.parse(stdout)).toEqual({});
   });
 
   // Scenario 1.3
@@ -193,7 +193,7 @@ describe('Feature 1：無 sessionId 時靜默退出', () => {
     });
     const stdout = proc.stdout ? new TextDecoder().decode(proc.stdout) : '';
     expect(proc.exitCode).toBe(0);
-    expect(JSON.parse(stdout)).toEqual({ result: '' });
+    expect(JSON.parse(stdout)).toEqual({});
   });
 
   // workflow.json 不存在時
@@ -201,7 +201,7 @@ describe('Feature 1：無 sessionId 時靜默退出', () => {
     // SESSION_NO_WF 從未初始化 workflow.json
     const result = runHook({ session_id: SESSION_NO_WF });
     expect(result.exitCode).toBe(0);
-    expect(JSON.parse(result.stdout)).toEqual({ result: '' });
+    expect(JSON.parse(result.stdout)).toEqual({});
   });
 });
 
@@ -561,7 +561,7 @@ describe('Feature 6：任何失敗 fallback 到 { result: \'\' }', () => {
 
     const result = runHook({ session_id: SESSION_CORRUPT });
     expect(result.exitCode).toBe(0);
-    expect(JSON.parse(result.stdout)).toEqual({ result: '' });
+    expect(JSON.parse(result.stdout)).toEqual({});
 
     rmSync(sessionDir, { recursive: true, force: true });
   });
@@ -579,7 +579,7 @@ describe('Feature 6：任何失敗 fallback 到 { result: \'\' }', () => {
     // stdin 畸形 → safeReadStdin 回傳 {} → sessionId 取自 CLAUDE_SESSION_ID='x'
     // workflow.json 不存在 → 輸出 { result: '' }
     const stdout = proc.stdout ? new TextDecoder().decode(proc.stdout) : '';
-    expect(JSON.parse(stdout)).toEqual({ result: '' });
+    expect(JSON.parse(stdout)).toEqual({});
   });
 });
 

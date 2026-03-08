@@ -315,14 +315,14 @@ describeI('handlePreCompact', () => {
     fsPc.rmSync(sess.dir, { recursive: true, force: true });
   });
 
-  itI('無 sessionId 且 input 為空物件 → 回傳 result: ""', () => {
+  itI('無 sessionId 且 input 為空物件 → 回傳空 output', () => {
     const result = handlePreCompact({});
-    expectI(result.output.result).toBe('');
+    expectI(result.output).toEqual({});
   });
 
-  itI('有 sessionId 但無 workflow state → 回傳 result: ""', () => {
+  itI('有 sessionId 但無 workflow state → 回傳空 output', () => {
     const result = handlePreCompact({ session_id: sess.id });
-    expectI(result.output.result).toBe('');
+    expectI(result.output).toEqual({});
   });
 
   itI('有 workflow state → 回傳 systemMessage', () => {

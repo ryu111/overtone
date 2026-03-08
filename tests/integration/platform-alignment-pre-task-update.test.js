@@ -100,8 +100,8 @@ describe('Feature 1c: PreToolUse updatedInput 注入', () => {
         expect(parsed.hookSpecificOutput.updatedInput).toBeDefined();
         expect(parsed.hookSpecificOutput.updatedInput.prompt).toBeDefined();
       } else {
-        // 允許回傳 result: '' 的格式（若 buildWorkflowContext 回傳 null）
-        expect(parsed.result).toBe('');
+        // 無 context 注入時回傳空物件
+        expect(parsed).toEqual({});
       }
     });
 
@@ -185,7 +185,7 @@ describe('Feature 1c: PreToolUse updatedInput 注入', () => {
 
   // Scenario 1c-7: 非 Overtone agent 不注入 workflow context
   describe('Scenario 1c-7: 非 Overtone agent 不注入 workflow context', () => {
-    test('未知 agent 早期退出輸出 { result: "" }', () => {
+    test('未知 agent 早期退出輸出 {}', () => {
       const sessionId = initSession('single');
 
       const { parsed } = runHook({
@@ -197,7 +197,7 @@ describe('Feature 1c: PreToolUse updatedInput 注入', () => {
       }, sessionId);
 
       // 無法辨識的 agent → 不阻擋，不注入
-      expect(parsed.result).toBe('');
+      expect(parsed).toEqual({});
     });
   });
 
@@ -267,11 +267,10 @@ describe('Feature 1c: PreToolUse updatedInput 注入', () => {
     });
   });
 
-  // Scenario 1c-6: 無 workflow state 時回傳空 result
-  describe('Scenario 1c-6: 無 workflow state 時回傳 { result: "" }', () => {
+  // Scenario 1c-6: 無 workflow state 時回傳空物件
+  describe('Scenario 1c-6: 無 workflow state 時回傳 {}', () => {
     test('workflow.json 不存在時早期退出', () => {
       const sessionId = newSessionId();
-      // 不建立 session 目錄（無 workflow.json）
 
       const { parsed } = runHook({
         session_id: sessionId,
@@ -284,7 +283,7 @@ describe('Feature 1c: PreToolUse updatedInput 注入', () => {
       }, sessionId);
 
       // 無 workflow state → pre-task.js 早期退出
-      expect(parsed.result).toBe('');
+      expect(parsed).toEqual({});
     });
   });
 });

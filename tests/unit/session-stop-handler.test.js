@@ -309,64 +309,58 @@ describeI('handleSessionStop 邊界情況', () => {
 // ── handleSessionStop：手動退出（loopState.stopped）───────────────────────────
 
 describeI('handleSessionStop 手動退出', () => {
-  testI('/ot:stop 手動退出 → 回傳 result 包含「手動停止」', () => {
+  testI('/ot:stop 手動退出 → 回傳空 output（side effects 已完成）', () => {
     const sid = newSid();
     setupSession(sid, ['DEV', 'REVIEW']);
-    // 設 stopped: true
     loopLib.writeLoop(sid, { iteration: 1, stopped: true, consecutiveErrors: 0, startedAt: new Date().toISOString() });
 
     const result = handleSessionStop({ cwd: '/tmp' }, sid);
-    expectI(result.output).toHaveProperty('result');
-    expectI(result.output.result).toContain('停止');
+    expectI(result.output).toEqual({});
   });
 });
 
 // ── handleSessionStop：max iterations ───────────────────────────────────────
 
 describeI('handleSessionStop max iterations', () => {
-  testI('達到最大迭代次數（100）→ 回傳帶「迭代」的 result 訊息', () => {
+  testI('達到最大迭代次數（100）→ 回傳空 output', () => {
     const sid = newSid();
     setupSession(sid, ['DEV', 'REVIEW']);
-    // loopDefaults.maxIterations = 100，設 >= 100 觸發條件
     loopLib.writeLoop(sid, { iteration: 100, stopped: false, consecutiveErrors: 0, startedAt: new Date().toISOString() });
 
     const result = handleSessionStop({ cwd: '/tmp' }, sid);
-    expectI(result.output).toHaveProperty('result');
-    expectI(result.output.result).toMatch(/迭代/);
+    expectI(result.output).toEqual({});
   });
 });
 
 // ── handleSessionStop：連續錯誤 ──────────────────────────────────────────────
 
 describeI('handleSessionStop 連續錯誤', () => {
-  testI('連續錯誤達閾值 → 回傳 result 包含錯誤訊息', () => {
+  testI('連續錯誤達閾值 → 回傳空 output', () => {
     const sid = newSid();
     setupSession(sid, ['DEV', 'REVIEW']);
     loopLib.writeLoop(sid, { iteration: 1, stopped: false, consecutiveErrors: 5, startedAt: new Date().toISOString() });
 
     const result = handleSessionStop({ cwd: '/tmp' }, sid);
-    expectI(result.output).toHaveProperty('result');
-    expectI(result.output.result).toMatch(/錯誤/);
+    expectI(result.output).toEqual({});
   });
 });
 
 // ── handleSessionStop：workflow 完成 ────────────────────────────────────────
 
 describeI('handleSessionStop workflow 完成', () => {
-  testI('所有 stage completed（無失敗）→ 回傳 result 包含完成訊息', () => {
+  testI('所有 stage completed（無失敗）→ 回傳空 output', () => {
     const sid = newSid();
     const s = setupSession(sid, ['DEV', 'REVIEW']);
-    // 標記所有 stage 為 completed
     stateLib.updateStage(sid, 'DEV', { status: 'completed', result: 'pass' });
     stateLib.updateStage(sid, 'REVIEW', { status: 'completed', result: 'pass' });
     loopLib.writeLoop(sid, { iteration: 1, stopped: false, consecutiveErrors: 0, startedAt: new Date().toISOString() });
 
     const result = handleSessionStop({ cwd: '/tmp' }, sid);
-    expectI(result.output).toHaveProperty('result');
-    expectI(result.output.result).toContain('完成');
+    // Stop event 只支援 decision/reason，非 block 路徑回傳空 output
+    expectI(result.output).toEqual({});
   });
 
-  testI('所有 stage completed（含失敗 stage）→ 回傳 allCompleted 的結果訊息', () => {
+  testI('所有 stage completed（含失敗 stage）→ 回傳空 output', () => {
     const sid = newSid();
     setupSession(sid, ['DEV', 'REVIEW']);
     stateLib.updateStage(sid, 'DEV', { status: 'completed', result: 'fail' });
@@ -374,10 +368,7 @@ describeI('handleSessionStop workflow 完成', () => {
     loopLib.writeLoop(sid, { iteration: 1, stopped: false, consecutiveErrors: 0, startedAt: new Date().toISOString() });
 
     const result = handleSessionStop({ cwd: '/tmp' }, sid);
-    // allCompleted === true → 回傳 result（summary 格式）
-    expectI(result.output).toHaveProperty('result');
-    // 含失敗 stage → ❌ 圖示
-    expectI(result.output.result).toContain('❌');
+    expectI(result.output).toEqual({});
   });
 });
 

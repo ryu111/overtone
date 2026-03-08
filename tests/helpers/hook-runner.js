@@ -202,9 +202,11 @@ function runInitWorkflow(workflowType, sessionId) {
  */
 function isAllowed(parsed) {
   if (!parsed) return false;
-  // 舊格式
-  if (parsed.result === '') return true;
-  // 新格式（updatedInput 注入）
+  // 空物件 → 放行（無 deny、無 context 注入）
+  if (Object.keys(parsed).length === 0) return true;
+  // 有 additionalContext 但無 deny → 放行（帶提示的放行）
+  if (parsed.hookSpecificOutput && !parsed.hookSpecificOutput.permissionDecision) return true;
+  // 明確 allow
   if (parsed.hookSpecificOutput?.permissionDecision === 'allow') return true;
   return false;
 }

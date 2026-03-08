@@ -243,13 +243,13 @@ describe('Feature 5: handleOnSubmit — workflow 覆寫語法', () => {
     expect(result.systemMessage).toContain('"auto"');
   });
 
-  test('Scenario 5-3: /ot: 指令提早返回，result 為空字串', () => {
+  test('Scenario 5-3: /ot: 指令提早返回，無 systemMessage', () => {
     const result = handleOnSubmit({
       session_id: session.id,
       prompt: '/ot:standard',
       cwd: process.cwd(),
     });
-    expect(result.result).toBe('');
+    expect(result.result).toBeUndefined();
     expect(result.systemMessage).toBeUndefined();
   });
 
@@ -258,8 +258,7 @@ describe('Feature 5: handleOnSubmit — workflow 覆寫語法', () => {
       prompt: '一般使用者需求',
       cwd: process.cwd(),
     });
-    // 無 sessionId 時仍能回傳 systemMessage（/ot:auto 引導）
-    expect(result.result).toBe('');
+    expect(result.result).toBeUndefined();
     expect(result.systemMessage).toBeDefined();
   });
 
@@ -269,7 +268,7 @@ describe('Feature 5: handleOnSubmit — workflow 覆寫語法', () => {
       user_prompt: '使用舊格式的 prompt',
       cwd: process.cwd(),
     });
-    expect(result.result).toBe('');
+    expect(result.result).toBeUndefined();
     expect(result.systemMessage).toBeDefined();
   });
 });
@@ -321,7 +320,7 @@ describe('Feature 14: handleOnSubmit — hookSpecificOutput 格式', () => {
       cwd: process.cwd(),
     });
     expect(result.hookSpecificOutput).toBeUndefined();
-    expect(result.result).toBe('');
+    expect(result.result).toBeUndefined();
   });
 
   test('Scenario 14-4: [workflow:quick] 覆寫時 hookSpecificOutput.additionalContext 包含 quick', () => {

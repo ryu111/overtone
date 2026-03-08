@@ -170,8 +170,8 @@ describe('PreEditGuard: 非受保護檔案放行', () => {
     });
     expect(result.exitCode).toBe(0);
     expect(isDenied(result.parsed)).toBe(false);
-    expect(result.parsed.result).toContain('閉環提示');
-    expect(result.parsed.result).toContain('Command 定義');
+    expect(result.parsed.hookSpecificOutput?.additionalContext).toContain('閉環提示');
+    expect(result.parsed.hookSpecificOutput?.additionalContext).toContain('Command 定義');
   });
 
   test('skills/*/references/*.md → allow 但帶閉環提示', () => {
@@ -180,8 +180,8 @@ describe('PreEditGuard: 非受保護檔案放行', () => {
     });
     expect(result.exitCode).toBe(0);
     expect(isDenied(result.parsed)).toBe(false);
-    expect(result.parsed.result).toContain('閉環提示');
-    expect(result.parsed.result).toContain('Skill Reference');
+    expect(result.parsed.hookSpecificOutput?.additionalContext).toContain('閉環提示');
+    expect(result.parsed.hookSpecificOutput?.additionalContext).toContain('Skill Reference');
   });
 
   test('hooks/scripts/*.js → allow 但帶閉環提示', () => {
@@ -190,8 +190,8 @@ describe('PreEditGuard: 非受保護檔案放行', () => {
     });
     expect(result.exitCode).toBe(0);
     expect(isDenied(result.parsed)).toBe(false);
-    expect(result.parsed.result).toContain('閉環提示');
-    expect(result.parsed.result).toContain('Hook 腳本');
+    expect(result.parsed.hookSpecificOutput?.additionalContext).toContain('閉環提示');
+    expect(result.parsed.hookSpecificOutput?.additionalContext).toContain('Hook 腳本');
   });
 
   test('scripts/lib/state.js → allow（一般 lib 不受保護）', () => {
@@ -223,7 +223,7 @@ describe('PreEditGuard: Plugin 目錄外放行', () => {
     });
     expect(result.exitCode).toBe(0);
     // CLAUDE.md 不阻擋但注入精簡原則提醒
-    expect(result.parsed.result).toContain('CLAUDE.md 精簡原則提醒');
+    expect(result.parsed.hookSpecificOutput?.additionalContext).toContain('CLAUDE.md 精簡原則提醒');
     // 確認不是 deny（沒有 permissionDecision）
     expect(result.parsed.hookSpecificOutput?.permissionDecision).toBeUndefined();
   });
@@ -233,7 +233,7 @@ describe('PreEditGuard: Plugin 目錄外放行', () => {
       file_path: `${PLUGIN_ROOT}/CLAUDE.md`,
     });
     expect(result.exitCode).toBe(0);
-    expect(result.parsed.result).toContain('CLAUDE.md 精簡原則提醒');
+    expect(result.parsed.hookSpecificOutput?.additionalContext).toContain('CLAUDE.md 精簡原則提醒');
     expect(result.parsed.hookSpecificOutput?.permissionDecision).toBeUndefined();
   });
 
