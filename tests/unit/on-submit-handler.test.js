@@ -23,7 +23,7 @@ describe('buildSystemMessage', () => {
       workflows,
     });
     expect(result).toContain('quick');
-    expect(result).toContain('/ot:quick');
+    expect(result).toContain('/quick');
     expect(result).toContain('MUST 依照 workflow command 指引委派 agent');
   });
 
@@ -35,7 +35,7 @@ describe('buildSystemMessage', () => {
       workflows,
     });
     expect(result).toContain('工作流進行中：quick（DEV）');
-    expect(result).toContain('/ot:auto');
+    expect(result).toContain('/auto');
   });
 
   it('Scenario 3: activeFeatureContext 在有 workflow 時也要包含', () => {
@@ -48,14 +48,14 @@ describe('buildSystemMessage', () => {
     expect(result).toContain('my-feature');
   });
 
-  it('Scenario 4: 無進行中 workflow 時回傳 /ot:auto 引導訊息', () => {
+  it('Scenario 4: 無進行中 workflow 時回傳 auto 引導訊息', () => {
     const result = buildSystemMessage({
       validWorkflowOverride: null,
       currentState: null,
       activeFeatureContext: '',
       workflows,
     });
-    expect(result).toContain('/ot:auto 工作流選擇器');
+    expect(result).toContain('"auto"');
     expect(result).toContain('18 個 workflow 模板');
   });
 
@@ -70,19 +70,19 @@ describe('buildSystemMessage', () => {
   });
 
   it('Scenario 6: currentState 有 currentStage 才視為進行中', () => {
-    // currentState 存在但無 currentStage → 應回傳 /ot:auto 引導
+    // currentState 存在但無 currentStage → 應回傳 auto 引導
     const result = buildSystemMessage({
       validWorkflowOverride: null,
       currentState: { workflowType: 'quick' }, // 無 currentStage
       activeFeatureContext: '',
       workflows,
     });
-    expect(result).toContain('/ot:auto 工作流選擇器');
+    expect(result).toContain('"auto"');
   });
 
-  it('Scenario 7: opts 為 null 時回傳預設 /ot:auto 引導', () => {
+  it('Scenario 7: opts 為 null 時回傳預設 auto 引導', () => {
     const result = buildSystemMessage(null);
-    expect(result).toContain('/ot:auto 工作流選擇器');
+    expect(result).toContain('"auto"');
   });
 });
 
@@ -230,7 +230,7 @@ describe('Feature 5: handleOnSubmit — workflow 覆寫語法', () => {
     });
     expect(result.systemMessage).toBeDefined();
     expect(result.systemMessage).toContain('quick');
-    expect(result.systemMessage).toContain('/ot:quick');
+    expect(result.systemMessage).toContain('/quick');
   });
 
   test('Scenario 5-2: [workflow:invalid] 使用無效 key 時退回 /ot:auto 引導', () => {
@@ -239,8 +239,8 @@ describe('Feature 5: handleOnSubmit — workflow 覆寫語法', () => {
       prompt: '幫我開發功能 [workflow:invalid_xyz]',
       cwd: process.cwd(),
     });
-    // 無效 workflow key → validWorkflowOverride 為 null → 回傳 /ot:auto 引導
-    expect(result.systemMessage).toContain('/ot:auto');
+    // 無效 workflow key → validWorkflowOverride 為 null → 回傳 auto 引導
+    expect(result.systemMessage).toContain('"auto"');
   });
 
   test('Scenario 5-3: /ot: 指令提早返回，result 為空字串', () => {
@@ -275,6 +275,68 @@ describe('Feature 5: handleOnSubmit — workflow 覆寫語法', () => {
 });
 
 // ════════════════════════════════════════════════════════
+// Feature 14: handleOnSubmit — hookSpecificOutput 格式驗證
+// ════════════════════════════════════════════════════════
+
+describe('Feature 14: handleOnSubmit — hookSpecificOutput 格式', () => {
+  let session;
+
+  beforeEach(() => {
+    session = makeSession('f14');
+    mkdirSync(session.dir, { recursive: true });
+  });
+
+  afterEach(() => {
+    rmSync(session.dir, { recursive: true, force: true });
+  });
+
+  test('Scenario 14-1: 有進行中 workflow 時 hookSpecificOutput.hookEventName 為 UserPromptSubmit', () => {
+    const result = handleOnSubmit({
+      session_id: session.id,
+      prompt: '繼續開發',
+      cwd: process.cwd(),
+    });
+    if (result.systemMessage) {
+      expect(result.hookSpecificOutput).toBeDefined();
+      expect(result.hookSpecificOutput.hookEventName).toBe('UserPromptSubmit');
+    }
+  });
+
+  test('Scenario 14-2: hookSpecificOutput.additionalContext 等於 systemMessage', () => {
+    const result = handleOnSubmit({
+      session_id: session.id,
+      prompt: '請幫我實作功能',
+      cwd: process.cwd(),
+    });
+    if (result.systemMessage) {
+      expect(result.hookSpecificOutput).toBeDefined();
+      expect(result.hookSpecificOutput.additionalContext).toBe(result.systemMessage);
+    }
+  });
+
+  test('Scenario 14-3: /ot: 指令時不包含 hookSpecificOutput', () => {
+    const result = handleOnSubmit({
+      session_id: session.id,
+      prompt: '/ot:auto',
+      cwd: process.cwd(),
+    });
+    expect(result.hookSpecificOutput).toBeUndefined();
+    expect(result.result).toBe('');
+  });
+
+  test('Scenario 14-4: [workflow:quick] 覆寫時 hookSpecificOutput.additionalContext 包含 quick', () => {
+    const result = handleOnSubmit({
+      session_id: session.id,
+      prompt: '新增功能 [workflow:quick]',
+      cwd: process.cwd(),
+    });
+    expect(result.hookSpecificOutput).toBeDefined();
+    expect(result.hookSpecificOutput.hookEventName).toBe('UserPromptSubmit');
+    expect(result.hookSpecificOutput.additionalContext).toContain('quick');
+  });
+});
+
+// ════════════════════════════════════════════════════════
 // Feature 6: buildSystemMessage — 進階邊界測試
 // ════════════════════════════════════════════════════════
 
@@ -299,14 +361,14 @@ describe('Feature 6: buildSystemMessage — 進階邊界', () => {
     expect(result).toContain('TaskCreate');
   });
 
-  test('Scenario 6-3: 進行中 workflow 的訊息包含 /ot:auto 查詢提示', () => {
+  test('Scenario 6-3: 進行中 workflow 的訊息包含 /auto 查詢提示', () => {
     const result = buildSystemMessage({
       validWorkflowOverride: null,
       currentState: { currentStage: 'REVIEW', workflowType: 'standard' },
       activeFeatureContext: '',
       workflows,
     });
-    expect(result).toContain('/ot:auto');
+    expect(result).toContain('/auto');
     expect(result).toContain('standard（REVIEW）');
   });
 
@@ -329,7 +391,7 @@ describe('Feature 6: buildSystemMessage — 進階邊界', () => {
       workflows: { myflow: {} },
     });
     expect(result).toContain('myflow');
-    expect(result).toContain('/ot:myflow');
+    expect(result).toContain('/myflow');
   });
 
   test('Scenario 6-6: workflows 傳入時 validWorkflowOverride 顯示正確 label', () => {

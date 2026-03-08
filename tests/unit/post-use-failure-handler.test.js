@@ -210,3 +210,60 @@ describe('handlePostUseFailure — 進階行為', () => {
     expect(result.output.result).toBe('');
   });
 });
+
+describe('handlePostUseFailure — hookSpecificOutput 格式（Feature fix-hook-output-format）', () => {
+  it('Scenario HO-1: Task 失敗時 hookSpecificOutput.hookEventName 為 PostToolUseFailure', () => {
+    const result = handlePostUseFailure({
+      session_id: 'test-sess-ho1',
+      tool_name: 'Task',
+      error: 'subagent not found',
+      is_interrupt: false,
+    });
+    expect(result.output.hookSpecificOutput).toBeDefined();
+    expect(result.output.hookSpecificOutput.hookEventName).toBe('PostToolUseFailure');
+  });
+
+  it('Scenario HO-2: Task 失敗時 hookSpecificOutput.additionalContext 等於 result', () => {
+    const result = handlePostUseFailure({
+      session_id: 'test-sess-ho2',
+      tool_name: 'Task',
+      error: 'timeout waiting for subagent',
+      is_interrupt: false,
+    });
+    expect(result.output.hookSpecificOutput.additionalContext).toBe(result.output.result);
+    expect(result.output.hookSpecificOutput.additionalContext).toContain('agent 委派失敗');
+  });
+
+  it('Scenario HO-3: Write 失敗時 hookSpecificOutput.additionalContext 等於 result', () => {
+    const result = handlePostUseFailure({
+      session_id: 'test-sess-ho3',
+      tool_name: 'Write',
+      error: 'permission denied',
+      is_interrupt: false,
+    });
+    expect(result.output.hookSpecificOutput).toBeDefined();
+    expect(result.output.hookSpecificOutput.hookEventName).toBe('PostToolUseFailure');
+    expect(result.output.hookSpecificOutput.additionalContext).toBe(result.output.result);
+  });
+
+  it('Scenario HO-4: 非 CRITICAL_TOOLS（Bash）失敗時無 hookSpecificOutput', () => {
+    const result = handlePostUseFailure({
+      session_id: 'test-sess-ho4',
+      tool_name: 'Bash',
+      error: 'command not found',
+      is_interrupt: false,
+    });
+    expect(result.output.hookSpecificOutput).toBeUndefined();
+    expect(result.output.result).toBe('');
+  });
+
+  it('Scenario HO-5: is_interrupt=true 時無 hookSpecificOutput（早期返回）', () => {
+    const result = handlePostUseFailure({
+      session_id: 'test-sess-ho5',
+      tool_name: 'Task',
+      error: 'interrupted',
+      is_interrupt: true,
+    });
+    expect(result.output.hookSpecificOutput).toBeUndefined();
+  });
+});

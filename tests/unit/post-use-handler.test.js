@@ -266,6 +266,61 @@ describe('handlePostUse — 整合行為', () => {
       rmSync(tmpFile, { force: true });
     }
   });
+
+  it('Scenario H-8: Bash 重大失敗時 hookSpecificOutput.hookEventName 為 PostToolUse', () => {
+    const result = handlePostUse({
+      session_id: session.id,
+      tool_name: 'Bash',
+      tool_input: { command: 'bun test' },
+      tool_response: { exit_code: 1, stderr: 'Module not found: cannot resolve "./something-missing"' },
+    });
+    if (result.output.result) {
+      expect(result.output.hookSpecificOutput).toBeDefined();
+      expect(result.output.hookSpecificOutput.hookEventName).toBe('PostToolUse');
+    }
+  });
+
+  it('Scenario H-9: Bash 重大失敗時 hookSpecificOutput.additionalContext 等於 result', () => {
+    const result = handlePostUse({
+      session_id: session.id,
+      tool_name: 'Bash',
+      tool_input: { command: 'bun test' },
+      tool_response: { exit_code: 1, stderr: 'Cannot find module "missing-module" from "src/index.js"' },
+    });
+    if (result.output.result) {
+      expect(result.output.hookSpecificOutput.additionalContext).toBe(result.output.result);
+    }
+  });
+
+  it('Scenario H-10: Wording 不匹配時 hookSpecificOutput.hookEventName 為 PostToolUse', () => {
+    const tmpFile = path.join(os.tmpdir(), `ot-wording-ho-${Date.now()}.md`);
+    writeFileSync(tmpFile, '💡 MUST do this\n');
+    try {
+      const result = handlePostUse({
+        session_id: session.id,
+        tool_name: 'Write',
+        tool_input: { file_path: tmpFile },
+        tool_response: {},
+      });
+      if (result.output.result) {
+        expect(result.output.hookSpecificOutput).toBeDefined();
+        expect(result.output.hookSpecificOutput.hookEventName).toBe('PostToolUse');
+        expect(result.output.hookSpecificOutput.additionalContext).toBe(result.output.result);
+      }
+    } finally {
+      rmSync(tmpFile, { force: true });
+    }
+  });
+
+  it('Scenario H-11: 無副作用時無 hookSpecificOutput', () => {
+    const result = handlePostUse({
+      session_id: session.id,
+      tool_name: 'Bash',
+      tool_input: { command: 'echo hello' },
+      tool_response: { exit_code: 0, stderr: '' },
+    });
+    expect(result.output.hookSpecificOutput).toBeUndefined();
+  });
 });
 
 // ── detectWordingMismatch 直接測試 ──

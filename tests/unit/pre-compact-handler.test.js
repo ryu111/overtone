@@ -370,6 +370,26 @@ describeI('handlePreCompact', () => {
     const st = stateLibPc.readState(sess.id);
     expectI(Object.keys(st.activeAgents)).toHaveLength(0);
   });
+
+  itI('有 workflow state → hookSpecificOutput.hookEventName 為 PreCompact', () => {
+    stateLibPc.initState(sess.id, 'quick', ['DEV', 'REVIEW']);
+    const result = handlePreCompact({ session_id: sess.id, cwd: '/tmp' });
+    expectI(result.output.hookSpecificOutput).toBeDefined();
+    expectI(result.output.hookSpecificOutput.hookEventName).toBe('PreCompact');
+  });
+
+  itI('有 workflow state → hookSpecificOutput.additionalContext 等於 systemMessage', () => {
+    stateLibPc.initState(sess.id, 'quick', ['DEV', 'REVIEW']);
+    const result = handlePreCompact({ session_id: sess.id, cwd: '/tmp' });
+    expectI(result.output.hookSpecificOutput.additionalContext).toBe(result.output.systemMessage);
+    expectI(result.output.hookSpecificOutput.additionalContext).toContain('Overtone 狀態恢復');
+  });
+
+  itI('無 workflow state → 無 hookSpecificOutput', () => {
+    const result = handlePreCompact({ session_id: sess.id });
+    expectI(result.output.hookSpecificOutput).toBeUndefined();
+    expectI(result.output.result).toBe('');
+  });
 });
 
 // ── Feature A: detectFrequencyAnomaly 純函式 ─────────────────────────────────

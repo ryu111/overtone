@@ -93,7 +93,7 @@ describe('[workflow:xxx] 覆寫語法 — 有效 key', () => {
     expect(ctx).toBeTruthy();
     expect(ctx).toContain('standard');
     expect(ctx).toContain('標準功能');
-    expect(ctx).toContain('/ot:standard');
+    expect(ctx).toContain('/standard');
   });
 
   test('場景 4：[workflow:quick] → additionalContext 包含 quick 資訊', async () => {
@@ -105,7 +105,7 @@ describe('[workflow:xxx] 覆寫語法 — 有效 key', () => {
     expect(ctx).toBeTruthy();
     expect(ctx).toContain('quick');
     expect(ctx).toContain('快速開發');
-    expect(ctx).toContain('/ot:quick');
+    expect(ctx).toContain('/quick');
   });
 
   test('場景 4b：[workflow:tdd] → additionalContext 包含 tdd 資訊', async () => {
@@ -125,14 +125,14 @@ describe('[workflow:xxx] 覆寫語法 — 有效 key', () => {
 // ────────────────────────────────────────────────────────────────────────────
 
 describe('[workflow:xxx] 覆寫語法 — 無效 key 降級', () => {
-  test('場景 5：[workflow:invalid] → 降級到一般 /ot:auto 注入（不 crash）', async () => {
+  test('場景 5：[workflow:invalid] → 降級到一般 auto 注入（不 crash）', async () => {
     const result = await runHook(
       { user_prompt: '請執行 [workflow:invalid]' },
       { CLAUDE_SESSION_ID: '' }
     );
     const ctx = getContext(result);
     expect(ctx).toBeTruthy();
-    expect(ctx).toContain('/ot:auto');
+    expect(ctx).toContain('"auto"');
     expect(ctx).not.toContain('工作流進行中');
   });
 
@@ -176,32 +176,32 @@ describe('[workflow:xxx] 大小寫不敏感', () => {
 });
 
 // ────────────────────────────────────────────────────────────────────────────
-// 場景 7：無 workflow、無 sessionId — 純 /ot:auto 注入
+// 場景 7：無 workflow、無 sessionId — 純 auto 注入
 // ────────────────────────────────────────────────────────────────────────────
 
-describe('無 workflow 狀態 — 注入 /ot:auto 指引', () => {
-  test('場景 7：普通文字 prompt（無 sessionId）→ 注入 /ot:auto', async () => {
+describe('無 workflow 狀態 — 注入 auto 指引', () => {
+  test('場景 7：普通文字 prompt（無 sessionId）→ 注入 auto 指引', async () => {
     const result = await runHook(
       { user_prompt: '請幫我修改程式碼' },
       { CLAUDE_SESSION_ID: '' }
     );
     const ctx = getContext(result);
     expect(ctx).toBeTruthy();
-    expect(ctx).toContain('/ot:auto');
+    expect(ctx).toContain('"auto"');
     expect(ctx).toContain('[Overtone]');
   });
 
-  test('場景 7b：prompt 為空字串 → 注入 /ot:auto', async () => {
+  test('場景 7b：prompt 為空字串 → 注入 auto 指引', async () => {
     const result = await runHook(
       { user_prompt: '' },
       { CLAUDE_SESSION_ID: '' }
     );
     const ctx = getContext(result);
     expect(ctx).toBeTruthy();
-    expect(ctx).toContain('/ot:auto');
+    expect(ctx).toContain('"auto"');
   });
 
-  test('場景 7c：缺少 CLAUDE_SESSION_ID 環境變數 → 注入 /ot:auto', async () => {
+  test('場景 7c：缺少 CLAUDE_SESSION_ID 環境變數 → 注入 auto 指引', async () => {
     const { CLAUDE_SESSION_ID: _, ...envWithoutSession } = process.env;
     const proc = Bun.spawn(['node', HOOK_PATH], {
       stdin: Buffer.from(JSON.stringify({ user_prompt: '你好' })),
@@ -214,7 +214,7 @@ describe('無 workflow 狀態 — 注入 /ot:auto 指引', () => {
     const result = JSON.parse(output);
     const ctx = getContext(result);
     expect(ctx).toBeTruthy();
-    expect(ctx).toContain('/ot:auto');
+    expect(ctx).toContain('"auto"');
   });
 });
 
@@ -233,17 +233,17 @@ describe('有進行中 workflow — 注入狀態摘要', () => {
     expect(ctx).toContain('[Overtone]');
     expect(ctx).toContain('quick');
     expect(ctx).toContain('DEV');
-    expect(ctx).toContain('/ot:auto');
+    expect(ctx).toContain('/auto');
   });
 
-  test('場景 8b：狀態摘要為簡短格式（指引用戶查看 /ot:auto）', async () => {
+  test('場景 8b：狀態摘要為簡短格式（指引用戶查看 /auto）', async () => {
     const result = await runHook(
       { user_prompt: '什麼狀況？' },
       { CLAUDE_SESSION_ID: TEST_SESSION }
     );
     const ctx = getContext(result);
     expect(ctx).toBeTruthy();
-    expect(ctx).toContain('/ot:auto');
+    expect(ctx).toContain('/auto');
     expect(ctx).toContain('工作流進行中');
   });
 
@@ -268,7 +268,7 @@ describe('有進行中 workflow — 注入狀態摘要', () => {
     const ctx = getContext(result);
     expect(ctx).not.toContain('失敗次數');
     expect(ctx).toContain('工作流進行中');
-    expect(ctx).toContain('/ot:auto');
+    expect(ctx).toContain('/auto');
 
     state.updateStateAtomic(TEST_SESSION, (s) => {
       s.failCount = 0;

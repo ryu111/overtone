@@ -114,8 +114,8 @@ describe('場景 2：首次 prompt 不記錄 workflow_routing', () => {
       cwd: process.cwd(),
     });
 
-    // systemMessage 應注入 /ot:auto 指引
-    expect(getContext(output)).toContain('/ot:auto');
+    // systemMessage 應注入 auto 指引
+    expect(getContext(output)).toContain('"auto"');
 
     // 不應有 workflow_routing 觀察
     const observations = instinct.query(sessionId, { type: 'workflow_routing' });

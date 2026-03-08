@@ -2,6 +2,8 @@
 
 > 裝上 Claude Code，就像有了一個開發團隊。
 
+**版本：v0.28.89**
+
 ---
 
 ## 3 分鐘上手
@@ -99,7 +101,7 @@ lint 0 error + test 0 fail + review PASS → 才算完成
 
 | 項目 | 內容 |
 |------|------|
-| Plugin 版本 | 0.28.83 |
+| Plugin 版本 | 0.28.89 |
 | Agent 數量 | 18（含 grader、claude-developer） |
 | Workflow 模板 | 18 |
 | Hook 數量 | 11 |
@@ -137,3 +139,4 @@ lint 0 error + test 0 fail + review PASS → 才算完成
 | `OT_CORS_ORIGIN` | CORS 允許來源 | `http://localhost:7777` |
 | `TELEGRAM_BOT_TOKEN` | Telegram Bot token | — |
 | `TELEGRAM_CHAT_ID` | 白名單 chat ID | — |
+<!-- hook-test -->
