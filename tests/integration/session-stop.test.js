@@ -154,7 +154,7 @@ describe('Stop hook 場景 2：有未完成 stages → block', () => {
 // ────────────────────────────────────────────────────────────────────────────
 
 describe('Stop hook 場景 3：手動停止 → 允許退出', () => {
-  test('loop.stopped = true → 不 block，result 含 🛑', async () => {
+  test('loop.stopped = true → 不 block，hook 正常退出', async () => {
     const sessionId = newSessionId();
     createdSessions.push(sessionId);
 
@@ -175,8 +175,6 @@ describe('Stop hook 場景 3：手動停止 → 允許退出', () => {
     const parsed = JSON.parse(output);
     // 不應 block
     expect(parsed.decision).not.toBe('block');
-    // result 應包含手動停止的 🛑 提示
-    expect(parsed.result).toContain('🛑');
     expect(exitCode).toBe(0);
   });
 });
@@ -186,7 +184,7 @@ describe('Stop hook 場景 3：手動停止 → 允許退出', () => {
 // ────────────────────────────────────────────────────────────────────────────
 
 describe('Stop hook 場景 4：所有 stages 完成 → 允許退出', () => {
-  test('single workflow DEV 完成 → 不 block，result 含 🎉', async () => {
+  test('single workflow DEV 完成 → 不 block，hook 正常退出', async () => {
     const sessionId = newSessionId();
     createdSessions.push(sessionId);
 
@@ -206,8 +204,6 @@ describe('Stop hook 場景 4：所有 stages 完成 → 允許退出', () => {
     const parsed = JSON.parse(output);
     // 不應 block
     expect(parsed.decision).not.toBe('block');
-    // result 應含完成摘要
-    expect(parsed.result).toContain('🎉');
     expect(exitCode).toBe(0);
   });
 });

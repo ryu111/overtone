@@ -189,16 +189,9 @@ describe('BDD F3：並行組中第一個完成時不觸發全部完成', () => {
     expect(ws.stages['REVIEW'].status).toBe('completed');
   });
 
-  test('result 含 ✅', () => {
-    expect(result.parsed?.result).toContain('✅');
-  });
-
-  test('result 不含「所有階段已完成」', () => {
-    expect(result.parsed?.result).not.toContain('所有階段已完成');
-  });
-
-  test('result 不含 🎉（未觸發全部完成）', () => {
-    expect(result.parsed?.result).not.toContain('🎉');
+  test('並行組尚未收斂（TEST:2 仍 active）', () => {
+    const ws = stateLib.readState(SESSION_ID);
+    expect(ws.stages['TEST:2'].status).toBe('active');
   });
 });
 
@@ -217,10 +210,6 @@ describe('BDD F3：並行組最後一個完成時收斂並推進至 RETRO', () =
   test('TEST:2.status 變為 completed', () => {
     const ws = stateLib.readState(SESSION_ID);
     expect(ws.stages['TEST:2'].status).toBe('completed');
-  });
-
-  test('result 含 ✅', () => {
-    expect(result.parsed?.result).toContain('✅');
   });
 
   test('REVIEW 和 TEST:2 均為 completed（並行收斂）', () => {

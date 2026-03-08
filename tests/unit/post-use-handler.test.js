@@ -208,14 +208,15 @@ describe('handlePostUse — 整合行為', () => {
     expect(result).toEqual({ output: {} });
   });
 
-  it('Scenario H-4: Bash 重大失敗 → 回傳錯誤守衛 result', () => {
+  it('Scenario H-4: Bash 重大失敗 → 回傳 hookSpecificOutput', () => {
     const result = handlePostUse({
       session_id: session.id,
       tool_name: 'Bash',
       tool_input: { command: 'bun test' },
       tool_response: { exit_code: 1, stderr: 'Module not found: cannot resolve "./something-missing"' },
     });
-    expect(result.output.result).toContain('Overtone 錯誤守衛');
+    expect(result.output.hookSpecificOutput).toBeDefined();
+    expect(result.output.hookSpecificOutput.additionalContext).toContain('Overtone 錯誤守衛');
   });
 
   it('Scenario H-5: Write .md 檔案含 wording 不匹配 → 回傳警告', () => {
@@ -228,8 +229,8 @@ describe('handlePostUse — 整合行為', () => {
         tool_input: { file_path: tmpFile },
         tool_response: {},
       });
-      expect(result.output.result).toContain('Overtone 措詞檢查');
-      expect(result.output.result).toContain(tmpFile);
+      expect(result.output.hookSpecificOutput.additionalContext).toContain('Overtone 措詞檢查');
+      expect(result.output.hookSpecificOutput.additionalContext).toContain(tmpFile);
     } finally {
       rmSync(tmpFile, { force: true });
     }
@@ -261,7 +262,7 @@ describe('handlePostUse — 整合行為', () => {
         tool_input: { file_path: tmpFile },
         tool_response: {},
       });
-      expect(result.output.result).toContain('Overtone 措詞檢查');
+      expect(result.output.hookSpecificOutput.additionalContext).toContain('Overtone 措詞檢查');
     } finally {
       rmSync(tmpFile, { force: true });
     }
@@ -274,22 +275,18 @@ describe('handlePostUse — 整合行為', () => {
       tool_input: { command: 'bun test' },
       tool_response: { exit_code: 1, stderr: 'Module not found: cannot resolve "./something-missing"' },
     });
-    if (result.output.result) {
-      expect(result.output.hookSpecificOutput).toBeDefined();
-      expect(result.output.hookSpecificOutput.hookEventName).toBe('PostToolUse');
-    }
+    expect(result.output.hookSpecificOutput).toBeDefined();
+    expect(result.output.hookSpecificOutput.hookEventName).toBe('PostToolUse');
   });
 
-  it('Scenario H-9: Bash 重大失敗時 hookSpecificOutput.additionalContext 等於 result', () => {
+  it('Scenario H-9: Bash 重大失敗時 hookSpecificOutput.additionalContext 含錯誤訊息', () => {
     const result = handlePostUse({
       session_id: session.id,
       tool_name: 'Bash',
       tool_input: { command: 'bun test' },
       tool_response: { exit_code: 1, stderr: 'Cannot find module "missing-module" from "src/index.js"' },
     });
-    if (result.output.result) {
-      expect(result.output.hookSpecificOutput.additionalContext).toBe(result.output.result);
-    }
+    expect(result.output.hookSpecificOutput.additionalContext).toContain('Overtone 錯誤守衛');
   });
 
   it('Scenario H-10: Wording 不匹配時 hookSpecificOutput.hookEventName 為 PostToolUse', () => {
@@ -302,11 +299,9 @@ describe('handlePostUse — 整合行為', () => {
         tool_input: { file_path: tmpFile },
         tool_response: {},
       });
-      if (result.output.result) {
-        expect(result.output.hookSpecificOutput).toBeDefined();
-        expect(result.output.hookSpecificOutput.hookEventName).toBe('PostToolUse');
-        expect(result.output.hookSpecificOutput.additionalContext).toBe(result.output.result);
-      }
+      expect(result.output.hookSpecificOutput).toBeDefined();
+      expect(result.output.hookSpecificOutput.hookEventName).toBe('PostToolUse');
+      expect(result.output.hookSpecificOutput.additionalContext).toContain('Overtone 措詞檢查');
     } finally {
       rmSync(tmpFile, { force: true });
     }

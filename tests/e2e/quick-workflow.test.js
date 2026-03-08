@@ -155,7 +155,7 @@ describe('BDD F4：DOCS PASS 後所有 stage 完成', () => {
     expect(allCompleted).toBe(true);
   });
 
-  test('result 含「所有階段已完成」', () => {
-    expect(result.parsed?.result).toContain('所有階段已完成');
+  test('hook output 為空物件（SubagentStop schema 無 result 欄位）', () => {
+    expect(result.parsed).toEqual({});
   });
 });

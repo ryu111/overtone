@@ -195,20 +195,20 @@ describe('場景 2：所有 stages 完成後 on-stop 偵測到完成狀態', () 
     expect(stopResult.exitCode).toBe(0);
   });
 
-  test('on-stop.js 輸出包含完成提示（result 欄位存在）', () => {
+  test('on-stop.js 輸出為空物件（SessionStop schema 無 result 欄位）', () => {
     expect(stopResult.parsed).not.toBeNull();
-    expect(stopResult.parsed).toHaveProperty('result');
+    expect(stopResult.parsed).toEqual({});
   });
 
-  test('on-stop.js result 包含工作流完成訊息', () => {
-    const result = stopResult.parsed?.result ?? '';
-    // on-stop.js 在所有階段完成時輸出 buildCompletionSummary，含 "工作流完成！"
-    expect(result).toContain('工作流完成');
+  test('所有 stages 均已 completed（workflow 真正完成的驗證）', () => {
+    const ws = state.readState(SESSION_ID);
+    const allCompleted = Object.values(ws.stages).every((s) => s.status === 'completed');
+    expect(allCompleted).toBe(true);
   });
 
-  test('on-stop.js result 包含 quick workflow 類型', () => {
-    const result = stopResult.parsed?.result ?? '';
-    expect(result).toContain('quick');
+  test('workflow 類型為 quick', () => {
+    const ws = state.readState(SESSION_ID);
+    expect(ws.workflowType).toBe('quick');
   });
 });
 

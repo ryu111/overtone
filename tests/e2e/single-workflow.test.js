@@ -126,8 +126,9 @@ describe('BDD F2：on-stop hook 將 DEV stage 標記完成並發出 timeline 事
     result = runSubagentStop(SESSION_ID, 'ot:developer', 'VERDICT: pass 開發完成，功能正常運作');
   });
 
-  test('hook 回傳 result 含 ✅', () => {
-    expect(result.parsed?.result).toContain('✅');
+  test('DEV.status 變為 completed', () => {
+    const ws = state.readState(SESSION_ID);
+    expect(ws.stages['DEV'].status).toBe('completed');
   });
 
   test('workflow.json 中 DEV.status 變為 completed', () => {
@@ -167,11 +168,12 @@ describe('BDD F2：所有 stage 完成後 session on-stop 輸出完成摘要', (
     expect(result.exitCode).toBe(0);
   });
 
-  test('result 含工作流完成', () => {
-    expect(result.parsed?.result).toContain('工作流完成');
+  test('hook output 為空物件（SessionStop schema 無 result 欄位）', () => {
+    expect(result.parsed).toEqual({});
   });
 
-  test('result 含 single', () => {
-    expect(result.parsed?.result).toContain('single');
+  test('workflow 類型為 single', () => {
+    const ws = state.readState(SESSION_ID);
+    expect(ws.workflowType).toBe('single');
   });
 });

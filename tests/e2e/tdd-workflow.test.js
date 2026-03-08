@@ -131,7 +131,7 @@ describe('BDD tdd：TEST:2(verify) 完成後所有 stage 均為 completed', () =
     expect(Object.keys(ws.stages).length).toBe(3);
   });
 
-  test('result 含「所有階段已完成」', () => {
-    expect(result.parsed?.result).toContain('所有階段已完成');
+  test('hook output 為空物件（SubagentStop schema 無 result 欄位）', () => {
+    expect(result.parsed).toEqual({});
   });
 });

@@ -206,12 +206,11 @@ describe('BDD secure：前兩個完成不收斂，第三個完成後收斂', () 
     thirdResult  = runSubagentStop(SESSION_ID, 'ot:security-reviewer', 'VERDICT: pass 無安全漏洞');
   });
 
-  test('REVIEW 完成：result 不含「所有階段已完成」', () => {
-    expect(firstResult.parsed?.result).not.toContain('所有階段已完成');
-  });
-
-  test('TEST:2 完成：result 不含「所有階段已完成」', () => {
-    expect(secondResult.parsed?.result).not.toContain('所有階段已完成');
+  test('三成員均在同一 beforeAll 完成（hook 依序執行）', () => {
+    const ws = stateLib.readState(SESSION_ID);
+    expect(ws.stages['REVIEW'].status).toBe('completed');
+    expect(ws.stages['TEST:2'].status).toBe('completed');
+    expect(ws.stages['SECURITY'].status).toBe('completed');
   });
 
   test('REVIEW.status 為 completed', () => {
@@ -269,7 +268,7 @@ describe('BDD secure：RETRO → DOCS 完成後所有 9 stage 均為 completed',
     expect(Object.keys(ws.stages).length).toBe(9);
   });
 
-  test('result 含「所有階段已完成」', () => {
-    expect(docsResult.parsed?.result).toContain('所有階段已完成');
+  test('hook output 為空物件（SubagentStop schema 無 result 欄位）', () => {
+    expect(docsResult.parsed).toEqual({});
   });
 });

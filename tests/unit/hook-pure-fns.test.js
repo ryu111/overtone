@@ -108,12 +108,12 @@ describe('on-start.js 純函數', () => {
   });
 
   describe('buildStartOutput', () => {
-    test('有 msgs 時回傳 result 和 systemMessage', () => {
+    test('有 msgs 時回傳 systemMessage（無 result 欄位）', () => {
       const output = buildStartOutput(
         { session_id: 'abc', api_key: 'key' },
         { banner: '🎵 banner', msgs: ['未完成任務訊息'] }
       );
-      expect(typeof output.result).toBe('string');
+      expect(output.result).toBeUndefined();
       expect(typeof output.systemMessage).toBe('string');
       expect(output.systemMessage.length).toBeGreaterThan(0);
     });
@@ -123,7 +123,7 @@ describe('on-start.js 純函數', () => {
         { session_id: 'abc' },
         { banner: 'banner', msgs: [] }
       );
-      expect(typeof output.result).toBe('string');
+      expect(output.result).toBeUndefined();
       expect(output.systemMessage).toBeUndefined();
     });
 
@@ -142,7 +142,7 @@ describe('on-start.js 純函數', () => {
       );
       expect(() => JSON.stringify(output)).not.toThrow();
       const parsed = JSON.parse(JSON.stringify(output));
-      expect(typeof parsed.result).toBe('string');
+      expect(parsed.result).toBeUndefined();
       expect(typeof parsed.systemMessage).toBe('string');
     });
   });

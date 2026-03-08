@@ -74,14 +74,14 @@ describe('Notification hook（on-notification.js）', () => {
   // ── elicitation_dialog ──
 
   describe('elicitation_dialog 事件', () => {
-    test('回傳 { result: "" }（不阻擋通知）', () => {
+    test('回傳空物件（不阻擋通知）', () => {
       const { parsed } = runHook({
         type: 'elicitation_dialog',
         session_id: 'test-session-001',
       });
 
       expect(parsed).not.toBeNull();
-      expect(parsed.result).toBe('');
+      expect(parsed.result).toBeUndefined();
     });
 
     test('exit code 為 0', () => {
@@ -97,14 +97,14 @@ describe('Notification hook（on-notification.js）', () => {
   // ── permission_prompt（不播放音效，但不 crash）──
 
   describe('permission_prompt 事件（不在 SOUND_TYPES 中）', () => {
-    test('回傳 { result: "" }（不阻擋通知、不播放音效）', () => {
+    test('回傳空物件（不阻擋通知、不播放音效）', () => {
       const { parsed } = runHook({
         type: 'permission_prompt',
         session_id: 'test-session-003',
       });
 
       expect(parsed).not.toBeNull();
-      expect(parsed.result).toBe('');
+      expect(parsed.result).toBeUndefined();
     });
 
     test('exit code 為 0', () => {
@@ -128,7 +128,7 @@ describe('Notification hook（on-notification.js）', () => {
 
       expect(exitCode).toBe(0);
       expect(parsed).not.toBeNull();
-      expect(parsed.result).toBe('');
+      expect(parsed.result).toBeUndefined();
     });
 
     test('permission_prompt 透過 notification_type 欄位也不 crash（不播放音效）', () => {
@@ -139,21 +139,21 @@ describe('Notification hook（on-notification.js）', () => {
 
       expect(exitCode).toBe(0);
       expect(parsed).not.toBeNull();
-      expect(parsed.result).toBe('');
+      expect(parsed.result).toBeUndefined();
     });
   });
 
   // ── 不需要音效的通知類型 ──
 
   describe('idle_prompt 事件（不在 SOUND_TYPES 中）', () => {
-    test('回傳 { result: "" }（不播放音效、不阻擋）', () => {
+    test('回傳空物件（不播放音效、不阻擋）', () => {
       const { parsed } = runHook({
         type: 'idle_prompt',
         session_id: 'test-session-007',
       });
 
       expect(parsed).not.toBeNull();
-      expect(parsed.result).toBe('');
+      expect(parsed.result).toBeUndefined();
     });
 
     test('exit code 為 0', () => {
@@ -169,12 +169,12 @@ describe('Notification hook（on-notification.js）', () => {
   // ── 空 input 容錯 ──
 
   describe('空 input 或畸形 JSON', () => {
-    test('空 JSON {} 不 crash，回傳 { result: "" }', () => {
+    test('空 JSON {} 不 crash，hook 正常完成', () => {
       const { parsed, exitCode } = runHook({});
 
       expect(exitCode).toBe(0);
       expect(parsed).not.toBeNull();
-      expect(parsed.result).toBe('');
+      expect(parsed.result).toBeUndefined();
     });
 
     test('畸形 JSON 不 crash，exit code 為 0', () => {
@@ -183,7 +183,7 @@ describe('Notification hook（on-notification.js）', () => {
       expect(exitCode).toBe(0);
       // safeRun 確保 fallback 輸出
       expect(parsed).not.toBeNull();
-      expect(parsed.result).toBe('');
+      expect(parsed.result).toBeUndefined();
     });
 
     test('空字串 input 不 crash，exit code 為 0', () => {
@@ -191,7 +191,7 @@ describe('Notification hook（on-notification.js）', () => {
 
       expect(exitCode).toBe(0);
       expect(parsed).not.toBeNull();
-      expect(parsed.result).toBe('');
+      expect(parsed.result).toBeUndefined();
     });
   });
 

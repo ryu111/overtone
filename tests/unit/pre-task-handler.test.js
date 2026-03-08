@@ -212,14 +212,14 @@ describe('checkSkippedStages', () => {
 // ── handlePreTask — 早期返回路徑 ─────────────────────────────────────────────
 
 describe('handlePreTask — 早期返回路徑', () => {
-  test('無 session 時回傳 { output: { result: \'\' } }', () => {
+  test('無 session 時回傳 { output: {} }', () => {
     const result = handlePreTask({});
-    expect(result).toEqual({ output: { result: '' } });
+    expect(result).toEqual({ output: {} });
   });
 
   test('sessionId 為空字串時回傳空 result', () => {
     const result = handlePreTask({ session_id: '' });
-    expect(result).toEqual({ output: { result: '' } });
+    expect(result).toEqual({ output: {} });
   });
 
   test('回傳物件含 output 欄位', () => {
@@ -236,7 +236,7 @@ describe('handlePreTask — 早期返回路徑', () => {
   test('有 session 但無 workflow state → 回傳空 result（不擋）', () => {
     // 不建立 session 目錄，readState 回傳 null
     const result = handlePreTask({ session_id: 'nonexistent-session-xyz' }, 'nonexistent-session-xyz');
-    expect(result).toEqual({ output: { result: '' } });
+    expect(result).toEqual({ output: {} });
   });
 
   test('無法辨識 agent 時回傳空 result（不擋）', () => {
@@ -252,7 +252,7 @@ describe('handlePreTask — 早期返回路徑', () => {
       },
     }, sid);
 
-    expect(result).toEqual({ output: { result: '' } });
+    expect(result).toEqual({ output: {} });
   });
 });
 
@@ -267,8 +267,8 @@ describe('handlePreTask — agent 辨識', () => {
         prompt: 'do something',
       },
     });
-    // 無 sessionId → 早期 return { result: '' }
-    expect(result).toEqual({ output: { result: '' } });
+    // 無 sessionId → 早期 return {}
+    expect(result).toEqual({ output: {} });
   });
 
   test('subagent_type 為 ot:developer → 正確辨識 developer', () => {
@@ -308,7 +308,7 @@ describe('handlePreTask — agent 辨識', () => {
 
     // ot:nonexistent-agent 不在 stages，fallback 到 identifyAgent
     // identifyAgent 也不認識 → 回傳空
-    expect(result).toEqual({ output: { result: '' } });
+    expect(result).toEqual({ output: {} });
   });
 
   test('description 含 tester 關鍵字 → identifyAgent fallback 辨識', () => {

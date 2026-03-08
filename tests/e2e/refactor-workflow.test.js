@@ -185,16 +185,14 @@ describe('BDD refactor：並行組中第一個完成時不觸發全部完成', (
     expect(ws.stages['REVIEW'].status).toBe('completed');
   });
 
-  test('result 含 ✅', () => {
-    expect(result.parsed?.result).toContain('✅');
+  test('REVIEW.status 為 completed', () => {
+    const ws = stateLib.readState(SESSION_ID);
+    expect(ws.stages['REVIEW'].status).toBe('completed');
   });
 
-  test('result 不含「所有階段已完成」', () => {
-    expect(result.parsed?.result).not.toContain('所有階段已完成');
-  });
-
-  test('result 不含 🎉（未觸發全部完成）', () => {
-    expect(result.parsed?.result).not.toContain('🎉');
+  test('並行組尚未收斂（TEST:2 仍 active）', () => {
+    const ws = stateLib.readState(SESSION_ID);
+    expect(ws.stages['TEST:2'].status).toBe('active');
   });
 });
 
@@ -228,7 +226,7 @@ describe('BDD refactor：並行組最後一個完成後所有 stage 均為 compl
     expect(Object.keys(ws.stages).length).toBe(5);
   });
 
-  test('result 含「所有階段已完成」', () => {
-    expect(result.parsed?.result).toContain('所有階段已完成');
+  test('hook output 為空物件（SubagentStop schema 無 result 欄位）', () => {
+    expect(result.parsed).toEqual({});
   });
 });

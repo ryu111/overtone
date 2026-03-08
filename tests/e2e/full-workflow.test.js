@@ -198,8 +198,10 @@ describe('BDD full：quality 並行組收斂，推進至 verify 並行組', () =
     e2eResult = runPreTask(SESSION_ID, { description: '委派 e2e-runner 執行 E2E 測試' });
   });
 
-  test('REVIEW 先完成：result 不含「所有階段已完成」', () => {
-    expect(firstResult.parsed?.result).not.toContain('所有階段已完成');
+  test('REVIEW 和 TEST:2 均在同一 beforeAll 完成並收斂', () => {
+    const ws = stateLib.readState(SESSION_ID);
+    expect(ws.stages['REVIEW'].status).toBe('completed');
+    expect(ws.stages['TEST:2'].status).toBe('completed');
   });
 
   test('REVIEW.status 為 completed', () => {
@@ -245,8 +247,10 @@ describe('BDD full：verify 並行組收斂，推進至 RETRO', () => {
     runSubagentStop(SESSION_ID, 'ot:e2e-runner', 'VERDICT: pass E2E 所有測試通過');
   });
 
-  test('QA 先完成：result 不含「所有階段已完成」', () => {
-    expect(firstResult.parsed?.result).not.toContain('所有階段已完成');
+  test('QA 和 E2E 均在同一 beforeAll 完成並收斂', () => {
+    const ws = stateLib.readState(SESSION_ID);
+    expect(ws.stages['QA'].status).toBe('completed');
+    expect(ws.stages['E2E'].status).toBe('completed');
   });
 
   test('QA.status 為 completed', () => {
@@ -299,7 +303,7 @@ describe('BDD full：RETRO → DOCS 完成後所有 11 stage 均為 completed', 
     expect(Object.keys(ws.stages).length).toBe(11);
   });
 
-  test('result 含「所有階段已完成」', () => {
-    expect(docsResult.parsed?.result).toContain('所有階段已完成');
+  test('hook output 為空物件（SubagentStop schema 無 result 欄位）', () => {
+    expect(docsResult.parsed).toEqual({});
   });
 });
