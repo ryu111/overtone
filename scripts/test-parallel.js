@@ -61,6 +61,20 @@ const KNOWN_WEIGHTS = {
 // 預設權重（未知檔案）
 const DEFAULT_WEIGHT = 300;
 
+// 互斥組：同組 sequential 檔案在同一 bun test 進程中串行（避免 I/O 競爭）
+// 不在任何組中的 sequential 檔案各自獨立進程
+const SEQUENTIAL_GROUPS = {
+  'health-check': [
+    'tests/unit/health-check.test.js',
+    'tests/unit/health-check-os-tools.test.js',
+    'tests/unit/health-check-compact-frequency.test.js',
+    'tests/unit/health-check-proactive.test.js',
+    'tests/unit/health-check-principles.test.js',
+    'tests/unit/health-check-internalization.test.js',
+    'tests/integration/health-check.test.js',
+  ],
+};
+
 // 需要隔離執行的檔案（fallback 白名單，向下相容）
 // 主要靠 // @sequential marker 偵測（見 hasSequentialMarker）
 // 注意：health-check.test.js 曾因重量級子進程列於此，優化後已透過 @sequential marker 管理
@@ -210,7 +224,9 @@ async function runParallel() {
     console.log(`偵測到 @sequential marker: ${markerCount} 個`);
   }
   if (sequentialFiles.length > 0) {
-    console.log(`隔離測試: ${sequentialFiles.length} 個（parallel 完成後並行啟動）`);
+    const groupCount = Object.keys(SEQUENTIAL_GROUPS).length;
+    const ungrouped = sequentialFiles.filter(f => !Object.values(SEQUENTIAL_GROUPS).flat().includes(f)).length;
+    console.log(`隔離測試: ${sequentialFiles.length} 個（${groupCount} 互斥組 + ${ungrouped} 獨立）`);
   }
 
   if (verbose) {
@@ -244,8 +260,35 @@ async function runParallel() {
 
   const parallelResults = await Promise.all(promises);
 
-  // sequential 檔案各自作為獨立進程，在 parallel 完成後並行啟動（彼此存取不同共享資源）
-  const seqPromises = sequentialFiles.map((f, i) => {
+  // sequential 檔案分組：同組在同一進程串行（避免 I/O 競爭），不同組之間並行
+  const groupedFiles = new Set();
+  const seqPromises = [];
+
+  // 先處理互斥組：每組一個 bun test 進程
+  for (const [groupName, groupFiles] of Object.entries(SEQUENTIAL_GROUPS)) {
+    const matched = sequentialFiles.filter(f => groupFiles.includes(f));
+    if (matched.length === 0) continue;
+    matched.forEach(f => groupedFiles.add(f));
+
+    const proc = Bun.spawn(['bun', 'test', '--max-concurrency=1', ...matched], {
+      cwd: PROJECT_ROOT,
+      env: CHILD_ENV,
+      stdout: 'pipe',
+      stderr: 'pipe',
+    });
+
+    seqPromises.push((async () => {
+      const stdout = await new Response(proc.stdout).text();
+      const stderr = await new Response(proc.stderr).text();
+      const exitCode = await proc.exited;
+      return { index: workers.length + seqPromises.length, stdout, stderr, exitCode, files: matched, sequential: true, group: groupName };
+    })());
+  }
+
+  // 未分組的 sequential 檔案各自獨立進程
+  for (const f of sequentialFiles) {
+    if (groupedFiles.has(f)) continue;
+    const idx = seqPromises.length;
     const proc = Bun.spawn(['bun', 'test', '--max-concurrency=1', f], {
       cwd: PROJECT_ROOT,
       env: CHILD_ENV,
@@ -253,13 +296,13 @@ async function runParallel() {
       stderr: 'pipe',
     });
 
-    return (async () => {
+    seqPromises.push((async () => {
       const stdout = await new Response(proc.stdout).text();
       const stderr = await new Response(proc.stderr).text();
       const exitCode = await proc.exited;
-      return { index: workers.length + i, stdout, stderr, exitCode, files: [f], sequential: true };
-    })();
-  });
+      return { index: workers.length + idx, stdout, stderr, exitCode, files: [f], sequential: true };
+    })());
+  }
 
   const seqResults = await Promise.all(seqPromises);
   const results = [...parallelResults, ...seqResults];
@@ -285,7 +328,7 @@ async function runParallel() {
       hasFailure = true;
       failedFiles.push(...r.files);
       if (verbose) {
-        const label = r.sequential ? `串行 ${r.files[0]}` : `Worker ${r.index + 1}`;
+        const label = r.group ? `串行組 ${r.group}（${r.files.length} 檔）` : r.sequential ? `串行 ${r.files[0]}` : `Worker ${r.index + 1}`;
         console.log(`\n❌ ${label} 失敗：`);
         console.log(output);
       }

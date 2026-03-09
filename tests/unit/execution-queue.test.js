@@ -9,6 +9,7 @@
  *   4. formatQueueSummary：摘要格式
  *   5. clearQueue：清除
  *   6. 邊界情況
+ *   13. DAG 依賴核心
  */
 
 const { test, expect, describe, afterAll } = require('bun:test');
@@ -19,6 +20,7 @@ const { SCRIPTS_LIB } = require('../helpers/paths');
 
 const executionQueue = require(join(SCRIPTS_LIB, 'execution-queue'));
 const paths = require(join(SCRIPTS_LIB, 'paths'));
+const { atomicWrite } = require(join(SCRIPTS_LIB, 'utils'));
 
 const TIMESTAMP = Date.now();
 const TEST_PROJECT = join(homedir(), '.overtone', 'test-eq-' + TIMESTAMP);
@@ -457,7 +459,165 @@ describe('formatQueueSummary 規劃模式標注', () => {
 });
 
 // ────────────────────────────────────────────────────────────────────────────
-// 11. 完整流程
+// 11. DAG 依賴排序（suggestOrder + depends_on）
+// ────────────────────────────────────────────────────────────────────────────
+
+describe('suggestOrder — 無依賴時行為不變（回歸測試）', () => {
+  test('無 dependsOn 時按 workflow 複雜度排序', () => {
+    executionQueue.writeQueue(TEST_PROJECT, [
+      { name: 'C', workflow: 'standard' },
+      { name: 'A', workflow: 'quick' },
+      { name: 'B', workflow: 'single' },
+    ], 'test', { skipValidation: true });
+
+    const { suggested, changed, hasCycle } = executionQueue.suggestOrder(TEST_PROJECT);
+    expect(hasCycle).toBe(false);
+    expect(changed).toBe(true);
+    // single < quick < standard
+    expect(suggested[0].name).toBe('B');
+    expect(suggested[1].name).toBe('A');
+    expect(suggested[2].name).toBe('C');
+  });
+
+  test('佇列為空時回傳 { suggested: null, changed: false, hasCycle: false }', () => {
+    executionQueue.clearQueue(TEST_PROJECT);
+    const result = executionQueue.suggestOrder(TEST_PROJECT);
+    expect(result.suggested).toBeNull();
+    expect(result.changed).toBe(false);
+    expect(result.hasCycle).toBe(false);
+  });
+});
+
+describe('suggestOrder — 有依賴時拓撲排序正確', () => {
+  test('dependsOn 項目排在依賴之後', () => {
+    // add-auth 依賴 setup-db，setup-db 依賴 init-project
+    executionQueue.writeQueue(TEST_PROJECT, [
+      { name: 'add-auth', workflow: 'standard', dependsOn: ['setup-db'] },
+      { name: 'init-project', workflow: 'quick' },
+      { name: 'setup-db', workflow: 'quick', dependsOn: ['init-project'] },
+    ], 'test');
+
+    const { suggested, changed, hasCycle } = executionQueue.suggestOrder(TEST_PROJECT);
+    expect(hasCycle).toBe(false);
+
+    const names = suggested.map(i => i.name);
+    const initIdx = names.indexOf('init-project');
+    const dbIdx = names.indexOf('setup-db');
+    const authIdx = names.indexOf('add-auth');
+    // init-project 必須在 setup-db 前，setup-db 必須在 add-auth 前
+    expect(initIdx).toBeLessThan(dbIdx);
+    expect(dbIdx).toBeLessThan(authIdx);
+  });
+
+  test('無依賴的項目仍依 workflow 複雜度排在前面', () => {
+    executionQueue.writeQueue(TEST_PROJECT, [
+      { name: 'feature-b', workflow: 'standard', dependsOn: ['feature-a'] },
+      { name: 'standalone', workflow: 'single' },
+      { name: 'feature-a', workflow: 'quick' },
+    ], 'test');
+
+    const { suggested, hasCycle } = executionQueue.suggestOrder(TEST_PROJECT);
+    expect(hasCycle).toBe(false);
+
+    const names = suggested.map(i => i.name);
+    // standalone(single) 和 feature-a(quick) 無依賴，排在 feature-b(standard) 前
+    expect(names.indexOf('feature-b')).toBeGreaterThan(names.indexOf('feature-a'));
+  });
+});
+
+describe('suggestOrder — 循環依賴偵測', () => {
+  test('A 依賴 B，B 依賴 A → hasCycle: true，保持原始順序', () => {
+    executionQueue.writeQueue(TEST_PROJECT, [
+      { name: 'task-a', workflow: 'quick', dependsOn: ['task-b'] },
+      { name: 'task-b', workflow: 'quick', dependsOn: ['task-a'] },
+    ], 'test', { skipValidation: true });
+
+    const { suggested, hasCycle } = executionQueue.suggestOrder(TEST_PROJECT);
+    expect(hasCycle).toBe(true);
+    // 回退到 workflow 排序（同類型 workflow 保持相對順序）
+    expect(suggested).not.toBeNull();
+    expect(suggested.length).toBe(2);
+  });
+
+  test('三節點循環 A→B→C→A → hasCycle: true', () => {
+    executionQueue.writeQueue(TEST_PROJECT, [
+      { name: 'A', workflow: 'quick', dependsOn: ['C'] },
+      { name: 'B', workflow: 'quick', dependsOn: ['A'] },
+      { name: 'C', workflow: 'quick', dependsOn: ['B'] },
+    ], 'test', { skipValidation: true });
+
+    const { hasCycle } = executionQueue.suggestOrder(TEST_PROJECT);
+    expect(hasCycle).toBe(true);
+  });
+});
+
+describe('suggestOrder — 已完成的依賴不影響排序', () => {
+  test('依賴目標已 completed，排序視為已滿足', () => {
+    executionQueue.writeQueue(TEST_PROJECT, [
+      { name: 'setup-db', workflow: 'quick' },
+      { name: 'add-auth', workflow: 'standard', dependsOn: ['setup-db'] },
+    ], 'test');
+
+    // 將 setup-db 標記為 completed
+    executionQueue.advanceToNext(TEST_PROJECT);
+    executionQueue.completeCurrent(TEST_PROJECT);
+
+    const { suggested, hasCycle } = executionQueue.suggestOrder(TEST_PROJECT);
+    expect(hasCycle).toBe(false);
+    // add-auth 可以排在任何位置（依賴已滿足）
+    expect(suggested).not.toBeNull();
+    const authItem = suggested.find(i => i.name === 'add-auth');
+    expect(authItem).toBeDefined();
+    expect(authItem.status).toBe('pending');
+  });
+});
+
+describe('addToQueue（writeQueue + appendQueue）— 保留 dependsOn 欄位', () => {
+  test('writeQueue 保留 dependsOn', () => {
+    executionQueue.writeQueue(TEST_PROJECT, [
+      { name: 'task-a', workflow: 'quick' },
+      { name: 'task-b', workflow: 'standard', dependsOn: ['task-a'] },
+    ], 'test');
+
+    const queue = executionQueue.readQueue(TEST_PROJECT);
+    expect(queue.items[0].dependsOn).toEqual([]);
+    expect(queue.items[1].dependsOn).toEqual(['task-a']);
+  });
+
+  test('appendQueue 保留 dependsOn', () => {
+    executionQueue.writeQueue(TEST_PROJECT, [
+      { name: 'base', workflow: 'quick' },
+    ], 'test');
+
+    executionQueue.appendQueue(TEST_PROJECT, [
+      { name: 'derived', workflow: 'standard', dependsOn: ['base'] },
+    ], 'test');
+
+    const queue = executionQueue.readQueue(TEST_PROJECT);
+    expect(queue.items[1].dependsOn).toEqual(['base']);
+  });
+
+  test('dependsOn 為空陣列時寫入空陣列', () => {
+    executionQueue.writeQueue(TEST_PROJECT, [
+      { name: 'no-dep', workflow: 'quick', dependsOn: [] },
+    ], 'test');
+
+    const queue = executionQueue.readQueue(TEST_PROJECT);
+    expect(queue.items[0].dependsOn).toEqual([]);
+  });
+
+  test('未宣告 dependsOn 時寫入空陣列（預設值）', () => {
+    executionQueue.writeQueue(TEST_PROJECT, [
+      { name: 'plain', workflow: 'quick' },
+    ], 'test');
+
+    const queue = executionQueue.readQueue(TEST_PROJECT);
+    expect(queue.items[0].dependsOn).toEqual([]);
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// 12. 完整流程
 // ────────────────────────────────────────────────────────────────────────────
 
 describe('完整流程（8）', () => {
@@ -490,5 +650,424 @@ describe('完整流程（8）', () => {
     // completeCurrent 在最後一個項目完成時自動刪除佇列
     const queue = executionQueue.readQueue(TEST_PROJECT);
     expect(queue).toBeNull();
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// 13. DAG 依賴核心（BDD Spec 覆蓋）
+// ────────────────────────────────────────────────────────────────────────────
+
+/**
+ * DAG 測試輔助函式：直接寫入帶有任意狀態和 dependsOn 的佇列
+ * @param {object[]} items - [{ name, workflow?, status?, dependsOn? }]
+ */
+function makeDAGQueue(items) {
+  const queueItems = items.map(i => ({
+    name: i.name,
+    workflow: i.workflow || 'quick',
+    status: i.status || 'pending',
+    dependsOn: i.dependsOn || [],
+    ...(i.startedAt ? { startedAt: i.startedAt } : {}),
+    ...(i.completedAt ? { completedAt: i.completedAt } : {}),
+    ...(i.failedAt ? { failedAt: i.failedAt } : {}),
+    ...(i.failReason ? { failReason: i.failReason } : {}),
+  }));
+  const filePath = join(paths.global.dir(TEST_PROJECT), 'execution-queue.json');
+  atomicWrite(filePath, {
+    items: queueItems,
+    autoExecute: true,
+    source: 'DAG test',
+    createdAt: new Date().toISOString(),
+  });
+}
+
+// ── Feature: 基本 dependsOn 宣告與 getNext 行為 ──
+
+describe('DAG — 基本 dependsOn 與 getNext 行為', () => {
+  test('無 dependsOn 的 item 可直接取得', () => {
+    executionQueue.writeQueue(TEST_PROJECT, [
+      { name: 'task-a', workflow: 'quick' },
+    ], 'test');
+
+    const next = executionQueue.getNext(TEST_PROJECT);
+    expect(next).not.toBeNull();
+    expect(next.item.name).toBe('task-a');
+  });
+
+  test('dependsOn 全部 completed 時 item 變為 ready', () => {
+    makeDAGQueue([
+      { name: 'task-a', status: 'completed' },
+      { name: 'task-b', status: 'pending', dependsOn: ['task-a'] },
+    ]);
+
+    const next = executionQueue.getNext(TEST_PROJECT);
+    expect(next).not.toBeNull();
+    expect(next.item.name).toBe('task-b');
+  });
+
+  test('dependsOn 尚有 pending 時 item 被阻擋', () => {
+    makeDAGQueue([
+      { name: 'task-a', status: 'pending' },
+      { name: 'task-b', status: 'pending', dependsOn: ['task-a'] },
+    ]);
+
+    const next = executionQueue.getNext(TEST_PROJECT);
+    expect(next).not.toBeNull();
+    expect(next.item.name).toBe('task-a');
+  });
+
+  test('dependsOn 尚有 in_progress 時 item 被阻擋，無其他 ready item 則回傳 null', () => {
+    makeDAGQueue([
+      { name: 'task-a', status: 'in_progress' },
+      { name: 'task-b', status: 'pending', dependsOn: ['task-a'] },
+    ]);
+
+    const next = executionQueue.getNext(TEST_PROJECT);
+    expect(next).toBeNull();
+  });
+});
+
+// ── Feature: 環偵測 ──
+
+describe('DAG — 環偵測', () => {
+  test('直接循環（A 依賴 B，B 依賴 A）丟出 Error 且佇列不寫入', () => {
+    executionQueue.clearQueue(TEST_PROJECT);
+    expect(() => {
+      executionQueue.writeQueue(TEST_PROJECT, [
+        { name: 'A', workflow: 'quick', dependsOn: ['B'] },
+        { name: 'B', workflow: 'quick', dependsOn: ['A'] },
+      ], 'test');
+    }).toThrow('循環依賴');
+
+    // 佇列不應被寫入
+    expect(executionQueue.readQueue(TEST_PROJECT)).toBeNull();
+  });
+
+  test('間接循環（A→B→C→A）丟出 Error', () => {
+    expect(() => {
+      executionQueue.writeQueue(TEST_PROJECT, [
+        { name: 'A', workflow: 'quick', dependsOn: ['C'] },
+        { name: 'B', workflow: 'quick', dependsOn: ['A'] },
+        { name: 'C', workflow: 'quick', dependsOn: ['B'] },
+      ], 'test');
+    }).toThrow('循環依賴');
+  });
+
+  test('無循環的菱形依賴正常通過', () => {
+    expect(() => {
+      executionQueue.writeQueue(TEST_PROJECT, [
+        { name: 'A', workflow: 'quick' },
+        { name: 'B', workflow: 'quick', dependsOn: ['A'] },
+        { name: 'C', workflow: 'quick', dependsOn: ['A'] },
+        { name: 'D', workflow: 'quick', dependsOn: ['B', 'C'] },
+      ], 'test');
+    }).not.toThrow();
+  });
+});
+
+// ── Feature: 引用驗證（不存在的 name）──
+
+describe('DAG — 引用驗證', () => {
+  test('dependsOn 引用不存在的 item name 時驗證失敗', () => {
+    expect(() => {
+      executionQueue.writeQueue(TEST_PROJECT, [
+        { name: 'task-b', workflow: 'quick', dependsOn: ['non-existent'] },
+      ], 'test');
+    }).toThrow(/依賴項不存在.*non-existent/);
+  });
+
+  test('dependsOn 為非陣列型別時驗證失敗', () => {
+    expect(() => {
+      executionQueue.writeQueue(TEST_PROJECT, [
+        { name: 'task-a', workflow: 'quick', dependsOn: 'task-b' },
+      ], 'test');
+    }).toThrow('dependsOn 必須是陣列');
+  });
+
+  test('dependsOn 為空陣列時正常通過', () => {
+    expect(() => {
+      executionQueue.writeQueue(TEST_PROJECT, [
+        { name: 'task-a', workflow: 'quick', dependsOn: [] },
+      ], 'test');
+    }).not.toThrow();
+  });
+});
+
+// ── Feature: 依賴感知排程（多 ready item 的 FIFO 偏好）──
+
+describe('DAG — 依賴感知排程（FIFO）', () => {
+  test('多個 ready item 時回傳 index 最小的（FIFO）', () => {
+    executionQueue.writeQueue(TEST_PROJECT, [
+      { name: 'task-a', workflow: 'quick' },
+      { name: 'task-b', workflow: 'quick' },
+      { name: 'task-c', workflow: 'quick' },
+    ], 'test');
+
+    const next = executionQueue.getNext(TEST_PROJECT);
+    expect(next.item.name).toBe('task-a');
+  });
+
+  test('前面的 item 被阻擋時跳過，取第一個 ready item', () => {
+    // task-a 依賴 task-x（已被移除或不存在佇列中），task-b 無依賴
+    makeDAGQueue([
+      { name: 'task-a', status: 'pending', dependsOn: ['task-x'] },
+      { name: 'task-b', status: 'pending', dependsOn: [] },
+    ]);
+
+    const next = executionQueue.getNext(TEST_PROJECT);
+    expect(next).not.toBeNull();
+    expect(next.item.name).toBe('task-b');
+  });
+
+  test('advanceToNext 標記第一個 ready item 為 in_progress', () => {
+    executionQueue.writeQueue(TEST_PROJECT, [
+      { name: 'task-a', workflow: 'quick' },
+      { name: 'task-b', workflow: 'quick', dependsOn: ['task-a'] },
+    ], 'test');
+
+    const advanced = executionQueue.advanceToNext(TEST_PROJECT);
+    expect(advanced.item.name).toBe('task-a');
+
+    const queue = executionQueue.readQueue(TEST_PROJECT);
+    expect(queue.items[0].status).toBe('in_progress');
+    expect(queue.items[1].status).toBe('pending');
+  });
+});
+
+// ── Feature: 失敗傳播（上游 failed 阻擋下游）──
+
+describe('DAG — 失敗傳播', () => {
+  test('上游 failed 時下游 pending 被永遠阻擋，回傳 null', () => {
+    makeDAGQueue([
+      { name: 'task-a', status: 'failed' },
+      { name: 'task-b', status: 'pending', dependsOn: ['task-a'] },
+    ]);
+
+    const next = executionQueue.getNext(TEST_PROJECT);
+    expect(next).toBeNull();
+  });
+
+  test('多重依賴中只要有一個 failed 就阻擋', () => {
+    makeDAGQueue([
+      { name: 'task-a', status: 'completed' },
+      { name: 'task-b', status: 'failed' },
+      { name: 'task-c', status: 'pending', dependsOn: ['task-a', 'task-b'] },
+    ]);
+
+    const next = executionQueue.getNext(TEST_PROJECT);
+    expect(next).toBeNull();
+  });
+
+  test('間接失敗傳播（A failed → B blocked → C blocked）', () => {
+    makeDAGQueue([
+      { name: 'task-a', status: 'failed' },
+      { name: 'task-b', status: 'pending', dependsOn: ['task-a'] },
+      { name: 'task-c', status: 'pending', dependsOn: ['task-b'] },
+    ]);
+
+    const next = executionQueue.getNext(TEST_PROJECT);
+    expect(next).toBeNull();
+  });
+});
+
+// ── Feature: retryItem 解除阻擋 ──
+
+describe('DAG — retryItem 解除阻擋', () => {
+  test('retryItem 將 failed 改回 pending，下游解除阻擋', () => {
+    makeDAGQueue([
+      { name: 'task-a', status: 'failed' },
+      { name: 'task-b', status: 'pending', dependsOn: ['task-a'] },
+    ]);
+
+    const result = executionQueue.retryItem(TEST_PROJECT, 'task-a');
+    expect(result.ok).toBe(true);
+
+    const queue = executionQueue.readQueue(TEST_PROJECT);
+    expect(queue.items[0].status).toBe('pending');
+
+    // task-a 現在是 pending，getNext 應回傳 task-a
+    const next = executionQueue.getNext(TEST_PROJECT);
+    expect(next).not.toBeNull();
+    expect(next.item.name).toBe('task-a');
+  });
+
+  test('retryItem 完成後上游 completed，下游自動解鎖', () => {
+    executionQueue.writeQueue(TEST_PROJECT, [
+      { name: 'task-a', workflow: 'quick' },
+      { name: 'task-b', workflow: 'quick', dependsOn: ['task-a'] },
+    ], 'test');
+
+    // 完成 task-a
+    executionQueue.advanceToNext(TEST_PROJECT);
+    executionQueue.completeCurrent(TEST_PROJECT);
+
+    // task-b 應解鎖
+    const next = executionQueue.getNext(TEST_PROJECT);
+    expect(next).not.toBeNull();
+    expect(next.item.name).toBe('task-b');
+  });
+
+  test('retryItem 對不存在的 item name 不丟出例外', () => {
+    makeDAGQueue([{ name: 'task-a' }]);
+
+    expect(() => {
+      executionQueue.retryItem(TEST_PROJECT, 'non-existent');
+    }).not.toThrow();
+  });
+});
+
+// ── Feature: appendQueue 跨批次引用 ──
+
+describe('DAG — appendQueue 跨批次引用', () => {
+  test('新 item 可依賴既有佇列中的 item', () => {
+    executionQueue.writeQueue(TEST_PROJECT, [
+      { name: 'task-a', workflow: 'quick' },
+    ], 'test');
+
+    expect(() => {
+      executionQueue.appendQueue(TEST_PROJECT, [
+        { name: 'task-b', workflow: 'quick', dependsOn: ['task-a'] },
+      ], 'test');
+    }).not.toThrow();
+
+    const queue = executionQueue.readQueue(TEST_PROJECT);
+    expect(queue.items[1].dependsOn).toEqual(['task-a']);
+  });
+
+  test('新 item 引用不存在的 item（跨批次）時驗證失敗', () => {
+    executionQueue.writeQueue(TEST_PROJECT, [
+      { name: 'task-a', workflow: 'quick' },
+    ], 'test');
+
+    expect(() => {
+      executionQueue.appendQueue(TEST_PROJECT, [
+        { name: 'task-b', workflow: 'quick', dependsOn: ['non-existent'] },
+      ], 'test');
+    }).toThrow('依賴項不存在');
+  });
+
+  test('既有 item 的 dependsOn 不被修改（不支援回顧引用）', () => {
+    executionQueue.writeQueue(TEST_PROJECT, [
+      { name: 'task-a', workflow: 'quick' },
+    ], 'test');
+
+    executionQueue.appendQueue(TEST_PROJECT, [
+      { name: 'task-b', workflow: 'quick' },
+    ], 'test');
+
+    const queue = executionQueue.readQueue(TEST_PROJECT);
+    expect(queue.items[0].dependsOn).toEqual([]);
+  });
+
+  test('跨批次新 item 形成環時丟出 Error', () => {
+    // 初始寫入 task-a，dependsOn 為空
+    executionQueue.writeQueue(TEST_PROJECT, [
+      { name: 'task-a', workflow: 'quick' },
+    ], 'test');
+
+    // 手動設定 task-a 有依賴（模擬跨批次形成環的情況）
+    const queueFile = join(paths.global.dir(TEST_PROJECT), 'execution-queue.json');
+    const queueData = require('fs').readFileSync(queueFile, 'utf8');
+    const queueObj = JSON.parse(queueData);
+    queueObj.items[0].dependsOn = ['task-c'];
+    atomicWrite(queueFile, queueObj);
+
+    // 新加 task-b(→task-a) 和 task-c(→task-b)，形成 task-a→task-c→task-b→task-a 環
+    expect(() => {
+      executionQueue.appendQueue(TEST_PROJECT, [
+        { name: 'task-b', workflow: 'quick', dependsOn: ['task-a'] },
+        { name: 'task-c', workflow: 'quick', dependsOn: ['task-b'] },
+      ], 'test');
+    }).toThrow('循環依賴');
+  });
+});
+
+// ── Feature: readQueue 舊格式向後相容 ──
+
+describe('DAG — readQueue 舊格式向後相容', () => {
+  test('舊格式 item 不含 dependsOn 欄位，讀取後自動補齊為空陣列', () => {
+    // 直接寫入不含 dependsOn 的舊格式
+    const queueFile = join(paths.global.dir(TEST_PROJECT), 'execution-queue.json');
+    atomicWrite(queueFile, {
+      items: [{ name: 'old-task', workflow: 'quick', status: 'pending' }],
+      autoExecute: true,
+      source: 'old',
+      createdAt: new Date().toISOString(),
+    });
+
+    const queue = executionQueue.readQueue(TEST_PROJECT);
+    expect(queue.items[0].dependsOn).toEqual([]);
+  });
+
+  test('舊格式 item 混有部分含 dependsOn、部分不含', () => {
+    const queueFile = join(paths.global.dir(TEST_PROJECT), 'execution-queue.json');
+    atomicWrite(queueFile, {
+      items: [
+        { name: 'task-with-dep', workflow: 'quick', status: 'pending', dependsOn: ['task-x'] },
+        { name: 'task-no-dep', workflow: 'quick', status: 'pending' },
+      ],
+      autoExecute: true,
+      source: 'old',
+      createdAt: new Date().toISOString(),
+    });
+
+    const queue = executionQueue.readQueue(TEST_PROJECT);
+    expect(queue.items[0].dependsOn).toEqual(['task-x']);
+    expect(queue.items[1].dependsOn).toEqual([]);
+  });
+
+  test('舊格式 item 透過 getNext 仍可正常取得（視為無依賴）', () => {
+    const queueFile = join(paths.global.dir(TEST_PROJECT), 'execution-queue.json');
+    atomicWrite(queueFile, {
+      items: [{ name: 'old-task', workflow: 'quick', status: 'pending' }],
+      autoExecute: true,
+      source: 'old',
+      createdAt: new Date().toISOString(),
+    });
+
+    const next = executionQueue.getNext(TEST_PROJECT);
+    expect(next).not.toBeNull();
+    expect(next.item.name).toBe('old-task');
+  });
+});
+
+// ── Feature: 無 dependsOn 的 item 行為不變（回歸保護）──
+
+describe('DAG — 無 dependsOn 的 item 回歸保護', () => {
+  test('全無依賴的佇列維持原有 FIFO 順序', () => {
+    executionQueue.writeQueue(TEST_PROJECT, [
+      { name: 'task-1', workflow: 'quick' },
+      { name: 'task-2', workflow: 'quick' },
+      { name: 'task-3', workflow: 'quick' },
+    ], 'test');
+
+    // 第一次 advanceToNext + completeCurrent
+    executionQueue.advanceToNext(TEST_PROJECT);
+    executionQueue.completeCurrent(TEST_PROJECT);
+    expect(executionQueue.getNext(TEST_PROJECT).item.name).toBe('task-2');
+
+    executionQueue.advanceToNext(TEST_PROJECT);
+    executionQueue.completeCurrent(TEST_PROJECT);
+    expect(executionQueue.getNext(TEST_PROJECT).item.name).toBe('task-3');
+  });
+
+  test('writeQueue 寫入無 dependsOn 的 item 時不報錯，讀回 dependsOn 為空陣列', () => {
+    executionQueue.writeQueue(TEST_PROJECT, [
+      { name: 'task-a', workflow: 'quick' },
+    ], 'test');
+
+    const queue = executionQueue.readQueue(TEST_PROJECT);
+    expect(queue.items[0].dependsOn).toEqual([]);
+  });
+
+  test('無依賴的 item 不受其他 item 的 failed 狀態影響', () => {
+    makeDAGQueue([
+      { name: 'task-a', status: 'failed' },
+      { name: 'task-b', status: 'pending', dependsOn: [] },
+    ]);
+
+    const next = executionQueue.getNext(TEST_PROJECT);
+    expect(next).not.toBeNull();
+    expect(next.item.name).toBe('task-b');
   });
 });

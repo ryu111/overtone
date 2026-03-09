@@ -718,7 +718,9 @@ describe('佇列進度顯示', () => {
     expect(lines[0]).toContain('1⏳');
   });
 
-  it('佇列全部完成時不顯示 📦', () => {
+  it('佇列全部完成時 active workflow 仍在，Line 1 顯示 📦 1🔥/0⏳', () => {
+    // 佇列全部 completed → readQueueProgress 回傳 null
+    // 但 active workflow 仍存在 → fallback 為 1🔥/0⏳
     writeQueue(projectRoot, {
       items: [
         { name: 'A', workflow: 'quick', status: 'completed' },
@@ -730,7 +732,10 @@ describe('佇列進度顯示', () => {
 
     const result = runWithSessionAndCwd(projectRoot, { context_window: { used_percentage: 20 } });
     const plain = stripAnsi(result.stdout || '');
-    expect(plain).not.toContain('📦');
+    const lines = plain.split('\n').filter(l => l.trim());
+    expect(lines[0]).toContain('📦');
+    expect(lines[0]).toContain('1🔥');
+    expect(lines[0]).toContain('0⏳');
   });
 
   it('佇列只有 1 項 in_progress 時 Line 1 仍顯示 📦 1🔥/0⏳', () => {
@@ -750,25 +755,33 @@ describe('佇列進度顯示', () => {
     expect(lines[0]).toContain('0⏳');
   });
 
-  it('無佇列時不顯示 📦', () => {
-    // 使用不存在的 projectRoot，不寫 queue 檔案
+  it('無佇列時（有 active workflow）Line 1 顯示 📦 1🔥/0⏳', () => {
+    // 使用不存在的 projectRoot，不寫 queue 檔案，但 session 有 active workflow
     const emptyRoot = path.join(tmpHome, 'empty-project');
 
     const result = runWithSessionAndCwd(emptyRoot, { context_window: { used_percentage: 20 } });
     const plain = stripAnsi(result.stdout || '');
-    expect(plain).not.toContain('📦');
+    const lines = plain.split('\n').filter(l => l.trim());
+    // active workflow 存在 → 自動計為 1🔥/0⏳
+    expect(lines[0]).toContain('📦');
+    expect(lines[0]).toContain('1🔥');
+    expect(lines[0]).toContain('0⏳');
   });
 
-  it('佇列讀取失敗時不 crash（安靜跳過）', () => {
+  it('佇列讀取失敗時不 crash（安靜跳過，fallback 為 1🔥/0⏳）', () => {
     // 寫入損壞的 JSON
     const dir = queueDir(projectRoot);
     mkdirSync(dir, { recursive: true });
     writeFileSync(path.join(dir, 'execution-queue.json'), '{invalid json}');
 
     const result = runWithSessionAndCwd(projectRoot, { context_window: { used_percentage: 20 } });
+    // 不 crash（exit 0）
     expect(result.status ?? 0).toBe(0);
+    // 佇列讀取失敗 + active workflow → fallback 為 1🔥/0⏳
     const plain = stripAnsi(result.stdout || '');
-    expect(plain).not.toContain('📦');
+    expect(plain).toContain('📦');
+    expect(plain).toContain('1🔥');
+    expect(plain).toContain('0⏳');
   });
 
   it('🔥 使用 yellow ANSI，⏳ 使用 dim ANSI', () => {

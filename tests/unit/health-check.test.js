@@ -547,7 +547,7 @@ describe('runAllChecks', () => {
     expect(result).toBeDefined();
     expect(Array.isArray(result.checks)).toBe(true);
     expect(Array.isArray(result.findings)).toBe(true);
-  });
+  }, 15_000); // runAllChecks 掃描 25 項（含 filesystem I/O），需要 7-10 秒
 
   test('checks 陣列長度至少為 12（含 F1/F2/F3 三個主動偵測）', () => {
     const { checks } = cached(runAllChecks);
