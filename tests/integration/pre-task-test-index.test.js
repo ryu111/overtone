@@ -112,7 +112,7 @@ describe('Scenario: tester agent 委派時注入 test-index 摘要', () => {
         tool_name: 'Task',
         cwd: PROJECT_ROOT, // 真實 tests/ 目錄存在於此
         tool_input: {
-          subagent_type: 'ot:tester',
+          subagent_type: 'tester',
           description: '委派 tester agent',
           prompt: '執行 BDD 測試驗證',
         },
@@ -138,7 +138,7 @@ describe('Scenario: tester agent 委派時注入 test-index 摘要', () => {
         tool_name: 'Task',
         cwd: PROJECT_ROOT,
         tool_input: {
-          subagent_type: 'ot:tester',
+          subagent_type: 'tester',
           description: '委派 tester agent',
           prompt: ORIGINAL_PROMPT,
         },
@@ -162,7 +162,7 @@ describe('Scenario: tester agent 委派時注入 test-index 摘要', () => {
         tool_name: 'Task',
         cwd: PROJECT_ROOT,
         tool_input: {
-          subagent_type: 'ot:tester',
+          subagent_type: 'tester',
           description: '委派 tester',
           prompt: ORIGINAL_PROMPT,
         },
@@ -196,7 +196,7 @@ describe('Scenario: developer agent 委派時注入 test-index 摘要', () => {
         tool_name: 'Task',
         cwd: PROJECT_ROOT,
         tool_input: {
-          subagent_type: 'ot:developer',
+          subagent_type: 'developer',
           description: '委派 developer agent',
           prompt: '實作新功能',
         },
@@ -223,7 +223,7 @@ describe('Scenario: 非 tester/developer agent 不注入 test-index 摘要', () 
         tool_name: 'Task',
         cwd: PROJECT_ROOT,
         tool_input: {
-          subagent_type: 'ot:planner',
+          subagent_type: 'planner',
           description: '委派 planner agent',
           prompt: '規劃功能',
         },
@@ -252,7 +252,7 @@ describe('Scenario: 非 tester/developer agent 不注入 test-index 摘要', () 
         tool_name: 'Task',
         cwd: PROJECT_ROOT,
         tool_input: {
-          subagent_type: 'ot:code-reviewer',
+          subagent_type: 'code-reviewer',
           description: '委派 code-reviewer agent',
           prompt: '審查程式碼品質',
         },
@@ -309,7 +309,7 @@ describe('Scenario: tests/ 目錄不存在時靜默降級', () => {
         tool_name: 'Task',
         cwd: '/nonexistent/path/that/does/not/exist', // tests/ 不存在
         tool_input: {
-          subagent_type: 'ot:tester',
+          subagent_type: 'tester',
           description: '委派 tester agent',
           prompt: '執行測試',
         },
@@ -338,7 +338,7 @@ describe('Scenario: tests/ 目錄不存在時靜默降級', () => {
         tool_name: 'Task',
         cwd: '/nonexistent/path',
         tool_input: {
-          subagent_type: 'ot:code-reviewer',
+          subagent_type: 'code-reviewer',
           description: '委派 code-reviewer',
           prompt: '審查程式碼',
         },
@@ -357,7 +357,7 @@ describe('Scenario: 注入後保留所有原始 toolInput 欄位', () => {
     const sessionId = newSession();
     state.initState(sessionId, 'single', workflows['single'].stages);
 
-    const ORIGINAL_SUBAGENT_TYPE = 'ot:developer';
+    const ORIGINAL_SUBAGENT_TYPE = 'developer';
     const ORIGINAL_DESCRIPTION = '開發任務描述（原始）';
 
     const result = await runHook(
@@ -394,7 +394,7 @@ describe('Scenario: 注入後保留所有原始 toolInput 欄位', () => {
         tool_name: 'Task',
         cwd: PROJECT_ROOT,
         tool_input: {
-          subagent_type: 'ot:developer',
+          subagent_type: 'developer',
           description: '開發任務',
           prompt: ORIGINAL_PROMPT,
         },
@@ -410,7 +410,7 @@ describe('Scenario: 注入後保留所有原始 toolInput 欄位', () => {
     expect(updatedInput.prompt).toContain('[Test Index]');
 
     // 其他欄位未被添加非預期屬性
-    expect(updatedInput.subagent_type).toBe('ot:developer');
+    expect(updatedInput.subagent_type).toBe('developer');
     expect(updatedInput.description).toBe('開發任務');
   });
 });

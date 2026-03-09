@@ -123,7 +123,7 @@ describe('BDD F2：on-stop hook 將 DEV stage 標記完成並發出 timeline 事
 
   beforeAll(() => {
     // DEV 為 active（Scenario 2 後的狀態）
-    result = runSubagentStop(SESSION_ID, 'ot:developer', 'VERDICT: pass 開發完成，功能正常運作');
+    result = runSubagentStop(SESSION_ID, 'developer', 'VERDICT: pass 開發完成，功能正常運作');
   });
 
   test('DEV.status 變為 completed', () => {

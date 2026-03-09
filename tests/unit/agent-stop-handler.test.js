@@ -115,7 +115,7 @@ describe('handleAgentStop 邊界情況', () => {
     // ot:developer → developer
     // 無 workflow state 所以最終靜默退出，但不會因為前綴誤判
     const result = handleAgentStop(
-      { agent_type: 'ot:developer', last_assistant_message: '' },
+      { agent_type: 'developer', last_assistant_message: '' },
       'nonexistent-session-xyz'
     );
     // 無 state → 靜默退出，但不因前綴失敗

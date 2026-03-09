@@ -94,15 +94,15 @@ describe('BDD refactor：前半 sequential — ARCH → TEST(spec) → DEV', () 
   beforeAll(() => {
     // ARCH：pre-task + on-stop PASS
     runPreTask(SESSION_ID, { description: '委派 architect 設計重構架構' });
-    runSubagentStop(SESSION_ID, 'ot:architect', 'VERDICT: pass 架構設計完成\nAPI 介面設計：POST /api/feature\n檔案結構：src/lib/feature.js');
+    runSubagentStop(SESSION_ID, 'architect', 'VERDICT: pass 架構設計完成\nAPI 介面設計：POST /api/feature\n檔案結構：src/lib/feature.js');
 
     // TEST（spec mode）：pre-task + on-stop PASS
     runPreTask(SESSION_ID, { description: '委派 tester 撰寫 BDD spec' });
-    runSubagentStop(SESSION_ID, 'ot:tester', 'VERDICT: pass BDD spec 完成');
+    runSubagentStop(SESSION_ID, 'tester', 'VERDICT: pass BDD spec 完成');
 
     // DEV：pre-task + on-stop PASS
     runPreTask(SESSION_ID, { description: '委派 developer 執行重構' });
-    runSubagentStop(SESSION_ID, 'ot:developer', 'VERDICT: pass 重構完成');
+    runSubagentStop(SESSION_ID, 'developer', 'VERDICT: pass 重構完成');
   });
 
   test('ARCH.status 為 completed', () => {
@@ -177,7 +177,7 @@ describe('BDD refactor：並行組中第一個完成時不觸發全部完成', (
 
   beforeAll(() => {
     // REVIEW 先完成（TEST:2 仍 active）
-    result = runSubagentStop(SESSION_ID, 'ot:code-reviewer', 'VERDICT: pass 重構審查通過');
+    result = runSubagentStop(SESSION_ID, 'code-reviewer', 'VERDICT: pass 重構審查通過');
   });
 
   test('REVIEW.status 變為 completed', () => {
@@ -205,7 +205,7 @@ describe('BDD refactor：並行組最後一個完成後所有 stage 均為 compl
 
   beforeAll(() => {
     // TEST:2 完成（REVIEW 已 completed）
-    result = runSubagentStop(SESSION_ID, 'ot:tester', 'VERDICT: pass 所有驗證測試通過');
+    result = runSubagentStop(SESSION_ID, 'tester', 'VERDICT: pass 所有驗證測試通過');
   });
 
   test('TEST:2.status 變為 completed', () => {

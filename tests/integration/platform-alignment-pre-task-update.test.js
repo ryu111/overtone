@@ -88,7 +88,7 @@ describe('Feature 1c: PreToolUse updatedInput 注入', () => {
         cwd: process.cwd(),
         tool_name: 'Task',
         tool_input: {
-          subagent_type: 'ot:developer',
+          subagent_type: 'developer',
           description: 'DEV 階段任務',
           prompt: '請執行 DEV 階段任務',
         },
@@ -113,7 +113,7 @@ describe('Feature 1c: PreToolUse updatedInput 注入', () => {
         cwd: process.cwd(),
         tool_name: 'Task',
         tool_input: {
-          subagent_type: 'ot:developer',
+          subagent_type: 'developer',
           description: 'DEV 階段任務',
           prompt: '請執行 DEV 階段任務',
         },
@@ -132,7 +132,7 @@ describe('Feature 1c: PreToolUse updatedInput 注入', () => {
         cwd: process.cwd(),
         tool_name: 'Task',
         tool_input: {
-          subagent_type: 'ot:developer',
+          subagent_type: 'developer',
           description: 'DEV 階段任務',
           prompt: '請執行 DEV 階段任務',
         },
@@ -152,7 +152,7 @@ describe('Feature 1c: PreToolUse updatedInput 注入', () => {
         cwd: process.cwd(),
         tool_name: 'Task',
         tool_input: {
-          subagent_type: 'ot:developer',
+          subagent_type: 'developer',
           description: 'DEV 階段任務',
           prompt: originalPrompt,
         },
@@ -171,14 +171,14 @@ describe('Feature 1c: PreToolUse updatedInput 注入', () => {
         cwd: process.cwd(),
         tool_name: 'Task',
         tool_input: {
-          subagent_type: 'ot:developer',
+          subagent_type: 'developer',
           description: 'DEV 階段任務',
           prompt: '任務說明',
         },
       }, sessionId);
 
       if (parsed.hookSpecificOutput?.updatedInput) {
-        expect(parsed.hookSpecificOutput.updatedInput.subagent_type).toBe('ot:developer');
+        expect(parsed.hookSpecificOutput.updatedInput.subagent_type).toBe('developer');
       }
     });
   });
@@ -214,7 +214,7 @@ describe('Feature 1c: PreToolUse updatedInput 注入', () => {
         session_id: sessionId,
         tool_name: 'Task',
         tool_input: {
-          subagent_type: 'ot:code-reviewer',
+          subagent_type: 'code-reviewer',
           description: '審查任務',
           prompt: '請審查程式碼',
         },
@@ -237,7 +237,7 @@ describe('Feature 1c: PreToolUse updatedInput 注入', () => {
         cwd: process.cwd(),
         tool_name: 'Task',
         tool_input: {
-          subagent_type: 'ot:developer',
+          subagent_type: 'developer',
           description: 'DEV 任務',
           prompt: '請開發功能',
         },
@@ -257,7 +257,7 @@ describe('Feature 1c: PreToolUse updatedInput 注入', () => {
         cwd: process.cwd(),
         tool_name: 'Task',
         tool_input: {
-          subagent_type: 'ot:developer',
+          subagent_type: 'developer',
           description: 'DEV 任務',
           prompt: '請開發功能',
         },
@@ -276,7 +276,7 @@ describe('Feature 1c: PreToolUse updatedInput 注入', () => {
         session_id: sessionId,
         tool_name: 'Task',
         tool_input: {
-          subagent_type: 'ot:developer',
+          subagent_type: 'developer',
           description: 'DEV 任務',
           prompt: '開發任務',
         },

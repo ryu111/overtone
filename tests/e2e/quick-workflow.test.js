@@ -72,7 +72,7 @@ describe('BDD F4：DEV 完成後 REVIEW 放行', () => {
   beforeAll(() => {
     // DEV：pre-task + on-stop PASS
     runPreTask(SESSION_ID, { description: '委派 developer 實作功能' });
-    runSubagentStop(SESSION_ID, 'ot:developer', 'VERDICT: pass 開發完成');
+    runSubagentStop(SESSION_ID, 'developer', 'VERDICT: pass 開發完成');
 
     // 委派 REVIEW
     reviewResult = runPreTask(SESSION_ID, { description: '委派 code-reviewer 審查程式碼' });
@@ -95,7 +95,7 @@ describe('BDD F4：DEV 完成後 REVIEW 放行', () => {
 describe('BDD F4：REVIEW PASS 後推進至 RETRO', () => {
   beforeAll(() => {
     // REVIEW：on-stop PASS
-    runSubagentStop(SESSION_ID, 'ot:code-reviewer', 'VERDICT: pass 審查通過，程式碼品質良好');
+    runSubagentStop(SESSION_ID, 'code-reviewer', 'VERDICT: pass 審查通過，程式碼品質良好');
   });
 
   test('REVIEW.status 為 completed', () => {
@@ -117,7 +117,7 @@ describe('BDD F4：RETRO PASS 後推進至 DOCS', () => {
   beforeAll(() => {
     // RETRO：pre-task + on-stop PASS
     runPreTask(SESSION_ID, { description: '委派 retrospective 進行回顧' });
-    runSubagentStop(SESSION_ID, 'ot:retrospective', 'VERDICT: pass 回顧完成，品質良好');
+    runSubagentStop(SESSION_ID, 'retrospective', 'VERDICT: pass 回顧完成，品質良好');
   });
 
   test('RETRO.status 為 completed', () => {
@@ -141,7 +141,7 @@ describe('BDD F4：DOCS PASS 後所有 stage 完成', () => {
   beforeAll(() => {
     // DOCS：pre-task + on-stop PASS
     runPreTask(SESSION_ID, { description: '委派 doc-updater 同步文件' });
-    result = runSubagentStop(SESSION_ID, 'ot:doc-updater', 'VERDICT: pass 文件同步完成');
+    result = runSubagentStop(SESSION_ID, 'doc-updater', 'VERDICT: pass 文件同步完成');
   });
 
   test('DOCS.status 為 completed', () => {

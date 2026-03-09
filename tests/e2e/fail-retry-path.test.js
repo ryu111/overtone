@@ -46,7 +46,7 @@ beforeAll(() => {
   });
 
   runPreTask(SESSION_ID, { description: '委派 developer 實作功能' });
-  runSubagentStop(SESSION_ID, 'ot:developer', 'VERDICT: pass 開發完成');
+  runSubagentStop(SESSION_ID, 'developer', 'VERDICT: pass 開發完成');
 
   // DEV 完成後進入 quality 並行群組，直接設定 REVIEW 完成、TEST 為 active
   stateLib.updateStateAtomic(SESSION_ID, (s) => {
@@ -67,7 +67,7 @@ describe('BDD F5：TEST FAIL 第一次 — failCount 遞增並提示 DEBUGGER', 
 
   beforeAll(() => {
     // tester 報告失敗
-    result = runSubagentStop(SESSION_ID, 'ot:tester', '3 tests failed with assertion errors');
+    result = runSubagentStop(SESSION_ID, 'tester', '3 tests failed with assertion errors');
   });
 
   test('hook 正常執行（exit code 0）', () => {
@@ -99,7 +99,7 @@ describe('BDD F5：retry 路徑 — debugger 完成分析（不追蹤額外 stag
 
   beforeAll(() => {
     // debugger 完成分析（不屬於原始 workflow stages）
-    result = runSubagentStop(SESSION_ID, 'ot:debugger', 'VERDICT: pass 根因分析完成，已找到問題所在');
+    result = runSubagentStop(SESSION_ID, 'debugger', 'VERDICT: pass 根因分析完成，已找到問題所在');
   });
 
   test('hook 正常執行（exit code 0）', () => {
@@ -127,7 +127,7 @@ describe('BDD F5：retry 路徑 — developer 完成修復（不追蹤額外 sta
     // developer 完成修復（retry 路徑，不屬於原始 workflow stages 的 DEV）
     // 注意：DEV 已 completed，所以這個 on-stop 對應不到 active stage，hook 會跳過
     // 但 hook 仍應正常執行（exit code 0）
-    result = runSubagentStop(SESSION_ID, 'ot:developer', 'VERDICT: pass 修復完成');
+    result = runSubagentStop(SESSION_ID, 'developer', 'VERDICT: pass 修復完成');
   });
 
   test('hook 正常執行（exit code 0）', () => {
@@ -155,7 +155,7 @@ describe('BDD F5：TEST 修復後 PASS — failCount 保留歷史', () => {
     });
 
     // tester 這次通過
-    result = runSubagentStop(SESSION_ID, 'ot:tester', 'VERDICT: pass 所有測試通過，修復有效');
+    result = runSubagentStop(SESSION_ID, 'tester', 'VERDICT: pass 所有測試通過，修復有效');
   });
 
   test('TEST.status 為 completed', () => {

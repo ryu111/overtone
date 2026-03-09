@@ -360,7 +360,7 @@ describe('Scenario 1：超過閾值 + 非最後 stage → 建議 + emit timeline
     const transcriptPath = createTranscript('above-threshold.jsonl', 6_000_000);
     const result = runOnStop({
       session_id: SESSION_ABOVE,
-      agent_type: 'ot:planner',
+      agent_type: 'planner',
       last_assistant_message: 'PASS\n- [x] 任務完成\n依賴順序確認',
       transcript_path: transcriptPath,
     }, {
@@ -395,7 +395,7 @@ describe('Scenario 3：最後 stage → 不建議', () => {
     const transcriptPath = createTranscript('last-stage.jsonl', 6_000_000);
     const result = runOnStop({
       session_id: SESSION_LAST,
-      agent_type: 'ot:developer',
+      agent_type: 'developer',
       last_assistant_message: 'PASS',
       transcript_path: transcriptPath,
     }, {
@@ -427,7 +427,7 @@ describe('Scenario 8：fail/reject → 不建議', () => {
     // 用結構化 VERDICT 確保解析為 fail
     const result = runOnStop({
       session_id: SESSION_FAIL,
-      agent_type: 'ot:tester',
+      agent_type: 'tester',
       last_assistant_message: '<!-- VERDICT: {"result": "FAIL"} -->',
       transcript_path: transcriptPath,
     }, {

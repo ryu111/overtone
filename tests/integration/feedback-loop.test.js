@@ -125,7 +125,7 @@ describe('Feature 1: pre-task.js 注入 score context', () => {
 
     const input = {
       tool_input: {
-        subagent_type: 'ot:developer',
+        subagent_type: 'developer',
         description: 'delegate to developer',
         prompt: '實作新功能',
       },
@@ -158,7 +158,7 @@ describe('Feature 1: pre-task.js 注入 score context', () => {
 
     const input = {
       tool_input: {
-        subagent_type: 'ot:developer',
+        subagent_type: 'developer',
         description: 'delegate to developer',
         prompt: '實作新功能',
       },
@@ -201,7 +201,7 @@ describe('Feature 1: pre-task.js 注入 score context', () => {
 
     const input = {
       tool_input: {
-        subagent_type: 'ot:developer',
+        subagent_type: 'developer',
         description: 'delegate to developer',
         prompt: '實作新功能',
       },
@@ -213,7 +213,7 @@ describe('Feature 1: pre-task.js 注入 score context', () => {
     const hookOutput = result.hookSpecificOutput;
     if (hookOutput && hookOutput.updatedInput) {
       // 重要：subagent_type 不應被移除
-      expect(hookOutput.updatedInput.subagent_type).toBe('ot:developer');
+      expect(hookOutput.updatedInput.subagent_type).toBe('developer');
     }
   });
 });

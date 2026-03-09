@@ -92,19 +92,19 @@ describe('BDD secure：前半 sequential — PLAN → ARCH → TEST(spec) → DE
   beforeAll(() => {
     // PLAN
     runPreTask(SESSION_ID, { description: '委派 planner 規劃高風險功能' });
-    runSubagentStop(SESSION_ID, 'ot:planner', 'VERDICT: pass 規劃完成\n- [x] 實作功能\n- [x] 撰寫測試\n依賴：先完成 API 再寫測試');
+    runSubagentStop(SESSION_ID, 'planner', 'VERDICT: pass 規劃完成\n- [x] 實作功能\n- [x] 撰寫測試\n依賴：先完成 API 再寫測試');
 
     // ARCH
     runPreTask(SESSION_ID, { description: '委派 architect 設計安全架構' });
-    runSubagentStop(SESSION_ID, 'ot:architect', 'VERDICT: pass 架構完成\nAPI 介面設計：POST /api/feature\n檔案結構：src/lib/feature.js');
+    runSubagentStop(SESSION_ID, 'architect', 'VERDICT: pass 架構完成\nAPI 介面設計：POST /api/feature\n檔案結構：src/lib/feature.js');
 
     // TEST（spec mode）
     runPreTask(SESSION_ID, { description: '委派 tester 撰寫 BDD spec' });
-    runSubagentStop(SESSION_ID, 'ot:tester', 'VERDICT: pass BDD spec 完成');
+    runSubagentStop(SESSION_ID, 'tester', 'VERDICT: pass BDD spec 完成');
 
     // DEV
     runPreTask(SESSION_ID, { description: '委派 developer 實作功能' });
-    runSubagentStop(SESSION_ID, 'ot:developer', 'VERDICT: pass 開發完成');
+    runSubagentStop(SESSION_ID, 'developer', 'VERDICT: pass 開發完成');
   });
 
   test('PLAN.status 為 completed', () => {
@@ -199,11 +199,11 @@ describe('BDD secure：前兩個完成不收斂，第三個完成後收斂', () 
 
   beforeAll(() => {
     // REVIEW 先完成
-    firstResult  = runSubagentStop(SESSION_ID, 'ot:code-reviewer', 'VERDICT: pass 審查通過');
+    firstResult  = runSubagentStop(SESSION_ID, 'code-reviewer', 'VERDICT: pass 審查通過');
     // TEST:2 第二個完成（尚未收斂）
-    secondResult = runSubagentStop(SESSION_ID, 'ot:tester', 'VERDICT: pass 所有測試通過');
+    secondResult = runSubagentStop(SESSION_ID, 'tester', 'VERDICT: pass 所有測試通過');
     // SECURITY 第三個完成（觸發收斂）
-    thirdResult  = runSubagentStop(SESSION_ID, 'ot:security-reviewer', 'VERDICT: pass 無安全漏洞');
+    thirdResult  = runSubagentStop(SESSION_ID, 'security-reviewer', 'VERDICT: pass 無安全漏洞');
   });
 
   test('三成員均在同一 beforeAll 完成（hook 依序執行）', () => {
@@ -244,11 +244,11 @@ describe('BDD secure：RETRO → DOCS 完成後所有 9 stage 均為 completed',
   beforeAll(() => {
     // RETRO
     runPreTask(SESSION_ID, { description: '委派 retrospective 進行回顧' });
-    runSubagentStop(SESSION_ID, 'ot:retrospective', 'VERDICT: pass 回顧完成');
+    runSubagentStop(SESSION_ID, 'retrospective', 'VERDICT: pass 回顧完成');
 
     // DOCS
     runPreTask(SESSION_ID, { description: '委派 doc-updater 更新文件' });
-    docsResult = runSubagentStop(SESSION_ID, 'ot:doc-updater', 'VERDICT: pass 文件已更新');
+    docsResult = runSubagentStop(SESSION_ID, 'doc-updater', 'VERDICT: pass 文件已更新');
   });
 
   test('RETRO.status 為 completed', () => {

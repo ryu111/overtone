@@ -90,7 +90,7 @@ function runPreTask(sessionId, toolInput = {}) {
 /**
  * 執行 on-stop.js（SubagentStop）hook（同步）
  * @param {string} sessionId
- * @param {string} agentType - agent 類型，如 'ot:developer'
+ * @param {string} agentType - agent 類型，如 'developer'
  * @param {string} message - last_assistant_message
  * @param {object} [extra={}] - 額外的 input 欄位（如 cwd）
  * @returns {{ exitCode: number, stdout: string, stderr: string, parsed: object|null }}

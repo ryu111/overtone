@@ -70,7 +70,7 @@ describe('on-stop stale agent cleanup — findActualStageKey null 時', () => {
     });
 
     // 觸發 on-stop（帶 INSTANCE_ID）— findActualStageKey 會找不到 active DEV
-    runSubagentStop(sessionId, 'ot:developer', `VERDICT: pass 修補完成\n\nINSTANCE_ID: ${instanceId}`);
+    runSubagentStop(sessionId, 'developer', `VERDICT: pass 修補完成\n\nINSTANCE_ID: ${instanceId}`);
 
     const ws = state.readState(sessionId);
     // activeAgents entry 應被清除（即使 findActualStageKey 回傳 null）
@@ -105,7 +105,7 @@ describe('on-stop stale agent cleanup — findActualStageKey null 時', () => {
     });
 
     // 不含 INSTANCE_ID → fallback 清除字典序最小的 key
-    runSubagentStop(sessionId, 'ot:developer', 'VERDICT: pass 修補完成（無 INSTANCE_ID）');
+    runSubagentStop(sessionId, 'developer', 'VERDICT: pass 修補完成（無 INSTANCE_ID）');
 
     const ws = state.readState(sessionId);
     // aaaa 被清除（字典序最小），bbbb 保留
@@ -135,7 +135,7 @@ describe('on-stop stale agent cleanup — findActualStageKey null 時', () => {
     });
 
     // 執行 on-stop
-    runSubagentStop(sessionId, 'ot:developer', `VERDICT: pass\n\nINSTANCE_ID: ${instanceId}`);
+    runSubagentStop(sessionId, 'developer', `VERDICT: pass\n\nINSTANCE_ID: ${instanceId}`);
 
     const ws = state.readState(sessionId);
     // activeAgents entry 已被清除
@@ -171,7 +171,7 @@ describe('on-stop stale agent cleanup — findActualStageKey null 時', () => {
     });
 
     // 第 1 個 instance 的 on-stop
-    runSubagentStop(sessionId, 'ot:developer', 'VERDICT: pass inst1\n\nINSTANCE_ID: developer:first001-inst');
+    runSubagentStop(sessionId, 'developer', 'VERDICT: pass inst1\n\nINSTANCE_ID: developer:first001-inst');
 
     const ws = state.readState(sessionId);
     // first001 被清除

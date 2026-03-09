@@ -60,7 +60,7 @@ describe('Feature 2：pre-task.js PARALLEL_TOTAL 解析與注入', () => {
     const sessionId = setupSession('single');
 
     const result = runPreTask(sessionId, {
-      subagent_type: 'ot:developer',
+      subagent_type: 'developer',
       description: '並行開發任務',
       prompt: 'PARALLEL_TOTAL: 3\n請實作並行功能',
     });
@@ -76,7 +76,7 @@ describe('Feature 2：pre-task.js PARALLEL_TOTAL 解析與注入', () => {
     const sessionId = setupSession('single');
 
     const result = runPreTask(sessionId, {
-      subagent_type: 'ot:developer',
+      subagent_type: 'developer',
       description: '單一開發任務',
       prompt: '請實作功能（無並行標記）',
     });
@@ -92,7 +92,7 @@ describe('Feature 2：pre-task.js PARALLEL_TOTAL 解析與注入', () => {
     const sessionId = setupSession('single');
 
     const result = runPreTask(sessionId, {
-      subagent_type: 'ot:developer',
+      subagent_type: 'developer',
       description: '並行開發',
       prompt: 'PARALLEL_TOTAL: 3\n原始任務內容',
     });
@@ -132,7 +132,7 @@ describe('Feature 2：pre-task.js PARALLEL_TOTAL 解析與注入', () => {
 
     // 第二個 pre-task（PARALLEL_TOTAL: 3）
     const result = runPreTask(sessionId, {
-      subagent_type: 'ot:developer',
+      subagent_type: 'developer',
       description: '並行開發',
       prompt: 'PARALLEL_TOTAL: 3\n任務',
     });
@@ -173,7 +173,7 @@ describe('Feature 3：on-stop.js 並行收斂門 — 3 個 developer 全部 pass
     });
 
     // 第 1 個 instance 完成（帶 INSTANCE_ID）
-    runSubagentStop(sessionId, 'ot:developer', 'VERDICT: pass 任務一完成\n\nINSTANCE_ID: developer:aaa001-inst1');
+    runSubagentStop(sessionId, 'developer', 'VERDICT: pass 任務一完成\n\nINSTANCE_ID: developer:aaa001-inst1');
 
     const ws1 = state.readState(sessionId);
     // 未收斂：stage 仍 active（parallelDone = 1，parallelTotal = 3）
@@ -181,7 +181,7 @@ describe('Feature 3：on-stop.js 並行收斂門 — 3 個 developer 全部 pass
     expect(ws1.stages['DEV'].parallelDone).toBe(1);
 
     // 第 2 個 instance 完成
-    runSubagentStop(sessionId, 'ot:developer', 'VERDICT: pass 任務二完成\n\nINSTANCE_ID: developer:bbb002-inst2');
+    runSubagentStop(sessionId, 'developer', 'VERDICT: pass 任務二完成\n\nINSTANCE_ID: developer:bbb002-inst2');
 
     const ws2 = state.readState(sessionId);
     // 仍未收斂
@@ -189,7 +189,7 @@ describe('Feature 3：on-stop.js 並行收斂門 — 3 個 developer 全部 pass
     expect(ws2.stages['DEV'].parallelDone).toBe(2);
 
     // 第 3 個 instance 完成（最後一個，觸發收斂）
-    runSubagentStop(sessionId, 'ot:developer', 'VERDICT: pass 任務三完成\n\nINSTANCE_ID: developer:ccc003-inst3');
+    runSubagentStop(sessionId, 'developer', 'VERDICT: pass 任務三完成\n\nINSTANCE_ID: developer:ccc003-inst3');
 
     const ws3 = state.readState(sessionId);
     // 已收斂：stage 標記 completed + pass
@@ -226,7 +226,7 @@ describe('Feature 3：on-stop.js 收斂門 — fail 立即觸發', () => {
     });
 
     // 第 2 個 tester instance fail（TEST stage 會判定 fail）
-    runSubagentStop(sessionId, 'ot:tester', '3 tests failed with errors\n\nINSTANCE_ID: tester:bbb002-inst2');
+    runSubagentStop(sessionId, 'tester', '3 tests failed with errors\n\nINSTANCE_ID: tester:bbb002-inst2');
 
     const ws = state.readState(sessionId);
     // 立即標記 completed + fail
@@ -257,7 +257,7 @@ describe('Feature 3：on-stop.js 收斂門 — fail 立即觸發', () => {
     });
 
     // 後續到達的 inst3（DEV 永遠 pass，但 stage 已 completed → 只做 cleanup）
-    runSubagentStop(sessionId, 'ot:developer', 'VERDICT: pass 任務三完成\n\nINSTANCE_ID: developer:ccc003-inst3');
+    runSubagentStop(sessionId, 'developer', 'VERDICT: pass 任務三完成\n\nINSTANCE_ID: developer:ccc003-inst3');
 
     const ws = state.readState(sessionId);
     // 結果維持 fail（不被 pass 覆蓋）
@@ -287,7 +287,7 @@ describe('Feature 3：on-stop.js 收斂門 — instanceId 解析', () => {
       return s;
     });
 
-    runSubagentStop(sessionId, 'ot:developer', `VERDICT: pass 完成\n\nINSTANCE_ID: ${instanceId}`);
+    runSubagentStop(sessionId, 'developer', `VERDICT: pass 完成\n\nINSTANCE_ID: ${instanceId}`);
 
     const ws = state.readState(sessionId);
     // 對應的 instanceId entry 被清除，另一個仍存在
@@ -313,7 +313,7 @@ describe('Feature 3：on-stop.js 收斂門 — instanceId 解析', () => {
     });
 
     // agentOutput 不含 INSTANCE_ID
-    runSubagentStop(sessionId, 'ot:developer', 'VERDICT: pass 完成（無 instanceId）');
+    runSubagentStop(sessionId, 'developer', 'VERDICT: pass 完成（無 instanceId）');
 
     const ws = state.readState(sessionId);
     // aaaa01 被清除（字典序最小），bbbb02 保留
@@ -342,7 +342,7 @@ describe('Feature 3：on-stop.js 收斂門 — activeAgents 生命週期', () =>
     });
 
     // 第 1 個完成（parallelDone = 1，parallelTotal = 3，未收斂）
-    runSubagentStop(sessionId, 'ot:developer', 'VERDICT: pass 任務一\n\nINSTANCE_ID: developer:aaa001-inst1');
+    runSubagentStop(sessionId, 'developer', 'VERDICT: pass 任務一\n\nINSTANCE_ID: developer:aaa001-inst1');
 
     const ws1 = state.readState(sessionId);
     expect(ws1.stages['DEV'].parallelDone).toBe(1);
@@ -352,13 +352,13 @@ describe('Feature 3：on-stop.js 收斂門 — activeAgents 生命週期', () =>
     expect(ws1.activeAgents['developer:bbb002-inst2']).toBeDefined();
 
     // 第 2 個完成（parallelDone = 2，未收斂）
-    runSubagentStop(sessionId, 'ot:developer', 'VERDICT: pass 任務二\n\nINSTANCE_ID: developer:bbb002-inst2');
+    runSubagentStop(sessionId, 'developer', 'VERDICT: pass 任務二\n\nINSTANCE_ID: developer:bbb002-inst2');
     const ws2 = state.readState(sessionId);
     expect(ws2.stages['DEV'].parallelDone).toBe(2);
     expect(ws2.stages['DEV'].status).toBe('active');
 
     // 第 3 個完成（parallelDone = 3，已收斂）
-    runSubagentStop(sessionId, 'ot:developer', 'VERDICT: pass 任務三\n\nINSTANCE_ID: developer:ccc003-inst3');
+    runSubagentStop(sessionId, 'developer', 'VERDICT: pass 任務三\n\nINSTANCE_ID: developer:ccc003-inst3');
 
     const ws3 = state.readState(sessionId);
     expect(ws3.stages['DEV'].status).toBe('completed');
@@ -388,7 +388,7 @@ describe('Feature 3：on-stop.js timeline — 每個 instance emit agent:complet
     });
 
     // 第 1 個完成
-    runSubagentStop(sessionId, 'ot:developer', 'VERDICT: pass inst1\n\nINSTANCE_ID: developer:a1-inst1');
+    runSubagentStop(sessionId, 'developer', 'VERDICT: pass inst1\n\nINSTANCE_ID: developer:a1-inst1');
 
     const stageEvents1 = timeline.query(sessionId, { type: 'stage:complete' });
     const agentEvents1 = timeline.query(sessionId, { type: 'agent:complete' });
@@ -397,7 +397,7 @@ describe('Feature 3：on-stop.js timeline — 每個 instance emit agent:complet
     expect(stageEvents1.length).toBe(0);
 
     // 第 2 個完成
-    runSubagentStop(sessionId, 'ot:developer', 'VERDICT: pass inst2\n\nINSTANCE_ID: developer:b2-inst2');
+    runSubagentStop(sessionId, 'developer', 'VERDICT: pass inst2\n\nINSTANCE_ID: developer:b2-inst2');
 
     const stageEvents2 = timeline.query(sessionId, { type: 'stage:complete' });
     const agentEvents2 = timeline.query(sessionId, { type: 'agent:complete' });
@@ -405,7 +405,7 @@ describe('Feature 3：on-stop.js timeline — 每個 instance emit agent:complet
     expect(stageEvents2.length).toBe(0); // 仍無 stage:complete
 
     // 第 3 個完成（收斂）
-    runSubagentStop(sessionId, 'ot:developer', 'VERDICT: pass inst3\n\nINSTANCE_ID: developer:c3-inst3');
+    runSubagentStop(sessionId, 'developer', 'VERDICT: pass inst3\n\nINSTANCE_ID: developer:c3-inst3');
 
     const stageEvents3 = timeline.query(sessionId, { type: 'stage:complete' });
     const agentEvents3 = timeline.query(sessionId, { type: 'agent:complete' });
@@ -428,7 +428,7 @@ describe('Feature 3：on-stop.js timeline — 每個 instance emit agent:complet
       return s;
     });
 
-    runSubagentStop(sessionId, 'ot:developer', 'VERDICT: pass 完成');
+    runSubagentStop(sessionId, 'developer', 'VERDICT: pass 完成');
 
     const ws = state.readState(sessionId);
     expect(ws.stages['DEV'].status).toBe('completed');
@@ -454,7 +454,7 @@ describe('Feature 7：邊界案例', () => {
     let result;
     expect(() => {
       result = runPreTask(sessionId, {
-        subagent_type: 'ot:developer',
+        subagent_type: 'developer',
         description: '並行開發',
         prompt: 'PARALLEL_TOTAL: abc\n任意任務',
       });
@@ -484,7 +484,7 @@ describe('Feature 7：邊界案例', () => {
     // agentOutput 不含 INSTANCE_ID，activeAgents 為空
     let result;
     expect(() => {
-      result = runSubagentStop(sessionId, 'ot:developer', 'VERDICT: pass 完成（無 instanceId）');
+      result = runSubagentStop(sessionId, 'developer', 'VERDICT: pass 完成（無 instanceId）');
     }).not.toThrow();
 
     // hook 正常退出（exit code 0）
@@ -511,7 +511,7 @@ describe('Feature 7：邊界案例', () => {
     });
 
     // inst2 的 on-stop 在 stage 已 completed 後到達
-    runSubagentStop(sessionId, 'ot:developer', 'VERDICT: pass inst2\n\nINSTANCE_ID: developer:bbb002-inst2');
+    runSubagentStop(sessionId, 'developer', 'VERDICT: pass inst2\n\nINSTANCE_ID: developer:bbb002-inst2');
 
     const ws = state.readState(sessionId);
     // 結果不改變

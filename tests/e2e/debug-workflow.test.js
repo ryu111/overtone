@@ -78,11 +78,11 @@ describe('BDD debug：DEBUG → DEV 依序推進', () => {
   beforeAll(() => {
     // DEBUG：pre-task + on-stop PASS
     runPreTask(SESSION_ID, { description: '委派 debugger 根因分析' });
-    runSubagentStop(SESSION_ID, 'ot:debugger', 'VERDICT: pass 根因已找到');
+    runSubagentStop(SESSION_ID, 'debugger', 'VERDICT: pass 根因已找到');
 
     // DEV：pre-task + on-stop PASS
     runPreTask(SESSION_ID, { description: '委派 developer 修復問題' });
-    runSubagentStop(SESSION_ID, 'ot:developer', 'VERDICT: pass 修復完成');
+    runSubagentStop(SESSION_ID, 'developer', 'VERDICT: pass 修復完成');
   });
 
   test('DEBUG.status 為 completed', () => {
@@ -111,7 +111,7 @@ describe('BDD debug：TEST(verify) 完成後所有 stage 均為 completed', () =
   beforeAll(() => {
     // TEST（verify mode）：pre-task + on-stop PASS
     runPreTask(SESSION_ID, { description: '委派 tester 驗證修復結果' });
-    result = runSubagentStop(SESSION_ID, 'ot:tester', 'VERDICT: pass 所有測試通過');
+    result = runSubagentStop(SESSION_ID, 'tester', 'VERDICT: pass 所有測試通過');
   });
 
   test('TEST.status 為 completed（verify mode）', () => {

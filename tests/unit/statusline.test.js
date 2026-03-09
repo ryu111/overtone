@@ -397,7 +397,7 @@ describe('agent 顯示與中文模式', () => {
     mkdirSync(sessionDir, { recursive: true });
     writeFileSync(path.join(sessionDir, 'active-agent.json'), JSON.stringify({
       agent: 'developer',
-      subagentType: 'ot:developer',
+      subagentType: 'developer',
       startedAt: new Date().toISOString(),
     }));
 

@@ -94,7 +94,7 @@ describe('場景 1：前置 stage 已完成 → 允許通過', () => {
         session_id: sessionId,
         tool_name: 'Task',
         tool_input: {
-          subagent_type: 'ot:code-reviewer',
+          subagent_type: 'code-reviewer',
           description: '委派審查',
           prompt: '請審查程式碼品質',
         },
@@ -127,7 +127,7 @@ describe('場景 2：前置 stage 未完成 → 阻擋並警告', () => {
         session_id: sessionId,
         tool_name: 'Task',
         tool_input: {
-          subagent_type: 'ot:code-reviewer',
+          subagent_type: 'code-reviewer',
           description: '委派審查',
           prompt: '請審查程式碼',
         },
@@ -218,7 +218,7 @@ describe('場景 5：subagent_type ot: 前綴 → 確定性映射（L1）', () =
         session_id: sessionId,
         tool_name: 'Task',
         tool_input: {
-          subagent_type: 'ot:developer',
+          subagent_type: 'developer',
           description: '開發任務',
           prompt: '請實作新功能',
         },
@@ -244,7 +244,7 @@ describe('場景 5：subagent_type ot: 前綴 → 確定性映射（L1）', () =
         session_id: sessionId,
         tool_name: 'Task',
         tool_input: {
-          subagent_type: 'ot:planner',
+          subagent_type: 'planner',
           description: '規劃任務',
           prompt: '規劃功能，注意不要讓 code-reviewer 提前介入',
         },
@@ -303,7 +303,7 @@ describe('場景 5：subagent_type ot: 前綴 → 確定性映射（L1）', () =
         session_id: sessionId,
         tool_name: 'Task',
         tool_input: {
-          subagent_type: 'ot:nonexistent-agent',
+          subagent_type: 'nonexistent-agent',
           description: '執行某任務',
           prompt: '任意內容',
         },
@@ -333,7 +333,7 @@ describe('場景 6：Knowledge Engine — skillContext 注入', () => {
         session_id: sessionId,
         tool_name: 'Task',
         tool_input: {
-          subagent_type: 'ot:developer',
+          subagent_type: 'developer',
           description: '開發任務',
           prompt: '請實作新功能',
         },
@@ -362,7 +362,7 @@ describe('場景 6：Knowledge Engine — skillContext 注入', () => {
         session_id: sessionId,
         tool_name: 'Task',
         tool_input: {
-          subagent_type: 'ot:tester',
+          subagent_type: 'tester',
           description: '撰寫 BDD spec',
           prompt: '請撰寫測試規格',
         },
@@ -389,7 +389,7 @@ describe('場景 6：Knowledge Engine — skillContext 注入', () => {
         session_id: sessionId,
         tool_name: 'Task',
         tool_input: {
-          subagent_type: 'ot:developer',
+          subagent_type: 'developer',
           description: '開發任務',
           prompt: '請實作',
         },
@@ -417,7 +417,7 @@ describe('場景 7：Knowledge Engine — gapWarnings 注入', () => {
         session_id: sessionId,
         tool_name: 'Task',
         tool_input: {
-          subagent_type: 'ot:doc-updater',
+          subagent_type: 'doc-updater',
           description: '安全修復',
           prompt: '修復 XSS vulnerability，檢查 authentication 和 authorization，加入 CSRF protection 和 input sanitization',
         },
@@ -444,7 +444,7 @@ describe('場景 7：Knowledge Engine — gapWarnings 注入', () => {
         session_id: sessionId,
         tool_name: 'Task',
         tool_input: {
-          subagent_type: 'ot:developer',
+          subagent_type: 'developer',
           description: '簡單修改',
           prompt: '把變數名稱改成 camelCase',
         },
@@ -518,7 +518,7 @@ describe('場景 8：全域觀察注入 subagent', () => {
         session_id: sessionId,
         tool_name: 'Task',
         tool_input: {
-          subagent_type: 'ot:developer',
+          subagent_type: 'developer',
           description: '開發任務',
           prompt: '請實作新功能',
         },
@@ -548,7 +548,7 @@ describe('場景 8：全域觀察注入 subagent', () => {
         session_id: sessionId,
         tool_name: 'Task',
         tool_input: {
-          subagent_type: 'ot:developer',
+          subagent_type: 'developer',
           description: '開發任務',
           prompt: '請實作新功能',
         },
@@ -592,7 +592,7 @@ describe('場景 20：retry — completed + reject/fail 時重新委派', () => 
         session_id: sessionId,
         tool_name: 'Task',
         tool_input: {
-          subagent_type: 'ot:code-reviewer',
+          subagent_type: 'code-reviewer',
           description: '重審',
           prompt: '修復後重新審查',
         },
@@ -633,7 +633,7 @@ describe('場景 20：retry — completed + reject/fail 時重新委派', () => 
         session_id: sessionId,
         tool_name: 'Task',
         tool_input: {
-          subagent_type: 'ot:tester',
+          subagent_type: 'tester',
           description: '重測',
           prompt: '修復後重新測試',
         },
@@ -671,7 +671,7 @@ describe('場景 20：retry — completed + reject/fail 時重新委派', () => 
         session_id: sessionId,
         tool_name: 'Task',
         tool_input: {
-          subagent_type: 'ot:code-reviewer',
+          subagent_type: 'code-reviewer',
           description: '再審',
           prompt: '再次審查',
         },

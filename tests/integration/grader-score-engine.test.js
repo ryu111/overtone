@@ -270,7 +270,7 @@ describe('Feature 7: 低分閾值觸發 instinct quality_signal', () => {
     const hookPath = join(HOOKS_DIR, 'agent', 'on-stop.js');
     const input = {
       session_id: sessionId,
-      agent_type: 'ot:developer',
+      agent_type: 'developer',
       last_assistant_message: 'HANDOFF: developer → code-reviewer\n\n### Context\n完成實作',
       cwd: TEST_PROJECT_ROOT,
       transcript_path: null,

@@ -281,7 +281,7 @@ describe('Feature 5: 附加條件', () => {
 
     const joined = result.messages.join('\n');
     expect(joined).not.toContain('grader');
-    expect(joined).not.toContain('ot:grader');
+    expect(joined).not.toContain('grader');
     expect(joined).not.toContain('評估此階段輸出品質');
   });
 

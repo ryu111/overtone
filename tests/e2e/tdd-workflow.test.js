@@ -83,11 +83,11 @@ describe('BDD tdd：TEST(spec) → DEV 依序推進', () => {
   beforeAll(() => {
     // TEST（spec mode）：pre-task + on-stop PASS
     runPreTask(SESSION_ID, { description: '委派 tester 撰寫 BDD spec' });
-    runSubagentStop(SESSION_ID, 'ot:tester', 'VERDICT: pass BDD spec 完成');
+    runSubagentStop(SESSION_ID, 'tester', 'VERDICT: pass BDD spec 完成');
 
     // DEV：pre-task + on-stop PASS
     runPreTask(SESSION_ID, { description: '委派 developer 實作功能' });
-    runSubagentStop(SESSION_ID, 'ot:developer', 'VERDICT: pass 開發完成');
+    runSubagentStop(SESSION_ID, 'developer', 'VERDICT: pass 開發完成');
   });
 
   test('TEST.status 為 completed（spec mode）', () => {
@@ -116,7 +116,7 @@ describe('BDD tdd：TEST:2(verify) 完成後所有 stage 均為 completed', () =
   beforeAll(() => {
     // TEST:2（verify mode）：pre-task + on-stop PASS
     runPreTask(SESSION_ID, { description: '委派 tester 執行驗證測試' });
-    result = runSubagentStop(SESSION_ID, 'ot:tester', 'VERDICT: pass 所有測試通過');
+    result = runSubagentStop(SESSION_ID, 'tester', 'VERDICT: pass 所有測試通過');
   });
 
   test('TEST:2.status 為 completed（verify mode）', () => {
