@@ -132,7 +132,7 @@ describe('[workflow:xxx] 覆寫語法 — 無效 key 降級', () => {
     );
     const ctx = getContext(result);
     expect(ctx).toBeTruthy();
-    expect(ctx).toContain('"auto"');
+    expect(ctx).toContain('/auto');
     expect(ctx).not.toContain('工作流進行中');
   });
 
@@ -187,7 +187,7 @@ describe('無 workflow 狀態 — 注入 auto 指引', () => {
     );
     const ctx = getContext(result);
     expect(ctx).toBeTruthy();
-    expect(ctx).toContain('"auto"');
+    expect(ctx).toContain('/auto');
     expect(ctx).toContain('[Overtone]');
   });
 
@@ -198,7 +198,7 @@ describe('無 workflow 狀態 — 注入 auto 指引', () => {
     );
     const ctx = getContext(result);
     expect(ctx).toBeTruthy();
-    expect(ctx).toContain('"auto"');
+    expect(ctx).toContain('/auto');
   });
 
   test('場景 7c：缺少 CLAUDE_SESSION_ID 環境變數 → 注入 auto 指引', async () => {
@@ -214,7 +214,7 @@ describe('無 workflow 狀態 — 注入 auto 指引', () => {
     const result = JSON.parse(output);
     const ctx = getContext(result);
     expect(ctx).toBeTruthy();
-    expect(ctx).toContain('"auto"');
+    expect(ctx).toContain('/auto');
   });
 });
 

@@ -131,7 +131,7 @@
 |--------|------|------|---------|
 | 無 session | sessionId 為空 | 放行（result: ''） | pre-task-handler.js L82-84 |
 | 無 workflow state | readState 回傳 null | 放行（result: ''） | pre-task-handler.js L86-89 |
-| 無法辨識目標 agent | subagent_type 非 ot: 前綴且 identifyAgent 無法匹配 | 放行（result: ''） | pre-task-handler.js L130-133 |
+| 無法辨識目標 agent | identifyAgent 無法匹配 subagent_type | 放行（result: ''） | pre-task-handler.js L130-133 |
 | 目標 stage 找不到 | getStageByAgent 回傳 null | 放行（result: ''） | pre-task-handler.js L138-140 |
 | 跳過必要前置階段 | targetIdx 之前存在 status === 'pending' 的 stage | **deny（阻擋委派）** | pre-task-handler.js L151-172 |
 | 通過所有檢查 | 無被跳過的前置階段 | allow + updatedInput（注入 workflow context + skill + gap + globalObs + score + failureWarning + testIndex） | pre-task-handler.js L174-418 |
