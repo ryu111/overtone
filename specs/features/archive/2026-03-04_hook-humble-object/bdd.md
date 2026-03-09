@@ -119,7 +119,7 @@ THEN 回傳字串（不拋出例外）
 ---
 
 ## Scenario: buildSystemMessage 在有 workflow override 時組裝 override 分支訊息
-GIVEN userPrompt 包含有效的 workflow 覆蓋指令（例如 "/ot:single"）
+GIVEN userPrompt 包含有效的 workflow 覆蓋指令（例如 "/single"）
 AND validWorkflowOverride 為 "single"
 AND currentState 為無 workflow 進行中的狀態
 WHEN 呼叫 `buildSystemMessage({ userPrompt, currentState, validWorkflowOverride, activeFeatureContext: null, workflows })`

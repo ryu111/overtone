@@ -236,7 +236,7 @@ describe('Feature 4: ISSUES 路徑', () => {
     const joined = result.messages.join('\n');
     expect(joined).toContain('回顧完成');
     expect(joined).toContain('1/3');
-    expect(joined).toContain('/ot:auto');
+    expect(joined).toContain('/auto');
     expect(result.stateUpdates.some(u => u.type === 'incrementRetroCount')).toBe(true);
   });
 
@@ -478,7 +478,7 @@ describe('Feature 7: postdev 收斂提示', () => {
 
     const joined = result.messages.join('\n');
     expect(joined).toContain('RETRO 回顧發現改善建議（retroCount: 1/3）');
-    expect(joined).toContain('可選：觸發 /ot:auto 新一輪優化，或標記工作流完成');
+    expect(joined).toContain('可選：觸發 /auto 新一輪優化，或標記工作流完成');
     expect(joined).not.toContain('已達迭代上限');
   });
 
@@ -529,7 +529,7 @@ describe('Feature 7: postdev 收斂提示', () => {
     const joined = result.messages.join('\n');
     expect(joined).toContain('RETRO 回顧發現改善建議（retroCount: 3/3）');
     expect(joined).toContain('已達迭代上限（3 次），工作流完成');
-    expect(joined).not.toContain('可選：觸發 /ot:auto');
+    expect(joined).not.toContain('可選：觸發 /auto');
   });
 });
 

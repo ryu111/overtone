@@ -137,7 +137,7 @@
 ## 開放問題
 
 1. **session 完成偵測策略**：stream-json `subtype:success` 是否可靠？若 Claude Code crash 沒有 success 事件，heartbeat 如何偵測到 session 結束？（是否需要 timeout 兜底）
-2. **prompt 格式**：spawn 時傳給 claude -p 的 prompt 內容格式？需要 Overtone Workflow Context 注入嗎？或只需 `開始執行 {featureName}（{workflow}）` 即可讓 UserPromptSubmit hook 和 /ot:auto 接管？
+2. **prompt 格式**：spawn 時傳給 claude -p 的 prompt 內容格式？需要 Overtone Workflow Context 注入嗎？或只需 `開始執行 {featureName}（{workflow}）` 即可讓 UserPromptSubmit hook 和 /auto 接管？
 3. **projectRoot 傳遞**：heartbeat.js 如何知道 projectRoot？execution-queue.json 路徑需要 projectHash，而 heartbeat 是獨立程序，無法從 Claude Code 的 `input.cwd` 取得。建議：daemon 啟動時接受 `--project-root <path>` 參數，或讀取 config.json。
 4. **Telegram 通知方式**：直接在 heartbeat.js 實例化 TelegramAdapter（簡單），還是透過 server.js 的 EventBus 轉發（一致性）？前者 heartbeat 可獨立運行，後者需要 server.js 同時啟動。
 5. **`--resume` 使用時機**：在哪個條件下使用 `--resume {sessionId}`？每次都 resume 同一個 session，還是每個佇列項目用全新 session？新 session 確保隔離，resume 保留 context。

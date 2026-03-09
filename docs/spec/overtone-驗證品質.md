@@ -8,7 +8,7 @@
 
 ## 驗證與品質
 
-### /ot:verify 統一 6 階段
+### /verify 統一 6 階段
 
 ```
 1️⃣ Build    npm run build / go build

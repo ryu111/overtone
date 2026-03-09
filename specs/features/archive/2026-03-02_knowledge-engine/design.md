@@ -35,8 +35,8 @@
 
 ### 決策 3：skill-router 新 Skill 門檻
 
-- **選擇**：不自動建立新 Skill。無匹配時（所有 domain 分數 < 0.2）記錄 instinct observation（type: knowledge_gap），由人工或 /ot:evolve 決定是否建立
-- **理由**：(1) pre-edit-guard 保護 skills/*/SKILL.md，自動建立需要 manage-component.js (2) 自動建立的 Skill 品質無法保證（名稱、描述、結構）(3) Instinct 系統的 skillEvolutionCount 機制已有「觀察累積 -> 進化」的路徑，知識缺口累積到閾值自然會被 /ot:evolve 發現
+- **選擇**：不自動建立新 Skill。無匹配時（所有 domain 分數 < 0.2）記錄 instinct observation（type: knowledge_gap），由人工或 /evolve 決定是否建立
+- **理由**：(1) pre-edit-guard 保護 skills/*/SKILL.md，自動建立需要 manage-component.js (2) 自動建立的 Skill 品質無法保證（名稱、描述、結構）(3) Instinct 系統的 skillEvolutionCount 機制已有「觀察累積 -> 進化」的路徑，知識缺口累積到閾值自然會被 /evolve 發現
 - **未選**：自動建立（threshold 0.3/0.5）-- 風險高且 pre-edit-guard 會擋
 
 ### 決策 4：knowledge-extractor 模組邊界
@@ -338,7 +338,7 @@ const DOMAIN_KEYWORDS = {
 ### 決策 D：不修改 agent frontmatter
 
 - **選擇**：不在任何迭代中自動修改 agent .md 的 skills 欄位
-- **理由**：pre-edit-guard 保護 agents/*.md，修改需要 manage-component.js。自動修改 skills 欄位風險高（可能引入不相關的 domain）。知識缺口記錄在 instinct observation，由 /ot:evolve 或人工決定是否新增 skills
+- **理由**：pre-edit-guard 保護 agents/*.md，修改需要 manage-component.js。自動修改 skills 欄位風險高（可能引入不相關的 domain）。知識缺口記錄在 instinct observation，由 /evolve 或人工決定是否新增 skills
 
 ## 實作注意事項
 

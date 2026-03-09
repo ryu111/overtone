@@ -12,7 +12,7 @@
 
 ### 輸入
 
-無輸入參數。使用者輸入 `/ot:status` 觸發。
+無輸入參數。使用者輸入 `/status` 觸發。
 
 ### 輸出格式
 
@@ -59,7 +59,7 @@ Overtone v{version}
 
 ```
 新增的檔案：
-  plugins/overtone/skills/status/SKILL.md  ← 新增：/ot:status skill 定義
+  plugins/overtone/skills/status/SKILL.md  ← 新增：/status skill 定義
 
 修改的檔案：
   docs/status.md                           ← 修改：Skill 數量 30 → 31

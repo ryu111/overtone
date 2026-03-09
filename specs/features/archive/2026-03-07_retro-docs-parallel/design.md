@@ -26,7 +26,7 @@ RETRO 先完成時，`issues` verdict 寫入 stage state（status: completed, re
 RETRO issues 提示**附加在群組收斂訊息之後**。在 PASS branch 的並行群組收斂偵測後，若 `postdev` 群組收斂且 RETRO result 為 `issues`，插入：
 ```
 🔁 RETRO 回顧發現改善建議（retroCount: N/3）
-💡 可選：觸發 /ot:auto 新一輪優化，或標記工作流完成
+💡 可選：觸發 /auto 新一輪優化，或標記工作流完成
 ```
 由 stop-message-builder 負責讀取 state 中的 RETRO result 並插入。
 
@@ -101,7 +101,7 @@ if (convergence && convergence.group === 'postdev') {
     if (newRetroCount >= 3) {
       messages.push('⛔ 已達迭代上限（3 次），工作流完成');
     } else {
-      messages.push('💡 可選：觸發 /ot:auto 新一輪優化，或標記工作流完成');
+      messages.push('💡 可選：觸發 /auto 新一輪優化，或標記工作流完成');
     }
   }
 }

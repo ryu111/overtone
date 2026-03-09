@@ -47,7 +47,7 @@
 | S12 | 音效通知 | macOS afplay 系統音效 — sound.js + Notification hook + error.flag 恢復偵測（v0.24.0） | ✅ 完成 |
 | S13 | Status Line | CLI 底部雙行即時顯示 — workflow/agent + ctx%/5h/7d 用量 + compact 計數 + ANSI 變色警告（v0.25.0） | ✅ 完成 |
 | S14 | Strategic Compact | SubagentStop hook 於 stage pass 時檢查 transcript 大小，超過閾值自動建議壓縮 + emit timeline 事件（v0.26.0） | ✅ 完成 |
-| S15 | CBP 最佳實踐對齊 | `/ot:commit` utility skill + code-reviewer 四維度審查（Anthropic 官方 CBP 交叉比對啟發） | ⚪ 計畫中 |
+| S15 | CBP 最佳實踐對齊 | `/commit` utility skill + code-reviewer 四維度審查（Anthropic 官方 CBP 交叉比對啟發） | ⚪ 計畫中 |
 | S15b | Skill/Agent/Command 正規化 | 38 skills → 15 skills + 27 commands。Agent=角色、Skill=知識、Command=動作。7 次迭代完成（v0.27.3-0.27.8） | ✅ 完成 |
 | S16 | Agent Prompt 強化 | 16 個 agent 加上 `description` frontmatter + `<example>` 路由範例（CBP 啟發的備援路由信號） | ⚪ 計畫中 |
 | S17 | 測試覆蓋率分析 | tester agent 覆蓋率分析能力（待 Bun 覆蓋率工具鏈成熟度驗證） | ⏳ 保留 |
@@ -59,7 +59,7 @@
 
 | # | 項目 | 類型 | 說明 | RICE |
 |---|------|:----:|------|:----:|
-| 15a | `/ot:commit` utility skill | 新 skill | diff 分析 + 拆分判斷 + conventional commit 自動化。引用 `ref-commit-convention`。workflow 外的快速 commit 工具 | 18.0 |
+| 15a | `/commit` utility skill | 新 skill | diff 分析 + 拆分判斷 + conventional commit 自動化。引用 `ref-commit-convention`。workflow 外的快速 commit 工具 | 18.0 |
 | 15b | code-reviewer 四維度審查 | prompt 增強 | Code Quality / Security / Performance / Observability 結構化審查。frontmatter 引用 `ref-pr-review-checklist`。Handoff 按維度分類 | 14.0 |
 
 **已完成前置**：
@@ -335,7 +335,7 @@
 | 12 | 2026-02-28 | quick | instinct-getbyid | ✅ 完成 | 0 次 | 新功能：instinct.getById() + CLI get 命令。731 tests pass，+9 新測試 |
 | 13 | 2026-02-28 | quick | arch-doc-line-count-fix | ✅ 完成 | 0 次 | overtone-架構.md hook 行數修正至實際值（REVIEW+TEST 並行品質門檻通過）。731 tests pass |
 | 14 | 2026-02-28 | standard | readme-rewrite | ✅ 完成 | 0 次 | 新功能：README 全面重寫「3 分鐘上手」+ docs/index.md 同步。731 tests pass |
-| 15 | 2026-02-28 | standard | status-skill | ✅ 完成 | 0 次 | 新功能：第 31 個 skill /ot:status 系統狀態快照。731 tests pass |
+| 15 | 2026-02-28 | standard | status-skill | ✅ 完成 | 0 次 | 新功能：第 31 個 skill /status 系統狀態快照。731 tests pass |
 
 ### 成功指標
 

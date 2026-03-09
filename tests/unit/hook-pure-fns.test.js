@@ -383,14 +383,14 @@ describe('on-submit.js 純函數', () => {
       expect(result).toContain('my-feature');
     });
 
-    test('無 workflow 時回傳非空字串（/ot:auto 指引）', () => {
+    test('無 workflow 時回傳非空字串（/auto 指引）', () => {
       const result = buildSystemMessage({
         validWorkflowOverride: null,
         currentState: null,
         activeFeatureContext: null,
         workflows: mockWorkflows,
       });
-      // 無 workflow 時回傳 /ot:auto 指引（非 null）
+      // 無 workflow 時回傳 /auto 指引（非 null）
       expect(typeof result === 'string' || result === null).toBe(true);
     });
 

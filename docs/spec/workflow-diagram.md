@@ -20,8 +20,8 @@ flowchart TB
 
     subgraph L1["🎯 Layer 1 — Skill 引導內圈"]
         direction LR
-        US["UserPromptSubmit\n注入 /ot:auto 指引"]
-        MA["Main Agent\n讀取 /ot:auto"]
+        US["UserPromptSubmit\n注入 /auto 指引"]
+        MA["Main Agent\n讀取 /auto"]
         WF["Workflow Command\nquick / standard / full..."]
         AG["依序委派\n18 個 Agents"]
         US --> MA --> WF --> AG
@@ -48,8 +48,8 @@ flowchart TB
     START(["Session 開始"]) --> SS_HOOK["SessionStart Hook\nBanner + 初始化目錄\nagent-browser 狀態"]
 
     SS_HOOK --> PROMPT["👤 使用者 Prompt"]
-    PROMPT --> US_HOOK["UserPromptSubmit Hook\n注入 /ot:auto 指引"]
-    US_HOOK --> MAIN["Main Agent\n/ot:auto 選擇 workflow"]
+    PROMPT --> US_HOOK["UserPromptSubmit Hook\n注入 /auto 指引"]
+    US_HOOK --> MAIN["Main Agent\n/auto 選擇 workflow"]
 
     MAIN --> WFSEL{"workflow 類型"}
 

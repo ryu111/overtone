@@ -268,7 +268,7 @@ function observeBashError(
 | 步驟 | Hook | 驗證項目 |
 |:----:|------|---------|
 | 1 | on-start.js | session 目錄存在；timeline 有 session:start |
-| 2 | on-submit.js | additionalContext 包含 /ot:auto 引導 |
+| 2 | on-submit.js | additionalContext 包含 /auto 引導 |
 | 3 | init-workflow.js single | workflow.json 存在；workflowType = 'single'；stages = {DEV: pending} |
 | 4 | pre-task.js（developer） | result: ''（允許）；activeAgents 有 developer；timeline 有 agent:delegate |
 | 5 | on-stop.js（developer PASS） | DEV status = completed；timeline 有 agent:complete + stage:complete |

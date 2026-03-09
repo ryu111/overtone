@@ -687,7 +687,7 @@ stdin 提供完整 session 狀態（model、cost、context window、vim mode 等
 | # | 能力 | 說明 |
 |---|------|------|
 | 1 | **CLAUDE.md 精簡** | SoT 引用取代重複內容（Agent 表、Workflow 表、目錄結構），釋放 ~60 行成長空間 |
-| 2 | **Skill `argument-hint`** | 常用 skill 加參數提示（auto、pm、issue），提升 `/ot:` 選單 UX |
+| 2 | **Skill `argument-hint`** | 常用 skill 加參數提示（auto、pm、issue），提升 `/` 選單 UX |
 
 ### ⚪ S12 待實作
 

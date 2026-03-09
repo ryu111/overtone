@@ -99,7 +99,7 @@
 
 1. **`agent_performance` tag 粒度**：是按 agent 分（`agent-developer`）還是按 stage 分（`stage-DEV`）？建議按 agent 分，因為同一 agent 在不同 workflow 的表現應累積。需 architect 確認。
 
-2. **`workflow_routing` 記錄時機**：on-submit.js 在首次 prompt（無 currentState）時無法記錄 workflow 選擇，因為 workflow 是由 /ot:auto skill 在後續決定的。是否需要在 init-workflow.js 中加入觀察記錄？需 architect 決定。
+2. **`workflow_routing` 記錄時機**：on-submit.js 在首次 prompt（無 currentState）時無法記錄 workflow 選擇，因為 workflow 是由 /auto skill 在後續決定的。是否需要在 init-workflow.js 中加入觀察記錄？需 architect 決定。
 
 3. **search-tools 反面偵測的 command 匹配**：Bash command 可能是 `grep -r "pattern" .`，也可能是管道 `cat file | grep pattern`。是否只檢查首個 token，還是掃描整個 command 字串？建議掃描整個 command 字串以覆蓋管道場景。需 architect 確認。
 

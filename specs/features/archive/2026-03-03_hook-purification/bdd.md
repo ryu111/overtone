@@ -131,7 +131,7 @@ AND 當前 `retroCount` 為 `0`（遞增後為 `1`）
 WHEN 函式執行
 THEN `messages` 包含「回顧完成」字串且含 retroCount 比例（如 `1/3`）
 AND `stateUpdates` 包含一個 retroCount 遞增函式
-AND `messages` 包含「可選觸發 /ot:auto」的提示
+AND `messages` 包含「可選觸發 /auto」的提示
 
 ### Scenario 4-2: ISSUES 且 retroCount 達上限 — 輸出迭代上限提示
 GIVEN `buildStopMessages` 被呼叫

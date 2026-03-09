@@ -89,10 +89,10 @@ describe('Hook Chain 延遲 — 基線 < 200ms', () => {
       expect(elapsed).toBeLessThan(200);
     });
 
-    test('/ot: 命令快速路徑執行時間 < 200ms', () => {
+    test('/ 命令快速路徑執行時間 < 200ms', () => {
       const { exitCode, elapsed } = runHookTimed(
         ON_SUBMIT_HOOK,
-        { prompt: '/ot:auto' }
+        { prompt: '/auto' }
       );
       expect(exitCode).toBe(0);
       expect(elapsed).toBeLessThan(200);
@@ -106,7 +106,7 @@ describe('Hook Chain 延遲 — 基線 < 200ms', () => {
         PRE_TASK_HOOK,
         {
           tool_name: 'Task',
-          tool_input: { subagent_type: 'ot:developer', prompt: 'implement feature' },
+          tool_input: { subagent_type: 'developer', prompt: 'implement feature' },
         }
       );
       expect(exitCode).toBe(0);
@@ -176,7 +176,7 @@ describe('Hook Chain 延遲 — 慢路徑（有 workflow state） < 300ms', () =
       PRE_TASK_HOOK,
       {
         tool_name: 'Task',
-        tool_input: { subagent_type: 'ot:developer', prompt: 'implement feature' },
+        tool_input: { subagent_type: 'developer', prompt: 'implement feature' },
         session_id: slowSession.id,
       },
       { CLAUDE_SESSION_ID: slowSession.id }

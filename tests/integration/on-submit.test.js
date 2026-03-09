@@ -58,23 +58,23 @@ afterAll(() => {
 });
 
 // ────────────────────────────────────────────────────────────────────────────
-// 場景 1 & 2：/ot: 命令跳過
+// 場景 1 & 2：/ 命令跳過
 // ────────────────────────────────────────────────────────────────────────────
 
-describe('/ot: 命令跳過', () => {
-  test('場景 1：prompt = /ot:auto → 回傳空 additionalContext', async () => {
-    const result = await runHook({ user_prompt: '/ot:auto' });
-    // hook 輸出 systemMessage 格式，/ot: 命令時 systemMessage 為 undefined → ''
+describe('/ 命令跳過', () => {
+  test('場景 1：prompt = /auto → 回傳空 additionalContext', async () => {
+    const result = await runHook({ user_prompt: '/auto' });
+    // hook 輸出 systemMessage 格式，/ 命令時 systemMessage 為 undefined → ''
     expect(getContext(result)).toBe('');
   });
 
-  test('場景 2：prompt = /ot:plan → 回傳空 additionalContext', async () => {
-    const result = await runHook({ user_prompt: '/ot:plan' });
+  test('場景 2：prompt = /plan → 回傳空 additionalContext', async () => {
+    const result = await runHook({ user_prompt: '/plan' });
     expect(getContext(result)).toBe('');
   });
 
-  test('場景 2b：prompt = /ot:standard → 回傳空 additionalContext', async () => {
-    const result = await runHook({ user_prompt: '/ot:standard' });
+  test('場景 2b：prompt = /standard → 回傳空 additionalContext', async () => {
+    const result = await runHook({ user_prompt: '/standard' });
     expect(getContext(result)).toBe('');
   });
 });
@@ -143,7 +143,7 @@ describe('[workflow:xxx] 覆寫語法 — 無效 key 降級', () => {
     );
     const ctx = getContext(result);
     expect(ctx).toBeTruthy();
-    expect(ctx).not.toContain('/ot:xyz123');
+    expect(ctx).not.toContain('/xyz123');
   });
 });
 

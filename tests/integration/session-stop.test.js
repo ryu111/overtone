@@ -162,7 +162,7 @@ describe('Stop hook 場景 3：手動停止 → 允許退出', () => {
     // 初始化 workflow（有未完成 stages）
     state.initState(sessionId, 'quick', ['DEV', 'REVIEW', 'TEST', 'RETRO']);
 
-    // 設定 loop.stopped = true（模擬 /ot:stop）
+    // 設定 loop.stopped = true（模擬 /stop）
     const loopState = loop.readLoop(sessionId);
     loopState.stopped = true;
     loop.writeLoop(sessionId, loopState);

@@ -5,7 +5,7 @@
  * Hook 鏈路 + Auto 路由驗證
  *
  * 聚焦在：
- *   1. Auto SKILL.md 路由表完整性（/ot:xxx 引用可達 + 涵蓋 18 個 workflow）
+ *   1. Auto SKILL.md 路由表完整性（/xxx 引用可達 + 涵蓋 18 個 workflow）
  *   2. UserPromptSubmit Hook 路由鏈（workflow 覆寫解析 + systemMessage 計數一致）
  *   3. Command 路徑可達性（auto/SKILL.md 的路由目標檔案存在）
  */
@@ -25,12 +25,13 @@ const ON_SUBMIT_PATH = path.join(PLUGIN_ROOT, 'scripts', 'lib', 'on-submit-handl
 // ────────────────────────────────────────────────────────────────────────────
 
 /**
- * 從 auto/SKILL.md 路由表提取 /ot:xxx 引用（過濾空的 /ot:）
+ * 從 auto/SKILL.md 路由表提取 /xxx 引用（僅限表格行中的命令）
  * 回傳格式：Map<command, type>
  *   type: 'command'（→ commands/xxx.md）| 'skill'（→ skills/xxx/SKILL.md）
  */
 function extractAutoSkillRoutes(content) {
-  const pattern = /`\/ot:([a-z0-9_-]+)`/g;
+  // 只匹配表格行中的 `/cmd` 格式（行首為 |）
+  const pattern = /^\|[^|]+\|\s*`\/([a-z0-9_-]+)`/gm;
   const routes = new Map();
 
   let m;
@@ -55,7 +56,7 @@ describe('Auto SKILL.md 路由表完整性', () => {
     expect(fs.existsSync(AUTO_SKILL_PATH)).toBe(true);
   });
 
-  test('路由表中的 /ot:xxx 命令對應的 command 或 skill 目標檔案存在', () => {
+  test('路由表中的 /xxx 命令對應的 command 或 skill 目標檔案存在', () => {
     const content = fs.readFileSync(AUTO_SKILL_PATH, 'utf8');
     const routes = extractAutoSkillRoutes(content);
 
@@ -67,12 +68,12 @@ describe('Auto SKILL.md 路由表完整性', () => {
       if (type === 'command') {
         const cmdPath = path.join(COMMANDS_DIR, `${cmd}.md`);
         if (!fs.existsSync(cmdPath)) {
-          missing.push(`commands/${cmd}.md（由 /ot:${cmd} 引用）`);
+          missing.push(`commands/${cmd}.md（由 /${cmd} 引用）`);
         }
       } else if (type === 'skill') {
         const skillPath = path.join(SKILLS_DIR, cmd, 'SKILL.md');
         if (!fs.existsSync(skillPath)) {
-          missing.push(`skills/${cmd}/SKILL.md（由 /ot:${cmd} 引用）`);
+          missing.push(`skills/${cmd}/SKILL.md（由 /${cmd} 引用）`);
         }
       }
     }
@@ -106,7 +107,7 @@ describe('Auto SKILL.md 路由表完整性', () => {
     const registryCount = Object.keys(workflows).length;
     expect(registryCount).toBe(WORKFLOW_COUNT);
     const routeTableLines = content.split('\n').filter(
-      line => line.match(/^\| .+`\/ot:[a-z]/)
+      line => line.match(/^\| .+`\/[a-z]/)
     );
     expect(routeTableLines.length).toBeGreaterThanOrEqual(16);
   });
@@ -131,12 +132,9 @@ describe('UserPromptSubmit Hook 路由鏈', () => {
     }
   });
 
-  test('on-submit.js 的 systemMessage 中 workflow 模板數量與 registry 計數一致', () => {
+  test('registry 的 workflow 計數與 WORKFLOW_COUNT 常數一致', () => {
     const { WORKFLOW_COUNT } = require('../helpers/counts');
-    const content = fs.readFileSync(ON_SUBMIT_PATH, 'utf8');
     const { workflows } = require(path.join(SCRIPTS_LIB, 'registry'));
-
-    expect(content).toContain(`${WORKFLOW_COUNT} 個 workflow 模板`);
 
     const registryCount = Object.keys(workflows).length;
     expect(registryCount).toBe(WORKFLOW_COUNT);

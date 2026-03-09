@@ -12,13 +12,13 @@
 
 | 方式 | 觸發 | 說明 |
 |------|------|------|
-| **自動** | UserPromptSubmit hook → systemMessage 指向 `/ot:auto` | 預設模式 |
-| **手動** | 使用者輸入 `/ot:plan`、`/ot:tdd`、`/ot:review` 等 | 直接觸發特定工作流 |
-| **覆寫** | `[workflow:xxx]` 語法在 prompt 中 | 跳過 /ot:auto 判斷 |
+| **自動** | UserPromptSubmit hook → systemMessage 指向 `/auto` | 預設模式 |
+| **手動** | 使用者輸入 `/plan`、`/tdd`、`/review` 等 | 直接觸發特定工作流 |
+| **覆寫** | `[workflow:xxx]` 語法在 prompt 中 | 跳過 /auto 判斷 |
 
-### /ot:auto 選擇器
+### /auto 選擇器
 
-Main Agent 讀取 `/ot:auto` Skill 內容後自行判斷最適合的工作流模板：
+Main Agent 讀取 `/auto` Skill 內容後自行判斷最適合的工作流模板：
 - **不需要 LLM classifier**
 - **不需要使用者確認**，直接執行
 - 沒有適合的預設模板時，Main Agent 自行編排 agent 序列
@@ -79,21 +79,21 @@ Main Agent 讀取 `/ot:auto` Skill 內容後自行判斷最適合的工作流模
 
 | 命令 | 功能 | 觸發工作流 |
 |------|------|:----------:|
-| `/ot:auto` | 自動選擇工作流（核心） | Main Agent 選 |
-| `/ot:plan` | 需求規劃 | - |
-| `/ot:dev` | 開發實作 | single |
-| `/ot:tdd` | TDD 流程 | tdd |
-| `/ot:review` | 程式碼審查 | review-only |
-| `/ot:security` | 安全掃描 | security-only |
-| `/ot:e2e` | E2E 測試 | e2e-only |
-| `/ot:build-fix` | 修構建錯誤 | build-fix |
-| `/ot:debug` | 除錯診斷 | debug |
-| `/ot:refactor` | 重構 | refactor |
-| `/ot:verify` | 統一 6 階段驗證 | - |
-| `/ot:stop` | 退出 Loop | - |
-| `/ot:dashboard` | 開啟 Dashboard | - |
-| `/ot:evolve` | 手動觸發知識進化 | - |
-| `/ot:multi-review` | 多模型審查（V2） | - |
+| `/auto` | 自動選擇工作流（核心） | Main Agent 選 |
+| `/plan` | 需求規劃 | - |
+| `/dev` | 開發實作 | single |
+| `/tdd` | TDD 流程 | tdd |
+| `/review` | 程式碼審查 | review-only |
+| `/security` | 安全掃描 | security-only |
+| `/e2e` | E2E 測試 | e2e-only |
+| `/build-fix` | 修構建錯誤 | build-fix |
+| `/debug` | 除錯診斷 | debug |
+| `/refactor` | 重構 | refactor |
+| `/verify` | 統一 6 階段驗證 | - |
+| `/stop` | 退出 Loop | - |
+| `/dashboard` | 開啟 Dashboard | - |
+| `/evolve` | 手動觸發知識進化 | - |
+| `/multi-review` | 多模型審查（V2） | - |
 
 ---
 

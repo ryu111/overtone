@@ -176,11 +176,11 @@ describe('3. Registry Workflows ↔ Commands 路由可達性', () => {
     }
   });
 
-  test('auto skill 存在（提供 /ot:auto 入口路由）', () => {
+  test('auto skill 存在（提供 /auto 入口路由）', () => {
     const autoSkillPath = join(SKILLS_DIR, 'auto', 'SKILL.md');
     expect(
       existsSync(autoSkillPath),
-      'auto/SKILL.md 必須存在（/ot:auto 入口路由）'
+      'auto/SKILL.md 必須存在（/auto 入口路由）'
     ).toBe(true);
   });
 });

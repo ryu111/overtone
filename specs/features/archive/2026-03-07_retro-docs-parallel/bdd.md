@@ -51,7 +51,7 @@ AND state.stages['DOCS'].result 為 'pass'
 AND state.retroCount 為 1
 WHEN checkParallelConvergence 偵測到 postdev 群組全部 completed
 THEN 輸出訊息中包含 'RETRO 回顧發現改善建議（retroCount: 1/3）'
-AND 輸出訊息中包含 '可選：觸發 /ot:auto 新一輪優化，或標記工作流完成'
+AND 輸出訊息中包含 '可選：觸發 /auto 新一輪優化，或標記工作流完成'
 
 ## Scenario C-3: DOCS 先完成時無收斂提示，RETRO 後完成時觸發收斂提示
 GIVEN postdev 群組（RETRO + DOCS）正在並行執行
@@ -78,4 +78,4 @@ AND state.retroCount 為 3
 WHEN checkParallelConvergence 偵測到 postdev 群組全部 completed
 THEN 輸出訊息中包含 'RETRO 回顧發現改善建議（retroCount: 3/3）'
 AND 輸出訊息中包含 '已達迭代上限（3 次），工作流完成'
-AND 輸出訊息中不包含 '可選：觸發 /ot:auto'
+AND 輸出訊息中不包含 '可選：觸發 /auto'

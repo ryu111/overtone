@@ -21,13 +21,13 @@ THEN `output.hookSpecificOutput` 不存在
 AND `output.systemMessage` 不存在
 
 ## Scenario: UserPromptSubmit 有 systemMessage 時包含 hookSpecificOutput
-GIVEN `handleOnSubmit` 收到一般使用者 prompt（非 `/ot:` 指令）
+GIVEN `handleOnSubmit` 收到一般使用者 prompt（非 `/` 指令）
 WHEN 函式組裝輸出物件且 `systemMessage` 有實質內容
 THEN `output.hookSpecificOutput.hookEventName` 等於 `'UserPromptSubmit'`
 AND `output.hookSpecificOutput.additionalContext` 等於 `systemMessage` 的值
 
-## Scenario: UserPromptSubmit /ot: 指令時無 hookSpecificOutput
-GIVEN `handleOnSubmit` 收到以 `/ot:` 開頭的 prompt
+## Scenario: UserPromptSubmit / 指令時無 hookSpecificOutput
+GIVEN `handleOnSubmit` 收到以 `/` 開頭的 prompt
 WHEN 函式提早返回
 THEN 回傳 `{ result: '' }`
 AND `hookSpecificOutput` 不存在

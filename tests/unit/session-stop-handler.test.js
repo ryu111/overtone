@@ -309,7 +309,7 @@ describeI('handleSessionStop 邊界情況', () => {
 // ── handleSessionStop：手動退出（loopState.stopped）───────────────────────────
 
 describeI('handleSessionStop 手動退出', () => {
-  testI('/ot:stop 手動退出 → 回傳空 output（side effects 已完成）', () => {
+  testI('/stop 手動退出 → 回傳空 output（side effects 已完成）', () => {
     const sid = newSid();
     setupSession(sid, ['DEV', 'REVIEW']);
     loopLib.writeLoop(sid, { iteration: 1, stopped: true, consecutiveErrors: 0, startedAt: new Date().toISOString() });

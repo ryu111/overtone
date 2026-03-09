@@ -3,7 +3,7 @@
 ## 範圍
 
 - `scripts/health-check.js`：5 項確定性偵測
-- `skills/audit/SKILL.md`：`/ot:audit` skill 串接
+- `skills/audit/SKILL.md`：`/audit` skill 串接
 - 偵測項目：phantom-events、dead-exports、doc-code-drift、unused-paths、duplicate-logic
 
 ---
@@ -224,10 +224,10 @@ AND stderr 或 stdout 包含可識別的錯誤訊息（不是空輸出）
 
 ---
 
-## Feature 8: /ot:audit Skill 串接
+## Feature 8: /audit Skill 串接
 
-### Scenario: /ot:audit skill 成功執行 health-check.js 並格式化報告
-GIVEN 使用者在 Claude Code 中輸入 `/ot:audit`
+### Scenario: /audit skill 成功執行 health-check.js 並格式化報告
+GIVEN 使用者在 Claude Code 中輸入 `/audit`
 AND health-check.js 可正常執行
 WHEN skill 被觸發
 THEN skill 透過 Bash 執行 `bun scripts/health-check.js`
@@ -235,7 +235,7 @@ AND 捕獲 JSON stdout 輸出
 AND Main Agent 直接解析 JSON 並格式化為可讀報告
 
 ### Scenario: Main Agent 針對 findings 產出優先級分類和修復建議
-GIVEN /ot:audit skill 取得了包含多個 findings 的 JSON 輸出
+GIVEN /audit skill 取得了包含多個 findings 的 JSON 輸出
 AND findings 包含 error、warning、info 不同 severity 的問題
 WHEN Main Agent 分析 findings
 THEN 輸出包含按 severity 分類的問題清單
@@ -244,13 +244,13 @@ AND error 類問題排在最高優先級
 
 ### Scenario: health-check.js 無任何 findings 時 skill 回報系統健康
 GIVEN health-check.js 執行後 findings 陣列為空且 exit code 為 0
-WHEN /ot:audit skill 取得結果
+WHEN /audit skill 取得結果
 THEN skill 向使用者回報「系統衛生狀態良好，無發現任何問題」
 
 ### Scenario: health-check.js 執行失敗時 skill 回報錯誤
 GIVEN health-check.js 因系統錯誤而退出（非正常 findings 導致的 exit 1）
 AND stdout 不是合法的 JSON
-WHEN /ot:audit skill 嘗試解析輸出
+WHEN /audit skill 嘗試解析輸出
 THEN skill 向使用者回報腳本執行失敗
 AND 說明可能的原因（如 Bun 未安裝、腳本路徑錯誤等）
 AND 不因解析錯誤而本身崩潰

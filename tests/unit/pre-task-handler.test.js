@@ -10,7 +10,7 @@
  *   - _buildMoscowWarning — MoSCoW 警告生成邏輯（T6）
  *
  * 補強（handler-test-critical）：
- *   - handlePreTask subagent_type ot: 直接映射（L1）
+ *   - handlePreTask subagent_type 直接映射（L1）
  *   - handlePreTask identifyAgent fallback（L1 fallback）
  *   - 跳階阻擋輸出格式（deny + permissionDecisionReason）
  *   - updatedInput 組裝：prompt 包含 workflowContext + originalPrompt
@@ -271,7 +271,7 @@ describe('handlePreTask — agent 辨識', () => {
     expect(result).toEqual({ output: {} });
   });
 
-  test('subagent_type 為 ot:developer → 正確辨識 developer', () => {
+  test('subagent_type 為 developer → 正確辨識 developer', () => {
     const sid = newSessionId();
     setupSession(sid, ['DEV'], 'single');
 
@@ -279,7 +279,7 @@ describe('handlePreTask — agent 辨識', () => {
       session_id: sid,
       cwd: process.cwd(),
       tool_input: {
-        subagent_type: 'ot:developer',
+        subagent_type: 'developer',
         description: '委派開發',
         prompt: '請實作功能 X',
       },
@@ -293,20 +293,20 @@ describe('handlePreTask — agent 辨識', () => {
     }
   });
 
-  test('subagent_type 為 ot:unknown → 回傳空 result（未知 agent）', () => {
+  test('subagent_type 為 unknown → 回傳空 result（未知 agent）', () => {
     const sid = newSessionId();
     setupSession(sid, ['DEV'], 'single');
 
     const result = handlePreTask({
       session_id: sid,
       tool_input: {
-        subagent_type: 'ot:nonexistent-agent',
+        subagent_type: 'nonexistent-agent',
         description: '委派',
         prompt: '做點什麼',
       },
     }, sid);
 
-    // ot:nonexistent-agent 不在 stages，fallback 到 identifyAgent
+    // nonexistent-agent 不在 stages，fallback 到 identifyAgent
     // identifyAgent 也不認識 → 回傳空
     expect(result).toEqual({ output: {} });
   });
@@ -326,7 +326,7 @@ describe('handlePreTask — agent 辨識', () => {
       session_id: sid,
       cwd: process.cwd(),
       tool_input: {
-        // 無 ot: 前綴，靠 description fallback
+        // 無前綴，靠 description fallback
         description: '委派 tester 執行測試',
         prompt: '請執行所有測試',
       },
@@ -350,7 +350,7 @@ describe('handlePreTask — 跳階阻擋', () => {
     const result = handlePreTask({
       session_id: sid,
       tool_input: {
-        subagent_type: 'ot:developer',
+        subagent_type: 'developer',
         description: '委派開發',
         prompt: '請實作功能',
       },
@@ -368,7 +368,7 @@ describe('handlePreTask — 跳階阻擋', () => {
     const result = handlePreTask({
       session_id: sid,
       tool_input: {
-        subagent_type: 'ot:developer',
+        subagent_type: 'developer',
         description: '委派開發',
         prompt: '請實作',
       },
@@ -385,7 +385,7 @@ describe('handlePreTask — 跳階阻擋', () => {
     const result = handlePreTask({
       session_id: sid,
       tool_input: {
-        subagent_type: 'ot:developer',
+        subagent_type: 'developer',
         description: '委派',
         prompt: '實作',
       },
@@ -412,7 +412,7 @@ describe('handlePreTask — updatedInput 組裝', () => {
       session_id: sid,
       cwd: process.cwd(),
       tool_input: {
-        subagent_type: 'ot:developer',
+        subagent_type: 'developer',
         description: '委派開發',
         prompt: originalPrompt,
       },
@@ -433,7 +433,7 @@ describe('handlePreTask — updatedInput 組裝', () => {
       session_id: sid,
       cwd: process.cwd(),
       tool_input: {
-        subagent_type: 'ot:developer',
+        subagent_type: 'developer',
         description: '委派開發',
         prompt: '實作功能',
         customField: 'should-be-preserved',
@@ -442,7 +442,7 @@ describe('handlePreTask — updatedInput 組裝', () => {
 
     if (result.output.hookSpecificOutput?.updatedInput) {
       // subagent_type 應被保留（MUST 規則）
-      expect(result.output.hookSpecificOutput.updatedInput.subagent_type).toBe('ot:developer');
+      expect(result.output.hookSpecificOutput.updatedInput.subagent_type).toBe('developer');
       expect(result.output.hookSpecificOutput.updatedInput.description).toBe('委派開發');
       expect(result.output.hookSpecificOutput.updatedInput.customField).toBe('should-be-preserved');
     }
@@ -456,7 +456,7 @@ describe('handlePreTask — updatedInput 組裝', () => {
       session_id: sid,
       cwd: process.cwd(),
       tool_input: {
-        subagent_type: 'ot:developer',
+        subagent_type: 'developer',
         description: '委派開發',
         prompt: '開發功能 Y',
       },
@@ -482,7 +482,7 @@ describe('handlePreTask — instanceId 生成', () => {
       session_id: sid,
       cwd: process.cwd(),
       tool_input: {
-        subagent_type: 'ot:developer',
+        subagent_type: 'developer',
         description: '委派',
         prompt: '實作',
       },
@@ -503,7 +503,7 @@ describe('handlePreTask — instanceId 生成', () => {
       session_id: sid,
       cwd: process.cwd(),
       tool_input: {
-        subagent_type: 'ot:developer',
+        subagent_type: 'developer',
         description: '委派',
         prompt: '實作',
       },
@@ -525,7 +525,7 @@ describe('handlePreTask — instanceId 生成', () => {
     handlePreTask({
       session_id: sid1,
       cwd: process.cwd(),
-      tool_input: { subagent_type: 'ot:developer', description: '委派 1', prompt: '實作 1' },
+      tool_input: { subagent_type: 'developer', description: '委派 1', prompt: '實作 1' },
     }, sid1);
 
     // 稍微等一下確保 timestamp 不同
@@ -534,7 +534,7 @@ describe('handlePreTask — instanceId 生成', () => {
     handlePreTask({
       session_id: sid2,
       cwd: process.cwd(),
-      tool_input: { subagent_type: 'ot:developer', description: '委派 2', prompt: '實作 2' },
+      tool_input: { subagent_type: 'developer', description: '委派 2', prompt: '實作 2' },
     }, sid2);
 
     const state1 = stateLib.readState(sid1);
@@ -558,7 +558,7 @@ describe('handlePreTask — PARALLEL_TOTAL 注入', () => {
       session_id: sid,
       cwd: process.cwd(),
       tool_input: {
-        subagent_type: 'ot:developer',
+        subagent_type: 'developer',
         description: '委派開發',
         prompt: 'PARALLEL_TOTAL: 3\n\n請實作功能。',
       },
@@ -580,7 +580,7 @@ describe('handlePreTask — PARALLEL_TOTAL 注入', () => {
       session_id: sid,
       cwd: process.cwd(),
       tool_input: {
-        subagent_type: 'ot:developer',
+        subagent_type: 'developer',
         description: '委派',
         prompt: '請實作功能。',
       },
@@ -608,7 +608,7 @@ describe('handlePreTask — PARALLEL_TOTAL 注入', () => {
       session_id: sid,
       cwd: process.cwd(),
       tool_input: {
-        subagent_type: 'ot:developer',
+        subagent_type: 'developer',
         description: '委派',
         prompt: 'PARALLEL_TOTAL: 5\n\n請實作。',
       },
@@ -640,7 +640,7 @@ describe('handlePreTask — retry 場景', () => {
       session_id: sid,
       cwd: process.cwd(),
       tool_input: {
-        subagent_type: 'ot:tester',
+        subagent_type: 'tester',
         description: '重試測試',
         prompt: '請重新執行所有測試',
       },
@@ -669,7 +669,7 @@ describe('handlePreTask — retry 場景', () => {
       session_id: sid,
       cwd: process.cwd(),
       tool_input: {
-        subagent_type: 'ot:code-reviewer',
+        subagent_type: 'code-reviewer',
         description: '重試審查',
         prompt: '請重新審查修改後的程式碼',
       },
@@ -691,7 +691,7 @@ describe('handlePreTask — timeline 事件', () => {
       session_id: sid,
       cwd: process.cwd(),
       tool_input: {
-        subagent_type: 'ot:developer',
+        subagent_type: 'developer',
         description: '委派開發',
         prompt: '實作功能',
       },
@@ -717,7 +717,7 @@ describe('handlePreTask — timeline 事件', () => {
       session_id: sid,
       cwd: process.cwd(),
       tool_input: {
-        subagent_type: 'ot:developer',
+        subagent_type: 'developer',
         description: '委派',
         prompt: '實作',
       },
@@ -748,7 +748,7 @@ describe('handlePreTask — timeline 事件', () => {
       session_id: sid,
       cwd: process.cwd(),
       tool_input: {
-        subagent_type: 'ot:developer',
+        subagent_type: 'developer',
         description: '委派',
         prompt: '實作',
       },
@@ -778,7 +778,7 @@ describe('handlePreTask — state 寫入', () => {
       session_id: sid,
       cwd: process.cwd(),
       tool_input: {
-        subagent_type: 'ot:developer',
+        subagent_type: 'developer',
         description: '委派',
         prompt: '實作',
       },
@@ -796,7 +796,7 @@ describe('handlePreTask — state 寫入', () => {
       session_id: sid,
       cwd: process.cwd(),
       tool_input: {
-        subagent_type: 'ot:developer',
+        subagent_type: 'developer',
         description: '委派',
         prompt: '實作',
       },
@@ -996,7 +996,7 @@ describe('handlePreTask — 穩定性（不拋出例外）', () => {
         session_id: sid,
         // cwd 未設定
         tool_input: {
-          subagent_type: 'ot:developer',
+          subagent_type: 'developer',
           description: '委派',
           prompt: '實作',
         },

@@ -1,25 +1,25 @@
-# Feature: GitHub Integration — `/ot:issue` 與 `/ot:pr` Skills
+# Feature: GitHub Integration — `/issue` 與 `/pr` Skills
 
 本 feature 涵蓋三個子系統的行為規格：
-1. `/ot:issue` Skill — 從 GitHub Issue 啟動 workflow
-2. `/ot:pr` Skill — workflow 結束後建立 Pull Request
+1. `/issue` Skill — 從 GitHub Issue 啟動 workflow
+2. `/pr` Skill — workflow 結束後建立 Pull Request
 3. `gh` CLI 依賴檢查 — SessionStart banner 狀態顯示
 
 ---
 
-## Feature 1: `/ot:issue` — 前置檢查
+## Feature 1: `/issue` — 前置檢查
 
 在執行任何步驟前，驗證 `gh` CLI 已安裝並已通過認證。
 
 ### Scenario: `gh` CLI 未安裝時終止並提示安裝指令
-GIVEN 使用者執行 `/ot:issue 123`
+GIVEN 使用者執行 `/issue 123`
 WHEN `gh --version` 指令失敗（command not found）
 THEN skill 停止執行，不繼續後續步驟
 AND 輸出提示訊息，包含 `gh` CLI 安裝指令（`brew install gh` 或官方文件連結）
 AND 不建立任何 branch 或 workflow state
 
 ### Scenario: `gh` 已安裝但未認證時提示登入
-GIVEN 使用者執行 `/ot:issue 123`
+GIVEN 使用者執行 `/issue 123`
 AND `gh --version` 成功回傳版本號
 WHEN `gh auth status` 回傳未認證錯誤
 THEN skill 停止執行
@@ -27,7 +27,7 @@ AND 輸出提示訊息，包含 `gh auth login` 指令
 AND 不繼續讀取 Issue 的步驟
 
 ### Scenario: `gh` 已安裝且已認證時正常繼續
-GIVEN 使用者執行 `/ot:issue 123`
+GIVEN 使用者執行 `/issue 123`
 AND `gh --version` 成功
 AND `gh auth status` 回傳已認證狀態
 WHEN 前置檢查完成
@@ -35,7 +35,7 @@ THEN skill 繼續執行「讀取 Issue」步驟
 
 ---
 
-## Feature 2: `/ot:issue` — Issue 讀取與不存在處理
+## Feature 2: `/issue` — Issue 讀取與不存在處理
 
 透過 `gh issue view` 讀取 Issue 資訊，處理 Issue 不存在的錯誤情況。
 
@@ -63,7 +63,7 @@ AND skill 繼續執行（不因 Issue 已關閉而中止）
 
 ---
 
-## Feature 3: `/ot:issue` — Label 映射 Workflow
+## Feature 3: `/issue` — Label 映射 Workflow
 
 根據 Issue labels 決定啟動哪種 workflow 類型。
 
@@ -102,7 +102,7 @@ THEN 選定 workflow 類型為 `single`
 
 ---
 
-## Feature 4: `/ot:issue` — Feature Branch 建立
+## Feature 4: `/issue` — Feature Branch 建立
 
 從 Issue title 生成 slug 並建立 feature branch。
 
@@ -127,7 +127,7 @@ AND 繼續後續步驟，不報錯
 
 ---
 
-## Feature 5: `/ot:issue` — Workflow 初始化與 Issue Context 注入
+## Feature 5: `/issue` — Workflow 初始化與 Issue Context 注入
 
 初始化 workflow state 並將 Issue 內容注入 specs。
 
@@ -157,16 +157,16 @@ AND workflow 正常初始化完成
 GIVEN Issue #42 的 workflow 已透過 init-workflow.js 初始化
 WHEN skill 執行完 init-workflow.js 後，將 issueNumber=42 寫入 workflow.json 的 options 欄位
 THEN `workflow.json` 中包含 `issueNumber: 42`（或 `"issueNumber": 42`）
-AND 此欄位可被 `/ot:pr` 讀取
+AND 此欄位可被 `/pr` 讀取
 
 ---
 
-## Feature 6: `/ot:pr` — 前置檢查與 Git 資訊收集
+## Feature 6: `/pr` — 前置檢查與 Git 資訊收集
 
 驗證 PR 建立環境，並收集必要的 git 資訊。
 
 ### Scenario: `gh` CLI 未安裝時終止
-GIVEN 使用者執行 `/ot:pr`
+GIVEN 使用者執行 `/pr`
 WHEN `gh --version` 指令失敗
 THEN skill 停止執行，輸出安裝提示
 AND 不嘗試讀取 workflow state 或執行任何 git 指令
@@ -189,11 +189,11 @@ GIVEN 自動 push 時遭遇錯誤（如 remote rejected、權限不足）
 WHEN `git push` 回傳非零 exit code
 THEN skill 停止執行
 AND 輸出錯誤訊息，包含 push 失敗原因
-AND 提示使用者手動解決後重新執行 `/ot:pr`
+AND 提示使用者手動解決後重新執行 `/pr`
 
 ---
 
-## Feature 7: `/ot:pr` — Workflow State 讀取與 PR Body 組裝
+## Feature 7: `/pr` — Workflow State 讀取與 PR Body 組裝
 
 讀取 workflow 資訊並組裝 PR description。
 
@@ -212,7 +212,7 @@ THEN PR body 不包含 `Closes #` 字串
 AND 其他區塊（Summary、Changes、Workflow）正常存在
 
 ### Scenario: 無 workflow state 時仍可建立基本 PR
-GIVEN 使用者在沒有 Overtone workflow 的情況下執行 `/ot:pr`（workflow.json 不存在或已清除）
+GIVEN 使用者在沒有 Overtone workflow 的情況下執行 `/pr`（workflow.json 不存在或已清除）
 WHEN skill 無法讀取 workflow.json
 THEN skill 繼續執行，以 git log 和 diff 組裝最小化的 PR body
 AND PR body 包含 Summary 和 Changes 區塊（來自 git history）
@@ -227,7 +227,7 @@ THEN PR body 的 Test Plan 區塊包含從 BDD spec 提取的 scenario 列表或
 
 ---
 
-## Feature 8: `/ot:pr` — PR 建立與結果輸出
+## Feature 8: `/pr` — PR 建立與結果輸出
 
 實際執行 `gh pr create` 並回傳結果。
 

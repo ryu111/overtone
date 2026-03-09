@@ -387,7 +387,7 @@ state.updateStateAtomic(sessionId, (s) => {
 });
 ```
 
-**PARALLEL_TOTAL 的來源**：Main Agent 在並行委派時，在每個 agent 的 prompt 最前面加上 `PARALLEL_TOTAL: N`。這是 Main Agent 的工作，可透過 `/ot:auto` skill 或工作流說明引導。
+**PARALLEL_TOTAL 的來源**：Main Agent 在並行委派時，在每個 agent 的 prompt 最前面加上 `PARALLEL_TOTAL: N`。這是 Main Agent 的工作，可透過 `/auto` skill 或工作流說明引導。
 
 ---
 

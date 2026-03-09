@@ -13,7 +13,7 @@
 Loop **預設開啟**。每個 workflow 完成後自動繼續下一個任務。
 
 ```
-使用者 prompt → /ot:auto 選工作流 → 執行 workflow → 完成
+使用者 prompt → /auto 選工作流 → 執行 workflow → 完成
                                                     ↓
                               ← 讀 tasks.md checkbox ←
                               ↓
@@ -27,7 +27,7 @@ Loop **預設開啟**。每個 workflow 完成後自動繼續下一個任務。
 | 條件 | 行為 |
 |------|------|
 | tasks.md checkbox 全部 `[x]` | 自動退出 |
-| 使用者執行 `/ot:stop` | 手動退出 |
+| 使用者執行 `/stop` | 手動退出 |
 | 達到 max iterations（預設 100） | 暫停，顯示進度 |
 | 連續 3 次錯誤 | 暫停，報告問題 |
 
@@ -179,4 +179,4 @@ Mul-Dev 執行期間同步維護 TaskList，提供可見性（不取代 workflow
 
 ### 編排模式
 
-**順序 + 並行 + Phase 依賴**：不需要 DAG、不需要 /ot:orchestrate 專門命令。
+**順序 + 並行 + Phase 依賴**：不需要 DAG、不需要 /orchestrate 專門命令。

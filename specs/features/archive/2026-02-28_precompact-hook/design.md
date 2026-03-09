@@ -112,7 +112,7 @@ Feature：{name}（{checked}/{total} 完成）
 → 請使用 TaskCreate 重建以上任務的 TaskList，然後繼續執行。
 
 ⛔ 禁止詢問使用者「我該繼續嗎？」，直接依照目前階段繼續執行。
-如需查看工作流指引，請使用 /ot:auto。
+如需查看工作流指引，請使用 /auto。
 ```
 
 ### 錯誤處理
@@ -183,7 +183,7 @@ Feature：{name}（{checked}/{total} 完成）
 
 - **選項 A**（選擇）：**不同步** — featureName 的同步由 SessionStart 處理（已有邏輯）
   - 優點：PreCompact 職責單一（注入恢復訊息），不疊加副作用
-  - 理由：PreCompact 發生在 session 中間，此時 featureName 早已由 SessionStart 或 /ot:auto 設定過
+  - 理由：PreCompact 發生在 session 中間，此時 featureName 早已由 SessionStart 或 /auto 設定過
 - **選項 B**（未選）：在 PreCompact 中也做 featureName 同步
   - 原因：過度防禦，增加不必要的 state 寫入
 
@@ -280,7 +280,7 @@ safeRun(() => {
   // 行動指引
   lines.push('');
   lines.push('⛔ 禁止詢問使用者「我該繼續嗎？」，直接依照目前階段繼續執行。');
-  lines.push('如需查看工作流指引，請使用 /ot:auto。');
+  lines.push('如需查看工作流指引，請使用 /auto。');
 
   // 截斷保護
   let message = lines.join('\n');

@@ -95,7 +95,7 @@ AND 至少有一列描述「跳過必要前置階段 → deny」的決策
 
 GIVEN 讀取「二、2.3 Stop hook 退出決策」小節
 WHEN 檢視退出條件清單
-THEN 第 1 項為「/ot:stop 手動退出 → exit」
+THEN 第 1 項為「/stop 手動退出 → exit」
 AND 第 2 項為「iteration >= 100 → exit + 警告」
 AND 第 3 項為「consecutiveErrors >= 3 → exit + 警告」
 AND 第 4 項為「allStagesCompleted + 含失敗 stage → abort」

@@ -27,7 +27,7 @@
 
 - prompt 格式：`開始執行 {featureName}，workflow: {workflow}`
 - 不注入 Overtone Workflow Context（避免 heartbeat 邏輯與 hook 邏輯重複）
-- 由 UserPromptSubmit hook（`pre-prompt.js`）的 `/ot:auto` 自動接管，偵測 featureName 並啟動 workflow
+- 由 UserPromptSubmit hook（`pre-prompt.js`）的 `/auto` 自動接管，偵測 featureName 並啟動 workflow
 - 理由：單一職責原則，heartbeat 只負責「觸發」，workflow 初始化由現有 hook 機制處理
 
 ### Q3：projectRoot 傳遞

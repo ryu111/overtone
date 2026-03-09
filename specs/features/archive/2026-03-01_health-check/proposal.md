@@ -5,14 +5,14 @@
 ## 需求背景（Why）
 
 - **問題**：Overtone 目前 13 個 lib 模組、7 個 hook、34 個 skill、22 種 timeline events，隨著迭代容易出現 phantom events、dead exports、doc-code drift 等衛生問題。上次手動審計找到 16 個問題（6 phantom events + 1 dead export + 5 doc drift + 2 unused paths + 2 duplicate logic），全部手動排查耗時且不可重複。
-- **目標**：建立可重複執行的自動化健康檢查腳本 + 配套 `/ot:audit` skill，讓使用者一個指令就能偵測並分析系統衛生問題。未來可接入 CI 做 gate。
+- **目標**：建立可重複執行的自動化健康檢查腳本 + 配套 `/audit` skill，讓使用者一個指令就能偵測並分析系統衛生問題。未來可接入 CI 做 gate。
 - **優先級**：系統已穩定（742 pass / 0 fail），現在是做衛生自動化的最佳時機。
 
 ## 使用者故事
 
 ```
 身為 Overtone 開發者
-我想要執行 /ot:audit 自動掃描系統健康問題
+我想要執行 /audit 自動掃描系統健康問題
 以便在每次大改版後快速找到 phantom events、dead exports、doc drift 等衛生問題
 ```
 
@@ -27,7 +27,7 @@
 ### 在範圍內（In Scope）
 
 - `scripts/health-check.js`：5 項確定性偵測（phantom events、dead exports、doc-code drift、unused paths、duplicate logic）
-- `skills/audit/SKILL.md`：`/ot:audit` skill，串接腳本 + PM agent 分析
+- `skills/audit/SKILL.md`：`/audit` skill，串接腳本 + PM agent 分析
 - 單元測試：覆蓋 5 項偵測的正向/負向 case
 - 整合測試：驗證腳本端到端輸出和退出碼
 
@@ -70,10 +70,10 @@
    - 相關檔案：`plugins/overtone/scripts/health-check.js`, `plugins/overtone/hooks/scripts/**/*.js`
    - 說明：偵測 7 個 hook 腳本中的相似程式碼片段。策略：定義一組「已知重複模式」的 pattern（如 progressBar 計算、sessionId 取得、state 讀取等常見邏輯），grep 各 hook 檔案，找出同一 pattern 出現在 2+ 個 hook 中的情況。這是啟發式偵測（非 AST），容忍一定程度的 false positive。
 
-7. **`/ot:audit` Skill**
+7. **`/audit` Skill**
    - 負責 agent：developer
    - 相關檔案：`plugins/overtone/skills/audit/SKILL.md`
-   - 說明：建立 `/ot:audit` skill。流程：(1) 用 Bash 執行 `health-check.js` (2) 將 JSON findings 傳給 PM agent 分析 (3) PM 產出優先級分類和修復建議。Skill 使用 `disable-model-invocation: true`（純指引型）。
+   - 說明：建立 `/audit` skill。流程：(1) 用 Bash 執行 `health-check.js` (2) 將 JSON findings 傳給 PM agent 分析 (3) PM 產出優先級分類和修復建議。Skill 使用 `disable-model-invocation: true`（純指引型）。
 
 8. **單元測試**
    - 負責 agent：developer

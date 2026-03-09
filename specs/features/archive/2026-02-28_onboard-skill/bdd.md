@@ -1,8 +1,8 @@
-# Feature: /ot:onboard — 專案 CLAUDE.md 骨架自動生成
+# Feature: /onboard — 專案 CLAUDE.md 骨架自動生成
 
 ## 背景說明
 
-`/ot:onboard` 是工具型 Skill（非 workflow），由 Main Agent 直接執行。
+`/onboard` 是工具型 Skill（非 workflow），由 Main Agent 直接執行。
 掃描專案結構後，將 CLAUDE.md 骨架輸出到對話，使用者自行決定是否寫入。
 `disable-model-invocation: false`（AI 負責語意判斷與填充）。
 
@@ -13,7 +13,7 @@
 GIVEN 當前目錄是一個 Node.js 專案
 AND 根目錄有 `package.json`，其中包含 `scripts` 欄位（如 `dev`、`build`、`test`）
 AND 根目錄不存在 `CLAUDE.md`
-WHEN 使用者執行 `/ot:onboard`
+WHEN 使用者執行 `/onboard`
 THEN Skill 進入「建立模式」（非補充模式）
 AND Skill 解析 `package.json` 取得專案名稱、版本、依賴
 AND Skill 從 `scripts` 欄位推導常用命令（dev、build、test）
@@ -31,7 +31,7 @@ AND 不自動寫入任何檔案到磁碟
 GIVEN 當前目錄是一個 Python 專案
 AND 根目錄有 `pyproject.toml`，包含 `[project]` 或 `[tool.poetry]` 段落
 AND 根目錄不存在 `CLAUDE.md`
-WHEN 使用者執行 `/ot:onboard`
+WHEN 使用者執行 `/onboard`
 THEN Skill 進入「建立模式」
 AND Skill 解析 `pyproject.toml` 取得專案名稱、依賴
 AND Skill 從 pyproject.toml 的 `[project.scripts]` 或 `[tool.poetry.scripts]` 推導入口命令
@@ -47,7 +47,7 @@ AND 不自動寫入任何檔案到磁碟
 
 GIVEN 當前目錄的根目錄已存在 `CLAUDE.md`，且包含部分內容
 AND 根目錄有 `package.json`
-WHEN 使用者執行 `/ot:onboard`
+WHEN 使用者執行 `/onboard`
 THEN Skill 偵測到已有 `CLAUDE.md` 並進入「補充模式」
 AND Skill 讀取現有 `CLAUDE.md` 內容，分析缺少哪些區塊
 AND 輸出結果只包含現有 `CLAUDE.md` 中缺失的骨架區塊（差異補充）
@@ -63,7 +63,7 @@ AND 輸出以 markdown code block 形式呈現在對話中
 GIVEN 當前目錄沒有任何可辨識的 manifest 檔案
 AND 不存在 package.json、pyproject.toml、Cargo.toml、go.mod、pom.xml、*.csproj
 AND 根目錄不存在 `CLAUDE.md`
-WHEN 使用者執行 `/ot:onboard`
+WHEN 使用者執行 `/onboard`
 THEN Skill 仍能完成掃描流程，不中途拋錯
 AND Skill 掃描頂層目錄結構作為 fallback 資訊來源
 AND 「技術棧」區塊標註為「未偵測到」或「請手動填寫」
@@ -79,7 +79,7 @@ AND 不自動寫入任何檔案到磁碟
 GIVEN 當前目錄是一個 Rust 專案
 AND 根目錄有 `Cargo.toml`，包含 `[package]` 段落
 AND 根目錄不存在 `CLAUDE.md`
-WHEN 使用者執行 `/ot:onboard`
+WHEN 使用者執行 `/onboard`
 THEN Skill 解析 `Cargo.toml` 取得 crate 名稱、版本、依賴
 AND 「技術棧」區塊標註語言為 Rust
 AND 「常用指令」區塊包含 Rust 生態系慣例命令（cargo build、cargo test、cargo run）
@@ -91,7 +91,7 @@ AND 「常用指令」區塊包含 Rust 生態系慣例命令（cargo build、ca
 GIVEN 當前目錄是一個 Go 專案
 AND 根目錄有 `go.mod`，包含 `module` 宣告
 AND 根目錄不存在 `CLAUDE.md`
-WHEN 使用者執行 `/ot:onboard`
+WHEN 使用者執行 `/onboard`
 THEN Skill 解析 `go.mod` 取得模組路徑
 AND 「技術棧」區塊標註語言為 Go
 AND 「常用指令」區塊包含 Go 生態系慣例命令（go build、go test、go run）

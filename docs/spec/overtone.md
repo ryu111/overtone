@@ -26,7 +26,7 @@
 | 文件 | 主題 | 說明 |
 |------|------|------|
 | [overtone-架構.md](overtone-架構.md) | 架構 | 三層模型（Loop/Skill/Hook）、Hook 系統、State 設計、Context 管理 |
-| [overtone-工作流.md](overtone-工作流.md) | 工作流 | 18 個 workflow 模板（含 3 個產品模板）、/ot:auto 選擇邏輯、命令清單、錯誤處理 |
+| [overtone-工作流.md](overtone-工作流.md) | 工作流 | 18 個 workflow 模板（含 3 個產品模板）、/auto 選擇邏輯、命令清單、錯誤處理 |
 | [overtone-agents.md](overtone-agents.md) | Agent 系統 | 18 個 agent 職責與 Model 分配、Handoff 協定、BDD 整合 |
 | [overtone-並行.md](overtone-並行.md) | 並行執行 | Loop 模式、靜態/動態並行、Mul-Dev 機制、D1-D4 缺陷修復 |
 | [overtone-子系統.md](overtone-子系統.md) | 子系統 | Specs 生命週期、Dashboard 監控、Remote 控制、Timeline 事件、Config API、持久化系統（global-instinct + baseline-tracker + score-engine） |
@@ -63,4 +63,4 @@ V0.21.0 版本共確認 55+ 個設計決策，重大決策包含：
 | 版本 | 狀態 | 詳情 |
 |------|------|------|
 | V1 | 完成 | [roadmap/v1.md](../roadmap/v1.md) |
-| V2 | 規劃中（延後） | 多模型審查（/ot:multi-review）、Slack Adapter、Discord Adapter、使用者自定義 Agent 擴充 |
+| V2 | 規劃中（延後） | 多模型審查（/multi-review）、Slack Adapter、Discord Adapter、使用者自定義 Agent 擴充 |

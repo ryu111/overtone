@@ -35,10 +35,10 @@
 
 ---
 
-#### UG-02：規劃模式（`/ot:pm plan`）佇列確認
+#### UG-02：規劃模式（`/pm plan`）佇列確認
 
-- **觸發條件**：`/ot:pm` 指令的 ARGUMENTS 包含 `plan` 關鍵字
-- **觸發時機**：Main Agent 解析 `/ot:pm` 指令時，偵測到 `plan` 關鍵字
+- **觸發條件**：`/pm` 指令的 ARGUMENTS 包含 `plan` 關鍵字
+- **觸發時機**：Main Agent 解析 `/pm` 指令時，偵測到 `plan` 關鍵字
 - **呈現方式**：停止（非 AskUserQuestion）— PM 分析完成後寫佇列並停止，等待使用者手動啟動
 - **Handler 位置**：`~/.claude/skills/pm/SKILL.md` L108-115（規劃模式導流規則）
 - **使用者看到的選項**：無互動選項；PM 輸出「已加入佇列」訊息後停止
@@ -46,7 +46,7 @@
   - 使用者可用 `bun scripts/queue.js enable-auto` 啟動自動執行
 - **Decision tree**：
   ```
-  IF /ot:pm arguments 含 "plan"
+  IF /pm arguments 含 "plan"
     → PM 分析完成
     → bun queue.js append --no-auto（寫佇列，不啟動）
     → 輸出「已加入佇列」訊息
@@ -179,7 +179,7 @@
 
 | 優先順序 | 條件 | 結果 | 程式碼位置 |
 |---------|------|------|-----------|
-| 1 | `loopState.stopped === true`（/ot:stop 手動退出） | exit — 停止 Loop，輸出「Loop 已手動停止」 | L152-155 |
+| 1 | `loopState.stopped === true`（/stop 手動退出） | exit — 停止 Loop，輸出「Loop 已手動停止」 | L152-155 |
 | 2 | `loopState.iteration >= 100`（最大迭代） | exit — 停止，輸出達到最大迭代次數警告 | L158-162 |
 | 3 | `loopState.consecutiveErrors >= 3`（連續錯誤） | exit — 停止，輸出連續錯誤警告 | L165-169 |
 | 4 | `allCompleted && hasFailedStage`（含失敗 stage） | exit（abort）— emit workflow:abort，停止 | L173-181 |

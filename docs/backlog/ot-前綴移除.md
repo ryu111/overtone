@@ -1,25 +1,25 @@
-# /ot: 前綴移除
+# / 前綴移除
 
 ## 問題
 
-所有 command 和 skill 使用 `/ot:xxx` 前綴呼叫。這是 Overtone 作為 plugin 時的命名空間（`plugins/overtone/` → `ot:`）。
+所有 command 和 skill 使用 `/xxx` 前綴呼叫。這是 Overtone 作為 plugin 時的命名空間（`plugins/overtone/` → `ot:`）。
 現在已遷移到 `~/.claude/`（全域唯一），`ot:` 前綴是多餘的。
 
 ## 影響範圍
 
-共 389 個 `/ot:` 引用：
+共 389 個 `/` 引用：
 
 ### 功能性（~13 處，影響邏輯）
 
 | 檔案 | 內容 |
 |------|------|
-| `on-submit-handler.js:44` | `startsWith('/ot:')` 檢測 |
-| `session-stop-handler.js:221` | `/ot:stop` 手動退出 |
-| `stop-message-builder.js` | 建議 `/ot:auto`（3 處） |
-| `pre-compact-handler.js` | 提示 `/ot:auto` |
+| `on-submit-handler.js:44` | `startsWith('/')` 檢測 |
+| `session-stop-handler.js:221` | `/stop` 手動退出 |
+| `stop-message-builder.js` | 建議 `/auto`（3 處） |
+| `pre-compact-handler.js` | 提示 `/auto` |
 | `pre-task-handler.js` | `subagent_type: 'ot:'` 前綴剝離 |
 | `state.js` | 註解引用 |
-| `instinct.js` | `/ot:evolve` CLI |
+| `instinct.js` | `/evolve` CLI |
 
 ### 文件性（~158 處，純文字替換）
 

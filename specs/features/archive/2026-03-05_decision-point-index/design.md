@@ -50,7 +50,7 @@
 （人工介入點 — 何時問使用者）
 
 ### 1.1 Discovery 模式使用者確認
-### 1.2 规劃模式（/ot:pm plan）確認
+### 1.2 规劃模式（/pm plan）確認
 ### 1.3 TEST FAIL 達到上限
 ### 1.4 REVIEW REJECT 達到上限
 ### 1.5 RETRO ISSUES 達到上限
@@ -93,8 +93,8 @@
 每個 Gate 使用上述 entry schema（Q1 回答的格式），以 `####` 標題開頭，包含 Gate ID（如 UG-01）。
 
 Gate 總數（MVP 範圍）：
-- UG-01：Discovery 模式使用者確認（PM SKILL.md，`/ot:pm` 觸發後選擇方向）
-- UG-02：規劃模式佇列確認（PM SKILL.md，`/ot:pm plan` 關鍵字觸發）
+- UG-01：Discovery 模式使用者確認（PM SKILL.md，`/pm` 觸發後選擇方向）
+- UG-02：規劃模式佇列確認（PM SKILL.md，`/pm plan` 關鍵字觸發）
 - UG-03：TEST FAIL 上限（failure-handling.md，failCount >= 3）
 - UG-04：REVIEW REJECT 上限（failure-handling.md，rejectCount >= 3）
 - UG-05：RETRO ISSUES 上限（failure-handling.md，retroCount >= 3）
@@ -108,7 +108,7 @@ Gate 總數（MVP 範圍）：
 
 2.3 Stop hook 退出決策用有序清單（因為條件有優先順序）：
 ```
-1. /ot:stop 手動退出 → exit
+1. /stop 手動退出 → exit
 2. iteration >= 100 → exit + 警告
 3. consecutiveErrors >= 3 → exit + 警告
 4. allStagesCompleted + 含失敗 stage → abort

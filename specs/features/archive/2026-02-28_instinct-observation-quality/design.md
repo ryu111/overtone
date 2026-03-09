@@ -15,7 +15,7 @@
 
 ### 決策 2：workflow_routing 記錄時機 — 在 on-submit.js 有 currentState 時記錄
 
-- **選項 A**（選擇）：僅在 `currentState && currentState.workflowType` 成立時記錄 — 首次 prompt 時 workflow 尚未初始化（由 /ot:auto skill 在後續決定），此時無法知道 workflow 類型，不記錄是正確行為。後續 prompt 時 currentState 已有 workflowType，此時記錄
+- **選項 A**（選擇）：僅在 `currentState && currentState.workflowType` 成立時記錄 — 首次 prompt 時 workflow 尚未初始化（由 /auto skill 在後續決定），此時無法知道 workflow 類型，不記錄是正確行為。後續 prompt 時 currentState 已有 workflowType，此時記錄
 - **選項 B**（未選）：在 `init-workflow.js` 中記錄 — 需要修改額外的檔案，且 init-workflow.js 是 Bash 工具呼叫的腳本，sessionId 傳遞較複雜。不值得為此改動
 - **選項 C**（未選）：在 workflow override `[workflow:xxx]` 解析成功時也記錄 — 可以作為選項 A 的補充，在 validWorkflowOverride 存在時記錄。但 override 使用頻率極低，效益不大。省略
 

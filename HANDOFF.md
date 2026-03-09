@@ -55,7 +55,7 @@ Overtone 是 Vibe（Claude Code marketplace plugin）的進化版。Vibe 的 pip
 | P0 | `scripts/lib/state.js` | workflow.json 讀寫（含 CAS 原子更新） |
 | P0 | `scripts/lib/timeline.js` | JSONL emit/query |
 | P0 | `hooks/hooks.json` | 6 個 hook 事件 |
-| P0 | `hooks/scripts/prompt/on-submit.js` | UserPromptSubmit → systemMessage 指向 /ot:auto |
+| P0 | `hooks/scripts/prompt/on-submit.js` | UserPromptSubmit → systemMessage 指向 /auto |
 | P0 | `hooks/scripts/agent/on-stop.js` | SubagentStop: 記錄 + 提示 + 寫 state |
 | P0 | `hooks/scripts/session/on-start.js` | 初始化 + Dashboard spawn |
 | P0 | `hooks/scripts/tool/pre-task.js` | PreToolUse(Task): 擋跳過必要階段 |
@@ -67,7 +67,7 @@ Overtone 是 Vibe（Claude Code marketplace plugin）的進化版。Vibe 的 pip
 
 ### Phase 3：核心 Skills（27 個）
 
-`/ot:auto`（核心選擇器）、`/ot:verify`（驗證）、各 workflow skill、`/ot:stop`、`/ot:dashboard`、`/ot:evolve` 等。
+`/auto`（核心選擇器）、`/verify`（驗證）、各 workflow skill、`/stop`、`/dashboard`、`/evolve` 等。
 
 ### Phase 4：Dashboard
 
@@ -91,7 +91,7 @@ EventBus + Adapter 架構（Dashboard + Telegram）。
 
 ### 工作流
 
-- **觸發**：UserPromptSubmit hook → systemMessage 指向 /ot:auto → Main Agent 自選 workflow
+- **觸發**：UserPromptSubmit hook → systemMessage 指向 /auto → Main Agent 自選 workflow
 - **BDD**：含 PLAN/ARCH 的 workflow 在 DEV 前加 TEST:spec（寫 BDD 行為規格）
 - **失敗**：FAIL → DEBUGGER（診斷）→ DEVELOPER（修復）→ TESTER（驗證），3 次上限
 - **並行**：同一訊息多 Task = ECC 原生並行，無硬上限，失敗隔離

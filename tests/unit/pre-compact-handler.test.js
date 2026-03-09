@@ -232,7 +232,7 @@ describe('buildCompactMessage', () => {
     })).not.toThrow();
   });
 
-  it('Scenario 17: 包含「/ot:auto」參考提示', () => {
+  it('Scenario 17: 包含「/auto」參考提示', () => {
     const result = buildCompactMessage({
       currentState: { workflowType: 'quick', currentStage: 'DEV' },
       progressBar: '',
@@ -242,7 +242,7 @@ describe('buildCompactMessage', () => {
       pendingMsg: null,
       queueSummary: null,
     });
-    expect(result).toContain('/ot:auto');
+    expect(result).toContain('/auto');
   });
 
   it('Scenario 18: 回傳字串型別', () => {

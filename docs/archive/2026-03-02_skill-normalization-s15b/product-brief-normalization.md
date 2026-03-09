@@ -19,7 +19,7 @@ Overtone 目前有 **38 個 skill**，但其中混合了三種本質不同的概
 
 ### 違反的設計原則
 
-1. **角色-能力混淆**：Stage Shortcut（如 `/ot:dev`）實質是「呼叫 developer agent」，不是提供知識
+1. **角色-能力混淆**：Stage Shortcut（如 `/dev`）實質是「呼叫 developer agent」，不是提供知識
 2. **知識碎片化**：同類知識散布於不同 skill 和 agent prompt 中（BDD 知識出現在 auto/references/、test/references/、agent 內嵌）
 3. **職責越界**：auto 選擇器兼任 workflow 知識庫（6 個 references/ 含 failure-handling、parallel-groups 等）
 4. **粒度不一致**：ref-commit-convention 單獨一個 skill，但 OWASP checklist 藏在 security/references/ 裡
@@ -395,8 +395,8 @@ Scenario: testing knowledge domain skill 建立
 
 ### Workflow 功能
 - [ ] 18 個 workflow 模板全部可選擇和執行
-- [ ] `/ot:auto` 路由準確
-- [ ] `/ot:standard`、`/ot:quick` 等快捷呼叫正常
+- [ ] `/auto` 路由準確
+- [ ] `/standard`、`/quick` 等快捷呼叫正常
 - [ ] BDD spec 前置生成（含 PLAN/ARCH 的 workflow）
 - [ ] 失敗重試迴圈（TEST FAIL → debugger → dev → tester）
 - [ ] 並行 stage 執行（[REVIEW + TEST]、[QA + E2E]）
@@ -421,7 +421,7 @@ Scenario: testing knowledge domain skill 建立
 - [ ] references/ 路徑全部可訪問
 
 ### 使用者體驗
-- [ ] 所有 `/ot:*` 命令可呼叫
+- [ ] 所有 `/*` 命令可呼叫
 - [ ] argument-hint 顯示正常
 - [ ] SessionStart banner 正常
 - [ ] Dashboard 顯示正常

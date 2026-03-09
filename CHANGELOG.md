@@ -1586,7 +1586,7 @@
 ### 新增
 - Phase 1-8 核心實作完成
 - 14 個 Agent prompt 檔案
-- 27 個 Skill（含 `/ot:auto`、`/ot:verify`、各 workflow skill）
+- 27 個 Skill（含 `/auto`、`/verify`、各 workflow skill）
 - Dashboard（Bun HTTP + SSE + htmx + Alpine.js）
 - Remote（EventBus + DashboardAdapter + TelegramAdapter）
 - Instinct 學習系統（`instinct.js` + PostToolUse hook）

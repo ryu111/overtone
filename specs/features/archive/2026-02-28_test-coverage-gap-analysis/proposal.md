@@ -65,7 +65,7 @@
 | Hook | 行數 | 有測試 | 覆蓋品質 | 缺口 |
 |------|:----:|:------:|:--------:|------|
 | agent/on-stop.js | 405 | **完整** | 高 | 13 個場景覆蓋 PASS/FAIL/REJECT/上限/並行/timeline |
-| prompt/on-submit.js | 109 | **完整** | 高 | 9 個場景覆蓋 /ot:命令、workflow覆寫、狀態摘要 |
+| prompt/on-submit.js | 109 | **完整** | 高 | 9 個場景覆蓋 /命令、workflow覆寫、狀態摘要 |
 | session/on-stop.js | 183 | **完整** | 高 | 6 個場景覆蓋 block/allow/loop/specs-archive |
 | session/on-start.js | 100 | **無** | 無 | Banner 輸出、session 目錄初始化、Dashboard spawn、依賴檢查全未測試 |
 | tool/post-use.js | 280 | 部分 | 中 | detectWordingMismatch 有測試；observeBashError/extractCommandTag/observeSearchToolPreference 未測試 |

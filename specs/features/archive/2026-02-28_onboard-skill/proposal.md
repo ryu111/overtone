@@ -5,20 +5,20 @@
 ## 需求背景（Why）
 
 - **問題**：新專案缺乏 CLAUDE.md 時，Claude Code 不了解專案結構、技術棧、常用命令，導致回答品質下降。手動撰寫 CLAUDE.md 耗時且容易遺漏。
-- **目標**：提供 `/ot:onboard` Skill，自動掃描專案結構並生成 CLAUDE.md 骨架，降低 onboarding 門檻。
+- **目標**：提供 `/onboard` Skill，自動掃描專案結構並生成 CLAUDE.md 骨架，降低 onboarding 門檻。
 - **優先級**：屬於開發者體驗（DX）改善，可獨立於主 workflow 實作。
 
 ## 使用者故事
 
 ```
 身為 Claude Code 使用者
-我想要在新專案中使用 /ot:onboard
+我想要在新專案中使用 /onboard
 以便快速生成 CLAUDE.md 骨架，讓 Claude Code 更了解我的專案
 ```
 
 ```
 身為 Claude Code 使用者
-我想要在已有 CLAUDE.md 的專案中使用 /ot:onboard
+我想要在已有 CLAUDE.md 的專案中使用 /onboard
 以便補充缺失的區塊（技術棧、目錄結構、常用命令等）
 ```
 

@@ -243,7 +243,7 @@ describe('Feature 2：有 workflow state 時組裝狀態摘要', () => {
     const ctx = buildCtxFromSession(SESSION_MAIN);
     const systemMessage = buildCompactMessage(ctx);
     expect(systemMessage).toContain('⛔ 禁止使用 AskUserQuestion');
-    expect(systemMessage).toContain('/ot:auto');
+    expect(systemMessage).toContain('/auto');
   });
 
   // Scenario 2.2: failCount > 0 時顯示失敗計數

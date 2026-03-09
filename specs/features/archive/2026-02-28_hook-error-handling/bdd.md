@@ -96,8 +96,8 @@ WHEN 執行 on-submit.js
 THEN stdout 輸出包含 `additionalContext` 欄位的 JSON
 AND 進程以 exit code 0 結束
 
-## Scenario: on-submit.js 使用者已輸入 /ot: 命令時不注入
-GIVEN stdin 包含 `{"session_id":"abc","prompt":"/ot:auto"}`
+## Scenario: on-submit.js 使用者已輸入 / 命令時不注入
+GIVEN stdin 包含 `{"session_id":"abc","prompt":"/auto"}`
 WHEN 執行 on-submit.js
 THEN stdout 輸出 `{"additionalContext":""}`
 AND 進程以 exit code 0 結束

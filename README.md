@@ -47,7 +47,7 @@ Dashboard 在 SessionStart 自動啟動（`http://localhost:7777`），即時顯
 ```
 你說需求
    ↓
-/ot:auto 自動選擇 workflow
+/auto 自動選擇 workflow
    ↓
 依序委派 18 個專職 agent
    ↓

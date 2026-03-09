@@ -122,7 +122,7 @@
 | Hook | 事件 | 行數 | 核心職責 | 健全度 |
 |------|------|:----:|---------|:------:|
 | on-start.js | SessionStart | 146 | Banner + 初始化 + Dashboard spawn | ⭐⭐⭐⭐⭐ |
-| on-submit.js | UserPromptSubmit | 109 | systemMessage 注入（/ot:auto） | ⭐⭐⭐⭐⭐ |
+| on-submit.js | UserPromptSubmit | 109 | systemMessage 注入（/auto） | ⭐⭐⭐⭐⭐ |
 | pre-task.js | PreToolUse(Task) | 173 | 阻擋跳過 stage + agent 辨識 | ⭐⭐⭐⭐ |
 | on-stop.js | SubagentStop | 410 | 結果解析 + state 更新 + 下一步提示 | ⭐⭐⭐⭐ |
 | post-use.js | PostToolUse | 280 | Instinct 觀察 + wording 偵測 | ⭐⭐⭐⭐ |

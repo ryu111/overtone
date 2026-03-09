@@ -153,7 +153,7 @@ Given 一個全新 session，尚無 workflow.json（currentState 為 null）
 When 使用者送出首次 prompt「請幫我實作登入功能」
 Then on-submit.js 不呼叫 workflow_routing 的 instinct.emit()
 And observations.jsonl 不存在或不含 type=`workflow_routing` 的記錄
-And systemMessage 正常注入 /ot:auto 指引
+And systemMessage 正常注入 /auto 指引
 
 ### Scenario: 使用者 prompt 超過 80 字元時截斷作為 trigger
 Given 一個 session 有進行中的 `quick` workflow

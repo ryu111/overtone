@@ -10,7 +10,7 @@
 
 ### 可選模式
 
-/ot:auto 判斷是否啟用 Specs 系統：
+/auto 判斷是否啟用 Specs 系統：
 
 ```
 大功能（standard/full/secure）
