@@ -10,6 +10,7 @@
  *   - 中文模式標籤
  *   - transcript_path 檔案大小
  *   - 佇列進度顯示（Feature 6）
+ *   - 本地模型狀態顯示（Feature 9）
  */
 
 const { describe, it, expect, beforeAll, afterAll } = require('bun:test');
@@ -660,7 +661,7 @@ describe('佇列進度顯示', () => {
     try { rmSync(tmpHome, { recursive: true, force: true }); } catch { /* 靜默 */ }
   });
 
-  it('多項佇列有未完成項目時，Line 2 顯示 📦 completed/total', () => {
+  it('有進行中和等待中項目時，Line 1 顯示 📦 running🔥/pending⏳', () => {
     writeQueue(projectRoot, {
       items: [
         { name: 'A', workflow: 'quick', status: 'completed' },
@@ -673,7 +674,48 @@ describe('佇列進度顯示', () => {
 
     const result = runWithSessionAndCwd(projectRoot, { context_window: { used_percentage: 20 } });
     const plain = stripAnsi(result.stdout || '');
-    expect(plain).toContain('📦 1/3');
+    const lines = plain.split('\n').filter(l => l.trim());
+    // 應顯示 1🔥/1⏳（1 in_progress, 1 pending，completed 不計）
+    expect(lines[0]).toContain('📦');
+    expect(lines[0]).toContain('1🔥');
+    expect(lines[0]).toContain('1⏳');
+    // Line 2 不應含佇列資訊
+    expect(lines[1] || '').not.toContain('📦');
+  });
+
+  it('只有進行中項目時 Line 1 顯示 📦 1🔥/0⏳', () => {
+    writeQueue(projectRoot, {
+      items: [
+        { name: 'A', workflow: 'quick', status: 'in_progress' },
+        { name: 'B', workflow: 'quick', status: 'completed' },
+      ],
+      autoExecute: true,
+      source: 'test',
+    });
+
+    const result = runWithSessionAndCwd(projectRoot, { context_window: { used_percentage: 20 } });
+    const plain = stripAnsi(result.stdout || '');
+    const lines = plain.split('\n').filter(l => l.trim());
+    expect(lines[0]).toContain('📦');
+    expect(lines[0]).toContain('1🔥');
+    expect(lines[0]).toContain('0⏳');
+  });
+
+  it('只有等待中項目時 Line 1 顯示 📦 0🔥/1⏳', () => {
+    writeQueue(projectRoot, {
+      items: [
+        { name: 'A', workflow: 'quick', status: 'pending' },
+      ],
+      autoExecute: true,
+      source: 'test',
+    });
+
+    const result = runWithSessionAndCwd(projectRoot, { context_window: { used_percentage: 20 } });
+    const plain = stripAnsi(result.stdout || '');
+    const lines = plain.split('\n').filter(l => l.trim());
+    expect(lines[0]).toContain('📦');
+    expect(lines[0]).toContain('0🔥');
+    expect(lines[0]).toContain('1⏳');
   });
 
   it('佇列全部完成時不顯示 📦', () => {
@@ -691,7 +733,7 @@ describe('佇列進度顯示', () => {
     expect(plain).not.toContain('📦');
   });
 
-  it('佇列只有 1 項時不顯示 📦', () => {
+  it('佇列只有 1 項 in_progress 時 Line 1 仍顯示 📦 1🔥/0⏳', () => {
     writeQueue(projectRoot, {
       items: [
         { name: 'A', workflow: 'quick', status: 'in_progress' },
@@ -702,7 +744,10 @@ describe('佇列進度顯示', () => {
 
     const result = runWithSessionAndCwd(projectRoot, { context_window: { used_percentage: 20 } });
     const plain = stripAnsi(result.stdout || '');
-    expect(plain).not.toContain('📦');
+    const lines = plain.split('\n').filter(l => l.trim());
+    expect(lines[0]).toContain('📦');
+    expect(lines[0]).toContain('1🔥');
+    expect(lines[0]).toContain('0⏳');
   });
 
   it('無佇列時不顯示 📦', () => {
@@ -724,5 +769,172 @@ describe('佇列進度顯示', () => {
     expect(result.status ?? 0).toBe(0);
     const plain = stripAnsi(result.stdout || '');
     expect(plain).not.toContain('📦');
+  });
+
+  it('🔥 使用 yellow ANSI，⏳ 使用 dim ANSI', () => {
+    writeQueue(projectRoot, {
+      items: [
+        { name: 'A', workflow: 'quick', status: 'in_progress' },
+        { name: 'B', workflow: 'quick', status: 'pending' },
+      ],
+      autoExecute: true,
+      source: 'test',
+    });
+
+    const result = runWithSessionAndCwd(projectRoot, { context_window: { used_percentage: 20 } });
+    const raw = result.stdout || '';
+    // yellow 色碼在 🔥 前
+    expect(raw).toContain('\x1b[33m');
+    // dim 色碼在 ⏳ 前
+    expect(raw).toContain('\x1b[2m');
+  });
+});
+
+// ── Feature 9: 本地模型狀態顯示 ──
+
+describe('本地模型狀態顯示', () => {
+  const os = require('os');
+  const path = require('path');
+  const { mkdirSync, writeFileSync, rmSync } = require('fs');
+
+  const tmpHome = path.join(os.tmpdir(), `home-model-status-test-${Date.now()}`);
+  const sessionId = `model-status-${Date.now()}`;
+  const sessionDir = path.join(tmpHome, '.overtone', 'sessions', sessionId);
+  const overtoneHome = path.join(tmpHome, '.overtone');
+
+  function writeWorkflow(data) {
+    mkdirSync(sessionDir, { recursive: true });
+    writeFileSync(path.join(sessionDir, 'workflow.json'), JSON.stringify(data));
+  }
+
+  function writeModelStatus(status) {
+    mkdirSync(overtoneHome, { recursive: true });
+    writeFileSync(path.join(overtoneHome, 'local-model-status.json'), JSON.stringify(status));
+  }
+
+  function runWithSession(stdinData = {}) {
+    return spawnSync('node', [STATUSLINE_PATH], {
+      input: JSON.stringify({ ...stdinData, session_id: sessionId }),
+      encoding: 'utf8',
+      timeout: 10000,
+      env: { ...process.env, HOME: tmpHome },
+    });
+  }
+
+  beforeAll(() => {
+    writeWorkflow({
+      workflowType: 'quick',
+      stages: { DEV: { status: 'active' } },
+    });
+  });
+
+  afterAll(() => {
+    try { rmSync(tmpHome, { recursive: true, force: true }); } catch { /* 靜默 */ }
+  });
+
+  it('healthy=true 時顯示 🤖 modelName 🟢', () => {
+    writeModelStatus({
+      healthy: true,
+      modelName: 'Qwen3.5-35B-A3B',
+      checkedAt: new Date().toISOString(),
+    });
+
+    const result = runWithSession({ context_window: { used_percentage: 20 } });
+    const plain = stripAnsi(result.stdout || '');
+    expect(plain).toContain('🤖');
+    expect(plain).toContain('Qwen3.5-35B-A3B');
+    expect(plain).toContain('🟢');
+  });
+
+  it('healthy=true 時 🟢 使用 green ANSI（\\x1b[32m）', () => {
+    writeModelStatus({
+      healthy: true,
+      modelName: 'Qwen3.5-35B-A3B',
+      checkedAt: new Date().toISOString(),
+    });
+
+    const result = runWithSession({ context_window: { used_percentage: 20 } });
+    expect(result.stdout).toContain('\x1b[32m');
+  });
+
+  it('healthy=false 時顯示 🤖 local 🔴', () => {
+    writeModelStatus({
+      healthy: false,
+      modelName: null,
+      checkedAt: new Date().toISOString(),
+    });
+
+    const result = runWithSession({ context_window: { used_percentage: 20 } });
+    const plain = stripAnsi(result.stdout || '');
+    expect(plain).toContain('🤖');
+    expect(plain).toContain('local');
+    expect(plain).toContain('🔴');
+  });
+
+  it('healthy=false 時 🔴 使用 red ANSI（\\x1b[91m）', () => {
+    writeModelStatus({
+      healthy: false,
+      modelName: null,
+      checkedAt: new Date().toISOString(),
+    });
+
+    const result = runWithSession({ context_window: { used_percentage: 20 } });
+    expect(result.stdout).toContain('\x1b[91m');
+  });
+
+  it('checkedAt 超過 2 分鐘時不顯示 🤖', () => {
+    const twoMinutesAgo = new Date(Date.now() - 121_000).toISOString();
+    writeModelStatus({
+      healthy: true,
+      modelName: 'Qwen3.5-35B-A3B',
+      checkedAt: twoMinutesAgo,
+    });
+
+    const result = runWithSession({ context_window: { used_percentage: 20 } });
+    const plain = stripAnsi(result.stdout || '');
+    expect(plain).not.toContain('🤖');
+  });
+
+  it('狀態檔不存在時不顯示 🤖', () => {
+    // 使用不同的 tmpHome（不寫 local-model-status.json）
+    const noStatusHome = path.join(os.tmpdir(), `home-no-model-status-${Date.now()}`);
+    const noStatusSessionId = `no-model-${Date.now()}`;
+    const noStatusSessionDir = path.join(noStatusHome, '.overtone', 'sessions', noStatusSessionId);
+    mkdirSync(noStatusSessionDir, { recursive: true });
+    writeFileSync(path.join(noStatusSessionDir, 'workflow.json'), JSON.stringify({
+      workflowType: 'quick',
+      stages: { DEV: { status: 'active' } },
+    }));
+
+    try {
+      const result = spawnSync('node', [STATUSLINE_PATH], {
+        input: JSON.stringify({ session_id: noStatusSessionId, context_window: { used_percentage: 20 } }),
+        encoding: 'utf8',
+        timeout: 10000,
+        env: { ...process.env, HOME: noStatusHome },
+      });
+      const plain = stripAnsi(result.stdout || '');
+      expect(plain).not.toContain('🤖');
+    } finally {
+      try { rmSync(noStatusHome, { recursive: true, force: true }); } catch { /* 靜默 */ }
+    }
+  });
+
+  it('無 active workflow 時不顯示 🤖（單行模式）', () => {
+    // 使用無 workflow 的 session
+    writeModelStatus({
+      healthy: true,
+      modelName: 'Qwen3.5-35B-A3B',
+      checkedAt: new Date().toISOString(),
+    });
+
+    const result = spawnSync('node', [STATUSLINE_PATH], {
+      input: JSON.stringify({ session_id: '', context_window: { used_percentage: 20 } }),
+      encoding: 'utf8',
+      timeout: 10000,
+      env: { ...process.env, HOME: tmpHome },
+    });
+    const plain = stripAnsi(result.stdout || '');
+    expect(plain).not.toContain('🤖');
   });
 });
