@@ -72,7 +72,7 @@ Dashboard 在 SessionStart 自動啟動（`http://localhost:7777`），即時顯
 **核心指標：**
 
 - 4724 pass / 0 fail（200 個測試檔）
-- 18 個 agent + 11 個 hook + 24 個 skill + 28 個 command
+- 18 個 agent + 11 個 hook + 26 個 skill + 31 個 command
 - 18 個 workflow 模板
 - 15 個 knowledge domain
 
@@ -103,8 +103,8 @@ lint 0 error + test 0 fail + review PASS → 才算完成
 | Agent 數量 | 18（含 grader、claude-developer） |
 | Workflow 模板 | 18 |
 | Hook 數量 | 11 |
-| Skill 數量 | 24（15 knowledge domain + orchestrator + pm + specs + 4 utility-with-refs + instinct） |
-| Command 數量 | 29（14 stage shortcut + 7 workflow pipeline + 8 utility） |
+| Skill 數量 | 26（15 knowledge domain + auto + orchestrator + pm + specs + 4 utility-with-refs + instinct） |
+| Command 數量 | 31（2 invocation + 14 stage shortcut + 7 workflow pipeline + 8 utility） |
 | 測試覆蓋 | 4683 pass（200 個測試檔） |
 | Runtime | Bun |
 | 前端 | htmx + Alpine.js（SSE 即時推送） |
