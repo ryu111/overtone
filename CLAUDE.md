@@ -25,6 +25,19 @@
 2. **BDD 驅動**：先定義行為（GIVEN/WHEN/THEN）再寫碼
 3. **Loop 預設**：任務完成自動繼續下一個
 
+## 元件職責分離
+
+- **Command** = 操作介面（使用者觸發入口，`/xxx`）
+- **Skill** = 純知識（不可直接呼叫，僅透過 agent `skills[]` 注入）
+- **Agent** = 執行者（被 Main Agent 委派）
+- Command ↔ Agent 大致一對一，Skill → Agent 多對多
+
+## 文件生命週期
+
+- `docs/backlog/`：待做（bug + 設計提案）→ 完成後轉入 spec/ 或 CLAUDE.md，或直接刪除
+- `docs/spec/`：活的產品規格
+- `docs/archive/`：死的歷史參考
+
 ## 並行委派
 
 委派 subagent 前，📋 MUST 評估是否可拆分：
