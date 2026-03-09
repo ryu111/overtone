@@ -77,7 +77,7 @@ describe('Feature A: detectAndCleanOrphans — 基本清理', () => {
     });
 
     const currentState = stateLib.readState(sid);
-    const result = detectAndCleanOrphans(sid, currentState);
+    const result = detectAndCleanOrphans(sid, null, currentState);
 
     // 清除後重新讀取 state 確認 entry 已移除
     const updatedState = stateLib.readState(sid);
@@ -105,7 +105,7 @@ describe('Feature A: detectAndCleanOrphans — 基本清理', () => {
     });
 
     const currentState = stateLib.readState(sid);
-    const result = detectAndCleanOrphans(sid, currentState);
+    const result = detectAndCleanOrphans(sid, null, currentState);
 
     const updatedState = stateLib.readState(sid);
     expect(result.cleaned.length).toBe(0);
@@ -163,9 +163,9 @@ describe('Feature B: detectAndCleanOrphans — 邊界條件', () => {
     });
 
     const currentState = stateLib.readState(sid);
-    expect(() => detectAndCleanOrphans(sid, currentState)).not.toThrow();
+    expect(() => detectAndCleanOrphans(sid, null, currentState)).not.toThrow();
 
-    const result = detectAndCleanOrphans(sid, currentState);
+    const result = detectAndCleanOrphans(sid, null, currentState);
     expect(result.cleaned.length).toBe(0);
 
     const updatedState = stateLib.readState(sid);
@@ -186,9 +186,9 @@ describe('Feature B: detectAndCleanOrphans — 邊界條件', () => {
     });
 
     const currentState = stateLib.readState(sid);
-    expect(() => detectAndCleanOrphans(sid, currentState)).not.toThrow();
+    expect(() => detectAndCleanOrphans(sid, null, currentState)).not.toThrow();
 
-    const result = detectAndCleanOrphans(sid, currentState);
+    const result = detectAndCleanOrphans(sid, null, currentState);
     expect(result.cleaned.length).toBe(0);
   });
 
@@ -206,9 +206,9 @@ describe('Feature B: detectAndCleanOrphans — 邊界條件', () => {
     });
 
     const currentState = stateLib.readState(sid);
-    expect(() => detectAndCleanOrphans(sid, currentState)).not.toThrow();
+    expect(() => detectAndCleanOrphans(sid, null, currentState)).not.toThrow();
 
-    const result = detectAndCleanOrphans(sid, currentState);
+    const result = detectAndCleanOrphans(sid, null, currentState);
     expect(result.cleaned.length).toBe(0);
   });
 
@@ -220,7 +220,7 @@ describe('Feature B: detectAndCleanOrphans — 邊界條件', () => {
     // 確保 activeAgents 為空
     expect(Object.keys(currentState.activeAgents).length).toBe(0);
 
-    const result = detectAndCleanOrphans(sid, currentState);
+    const result = detectAndCleanOrphans(sid, null, currentState);
     expect(result).toEqual({ cleaned: [] });
   });
 
@@ -239,7 +239,7 @@ describe('Feature B: detectAndCleanOrphans — 邊界條件', () => {
     });
 
     const currentState = stateLib.readState(sid);
-    const result = detectAndCleanOrphans(sid, currentState);
+    const result = detectAndCleanOrphans(sid, null, currentState);
 
     expect(result.cleaned.length).toBe(2);
     const cleanedIds = result.cleaned.map((c) => c.instanceId);
@@ -281,7 +281,7 @@ describe('Feature B: detectAndCleanOrphans — 邊界條件', () => {
       },
     };
 
-    expect(() => detectAndCleanOrphans(sid, staleState)).not.toThrow();
+    expect(() => detectAndCleanOrphans(sid, null, staleState)).not.toThrow();
     // delete 不存在的 key 為 no-op，不影響其他 entry
   });
 });
@@ -545,7 +545,7 @@ describe('Feature E: agent:orphan-cleanup timeline 事件格式', () => {
     });
 
     const currentState = stateLib.readState(sid);
-    const result = detectAndCleanOrphans(sid, currentState);
+    const result = detectAndCleanOrphans(sid, null, currentState);
 
     expect(result.cleaned.length).toBe(1);
     const entry = result.cleaned[0];

@@ -20,10 +20,9 @@ const { test, expect, describe, beforeAll, afterAll } = require('bun:test');
 const { existsSync, rmSync } = require('fs');
 const { join } = require('path');
 const { SCRIPTS_LIB } = require('../helpers/paths');
-const { runOnStart, runInitWorkflow, runPreTask, runSubagentStop, isAllowed } = require('../helpers/hook-runner');
+const { runOnStart, runInitWorkflow, runPreTask, runSubagentStop, isAllowed, readWorkflowState, getWorkflowFilePath } = require('../helpers/hook-runner');
 
-const paths    = require(join(SCRIPTS_LIB, 'paths'));
-const stateLib = require(join(SCRIPTS_LIB, 'state'));
+const paths = require(join(SCRIPTS_LIB, 'paths'));
 
 // 跨 describe 共用的唯一 sessionId
 const SESSION_ID = `e2e-full-${Date.now()}`;
@@ -49,11 +48,11 @@ describe('BDD full：初始化 full workflow 建立 11 個 stage', () => {
   });
 
   test('workflow.json 存在', () => {
-    expect(existsSync(paths.session.workflow(SESSION_ID))).toBe(true);
+    expect(existsSync(getWorkflowFilePath(SESSION_ID))).toBe(true);
   });
 
   test('stages 包含 PLAN、ARCH、DESIGN、TEST、DEV、REVIEW、TEST:2、QA、E2E、RETRO、DOCS（共 11 個）', () => {
-    const ws = stateLib.readState(SESSION_ID);
+    const ws = readWorkflowState(SESSION_ID);
     const stageKeys = Object.keys(ws.stages);
     expect(stageKeys).toContain('PLAN');
     expect(stageKeys).toContain('ARCH');
@@ -70,17 +69,17 @@ describe('BDD full：初始化 full workflow 建立 11 個 stage', () => {
   });
 
   test('TEST stage 的 mode 為 spec', () => {
-    const ws = stateLib.readState(SESSION_ID);
+    const ws = readWorkflowState(SESSION_ID);
     expect(ws.stages['TEST'].mode).toBe('spec');
   });
 
   test('TEST:2 stage 的 mode 為 verify', () => {
-    const ws = stateLib.readState(SESSION_ID);
+    const ws = readWorkflowState(SESSION_ID);
     expect(ws.stages['TEST:2'].mode).toBe('verify');
   });
 
   test('所有 stage 初始狀態為 pending', () => {
-    const ws = stateLib.readState(SESSION_ID);
+    const ws = readWorkflowState(SESSION_ID);
     for (const val of Object.values(ws.stages)) {
       expect(val.status).toBe('pending');
     }
@@ -115,32 +114,32 @@ describe('BDD full：前半 sequential — PLAN → ARCH → DESIGN → TEST(spe
   });
 
   test('PLAN.status 為 completed', () => {
-    const ws = stateLib.readState(SESSION_ID);
+    const ws = readWorkflowState(SESSION_ID);
     expect(ws.stages['PLAN'].status).toBe('completed');
   });
 
   test('ARCH.status 為 completed', () => {
-    const ws = stateLib.readState(SESSION_ID);
+    const ws = readWorkflowState(SESSION_ID);
     expect(ws.stages['ARCH'].status).toBe('completed');
   });
 
   test('DESIGN.status 為 completed', () => {
-    const ws = stateLib.readState(SESSION_ID);
+    const ws = readWorkflowState(SESSION_ID);
     expect(ws.stages['DESIGN'].status).toBe('completed');
   });
 
   test('TEST.status 為 completed（spec mode）', () => {
-    const ws = stateLib.readState(SESSION_ID);
+    const ws = readWorkflowState(SESSION_ID);
     expect(ws.stages['TEST'].status).toBe('completed');
   });
 
   test('DEV.status 為 completed', () => {
-    const ws = stateLib.readState(SESSION_ID);
+    const ws = readWorkflowState(SESSION_ID);
     expect(ws.stages['DEV'].status).toBe('completed');
   });
 
   test('currentStage 推進至 REVIEW（quality 並行組第一個）', () => {
-    const ws = stateLib.readState(SESSION_ID);
+    const ws = readWorkflowState(SESSION_ID);
     expect(ws.currentStage).toBe('REVIEW');
   });
 });
@@ -167,12 +166,12 @@ describe('BDD full：quality 並行組 [REVIEW + TEST:2] 同時 active', () => {
   });
 
   test('REVIEW.status 為 active', () => {
-    const ws = stateLib.readState(SESSION_ID);
+    const ws = readWorkflowState(SESSION_ID);
     expect(ws.stages['REVIEW'].status).toBe('active');
   });
 
   test('TEST:2.status 為 active', () => {
-    const ws = stateLib.readState(SESSION_ID);
+    const ws = readWorkflowState(SESSION_ID);
     expect(ws.stages['TEST:2'].status).toBe('active');
   });
 });
@@ -199,18 +198,18 @@ describe('BDD full：quality 並行組收斂，推進至 verify 並行組', () =
   });
 
   test('REVIEW 和 TEST:2 均在同一 beforeAll 完成並收斂', () => {
-    const ws = stateLib.readState(SESSION_ID);
+    const ws = readWorkflowState(SESSION_ID);
     expect(ws.stages['REVIEW'].status).toBe('completed');
     expect(ws.stages['TEST:2'].status).toBe('completed');
   });
 
   test('REVIEW.status 為 completed', () => {
-    const ws = stateLib.readState(SESSION_ID);
+    const ws = readWorkflowState(SESSION_ID);
     expect(ws.stages['REVIEW'].status).toBe('completed');
   });
 
   test('TEST:2.status 為 completed', () => {
-    const ws = stateLib.readState(SESSION_ID);
+    const ws = readWorkflowState(SESSION_ID);
     expect(ws.stages['TEST:2'].status).toBe('completed');
   });
 
@@ -223,12 +222,12 @@ describe('BDD full：quality 並行組收斂，推進至 verify 並行組', () =
   });
 
   test('QA.status 為 active', () => {
-    const ws = stateLib.readState(SESSION_ID);
+    const ws = readWorkflowState(SESSION_ID);
     expect(ws.stages['QA'].status).toBe('active');
   });
 
   test('E2E.status 為 active', () => {
-    const ws = stateLib.readState(SESSION_ID);
+    const ws = readWorkflowState(SESSION_ID);
     expect(ws.stages['E2E'].status).toBe('active');
   });
 });
@@ -248,23 +247,23 @@ describe('BDD full：verify 並行組收斂，推進至 RETRO', () => {
   });
 
   test('QA 和 E2E 均在同一 beforeAll 完成並收斂', () => {
-    const ws = stateLib.readState(SESSION_ID);
+    const ws = readWorkflowState(SESSION_ID);
     expect(ws.stages['QA'].status).toBe('completed');
     expect(ws.stages['E2E'].status).toBe('completed');
   });
 
   test('QA.status 為 completed', () => {
-    const ws = stateLib.readState(SESSION_ID);
+    const ws = readWorkflowState(SESSION_ID);
     expect(ws.stages['QA'].status).toBe('completed');
   });
 
   test('E2E.status 為 completed', () => {
-    const ws = stateLib.readState(SESSION_ID);
+    const ws = readWorkflowState(SESSION_ID);
     expect(ws.stages['E2E'].status).toBe('completed');
   });
 
   test('currentStage 推進至 RETRO（verify 並行組收斂後）', () => {
-    const ws = stateLib.readState(SESSION_ID);
+    const ws = readWorkflowState(SESSION_ID);
     expect(ws.currentStage).toBe('RETRO');
   });
 });
@@ -287,17 +286,17 @@ describe('BDD full：RETRO → DOCS 完成後所有 11 stage 均為 completed', 
   });
 
   test('RETRO.status 為 completed', () => {
-    const ws = stateLib.readState(SESSION_ID);
+    const ws = readWorkflowState(SESSION_ID);
     expect(ws.stages['RETRO'].status).toBe('completed');
   });
 
   test('DOCS.status 為 completed', () => {
-    const ws = stateLib.readState(SESSION_ID);
+    const ws = readWorkflowState(SESSION_ID);
     expect(ws.stages['DOCS'].status).toBe('completed');
   });
 
   test('所有 11 個 stage 均為 completed', () => {
-    const ws = stateLib.readState(SESSION_ID);
+    const ws = readWorkflowState(SESSION_ID);
     const allCompleted = Object.values(ws.stages).every((s) => s.status === 'completed');
     expect(allCompleted).toBe(true);
     expect(Object.keys(ws.stages).length).toBe(11);

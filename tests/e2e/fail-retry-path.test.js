@@ -14,11 +14,10 @@ const { test, expect, describe, beforeAll, afterAll } = require('bun:test');
 const { rmSync } = require('fs');
 const { join } = require('path');
 const { SCRIPTS_LIB } = require('../helpers/paths');
-const { runOnStart, runInitWorkflow, runPreTask, runSubagentStop } = require('../helpers/hook-runner');
+const { runOnStart, runInitWorkflow, runPreTask, runSubagentStop,
+  readWorkflowState, updateWorkflowState, queryWorkflowTimeline } = require('../helpers/hook-runner');
 
-const paths    = require(join(SCRIPTS_LIB, 'paths'));
-const stateLib = require(join(SCRIPTS_LIB, 'state'));
-const timeline = require(join(SCRIPTS_LIB, 'timeline'));
+const paths = require(join(SCRIPTS_LIB, 'paths'));
 
 // 跨 describe 共用的唯一 sessionId
 const SESSION_ID = `e2e-fail-retry-${Date.now()}`;
@@ -34,7 +33,7 @@ beforeAll(() => {
   runInitWorkflow('standard', SESSION_ID);
 
   // DEV PASS（前置：PLAN→ARCH→TEST:spec 直接設定完成，避免流程複雜化）
-  stateLib.updateStateAtomic(SESSION_ID, (s) => {
+  updateWorkflowState(SESSION_ID, (s) => {
     s.stages['PLAN'].status = 'completed';
     s.stages['PLAN'].result = 'pass';
     s.stages['ARCH'].status = 'completed';
@@ -49,7 +48,7 @@ beforeAll(() => {
   runSubagentStop(SESSION_ID, 'developer', 'VERDICT: pass 開發完成');
 
   // DEV 完成後進入 quality 並行群組，直接設定 REVIEW 完成、TEST 為 active
-  stateLib.updateStateAtomic(SESSION_ID, (s) => {
+  updateWorkflowState(SESSION_ID, (s) => {
     s.stages['REVIEW'].status = 'completed';
     s.stages['REVIEW'].result = 'pass';
     s.stages['TEST'].status = 'active';
@@ -75,17 +74,17 @@ describe('BDD F5：TEST FAIL 第一次 — failCount 遞增並提示 DEBUGGER', 
   });
 
   test('workflow.json 中 failCount 為 1', () => {
-    const ws = stateLib.readState(SESSION_ID);
+    const ws = readWorkflowState(SESSION_ID);
     expect(ws.failCount).toBe(1);
   });
 
   test('TEST stage 標記為 fail', () => {
-    const ws = stateLib.readState(SESSION_ID);
+    const ws = readWorkflowState(SESSION_ID);
     expect(ws.stages['TEST'].result).toBe('fail');
   });
 
   test('timeline.jsonl 包含 stage:retry 事件', () => {
-    const events = timeline.query(SESSION_ID, { type: 'stage:retry' });
+    const events = queryWorkflowTimeline(SESSION_ID, { type: 'stage:retry' });
     expect(events.length).toBeGreaterThan(0);
   });
 });
@@ -111,7 +110,7 @@ describe('BDD F5：retry 路徑 — debugger 完成分析（不追蹤額外 stag
   });
 
   test('failCount 仍為 1（debugger 不屬於原始 workflow stages，不記計數）', () => {
-    const ws = stateLib.readState(SESSION_ID);
+    const ws = readWorkflowState(SESSION_ID);
     expect(ws.failCount).toBe(1);
   });
 });
@@ -135,7 +134,7 @@ describe('BDD F5：retry 路徑 — developer 完成修復（不追蹤額外 sta
   });
 
   test('failCount 仍為 1', () => {
-    const ws = stateLib.readState(SESSION_ID);
+    const ws = readWorkflowState(SESSION_ID);
     expect(ws.failCount).toBe(1);
   });
 });
@@ -149,7 +148,7 @@ describe('BDD F5：TEST 修復後 PASS — failCount 保留歷史', () => {
 
   beforeAll(() => {
     // 重新將 TEST 設為 active（模擬 retry 後再次委派）
-    stateLib.updateStateAtomic(SESSION_ID, (s) => {
+    updateWorkflowState(SESSION_ID, (s) => {
       s.stages['TEST'].status = 'active';
       return s;
     });
@@ -159,7 +158,7 @@ describe('BDD F5：TEST 修復後 PASS — failCount 保留歷史', () => {
   });
 
   test('TEST.status 為 completed', () => {
-    const ws = stateLib.readState(SESSION_ID);
+    const ws = readWorkflowState(SESSION_ID);
     expect(ws.stages['TEST'].status).toBe('completed');
   });
 
@@ -168,7 +167,7 @@ describe('BDD F5：TEST 修復後 PASS — failCount 保留歷史', () => {
   });
 
   test('failCount 仍為 1（歷史保留，不歸零）', () => {
-    const ws = stateLib.readState(SESSION_ID);
+    const ws = readWorkflowState(SESSION_ID);
     expect(ws.failCount).toBe(1);
   });
 });

@@ -10,100 +10,24 @@
  */
 
 const { test, expect, describe, beforeAll, afterAll } = require('bun:test');
-const { existsSync, rmSync, readFileSync } = require('fs');
+const { existsSync, rmSync } = require('fs');
+const { SCRIPTS_LIB } = require('../helpers/paths');
 const { join } = require('path');
-const { HOOKS_DIR, SCRIPTS_DIR, SCRIPTS_LIB } = require('../helpers/paths');
 
-// ── 路徑設定 ──
-
-const ON_START_PATH = join(HOOKS_DIR, 'session', 'on-start.js');
-const ON_STOP_PATH = join(HOOKS_DIR, 'session', 'on-stop.js');
-const INIT_WORKFLOW_PATH = join(SCRIPTS_DIR, 'init-workflow.js');
+const {
+  runOnStart,
+  runInitWorkflow,
+  runSessionStop,
+  getActiveWorkflowId,
+  readWorkflowState,
+  getWorkflowFilePath,
+} = require('../helpers/hook-runner');
 
 const paths = require(join(SCRIPTS_LIB, 'paths'));
 const state = require(join(SCRIPTS_LIB, 'state'));
 
 // 跨 describe 共用的唯一 sessionId
 const SESSION_ID = `e2e-lifecycle-${Date.now()}`;
-
-// ── 輔助函式 ──
-
-/**
- * 執行 on-start.js 子進程（同步）
- * @param {string} sessionId
- * @returns {{ exitCode: number, stdout: string, stderr: string }}
- */
-function runOnStart(sessionId) {
-  const proc = Bun.spawnSync(['node', ON_START_PATH], {
-    stdin: Buffer.from(JSON.stringify({ session_id: sessionId })),
-    env: {
-      ...process.env,
-      CLAUDE_SESSION_ID: '',
-      OVERTONE_NO_DASHBOARD: '1',
-    },
-    stdout: 'pipe',
-    stderr: 'pipe',
-  });
-  return {
-    exitCode: proc.exitCode,
-    stdout: proc.stdout ? new TextDecoder().decode(proc.stdout) : '',
-    stderr: proc.stderr ? new TextDecoder().decode(proc.stderr) : '',
-  };
-}
-
-/**
- * 執行 init-workflow.js 子進程（同步）
- * @param {string} workflowType
- * @param {string} sessionId
- * @returns {{ exitCode: number, stdout: string, stderr: string }}
- */
-function runInitWorkflow(workflowType, sessionId) {
-  const proc = Bun.spawnSync(['node', INIT_WORKFLOW_PATH, workflowType, sessionId], {
-    env: {
-      ...process.env,
-    },
-    stdout: 'pipe',
-    stderr: 'pipe',
-  });
-  return {
-    exitCode: proc.exitCode,
-    stdout: proc.stdout ? new TextDecoder().decode(proc.stdout) : '',
-    stderr: proc.stderr ? new TextDecoder().decode(proc.stderr) : '',
-  };
-}
-
-/**
- * 執行 on-stop.js 子進程（同步）
- * @param {string} sessionId
- * @param {string} lastAssistantMessage
- * @returns {{ exitCode: number, stdout: string, stderr: string, parsed: object|null }}
- */
-function runOnStop(sessionId, lastAssistantMessage = 'test') {
-  const input = {
-    session_id: sessionId,
-    stop_hook_active: false,
-    last_assistant_message: lastAssistantMessage,
-    cwd: require('os').tmpdir(), // 隔離佇列：避免命中真實專案的執行佇列
-  };
-  const proc = Bun.spawnSync(['node', ON_STOP_PATH], {
-    stdin: Buffer.from(JSON.stringify(input)),
-    env: {
-      ...process.env,
-      CLAUDE_SESSION_ID: '',
-    },
-    stdout: 'pipe',
-    stderr: 'pipe',
-  });
-  const stdout = proc.stdout ? new TextDecoder().decode(proc.stdout) : '';
-  let parsed = null;
-  try { parsed = JSON.parse(stdout); } catch { /* 解析失敗時保留 null */ }
-  return {
-    exitCode: proc.exitCode,
-    stdout,
-    stderr: proc.stderr ? new TextDecoder().decode(proc.stderr) : '',
-    parsed,
-  };
-}
 
 // ── 清理 ──
 
@@ -135,38 +59,38 @@ describe('場景 1：on-start 建立目錄，init-workflow 初始化 quick workf
   });
 
   test('workflow.json 已建立', () => {
-    const workflowPath = paths.session.workflow(SESSION_ID);
+    const workflowPath = getWorkflowFilePath(SESSION_ID);
     expect(existsSync(workflowPath)).toBe(true);
   });
 
   test('workflow.json 中 workflowType 為 quick', () => {
-    const ws = state.readState(SESSION_ID);
+    const ws = readWorkflowState(SESSION_ID);
     expect(ws).not.toBeNull();
     expect(ws.workflowType).toBe('quick');
   });
 
   test('workflow.json 中 stages 包含 DEV', () => {
-    const ws = state.readState(SESSION_ID);
+    const ws = readWorkflowState(SESSION_ID);
     expect(ws.stages).toHaveProperty('DEV');
   });
 
   test('workflow.json 中 stages 包含 REVIEW', () => {
-    const ws = state.readState(SESSION_ID);
+    const ws = readWorkflowState(SESSION_ID);
     expect(ws.stages).toHaveProperty('REVIEW');
   });
 
   test('workflow.json 中 stages 包含 RETRO', () => {
-    const ws = state.readState(SESSION_ID);
+    const ws = readWorkflowState(SESSION_ID);
     expect(ws.stages).toHaveProperty('RETRO');
   });
 
   test('workflow.json 中 stages 包含 DOCS', () => {
-    const ws = state.readState(SESSION_ID);
+    const ws = readWorkflowState(SESSION_ID);
     expect(ws.stages).toHaveProperty('DOCS');
   });
 
   test('workflow.json 中 stages 不含 TEST（quick workflow 已移除）', () => {
-    const ws = state.readState(SESSION_ID);
+    const ws = readWorkflowState(SESSION_ID);
     expect(ws.stages).not.toHaveProperty('TEST');
   });
 });
@@ -180,15 +104,16 @@ describe('場景 2：所有 stages 完成後 on-stop 偵測到完成狀態', () 
 
   beforeAll(() => {
     // 手動將所有 stages 標記為 completed
-    const ws = state.readState(SESSION_ID);
+    const workflowId = getActiveWorkflowId(SESSION_ID);
+    const ws = readWorkflowState(SESSION_ID);
     if (ws) {
       for (const stageKey of Object.keys(ws.stages)) {
-        state.updateStage(SESSION_ID, stageKey, { status: 'completed', result: 'pass' });
+        state.updateStage(SESSION_ID, workflowId, stageKey, { status: 'completed', result: 'pass' });
       }
     }
 
     // 執行 on-stop.js 並記錄結果
-    stopResult = runOnStop(SESSION_ID);
+    stopResult = runSessionStop(SESSION_ID);
   });
 
   test('on-stop.js exit code 為 0', () => {
@@ -201,13 +126,13 @@ describe('場景 2：所有 stages 完成後 on-stop 偵測到完成狀態', () 
   });
 
   test('所有 stages 均已 completed（workflow 真正完成的驗證）', () => {
-    const ws = state.readState(SESSION_ID);
+    const ws = readWorkflowState(SESSION_ID);
     const allCompleted = Object.values(ws.stages).every((s) => s.status === 'completed');
     expect(allCompleted).toBe(true);
   });
 
   test('workflow 類型為 quick', () => {
-    const ws = state.readState(SESSION_ID);
+    const ws = readWorkflowState(SESSION_ID);
     expect(ws.workflowType).toBe('quick');
   });
 });
@@ -229,14 +154,15 @@ describe('場景 3：完整生命週期後清理驗證', () => {
       expect(initResult.exitCode).toBe(0);
 
       // 標記所有 stages 完成
-      const ws = state.readState(cleanSessionId);
+      const workflowId = getActiveWorkflowId(cleanSessionId);
+      const ws = readWorkflowState(cleanSessionId);
       if (ws) {
         for (const stageKey of Object.keys(ws.stages)) {
-          state.updateStage(cleanSessionId, stageKey, { status: 'completed', result: 'pass' });
+          state.updateStage(cleanSessionId, workflowId, stageKey, { status: 'completed', result: 'pass' });
         }
       }
 
-      const stopResult = runOnStop(cleanSessionId);
+      const stopResult = runSessionStop(cleanSessionId);
       expect(stopResult.exitCode).toBe(0);
     } finally {
       // 清理此場景的測試 session 目錄

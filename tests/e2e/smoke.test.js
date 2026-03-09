@@ -212,12 +212,19 @@ describe('Scenario 4：Workflow 模板初始化', () => {
       }
       expect(result.exitCode).toBe(0);
 
-      // 讀取並驗證 workflow.json
-      const workflowPath = join(SESSIONS_DIR, sid, 'workflow.json');
+      // 讀取 active-workflow-id，再找到對應的 workflow.json（新的多 instance 路徑結構）
+      const activeWorkflowIdPath = join(SESSIONS_DIR, sid, 'active-workflow-id');
+      expect(existsSync(activeWorkflowIdPath)).toBe(true);
+
+      const workflowId = readFileSync(activeWorkflowIdPath, 'utf8').trim();
+      expect(workflowId).toBeTruthy();
+
+      const workflowPath = join(SESSIONS_DIR, sid, 'workflows', workflowId, 'workflow.json');
       expect(existsSync(workflowPath)).toBe(true);
 
       const state = JSON.parse(readFileSync(workflowPath, 'utf8'));
       expect(state.workflowType).toBe(name);
+      expect(state.workflowId).toBe(workflowId);
       expect(typeof state.stages).toBe('object');
       expect(Object.keys(state.stages).length).toBeGreaterThan(0);
       expect(state.sessionId).toBe(sid);

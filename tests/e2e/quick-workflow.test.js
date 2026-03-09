@@ -15,10 +15,9 @@ const { test, expect, describe, beforeAll, afterAll } = require('bun:test');
 const { existsSync, rmSync } = require('fs');
 const { join } = require('path');
 const { SCRIPTS_LIB } = require('../helpers/paths');
-const { runOnStart, runInitWorkflow, runPreTask, runSubagentStop, isAllowed } = require('../helpers/hook-runner');
+const { runOnStart, runInitWorkflow, runPreTask, runSubagentStop, isAllowed, readWorkflowState } = require('../helpers/hook-runner');
 
-const paths    = require(join(SCRIPTS_LIB, 'paths'));
-const stateLib = require(join(SCRIPTS_LIB, 'state'));
+const paths = require(join(SCRIPTS_LIB, 'paths'));
 
 // 跨 describe 共用的唯一 sessionId
 const SESSION_ID = `e2e-quick-${Date.now()}`;
@@ -44,7 +43,7 @@ describe('BDD F4：初始化 quick workflow 建立 4 個 stage', () => {
   });
 
   test('stages 包含 DEV、REVIEW、RETRO、DOCS（共 4 個，不含 TEST）', () => {
-    const ws = stateLib.readState(SESSION_ID);
+    const ws = readWorkflowState(SESSION_ID);
     const stageKeys = Object.keys(ws.stages);
     expect(stageKeys).toContain('DEV');
     expect(stageKeys).toContain('REVIEW');
@@ -55,7 +54,7 @@ describe('BDD F4：初始化 quick workflow 建立 4 個 stage', () => {
   });
 
   test('所有 stage 初始狀態為 pending', () => {
-    const ws = stateLib.readState(SESSION_ID);
+    const ws = readWorkflowState(SESSION_ID);
     for (const val of Object.values(ws.stages)) {
       expect(val.status).toBe('pending');
     }
@@ -83,7 +82,7 @@ describe('BDD F4：DEV 完成後 REVIEW 放行', () => {
   });
 
   test('REVIEW.status 為 active', () => {
-    const ws = stateLib.readState(SESSION_ID);
+    const ws = readWorkflowState(SESSION_ID);
     expect(ws.stages['REVIEW'].status).toBe('active');
   });
 });
@@ -99,12 +98,12 @@ describe('BDD F4：REVIEW PASS 後推進至 RETRO', () => {
   });
 
   test('REVIEW.status 為 completed', () => {
-    const ws = stateLib.readState(SESSION_ID);
+    const ws = readWorkflowState(SESSION_ID);
     expect(ws.stages['REVIEW'].status).toBe('completed');
   });
 
   test('currentStage 推進至 RETRO', () => {
-    const ws = stateLib.readState(SESSION_ID);
+    const ws = readWorkflowState(SESSION_ID);
     expect(ws.currentStage).toBe('RETRO');
   });
 });
@@ -121,12 +120,12 @@ describe('BDD F4：RETRO PASS 後推進至 DOCS', () => {
   });
 
   test('RETRO.status 為 completed', () => {
-    const ws = stateLib.readState(SESSION_ID);
+    const ws = readWorkflowState(SESSION_ID);
     expect(ws.stages['RETRO'].status).toBe('completed');
   });
 
   test('currentStage 推進至 DOCS', () => {
-    const ws = stateLib.readState(SESSION_ID);
+    const ws = readWorkflowState(SESSION_ID);
     expect(ws.currentStage).toBe('DOCS');
   });
 });
@@ -145,12 +144,12 @@ describe('BDD F4：DOCS PASS 後所有 stage 完成', () => {
   });
 
   test('DOCS.status 為 completed', () => {
-    const ws = stateLib.readState(SESSION_ID);
+    const ws = readWorkflowState(SESSION_ID);
     expect(ws.stages['DOCS'].status).toBe('completed');
   });
 
   test('所有 4 個 stage 均為 completed', () => {
-    const ws = stateLib.readState(SESSION_ID);
+    const ws = readWorkflowState(SESSION_ID);
     const allCompleted = Object.values(ws.stages).every((s) => s.status === 'completed');
     expect(allCompleted).toBe(true);
   });

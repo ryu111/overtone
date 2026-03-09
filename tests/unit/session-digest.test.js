@@ -59,7 +59,7 @@ const MOCK_STATE = {
 function makeMockDeps(overrides = {}) {
   return {
     timeline: {
-      query: (sessionId, filter) => {
+      query: (sessionId, workflowId, filter) => {
         if (filter && filter.type === 'stage:complete') {
           return MOCK_TIMELINE_EVENTS.filter(e => e.type === 'stage:complete');
         }
@@ -258,7 +258,7 @@ describe('generateDigest — stage 執行結果統計', () => {
   test('全部 pass 時正確計數', () => {
     const deps = makeMockDeps({
       timeline: {
-        query: (sessionId, filter) => {
+        query: (sessionId, workflowId, filter) => {
           if (filter && filter.type === 'stage:complete') {
             return [
               { ts: '2024-01-01T00:05:00.000Z', type: 'stage:complete', stage: 'DEV', result: 'pass' },
@@ -280,7 +280,7 @@ describe('generateDigest — stage 執行結果統計', () => {
   test('混合結果時正確計數', () => {
     const deps = makeMockDeps({
       timeline: {
-        query: (sessionId, filter) => {
+        query: (sessionId, workflowId, filter) => {
           if (filter && filter.type === 'stage:complete') {
             return [
               { ts: '2024-01-01T00:05:00.000Z', type: 'stage:complete', stage: 'DEV', result: 'pass' },
@@ -303,7 +303,7 @@ describe('generateDigest — stage 執行結果統計', () => {
   test('無 stage:complete 事件時全為 0', () => {
     const deps = makeMockDeps({
       timeline: {
-        query: (sessionId, filter) => {
+        query: (sessionId, workflowId, filter) => {
           if (filter && filter.type === 'stage:complete') {
             return [];
           }

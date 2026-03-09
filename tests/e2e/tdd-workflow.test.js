@@ -16,10 +16,9 @@ const { test, expect, describe, beforeAll, afterAll } = require('bun:test');
 const { existsSync, rmSync } = require('fs');
 const { join } = require('path');
 const { SCRIPTS_LIB } = require('../helpers/paths');
-const { runOnStart, runInitWorkflow, runPreTask, runSubagentStop } = require('../helpers/hook-runner');
+const { runOnStart, runInitWorkflow, runPreTask, runSubagentStop, readWorkflowState, getWorkflowFilePath } = require('../helpers/hook-runner');
 
-const paths    = require(join(SCRIPTS_LIB, 'paths'));
-const stateLib = require(join(SCRIPTS_LIB, 'state'));
+const paths = require(join(SCRIPTS_LIB, 'paths'));
 
 // 跨 describe 共用的唯一 sessionId
 const SESSION_ID = `e2e-tdd-${Date.now()}`;
@@ -45,11 +44,11 @@ describe('BDD tdd：初始化 tdd workflow 建立 3 個 stage', () => {
   });
 
   test('workflow.json 存在', () => {
-    expect(existsSync(paths.session.workflow(SESSION_ID))).toBe(true);
+    expect(existsSync(getWorkflowFilePath(SESSION_ID))).toBe(true);
   });
 
   test('stages 包含 TEST、DEV、TEST:2（共 3 個）', () => {
-    const ws = stateLib.readState(SESSION_ID);
+    const ws = readWorkflowState(SESSION_ID);
     const stageKeys = Object.keys(ws.stages);
     expect(stageKeys).toContain('TEST');
     expect(stageKeys).toContain('DEV');
@@ -58,17 +57,17 @@ describe('BDD tdd：初始化 tdd workflow 建立 3 個 stage', () => {
   });
 
   test('TEST stage 的 mode 為 spec', () => {
-    const ws = stateLib.readState(SESSION_ID);
+    const ws = readWorkflowState(SESSION_ID);
     expect(ws.stages['TEST'].mode).toBe('spec');
   });
 
   test('TEST:2 stage 的 mode 為 verify', () => {
-    const ws = stateLib.readState(SESSION_ID);
+    const ws = readWorkflowState(SESSION_ID);
     expect(ws.stages['TEST:2'].mode).toBe('verify');
   });
 
   test('所有 stage 初始狀態為 pending', () => {
-    const ws = stateLib.readState(SESSION_ID);
+    const ws = readWorkflowState(SESSION_ID);
     for (const val of Object.values(ws.stages)) {
       expect(val.status).toBe('pending');
     }
@@ -91,17 +90,17 @@ describe('BDD tdd：TEST(spec) → DEV 依序推進', () => {
   });
 
   test('TEST.status 為 completed（spec mode）', () => {
-    const ws = stateLib.readState(SESSION_ID);
+    const ws = readWorkflowState(SESSION_ID);
     expect(ws.stages['TEST'].status).toBe('completed');
   });
 
   test('DEV.status 為 completed', () => {
-    const ws = stateLib.readState(SESSION_ID);
+    const ws = readWorkflowState(SESSION_ID);
     expect(ws.stages['DEV'].status).toBe('completed');
   });
 
   test('currentStage 推進至 TEST:2（verify mode）', () => {
-    const ws = stateLib.readState(SESSION_ID);
+    const ws = readWorkflowState(SESSION_ID);
     expect(ws.currentStage).toBe('TEST:2');
   });
 });
@@ -120,12 +119,12 @@ describe('BDD tdd：TEST:2(verify) 完成後所有 stage 均為 completed', () =
   });
 
   test('TEST:2.status 為 completed（verify mode）', () => {
-    const ws = stateLib.readState(SESSION_ID);
+    const ws = readWorkflowState(SESSION_ID);
     expect(ws.stages['TEST:2'].status).toBe('completed');
   });
 
   test('所有 3 個 stage 均為 completed', () => {
-    const ws = stateLib.readState(SESSION_ID);
+    const ws = readWorkflowState(SESSION_ID);
     const allCompleted = Object.values(ws.stages).every((s) => s.status === 'completed');
     expect(allCompleted).toBe(true);
     expect(Object.keys(ws.stages).length).toBe(3);

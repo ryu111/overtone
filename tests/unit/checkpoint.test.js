@@ -131,7 +131,7 @@ ${'- file.ts — 修改\n'.repeat(100)}
 describe('_loadHandoffContext', () => {
   it('無 handoffs 目錄時回傳 null', () => {
     const state = { stages: { DEV: { status: 'active' } }, currentStage: 'DEV' };
-    expect(_loadHandoffContext(TEST_SESSION, state)).toBeNull();
+    expect(_loadHandoffContext(TEST_SESSION, null, state)).toBeNull();
   });
 
   it('載入最近完成 stage 的 handoff', () => {
@@ -148,7 +148,7 @@ describe('_loadHandoffContext', () => {
       },
     };
 
-    const result = _loadHandoffContext(TEST_SESSION, state);
+    const result = _loadHandoffContext(TEST_SESSION, null, state);
     expect(result).toContain('架構設計完成');
   });
 
@@ -169,7 +169,7 @@ describe('_loadHandoffContext', () => {
       },
     };
 
-    const result = _loadHandoffContext(TEST_SESSION, state);
+    const result = _loadHandoffContext(TEST_SESSION, null, state);
     // 最近 2 個 = ARCH + TEST
     expect(result).toContain('ARCH handoff');
     expect(result).toContain('TEST handoff');
@@ -189,7 +189,7 @@ describe('_loadHandoffContext', () => {
       },
     };
 
-    const result = _loadHandoffContext(TEST_SESSION, state);
+    const result = _loadHandoffContext(TEST_SESSION, null, state);
     expect(result).toBeNull();
   });
 
@@ -208,6 +208,6 @@ describe('_loadHandoffContext', () => {
     };
 
     // 不應該拋錯
-    expect(() => _loadHandoffContext(TEST_SESSION, state)).not.toThrow();
+    expect(() => _loadHandoffContext(TEST_SESSION, null, state)).not.toThrow();
   });
 });

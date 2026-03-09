@@ -107,8 +107,11 @@ describe('Session ID Bridge — init-workflow.js fallback 讀取', () => {
     expect(stdout).toContain('quick');
     expect(stdout).toContain('DEV');
 
-    // workflow.json 應被建立在正確的 session 目錄下
-    const workflowPath = path.join(sessionDir, 'workflow.json');
+    // workflow.json 現在寫在 workflow-level 路徑下，先從 active-workflow-id 讀取 workflowId
+    const activeWfIdPath = path.join(sessionDir, 'active-workflow-id');
+    expect(existsSync(activeWfIdPath)).toBe(true);
+    const workflowId = readFileSync(activeWfIdPath, 'utf8').trim();
+    const workflowPath = path.join(sessionDir, 'workflows', workflowId, 'workflow.json');
     expect(existsSync(workflowPath)).toBe(true);
 
     // 驗證 workflow.json 內容正確
@@ -167,8 +170,11 @@ describe('Session ID Bridge — init-workflow.js fallback 讀取', () => {
       expect(exitCode).toBe(0);
       expect(stdout).toContain('single');
 
-      // workflow.json 應被建立在明確指定的 session 目錄
-      const workflowPath = path.join(explicitSessionDir, 'workflow.json');
+      // workflow.json 現在寫在 workflow-level 路徑下，先從 active-workflow-id 讀取 workflowId
+      const activeWfIdPath = path.join(explicitSessionDir, 'active-workflow-id');
+      expect(existsSync(activeWfIdPath)).toBe(true);
+      const workflowId = readFileSync(activeWfIdPath, 'utf8').trim();
+      const workflowPath = path.join(explicitSessionDir, 'workflows', workflowId, 'workflow.json');
       expect(existsSync(workflowPath)).toBe(true);
 
       const wfData = JSON.parse(readFileSync(workflowPath, 'utf8'));

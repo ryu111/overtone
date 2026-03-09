@@ -9,7 +9,8 @@
  */
 
 const { join } = require('path');
-const { HOOKS_DIR, SCRIPTS_DIR } = require('./paths');
+const { readFileSync } = require('fs');
+const { HOOKS_DIR, SCRIPTS_DIR, SCRIPTS_LIB } = require('./paths');
 
 // ── Hook 路徑 ──
 
@@ -183,11 +184,29 @@ function runInitWorkflow(workflowType, sessionId) {
     stdout: 'pipe',
     stderr: 'pipe',
   });
+  const stdout = decodeOutput(proc.stdout);
+  // 從 stdout 解析 workflowId（格式：🆔 Workflow ID：{workflowId}）
+  const match = stdout.match(/Workflow ID[：:]\s*(\S+)/);
   return {
     exitCode: proc.exitCode,
-    stdout: decodeOutput(proc.stdout),
+    stdout,
     stderr: decodeOutput(proc.stderr),
+    workflowId: match ? match[1] : null,
   };
+}
+
+/**
+ * 讀取 session 的 active-workflow-id
+ * @param {string} sessionId
+ * @returns {string|null}
+ */
+function getActiveWorkflowId(sessionId) {
+  const paths = require(join(SCRIPTS_LIB, 'paths'));
+  try {
+    return readFileSync(paths.session.activeWorkflowId(sessionId), 'utf8').trim();
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -262,6 +281,56 @@ function runPreBashGuard(toolInput = {}) {
   };
 }
 
+/**
+ * 讀取 workflow state（自動偵測 workflowId）
+ * 先嘗試 active-workflow-id，再 fallback 到 session-level
+ * @param {string} sessionId
+ * @returns {object|null}
+ */
+function readWorkflowState(sessionId) {
+  const stateLib = require(join(SCRIPTS_LIB, 'state'));
+  const workflowId = getActiveWorkflowId(sessionId);
+  return stateLib.readState(sessionId, workflowId);
+}
+
+/**
+ * 原子更新 workflow state（自動偵測 workflowId）
+ * @param {string} sessionId
+ * @param {function} modifier
+ * @returns {object}
+ */
+function updateWorkflowState(sessionId, modifier) {
+  const stateLib = require(join(SCRIPTS_LIB, 'state'));
+  const workflowId = getActiveWorkflowId(sessionId);
+  return stateLib.updateStateAtomic(sessionId, workflowId, modifier);
+}
+
+/**
+ * 查詢 workflow timeline（自動偵測 workflowId）
+ * @param {string} sessionId
+ * @param {object} filter
+ * @returns {Array}
+ */
+function queryWorkflowTimeline(sessionId, filter = {}) {
+  const timelineLib = require(join(SCRIPTS_LIB, 'timeline'));
+  const workflowId = getActiveWorkflowId(sessionId);
+  return timelineLib.query(sessionId, workflowId, filter);
+}
+
+/**
+ * 取得 workflow state 檔案路徑（自動偵測 workflowId）
+ * @param {string} sessionId
+ * @returns {string}
+ */
+function getWorkflowFilePath(sessionId) {
+  const pathsLib = require(join(SCRIPTS_LIB, 'paths'));
+  const workflowId = getActiveWorkflowId(sessionId);
+  if (workflowId) {
+    return pathsLib.session.workflowFile(sessionId, workflowId);
+  }
+  return pathsLib.session.workflow(sessionId);
+}
+
 module.exports = {
   runPreTask,
   runPreEditGuard,
@@ -270,5 +339,10 @@ module.exports = {
   runSessionStop,
   runOnStart,
   runInitWorkflow,
+  getActiveWorkflowId,
+  readWorkflowState,
+  updateWorkflowState,
+  queryWorkflowTimeline,
+  getWorkflowFilePath,
   isAllowed,
 };
