@@ -177,8 +177,8 @@ describe('BDD F6：prompt 含 .test.js 路徑時不誤判為 tester', () => {
       prompt: '請檢視 tests/unit/foo.test.js 和 tests/integration/bar.test.js 的輸出',
     });
 
-    // 應放行（不阻擋）
-    expect(result.parsed?.result).toBe('');
+    // 應放行（不阻擋，hook 回傳空物件不含 decision: block）
+    expect(result.parsed?.decision).toBeUndefined();
 
     // TEST.status 仍為 pending（未被誤設為 active）
     const ws = state.readState(sessionId);

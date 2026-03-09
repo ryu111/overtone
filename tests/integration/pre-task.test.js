@@ -152,7 +152,7 @@ describe('場景 2：前置 stage 未完成 → 阻擋並警告', () => {
 // ────────────────────────────────────────────────────────────────────────────
 
 describe('場景 3：無法辨識的 agent → 允許通過', () => {
-  test('完全未知的 agent 描述 → result 為空字串（不阻擋）', async () => {
+  test('完全未知的 agent 描述 → 回傳空物件（不阻擋）', async () => {
     const sessionId = newSessionId();
     createdSessions.push(sessionId);
 
@@ -172,8 +172,8 @@ describe('場景 3：無法辨識的 agent → 允許通過', () => {
       sessionId
     );
 
-    // 無法辨識 → 不阻擋
-    expect(result.result).toBe('');
+    // 無法辨識 → 不阻擋，回傳空物件
+    expect(result).toEqual({});
   });
 });
 
@@ -182,7 +182,7 @@ describe('場景 3：無法辨識的 agent → 允許通過', () => {
 // ────────────────────────────────────────────────────────────────────────────
 
 describe('場景 4：無 session_id → 靜默放行', () => {
-  test('stdin 無 session_id 且無環境變數 → result 為空字串', async () => {
+  test('stdin 無 session_id 且無環境變數 → 回傳空物件', async () => {
     // 不傳 sessionId（刪除環境變數）、stdin 中也無 session_id
     const result = await runHook(
       {
@@ -194,8 +194,8 @@ describe('場景 4：無 session_id → 靜默放行', () => {
       undefined
     );
 
-    // 無 session → 靜默放行
-    expect(result.result).toBe('');
+    // 無 session → 靜默放行，回傳空物件
+    expect(result).toEqual({});
   });
 });
 
@@ -311,8 +311,8 @@ describe('場景 5：subagent_type ot: 前綴 → 確定性映射（L1）', () =
       sessionId
     );
 
-    // 未知 ot: agent → fallback → identifyAgent 也無法辨識 → 不阻擋
-    expect(result.result).toBe('');
+    // 未知 ot: agent → fallback → identifyAgent 也無法辨識 → 不阻擋，回傳空物件
+    expect(result).toEqual({});
   });
 });
 

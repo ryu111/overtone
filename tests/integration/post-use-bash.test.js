@@ -49,7 +49,7 @@ afterAll(() => {
  * @param {object} input - hook 的 stdin 輸入（PostToolUse 格式）
  * @returns {Promise<{ exitCode: number, result: string|null }>}
  *   exitCode：子進程退出碼
- *   result：若 stdout 為 JSON { result: "..." } 則是 result 字串，否則 null
+ *   result：若 stdout 為 JSON { hookSpecificOutput: { additionalContext: "..." } } 則是 additionalContext 字串，否則 null
  */
 async function runHook(input) {
   const proc = Bun.spawn(['node', HOOK_PATH], {
@@ -69,7 +69,7 @@ async function runHook(input) {
   if (stdout.trim()) {
     try {
       const parsed = JSON.parse(stdout);
-      result = parsed.result ?? null;
+      result = parsed.hookSpecificOutput?.additionalContext ?? null;
     } catch {
       result = stdout;
     }

@@ -59,7 +59,10 @@ function runHook(input, extraEnv = {}) {
 function parseBanner(stdout) {
   try {
     const output = JSON.parse(stdout);
-    return output.result || '';
+    // banner 是 systemMessage 的開頭部分，直到第一個 ## 標頭（Plugin Context）之前
+    const systemMessage = output.systemMessage || '';
+    const headerIdx = systemMessage.indexOf('\n## ');
+    return headerIdx !== -1 ? systemMessage.slice(0, headerIdx) : systemMessage;
   } catch {
     return stdout;
   }

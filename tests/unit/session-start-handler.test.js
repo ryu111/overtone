@@ -97,37 +97,36 @@ describe('buildBanner', () => {
 // ────────────────────────────────────────────────────────────────────────────
 
 describe('buildStartOutput', () => {
-  test('回傳物件（banner 不再輸出至 result）', () => {
+  test('回傳物件（result 不在 schema 中）', () => {
     const output = buildStartOutput({}, { banner: 'some banner', msgs: [] });
     expect(typeof output).toBe('object');
-    // banner 不在 schema 中，不輸出
     expect(output.result).toBeUndefined();
   });
 
-  test('msgs 為空時不包含 systemMessage', () => {
-    const output = buildStartOutput({}, { banner: 'banner', msgs: [] });
-    expect(output.systemMessage).toBeUndefined();
+  test('banner 透過 systemMessage 輸出', () => {
+    const output = buildStartOutput({}, { banner: 'my banner', msgs: [] });
+    expect(output.systemMessage).toBe('my banner');
   });
 
-  test('msgs 含一個字串時 systemMessage 等於該字串', () => {
+  test('msgs 含一個字串時 systemMessage 含 banner 和 msg', () => {
     const msg = '## 未完成任務\n\n- [ ] DEV';
     const output = buildStartOutput({}, { banner: 'banner', msgs: [msg] });
-    expect(output.systemMessage).toBe(msg);
+    expect(output.systemMessage).toBe('banner\n\n' + msg);
   });
 
-  test('msgs 含多個字串時以雙換行連接', () => {
+  test('msgs 含多個字串時以雙換行連接（含 banner）', () => {
     const output = buildStartOutput({}, { banner: 'banner', msgs: ['A', 'B', 'C'] });
-    expect(output.systemMessage).toBe('A\n\nB\n\nC');
+    expect(output.systemMessage).toBe('banner\n\nA\n\nB\n\nC');
   });
 
   test('msgs 含 null/undefined 時自動過濾', () => {
     const output = buildStartOutput({}, { banner: 'banner', msgs: [null, 'valid', undefined, ''] });
-    expect(output.systemMessage).toBe('valid');
+    expect(output.systemMessage).toBe('banner\n\nvalid');
   });
 
-  test('msgs 全為 falsy 時不包含 systemMessage', () => {
+  test('msgs 全為 falsy 且 banner 有值時 systemMessage 為 banner', () => {
     const output = buildStartOutput({}, { banner: 'banner', msgs: [null, undefined, ''] });
-    expect(output.systemMessage).toBeUndefined();
+    expect(output.systemMessage).toBe('banner');
   });
 
   test('options 為 undefined 時回傳空物件', () => {
@@ -651,15 +650,15 @@ describe('Feature 12: buildStartOutput — 邊界補強', () => {
     expect(output.systemMessage).toBe('msg');
   });
 
-  test('Scenario 12-2: msgs 含大量訊息時全部合並', () => {
+  test('Scenario 12-2: msgs 含大量訊息時全部合並（含 banner）', () => {
     const msgs = ['A', 'B', 'C', 'D', 'E'];
     const output = buildStartOutput({}, { banner: 'b', msgs });
-    expect(output.systemMessage).toBe('A\n\nB\n\nC\n\nD\n\nE');
+    expect(output.systemMessage).toBe('b\n\nA\n\nB\n\nC\n\nD\n\nE');
   });
 
-  test('Scenario 12-3: msgs 為 undefined 時不含 systemMessage', () => {
+  test('Scenario 12-3: msgs 為 undefined 時 systemMessage 為 banner', () => {
     const output = buildStartOutput({}, { banner: 'b' });
-    expect(output.systemMessage).toBeUndefined();
+    expect(output.systemMessage).toBe('b');
   });
 
   test('Scenario 12-4: _input 參數被忽略（相容性保留）', () => {
@@ -669,9 +668,9 @@ describe('Feature 12: buildStartOutput — 邊界補強', () => {
     expect(output1.systemMessage).toBe(output2.systemMessage);
   });
 
-  test('Scenario 12-5: 混合 truthy 和 falsy 的 msgs 只保留 truthy', () => {
+  test('Scenario 12-5: 混合 truthy 和 falsy 的 msgs 只保留 truthy（含 banner）', () => {
     const output = buildStartOutput({}, { banner: 'b', msgs: [null, 'A', '', undefined, 'B', false] });
-    expect(output.systemMessage).toBe('A\n\nB');
+    expect(output.systemMessage).toBe('b\n\nA\n\nB');
   });
 
   test('Scenario 12-6: 有 msgs 時 output 包含 hookSpecificOutput.hookEventName === SessionStart', () => {
@@ -680,11 +679,12 @@ describe('Feature 12: buildStartOutput — 邊界補強', () => {
     expect(output.hookSpecificOutput.hookEventName).toBe('SessionStart');
   });
 
-  test('Scenario 12-7: 有 msgs 時 hookSpecificOutput.additionalContext 等於 systemMessage', () => {
+  test('Scenario 12-7: 有 msgs 時 hookSpecificOutput.additionalContext 為 validMsgs（不含 banner）', () => {
     const msg = '## Plugin Context\n\n測試內容';
     const output = buildStartOutput({}, { banner: 'banner', msgs: [msg] });
     expect(output.hookSpecificOutput).toBeDefined();
-    expect(output.hookSpecificOutput.additionalContext).toBe(output.systemMessage);
+    // additionalContext 是 validMsgs（注入 model context），systemMessage 含 banner（UI 顯示）
+    expect(output.hookSpecificOutput.additionalContext).toBe(msg);
   });
 });
 

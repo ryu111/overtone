@@ -356,7 +356,7 @@ describe('Scenario 1：超過閾值 + 非最後 stage → 建議 + emit timeline
     stateLib.updateStage(SESSION_ABOVE, 'PLAN', { status: 'active', result: null });
   });
 
-  test('超過閾值時 result 包含 compact 建議文字', () => {
+  test('超過閾值時 hook 正常完成（compact 建議透過 timeline 事件記錄）', () => {
     const transcriptPath = createTranscript('above-threshold.jsonl', 6_000_000);
     const result = runOnStop({
       session_id: SESSION_ABOVE,
@@ -368,9 +368,9 @@ describe('Scenario 1：超過閾值 + 非最後 stage → 建議 + emit timeline
     });
 
     expect(result.exitCode).toBe(0);
+    // SubagentStop hook 不在 output 中包含 compact 建議文字（透過 timeline 事件傳遞，見下方 timeline 測試）
     const parsed = JSON.parse(result.stdout);
-    expect(parsed.result).toContain('建議在繼續下一個 stage 前執行 /compact');
-    expect(parsed.result).toContain('6.0MB');
+    expect(parsed).toEqual({});
   });
 
   test('超過閾值時 timeline 包含 session:compact-suggestion 事件', () => {
@@ -391,7 +391,7 @@ describe('Scenario 3：最後 stage → 不建議', () => {
     stateLib.updateStage(SESSION_LAST, 'DEV', { status: 'active', result: null });
   });
 
-  test('所有 stage 完成後（無 nextHint）result 不包含 compact 建議', () => {
+  test('所有 stage 完成後（無 nextHint）hook 回傳空物件（不觸發 compact 建議）', () => {
     const transcriptPath = createTranscript('last-stage.jsonl', 6_000_000);
     const result = runOnStop({
       session_id: SESSION_LAST,
@@ -404,9 +404,8 @@ describe('Scenario 3：最後 stage → 不建議', () => {
 
     expect(result.exitCode).toBe(0);
     const parsed = JSON.parse(result.stdout);
-    // 最後 stage 完成 → 進入「所有階段完成」分支，不觸發 compact 建議
-    expect(parsed.result).not.toContain('建議在繼續下一個 stage 前執行 /compact');
-    expect(parsed.result).toContain('所有階段已完成');
+    // 最後 stage 完成 → SubagentStop hook 回傳空物件（compact 建議不觸發，timeline 亦無 compact-suggestion 事件）
+    expect(parsed).toEqual({});
   });
 
   test('最後 stage 完成後 timeline 不包含 session:compact-suggestion 事件', () => {
@@ -423,7 +422,7 @@ describe('Scenario 8：fail/reject → 不建議', () => {
     stateLib.updateStage(SESSION_FAIL, 'TEST', { status: 'active', result: null });
   });
 
-  test('agent 結果為 fail 時不建議 compact', () => {
+  test('agent 結果為 fail 時 hook 回傳空物件（不觸發 compact 建議）', () => {
     const transcriptPath = createTranscript('fail-stage.jsonl', 6_000_000);
     // 用結構化 VERDICT 確保解析為 fail
     const result = runOnStop({
@@ -437,6 +436,7 @@ describe('Scenario 8：fail/reject → 不建議', () => {
 
     expect(result.exitCode).toBe(0);
     const parsed = JSON.parse(result.stdout);
-    expect(parsed.result).not.toContain('建議在繼續下一個 stage 前執行 /compact');
+    // fail 時 SubagentStop hook 回傳空物件（不觸發 compact 建議）
+    expect(parsed).toEqual({});
   });
 });

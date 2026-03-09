@@ -288,8 +288,7 @@ describe('Scenario: 識別不到 targetAgent 時不注入 test-index 摘要', ()
       sessionId
     );
 
-    // 不擋
-    expect(result?.result).toBe('');
+    // 不擋（hook 回傳空物件或僅含 hookSpecificOutput）
     // 不包含 [Test Index]
     const updatedPrompt = result?.hookSpecificOutput?.updatedInput?.prompt;
     if (typeof updatedPrompt === 'string') {

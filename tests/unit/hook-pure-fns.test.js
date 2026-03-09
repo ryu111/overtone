@@ -118,21 +118,21 @@ describe('on-start.js 純函數', () => {
       expect(output.systemMessage.length).toBeGreaterThan(0);
     });
 
-    test('無 msgs（空陣列）時 systemMessage 為 undefined', () => {
+    test('無 msgs（空陣列）時 systemMessage 為 banner', () => {
       const output = buildStartOutput(
         { session_id: 'abc' },
         { banner: 'banner', msgs: [] }
       );
       expect(output.result).toBeUndefined();
-      expect(output.systemMessage).toBeUndefined();
+      expect(output.systemMessage).toBe('banner');
     });
 
-    test('msgs 含 null/undefined 時自動過濾', () => {
+    test('msgs 含 null/undefined 時自動過濾（含 banner）', () => {
       const output = buildStartOutput(
         {},
         { banner: 'banner', msgs: [null, undefined, '有效訊息'] }
       );
-      expect(output.systemMessage).toBe('有效訊息');
+      expect(output.systemMessage).toBe('banner\n\n有效訊息');
     });
 
     test('回傳物件可安全序列化為 JSON', () => {

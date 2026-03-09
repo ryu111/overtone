@@ -104,7 +104,7 @@ describe('safeRun', () => {
     `;
     const { stdout, stderr, exitCode } = runScript(script);
     expect(exitCode).toBe(0);
-    expect(JSON.parse(stdout)).toEqual({ result: '' });
+    expect(JSON.parse(stdout)).toEqual({});
     expect(stderr).toContain('[overtone/');
   });
 
@@ -129,7 +129,7 @@ describe('safeRun', () => {
     `;
     const { stdout, exitCode } = runScript(script);
     expect(exitCode).toBe(0);
-    expect(JSON.parse(stdout)).toEqual({ result: '' });
+    expect(JSON.parse(stdout)).toEqual({});
   });
 
   it('exit code 永遠為 0（錯誤路徑）', () => {

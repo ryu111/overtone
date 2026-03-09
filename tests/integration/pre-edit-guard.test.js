@@ -5,11 +5,13 @@
 //   受保護檔案 → deny、非受保護檔案 → allow
 //   plugin 目錄外檔案 → allow、無 file_path → allow
 //   MEMORY.md 行數守衛 → 超過上限 deny、限制內 allow
+//   Workflow 必要性守衛 → 無 workflow → deny、有 workflow → allow
 
-const { test, expect, describe } = require('bun:test');
+const { test, expect, describe, beforeEach, afterEach } = require('bun:test');
 const { join } = require('path');
 const { PLUGIN_ROOT } = require('../helpers/paths');
 const { runPreEditGuard, isAllowed } = require('../helpers/hook-runner');
+const { checkWorkflowRequired } = require(join(PLUGIN_ROOT, 'hooks', 'scripts', 'tool', 'pre-edit-guard.js'));
 
 // MEMORY.md 相關常數
 const MEMORY_LINE_LIMIT = 200;
@@ -370,5 +372,73 @@ describe('PreEditGuard: MEMORY.md 行數守衛', () => {
     });
     expect(result.exitCode).toBe(0);
     expect(isAllowed(result.parsed)).toBe(true);
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// Workflow 必要性守衛（純函數測試）
+// ────────────────────────────────────────────────────────────────────────────
+
+describe('PreEditGuard: checkWorkflowRequired', () => {
+
+  const TEST_SESSION_ID = 'wf-guard-test-' + Date.now();
+  let savedSpawned;
+
+  // 設置 .current-session-id 讓 guard 能匹配主 session
+  function writeCurrentSessionId(sessionId) {
+    const { currentSessionFile, projectHash, GLOBAL_DIR } = require(join(PLUGIN_ROOT, 'scripts', 'lib', 'paths'));
+    const projectRoot = process.cwd();
+    const dir = join(GLOBAL_DIR, projectHash(projectRoot));
+    require('fs').mkdirSync(dir, { recursive: true });
+    require('fs').writeFileSync(currentSessionFile(projectRoot), sessionId, 'utf8');
+  }
+
+  beforeEach(() => {
+    savedSpawned = process.env.OVERTONE_SPAWNED;
+    delete process.env.OVERTONE_SPAWNED;
+  });
+  afterEach(() => {
+    if (savedSpawned !== undefined) {
+      process.env.OVERTONE_SPAWNED = savedSpawned;
+    } else {
+      delete process.env.OVERTONE_SPAWNED;
+    }
+  });
+
+  test('無 sessionId → null（放行）', () => {
+    expect(checkWorkflowRequired({})).toBeNull();
+    expect(checkWorkflowRequired({ session_id: '' })).toBeNull();
+  });
+
+  test('OVERTONE_SPAWNED=1 → null（放行）', () => {
+    process.env.OVERTONE_SPAWNED = '1';
+    expect(checkWorkflowRequired({ session_id: TEST_SESSION_ID })).toBeNull();
+  });
+
+  test('sessionId 不匹配 .current-session-id → null（subagent 放行）', () => {
+    writeCurrentSessionId('main-session-abc');
+    const result = checkWorkflowRequired({ session_id: 'different-subagent-session', cwd: process.cwd() });
+    expect(result).toBeNull();
+  });
+
+  test('無 workflow state + sessionId 匹配 → 阻擋訊息', () => {
+    writeCurrentSessionId(TEST_SESSION_ID);
+    const result = checkWorkflowRequired({ session_id: TEST_SESSION_ID, cwd: process.cwd() });
+    expect(result).not.toBeNull();
+    expect(result).toContain('尚未啟動工作流');
+    expect(result).toContain('Skill');
+    expect(result).toContain('auto');
+  });
+
+  test('阻擋訊息不含 sessionId', () => {
+    writeCurrentSessionId(TEST_SESSION_ID);
+    const result = checkWorkflowRequired({ session_id: TEST_SESSION_ID, cwd: process.cwd() });
+    expect(typeof result).toBe('string');
+    expect(result).not.toContain(TEST_SESSION_ID);
+  });
+
+  test('input 為 null/undefined → null（靜默放行）', () => {
+    expect(checkWorkflowRequired(null)).toBeNull();
+    expect(checkWorkflowRequired(undefined)).toBeNull();
   });
 });

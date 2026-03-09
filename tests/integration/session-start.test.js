@@ -201,15 +201,15 @@ describe('場景 4：有未完成 tasks — 業務邏輯（純函數）', () => 
     expect(checkboxLines.some(l => l.includes('PLAN'))).toBe(false);
   });
 
-  test('buildStartOutput 含 msg 時輸出有 systemMessage', () => {
+  test('buildStartOutput 含 msg 時 systemMessage 包含 banner 和 msg', () => {
     const msg = '## 未完成任務\n\nFeature：test（1/2 完成）\n- [ ] ARCH';
     const output = buildStartOutput({}, { banner: 'banner text', msgs: [msg] });
-    expect(output.systemMessage).toBe(msg);
+    expect(output.systemMessage).toBe('banner text\n\n' + msg);
   });
 
-  test('buildStartOutput 無 msg 時輸出不含 systemMessage', () => {
+  test('buildStartOutput 無 msg 但有 banner 時 systemMessage 為 banner', () => {
     const output = buildStartOutput({}, { banner: 'banner text', msgs: [] });
-    expect(output.systemMessage).toBeUndefined();
+    expect(output.systemMessage).toBe('banner text');
   });
 
   test('所有任務完成時 buildPendingTasksMessage 回傳 null', () => {
