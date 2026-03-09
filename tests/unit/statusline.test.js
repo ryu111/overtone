@@ -555,6 +555,59 @@ describe('readWorkflow workflowId 路由', () => {
   });
 });
 
+// ── Feature 8: compacting 標記偵測 ──
+
+describe('compacting 標記偵測', () => {
+  const os = require('os');
+  const path = require('path');
+  const { mkdirSync, writeFileSync, existsSync, rmSync } = require('fs');
+
+  const tmpHome = path.join(os.tmpdir(), `home-compacting-test-${Date.now()}`);
+  const sessionId = `compacting-${Date.now()}`;
+  const sessionDir = path.join(tmpHome, '.overtone', 'sessions', sessionId);
+
+  function runWithSession(stdinData = {}) {
+    return spawnSync('node', [STATUSLINE_PATH], {
+      input: JSON.stringify({ ...stdinData, session_id: sessionId }),
+      encoding: 'utf8',
+      timeout: 10000,
+      env: { ...process.env, HOME: tmpHome },
+    });
+  }
+
+  afterAll(() => {
+    try { rmSync(tmpHome, { recursive: true, force: true }); } catch { /* 靜默 */ }
+  });
+
+  it('compacting 標記存在時 ctx 顯示 --%', () => {
+    mkdirSync(sessionDir, { recursive: true });
+    // 寫入 compacting 標記
+    writeFileSync(path.join(sessionDir, 'compacting'), '', 'utf8');
+
+    const result = runWithSession({ context_window: { used_percentage: 85 } });
+    const plain = stripAnsi(result.stdout || '');
+    // 應顯示 --% 而非 85%
+    expect(plain).toContain('--%');
+    expect(plain).not.toContain('85%');
+  });
+
+  it('compacting 標記讀取後被刪除', () => {
+    mkdirSync(sessionDir, { recursive: true });
+    const compactingPath = path.join(sessionDir, 'compacting');
+    writeFileSync(compactingPath, '', 'utf8');
+
+    // 第一次呼叫：偵測到標記 → 顯示 --% + 刪除標記
+    runWithSession({ context_window: { used_percentage: 85 } });
+    expect(existsSync(compactingPath)).toBe(false);
+
+    // 第二次呼叫：標記已刪除 → 恢復正常百分比顯示
+    const result2 = runWithSession({ context_window: { used_percentage: 85 } });
+    const plain2 = stripAnsi(result2.stdout || '');
+    expect(plain2).toContain('85%');
+    expect(plain2).not.toContain('--%');
+  });
+});
+
 // ── Feature 6: 佇列進度顯示 ──
 
 describe('佇列進度顯示', () => {
