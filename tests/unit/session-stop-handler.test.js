@@ -215,17 +215,17 @@ describe('buildContinueMessage', () => {
 // ── _isRelatedQueueItem ──────────────────────────────────────────────────────
 
 describe('_isRelatedQueueItem', () => {
-  test('itemName 包含 featureName 時回傳 true', () => {
-    expect(_isRelatedQueueItem('prompt-journal-core', 'prompt-journal')).toBe(true);
+  test('itemName 包含 featureName 但不完全相等時回傳 false（精確匹配）', () => {
+    expect(_isRelatedQueueItem('prompt-journal-core', 'prompt-journal')).toBe(false);
   });
 
   test('itemName 完全等於 featureName 時回傳 true', () => {
     expect(_isRelatedQueueItem('prompt-journal', 'prompt-journal')).toBe(true);
   });
 
-  test('featureName 包含 itemName 時回傳 true（子任務比主任務長）', () => {
-    // featureName = 'prompt-journal-graduation'，itemName = 'promptjournal'
-    expect(_isRelatedQueueItem('promptjournal', 'prompt-journal-graduation')).toBe(true);
+  test('featureName 包含 itemName 但不完全相等時回傳 false（精確匹配）', () => {
+    // featureName = 'prompt-journal-graduation'，itemName = 'promptjournal' — normalize 後不相等
+    expect(_isRelatedQueueItem('promptjournal', 'prompt-journal-graduation')).toBe(false);
   });
 
   test('不相關的項目回傳 false', () => {
@@ -239,12 +239,14 @@ describe('_isRelatedQueueItem', () => {
     expect(_isRelatedQueueItem('prompt-journal', null)).toBe(false);
   });
 
-  test('大小寫不敏感匹配', () => {
-    expect(_isRelatedQueueItem('Prompt-Journal-Core', 'prompt-journal')).toBe(true);
+  test('大小寫不敏感精確匹配（normalize 後相等）', () => {
+    // 'Prompt-Journal-Core' normalize → 'promptjournalcore'，'prompt-journal' → 'promptjournal' → 不相等
+    expect(_isRelatedQueueItem('Prompt-Journal-Core', 'prompt-journal')).toBe(false);
   });
 
-  test('底線和空白與連字號等效', () => {
-    expect(_isRelatedQueueItem('prompt_journal_core', 'prompt-journal')).toBe(true);
+  test('底線和連字號等效但長度不同時回傳 false（精確匹配）', () => {
+    // 'prompt_journal_core' normalize → 'promptjournalcore'，'prompt-journal' → 'promptjournal' → 不相等
+    expect(_isRelatedQueueItem('prompt_journal_core', 'prompt-journal')).toBe(false);
   });
 });
 

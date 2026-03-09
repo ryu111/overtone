@@ -176,16 +176,22 @@ function runOnStart(sessionId) {
  * 執行 init-workflow.js 腳本（同步）
  * @param {string} workflowType - workflow 類型（如 'single', 'quick', 'standard'）
  * @param {string} sessionId
- * @returns {{ exitCode: number, stdout: string, stderr: string }}
+ * @param {string} [featureName] - 可選的 feature 名稱（kebab-case）
+ * @param {string} [projectRoot] - 可選的 project 根目錄（用於佇列回寫測試）
+ * @returns {{ exitCode: number, stdout: string, stderr: string, workflowId: string|null }}
  */
-function runInitWorkflow(workflowType, sessionId) {
-  const proc = Bun.spawnSync(['node', INIT_WORKFLOW_PATH, workflowType, sessionId], {
+function runInitWorkflow(workflowType, sessionId, featureName, projectRoot) {
+  const args = ['node', INIT_WORKFLOW_PATH, workflowType, sessionId];
+  if (featureName) args.push(featureName);
+  const proc = Bun.spawnSync(args, {
     env: { ...process.env },
     stdout: 'pipe',
     stderr: 'pipe',
+    // 若提供 projectRoot，以該目錄為 cwd（讓 init-workflow.js 的 process.cwd() 指向正確位置）
+    cwd: projectRoot || process.cwd(),
   });
   const stdout = decodeOutput(proc.stdout);
-  // 從 stdout 解析 workflowId（格式：🆔 Workflow ID：{workflowId}）
+  // 從 stdout 解析 workflowId（格式：Workflow ID：{workflowId}）
   const match = stdout.match(/Workflow ID[：:]\s*(\S+)/);
   return {
     exitCode: proc.exitCode,

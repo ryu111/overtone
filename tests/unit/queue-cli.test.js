@@ -12,7 +12,7 @@
  */
 
 const { test, expect, describe, afterAll, beforeEach, afterEach, spyOn } = require('bun:test');
-const { rmSync } = require('fs');
+const { rmSync, mkdirSync, writeFileSync } = require('fs');
 const { join } = require('path');
 const { homedir } = require('os');
 const { SCRIPTS_DIR, SCRIPTS_LIB } = require('../helpers/paths');
@@ -267,6 +267,21 @@ describe('PM 整合流程', () => {
 describe('Discovery 模式守衛', () => {
   const stateModule = require(join(SCRIPTS_LIB, 'state'));
   let origReadState;
+  const GUARD_SESSION_ID = 'test-discovery-guard-' + Date.now();
+
+  // 輔助：為 guardDiscoveryMode 建立 activeWorkflowId 檔案
+  function setupDiscoverySession(sessionId, workflowId) {
+    const sessionDir = paths.sessionDir(sessionId);
+    mkdirSync(sessionDir, { recursive: true });
+    writeFileSync(paths.session.activeWorkflowId(sessionId), workflowId);
+  }
+
+  // 輔助：清理 session 目錄
+  function cleanupDiscoverySession(sessionId) {
+    try {
+      rmSync(paths.sessionDir(sessionId), { recursive: true, force: true });
+    } catch { /* ignore */ }
+  }
 
   beforeEach(() => {
     origReadState = stateModule.readState;
@@ -275,11 +290,13 @@ describe('Discovery 模式守衛', () => {
   afterEach(() => {
     stateModule.readState = origReadState;
     delete process.env.CLAUDE_SESSION_ID;
+    cleanupDiscoverySession(GUARD_SESSION_ID);
   });
 
   test('discovery workflow 時 add 被阻擋（exit 1）', () => {
-    process.env.CLAUDE_SESSION_ID = 'test-discovery-guard';
-    stateModule.readState = () => ({ workflowType: 'discovery' });
+    process.env.CLAUDE_SESSION_ID = GUARD_SESSION_ID;
+    setupDiscoverySession(GUARD_SESSION_ID, 'test-wf-guard');
+    stateModule.readState = () => ({ workflowType: 'discovery', currentStage: 'PM' });
 
     const { errors, exitCode } = runCli([
       'add', '--project-root', TEST_PROJECT,
@@ -291,8 +308,9 @@ describe('Discovery 模式守衛', () => {
   });
 
   test('discovery workflow 時 append 被阻擋（exit 1）', () => {
-    process.env.CLAUDE_SESSION_ID = 'test-discovery-guard';
-    stateModule.readState = () => ({ workflowType: 'discovery' });
+    process.env.CLAUDE_SESSION_ID = GUARD_SESSION_ID;
+    setupDiscoverySession(GUARD_SESSION_ID, 'test-wf-guard');
+    stateModule.readState = () => ({ workflowType: 'discovery', currentStage: 'PM' });
 
     const { errors, exitCode } = runCli([
       'append', '--project-root', TEST_PROJECT,
@@ -304,8 +322,9 @@ describe('Discovery 模式守衛', () => {
   });
 
   test('discovery workflow + --force 時允許寫入', () => {
-    process.env.CLAUDE_SESSION_ID = 'test-discovery-guard';
-    stateModule.readState = () => ({ workflowType: 'discovery' });
+    process.env.CLAUDE_SESSION_ID = GUARD_SESSION_ID;
+    setupDiscoverySession(GUARD_SESSION_ID, 'test-wf-guard');
+    stateModule.readState = () => ({ workflowType: 'discovery', currentStage: 'PM' });
 
     const { logs, exitCode } = runCli([
       'add', '--project-root', TEST_PROJECT, '--force',
