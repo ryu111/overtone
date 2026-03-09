@@ -139,4 +139,3 @@ lint 0 error + test 0 fail + review PASS → 才算完成
 | `OT_CORS_ORIGIN` | CORS 允許來源 | `http://localhost:7777` |
 | `TELEGRAM_BOT_TOKEN` | Telegram Bot token | — |
 | `TELEGRAM_CHAT_ID` | 白名單 chat ID | — |
-<!-- hook-test -->
