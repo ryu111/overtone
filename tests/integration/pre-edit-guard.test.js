@@ -426,8 +426,8 @@ describe('PreEditGuard: checkWorkflowRequired', () => {
     const result = checkWorkflowRequired({ session_id: TEST_SESSION_ID, cwd: process.cwd() });
     expect(result).not.toBeNull();
     expect(result).toContain('尚未啟動工作流');
-    expect(result).toContain('Skill');
-    expect(result).toContain('auto');
+    expect(result).toContain('/auto');
+    expect(result).toContain('command');
   });
 
   test('阻擋訊息不含 sessionId', () => {
@@ -440,5 +440,75 @@ describe('PreEditGuard: checkWorkflowRequired', () => {
   test('input 為 null/undefined → null（靜默放行）', () => {
     expect(checkWorkflowRequired(null)).toBeNull();
     expect(checkWorkflowRequired(undefined)).toBeNull();
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// Workflow 編碼守衛（Main Agent 直接寫碼 → deny）
+// ────────────────────────────────────────────────────────────────────────────
+
+describe('PreEditGuard: shouldWarnMainAgentCoding（deny 模式）', () => {
+  const { shouldWarnMainAgentCoding } = require(join(PLUGIN_ROOT, 'hooks', 'scripts', 'tool', 'pre-edit-guard.js'));
+
+  test('state 為 null → null（放行）', () => {
+    expect(shouldWarnMainAgentCoding(null)).toBeNull();
+  });
+
+  test('state 無 stages → null（放行）', () => {
+    expect(shouldWarnMainAgentCoding({})).toBeNull();
+  });
+
+  test('無 DEV stage → null（放行，不含 DEV 的 workflow）', () => {
+    expect(shouldWarnMainAgentCoding({ stages: { PLAN: { status: 'completed' } } })).toBeNull();
+  });
+
+  test('DEV status = completed → null（放行）', () => {
+    expect(shouldWarnMainAgentCoding({
+      stages: { DEV: { status: 'completed' } },
+      activeAgents: {},
+    })).toBeNull();
+  });
+
+  test('有 activeAgents → null（subagent 在寫碼，放行）', () => {
+    expect(shouldWarnMainAgentCoding({
+      stages: { DEV: { status: 'pending' } },
+      activeAgents: { 'inst-123': { agent: 'developer' } },
+    })).toBeNull();
+  });
+
+  test('DEV pending + 無 activeAgents → 回傳 deny 訊息', () => {
+    const result = shouldWarnMainAgentCoding({
+      stages: { DEV: { status: 'pending' } },
+      activeAgents: {},
+    });
+    expect(result).not.toBeNull();
+    expect(result).toContain('Main Agent 不可直接編輯程式碼');
+    expect(result).toContain('developer');
+  });
+
+  test('DEV active + 無 activeAgents → 回傳 deny 訊息', () => {
+    const result = shouldWarnMainAgentCoding({
+      stages: { DEV: { status: 'active' } },
+      activeAgents: {},
+    });
+    expect(result).not.toBeNull();
+    expect(result).toContain('⛔ [Overtone]');
+  });
+
+  test('deny 訊息語氣強硬，不再是警告', () => {
+    const result = shouldWarnMainAgentCoding({
+      stages: { DEV: { status: 'pending' } },
+      activeAgents: {},
+    });
+    expect(result).not.toContain('⚠️');
+    expect(result).toContain('⛔');
+  });
+
+  test('deny 訊息包含 doc-updater 指引', () => {
+    const result = shouldWarnMainAgentCoding({
+      stages: { DEV: { status: 'pending' } },
+      activeAgents: {},
+    });
+    expect(result).toContain('doc-updater');
   });
 });

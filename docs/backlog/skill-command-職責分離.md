@@ -30,7 +30,7 @@ skill 和 command 的職責邊界未定義清楚。
 ## 影響範圍
 
 - 所有 `user-invocable: true` 的入口型 skill → 拆分：知識留 skill，入口邏輯合併進 command
-- `on-submit-handler.js`：目前注入「使用 Skill 工具呼叫 auto」→ 改為指向 command
+- ✅ `on-submit-handler.js`：已改為指向 command（v0.28.90+ 由 on-submit 和 pre-edit-guard 注入）
 - agent frontmatter 中的 `skills[]`：確認只引用知識型 skill
 - 測試：hook-routing.test.js 等需同步更新
 

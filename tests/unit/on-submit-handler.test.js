@@ -55,8 +55,8 @@ describe('buildSystemMessage', () => {
       activeFeatureContext: '',
       workflows,
     });
-    expect(result).toContain('"auto"');
-    expect(result).toContain('18 個 workflow 模板');
+    expect(result).toContain('/auto');
+    expect(result).toContain('workflow');
   });
 
   it('Scenario 5: activeFeatureContext 在無 workflow 時也包含', () => {
@@ -77,12 +77,12 @@ describe('buildSystemMessage', () => {
       activeFeatureContext: '',
       workflows,
     });
-    expect(result).toContain('"auto"');
+    expect(result).toContain('/auto');
   });
 
   it('Scenario 7: opts 為 null 時回傳預設 auto 引導', () => {
     const result = buildSystemMessage(null);
-    expect(result).toContain('"auto"');
+    expect(result).toContain('/auto');
   });
 });
 
@@ -194,10 +194,10 @@ describe('Feature 4: intent_journal 記錄（handleOnSubmit）', () => {
   });
 
   // Scenario 4-6
-  test('Scenario 4-6: /ot: 指令不記錄 intent_journal', () => {
+  test('Scenario 4-6: 已知 workflow command 不記錄 intent_journal', () => {
     handleOnSubmit({
       session_id: session.id,
-      prompt: '/ot:auto',
+      prompt: '/auto',
       cwd: process.cwd(),
     });
 
@@ -233,20 +233,20 @@ describe('Feature 5: handleOnSubmit — workflow 覆寫語法', () => {
     expect(result.systemMessage).toContain('/quick');
   });
 
-  test('Scenario 5-2: [workflow:invalid] 使用無效 key 時退回 /ot:auto 引導', () => {
+  test('Scenario 5-2: [workflow:invalid] 使用無效 key 時退回 /auto 引導', () => {
     const result = handleOnSubmit({
       session_id: session.id,
       prompt: '幫我開發功能 [workflow:invalid_xyz]',
       cwd: process.cwd(),
     });
     // 無效 workflow key → validWorkflowOverride 為 null → 回傳 auto 引導
-    expect(result.systemMessage).toContain('"auto"');
+    expect(result.systemMessage).toContain('/auto');
   });
 
-  test('Scenario 5-3: /ot: 指令提早返回，無 systemMessage', () => {
+  test('Scenario 5-3: 已知 workflow command 提早返回，無 systemMessage', () => {
     const result = handleOnSubmit({
       session_id: session.id,
-      prompt: '/ot:standard',
+      prompt: '/standard',
       cwd: process.cwd(),
     });
     expect(result.result).toBeUndefined();
@@ -313,10 +313,10 @@ describe('Feature 14: handleOnSubmit — hookSpecificOutput 格式', () => {
     }
   });
 
-  test('Scenario 14-3: /ot: 指令時不包含 hookSpecificOutput', () => {
+  test('Scenario 14-3: 已知 workflow command 時不包含 hookSpecificOutput', () => {
     const result = handleOnSubmit({
       session_id: session.id,
-      prompt: '/ot:auto',
+      prompt: '/quick',
       cwd: process.cwd(),
     });
     expect(result.hookSpecificOutput).toBeUndefined();
