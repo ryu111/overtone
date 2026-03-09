@@ -371,6 +371,38 @@ describeI('handlePreCompact', () => {
     expectI(Object.keys(st.activeAgents)).toHaveLength(0);
   });
 
+  itI('compact 後 active stage（無 completedAt）被標回 pending', () => {
+    stateLibPc.initState(sess.id, 'quick', ['DEV', 'REVIEW']);
+    // 手動將 DEV stage 設為 active（模擬 agent 執行中）
+    stateLibPc.updateStateAtomic(sess.id, (s) => {
+      if (s.stages && s.stages.DEV) {
+        s.stages.DEV.status = 'active';
+        delete s.stages.DEV.completedAt;
+      }
+      return s;
+    });
+    handlePreCompact({ session_id: sess.id, trigger: 'auto', cwd: '/tmp' });
+    const st = stateLibPc.readState(sess.id);
+    expectI(st.stages.DEV.status).toBe('pending');
+  });
+
+  itI('compact 後 active stage 有 completedAt 者不改（enforceInvariants 負責）', () => {
+    stateLibPc.initState(sess.id, 'quick', ['DEV', 'REVIEW']);
+    // 手動將 DEV stage 設為 active 但有 completedAt（極端邊界情況）
+    stateLibPc.updateStateAtomic(sess.id, (s) => {
+      if (s.stages && s.stages.DEV) {
+        s.stages.DEV.status = 'active';
+        s.stages.DEV.completedAt = new Date().toISOString();
+      }
+      return s;
+    });
+    handlePreCompact({ session_id: sess.id, trigger: 'auto', cwd: '/tmp' });
+    const st = stateLibPc.readState(sess.id);
+    // 有 completedAt 的 active stage 不被 pre-compact 改回 pending
+    // enforceInvariants 稍後會把它標為 completed
+    expectI(st.stages.DEV.status).not.toBe('pending');
+  });
+
 });
 
 // ── Feature A: detectFrequencyAnomaly 純函式 ─────────────────────────────────
