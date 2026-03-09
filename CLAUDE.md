@@ -50,7 +50,7 @@ bun test                         # 單進程測試（~53s）
 
 ## Hook 改動驗收
 
-Hook/config 改動只在新 session 生效，驗收方式：
+Hook 腳本修改和 settings.json 設定變更皆在同一 session 即時生效（無需重啟）。驗收方式：
 - **單元測試**：`require()` handler 驗證 output 格式
 - **Hook stdout 驗收**：pipe stdin 到 hook 腳本，檢查 JSON 有 `hookSpecificOutput.additionalContext`
 
