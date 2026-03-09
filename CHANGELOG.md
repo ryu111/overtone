@@ -2,6 +2,27 @@
 
 所有重要變更記錄於此文件。
 
+## [0.28.93] - 2026-03-09
+
+### Workflow 多實例隔離內部修復
+
+#### 核心修復
+
+**statusline.js readWorkflow 斷鏈修復**
+- readWorkflow 加入 workflowId 路由，正確偵測多實例環境中的 workflow 狀態
+- 解決 statusline 無法正確識別當前 workflow 的問題
+
+**pre-edit-guard.js allCompleted 誤判修復**
+- checkWorkflowRequired 放行 activeAgents > 0 的情況
+- 解決在並行 agent 執行期間被錯誤阻擋 edit 操作的問題
+
+#### 測試結果
+
+- 新增/修改 6 個單元 + 整合測試（statusline.test.js + pre-edit-guard.test.js）
+- 總測試數：4836 pass / 0 fail
+
+---
+
 ## [0.28.92] - 2026-03-09
 
 ### Workflow 多實例隔離系列修復（3/3 完成）
