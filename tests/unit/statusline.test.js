@@ -441,6 +441,120 @@ describe('agent 顯示與中文模式', () => {
   });
 });
 
+// ── Feature 7: workflowId 路由（多實例隔離）──
+
+describe('readWorkflow workflowId 路由', () => {
+  const os = require('os');
+  const path = require('path');
+  const { mkdirSync, writeFileSync, rmSync } = require('fs');
+
+  const tmpHome = path.join(os.tmpdir(), `home-wid-route-test-${Date.now()}`);
+  const sessionId = `wid-route-${Date.now()}`;
+  const sessionDir = path.join(tmpHome, '.overtone', 'sessions', sessionId);
+
+  function runWithSession(stdinData = {}) {
+    return spawnSync('node', [STATUSLINE_PATH], {
+      input: JSON.stringify({ ...stdinData, session_id: sessionId }),
+      encoding: 'utf8',
+      timeout: 10000,
+      env: { ...process.env, HOME: tmpHome },
+    });
+  }
+
+  afterAll(() => {
+    try { rmSync(tmpHome, { recursive: true, force: true }); } catch { /* 靜默 */ }
+  });
+
+  it('有 active-workflow-id 時從 workflows/{wid}/workflow.json 讀取', () => {
+    const workflowId = 'test-wid-abc123';
+    const workflowDir = path.join(sessionDir, 'workflows', workflowId);
+    mkdirSync(workflowDir, { recursive: true });
+    // 寫入 workflow 層級 workflow.json（有 active stage）
+    writeFileSync(path.join(workflowDir, 'workflow.json'), JSON.stringify({
+      workflowType: 'quick',
+      stages: { DEV: { status: 'active' } },
+    }));
+    // 寫入 active-workflow-id
+    mkdirSync(sessionDir, { recursive: true });
+    writeFileSync(path.join(sessionDir, 'active-workflow-id'), workflowId);
+
+    const result = runWithSession({ context_window: { used_percentage: 20 } });
+    const plain = stripAnsi(result.stdout || '');
+    const lines = plain.split('\n').filter(l => l.trim());
+    // 應讀到 workflow 層級的 active stage → 雙行輸出含 developer
+    expect(lines.length).toBe(2);
+    expect(lines[0]).toContain('developer');
+  });
+
+  it('無 active-workflow-id 時 fallback 到 session 層級 workflow.json', () => {
+    // 確保無 active-workflow-id（先做好隔離）
+    const isolatedSessionId = `wid-fallback-${Date.now()}`;
+    const isolatedSessionDir = path.join(tmpHome, '.overtone', 'sessions', isolatedSessionId);
+    mkdirSync(isolatedSessionDir, { recursive: true });
+    writeFileSync(path.join(isolatedSessionDir, 'workflow.json'), JSON.stringify({
+      workflowType: 'standard',
+      stages: { PLAN: { status: 'active' } },
+    }));
+    // 不寫 active-workflow-id → fallback 路徑
+
+    const result = spawnSync('node', [STATUSLINE_PATH], {
+      input: JSON.stringify({ session_id: isolatedSessionId, context_window: { used_percentage: 20 } }),
+      encoding: 'utf8',
+      timeout: 10000,
+      env: { ...process.env, HOME: tmpHome },
+    });
+    const plain = stripAnsi(result.stdout || '');
+    const lines = plain.split('\n').filter(l => l.trim());
+    // 應讀到 session 層級 workflow.json 的 PLAN stage
+    expect(lines.length).toBe(2);
+    expect(lines[0]).toContain('標準');
+  });
+
+  it('active-workflow-id 指向的 workflow.json 不存在時回傳 null（顯示單行）', () => {
+    const badWid = 'non-existent-wid';
+    const isolatedSessionId = `wid-missing-${Date.now()}`;
+    const isolatedSessionDir = path.join(tmpHome, '.overtone', 'sessions', isolatedSessionId);
+    mkdirSync(isolatedSessionDir, { recursive: true });
+    writeFileSync(path.join(isolatedSessionDir, 'active-workflow-id'), badWid);
+    // 不寫 workflows/{badWid}/workflow.json
+
+    const result = spawnSync('node', [STATUSLINE_PATH], {
+      input: JSON.stringify({ session_id: isolatedSessionId, context_window: { used_percentage: 20 } }),
+      encoding: 'utf8',
+      timeout: 10000,
+      env: { ...process.env, HOME: tmpHome },
+    });
+    const plain = stripAnsi(result.stdout || '');
+    const lines = plain.split('\n').filter(l => l.trim());
+    // workflow.json 不存在 → readWorkflow 回傳 null → 無 workflow 單行
+    expect(lines.length).toBe(1);
+    expect(plain).toContain('ctx');
+  });
+
+  it('active-workflow-id 為空字串時 fallback 到 session 層級', () => {
+    const isolatedSessionId = `wid-empty-${Date.now()}`;
+    const isolatedSessionDir = path.join(tmpHome, '.overtone', 'sessions', isolatedSessionId);
+    mkdirSync(isolatedSessionDir, { recursive: true });
+    writeFileSync(path.join(isolatedSessionDir, 'active-workflow-id'), '');
+    writeFileSync(path.join(isolatedSessionDir, 'workflow.json'), JSON.stringify({
+      workflowType: 'quick',
+      stages: { DEV: { status: 'active' } },
+    }));
+
+    const result = spawnSync('node', [STATUSLINE_PATH], {
+      input: JSON.stringify({ session_id: isolatedSessionId, context_window: { used_percentage: 20 } }),
+      encoding: 'utf8',
+      timeout: 10000,
+      env: { ...process.env, HOME: tmpHome },
+    });
+    const plain = stripAnsi(result.stdout || '');
+    const lines = plain.split('\n').filter(l => l.trim());
+    // 空字串 workflowId → fallback → 從 session 層級讀取 → DEV active → 雙行
+    expect(lines.length).toBe(2);
+    expect(lines[0]).toContain('developer');
+  });
+});
+
 // ── Feature 6: 佇列進度顯示 ──
 
 describe('佇列進度顯示', () => {

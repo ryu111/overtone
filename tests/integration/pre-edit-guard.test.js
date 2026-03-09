@@ -441,6 +441,68 @@ describe('PreEditGuard: checkWorkflowRequired', () => {
     expect(checkWorkflowRequired(null)).toBeNull();
     expect(checkWorkflowRequired(undefined)).toBeNull();
   });
+
+  test('allCompleted=true + activeAgents > 0 → null（subagent 仍在執行中，放行）', () => {
+    const fs = require('fs');
+    const { join } = require('path');
+    const { session: sessionPaths, SESSIONS_DIR } = require(join(PLUGIN_ROOT, 'scripts', 'lib', 'paths'));
+    const { writeState } = require(join(PLUGIN_ROOT, 'scripts', 'lib', 'state'));
+
+    // 設定 sessionId 匹配
+    writeCurrentSessionId(TEST_SESSION_ID);
+
+    // 建立 session 目錄
+    fs.mkdirSync(join(SESSIONS_DIR, TEST_SESSION_ID), { recursive: true });
+
+    // 寫入 workflow state：所有 stage 都 completed，但 activeAgents 有活躍 agent
+    writeState(TEST_SESSION_ID, {
+      sessionId: TEST_SESSION_ID,
+      workflowType: 'quick',
+      stages: {
+        DEV: { status: 'completed' },
+        REVIEW: { status: 'completed' },
+      },
+      activeAgents: { 'instance-abc': { agent: 'developer', startedAt: Date.now() } },
+    });
+
+    const result = checkWorkflowRequired({ session_id: TEST_SESSION_ID, cwd: process.cwd() });
+    expect(result).toBeNull();
+
+    // 清理
+    try { fs.rmSync(join(SESSIONS_DIR, TEST_SESSION_ID), { recursive: true, force: true }); } catch {}
+  });
+
+  test('allCompleted=true + activeAgents = 0 → 阻擋訊息', () => {
+    const fs = require('fs');
+    const { join } = require('path');
+    const { session: sessionPaths, SESSIONS_DIR } = require(join(PLUGIN_ROOT, 'scripts', 'lib', 'paths'));
+    const { writeState } = require(join(PLUGIN_ROOT, 'scripts', 'lib', 'state'));
+
+    // 設定 sessionId 匹配
+    writeCurrentSessionId(TEST_SESSION_ID);
+
+    // 建立 session 目錄
+    fs.mkdirSync(join(SESSIONS_DIR, TEST_SESSION_ID), { recursive: true });
+
+    // 寫入 workflow state：所有 stage 都 completed，activeAgents 為空
+    writeState(TEST_SESSION_ID, {
+      sessionId: TEST_SESSION_ID,
+      workflowType: 'quick',
+      stages: {
+        DEV: { status: 'completed' },
+        REVIEW: { status: 'completed' },
+      },
+      activeAgents: {},
+    });
+
+    const result = checkWorkflowRequired({ session_id: TEST_SESSION_ID, cwd: process.cwd() });
+    expect(result).not.toBeNull();
+    expect(result).toContain('尚未啟動工作流');
+    expect(result).toContain('/auto');
+
+    // 清理
+    try { fs.rmSync(join(SESSIONS_DIR, TEST_SESSION_ID), { recursive: true, force: true }); } catch {}
+  });
 });
 
 // ────────────────────────────────────────────────────────────────────────────
