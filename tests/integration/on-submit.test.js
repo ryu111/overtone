@@ -191,14 +191,14 @@ describe('無 workflow 狀態 — 注入 auto 指引', () => {
     expect(ctx).toContain('[Overtone]');
   });
 
-  test('場景 7b：prompt 為空字串 → 注入 auto 指引', async () => {
+  test('場景 7b：prompt 為空字串且無 session → 抑制 auto 指引（空白 prompt 不需要注入）', async () => {
     const result = await runHook(
       { user_prompt: '' },
       { CLAUDE_SESSION_ID: '' }
     );
     const ctx = getContext(result);
-    expect(ctx).toBeTruthy();
-    expect(ctx).toContain('/auto');
+    // 空 prompt + 無進行中 workflow → 抑制警告 systemMessage（task-notification / system-reminder 情境）
+    expect(ctx).toBe('');
   });
 
   test('場景 7c：缺少 CLAUDE_SESSION_ID 環境變數 → 注入 auto 指引', async () => {
