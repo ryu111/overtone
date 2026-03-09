@@ -42,43 +42,28 @@ describe('_checkCompactRecovery', () => {
   let tempDirs;
   let sessionId;
   let sessionDir;
-  let compactingPath;
-  let recoveryPath;
 
-  // 覆蓋 paths 模組回傳的路徑（使用真實 paths 模組但注入假路徑）
   beforeEach(() => {
     tempDirs = makeTempDirs();
     sessionId = 'test-session-compactrecovery-' + Date.now();
     sessionDir = join(tempDirs.sessionsDir, sessionId);
     mkdirSync(sessionDir, { recursive: true });
-
-    compactingPath = join(sessionDir, 'compacting');
-    recoveryPath = join(tempDirs.globalDir, 'compact-recovery.md');
   });
 
   afterEach(() => {
     tempDirs.cleanup();
   });
 
-  it('Scenario 1: compacting 標記存在 + compact-recovery.md 存在 → 回傳 recovery 內容並清理檔案', () => {
-    // 準備 compacting 標記
-    writeFileSync(compactingPath, '', 'utf8');
-    // 準備 compact-recovery.md
+  it('Scenario 1: compact-recovery.md 存在（不依賴 compacting 標記）→ 回傳 recovery 內容並清理', () => {
+    // 注意：不需要建立 compacting 標記，compact-recovery.md 是主要偵測依據
     const recoveryContent = '[Overtone 狀態恢復（compact 後）]\n工作流：quick\n進度：✅ (1/2)';
-    writeFileSync(recoveryPath, recoveryContent, 'utf8');
 
-    // 直接呼叫（使用真實路徑但透過 paths module 取路徑需 monkey-patch）
-    // 由於 _checkCompactRecovery 使用 paths.session.compacting() 和 paths.global.dir()，
-    // 我們需要用封裝方式呼叫，傳入可控制的 sessionId 和 projectRoot。
-    // 以下使用實際路徑驗證邏輯一致性，依賴 paths 模組的真實行為。
-    // 建立實際測試所需的真實 session 目錄結構
-    const realSessionsDir = paths.SESSIONS_DIR;
-    const realSessionDir = join(realSessionsDir, sessionId);
+    // 建立真實 session 目錄（paths 模組讀取）
+    const realSessionDir = join(paths.SESSIONS_DIR, sessionId);
     const realCompactingPath = paths.session.compacting(sessionId);
     mkdirSync(realSessionDir, { recursive: true });
-    writeFileSync(realCompactingPath, '', 'utf8');
 
-    // 建立真實 projectRoot 對應的 global dir
+    // 建立真實 projectRoot 對應的 global dir + compact-recovery.md
     const projectRoot = tempDirs.root;
     const realGlobalDir = paths.global.dir(projectRoot);
     mkdirSync(realGlobalDir, { recursive: true });
@@ -88,7 +73,7 @@ describe('_checkCompactRecovery', () => {
     const result = _checkCompactRecovery(sessionId, projectRoot);
 
     expect(result).toBe(recoveryContent);
-    // 確認 compacting 標記已清理
+    // compacting 標記本來就不存在，確認沒有因此報錯（call 仍正常完成）
     expect(existsSync(realCompactingPath)).toBe(false);
     // 確認 compact-recovery.md 已清理
     expect(existsSync(realRecoveryPath)).toBe(false);
@@ -97,8 +82,8 @@ describe('_checkCompactRecovery', () => {
     try { rmSync(realSessionDir, { recursive: true, force: true }); } catch { /* 忽略 */ }
   });
 
-  it('Scenario 2: compacting 標記不存在 → 回傳 null（正常流程）', () => {
-    // 不建立 compacting 標記
+  it('Scenario 2: compacting 標記和 compact-recovery.md 都不存在 → 回傳 null（正常流程）', () => {
+    // 不建立任何標記或 recovery 檔案
     const projectRoot = tempDirs.root;
 
     const result = _checkCompactRecovery(sessionId, projectRoot);
@@ -106,21 +91,47 @@ describe('_checkCompactRecovery', () => {
     expect(result).toBeNull();
   });
 
-  it('Scenario 3: compacting 標記存在但 compact-recovery.md 不存在 → 清理標記但回傳 null', () => {
+  it('Scenario 3: 只有 compacting 標記存在但 compact-recovery.md 不存在 → 清理標記並回傳 null', () => {
     const realSessionDir = join(paths.SESSIONS_DIR, sessionId);
     const realCompactingPath = paths.session.compacting(sessionId);
     mkdirSync(realSessionDir, { recursive: true });
+    // 建立 compacting 標記（但無 compact-recovery.md）
     writeFileSync(realCompactingPath, '', 'utf8');
 
     const projectRoot = tempDirs.root;
-    // 不建立 compact-recovery.md
+    // 確認 compact-recovery.md 不存在
 
     const result = _checkCompactRecovery(sessionId, projectRoot);
 
     // 無 recovery 內容
     expect(result).toBeNull();
-    // compacting 標記仍應被清理
+    // compacting 殘留標記應被清理
     expect(existsSync(realCompactingPath)).toBe(false);
+
+    // 清理真實 session 目錄
+    try { rmSync(realSessionDir, { recursive: true, force: true }); } catch { /* 忽略 */ }
+  });
+
+  it('Scenario 4（競態修復）: compacting 標記已被 statusline 搶先刪除，但 compact-recovery.md 仍存在 → 仍能 recovery', () => {
+    // 模擬競態：statusline 先執行並刪除了 compacting 標記，但 compact-recovery.md 還在
+    // compacting 標記刻意不建立（代表已被 statusline 刪除）
+    const recoveryContent = '[Overtone 狀態恢復（compact 後）]\n工作流：standard\n進度：✅✅ (2/3)';
+
+    const realSessionDir = join(paths.SESSIONS_DIR, sessionId);
+    mkdirSync(realSessionDir, { recursive: true });
+
+    const projectRoot = tempDirs.root;
+    const realGlobalDir = paths.global.dir(projectRoot);
+    mkdirSync(realGlobalDir, { recursive: true });
+    const realRecoveryPath = join(realGlobalDir, 'compact-recovery.md');
+    writeFileSync(realRecoveryPath, recoveryContent, 'utf8');
+
+    const result = _checkCompactRecovery(sessionId, projectRoot);
+
+    // 競態下仍能正確 recovery
+    expect(result).toBe(recoveryContent);
+    // compact-recovery.md 應已清理
+    expect(existsSync(realRecoveryPath)).toBe(false);
 
     // 清理真實 session 目錄
     try { rmSync(realSessionDir, { recursive: true, force: true }); } catch { /* 忽略 */ }
@@ -142,12 +153,8 @@ describe('handleOnSubmit — compact recovery 注入', () => {
     try { rmSync(realSessionDir, { recursive: true, force: true }); } catch { /* 忽略 */ }
   });
 
-  it('Scenario 4: compact 後首次 submit WHEN compacting 標記存在 THEN additionalContext 包含 recovery 內容', () => {
-    // 設置 compacting 標記
-    const realCompactingPath = paths.session.compacting(sessionId);
-    writeFileSync(realCompactingPath, '', 'utf8');
-
-    // 設置 compact-recovery.md
+  it('Scenario 5: compact 後首次 submit WHEN compact-recovery.md 存在 THEN additionalContext 包含 recovery 內容', () => {
+    // 設置 compact-recovery.md（不需要 compacting 標記）
     const projectRoot = process.cwd();
     const realGlobalDir = paths.global.dir(projectRoot);
     mkdirSync(realGlobalDir, { recursive: true });
@@ -170,7 +177,7 @@ describe('handleOnSubmit — compact recovery 注入', () => {
     try { rmSync(realRecoveryPath); } catch { /* 忽略 */ }
   });
 
-  it('Scenario 5: 無 compacting 標記 WHEN handleOnSubmit THEN 正常流程（不注入 recovery 內容）', () => {
+  it('Scenario 6: 無 compact-recovery.md WHEN handleOnSubmit THEN 正常流程（不注入 recovery 內容）', () => {
     const projectRoot = process.cwd();
 
     const input = {
