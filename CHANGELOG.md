@@ -2,6 +2,40 @@
 
 所有重要變更記錄於此文件。
 
+## [0.28.92] - 2026-03-09
+
+### Workflow 多實例隔離系列修復（3/3 完成）
+
+#### 核心修復
+
+**PreCompact 孤兒 stage 清理修復**
+- PreCompact handler 清空 activeAgents 同時將孤兒 active stage 標回 pending
+- 解決斷鏈 #7：多實例並行時 SubagentStop 遺漏導致的孤兒 active stage
+- 新增 3 個測試 scenario（pre-compact-handler.test.js）
+
+#### 相關修復（v0.28.89-0.28.91）
+
+**Timeline emit API 統一（v0.28.91）**
+- 所有 timeline.emit 調用加入 workflowId 參數
+- 修復斷鏈 #2 #3：workflow 多實例環境中事件記錄缺失 workflowId
+
+**SessionStart 和 on-submit hook 穩定性增強（v0.28.90）**
+- SessionStart handler 加入 workflowId 支援（斷鏈 #6）
+- on-submit hook 空 prompt 噪音抑制
+- 佇列系統完整 workflowId 路由
+
+**Workflow 多實例隔離全量 API 遷移（v0.28.89）**
+- 佇列系統 workflowId 整合（execution-queue + queue CLI）
+- API 修復斷鏈 #1、#4、#5 共 6 項
+
+#### 測試結果
+
+- 新增/修改 35+ 個單元測試（pre-compact-handler、execution-queue、session-stop-handler 等）
+- 全 workflow 多實例隔離 E2E 測試 pass
+- 總測試數：4760 pass / 0 fail（200+ 個測試檔）
+
+---
+
 ## [0.28.88] - 2026-03-08
 
 ### 佇列 & 設定 API 穩定性強化（Bug 修復）
