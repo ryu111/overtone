@@ -2,6 +2,36 @@
 
 所有重要變更記錄於此文件。
 
+## [0.28.94] - 2026-03-10
+
+### P0 Skill 品質改進 + Statusline 新功能
+
+#### Skill 改進（P0 三項）
+
+**wording SKILL.md**（81/D → 89/C, +8）
+- 前置四級強度對照表（⛔📋💡🔧）、決策樹、反模式速查
+- 語氣校準速查表從 references 萃取到 body
+
+**craft SKILL.md**（79/D → 89/C, +10）
+- 前置 Overtone 製作原則、UI 反模式速查表、程式碼模式快速決策
+- NEVER 新增 catch 後靜默反模式
+
+**thinking SKILL.md**（83/D → 82/D, ±0）
+- 新增 30 秒快速決策表、三工具速查（when-stuck/inversion/simplification）
+
+#### Statusline 新功能
+
+- 佇列顯示改為 running🔥/pending⏳ 格式，單項也顯示
+- 新增本地模型（Qwen3.5）線上/離線指示器（綠/紅圓圈）
+- model-router.js 新增狀態檔寫入機制
+
+#### 其他
+
+- 全域 CLAUDE.md 新增「檔名中文化」規則
+- 根目錄清理：1330 → 46 項（移除過期 pipeline/timeline/heartbeat 檔案）
+
+---
+
 ## [0.28.93] - 2026-03-09
 
 ### Workflow 多實例隔離內部修復
