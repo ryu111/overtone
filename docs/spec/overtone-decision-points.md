@@ -190,13 +190,13 @@
 **前置計算**（在退出條件之前，每次都執行）：
 - Specs 自動歸檔：allCompleted + !hasFailedStage + featureName → archiveFeature（L72-95）
 - 掃描式歸檔 fallback：掃描 in-progress 下 checkbox 全勾選的 feature（L97-108）
-- 佇列 completeCurrent：allCompleted + !hasFailedStage → executionQueue.completeCurrent（L120-147）
+- 佇列推進（三策略）：allCompleted + !hasFailedStage → 執行佇列完成標記（L193-224）
 
 ---
 
 ### 2.4 佇列控制流
 
-> 來源：`~/.claude/scripts/lib/agent-stop-handler.js` L177-187 + `~/.claude/scripts/lib/session-stop-handler.js` L193-220
+> 來源：`~/.claude/scripts/lib/agent-stop-handler.js` L177-187 + `~/.claude/scripts/lib/session-stop-handler.js` L193-224
 
 **前置步驟（PM stage 完成時）**：
 
@@ -211,18 +211,21 @@ PM stage pass
 
 位置：`agent-stop-handler.js` L178-187
 
+**佇列完成標記（三策略，優先順序遞降）**（session-stop-handler.js L193-224）：
+
+| 策略 | 條件 | 動作 | 適用場景 |
+|------|------|------|---------|
+| **1 — workflowId 精確定位** | `workflowId` 存在 + `completeByWorkflowId(projectRoot, workflowId)` 成功 | 標記 queueCompleted = true | 工作流已記錄 workflowId（新佇列格式） |
+| **2 — completeCurrent fallback** | 策略 1 失敗 + `completeCurrent(projectRoot)` 成功 | 標記 queueCompleted = true | 查詢 in_progress 或第一個 pending 項目 |
+| **3 — 名稱比對 fallback** | 策略 1、2 都失敗 + `featureName` 存在 | `getNext()` + `_isRelatedQueueItem()` 比對 + `advanceToNext()` + `completeCurrent()` | heartbeat 尚未 advance 且無 workflowId 時 |
+
 **主流程（workflow 完成後）**：
 
 | 條件 | 動作 | 結果 |
 |------|------|------|
-| allCompleted + !hasFailedStage + completeCurrent 成功（queueCompleted = true） | executionQueue.getNext(projectRoot) | 查詢是否有下一個佇列項目 |
+| allCompleted + !hasFailedStage + 三策略中有一個成功（queueCompleted = true） | executionQueue.getNext(projectRoot) | 查詢是否有下一個佇列項目 |
 | getNext 有結果（next !== null） | decision: 'block' — 強制 loop 繼續，reason 含「佇列下一項」提示 | Loop 不退出，Main Agent 繼續執行下一個 workflow |
-| getNext 無結果 | 正常退出（result: summary） | Loop 退出，工作流完成 |
-
-**`completeCurrent` 詳細邏輯**（session-stop-handler.js L120-147）：
-1. `executionQueue.completeCurrent(projectRoot)` — 標記 in_progress 項目為 completed
-2. fallback：若無 in_progress 項目，用 featureName 匹配 getNext 並 advanceToNext + completeCurrent
-3. 連續完成相關項目：同 featureName 前綴的 pending 項目一併推進
+| getNext 無結果 或 queueCompleted = false | 正常退出（result: summary） | Loop 退出，工作流完成 |
 
 ---
 

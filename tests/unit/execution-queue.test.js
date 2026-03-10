@@ -10,6 +10,8 @@
  *   5. clearQueue：清除
  *   6. 邊界情況
  *   13. DAG 依賴核心
+ *   14. updateWorkflowId fallback
+ *   15. completeByWorkflowId
  */
 
 const { test, expect, describe, afterAll } = require('bun:test');
@@ -1069,5 +1071,150 @@ describe('DAG — 無 dependsOn 的 item 回歸保護', () => {
     const next = executionQueue.getNext(TEST_PROJECT);
     expect(next).not.toBeNull();
     expect(next.item.name).toBe('task-b');
+  });
+});
+
+// ── Feature 14: updateWorkflowId fallback ────────────────────────────────────
+
+describe('updateWorkflowId — fallback 行為', () => {
+  test('名稱精確比對成功時正常寫入 workflowId', () => {
+    executionQueue.writeQueue(TEST_PROJECT, [
+      { name: 'feature-a', workflow: 'quick' },
+    ], 'test');
+
+    const result = executionQueue.updateWorkflowId(TEST_PROJECT, 'feature-a', 'wf-001');
+    expect(result.ok).toBe(true);
+
+    const queue = executionQueue.readQueue(TEST_PROJECT);
+    expect(queue.items[0].workflowId).toBe('wf-001');
+  });
+
+  test('名稱不匹配時 fallback 到 in_progress 項目', () => {
+    executionQueue.writeQueue(TEST_PROJECT, [
+      { name: '中文功能名稱', workflow: 'quick' },
+    ], 'test');
+    // 手動將項目標記為 in_progress
+    const queueFile = require('path').join(paths.global.dir(TEST_PROJECT), 'execution-queue.json');
+    const q = executionQueue.readQueue(TEST_PROJECT);
+    q.items[0].status = 'in_progress';
+    atomicWrite(queueFile, q);
+
+    // 傳入英文名稱（不匹配）
+    const result = executionQueue.updateWorkflowId(TEST_PROJECT, 'english-feature-name', 'wf-002');
+    expect(result.ok).toBe(true);
+
+    const queue = executionQueue.readQueue(TEST_PROJECT);
+    expect(queue.items[0].workflowId).toBe('wf-002');
+  });
+
+  test('名稱不匹配且無 in_progress 時 fallback 到第一個 pending', () => {
+    executionQueue.writeQueue(TEST_PROJECT, [
+      { name: '中文功能名稱', workflow: 'quick' },
+    ], 'test');
+
+    const result = executionQueue.updateWorkflowId(TEST_PROJECT, 'english-feature-name', 'wf-003');
+    expect(result.ok).toBe(true);
+
+    const queue = executionQueue.readQueue(TEST_PROJECT);
+    expect(queue.items[0].workflowId).toBe('wf-003');
+  });
+
+  test('佇列不存在時回傳 QUEUE_NOT_FOUND', () => {
+    const result = executionQueue.updateWorkflowId(
+      '/tmp/no-queue-proj-' + Date.now(),
+      'any-name',
+      'wf-x'
+    );
+    expect(result.ok).toBe(false);
+    expect(result.error).toBe('QUEUE_NOT_FOUND');
+  });
+
+  test('無任何 pending/in_progress 項目時回傳 ITEM_NOT_FOUND', () => {
+    executionQueue.writeQueue(TEST_PROJECT, [
+      { name: 'completed-task', workflow: 'quick' },
+    ], 'test');
+    // 手動標記為 completed
+    const queueFile = require('path').join(paths.global.dir(TEST_PROJECT), 'execution-queue.json');
+    const q = executionQueue.readQueue(TEST_PROJECT);
+    q.items[0].status = 'completed';
+    atomicWrite(queueFile, q);
+
+    const result = executionQueue.updateWorkflowId(TEST_PROJECT, 'english-name', 'wf-y');
+    expect(result.ok).toBe(false);
+    expect(result.error).toBe('ITEM_NOT_FOUND');
+  });
+});
+
+// ── Feature 15: completeByWorkflowId ─────────────────────────────────────────
+
+describe('completeByWorkflowId', () => {
+  test('依 workflowId 精確找到項目並標記完成', () => {
+    executionQueue.writeQueue(TEST_PROJECT, [
+      { name: 'feature-x', workflow: 'quick' },
+      { name: 'feature-y', workflow: 'quick' },
+    ], 'test');
+
+    // 先用 updateWorkflowId 綁定 workflowId
+    executionQueue.updateWorkflowId(TEST_PROJECT, 'feature-x', 'wf-100');
+
+    const ok = executionQueue.completeByWorkflowId(TEST_PROJECT, 'wf-100');
+    expect(ok).toBe(true);
+
+    const queue = executionQueue.readQueue(TEST_PROJECT);
+    expect(queue.items[0].status).toBe('completed');
+    expect(queue.items[0].completedAt).toBeDefined();
+    expect(queue.items[1].status).toBe('pending');
+  });
+
+  test('workflowId 不存在時回傳 false', () => {
+    executionQueue.writeQueue(TEST_PROJECT, [
+      { name: 'feature-z', workflow: 'quick' },
+    ], 'test');
+
+    const ok = executionQueue.completeByWorkflowId(TEST_PROJECT, 'wf-nonexistent');
+    expect(ok).toBe(false);
+  });
+
+  test('workflowId 為 null/undefined 時回傳 false', () => {
+    executionQueue.writeQueue(TEST_PROJECT, [
+      { name: 'feature-w', workflow: 'quick' },
+    ], 'test');
+
+    expect(executionQueue.completeByWorkflowId(TEST_PROJECT, null)).toBe(false);
+    expect(executionQueue.completeByWorkflowId(TEST_PROJECT, undefined)).toBe(false);
+  });
+
+  test('已 completed 的項目不重複標記', () => {
+    executionQueue.writeQueue(TEST_PROJECT, [
+      { name: 'feature-v', workflow: 'quick' },
+    ], 'test');
+    executionQueue.updateWorkflowId(TEST_PROJECT, 'feature-v', 'wf-200');
+
+    // 第一次完成
+    executionQueue.completeByWorkflowId(TEST_PROJECT, 'wf-200');
+    // 第二次呼叫回傳 false（已完成）
+    const ok = executionQueue.completeByWorkflowId(TEST_PROJECT, 'wf-200');
+    expect(ok).toBe(false);
+  });
+
+  test('全部完成時佇列檔案自動刪除', () => {
+    executionQueue.writeQueue(TEST_PROJECT, [
+      { name: 'single-task', workflow: 'quick' },
+    ], 'test');
+    executionQueue.updateWorkflowId(TEST_PROJECT, 'single-task', 'wf-300');
+
+    executionQueue.completeByWorkflowId(TEST_PROJECT, 'wf-300');
+
+    // 佇列檔案應已被刪除
+    const queueFile = require('path').join(paths.global.dir(TEST_PROJECT), 'execution-queue.json');
+    expect(require('fs').existsSync(queueFile)).toBe(false);
+  });
+
+  test('佇列不存在時回傳 false', () => {
+    const ok = executionQueue.completeByWorkflowId(
+      '/tmp/no-queue-proj2-' + Date.now(),
+      'wf-xxx'
+    );
+    expect(ok).toBe(false);
   });
 });

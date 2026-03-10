@@ -78,11 +78,34 @@ describe('Feature C: updateWorkflowId — 回寫 workflowId 到佇列項目', ()
     expect(result.error).toBe('QUEUE_NOT_FOUND');
   });
 
-  test('C-4: 佇列項目不存在時回傳 ITEM_NOT_FOUND', () => {
+  test('C-4: 名稱不匹配時 fallback 到 pending 項目（解決中文名稱 vs 英文 featureName 問題）', () => {
+    // 情境：佇列項目名稱為中文（如 "tap-dash-v0.3-障礙生成"），
+    // 但呼叫方傳入英文 featureName（如 "nonexistent-english-name"）
+    // 新行為：fallback 到第一個 pending 項目，確保 workflowId 能正確綁定
     const projectRoot = freshTestDir();
     executionQueue.writeQueue(projectRoot, [
       { name: 'feature-a', workflow: 'quick' },
     ], 'test');
+
+    const result = executionQueue.updateWorkflowId(projectRoot, 'nonexistent-english-name', 'wf-123');
+
+    expect(result.ok).toBe(true);
+    const queue = executionQueue.readQueue(projectRoot);
+    expect(queue.items[0].workflowId).toBe('wf-123');
+  });
+
+  test('C-4b: 佇列中無任何 in_progress 或 pending 項目時回傳 ITEM_NOT_FOUND', () => {
+    // 情境：佇列全部已完成，找不到任何可綁定的項目
+    const projectRoot = freshTestDir();
+    const { atomicWrite } = require(join(SCRIPTS_LIB, 'utils'));
+    const paths = require(join(SCRIPTS_LIB, 'paths'));
+    const queueFile = join(paths.global.dir(projectRoot), 'execution-queue.json');
+    atomicWrite(queueFile, {
+      items: [{ name: 'feature-a', workflow: 'quick', status: 'completed' }],
+      autoExecute: true,
+      source: 'test',
+      createdAt: new Date().toISOString(),
+    });
 
     const result = executionQueue.updateWorkflowId(projectRoot, 'nonexistent', 'wf-123');
 
