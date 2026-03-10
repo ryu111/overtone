@@ -1,0 +1,9 @@
+{
+  "name": "GAME_NAME",
+  "displayName": "DISPLAY_NAME",
+  "version": "0.1.0",
+  "itchChannel": {
+    "html5": "html5"
+  },
+  "godotExportPresets": ["Web"]
+}

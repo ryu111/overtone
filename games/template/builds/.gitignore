@@ -1,0 +1,12 @@
+# 排除 build 產物
+html5/
+linux/
+macos/
+windows/
+*.exe
+*.app
+*.x86_64
+*.html
+*.wasm
+*.pck
+*.import

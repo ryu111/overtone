@@ -12,6 +12,7 @@ const {
   hookEvents,
   journalDefaults,
   parallelGroupDefs,
+  specsConfig,
 } = require(join(SCRIPTS_LIB, 'registry'));
 
 describe('registry.js 資料完整性', () => {
@@ -210,6 +211,47 @@ describe('registry.js 資料完整性', () => {
     test('Scenario 3-2: journalDefaults 是 module.exports 的一部分（可直接解構取得）', () => {
       expect(journalDefaults).toBeDefined();
       expect(typeof journalDefaults).toBe('object');
+    });
+  });
+
+  // Feature 6 BDD: game-studio workflow 定義
+  describe('game-studio workflow 定義（BDD Feature 6）', () => {
+    // Scenario: registry.js 包含 game-studio workflow 定義
+    test('Scenario 6-1: workflows 包含 game-studio 鍵', () => {
+      expect(workflows['game-studio']).toBeDefined();
+      expect(typeof workflows['game-studio']).toBe('object');
+    });
+
+    // Scenario: game-studio workflow stages 正確
+    test('Scenario 6-2: game-studio.stages 與 product workflow 一致', () => {
+      const gameStudioStages = workflows['game-studio'].stages;
+      const productStages = workflows['product'].stages;
+      expect(gameStudioStages).toEqual(productStages);
+    });
+
+    test('Scenario 6-2: game-studio stages 第一個是 PM', () => {
+      expect(workflows['game-studio'].stages[0]).toBe('PM');
+    });
+
+    test('Scenario 6-2: game-studio stages 中所有 stage 都存在於 registry stages 定義', () => {
+      const validStages = new Set(Object.keys(stages));
+      for (const s of workflows['game-studio'].stages) {
+        expect(validStages.has(s)).toBe(true);
+      }
+    });
+
+    // Scenario: specsConfig 包含 game-studio
+    test('Scenario 6-3: specsConfig[game-studio] 包含 tasks 和 bdd', () => {
+      expect(specsConfig['game-studio']).toBeDefined();
+      expect(specsConfig['game-studio']).toContain('tasks');
+      expect(specsConfig['game-studio']).toContain('bdd');
+    });
+
+    // Scenario: require 不拋出例外
+    test('Scenario 6-4: require registry.js 不拋出例外', () => {
+      expect(() => {
+        require(join(SCRIPTS_LIB, 'registry'));
+      }).not.toThrow();
     });
   });
 });
