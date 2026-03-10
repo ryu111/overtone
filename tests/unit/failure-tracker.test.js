@@ -1,3 +1,4 @@
+// @sequential
 'use strict';
 /**
  * failure-tracker.test.js — 跨 session 失敗模式追蹤單元測試

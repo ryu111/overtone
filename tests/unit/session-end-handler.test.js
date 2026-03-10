@@ -1,3 +1,4 @@
+// @sequential — monkey-patch mock 修改全域模組（session-cleanup），不能與其他測試共享進程
 'use strict';
 /**
  * session-end-handler.test.js

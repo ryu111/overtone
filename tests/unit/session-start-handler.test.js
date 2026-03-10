@@ -1,3 +1,4 @@
+// @sequential — monkey-patch mock 修改全域模組（child_process、timeline 等），不能與其他測試共享進程
 'use strict';
 /**
  * session-start-handler.test.js — session-start-handler.js 純函數單元測試
@@ -16,6 +17,56 @@ const { test, expect, describe, beforeEach, afterEach } = require('bun:test');
 const { join } = require('path');
 const { SCRIPTS_LIB } = require('../helpers/paths');
 
+// ── 效能優化：在 require session-start-handler 之前 monkey-patch 昂貴的 I/O 模組 ──
+// 策略：只 mock 對測試行為無關的 I/O，保留 state/globalInstinct（Features 7/9/13 需要）
+//
+// 根因：setup.js 設定 OVERTONE_TEST=1，讓 dep cache 強制 skipCache=true，
+//   每次 handleSessionStart 都重跑 execSync('which agent-browser/gh') + 'gh auth status'，
+//   三個 execSync 在 bun test 下各約 140ms，31 次呼叫累積 13 秒。
+
+// 1. child_process.execSync：mock dep check 指令（only which/gh auth）
+//    dep check 在 session-start-handler.js:357/373/375，是唯一的 execSync 使用點。
+//    保留其他 execSync 行為（其他測試可能使用真實 execSync）。
+const cp = require('child_process');
+const _origExecSync = cp.execSync;
+cp.execSync = (cmd, opts) => {
+  if (cmd === 'which agent-browser' || cmd === 'which gh' || cmd === 'gh auth status') {
+    return '';  // 假裝安裝且認證成功
+  }
+  return _origExecSync(cmd, opts);
+};
+
+// 2. timeline：mock cleanupOldSessions（掃描 sessions 目錄）+ emit（寫 JSONL 累積開銷）
+//    注意：保留 query/latest/count 等函式（Features 7/13 的 writeState 可能用到）
+const timelineMod = require(join(SCRIPTS_LIB, 'timeline'));
+timelineMod.cleanupOldSessions = () => ({ removed: 0, kept: 0 });
+timelineMod.emit = () => {};
+
+// 3. specsArchiveScanner：mock scanAndArchive（掃描 specs 目錄）
+const specsArchiveScannerMod = require(join(SCRIPTS_LIB, 'specs-archive-scanner'));
+specsArchiveScannerMod.scanAndArchive = () => ({ archived: [], skipped: [], errors: [] });
+
+// 4. dashboard/pid：mock isRunning（避免 port 探測的系統 I/O）
+const dashboardPidMod = require(join(SCRIPTS_LIB, 'dashboard/pid'));
+dashboardPidMod.isRunning = () => true;  // 假裝 dashboard 已在執行 → 不 spawn
+
+// 5. baselineTracker：mock formatBaselineSummary（讀 .jsonl 並格式化）
+const baselineTrackerMod = require(join(SCRIPTS_LIB, 'baseline-tracker'));
+baselineTrackerMod.formatBaselineSummary = () => null;
+
+// 6. scoreEngine：mock formatScoreSummary（讀 .jsonl 並格式化）
+const scoreEngineMod = require(join(SCRIPTS_LIB, 'score-engine'));
+scoreEngineMod.formatScoreSummary = () => null;
+
+// 7. failureTracker：mock formatFailureSummary（讀 .jsonl 並格式化）
+const failureTrackerMod = require(join(SCRIPTS_LIB, 'failure-tracker'));
+failureTrackerMod.formatFailureSummary = () => null;
+
+// 8. executionQueue：mock formatQueueSummary（讀佇列檔案）
+const executionQueueMod = require(join(SCRIPTS_LIB, 'execution-queue'));
+executionQueueMod.formatQueueSummary = () => null;
+
+// ── 上述 patch 完成後才 require handler，讓 handler 拿到已 patch 的版本 ──
 const handler = require(join(SCRIPTS_LIB, 'session-start-handler'));
 const { buildBanner, buildStartOutput, buildPluginContext } = handler;
 
