@@ -35,43 +35,42 @@ function runHealthCheck() {
   };
 }
 
+// ── 共用 lazy cache（所有 describe 共用同一次 spawn 結果）──
+let _sharedResult;
+let _sharedParsed;
+
+function getSharedResult() {
+  if (!_sharedResult) {
+    _sharedResult = runHealthCheck();
+  }
+  return _sharedResult;
+}
+
+function getSharedParsed() {
+  if (!_sharedParsed) {
+    _sharedParsed = JSON.parse(getSharedResult().stdout);
+  }
+  return _sharedParsed;
+}
+
 // ══════════════════════════════════════════════════════════════════
 // Feature 6: 輸出格式驗證
 // ══════════════════════════════════════════════════════════════════
 
 describe('Feature 6：輸出格式驗證', () => {
-  // 只執行一次，讓所有測試共用結果
-  let result;
-  let parsed;
-
-  // 執行腳本（共用結果）
-  function getResult() {
-    if (!result) {
-      result = runHealthCheck();
-    }
-    return result;
-  }
-
-  function getParsed() {
-    if (!parsed) {
-      parsed = JSON.parse(getResult().stdout);
-    }
-    return parsed;
-  }
-
   test('Scenario 正常 — stdout 是合法的 JSON 字串', () => {
-    const { stdout } = getResult();
+    const { stdout } = getSharedResult();
     expect(() => JSON.parse(stdout)).not.toThrow();
-  });
+  }, 15_000); // 首次呼叫 runHealthCheck spawn 子進程，需要 7-10 秒
 
   test('Scenario 正常 — 頂層物件包含 version 欄位（string）', () => {
-    const output = getParsed();
+    const output = getSharedParsed();
     expect(typeof output.version).toBe('string');
     expect(output.version.length).toBeGreaterThan(0);
   });
 
   test('Scenario 正常 — 頂層物件包含 timestamp 欄位（ISO 8601）', () => {
-    const output = getParsed();
+    const output = getSharedParsed();
     expect(typeof output.timestamp).toBe('string');
     // 驗證 ISO 8601 格式
     const d = new Date(output.timestamp);
@@ -79,29 +78,29 @@ describe('Feature 6：輸出格式驗證', () => {
   });
 
   test('Scenario 正常 — 頂層物件包含 checks 欄位（array）', () => {
-    const output = getParsed();
+    const output = getSharedParsed();
     expect(Array.isArray(output.checks)).toBe(true);
   });
 
   test('Scenario 正常 — 頂層物件包含 findings 欄位（array）', () => {
-    const output = getParsed();
+    const output = getSharedParsed();
     expect(Array.isArray(output.findings)).toBe(true);
   });
 
   test('Scenario 正常 — 頂層物件包含 summary 欄位（object）', () => {
-    const output = getParsed();
+    const output = getSharedParsed();
     expect(typeof output.summary).toBe('object');
     expect(output.summary).not.toBeNull();
   });
 
   test('Scenario checks — checks 陣列長度與 runAllChecks 定義一致', () => {
     const { HEALTH_CHECK_COUNT } = require('../helpers/counts');
-    const output = getParsed();
+    const output = getSharedParsed();
     expect(output.checks.length).toBe(HEALTH_CHECK_COUNT);
   });
 
   test('Scenario checks — 包含所有 25 個偵測項目', () => {
-    const output = getParsed();
+    const output = getSharedParsed();
     const names = output.checks.map((c) => c.name);
     expect(names).toContain('phantom-events');
     expect(names).toContain('dead-exports');
@@ -129,7 +128,7 @@ describe('Feature 6：輸出格式驗證', () => {
   });
 
   test('Scenario checks — 每個 check 包含 name、passed、findingsCount', () => {
-    const output = getParsed();
+    const output = getSharedParsed();
     for (const c of output.checks) {
       expect(typeof c.name).toBe('string');
       expect(typeof c.passed).toBe('boolean');
@@ -138,7 +137,7 @@ describe('Feature 6：輸出格式驗證', () => {
   });
 
   test('Scenario findings — 每筆 finding 包含必要欄位', () => {
-    const output = getParsed();
+    const output = getSharedParsed();
     const validChecks = new Set([
       'phantom-events', 'dead-exports', 'doc-code-drift', 'unused-paths',
       'duplicate-logic', 'platform-drift', 'doc-staleness', 'os-tools',
@@ -160,7 +159,7 @@ describe('Feature 6：輸出格式驗證', () => {
   });
 
   test('Scenario summary — 包含 total、errors、warnings、infos、passed', () => {
-    const { summary } = getParsed();
+    const { summary } = getSharedParsed();
     expect(typeof summary.total).toBe('number');
     expect(typeof summary.errors).toBe('number');
     expect(typeof summary.warnings).toBe('number');
@@ -169,7 +168,7 @@ describe('Feature 6：輸出格式驗證', () => {
   });
 
   test('Scenario summary — summary 數字與 findings 陣列一致', () => {
-    const output = getParsed();
+    const output = getSharedParsed();
     const { findings, summary } = output;
 
     const errors   = findings.filter((f) => f.severity === 'error').length;
@@ -183,7 +182,7 @@ describe('Feature 6：輸出格式驗證', () => {
   });
 
   test('Scenario summary — passed 只看 errors（warnings/infos 不影響）', () => {
-    const output = getParsed();
+    const output = getSharedParsed();
     const { findings, summary } = output;
     const hasErrors = findings.some(f => f.severity === 'error');
     if (hasErrors) {
@@ -197,7 +196,7 @@ describe('Feature 6：輸出格式驗證', () => {
     const { readFileSync } = require('fs');
     const pluginJsonPath = path.join(SCRIPTS_DIR, '..', 'plugin.json');
     const pluginJson = JSON.parse(readFileSync(pluginJsonPath, 'utf8'));
-    const output = getParsed();
+    const output = getSharedParsed();
     expect(output.version).toBe(pluginJson.version);
   });
 });
@@ -206,28 +205,21 @@ describe('Feature 6：輸出格式驗證', () => {
 // Feature 7: Exit code 行為
 // ══════════════════════════════════════════════════════════════════
 
-// Feature 7 lazy 快取（只執行一次 spawn）
-let f7Result;
-function getF7Result() {
-  if (!f7Result) f7Result = runHealthCheck();
-  return f7Result;
-}
-
 describe('Feature 7：Exit code 行為', () => {
   test('Scenario — exit code 與 summary.passed 一致', () => {
-    const result = getF7Result();
-    const output = JSON.parse(result.stdout);
+    const result = getSharedResult();
+    const output = getSharedParsed();
 
     if (output.summary.passed) {
       expect(result.exitCode).toBe(0);
     } else {
       expect(result.exitCode).toBe(1);
     }
-  });
+  }, 15_000); // runHealthCheck spawn 子進程跑 25 項檢查，需要 7-10 秒
 
   test('Scenario — 只有 error 級別的 finding 才導致 exit 1', () => {
-    const result = getF7Result();
-    const output = JSON.parse(result.stdout);
+    const result = getSharedResult();
+    const output = getSharedParsed();
 
     const hasErrors = output.findings.some(f => f.severity === 'error');
     if (hasErrors) {
@@ -239,20 +231,20 @@ describe('Feature 7：Exit code 行為', () => {
   });
 
   test('Scenario — exit code 0 時 passed 為 true 且無 error', () => {
-    const result = getF7Result();
+    const result = getSharedResult();
     if (result.exitCode === 0) {
-      const output = JSON.parse(result.stdout);
+      const output = getSharedParsed();
       expect(output.summary.passed).toBe(true);
       expect(output.summary.errors).toBe(0);
     } else {
       // exit 1 時 passed 為 false
-      const output = JSON.parse(result.stdout);
+      const output = getSharedParsed();
       expect(output.summary.passed).toBe(false);
     }
   });
 
   test('Scenario — stdout 不為空（即使有錯誤也有輸出）', () => {
-    const result = getF7Result();
+    const result = getSharedResult();
     expect(result.stdout.length).toBeGreaterThan(0);
   });
 });
@@ -261,24 +253,16 @@ describe('Feature 7：Exit code 行為', () => {
 // 真實 codebase 執行驗證
 // ══════════════════════════════════════════════════════════════════
 
-// 真實 codebase lazy 快取（只執行一次 spawn）
-let realResult;
-function getRealResult() {
-  if (!realResult) realResult = runHealthCheck();
-  return realResult;
-}
-
 describe('真實 codebase 執行驗證', () => {
   test('在真實 codebase 執行不拋出非預期例外', () => {
-    const result = getRealResult();
+    const result = getSharedResult();
     // 無論有無 findings，stdout 都應是合法 JSON
     expect(() => JSON.parse(result.stdout)).not.toThrow();
-  });
+  }, 15_000); // 首次呼叫 runHealthCheck spawn 子進程，需要 7-10 秒
 
   test('所有 check 都成功執行（findingsCount 為數字）', () => {
     const { HEALTH_CHECK_COUNT } = require('../helpers/counts');
-    const result = getRealResult();
-    const output = JSON.parse(result.stdout);
+    const output = getSharedParsed();
     expect(output.checks.length).toBe(HEALTH_CHECK_COUNT);
     for (const c of output.checks) {
       expect(Number.isInteger(c.findingsCount)).toBe(true);
@@ -287,44 +271,38 @@ describe('真實 codebase 執行驗證', () => {
   });
 
   test('phantom-events check 有執行（存在於 checks 陣列中）', () => {
-    const result = getRealResult();
-    const output = JSON.parse(result.stdout);
+    const output = getSharedParsed();
     const check = output.checks.find((c) => c.name === 'phantom-events');
     expect(check).toBeDefined();
     expect(typeof check.passed).toBe('boolean');
   });
 
   test('dead-exports check 有執行', () => {
-    const result = getRealResult();
-    const output = JSON.parse(result.stdout);
+    const output = getSharedParsed();
     const check = output.checks.find((c) => c.name === 'dead-exports');
     expect(check).toBeDefined();
   });
 
   test('doc-code-drift check 有執行', () => {
-    const result = getRealResult();
-    const output = JSON.parse(result.stdout);
+    const output = getSharedParsed();
     const check = output.checks.find((c) => c.name === 'doc-code-drift');
     expect(check).toBeDefined();
   });
 
   test('unused-paths check 有執行', () => {
-    const result = getRealResult();
-    const output = JSON.parse(result.stdout);
+    const output = getSharedParsed();
     const check = output.checks.find((c) => c.name === 'unused-paths');
     expect(check).toBeDefined();
   });
 
   test('duplicate-logic check 有執行', () => {
-    const result = getRealResult();
-    const output = JSON.parse(result.stdout);
+    const output = getSharedParsed();
     const check = output.checks.find((c) => c.name === 'duplicate-logic');
     expect(check).toBeDefined();
   });
 
   test('doc-staleness check 有執行', () => {
-    const result = getRealResult();
-    const output = JSON.parse(result.stdout);
+    const output = getSharedParsed();
     const check = output.checks.find((c) => c.name === 'doc-staleness');
     expect(check).toBeDefined();
     expect(typeof check.passed).toBe('boolean');

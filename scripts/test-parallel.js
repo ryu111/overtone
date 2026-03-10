@@ -33,29 +33,34 @@ const CHILD_ENV = {
 
 // 已知重量級檔案（ms，來自實測）——定期用 --calibrate 更新
 const KNOWN_WEIGHTS = {
-  'tests/unit/session-start-handler.test.js': 10302,
-  'tests/unit/session-end-handler.test.js': 9265,
-  'tests/integration/session-start.test.js': 6322,
-  'tests/integration/health-check.test.js': 3743,
-  'tests/integration/platform-alignment-session-end.test.js': 3577,
-  'tests/e2e/smoke.test.js': 2837,
-  'tests/integration/os-scripts.test.js': 2388,
-  'tests/integration/pre-compact.test.js': 2269,
-  'tests/unit/guard-system.test.js': 1953,
-  'tests/unit/health-check.test.js': 1722,
-  'tests/e2e/guard-system-e2e.test.js': 1393,
-  'tests/integration/feedback-loop.test.js': 1342,
-  'tests/unit/health-check-internalization.test.js': 1332,
-  'tests/integration/agent-on-stop.test.js': 1331,
-  'tests/unit/health-check-os-tools.test.js': 1307,
-  'tests/e2e/full-workflow.test.js': 1294,
-  'tests/unit/health-check-proactive.test.js': 1256,
-  'tests/e2e/secure-workflow.test.js': 1124,
-  'tests/unit/dead-code-scanner.test.js': 1108,
-  'tests/integration/gh-check.test.js': 1104,
-  'tests/e2e/workflow-lifecycle.test.js': 1053,
-  'tests/e2e/standard-workflow.test.js': 1023,
-  'tests/unit/websocket.test.js': 1007,
+  'tests/e2e/smoke.test.js': 9930,
+  'tests/unit/session-start-handler.test.js': 9870,
+  'tests/unit/health-check.test.js': 8406,
+  'tests/unit/health-check-internalization.test.js': 7698,
+  'tests/unit/health-check-os-tools.test.js': 7591,
+  'tests/integration/session-start.test.js': 6821,
+  'tests/integration/health-check.test.js': 6789,
+  'tests/integration/platform-alignment-session-end.test.js': 6153,
+  'tests/integration/pre-compact.test.js': 2388,
+  'tests/unit/health-check-proactive.test.js': 2369,
+  'tests/integration/os-scripts.test.js': 2362,
+  'tests/integration/feedback-loop.test.js': 2235,
+  'tests/e2e/full-workflow.test.js': 1814,
+  'tests/e2e/guard-system-e2e.test.js': 1665,
+  'tests/integration/agent-on-stop.test.js': 1615,
+  'tests/unit/guard-system.test.js': 1479,
+  'tests/integration/evolution-fix.test.js': 1382,
+  'tests/e2e/secure-workflow.test.js': 1372,
+  'tests/unit/statusline.test.js': 1316,
+  'tests/e2e/standard-workflow.test.js': 1293,
+  'tests/e2e/workflow-lifecycle.test.js': 1264,
+  'tests/integration/parallel-convergence-gate.test.js': 1216,
+  'tests/integration/gh-check.test.js': 1158,
+  'tests/unit/dead-code-scanner.test.js': 1147,
+  'tests/integration/baseline-tracker.test.js': 1103,
+  'tests/e2e/quick-workflow.test.js': 1096,
+  'tests/unit/hook-timing.test.js': 1090,
+  'tests/unit/websocket.test.js': 1012,
 };
 
 // 預設權重（未知檔案）
@@ -63,13 +68,17 @@ const DEFAULT_WEIGHT = 300;
 
 // 互斥組：同組 sequential 檔案在同一 bun test 進程中串行（避免 I/O 競爭）
 // 不在任何組中的 sequential 檔案各自獨立進程
+//
+// 方案 B 優化（2026-03-10）：
+//   compact-frequency 和 principles 已移出互斥組：
+//   - health-check-compact-frequency.test.js：只呼叫 checkCompactFrequency，用獨立 tmp 目錄，無全域狀態依賴
+//   - health-check-principles.test.js：只呼叫 checkClosedLoop/checkRecoveryStrategy/checkCompletionGap，各用 tmp 目錄
+//   移出後它們在 Phase 2 作為獨立 @sequential 進程並行執行，不再佔用互斥組時間。
 const SEQUENTIAL_GROUPS = {
   'health-check': [
     'tests/unit/health-check.test.js',
     'tests/unit/health-check-os-tools.test.js',
-    'tests/unit/health-check-compact-frequency.test.js',
     'tests/unit/health-check-proactive.test.js',
-    'tests/unit/health-check-principles.test.js',
     'tests/unit/health-check-internalization.test.js',
     'tests/integration/health-check.test.js',
   ],
@@ -84,7 +93,7 @@ const SEQUENTIAL_FILES = new Set([
   'tests/integration/dashboard-pid.test.js',
   'tests/integration/health-check.test.js',
   'tests/integration/platform-alignment-post-failure.test.js',
-  // unit (health-check 系列共用全域狀態)
+  // unit (health-check 系列 — compact-frequency 和 principles 已不需互斥，但仍需 @sequential)
   'tests/unit/health-check.test.js',
   'tests/unit/health-check-os-tools.test.js',
   'tests/unit/health-check-compact-frequency.test.js',
@@ -125,6 +134,7 @@ function hasSequentialMarker(relativePath) {
 const args = process.argv.slice(2);
 const verbose = args.includes('--verbose');
 const calibrate = args.includes('--calibrate');
+const skipSlow = args.includes('--skip-slow');
 const workerOverride = args.find(a => a.startsWith('--workers='));
 const cpuCount = cpus().length;
 const workerCount = workerOverride
@@ -217,33 +227,104 @@ async function runParallel() {
   const sequentialFiles = allFiles.filter(f => hasSequentialMarker(f) || SEQUENTIAL_FILES.has(f));
   const parallelFiles = allFiles.filter(f => !sequentialFiles.includes(f));
 
-  const workers = distributeFiles(parallelFiles, workerCount);
+  // --skip-slow：跳過互斥組中的檔案（加速日常開發迭代）
+  const slowFiles = new Set(Object.values(SEQUENTIAL_GROUPS).flat());
+  const skippedCount = skipSlow ? allFiles.filter(f => slowFiles.has(f)).length : 0;
 
-  console.log(`CPU: ${cpuCount} 核心 | Workers: ${workerCount} | 測試檔案: ${allFiles.length}`);
+  console.log(`CPU: ${cpuCount} 核心 | Workers: ${workerCount} | 測試檔案: ${allFiles.length - skippedCount}`);
+  if (skipSlow) {
+    console.log(`⏭️  跳過互斥組: ${skippedCount} 個慢速測試`);
+  }
   if (markerCount > 0) {
-    console.log(`偵測到 @sequential marker: ${markerCount} 個`);
+    console.log(`偵測到 @sequential marker: ${markerCount - skippedCount} 個`);
   }
-  if (sequentialFiles.length > 0) {
-    const groupCount = Object.keys(SEQUENTIAL_GROUPS).length;
-    const ungrouped = sequentialFiles.filter(f => !Object.values(SEQUENTIAL_GROUPS).flat().includes(f)).length;
-    console.log(`隔離測試: ${sequentialFiles.length} 個（${groupCount} 互斥組 + ${ungrouped} 獨立）`);
-  }
-
-  if (verbose) {
-    for (let i = 0; i < workers.length; i++) {
-      const w = workers[i];
-      console.log(`  Worker ${i + 1}: ${w.files.length} 檔案, 預估 ${w.totalWeight}ms`);
-    }
-    console.log('');
+  if (sequentialFiles.length - skippedCount > 0) {
+    const groupCount = skipSlow ? 0 : Object.keys(SEQUENTIAL_GROUPS).length;
+    const ungrouped = sequentialFiles.filter(f => !slowFiles.has(f)).length;
+    console.log(`隔離測試: ${sequentialFiles.length - skippedCount} 個（${groupCount} 互斥組 + ${ungrouped} 獨立）`);
   }
 
   const start = performance.now();
 
-  // 啟動所有並行 worker
-  const promises = workers
+  // 收集 sequential 進程定義（互斥組 + 獨立檔案）
+  const groupedFiles = new Set();
+  const seqEntries = []; // { files, group? }
+
+  for (const [groupName, groupFiles] of Object.entries(SEQUENTIAL_GROUPS)) {
+    if (skipSlow) {
+      // --skip-slow：互斥組全部標記為已處理（跳過）
+      groupFiles.forEach(f => groupedFiles.add(f));
+      continue;
+    }
+    const matched = sequentialFiles.filter(f => groupFiles.includes(f));
+    if (matched.length === 0) continue;
+    matched.forEach(f => groupedFiles.add(f));
+    seqEntries.push({ files: matched, group: groupName });
+  }
+  for (const f of sequentialFiles) {
+    if (groupedFiles.has(f)) continue;
+    seqEntries.push({ files: [f] });
+  }
+
+  const parallelWorkers = distributeFiles(parallelFiles, workerCount);
+
+  // Phase 1：parallel workers + 互斥組同時啟動
+  // 互斥組是最慢的單一進程（~29s），重疊可省最多時間
+  const phase1 = [];
+
+  // 並行 worker
+  parallelWorkers
     .filter(w => w.files.length > 0)
-    .map((w, i) => {
+    .forEach((w, i) => {
       const proc = Bun.spawn(['bun', 'test', ...w.files], {
+        cwd: PROJECT_ROOT,
+        env: CHILD_ENV,
+        stdout: 'pipe',
+        stderr: 'pipe',
+      });
+
+      phase1.push((async () => {
+        const stdout = await new Response(proc.stdout).text();
+        const stderr = await new Response(proc.stderr).text();
+        const exitCode = await proc.exited;
+        return { index: i, stdout, stderr, exitCode, files: w.files };
+      })());
+    });
+
+  // 互斥組進程（與 parallel 同時啟動）
+  const groupEntries = seqEntries.filter(e => e.group);
+  for (const entry of groupEntries) {
+    const idx = phase1.length;
+    const proc = Bun.spawn(['bun', 'test', '--max-concurrency=1', ...entry.files], {
+      cwd: PROJECT_ROOT,
+      env: CHILD_ENV,
+      stdout: 'pipe',
+      stderr: 'pipe',
+    });
+
+    phase1.push((async () => {
+      const stdout = await new Response(proc.stdout).text();
+      const stderr = await new Response(proc.stderr).text();
+      const exitCode = await proc.exited;
+      return { index: idx, stdout, stderr, exitCode, files: entry.files, sequential: true, group: entry.group };
+    })());
+  }
+
+  // Phase 2：parallel workers 結束後立刻啟動獨立 sequential（不等互斥組完成）
+  const independentEntries = seqEntries.filter(e => !e.group);
+  const SEQ_CONCURRENCY = Math.max(2, Math.floor(workerCount / 3));
+
+  // 等 parallel workers 結束（釋放 CPU），但互斥組繼續跑
+  const parallelWorkerPromises = phase1.slice(0, parallelWorkers.filter(w => w.files.length > 0).length);
+  const groupPromises = phase1.slice(parallelWorkerPromises.length);
+  const parallelResults = await Promise.all(parallelWorkerPromises);
+
+  // 啟動獨立 sequential（現在 CPU 已釋放）
+  const phase2Results = [];
+  for (let i = 0; i < independentEntries.length; i += SEQ_CONCURRENCY) {
+    const batch = independentEntries.slice(i, i + SEQ_CONCURRENCY);
+    const batchResults = await Promise.all(batch.map(entry => {
+      const proc = Bun.spawn(['bun', 'test', '--max-concurrency=1', ...entry.files], {
         cwd: PROJECT_ROOT,
         env: CHILD_ENV,
         stdout: 'pipe',
@@ -254,58 +335,15 @@ async function runParallel() {
         const stdout = await new Response(proc.stdout).text();
         const stderr = await new Response(proc.stderr).text();
         const exitCode = await proc.exited;
-        return { index: i, stdout, stderr, exitCode, files: w.files };
+        return { index: phase1.length + phase2Results.length, stdout, stderr, exitCode, files: entry.files, sequential: true };
       })();
-    });
-
-  const parallelResults = await Promise.all(promises);
-
-  // sequential 檔案分組：同組在同一進程串行（避免 I/O 競爭），不同組之間並行
-  const groupedFiles = new Set();
-  const seqPromises = [];
-
-  // 先處理互斥組：每組一個 bun test 進程
-  for (const [groupName, groupFiles] of Object.entries(SEQUENTIAL_GROUPS)) {
-    const matched = sequentialFiles.filter(f => groupFiles.includes(f));
-    if (matched.length === 0) continue;
-    matched.forEach(f => groupedFiles.add(f));
-
-    const proc = Bun.spawn(['bun', 'test', '--max-concurrency=1', ...matched], {
-      cwd: PROJECT_ROOT,
-      env: CHILD_ENV,
-      stdout: 'pipe',
-      stderr: 'pipe',
-    });
-
-    seqPromises.push((async () => {
-      const stdout = await new Response(proc.stdout).text();
-      const stderr = await new Response(proc.stderr).text();
-      const exitCode = await proc.exited;
-      return { index: workers.length + seqPromises.length, stdout, stderr, exitCode, files: matched, sequential: true, group: groupName };
-    })());
+    }));
+    phase2Results.push(...batchResults);
   }
 
-  // 未分組的 sequential 檔案各自獨立進程
-  for (const f of sequentialFiles) {
-    if (groupedFiles.has(f)) continue;
-    const idx = seqPromises.length;
-    const proc = Bun.spawn(['bun', 'test', '--max-concurrency=1', f], {
-      cwd: PROJECT_ROOT,
-      env: CHILD_ENV,
-      stdout: 'pipe',
-      stderr: 'pipe',
-    });
-
-    seqPromises.push((async () => {
-      const stdout = await new Response(proc.stdout).text();
-      const stderr = await new Response(proc.stderr).text();
-      const exitCode = await proc.exited;
-      return { index: workers.length + idx, stdout, stderr, exitCode, files: [f], sequential: true };
-    })());
-  }
-
-  const seqResults = await Promise.all(seqPromises);
-  const results = [...parallelResults, ...seqResults];
+  // 等互斥組完成
+  const groupResults = await Promise.all(groupPromises);
+  const results = [...parallelResults, ...groupResults, ...phase2Results];
 
   const elapsed = Math.round(performance.now() - start);
 

@@ -13,6 +13,17 @@ const { mkdirSync, rmSync } = require('fs');
 const { join } = require('path');
 const { homedir } = require('os');
 const { SCRIPTS_LIB } = require('../helpers/paths');
+
+// ── Mock session-cleanup 避免掃描 5 萬+ 目錄（~1s/call × 31 tests = 16s）──
+// 必須在 require session-end-handler 之前先 patch，因為 Node/Bun module cache
+// 讓 session-end-handler 拿到已 patch 的版本。
+const sessionCleanupMod = require(join(SCRIPTS_LIB, 'session-cleanup'));
+sessionCleanupMod.runCleanup = () => ({
+  sessions: { cleaned: 0, errors: [] },
+  orphanFiles: { cleaned: 0, errors: [] },
+  globalDirs: { cleaned: 0, errors: [] },
+});
+
 const { handleSessionEnd, resolveSessionResult } = require(join(SCRIPTS_LIB, 'session-end-handler'));
 const instinct = require(join(SCRIPTS_LIB, 'knowledge/instinct'));
 

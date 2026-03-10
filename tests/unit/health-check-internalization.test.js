@@ -21,8 +21,8 @@ const { SCRIPTS_DIR } = require('../helpers/paths');
 
 const {
   checkInternalizationIndex,
-  runAllChecks,
 } = require(join(SCRIPTS_DIR, 'health-check'));
+const { getCachedRunAllChecks } = require('../helpers/health-check-cache');
 
 // ── 輔助函式 ──
 
@@ -220,12 +220,12 @@ describe('checkInternalizationIndex', () => {
 describe('runAllChecks — 第 17 項 internalization-index', () => {
   test('Scenario 6-6: runAllChecks 輸出包含 internalization-index，項數與定義一致', () => {
     const { HEALTH_CHECK_COUNT } = require('../helpers/counts');
-    const { checks } = runAllChecks();
+    const { checks } = getCachedRunAllChecks();
 
     expect(Array.isArray(checks)).toBe(true);
     expect(checks.length).toBe(HEALTH_CHECK_COUNT);
 
     const names = checks.map((c) => c.name);
     expect(names).toContain('internalization-index');
-  });
+  }, 15_000); // 首次呼叫（如尚未 cache）需要 7-10 秒，後續命中 cache 極快
 });

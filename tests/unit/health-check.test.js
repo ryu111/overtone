@@ -26,7 +26,6 @@ const {
   checkDocStaleness,
   checkTestGrowth,
   checkSpecsDirectoryStructure,
-  runAllChecks,
   collectJsFiles,
   collectMdFiles,
   parseModuleExportKeys,
@@ -38,8 +37,9 @@ const {
   DOCS_DIR,
   PROJECT_ROOT,
 } = require(join(SCRIPTS_DIR, 'health-check'));
+const { getCachedRunAllChecks } = require('../helpers/health-check-cache');
 
-// ── 效能：lazy cache 避免重複目錄掃描 ──
+// ── 效能：lazy cache 避免重複目錄掃描（個別 check 函式用）──
 const _cache = new Map();
 function cached(fn) {
   if (!_cache.has(fn)) _cache.set(fn, fn());
@@ -543,19 +543,19 @@ describe('checkDocStaleness', () => {
 
 describe('runAllChecks', () => {
   test('回傳 { checks, findings } 物件', () => {
-    const result = cached(runAllChecks);
+    const result = getCachedRunAllChecks();
     expect(result).toBeDefined();
     expect(Array.isArray(result.checks)).toBe(true);
     expect(Array.isArray(result.findings)).toBe(true);
-  }, 15_000); // runAllChecks 掃描 25 項（含 filesystem I/O），需要 7-10 秒
+  }, 15_000); // 首次呼叫（如尚未 cache）需要 7-10 秒，後續命中 cache 極快
 
   test('checks 陣列長度至少為 12（含 F1/F2/F3 三個主動偵測）', () => {
-    const { checks } = cached(runAllChecks);
+    const { checks } = getCachedRunAllChecks();
     expect(checks.length).toBeGreaterThanOrEqual(12);
   });
 
   test('checks 包含所有 12 個偵測項目名稱', () => {
-    const { checks } = cached(runAllChecks);
+    const { checks } = getCachedRunAllChecks();
     const names = checks.map((c) => c.name);
     expect(names).toContain('phantom-events');
     expect(names).toContain('dead-exports');
@@ -572,7 +572,7 @@ describe('runAllChecks', () => {
   });
 
   test('每個 check 項目包含 name、passed、findingsCount', () => {
-    const { checks } = cached(runAllChecks);
+    const { checks } = getCachedRunAllChecks();
     for (const c of checks) {
       expect(typeof c.name).toBe('string');
       expect(typeof c.passed).toBe('boolean');
@@ -581,7 +581,7 @@ describe('runAllChecks', () => {
   });
 
   test('check.findingsCount 與實際 findings 數量一致', () => {
-    const { checks, findings } = cached(runAllChecks);
+    const { checks, findings } = getCachedRunAllChecks();
     for (const c of checks) {
       const actual = findings.filter((f) => f.check === c.name).length;
       expect(c.findingsCount).toBe(actual);
@@ -589,7 +589,7 @@ describe('runAllChecks', () => {
   });
 
   test('check.passed 當且僅當 findingsCount === 0 時為 true', () => {
-    const { checks } = cached(runAllChecks);
+    const { checks } = getCachedRunAllChecks();
     for (const c of checks) {
       if (c.findingsCount === 0) {
         expect(c.passed).toBe(true);
@@ -600,7 +600,7 @@ describe('runAllChecks', () => {
   });
 
   test('所有 finding 的 severity 只能是 error/warning/info', () => {
-    const { findings } = cached(runAllChecks);
+    const { findings } = getCachedRunAllChecks();
     const valid = new Set(['error', 'warning', 'info']);
     for (const f of findings) {
       expect(valid.has(f.severity)).toBe(true);
@@ -608,7 +608,7 @@ describe('runAllChecks', () => {
   });
 
   test('所有 finding 的 check 只能是已知 25 個 check 名稱之一', () => {
-    const { findings } = cached(runAllChecks);
+    const { findings } = getCachedRunAllChecks();
     const validChecks = new Set([
       'phantom-events', 'dead-exports', 'doc-code-drift', 'unused-paths',
       'duplicate-logic', 'platform-drift', 'doc-staleness', 'os-tools',

@@ -14,6 +14,7 @@ const { join } = path;
 const { writeFileSync, mkdirSync, unlinkSync, existsSync } = require('fs');
 const { SCRIPTS_DIR } = require('../helpers/paths');
 const { checkOsTools } = require(join(SCRIPTS_DIR, 'health-check'));
+const { getCachedRunAllChecks } = require('../helpers/health-check-cache');
 
 // heartbeat PID 檔路徑（與 paths.js 一致）
 const HEARTBEAT_PID_FILE = path.join(os.homedir(), '.overtone', 'heartbeat.pid');
@@ -204,11 +205,10 @@ describe('checkOsTools: heartbeat daemon 狀態偵測', () => {
 
   test('Feature 5 Scenario 4: health-check 的 check 項目數量與 runAllChecks 定義一致', () => {
     const { HEALTH_CHECK_COUNT } = require('../helpers/counts');
-    const { runAllChecks } = require(join(SCRIPTS_DIR, 'health-check'));
-    const { checks } = runAllChecks();
+    const { checks } = getCachedRunAllChecks();
     expect(checks.length).toBe(HEALTH_CHECK_COUNT);
     // screencapture 和 heartbeat 屬於 checkOsTools 內部擴展，不增加 check item
     const osToolsCheck = checks.find(c => c.name === 'os-tools');
     expect(osToolsCheck).toBeDefined();
-  });
+  }, 15_000); // getCachedRunAllChecks() 首次呼叫需要 7-10 秒，後續命中 cache 極快
 });

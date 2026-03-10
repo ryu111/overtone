@@ -20,9 +20,9 @@ const {
   checkComponentChain,
   checkDataQuality,
   checkQualityTrends,
-  runAllChecks,
   PLUGIN_ROOT,
 } = require(join(SCRIPTS_DIR, 'health-check'));
+const { getCachedRunAllChecks } = require('../helpers/health-check-cache');
 
 // ── 效能：lazy cache 避免重複目錄掃描 ──
 const _cache = new Map();
@@ -299,10 +299,10 @@ describe('checkQualityTrends', () => {
 
   // Scenario F3-4: 傳入不存在的 projectRoot 不拋出例外
   test('Scenario F3-4: 不存在的 projectRoot 不拋出例外', () => {
+    let findings;
     expect(() => {
-      checkQualityTrends('/nonexistent/path/xyz');
+      findings = checkQualityTrends('/nonexistent/path/xyz');
     }).not.toThrow();
-    const findings = checkQualityTrends('/nonexistent/path/xyz');
     expect(Array.isArray(findings)).toBe(true);
     // 無學習資料時應回傳空陣列
     expect(findings.length).toBe(0);
@@ -324,12 +324,12 @@ describe('checkQualityTrends', () => {
 describe('runAllChecks — 包含 F1/F2/F3 新增 check', () => {
   test('checks 陣列長度與 runAllChecks 定義一致', () => {
     const { HEALTH_CHECK_COUNT } = require('../helpers/counts');
-    const { checks } = cached(runAllChecks);
+    const { checks } = getCachedRunAllChecks();
     expect(checks.length).toBe(HEALTH_CHECK_COUNT);
-  });
+  }, 15_000); // getCachedRunAllChecks() 首次呼叫需要 7-10 秒，後續命中 cache 極快
 
   test('checks 包含所有偵測項目（含 3 個製作原則偵測）', () => {
-    const { checks } = cached(runAllChecks);
+    const { checks } = getCachedRunAllChecks();
     const names = checks.map((c) => c.name);
     expect(names).toContain('component-chain');
     expect(names).toContain('data-quality');
@@ -340,7 +340,7 @@ describe('runAllChecks — 包含 F1/F2/F3 新增 check', () => {
   });
 
   test('所有 finding 的 check 欄位包含所有 check 名稱', () => {
-    const { findings } = cached(runAllChecks);
+    const { findings } = getCachedRunAllChecks();
     const validChecks = new Set([
       'phantom-events', 'dead-exports', 'doc-code-drift', 'unused-paths',
       'duplicate-logic', 'platform-drift', 'doc-staleness', 'os-tools',
@@ -357,7 +357,7 @@ describe('runAllChecks — 包含 F1/F2/F3 新增 check', () => {
   });
 
   test('check.findingsCount 與實際 findings 數量一致（含新 check）', () => {
-    const { checks, findings } = cached(runAllChecks);
+    const { checks, findings } = getCachedRunAllChecks();
     for (const c of checks) {
       const actual = findings.filter((f) => f.check === c.name).length;
       expect(c.findingsCount).toBe(actual);

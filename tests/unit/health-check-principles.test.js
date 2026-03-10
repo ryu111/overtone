@@ -314,8 +314,8 @@ describe('checkCompletionGap', () => {
   // Scenario C-5: 目錄不存在時不拋出例外
   test('Scenario C-5: 目錄不存在時不拋出例外，回傳空陣列', () => {
     const nonExistDir = path.join(os.tmpdir(), 'ot-nonexist-skills-xyz-12345');
-    expect(() => checkCompletionGap(nonExistDir)).not.toThrow();
-    const findings = checkCompletionGap(nonExistDir);
+    let findings;
+    expect(() => { findings = checkCompletionGap(nonExistDir); }).not.toThrow();
     expect(Array.isArray(findings)).toBe(true);
     expect(findings.length).toBe(0);
   });
@@ -340,8 +340,8 @@ describe('checkCompletionGap', () => {
 
   // Scenario C-7: 真實 codebase skills 目錄掃描不拋出例外
   test('Scenario C-7: 真實 codebase checkCompletionGap 不拋出例外', () => {
-    expect(() => checkCompletionGap()).not.toThrow();
-    const findings = checkCompletionGap();
+    let findings;
+    expect(() => { findings = checkCompletionGap(); }).not.toThrow();
     expect(Array.isArray(findings)).toBe(true);
     for (const f of findings) {
       expect(f.check).toBe('completion-gap');
