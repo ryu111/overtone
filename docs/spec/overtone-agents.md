@@ -2,7 +2,7 @@
 
 > 本文件是 [Overtone 規格文件](overtone.md) 的子文件。
 > 主題：18 個 agent 職責、Handoff 協定、BDD 整合
-> 版本：v0.17.7
+> 版本：v0.28.96
 
 ---
 

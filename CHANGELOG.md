@@ -2,6 +2,64 @@
 
 所有重要變更記錄於此文件。
 
+## [0.28.96] - 2026-03-10
+
+### 並行群組 Hook 阻擋邏輯修復
+
+#### 核心修復
+
+**pre-task-handler.js checkSkippedStages**
+- 新增第四參數 `parallelGroupsDef`，排除同群組 pending stage 的阻擋判斷
+- 使 RETRO + DOCS 等並行群組無互相阻擋
+
+#### 測試新增
+
+**pre-task-handler.test.js**（新增 5 個測試）
+- 同群組 stage 互不阻擋（DOCS ↔ RETRO）
+- 不同群組 stage 仍保持阻擋關係（DEV → DOCS）
+- REVIEW ↔ TEST（quality 群組）互不阻擋
+- 向後相容：未傳 parallelGroupsDef 時保持原有行為
+
+#### 技術原理
+
+並行群組定義於 registry.js 的 `parallelGroupDefs`，各 workflow 透過 `parallelGroups` 欄位引用。checkSkippedStages 現以此資訊排除「同群組」的 pending stage，確保真正的「前置必要條件」得以強制執行，而併行任務之間不互相阻擋。
+
+---
+
+## [0.28.95] - 2026-03-10
+
+### PM Workflow 選擇指引 + Visual Brainstorming 能力吸收
+
+#### Skill 知識注入
+
+**pm SKILL.md**
+- 新增 `workflow-selection-guide.md` reference 索引
+- 補充多次迭代佇列規則說明
+- PM workflow 複雜度判斷準則完備
+
+**thinking SKILL.md**
+- 新增 `visual-brainstorming.md` reference 索引
+- 補充視覺化伴侶與決策樹說明
+
+#### Agent 強化
+
+**product-manager agent**
+- frontmatter 修正：增加 thinking skill
+- 研究先行原則（📋 MUST）強制：提問前必研究
+- AskUserQuestion 使用規則硬化（⛔ NEVER 純文字選項）
+- 五層追問法 + MoSCoW 分類完整整合
+
+#### 文件整理
+
+- 新 spec 移至已完成：specs/features/completed/pm-workflow-selection-and-visual-brainstorming/
+
+#### 測試結果
+
+- 總測試數：4836 pass / 0 fail
+- Skill quality：pm 及 thinking domain 均達 C 級以上
+
+---
+
 ## [0.28.94] - 2026-03-10
 
 ### P0 Skill 品質改進 + Statusline 新功能

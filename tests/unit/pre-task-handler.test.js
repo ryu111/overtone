@@ -207,6 +207,111 @@ describe('checkSkippedStages', () => {
     expect(Array.isArray(result)).toBe(true);
     expect(result).toHaveLength(0);
   });
+
+  // ── 並行群組排除測試 ──────────────────────────────────────────────────────
+
+  test('同一並行群組的 pending stage 不算必要前置條件（DOCS 不被 RETRO 阻擋）', () => {
+    const stages = {
+      DEV:  { emoji: '💻', label: '開發', agent: 'developer' },
+      RETRO: { emoji: '🔁', label: '回顧', agent: 'retrospective' },
+      DOCS: { emoji: '📝', label: '文件', agent: 'doc-updater' },
+    };
+    const parallelGroupsDef = {
+      postdev: ['RETRO', 'DOCS'],
+    };
+    const currentState = {
+      stages: {
+        DEV:  { status: 'completed', result: 'pass' },
+        RETRO: { status: 'pending' },
+        DOCS: { status: 'pending' },
+      },
+    };
+    // DOCS 委派時 RETRO 是同群組，不應被列為必要前置
+    const result = checkSkippedStages(currentState, 'DOCS', stages, parallelGroupsDef);
+    expect(result).toHaveLength(0);
+  });
+
+  test('同一並行群組的 pending stage 不算前置條件（RETRO 不被 DOCS 阻擋）', () => {
+    const stages = {
+      DEV:  { emoji: '💻', label: '開發', agent: 'developer' },
+      RETRO: { emoji: '🔁', label: '回顧', agent: 'retrospective' },
+      DOCS: { emoji: '📝', label: '文件', agent: 'doc-updater' },
+    };
+    const parallelGroupsDef = {
+      postdev: ['RETRO', 'DOCS'],
+    };
+    const currentState = {
+      stages: {
+        DEV:  { status: 'completed', result: 'pass' },
+        RETRO: { status: 'pending' },
+        DOCS: { status: 'pending' },
+      },
+    };
+    // RETRO 委派時 DOCS 不在 RETRO 之前（RETRO 在 DOCS 之前），不影響此案例
+    // 但 RETRO 不應被任何同群組 stage 阻擋
+    const result = checkSkippedStages(currentState, 'RETRO', stages, parallelGroupsDef);
+    expect(result).toHaveLength(0);
+  });
+
+  test('不同群組的 pending stage 仍算必要前置條件（DOCS 被 DEV 阻擋）', () => {
+    const stages = {
+      DEV:  { emoji: '💻', label: '開發', agent: 'developer' },
+      RETRO: { emoji: '🔁', label: '回顧', agent: 'retrospective' },
+      DOCS: { emoji: '📝', label: '文件', agent: 'doc-updater' },
+    };
+    const parallelGroupsDef = {
+      postdev: ['RETRO', 'DOCS'],
+    };
+    const currentState = {
+      stages: {
+        DEV:  { status: 'pending' },  // DEV 未完成
+        RETRO: { status: 'pending' },
+        DOCS: { status: 'pending' },
+      },
+    };
+    // DEV 不在 postdev 群組，應該阻擋 DOCS
+    const result = checkSkippedStages(currentState, 'DOCS', stages, parallelGroupsDef);
+    expect(result.length).toBeGreaterThan(0);
+    expect(result.some(s => s.includes('DEV'))).toBe(true);
+    // RETRO 在同群組，不應出現在阻擋清單
+    expect(result.some(s => s.includes('RETRO'))).toBe(false);
+  });
+
+  test('quality 群組：REVIEW 不被 TEST 阻擋', () => {
+    const stages = {
+      DEV:  { emoji: '💻', label: '開發', agent: 'developer' },
+      REVIEW: { emoji: '🔍', label: '審查', agent: 'code-reviewer' },
+      TEST: { emoji: '🧪', label: '測試', agent: 'tester' },
+    };
+    const parallelGroupsDef = {
+      quality: ['REVIEW', 'TEST'],
+    };
+    const currentState = {
+      stages: {
+        DEV:  { status: 'completed', result: 'pass' },
+        REVIEW: { status: 'pending' },
+        TEST: { status: 'pending' },
+      },
+    };
+    const result = checkSkippedStages(currentState, 'REVIEW', stages, parallelGroupsDef);
+    expect(result).toHaveLength(0);
+  });
+
+  test('parallelGroupsDef 未傳時預設為 {} — 不影響非並行場景', () => {
+    const stages = {
+      PLAN: { emoji: '🏗️', label: '計劃', agent: 'planner' },
+      DEV:  { emoji: '💻', label: '開發', agent: 'developer' },
+    };
+    const currentState = {
+      stages: {
+        PLAN: { status: 'completed', result: 'pass' },
+        DEV:  { status: 'pending' },
+      },
+    };
+    // 不傳第四參數，向後相容
+    const result = checkSkippedStages(currentState, 'DEV', stages);
+    expect(result).toHaveLength(0);
+  });
 });
 
 // ── handlePreTask — 早期返回路徑 ─────────────────────────────────────────────

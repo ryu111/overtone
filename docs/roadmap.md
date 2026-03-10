@@ -1,6 +1,6 @@
 # Overtone Roadmap
 
-> 最後更新：2026-03-08 | 當前進度：Layer 3 完成開發驗證（L3.1-L3.7 ✅，L3.6 Acid Test standard workflow 完成，Skill Forge + Internalization 驗證待執行）| Plugin v0.28.89 | 4755 pass
+> 最後更新：2026-03-10 | 當前進度：Layer 3 完成開發驗證（L3.1-L3.7 ✅，L3.6 Acid Test standard workflow 完成，Skill Forge + Internalization 驗證待執行）| Plugin v0.28.96 | 4836 pass
 
 ## Layer 總覽
 
