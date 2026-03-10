@@ -661,7 +661,7 @@ describe('佇列進度顯示', () => {
     try { rmSync(tmpHome, { recursive: true, force: true }); } catch { /* 靜默 */ }
   });
 
-  it('有進行中和等待中項目時，Line 1 顯示 📦 1/1', () => {
+  it('有進行中和等待中項目時，Line 1 顯示 📦 名稱 1/2', () => {
     writeQueue(projectRoot, {
       items: [
         { name: 'A', workflow: 'quick', status: 'completed' },
@@ -675,13 +675,13 @@ describe('佇列進度顯示', () => {
     const result = runWithSessionAndCwd(projectRoot, { context_window: { used_percentage: 20 } });
     const plain = stripAnsi(result.stdout || '');
     const lines = plain.split('\n').filter(l => l.trim());
-    // 應顯示 📦 1/1（1 in_progress, 1 pending，completed 不計）
-    expect(lines[0]).toContain('📦 1/1');
+    // 應顯示 📦 B 1/2（進行中項目名稱 B，running=1，total=running+pending=2，completed 不計）
+    expect(lines[0]).toContain('📦 B 1/2');
     // Line 2 不應含佇列資訊
     expect(lines[1] || '').not.toContain('📦');
   });
 
-  it('只有進行中項目時 Line 1 顯示 📦 1/0', () => {
+  it('只有進行中項目時 Line 1 顯示 📦 名稱 1/1', () => {
     writeQueue(projectRoot, {
       items: [
         { name: 'A', workflow: 'quick', status: 'in_progress' },
@@ -694,7 +694,8 @@ describe('佇列進度顯示', () => {
     const result = runWithSessionAndCwd(projectRoot, { context_window: { used_percentage: 20 } });
     const plain = stripAnsi(result.stdout || '');
     const lines = plain.split('\n').filter(l => l.trim());
-    expect(lines[0]).toContain('📦 1/0');
+    // 顯示進行中項目名稱和計數（running/total），completed 不計
+    expect(lines[0]).toContain('📦 A 1/1');
   });
 
   it('只有等待中項目時 Line 1 顯示 📦 0/1', () => {
@@ -728,7 +729,7 @@ describe('佇列進度顯示', () => {
     expect(plain).not.toContain('📦');
   });
 
-  it('佇列只有 1 項 in_progress 時 Line 1 顯示 📦 1/0', () => {
+  it('佇列只有 1 項 in_progress 時 Line 1 顯示 📦 名稱 1/1', () => {
     writeQueue(projectRoot, {
       items: [
         { name: 'A', workflow: 'quick', status: 'in_progress' },
@@ -740,7 +741,8 @@ describe('佇列進度顯示', () => {
     const result = runWithSessionAndCwd(projectRoot, { context_window: { used_percentage: 20 } });
     const plain = stripAnsi(result.stdout || '');
     const lines = plain.split('\n').filter(l => l.trim());
-    expect(lines[0]).toContain('📦 1/0');
+    // 有 in_progress 項目時顯示項目名稱和計數（running/total）
+    expect(lines[0]).toContain('📦 A 1/1');
   });
 
   it('無佇列時（有 active workflow）不顯示 📦', () => {
@@ -767,7 +769,7 @@ describe('佇列進度顯示', () => {
     expect(plain).not.toContain('📦');
   });
 
-  it('running 數字使用 yellow ANSI，pending 使用 dim ANSI', () => {
+  it('進行中項目名稱使用 yellow ANSI，計數使用 dim ANSI', () => {
     writeQueue(projectRoot, {
       items: [
         { name: 'A', workflow: 'quick', status: 'in_progress' },
@@ -779,9 +781,9 @@ describe('佇列進度顯示', () => {
 
     const result = runWithSessionAndCwd(projectRoot, { context_window: { used_percentage: 20 } });
     const raw = result.stdout || '';
-    // yellow 色碼在 running 數字前
+    // yellow 色碼標記進行中項目名稱
     expect(raw).toContain('\x1b[33m');
-    // dim 色碼在 pending 數字前
+    // dim 色碼標記計數（running/total）
     expect(raw).toContain('\x1b[2m');
   });
 });
