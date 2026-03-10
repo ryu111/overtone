@@ -31,6 +31,14 @@ $GODOT --headless --path games/{slug} --export-release "Web" builds/html5/index.
 $GODOT --headless --path games/{slug} -s addons/gut/gut_cmdln.gd -gdir=res://tests/
 ```
 
+## 隔離原則
+
+⛔ **禁止修改全域 `~/.claude/`**：game skills 只在 `games/.claude/skills/` 內，不可建立 symlink 或複製到全域。
+⛔ **禁止修改 `~/.claude/scripts/lib/registry.js`**：game-studio workflow 已定義完成，後續遊戲開發不需要動全域。
+⛔ **禁止新增全域 agent/hook/skill**：遊戲相關知識全部放在 `games/.claude/` 下。
+
+知識來源：`games/.claude/skills/game-dev/` + `games/.claude/skills/game-publish/`
+
 ## 遊戲設計約束
 
 - 單局 ≤ 3 分鐘（廣告模型的前提）
