@@ -32,7 +32,8 @@ const dirsToClean = [TEST_PROJECT_ROOT];
 
 function makeSession(suffix) {
   const id = `test_bl_${suffix}_${TIMESTAMP}`;
-  const dir = join(homedir(), '.nova', 'sessions', id);
+  // per-project 架構：session 目錄在 TEST_PROJECT_ROOT 下
+  const dir = paths.sessionDir(TEST_PROJECT_ROOT, id);
   mkdirSync(dir, { recursive: true });
   sessionsToClean.push(dir);
   return { id, dir };
@@ -110,7 +111,7 @@ afterAll(() => {
 describe('computeSessionMetrics', () => {
   test('無 workflow state 時回傳 null', () => {
     const session = makeSession('no-state');
-    const result = baselineTracker.computeSessionMetrics(session.id);
+    const result = baselineTracker.computeSessionMetrics(TEST_PROJECT_ROOT, session.id);
     expect(result).toBeNull();
   });
 
@@ -118,7 +119,7 @@ describe('computeSessionMetrics', () => {
     const session = makeSession('complete');
     setupCompleteWorkflow(session, { durationMs: 30000, stageDurationMs: 5000 });
 
-    const metrics = baselineTracker.computeSessionMetrics(session.id);
+    const metrics = baselineTracker.computeSessionMetrics(TEST_PROJECT_ROOT, session.id);
     expect(metrics).not.toBeNull();
     expect(metrics.workflowType).toBe('quick');
     expect(metrics.duration).toBeGreaterThan(0);
@@ -132,7 +133,7 @@ describe('computeSessionMetrics', () => {
     const session = makeSession('retries');
     setupCompleteWorkflow(session, { failCount: 2, rejectCount: 1 });
 
-    const metrics = baselineTracker.computeSessionMetrics(session.id);
+    const metrics = baselineTracker.computeSessionMetrics(TEST_PROJECT_ROOT, session.id);
     expect(metrics.retryCount).toBe(3);
   });
 
@@ -151,7 +152,7 @@ describe('computeSessionMetrics', () => {
     };
     writeFileSync(join(session.dir, 'workflow.json'), JSON.stringify(ws), 'utf8');
 
-    const metrics = baselineTracker.computeSessionMetrics(session.id);
+    const metrics = baselineTracker.computeSessionMetrics(TEST_PROJECT_ROOT, session.id);
     expect(metrics).not.toBeNull();
     expect(metrics.duration).toBeNull();
   });
@@ -180,7 +181,7 @@ describe('computeSessionMetrics', () => {
     ];
     writeFileSync(join(session.dir, 'timeline.jsonl'), events.map(e => JSON.stringify(e)).join('\n') + '\n', 'utf8');
 
-    const metrics = baselineTracker.computeSessionMetrics(session.id);
+    const metrics = baselineTracker.computeSessionMetrics(TEST_PROJECT_ROOT, session.id);
     // latest('workflow:start') = 第 2 次 (baseTime-10000)
     // latest('workflow:complete') = 第 1 次 (baseTime-30000)
     // complete < start → duration 應為 null

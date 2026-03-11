@@ -20,6 +20,7 @@ const paths = require(join(SCRIPTS_LIB, 'paths'));
 // ── Session 管理 ──
 
 const SESSION_PREFIX = `test_post_fail_${Date.now()}`;
+const TEST_PROJECT_ROOT = join(require('os').tmpdir(), 'post-failure-test-project-' + Date.now());
 let testCounter = 0;
 const createdSessions = [];
 
@@ -30,9 +31,7 @@ function newSessionId() {
 }
 
 afterAll(() => {
-  for (const sid of createdSessions) {
-    rmSync(paths.sessionDir(sid), { recursive: true, force: true });
-  }
+  rmSync(TEST_PROJECT_ROOT, { recursive: true, force: true });
 });
 
 // ── 輔助函式 ──
@@ -47,8 +46,10 @@ function runHook(input, sessionId) {
     envConfig.CLAUDE_SESSION_ID = sessionId;
   }
 
+  // 注入 cwd 讓 hook 的 resolveProjectRoot 指向測試 project
+  const inputWithCwd = { ...input, cwd: TEST_PROJECT_ROOT };
   const proc = Bun.spawnSync(['node', HOOK_PATH], {
-    stdin: Buffer.from(JSON.stringify(input)),
+    stdin: Buffer.from(JSON.stringify(inputWithCwd)),
     env: envConfig,
     stdout: 'pipe',
     stderr: 'pipe',
@@ -66,12 +67,12 @@ function runHook(input, sessionId) {
 }
 
 function initSessionDir(sessionId) {
-  mkdirSync(paths.sessionDir(sessionId), { recursive: true });
+  mkdirSync(paths.sessionDir(TEST_PROJECT_ROOT, sessionId), { recursive: true });
 }
 
 function readTimeline(sessionId) {
   try {
-    const content = readFileSync(paths.session.timeline(sessionId), 'utf8');
+    const content = readFileSync(paths.session.timeline(TEST_PROJECT_ROOT, sessionId), 'utf8');
     return content.trim().split('\n').filter(Boolean).map(line => JSON.parse(line));
   } catch {
     return [];

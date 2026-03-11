@@ -83,7 +83,7 @@ function _findTopPattern(records) {
  */
 function makeMockTimeline(eventsPerSession = {}) {
   return {
-    query: (sessionId, filter = {}) => {
+    query: (projectRoot, sessionId, workflowId, filter = {}) => {
       const events = eventsPerSession[sessionId] || [];
       if (!filter.type) return events;
       return events.filter(e => e.type === filter.type);
@@ -307,7 +307,7 @@ describe('analyzeWorkflowVelocity', () => {
       failureTracker: makeMockFailureTracker(),
     };
 
-    const result = crossAnalyzer.analyzeWorkflowVelocity(deps, [SESSION_A, SESSION_B]);
+    const result = crossAnalyzer.analyzeWorkflowVelocity(deps, [SESSION_A, SESSION_B], MOCK_PROJECT_ROOT);
 
     expect(result.sessionCount).toBe(2);
     expect(Array.isArray(result.stages)).toBe(true);
@@ -339,7 +339,7 @@ describe('analyzeWorkflowVelocity', () => {
       failureTracker: makeMockFailureTracker(),
     };
 
-    const result = crossAnalyzer.analyzeWorkflowVelocity(deps, [SESSION_A]);
+    const result = crossAnalyzer.analyzeWorkflowVelocity(deps, [SESSION_A], MOCK_PROJECT_ROOT);
 
     // DEV (10min) > REVIEW (1min)，DEV 應在前
     expect(result.stages[0].stage).toBe('DEV');
@@ -362,7 +362,7 @@ describe('analyzeWorkflowVelocity', () => {
       failureTracker: makeMockFailureTracker(),
     };
 
-    const result = crossAnalyzer.analyzeWorkflowVelocity(deps, [SESSION_A, SESSION_B]);
+    const result = crossAnalyzer.analyzeWorkflowVelocity(deps, [SESSION_A, SESSION_B], MOCK_PROJECT_ROOT);
 
     const devStage = result.stages.find(s => s.stage === 'DEV');
     expect(devStage.minMs).toBe(120000);  // 2 分鐘
@@ -375,7 +375,7 @@ describe('analyzeWorkflowVelocity', () => {
       failureTracker: makeMockFailureTracker(),
     };
 
-    const result = crossAnalyzer.analyzeWorkflowVelocity(deps, []);
+    const result = crossAnalyzer.analyzeWorkflowVelocity(deps, [], MOCK_PROJECT_ROOT);
 
     expect(result.stages).toEqual([]);
     expect(result.sessionCount).toBe(0);
@@ -395,7 +395,7 @@ describe('analyzeWorkflowVelocity', () => {
       failureTracker: makeMockFailureTracker(),
     };
 
-    const result = crossAnalyzer.analyzeWorkflowVelocity(deps, [SESSION_A, SESSION_B]);
+    const result = crossAnalyzer.analyzeWorkflowVelocity(deps, [SESSION_A, SESSION_B], MOCK_PROJECT_ROOT);
 
     expect(result.sessionCount).toBe(2);
     const devStage = result.stages.find(s => s.stage === 'DEV');
@@ -414,7 +414,7 @@ describe('analyzeWorkflowVelocity', () => {
       failureTracker: makeMockFailureTracker(),
     };
 
-    const result = crossAnalyzer.analyzeWorkflowVelocity(deps, [SESSION_A]);
+    const result = crossAnalyzer.analyzeWorkflowVelocity(deps, [SESSION_A], MOCK_PROJECT_ROOT);
 
     expect(result.stages).toEqual([]);
   });

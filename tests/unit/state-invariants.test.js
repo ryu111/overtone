@@ -242,7 +242,7 @@ describe('state 不變量守衛 — timeline system:warning 事件', () => {
     });
 
     // 查詢 system:warning 事件（使用 session 層級的 timeline，不帶 workflowId）
-    const warnings = timeline.query(sid, { type: 'system:warning' });
+    const warnings = timeline.query(projectRoot, sid, null, { type: 'system:warning' });
     expect(warnings.length).toBeGreaterThan(0);
 
     const latest = warnings[warnings.length - 1];
@@ -270,7 +270,7 @@ describe('state 不變量守衛 — timeline system:warning 事件', () => {
     });
 
     // 不應有 system:warning 事件
-    const warnings = timeline.query(sid, { type: 'system:warning' });
+    const warnings = timeline.query(projectRoot, sid, null, { type: 'system:warning' });
     expect(warnings.length).toBe(0);
   });
 });

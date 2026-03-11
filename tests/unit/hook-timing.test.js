@@ -50,20 +50,19 @@ describe('Feature 5: hook:timing 事件結構（timeline.emit 直接呼叫）', 
   // 使用固定 prefix 讓 afterAll 能精確清理
   const sid = 'hook-timing-struct-' + Date.now().toString(36);
 
+  const structProjectRoot = join(os.tmpdir(), 'hook-timing-struct-project-' + Date.now());
+
   afterAll(() => {
-    const dir = paths.sessionDir(sid);
-    if (fs.existsSync(dir)) {
-      fs.rmSync(dir, { recursive: true, force: true });
-    }
+    fs.rmSync(structProjectRoot, { recursive: true, force: true });
   });
 
   test('emit hook:timing → 事件寫入 timeline.jsonl 且包含必要欄位', () => {
     const startTime = Date.now();
 
-    // 確保 session 目錄存在
-    fs.mkdirSync(paths.sessionDir(sid), { recursive: true });
+    // 確保 session 目錄存在（per-project）
+    fs.mkdirSync(paths.sessionDir(structProjectRoot, sid), { recursive: true });
 
-    const evt = timeline.emit(sid, 'hook:timing', {
+    const evt = timeline.emit(structProjectRoot, sid, null, 'hook:timing', {
       hook: 'test-hook',
       event: 'TestEvent',
       durationMs: 42,
@@ -79,7 +78,7 @@ describe('Feature 5: hook:timing 事件結構（timeline.emit 直接呼叫）', 
     expect(typeof evt.ts).toBe('string');
 
     // 驗證事件確實寫入 JSONL
-    const timelinePath = paths.session.timeline(sid);
+    const timelinePath = paths.session.timeline(structProjectRoot, sid);
     expect(fs.existsSync(timelinePath)).toBe(true);
     const lines = fs.readFileSync(timelinePath, 'utf8').split('\n').filter(Boolean);
     const parsedEvents = lines.map((l) => { try { return JSON.parse(l); } catch { return null; } }).filter(Boolean);
@@ -91,32 +90,41 @@ describe('Feature 5: hook:timing 事件結構（timeline.emit 直接呼叫）', 
 
 // ── 子進程輔助工具 ─────────────────────────────────────────────────────────
 
+// 使用固定的測試 projectRoot，hook subprocess 透過 stdin.cwd 傳遞
+const TEST_PROJECT_ROOT = join(os.tmpdir(), 'hook-timing-test-project-' + Date.now());
+
 /**
- * 建立 overtone session 目錄（寫到真實的 ~/.nova/sessions/<sid>/）
- * 回傳 sessionId 和清理函式
+ * 建立 overtone session 目錄（per-project 架構）
+ * 回傳 sessionId
  */
 function createSession(prefix = 'hook-timing-test') {
   const sid = prefix + '-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
   const paths = require(join(SCRIPTS_LIB, 'paths'));
-  fs.mkdirSync(paths.sessionDir(sid), { recursive: true });
+  fs.mkdirSync(paths.sessionDir(TEST_PROJECT_ROOT, sid), { recursive: true });
   return sid;
 }
 
 function deleteSession(sid) {
   const paths = require(join(SCRIPTS_LIB, 'paths'));
-  const dir = paths.sessionDir(sid);
+  const dir = paths.sessionDir(TEST_PROJECT_ROOT, sid);
   if (fs.existsSync(dir)) {
     fs.rmSync(dir, { recursive: true, force: true });
   }
 }
+
+afterAll(() => {
+  fs.rmSync(TEST_PROJECT_ROOT, { recursive: true, force: true });
+});
 
 /**
  * 執行 hook 腳本（子進程），傳入 stdin JSON
  * 回傳 { stdout, stderr, exitCode, timingEvents }
  */
 function runHook(hookPath, stdinData) {
+  // 確保 hook subprocess 的 projectRoot 指向測試 project
+  const inputWithCwd = { ...stdinData, cwd: TEST_PROJECT_ROOT };
   const result = spawnSync('node', [hookPath], {
-    input: JSON.stringify(stdinData),
+    input: JSON.stringify(inputWithCwd),
     encoding: 'utf8',
     timeout: 10000,
     env: {
@@ -125,9 +133,9 @@ function runHook(hookPath, stdinData) {
     },
   });
 
-  // 讀取 timeline JSONL（路徑由 paths.js 決定）
+  // 讀取 timeline JSONL（per-project 路徑）
   const paths = require(join(SCRIPTS_LIB, 'paths'));
-  const timelinePath = paths.session.timeline(stdinData.session_id || '');
+  const timelinePath = paths.session.timeline(TEST_PROJECT_ROOT, stdinData.session_id || '');
   let timingEvents = [];
   if (stdinData.session_id && fs.existsSync(timelinePath)) {
     const lines = fs.readFileSync(timelinePath, 'utf8').split('\n').filter(Boolean);
@@ -239,7 +247,7 @@ describe('Feature 4: on-session-end.js emit hook:timing', () => {
     sid = createSession('session-end-timing');
     // 建立 loop.json（stopped: true 避免 emit session:end 觸發額外邏輯）
     const paths = require(join(SCRIPTS_LIB, 'paths'));
-    fs.writeFileSync(paths.session.loop(sid), JSON.stringify({ stopped: true }));
+    fs.writeFileSync(paths.session.loop(TEST_PROJECT_ROOT, sid), JSON.stringify({ stopped: true }));
   });
 
   afterAll(() => { deleteSession(sid); });
