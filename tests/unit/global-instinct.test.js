@@ -37,18 +37,20 @@ function makeTmpProject(suffix = '') {
 /**
  * 建立測試用 sessionId 並初始化觀察檔
  */
-function makeTmpSession(suffix = '') {
+function makeTmpSession(projectRoot, suffix = '') {
   const id = `test_gi_${suffix}_${Date.now()}`;
-  const dir = join(homedir(), '.nova', 'sessions', id);
+  const dir = projectRoot
+    ? paths.sessionDir(projectRoot, id)
+    : join(homedir(), '.nova', 'sessions', id);
   mkdirSync(dir, { recursive: true });
   return { id, dir };
 }
 
 /**
- * 向 session 寫入一筆觀察記錄
+ * 向 session 寫入一筆觀察記錄（per-project 路徑）
  */
-function writeSessionObs(sessionId, obs) {
-  const filePath = paths.session.observations(sessionId);
+function writeSessionObs(projectRoot, sessionId, obs) {
+  const filePath = paths.session.observations(projectRoot, sessionId);
   mkdirSync(path.dirname(filePath), { recursive: true });
   appendFileSync(filePath, JSON.stringify(obs) + '\n', 'utf8');
 }
@@ -81,7 +83,7 @@ describe('Feature 1: 畢業機制（graduate）', () => {
 
   beforeEach(() => {
     projectRoot = makeTmpProject('grad');
-    session = makeTmpSession('grad');
+    session = makeTmpSession(projectRoot, 'grad');
   });
 
   afterEach(() => {
@@ -93,7 +95,7 @@ describe('Feature 1: 畢業機制（graduate）', () => {
 
   // Scenario 1-1
   test('Scenario 1-1: 高信心觀察成功畢業到全域 store', () => {
-    writeSessionObs(session.id, makeObs({ confidence: 0.8, tag: 'high-conf', type: 'tool_preferences' }));
+    writeSessionObs(projectRoot, session.id, makeObs({ confidence: 0.8, tag: 'high-conf', type: 'tool_preferences' }));
 
     const result = globalInstinct.graduate(session.id, projectRoot);
 
@@ -106,7 +108,7 @@ describe('Feature 1: 畢業機制（graduate）', () => {
 
   // Scenario 1-2
   test('Scenario 1-2: 低信心觀察不畢業', () => {
-    writeSessionObs(session.id, makeObs({ confidence: 0.5, tag: 'low-conf', type: 'tool_preferences' }));
+    writeSessionObs(projectRoot, session.id, makeObs({ confidence: 0.5, tag: 'low-conf', type: 'tool_preferences' }));
 
     const result = globalInstinct.graduate(session.id, projectRoot);
 
@@ -117,7 +119,7 @@ describe('Feature 1: 畢業機制（graduate）', () => {
 
   // Scenario 1-3
   test('Scenario 1-3: 邊界值 confidence = 0.7 剛好畢業', () => {
-    writeSessionObs(session.id, makeObs({ confidence: 0.7, tag: 'boundary', type: 'tool_preferences' }));
+    writeSessionObs(projectRoot, session.id, makeObs({ confidence: 0.7, tag: 'boundary', type: 'tool_preferences' }));
 
     const result = globalInstinct.graduate(session.id, projectRoot);
 
@@ -129,13 +131,13 @@ describe('Feature 1: 畢業機制（graduate）', () => {
   // Scenario 1-4
   test('Scenario 1-4: 相同 tag+type 去重合併，保留較高 confidence', () => {
     // 先畢業一個低信心觀察到全域
-    writeSessionObs(session.id, makeObs({ confidence: 0.75, tag: 'testing', type: 'pattern' }));
+    writeSessionObs(projectRoot, session.id, makeObs({ confidence: 0.75, tag: 'testing', type: 'pattern' }));
     globalInstinct.graduate(session.id, projectRoot);
 
     // 新 session 有更高信心的同 tag+type 觀察
-    const session2 = makeTmpSession('grad2');
+    const session2 = makeTmpSession(projectRoot, 'grad2');
     try {
-      writeSessionObs(session2.id, makeObs({ confidence: 0.9, tag: 'testing', type: 'pattern' }));
+      writeSessionObs(projectRoot, session2.id, makeObs({ confidence: 0.9, tag: 'testing', type: 'pattern' }));
       globalInstinct.graduate(session2.id, projectRoot);
 
       const obs = globalInstinct.queryGlobal(projectRoot, { tag: 'testing', type: 'pattern' });
@@ -149,13 +151,13 @@ describe('Feature 1: 畢業機制（graduate）', () => {
   // Scenario 1-5
   test('Scenario 1-5: 相同 tag+type 去重合併，不降低已有的高 confidence', () => {
     // 先畢業高信心觀察
-    writeSessionObs(session.id, makeObs({ confidence: 0.9, tag: 'testing', type: 'pattern' }));
+    writeSessionObs(projectRoot, session.id, makeObs({ confidence: 0.9, tag: 'testing', type: 'pattern' }));
     globalInstinct.graduate(session.id, projectRoot);
 
     // 新 session 有更低信心的同 tag+type 觀察
-    const session2 = makeTmpSession('grad3');
+    const session2 = makeTmpSession(projectRoot, 'grad3');
     try {
-      writeSessionObs(session2.id, makeObs({ confidence: 0.75, tag: 'testing', type: 'pattern' }));
+      writeSessionObs(projectRoot, session2.id, makeObs({ confidence: 0.75, tag: 'testing', type: 'pattern' }));
       globalInstinct.graduate(session2.id, projectRoot);
 
       const obs = globalInstinct.queryGlobal(projectRoot, { tag: 'testing', type: 'pattern' });
@@ -208,7 +210,7 @@ describe('Feature 2: 全域查詢（queryGlobal）', () => {
 
   beforeEach(() => {
     projectRoot = makeTmpProject('query');
-    session = makeTmpSession('query');
+    session = makeTmpSession(projectRoot, 'query');
   });
 
   afterEach(() => {
@@ -623,8 +625,8 @@ describe('Feature 9: 專案維度隔離（projectHash）', () => {
   beforeEach(() => {
     projectA = makeTmpProject('proj-a');
     projectB = makeTmpProject('proj-b');
-    sessionA = makeTmpSession('proj-a');
-    sessionB = makeTmpSession('proj-b');
+    sessionA = makeTmpSession(projectA, 'proj-a');
+    sessionB = makeTmpSession(projectB, 'proj-b');
   });
 
   afterEach(() => {
@@ -638,13 +640,13 @@ describe('Feature 9: 專案維度隔離（projectHash）', () => {
 
   // Scenario 9-1
   test('Scenario 9-1: 不同專案的觀察存入各自的 store', () => {
-    writeSessionObs(sessionA.id, makeObs({ confidence: 0.8, tag: 'proj-a-tag', type: 'tool_preferences' }));
-    writeSessionObs(sessionA.id, makeObs({ confidence: 0.8, tag: 'proj-a-tag2', type: 'tool_preferences' }));
+    writeSessionObs(projectA, sessionA.id, makeObs({ confidence: 0.8, tag: 'proj-a-tag', type: 'tool_preferences' }));
+    writeSessionObs(projectA, sessionA.id, makeObs({ confidence: 0.8, tag: 'proj-a-tag2', type: 'tool_preferences' }));
     globalInstinct.graduate(sessionA.id, projectA);
 
-    writeSessionObs(sessionB.id, makeObs({ confidence: 0.8, tag: 'proj-b-tag', type: 'tool_preferences' }));
-    writeSessionObs(sessionB.id, makeObs({ confidence: 0.8, tag: 'proj-b-tag2', type: 'tool_preferences' }));
-    writeSessionObs(sessionB.id, makeObs({ confidence: 0.8, tag: 'proj-b-tag3', type: 'tool_preferences' }));
+    writeSessionObs(projectB, sessionB.id, makeObs({ confidence: 0.8, tag: 'proj-b-tag', type: 'tool_preferences' }));
+    writeSessionObs(projectB, sessionB.id, makeObs({ confidence: 0.8, tag: 'proj-b-tag2', type: 'tool_preferences' }));
+    writeSessionObs(projectB, sessionB.id, makeObs({ confidence: 0.8, tag: 'proj-b-tag3', type: 'tool_preferences' }));
     globalInstinct.graduate(sessionB.id, projectB);
 
     const obsA = globalInstinct.queryGlobal(projectA, {});
@@ -659,10 +661,10 @@ describe('Feature 9: 專案維度隔離（projectHash）', () => {
 
   // Scenario 9-2
   test('Scenario 9-2: 查詢只回傳當前專案的觀察', () => {
-    writeSessionObs(sessionA.id, makeObs({ confidence: 0.8, tag: 'bun-test', type: 'tool_preferences' }));
+    writeSessionObs(projectA, sessionA.id, makeObs({ confidence: 0.8, tag: 'bun-test', type: 'tool_preferences' }));
     globalInstinct.graduate(sessionA.id, projectA);
 
-    writeSessionObs(sessionB.id, makeObs({ confidence: 0.8, tag: 'npm-test', type: 'tool_preferences' }));
+    writeSessionObs(projectB, sessionB.id, makeObs({ confidence: 0.8, tag: 'npm-test', type: 'tool_preferences' }));
     globalInstinct.graduate(sessionB.id, projectB);
 
     const obsA = globalInstinct.queryGlobal(projectA, {});
@@ -762,7 +764,7 @@ describe('graduate merge 語意', () => {
 
   beforeEach(() => {
     projectRoot = makeTmpProject('merge');
-    session = makeTmpSession('merge');
+    session = makeTmpSession(projectRoot, 'merge');
   });
 
   afterEach(() => {
@@ -781,7 +783,7 @@ describe('graduate merge 語意', () => {
     })) + '\n', 'utf8');
 
     // session 有同 tag+type 的觀察 count=3
-    writeSessionObs(session.id, makeObs({
+    writeSessionObs(projectRoot, session.id, makeObs({
       confidence: 0.75, tag: 'merge-test', type: 'tool_preferences', count: 3,
     }));
 
@@ -801,7 +803,7 @@ describe('graduate merge 語意', () => {
       globalTs: originalGlobalTs,
     })) + '\n', 'utf8');
 
-    writeSessionObs(session.id, makeObs({
+    writeSessionObs(projectRoot, session.id, makeObs({
       confidence: 0.9, tag: 'ts-test', type: 'tool_preferences', count: 1,
     }));
 
@@ -820,7 +822,7 @@ describe('graduate merge 語意', () => {
       globalTs: new Date().toISOString(),
     })) + '\n', 'utf8');
 
-    writeSessionObs(session.id, makeObs({
+    writeSessionObs(projectRoot, session.id, makeObs({
       confidence: 0.8, tag: 'equal-conf', type: 'tool_preferences', count: 1,
       trigger: '新觸發條件', action: '新行動',
     }));
