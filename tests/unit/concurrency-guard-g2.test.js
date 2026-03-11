@@ -34,6 +34,7 @@ const {
 
 // ── session 管理 ──
 
+const TEST_PROJECT_ROOT = '/tmp';
 const SID_PREFIX = `test_ccg2_${Date.now()}`;
 let sidCounter = 0;
 const createdSessions = [];
@@ -45,16 +46,15 @@ function newSid() {
 }
 
 function setupSession(sid, stageList, workflowType = 'quick', extra = {}) {
-  const dir = paths.sessionDir(sid);
+  const dir = paths.sessionDir(TEST_PROJECT_ROOT, sid);
   fs.mkdirSync(dir, { recursive: true });
-  return stateLib.initState(sid, workflowType, stageList, extra);
+  return stateLib.initState(TEST_PROJECT_ROOT, sid, workflowType, stageList, extra);
 }
 
 afterAll(() => {
   for (const sid of createdSessions) {
-    try {
-      fs.rmSync(paths.sessionDir(sid), { recursive: true, force: true });
-    } catch { /* ignore */ }
+    try { fs.rmSync(paths.sessionDir(TEST_PROJECT_ROOT, sid), { recursive: true, force: true }); } catch {}
+    try { fs.rmSync(paths.sessionDir(sid), { recursive: true, force: true }); } catch {}
   }
 });
 
@@ -67,7 +67,7 @@ describe('Feature A: detectAndCleanOrphans — 基本清理', () => {
     setupSession(sid, ['DEV', 'REVIEW']);
 
     const startedAt16MinAgo = new Date(Date.now() - 16 * 60 * 1000).toISOString();
-    stateLib.updateStateAtomic(sid, (s) => {
+    stateLib.updateStateAtomic(TEST_PROJECT_ROOT, sid, null,(s) => {
       s.activeAgents['developer:orphan1'] = {
         agentName: 'developer',
         stage: 'DEV',
@@ -76,11 +76,11 @@ describe('Feature A: detectAndCleanOrphans — 基本清理', () => {
       return s;
     });
 
-    const currentState = stateLib.readState(sid);
-    const result = detectAndCleanOrphans(sid, null, currentState);
+    const currentState = stateLib.readState(TEST_PROJECT_ROOT, sid);
+    const result = detectAndCleanOrphans(TEST_PROJECT_ROOT, sid, null,currentState);
 
     // 清除後重新讀取 state 確認 entry 已移除
-    const updatedState = stateLib.readState(sid);
+    const updatedState = stateLib.readState(TEST_PROJECT_ROOT, sid);
     expect(result.cleaned.length).toBe(1);
     expect(result.cleaned[0].instanceId).toBe('developer:orphan1');
     expect(result.cleaned[0].agentName).toBe('developer');
@@ -95,7 +95,7 @@ describe('Feature A: detectAndCleanOrphans — 基本清理', () => {
     setupSession(sid, ['DEV', 'REVIEW']);
 
     const startedAt5MinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
-    stateLib.updateStateAtomic(sid, (s) => {
+    stateLib.updateStateAtomic(TEST_PROJECT_ROOT, sid, null,(s) => {
       s.activeAgents['developer:recent1'] = {
         agentName: 'developer',
         stage: 'DEV',
@@ -104,10 +104,10 @@ describe('Feature A: detectAndCleanOrphans — 基本清理', () => {
       return s;
     });
 
-    const currentState = stateLib.readState(sid);
-    const result = detectAndCleanOrphans(sid, null, currentState);
+    const currentState = stateLib.readState(TEST_PROJECT_ROOT, sid);
+    const result = detectAndCleanOrphans(TEST_PROJECT_ROOT, sid, null,currentState);
 
-    const updatedState = stateLib.readState(sid);
+    const updatedState = stateLib.readState(TEST_PROJECT_ROOT, sid);
     expect(result.cleaned.length).toBe(0);
     expect(updatedState.activeAgents['developer:recent1']).toBeDefined();
   });
@@ -118,7 +118,7 @@ describe('Feature A: detectAndCleanOrphans — 基本清理', () => {
 
     // DEV stage 設為 active + 有超時 orphan
     const startedAt20MinAgo = new Date(Date.now() - 20 * 60 * 1000).toISOString();
-    stateLib.updateStateAtomic(sid, (s) => {
+    stateLib.updateStateAtomic(TEST_PROJECT_ROOT, sid, null,(s) => {
       s.stages.DEV.status = 'active';
       s.activeAgents['developer:orphan2'] = {
         agentName: 'developer',
@@ -128,7 +128,7 @@ describe('Feature A: detectAndCleanOrphans — 基本清理', () => {
       return s;
     });
 
-    loopLib.writeLoop(sid, {
+    loopLib.writeLoop(TEST_PROJECT_ROOT, sid,{
       iteration: 1,
       stopped: false,
       consecutiveErrors: 0,
@@ -153,7 +153,7 @@ describe('Feature B: detectAndCleanOrphans — 邊界條件', () => {
     const sid = newSid();
     setupSession(sid, ['DEV']);
 
-    stateLib.updateStateAtomic(sid, (s) => {
+    stateLib.updateStateAtomic(TEST_PROJECT_ROOT, sid, null,(s) => {
       s.activeAgents['developer:no-start'] = {
         agentName: 'developer',
         stage: 'DEV',
@@ -162,13 +162,13 @@ describe('Feature B: detectAndCleanOrphans — 邊界條件', () => {
       return s;
     });
 
-    const currentState = stateLib.readState(sid);
-    expect(() => detectAndCleanOrphans(sid, null, currentState)).not.toThrow();
+    const currentState = stateLib.readState(TEST_PROJECT_ROOT, sid);
+    expect(() => detectAndCleanOrphans(TEST_PROJECT_ROOT, sid, null,currentState)).not.toThrow();
 
-    const result = detectAndCleanOrphans(sid, null, currentState);
+    const result = detectAndCleanOrphans(TEST_PROJECT_ROOT, sid, null,currentState);
     expect(result.cleaned.length).toBe(0);
 
-    const updatedState = stateLib.readState(sid);
+    const updatedState = stateLib.readState(TEST_PROJECT_ROOT, sid);
     expect(updatedState.activeAgents['developer:no-start']).toBeDefined();
   });
 
@@ -176,7 +176,7 @@ describe('Feature B: detectAndCleanOrphans — 邊界條件', () => {
     const sid = newSid();
     setupSession(sid, ['DEV']);
 
-    stateLib.updateStateAtomic(sid, (s) => {
+    stateLib.updateStateAtomic(TEST_PROJECT_ROOT, sid, null,(s) => {
       s.activeAgents['developer:bad-date'] = {
         agentName: 'developer',
         stage: 'DEV',
@@ -185,10 +185,10 @@ describe('Feature B: detectAndCleanOrphans — 邊界條件', () => {
       return s;
     });
 
-    const currentState = stateLib.readState(sid);
-    expect(() => detectAndCleanOrphans(sid, null, currentState)).not.toThrow();
+    const currentState = stateLib.readState(TEST_PROJECT_ROOT, sid);
+    expect(() => detectAndCleanOrphans(TEST_PROJECT_ROOT, sid, null,currentState)).not.toThrow();
 
-    const result = detectAndCleanOrphans(sid, null, currentState);
+    const result = detectAndCleanOrphans(TEST_PROJECT_ROOT, sid, null,currentState);
     expect(result.cleaned.length).toBe(0);
   });
 
@@ -196,7 +196,7 @@ describe('Feature B: detectAndCleanOrphans — 邊界條件', () => {
     const sid = newSid();
     setupSession(sid, ['DEV']);
 
-    stateLib.updateStateAtomic(sid, (s) => {
+    stateLib.updateStateAtomic(TEST_PROJECT_ROOT, sid, null,(s) => {
       s.activeAgents['developer:null-date'] = {
         agentName: 'developer',
         stage: 'DEV',
@@ -205,10 +205,10 @@ describe('Feature B: detectAndCleanOrphans — 邊界條件', () => {
       return s;
     });
 
-    const currentState = stateLib.readState(sid);
-    expect(() => detectAndCleanOrphans(sid, null, currentState)).not.toThrow();
+    const currentState = stateLib.readState(TEST_PROJECT_ROOT, sid);
+    expect(() => detectAndCleanOrphans(TEST_PROJECT_ROOT, sid, null,currentState)).not.toThrow();
 
-    const result = detectAndCleanOrphans(sid, null, currentState);
+    const result = detectAndCleanOrphans(TEST_PROJECT_ROOT, sid, null,currentState);
     expect(result.cleaned.length).toBe(0);
   });
 
@@ -216,11 +216,11 @@ describe('Feature B: detectAndCleanOrphans — 邊界條件', () => {
     const sid = newSid();
     setupSession(sid, ['DEV']);
 
-    const currentState = stateLib.readState(sid);
+    const currentState = stateLib.readState(TEST_PROJECT_ROOT, sid);
     // 確保 activeAgents 為空
     expect(Object.keys(currentState.activeAgents).length).toBe(0);
 
-    const result = detectAndCleanOrphans(sid, null, currentState);
+    const result = detectAndCleanOrphans(TEST_PROJECT_ROOT, sid, null,currentState);
     expect(result).toEqual({ cleaned: [] });
   });
 
@@ -231,22 +231,22 @@ describe('Feature B: detectAndCleanOrphans — 邊界條件', () => {
     const oldTime = new Date(Date.now() - 20 * 60 * 1000).toISOString();
     const recentTime = new Date(Date.now() - 5 * 60 * 1000).toISOString();
 
-    stateLib.updateStateAtomic(sid, (s) => {
+    stateLib.updateStateAtomic(TEST_PROJECT_ROOT, sid, null,(s) => {
       s.activeAgents['developer:old1'] = { agentName: 'developer', stage: 'DEV', startedAt: oldTime };
       s.activeAgents['reviewer:old2'] = { agentName: 'reviewer', stage: 'REVIEW', startedAt: oldTime };
       s.activeAgents['tester:recent'] = { agentName: 'tester', stage: 'TEST', startedAt: recentTime };
       return s;
     });
 
-    const currentState = stateLib.readState(sid);
-    const result = detectAndCleanOrphans(sid, null, currentState);
+    const currentState = stateLib.readState(TEST_PROJECT_ROOT, sid);
+    const result = detectAndCleanOrphans(TEST_PROJECT_ROOT, sid, null,currentState);
 
     expect(result.cleaned.length).toBe(2);
     const cleanedIds = result.cleaned.map((c) => c.instanceId);
     expect(cleanedIds).toContain('developer:old1');
     expect(cleanedIds).toContain('reviewer:old2');
 
-    const updatedState = stateLib.readState(sid);
+    const updatedState = stateLib.readState(TEST_PROJECT_ROOT, sid);
     expect(updatedState.activeAgents['tester:recent']).toBeDefined();
     expect(updatedState.activeAgents['developer:old1']).toBeUndefined();
     expect(updatedState.activeAgents['reviewer:old2']).toBeUndefined();
@@ -259,7 +259,7 @@ describe('Feature B: detectAndCleanOrphans — 邊界條件', () => {
     const oldTime = new Date(Date.now() - 20 * 60 * 1000).toISOString();
 
     // 建立 entry 再手動刪除（模擬 SubagentStop 先清除）
-    stateLib.updateStateAtomic(sid, (s) => {
+    stateLib.updateStateAtomic(TEST_PROJECT_ROOT, sid, null,(s) => {
       s.activeAgents['developer:already-gone'] = {
         agentName: 'developer',
         stage: 'DEV',
@@ -269,7 +269,7 @@ describe('Feature B: detectAndCleanOrphans — 邊界條件', () => {
     });
 
     // 模擬 SubagentStop 已先刪除
-    stateLib.updateStateAtomic(sid, (s) => {
+    stateLib.updateStateAtomic(TEST_PROJECT_ROOT, sid, null,(s) => {
       delete s.activeAgents['developer:already-gone'];
       return s;
     });
@@ -281,7 +281,7 @@ describe('Feature B: detectAndCleanOrphans — 邊界條件', () => {
       },
     };
 
-    expect(() => detectAndCleanOrphans(sid, null, staleState)).not.toThrow();
+    expect(() => detectAndCleanOrphans(TEST_PROJECT_ROOT, sid, null,staleState)).not.toThrow();
     // delete 不存在的 key 為 no-op，不影響其他 entry
   });
 });
@@ -535,7 +535,7 @@ describe('Feature E: agent:orphan-cleanup timeline 事件格式', () => {
     setupSession(sid, ['DEV']);
 
     const oldTime = new Date(Date.now() - 16 * 60 * 1000).toISOString();
-    stateLib.updateStateAtomic(sid, (s) => {
+    stateLib.updateStateAtomic(TEST_PROJECT_ROOT, sid, null,(s) => {
       s.activeAgents['developer:e1test'] = {
         agentName: 'developer',
         stage: 'DEV',
@@ -544,8 +544,8 @@ describe('Feature E: agent:orphan-cleanup timeline 事件格式', () => {
       return s;
     });
 
-    const currentState = stateLib.readState(sid);
-    const result = detectAndCleanOrphans(sid, null, currentState);
+    const currentState = stateLib.readState(TEST_PROJECT_ROOT, sid);
+    const result = detectAndCleanOrphans(TEST_PROJECT_ROOT, sid, null,currentState);
 
     expect(result.cleaned.length).toBe(1);
     const entry = result.cleaned[0];

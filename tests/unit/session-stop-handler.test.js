@@ -261,6 +261,7 @@ const loopLib = require(join(SCRIPTS_LIB, 'loop'));
 const paths = require(join(SCRIPTS_LIB, 'paths'));
 const { handleSessionStop } = require(join(SCRIPTS_LIB, 'session-stop-handler'));
 
+const TEST_PROJECT_ROOT = '/tmp';
 const SID_PREFIX = `test_ssh_${Date.now()}`;
 let sidCounter = 0;
 const createdSessions = [];
@@ -272,15 +273,16 @@ function newSid() {
 }
 
 function setupSession(sid, stageList, workflowType = 'quick', extra = {}) {
-  const dir = paths.sessionDir(sid);
+  const dir = paths.sessionDir(TEST_PROJECT_ROOT, sid);
   fs.mkdirSync(dir, { recursive: true });
-  const s = stateLib.initState(sid, workflowType, stageList, extra);
+  const s = stateLib.initState(TEST_PROJECT_ROOT, sid, workflowType, stageList, extra);
   return s;
 }
 
 afterAll(() => {
   for (const sid of createdSessions) {
-    fs.rmSync(paths.sessionDir(sid), { recursive: true, force: true });
+    try { fs.rmSync(paths.sessionDir(TEST_PROJECT_ROOT, sid), { recursive: true, force: true }); } catch {}
+    try { fs.rmSync(paths.sessionDir(sid), { recursive: true, force: true }); } catch {}
   }
 });
 
@@ -314,7 +316,7 @@ describeI('handleSessionStop 手動退出', () => {
   testI('/stop 手動退出 → 回傳空 output（side effects 已完成）', () => {
     const sid = newSid();
     setupSession(sid, ['DEV', 'REVIEW']);
-    loopLib.writeLoop(sid, { iteration: 1, stopped: true, consecutiveErrors: 0, startedAt: new Date().toISOString() });
+    loopLib.writeLoop(TEST_PROJECT_ROOT, sid,{ iteration: 1, stopped: true, consecutiveErrors: 0, startedAt: new Date().toISOString() });
 
     const result = handleSessionStop({ cwd: '/tmp' }, sid);
     expectI(result.output).toEqual({});
@@ -327,7 +329,7 @@ describeI('handleSessionStop max iterations', () => {
   testI('達到最大迭代次數（100）→ 回傳空 output', () => {
     const sid = newSid();
     setupSession(sid, ['DEV', 'REVIEW']);
-    loopLib.writeLoop(sid, { iteration: 100, stopped: false, consecutiveErrors: 0, startedAt: new Date().toISOString() });
+    loopLib.writeLoop(TEST_PROJECT_ROOT, sid,{ iteration: 100, stopped: false, consecutiveErrors: 0, startedAt: new Date().toISOString() });
 
     const result = handleSessionStop({ cwd: '/tmp' }, sid);
     expectI(result.output).toEqual({});
@@ -340,7 +342,7 @@ describeI('handleSessionStop 連續錯誤', () => {
   testI('連續錯誤達閾值 → 回傳空 output', () => {
     const sid = newSid();
     setupSession(sid, ['DEV', 'REVIEW']);
-    loopLib.writeLoop(sid, { iteration: 1, stopped: false, consecutiveErrors: 5, startedAt: new Date().toISOString() });
+    loopLib.writeLoop(TEST_PROJECT_ROOT, sid,{ iteration: 1, stopped: false, consecutiveErrors: 5, startedAt: new Date().toISOString() });
 
     const result = handleSessionStop({ cwd: '/tmp' }, sid);
     expectI(result.output).toEqual({});
@@ -353,9 +355,9 @@ describeI('handleSessionStop workflow 完成', () => {
   testI('所有 stage completed（無失敗）→ 回傳空 output', () => {
     const sid = newSid();
     const s = setupSession(sid, ['DEV', 'REVIEW']);
-    stateLib.updateStage(sid, 'DEV', { status: 'completed', result: 'pass' });
-    stateLib.updateStage(sid, 'REVIEW', { status: 'completed', result: 'pass' });
-    loopLib.writeLoop(sid, { iteration: 1, stopped: false, consecutiveErrors: 0, startedAt: new Date().toISOString() });
+    stateLib.updateStage(TEST_PROJECT_ROOT, sid, null,'DEV', { status: 'completed', result: 'pass' });
+    stateLib.updateStage(TEST_PROJECT_ROOT, sid, null,'REVIEW', { status: 'completed', result: 'pass' });
+    loopLib.writeLoop(TEST_PROJECT_ROOT, sid,{ iteration: 1, stopped: false, consecutiveErrors: 0, startedAt: new Date().toISOString() });
 
     const result = handleSessionStop({ cwd: '/tmp' }, sid);
     // Stop event 只支援 decision/reason，非 block 路徑回傳空 output
@@ -365,9 +367,9 @@ describeI('handleSessionStop workflow 完成', () => {
   testI('所有 stage completed（含失敗 stage）→ 回傳空 output', () => {
     const sid = newSid();
     setupSession(sid, ['DEV', 'REVIEW']);
-    stateLib.updateStage(sid, 'DEV', { status: 'completed', result: 'fail' });
-    stateLib.updateStage(sid, 'REVIEW', { status: 'completed', result: 'pass' });
-    loopLib.writeLoop(sid, { iteration: 1, stopped: false, consecutiveErrors: 0, startedAt: new Date().toISOString() });
+    stateLib.updateStage(TEST_PROJECT_ROOT, sid, null,'DEV', { status: 'completed', result: 'fail' });
+    stateLib.updateStage(TEST_PROJECT_ROOT, sid, null,'REVIEW', { status: 'completed', result: 'pass' });
+    loopLib.writeLoop(TEST_PROJECT_ROOT, sid,{ iteration: 1, stopped: false, consecutiveErrors: 0, startedAt: new Date().toISOString() });
 
     const result = handleSessionStop({ cwd: '/tmp' }, sid);
     expectI(result.output).toEqual({});
@@ -380,9 +382,9 @@ describeI('handleSessionStop loop 繼續', () => {
   testI('workflow 未完成 → 回傳 decision: block', () => {
     const sid = newSid();
     setupSession(sid, ['DEV', 'REVIEW']);
-    stateLib.updateStage(sid, 'DEV', { status: 'completed', result: 'pass' });
+    stateLib.updateStage(TEST_PROJECT_ROOT, sid, null,'DEV', { status: 'completed', result: 'pass' });
     // REVIEW 仍為 pending
-    loopLib.writeLoop(sid, { iteration: 1, stopped: false, consecutiveErrors: 0, startedAt: new Date().toISOString() });
+    loopLib.writeLoop(TEST_PROJECT_ROOT, sid,{ iteration: 1, stopped: false, consecutiveErrors: 0, startedAt: new Date().toISOString() });
 
     const result = handleSessionStop({ cwd: '/tmp' }, sid);
     expectI(result.output.decision).toBe('block');
@@ -392,7 +394,7 @@ describeI('handleSessionStop loop 繼續', () => {
   testI('loop 繼續訊息包含 iteration 資訊', () => {
     const sid = newSid();
     setupSession(sid, ['DEV', 'REVIEW']);
-    loopLib.writeLoop(sid, { iteration: 2, stopped: false, consecutiveErrors: 0, startedAt: new Date().toISOString() });
+    loopLib.writeLoop(TEST_PROJECT_ROOT, sid,{ iteration: 2, stopped: false, consecutiveErrors: 0, startedAt: new Date().toISOString() });
 
     const result = handleSessionStop({ cwd: '/tmp' }, sid);
     if (result.output.decision === 'block') {
@@ -403,8 +405,8 @@ describeI('handleSessionStop loop 繼續', () => {
   testI('loop 繼續訊息包含進度資訊', () => {
     const sid = newSid();
     setupSession(sid, ['DEV', 'REVIEW', 'RETRO', 'DOCS']);
-    stateLib.updateStage(sid, 'DEV', { status: 'completed', result: 'pass' });
-    loopLib.writeLoop(sid, { iteration: 1, stopped: false, consecutiveErrors: 0, startedAt: new Date().toISOString() });
+    stateLib.updateStage(TEST_PROJECT_ROOT, sid, null,'DEV', { status: 'completed', result: 'pass' });
+    loopLib.writeLoop(TEST_PROJECT_ROOT, sid,{ iteration: 1, stopped: false, consecutiveErrors: 0, startedAt: new Date().toISOString() });
 
     const result = handleSessionStop({ cwd: '/tmp' }, sid);
     expectI(result.output.decision).toBe('block');
@@ -418,7 +420,7 @@ describeI('handleSessionStop loop:start 事件', () => {
   testI('iteration === 0 時 loop:start 事件被 emit（不拋出）', () => {
     const sid = newSid();
     setupSession(sid, ['DEV']);
-    loopLib.writeLoop(sid, { iteration: 0, stopped: false, consecutiveErrors: 0, startedAt: new Date().toISOString() });
+    loopLib.writeLoop(TEST_PROJECT_ROOT, sid,{ iteration: 0, stopped: false, consecutiveErrors: 0, startedAt: new Date().toISOString() });
 
     expectI(() => handleSessionStop({ cwd: '/tmp' }, sid)).not.toThrow();
   });
@@ -430,7 +432,7 @@ describeI('handleSessionStop PM stage', () => {
   testI('currentStage 為 PM → 不強制 loop（result 為 undefined）', () => {
     const sid = newSid();
     const s = setupSession(sid, ['PM', 'DEV']);
-    loopLib.writeLoop(sid, { iteration: 1, stopped: false, consecutiveErrors: 0, startedAt: new Date().toISOString() });
+    loopLib.writeLoop(TEST_PROJECT_ROOT, sid,{ iteration: 1, stopped: false, consecutiveErrors: 0, startedAt: new Date().toISOString() });
 
     const result = handleSessionStop({ cwd: '/tmp' }, sid);
     // PM 模式不應 block loop，回傳 { output: {} }
@@ -446,7 +448,7 @@ describeI('handleSessionStop 背景 agent soft-release', () => {
     const sid = newSid();
     setupSession(sid, ['DEV', 'REVIEW']);
     // DEV 設為 active 且有 activeAgents（模擬背景 agent 正在執行）
-    stateLib.updateStateAtomic(sid, (s) => {
+    stateLib.updateStateAtomic(TEST_PROJECT_ROOT, sid, null,(s) => {
       s.stages.DEV.status = 'active';
       s.activeAgents['developer:abc123'] = {
         agentName: 'developer',
@@ -454,7 +456,7 @@ describeI('handleSessionStop 背景 agent soft-release', () => {
       };
       return s;
     });
-    loopLib.writeLoop(sid, { iteration: 1, stopped: false, consecutiveErrors: 0, startedAt: new Date().toISOString() });
+    loopLib.writeLoop(TEST_PROJECT_ROOT, sid,{ iteration: 1, stopped: false, consecutiveErrors: 0, startedAt: new Date().toISOString() });
 
     const result = handleSessionStop({ cwd: '/tmp' }, sid);
     // 應 soft-release 而非 block，回傳 { output: {} }
@@ -465,9 +467,9 @@ describeI('handleSessionStop 背景 agent soft-release', () => {
   testI('無 activeAgents 且 stage 未完成 → block loop 繼續', () => {
     const sid = newSid();
     setupSession(sid, ['DEV', 'REVIEW']);
-    stateLib.updateStage(sid, 'DEV', { status: 'completed', result: 'pass' });
+    stateLib.updateStage(TEST_PROJECT_ROOT, sid, null,'DEV', { status: 'completed', result: 'pass' });
     // REVIEW 仍為 pending，無 activeAgents
-    loopLib.writeLoop(sid, { iteration: 1, stopped: false, consecutiveErrors: 0, startedAt: new Date().toISOString() });
+    loopLib.writeLoop(TEST_PROJECT_ROOT, sid,{ iteration: 1, stopped: false, consecutiveErrors: 0, startedAt: new Date().toISOString() });
 
     const result = handleSessionStop({ cwd: '/tmp' }, sid);
     expectI(result.output.decision).toBe('block');
