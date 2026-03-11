@@ -1,3 +1,4 @@
+// @sequential — health-check 子進程 cwd 競爭
 'use strict';
 /**
  * evolution-analyze.test.js — evolution.js CLI 整合測試

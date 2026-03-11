@@ -1,3 +1,4 @@
+// @sequential — SessionEnd hook 子進程 I/O 競爭
 'use strict';
 /**
  * platform-alignment-session-end.test.js

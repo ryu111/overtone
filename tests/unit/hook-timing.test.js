@@ -1,3 +1,4 @@
+// @sequential — SessionEnd hook timing 子進程 I/O 競爭
 'use strict';
 /**
  * hook-timing.test.js — Hook 執行計時單元測試
