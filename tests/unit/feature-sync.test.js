@@ -27,16 +27,16 @@ const SESSION_PREFIX = `test_featuresync_${Date.now()}`;
 let counter = 0;
 const createdSessions = [];
 
-function newSessionId() {
+function newSessionId(projectRoot) {
   const id = `${SESSION_PREFIX}_${++counter}`;
-  createdSessions.push(id);
-  mkdirSync(paths.sessionDir(id), { recursive: true });
+  createdSessions.push({ projectRoot, id });
+  mkdirSync(paths.sessionDir(projectRoot, id), { recursive: true });
   return id;
 }
 
 afterAll(() => {
-  for (const sid of createdSessions) {
-    rmSync(paths.sessionDir(sid), { recursive: true, force: true });
+  for (const { projectRoot, id } of createdSessions) {
+    rmSync(paths.sessionDir(projectRoot, id), { recursive: true, force: true });
   }
 });
 
@@ -72,8 +72,8 @@ describe('syncFeatureName', () => {
   it('Scenario 3: 無 active feature 時回傳 null', () => {
     const emptyRoot = join(tmpdir(), `overtone_empty_${Date.now()}`);
     mkdirSync(join(emptyRoot, 'specs', 'features', 'in-progress'), { recursive: true });
-    const sid = newSessionId();
-    state.initState(sid, 'quick', ['DEV']);
+    const sid = newSessionId(emptyRoot);
+    state.initState(emptyRoot, sid, 'quick', ['DEV']);
 
     const result = syncFeatureName(emptyRoot, sid);
     expect(result).toBeNull();
@@ -85,7 +85,7 @@ describe('syncFeatureName', () => {
   it('Scenario 4: workflow state 不存在時回傳 null', () => {
     setupMockFeature(MOCK_FEATURE);
     // 不呼叫 initState，直接用存在的 session dir 但無 workflow.json
-    const sid = newSessionId();
+    const sid = newSessionId(MOCK_PROJECT_ROOT);
     const result = syncFeatureName(MOCK_PROJECT_ROOT, sid);
     expect(result).toBeNull();
   });
@@ -93,32 +93,32 @@ describe('syncFeatureName', () => {
   // ── Scenario 5: workflow state 已有 featureName 時不覆寫 ──
   it('Scenario 5: workflow state 已有 featureName 時不覆寫，回傳 null', () => {
     setupMockFeature(MOCK_FEATURE);
-    const sid = newSessionId();
-    state.initState(sid, 'quick', ['DEV']);
-    state.setFeatureName(sid, 'existing-feature');
+    const sid = newSessionId(MOCK_PROJECT_ROOT);
+    state.initState(MOCK_PROJECT_ROOT, sid, 'quick', ['DEV']);
+    state.setFeatureName(MOCK_PROJECT_ROOT, sid, null, 'existing-feature');
 
     const result = syncFeatureName(MOCK_PROJECT_ROOT, sid);
     expect(result).toBeNull();
 
     // 確認 featureName 未被覆寫
-    const ws = state.readState(sid);
+    const ws = state.readState(MOCK_PROJECT_ROOT, sid);
     expect(ws.featureName).toBe('existing-feature');
   });
 
   // ── Scenario 6: workflow state 無 featureName 時設定並回傳 ──
   it('Scenario 6: workflow state 無 featureName 時設定並回傳 featureName', () => {
     setupMockFeature(MOCK_FEATURE);
-    const sid = newSessionId();
-    state.initState(sid, 'quick', ['DEV']);
+    const sid = newSessionId(MOCK_PROJECT_ROOT);
+    state.initState(MOCK_PROJECT_ROOT, sid, 'quick', ['DEV']);
 
     // 確認初始 featureName 為 null（initState 預設值）
-    expect(state.readState(sid).featureName).toBeNull();
+    expect(state.readState(MOCK_PROJECT_ROOT, sid).featureName).toBeNull();
 
     const result = syncFeatureName(MOCK_PROJECT_ROOT, sid);
     expect(result).toBe(MOCK_FEATURE);
 
     // 確認已寫入 workflow.json
-    const ws = state.readState(sid);
+    const ws = state.readState(MOCK_PROJECT_ROOT, sid);
     expect(ws.featureName).toBe(MOCK_FEATURE);
   });
 
@@ -127,8 +127,8 @@ describe('syncFeatureName', () => {
     // 傳入一個無效的 projectRoot（路徑格式合法但 specs/features 不存在）
     const noSpecsRoot = join(tmpdir(), `overtone_nospec_${Date.now()}`);
     mkdirSync(noSpecsRoot, { recursive: true });
-    const sid = newSessionId();
-    state.initState(sid, 'quick', ['DEV']);
+    const sid = newSessionId(noSpecsRoot);
+    state.initState(noSpecsRoot, sid, 'quick', ['DEV']);
 
     // getActiveFeature 會靜默回傳 null（目錄不存在）而非拋出
     // 此處驗證整體 syncFeatureName 回傳 null 且不拋出

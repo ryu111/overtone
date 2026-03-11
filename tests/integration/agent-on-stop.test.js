@@ -484,11 +484,19 @@ describe('場景 15：featureName auto-sync', () => {
     expect(initialContent).toContain('- [ ] DEV');
 
     // 建立 workflow state（不帶 featureName）
+    // 同時在舊路徑和 per-project 路徑建立（handler 用舊 API，syncFeatureName 用新 API）
     mkdirSync(paths.sessionDir(sessionId), { recursive: true });
     state.initState(sessionId, 'quick', ['DEV', 'REVIEW', 'TEST']);
     state.updateStateAtomic(sessionId, (s) => {
       s.stages['DEV'].status = 'active';
-      // 明確不設定 featureName
+      s.featureName = null;
+      return s;
+    });
+    // per-project 路徑（syncFeatureName 遷移後從這裡讀取）
+    mkdirSync(paths.sessionDir(tmpProject, sessionId), { recursive: true });
+    state.initState(tmpProject, sessionId, 'quick', ['DEV', 'REVIEW', 'TEST']);
+    state.updateStateAtomic(tmpProject, sessionId, null, (s) => {
+      s.stages['DEV'].status = 'active';
       s.featureName = null;
       return s;
     });
@@ -513,8 +521,8 @@ describe('場景 15：featureName auto-sync', () => {
     const updatedContent = readFileSync(tasksPath, 'utf8');
     expect(updatedContent).toContain('- [x] DEV');
 
-    // state 中 featureName 應被同步
-    const updatedState = state.readState(sessionId);
+    // state 中 featureName 應被同步（per-project 路徑）
+    const updatedState = state.readState(tmpProject, sessionId);
     expect(updatedState.featureName).toBe('my-feature');
 
     // 清理臨時目錄
@@ -531,6 +539,14 @@ describe('場景 15：featureName auto-sync', () => {
     mkdirSync(paths.sessionDir(sessionId), { recursive: true });
     state.initState(sessionId, 'quick', ['DEV', 'REVIEW', 'TEST']);
     state.updateStateAtomic(sessionId, (s) => {
+      s.stages['DEV'].status = 'active';
+      s.featureName = null;
+      return s;
+    });
+    // per-project 路徑（syncFeatureName 遷移後從這裡讀取）
+    mkdirSync(paths.sessionDir(tmpProject, sessionId), { recursive: true });
+    state.initState(tmpProject, sessionId, 'quick', ['DEV', 'REVIEW', 'TEST']);
+    state.updateStateAtomic(tmpProject, sessionId, null, (s) => {
       s.stages['DEV'].status = 'active';
       s.featureName = null;
       return s;
@@ -1286,10 +1302,18 @@ describe('場景 19：auto-sync specsConfig 過濾', () => {
     specs.initFeatureDir(tmpProject, 'my-feature', 'standard');
 
     // 建立 standard workflow state（不帶 featureName）
+    // 同時在舊路徑和 per-project 路徑建立（handler 用舊 API，syncFeatureName 用新 API）
     mkdirSync(paths.sessionDir(sessionId), { recursive: true });
     state.initState(sessionId, 'standard', ['PLAN', 'ARCH', 'TEST', 'DEV', 'REVIEW', 'TEST:2', 'RETRO', 'DOCS']);
     state.updateStateAtomic(sessionId, (s) => {
-      // 將 DEV 設為 active
+      s.stages['DEV'].status = 'active';
+      s.featureName = null;
+      return s;
+    });
+    // per-project 路徑（syncFeatureName 遷移後從這裡讀取）
+    mkdirSync(paths.sessionDir(tmpProject, sessionId), { recursive: true });
+    state.initState(tmpProject, sessionId, 'standard', ['PLAN', 'ARCH', 'TEST', 'DEV', 'REVIEW', 'TEST:2', 'RETRO', 'DOCS']);
+    state.updateStateAtomic(tmpProject, sessionId, null, (s) => {
       s.stages['DEV'].status = 'active';
       s.featureName = null;
       return s;
@@ -1315,7 +1339,7 @@ describe('場景 19：auto-sync specsConfig 過濾', () => {
     expect(result).toEqual({});
 
     // standard workflow → specsConfig['standard'].length > 0 → auto-sync 執行
-    const updatedState = state.readState(sessionId);
+    const updatedState = state.readState(tmpProject, sessionId);
     expect(updatedState.featureName).toBe('my-feature');
 
     rmSync(tmpProject, { recursive: true, force: true });

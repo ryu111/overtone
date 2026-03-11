@@ -546,12 +546,14 @@ const stateLib = require(join(SCRIPTS_LIB, 'state'));
 const paths9 = require(join(SCRIPTS_LIB, 'paths'));
 const homedir9 = require('os').homedir;
 
+const TEST_PROJECT_ROOT_F9 = process.cwd();
+
 function makeSession9(suffix) {
   const id = `test_ssh_f9_${suffix}_${Date.now().toString(36)}`;
-  const dir = pathMod.join(homedir9(), '.nova', 'sessions', id);
+  const dir = paths9.sessionDir(TEST_PROJECT_ROOT_F9, id);
   mkdirSyncF9(dir, { recursive: true });
   // 初始化空白 workflow.json，讓 updateStateAtomic 可以讀取到狀態
-  writeFileSyncF9(paths9.session.workflow(id), JSON.stringify({}), 'utf8');
+  writeFileSyncF9(paths9.session.workflow(TEST_PROJECT_ROOT_F9, id), JSON.stringify({}), 'utf8');
   return { id, dir };
 }
 
@@ -567,7 +569,7 @@ describe('Feature 9: handleSessionStart — pendingAction 恢復', () => {
 
   test('Scenario 9-1: fix-reject pendingAction 時 systemMessage 包含「REVIEW 被拒絕」', () => {
     session = makeSession9('reject');
-    stateLib.writeState(session.id, {
+    stateLib.writeState(TEST_PROJECT_ROOT_F9, session.id, {
       pendingAction: { type: 'fix-reject', count: 1, stage: 'DEV', reason: '測試原因' },
     });
     const output = handler.handleSessionStart({ cwd: process.cwd() }, session.id, null);
@@ -578,7 +580,7 @@ describe('Feature 9: handleSessionStart — pendingAction 恢復', () => {
 
   test('Scenario 9-2: fix-fail pendingAction 時 systemMessage 包含失敗提示', () => {
     session = makeSession9('fail');
-    stateLib.writeState(session.id, {
+    stateLib.writeState(TEST_PROJECT_ROOT_F9, session.id, {
       pendingAction: { type: 'fix-fail', count: 2, stage: 'TEST', reason: 'Assertion error' },
     });
     const output = handler.handleSessionStart({ cwd: process.cwd() }, session.id, null);
@@ -590,7 +592,7 @@ describe('Feature 9: handleSessionStart — pendingAction 恢復', () => {
 
   test('Scenario 9-3: 無 pendingAction 時 systemMessage 不含「待執行動作」', () => {
     session = makeSession9('nopending');
-    stateLib.writeState(session.id, { workflowType: 'quick' });
+    stateLib.writeState(TEST_PROJECT_ROOT_F9, session.id, { workflowType: 'quick' });
     const output = handler.handleSessionStart({ cwd: process.cwd() }, session.id, null);
     if (output.systemMessage) {
       expect(output.systemMessage).not.toContain('待執行動作');
@@ -599,7 +601,7 @@ describe('Feature 9: handleSessionStart — pendingAction 恢復', () => {
 
   test('Scenario 9-4: fix-reject 包含 count/3 格式', () => {
     session = makeSession9('count');
-    stateLib.writeState(session.id, {
+    stateLib.writeState(TEST_PROJECT_ROOT_F9, session.id, {
       pendingAction: { type: 'fix-reject', count: 2, stage: 'REVIEW' },
     });
     const output = handler.handleSessionStart({ cwd: process.cwd() }, session.id, null);
@@ -746,9 +748,9 @@ describe('Feature 12: buildStartOutput — 邊界補強', () => {
 const { mkdirSync: mkdirSyncF13, rmSync: rmSyncF13, appendFileSync: appendFileSyncF13 } = require('fs');
 const paths13 = require(join(SCRIPTS_LIB, 'paths'));
 
-function makeSession13(suffix) {
+function makeSession13(suffix, projectRoot) {
   const id = `test_ssh_f13_${suffix}_${Date.now().toString(36)}`;
-  const dir = pathMod.join(os.homedir(), '.nova', 'sessions', id);
+  const dir = paths13.sessionDir(projectRoot, id);
   mkdirSyncF13(dir, { recursive: true });
   return { id, dir };
 }
@@ -768,7 +770,7 @@ describe('Feature 13: handleSessionStart — 全域觀察注入', () => {
   beforeEach(() => {
     projectRoot = pathMod.join(os.tmpdir(), `ot-f13-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`);
     mkdirSyncF13(projectRoot, { recursive: true });
-    session = makeSession13('obs');
+    session = makeSession13('obs', projectRoot);
   });
 
   afterEach(() => {
@@ -831,7 +833,7 @@ describe('Feature 13: handleSessionStart — 全域觀察注入', () => {
 
   test('Scenario 13-4: 有 sessionId 時觀察注入後 appliedObservationIds 寫入 state', () => {
     // 初始化 session state
-    stateLib.writeState(session.id, {});
+    stateLib.writeState(projectRoot, session.id, {});
     seedGlobalObs13(projectRoot, [{
       id: `inst_applied_${Date.now().toString(36)}`,
       ts: new Date().toISOString(),
@@ -846,7 +848,7 @@ describe('Feature 13: handleSessionStart — 全域觀察注入', () => {
     }]);
     handler.handleSessionStart({ cwd: projectRoot }, session.id, null);
     // 確認 session state 寫入了 appliedObservationIds（有觀察時）
-    const st = stateLib.readState(session.id);
+    const st = stateLib.readState(projectRoot, session.id);
     if (st && st.appliedObservationIds) {
       expect(Array.isArray(st.appliedObservationIds)).toBe(true);
       expect(st.appliedObservationIds.length).toBeGreaterThan(0);
@@ -855,7 +857,7 @@ describe('Feature 13: handleSessionStart — 全域觀察注入', () => {
   });
 
   test('Scenario 13-5: handleSessionStart 傳入真實 sessionId 時不拋出例外', () => {
-    stateLib.writeState(session.id, {});
+    stateLib.writeState(projectRoot, session.id, {});
     expect(() => {
       handler.handleSessionStart({ cwd: projectRoot }, session.id, null);
     }).not.toThrow();

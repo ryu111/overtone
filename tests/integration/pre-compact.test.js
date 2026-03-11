@@ -698,14 +698,15 @@ describe('Feature 8：on-start.js 重構後行為不變', () => {
 
   // Scenario 8.3: featureName 同步邏輯不受重構影響
   test('on-start.js 有 active feature 且 featureName 為 null 時自動補寫 workflow.json', () => {
-    stateLib.initState(SESSION_ON_START, 'standard', STANDARD_STAGES);
-    const ws = stateLib.readState(SESSION_ON_START);
+    // 在 per-project 路徑建立 state（syncFeatureName 遷移後從這裡讀寫）
+    stateLib.initState(TMP_ROOT_ONSTART, SESSION_ON_START, 'standard', STANDARD_STAGES);
+    const ws = stateLib.readState(TMP_ROOT_ONSTART, SESSION_ON_START);
     expect(ws.featureName).toBeNull();
 
     const result = runOnStart({ session_id: SESSION_ON_START, cwd: TMP_ROOT_ONSTART });
     expect(result.exitCode).toBe(0);
 
-    const updatedWs = stateLib.readState(SESSION_ON_START);
+    const updatedWs = stateLib.readState(TMP_ROOT_ONSTART, SESSION_ON_START);
     expect(updatedWs.featureName).toBe(ON_START_FEAT);
   });
 });

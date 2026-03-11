@@ -31,6 +31,7 @@ const { buildPendingTasksMessage } = require(join(SCRIPTS_LIB, 'hook-utils'));
 
 // 每個場景使用唯一 sessionId 避免衝突
 const TIMESTAMP = Date.now();
+const DEFAULT_CWD = process.cwd(); // spawn 的 projectRoot fallback
 const SESSION_1 = `test-start-001-${TIMESTAMP}`;
 const SESSION_2 = `test-start-002-${TIMESTAMP}`;
 const SESSION_5 = `test-start-005-${TIMESTAMP}`;
@@ -75,20 +76,19 @@ function runHook(input, extraEnv = {}) {
 // ── 清理 ──
 
 afterAll(() => {
-  // 清理所有測試建立的 session 目錄
+  // 清理所有測試建立的 session 目錄（per-project path）
   for (const sessionId of [SESSION_1, SESSION_2]) {
-    const dir = paths.sessionDir(sessionId);
+    const dir = paths.sessionDir(DEFAULT_CWD, sessionId);
     rmSync(dir, { recursive: true, force: true });
   }
   // 清理場景 4, 5 的暫存 feature
   rmSync(TMP_PROJECT_ROOT, { recursive: true, force: true });
   rmSync(TMP_PROJECT_ROOT_5, { recursive: true, force: true });
-  // 清理場景 5 的 session
-  const stateLib = require(join(SCRIPTS_LIB, 'state'));
-  const dir5 = paths.sessionDir(SESSION_5);
+  // 清理場景 5 的 session（per-project path）
+  const dir5 = paths.sessionDir(TMP_PROJECT_ROOT_5, SESSION_5);
   rmSync(dir5, { recursive: true, force: true });
-  // 清理場景 8 的 session
-  const dir8 = paths.sessionDir(SESSION_8);
+  // 清理場景 8 的 session（per-project path）
+  const dir8 = paths.sessionDir(DEFAULT_CWD, SESSION_8);
   rmSync(dir8, { recursive: true, force: true });
 });
 
@@ -103,7 +103,7 @@ describe('場景 1：有效 session_id — exit 0 並建立 session 目錄', () 
   });
 
   test('session 根目錄已建立', () => {
-    const sessionDir = paths.sessionDir(SESSION_1);
+    const sessionDir = paths.sessionDir(DEFAULT_CWD, SESSION_1);
     expect(existsSync(sessionDir)).toBe(true);
   });
 
@@ -120,7 +120,7 @@ describe('場景 2：timeline 寫入 session:start 事件', () => {
     const result = runHook({ session_id: SESSION_2 });
     expect(result.exitCode).toBe(0);
 
-    const timelinePath = paths.session.timeline(SESSION_2);
+    const timelinePath = paths.session.timeline(DEFAULT_CWD, SESSION_2);
     expect(existsSync(timelinePath)).toBe(true);
 
     // 讀取 timeline.jsonl 並解析所有事件
@@ -257,8 +257,8 @@ describe('場景 5：active feature 自動補寫 workflow.json.featureName', () 
 
   test('setup: 初始化 workflow.json（featureName 為 null）並建立 in-progress feature', () => {
     // 初始化 session 的 workflow.json（standard workflow 的 stage 列表）
-    stateLib.initState(SESSION_5, 'standard', ['PLAN', 'ARCH', 'TEST', 'DEV', 'REVIEW', 'TEST', 'RETRO', 'DOCS']);
-    const ws = stateLib.readState(SESSION_5);
+    stateLib.initState(TMP_PROJECT_ROOT_5, SESSION_5, 'standard', ['PLAN', 'ARCH', 'TEST', 'DEV', 'REVIEW', 'TEST', 'RETRO', 'DOCS']);
+    const ws = stateLib.readState(TMP_PROJECT_ROOT_5, SESSION_5);
     expect(ws).toBeDefined();
     expect(ws.featureName).toBeNull();
 
@@ -284,18 +284,18 @@ describe('場景 5：active feature 自動補寫 workflow.json.featureName', () 
     const result = runHook({ session_id: SESSION_5, cwd: TMP_PROJECT_ROOT_5 });
     expect(result.exitCode).toBe(0);
 
-    const ws = stateLib.readState(SESSION_5);
+    const ws = stateLib.readState(TMP_PROJECT_ROOT_5, SESSION_5);
     expect(ws.featureName).toBe(FEATURE_NAME_5);
   });
 
   test('workflow.json.featureName 已有值時不覆蓋', () => {
     // 設置一個不同的 featureName
-    stateLib.setFeatureName(SESSION_5, 'existing-feature');
+    stateLib.setFeatureName(TMP_PROJECT_ROOT_5, SESSION_5, null, 'existing-feature');
     const result = runHook({ session_id: SESSION_5, cwd: TMP_PROJECT_ROOT_5 });
     expect(result.exitCode).toBe(0);
 
     // 應保留原有值，不被 active feature 覆蓋
-    const ws = stateLib.readState(SESSION_5);
+    const ws = stateLib.readState(TMP_PROJECT_ROOT_5, SESSION_5);
     expect(ws.featureName).toBe('existing-feature');
   });
 });
@@ -330,7 +330,7 @@ describe('場景 7b：CLAUDE_ENV_FILE — 寫入副作用整合測試（spawn）
   const tmpEnvFile = join(homedir(), '.nova', 'test-tmp', `session-start-env-${TIMESTAMP}.txt`);
 
   afterAll(() => {
-    const dir7 = paths.sessionDir(SESSION_7);
+    const dir7 = paths.sessionDir(DEFAULT_CWD, SESSION_7);
     rmSync(dir7, { recursive: true, force: true });
     rmSync(tmpEnvFile, { force: true });
   });
@@ -411,7 +411,7 @@ describe('場景 6b：NOVA_NO_DASHBOARD=1 — 跳過 Dashboard spawn（副作用
 
   // 清理場景 6 的 session
   afterAll(() => {
-    const dir6 = paths.sessionDir(SESSION_6);
+    const dir6 = paths.sessionDir(DEFAULT_CWD, SESSION_6);
     rmSync(dir6, { recursive: true, force: true });
   });
 
@@ -432,10 +432,10 @@ describe('場景 8：on-start.js 呼叫 sanitize() 修復殘留不一致狀態',
   const stateLib = require(join(SCRIPTS_LIB, 'state'));
 
   test('setup: 初始化 workflow.json 並注入孤兒 activeAgent', () => {
-    stateLib.initState(SESSION_8, 'quick', ['DEV', 'REVIEW']);
+    stateLib.initState(DEFAULT_CWD, SESSION_8, 'quick', ['DEV', 'REVIEW']);
     // 注入孤兒 activeAgent（TEST 不在 stages 中）
-    stateLib.writeState(SESSION_8, {
-      ...stateLib.readState(SESSION_8),
+    stateLib.writeState(DEFAULT_CWD, SESSION_8, {
+      ...stateLib.readState(DEFAULT_CWD, SESSION_8),
       activeAgents: {
         'tester:orphan999': {
           agentName: 'tester',
@@ -444,7 +444,7 @@ describe('場景 8：on-start.js 呼叫 sanitize() 修復殘留不一致狀態',
         },
       },
     });
-    const ws = stateLib.readState(SESSION_8);
+    const ws = stateLib.readState(DEFAULT_CWD, SESSION_8);
     expect(ws.activeAgents['tester:orphan999']).toBeDefined();
   });
 
@@ -452,7 +452,7 @@ describe('場景 8：on-start.js 呼叫 sanitize() 修復殘留不一致狀態',
     const result = runHook({ session_id: SESSION_8 });
     expect(result.exitCode).toBe(0);
 
-    const ws = stateLib.readState(SESSION_8);
+    const ws = stateLib.readState(DEFAULT_CWD, SESSION_8);
     // sanitize() 應在 SessionStart 時清除孤兒 entry
     expect(ws.activeAgents['tester:orphan999']).toBeUndefined();
     expect(Object.keys(ws.activeAgents)).toHaveLength(0);
@@ -465,6 +465,6 @@ describe('場景 8：on-start.js 呼叫 sanitize() 修復殘留不一致狀態',
     expect(result.exitCode).toBe(0);
     // 清理
     const { rmSync: rm } = require('fs');
-    rm(paths.sessionDir(SESSION_NO_WF_8), { recursive: true, force: true });
+    rm(paths.sessionDir(DEFAULT_CWD, SESSION_NO_WF_8), { recursive: true, force: true });
   });
 });
