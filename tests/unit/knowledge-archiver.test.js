@@ -112,7 +112,9 @@ describe('Feature B: archiveKnowledge 外部 fragment 降級', () => {
 
     expect(result.archived).toBe(0);
     expect(emitCalls.length).toBe(1);
-    expect(emitCalls[0][1]).toBe('knowledge_gap');
+    // emit(projectRoot, sessionId, 'knowledge_gap', {...})
+    expect(emitCalls[0][0]).toBe(PROJECT_ROOT);
+    expect(emitCalls[0][2]).toBe('knowledge_gap');
   });
 
   // Scenario B-3: 外部 fragment + 無 sessionId → emit 不被呼叫

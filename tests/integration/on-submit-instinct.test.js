@@ -62,10 +62,7 @@ const createdSessions = [];
 
 afterAll(() => {
   for (const sid of createdSessions) {
-    // 清理 per-project 路徑（state 寫入處）
     rmSync(paths.sessionDir(PROJECT_ROOT, sid), { recursive: true, force: true });
-    // 清理舊全域路徑（instinct emit 寫入處，instinct API 尚未遷移 per-project）
-    rmSync(paths.sessionDir(sid), { recursive: true, force: true });
   }
 });
 
@@ -92,8 +89,7 @@ describe('場景 1：已有進行中 workflow 時記錄 workflow_routing', () =>
       cwd: PROJECT_ROOT,
     });
 
-    // instinct API 尚未遷移 per-project，emit/query 均以 sessionId 為第一參數
-    const observations = instinct.query(sessionId, { type: 'workflow_routing' });
+    const observations = instinct.query(PROJECT_ROOT, sessionId, { type: 'workflow_routing' });
     expect(observations.length).toBeGreaterThan(0);
 
     const obs = observations.find(o => o.tag === 'wf-standard');
@@ -125,8 +121,8 @@ describe('場景 2：首次 prompt 不記錄 workflow_routing', () => {
     // systemMessage 應注入 auto 指引
     expect(getContext(output)).toContain('/auto');
 
-    // 不應有 workflow_routing 觀察（instinct API 尚未遷移 per-project）
-    const observations = instinct.query(sessionId, { type: 'workflow_routing' });
+    // 不應有 workflow_routing 觀察
+    const observations = instinct.query(PROJECT_ROOT, sessionId, { type: 'workflow_routing' });
     expect(observations.length).toBe(0);
   });
 });
@@ -156,8 +152,7 @@ describe('場景 3：prompt 超過 80 字元時截斷', () => {
       cwd: PROJECT_ROOT,
     });
 
-    // instinct API 尚未遷移 per-project
-    const observations = instinct.query(sessionId, { type: 'workflow_routing', tag: 'wf-quick' });
+    const observations = instinct.query(PROJECT_ROOT, sessionId, { type: 'workflow_routing', tag: 'wf-quick' });
     expect(observations.length).toBeGreaterThan(0);
 
     // trigger 應為前 80 字元
@@ -190,8 +185,7 @@ describe('場景 4：空字串 prompt 使用預設 trigger', () => {
       cwd: PROJECT_ROOT,
     });
 
-    // instinct API 尚未遷移 per-project
-    const observations = instinct.query(sessionId, { type: 'workflow_routing', tag: 'wf-tdd' });
+    const observations = instinct.query(PROJECT_ROOT, sessionId, { type: 'workflow_routing', tag: 'wf-tdd' });
     expect(observations.length).toBeGreaterThan(0);
     expect(observations[0].trigger).toBe('(empty prompt)');
   });

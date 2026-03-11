@@ -13,6 +13,9 @@ const { SCRIPTS_LIB } = require('../helpers/paths');
 const { buildSystemMessage, handleOnSubmit } = require(join(SCRIPTS_LIB, 'on-submit-handler'));
 const { workflows } = require(join(SCRIPTS_LIB, 'registry'));
 const instinct = require(join(SCRIPTS_LIB, 'knowledge/instinct'));
+const paths = require(join(SCRIPTS_LIB, 'paths'));
+
+const PROJECT_ROOT = process.cwd();
 
 describe('buildSystemMessage', () => {
   it('Scenario 1: validWorkflowOverride 有效時回傳指定 workflow 指引', () => {
@@ -92,7 +95,7 @@ describe('buildSystemMessage', () => {
 
 function makeSession(suffix) {
   const id = `test_submit_j_${suffix}_${Date.now()}`;
-  const dir = join(homedir(), '.nova', 'sessions', id);
+  const dir = paths.sessionDir(PROJECT_ROOT, id);
   return { id, dir };
 }
 
@@ -116,7 +119,7 @@ describe('Feature 4: intent_journal 記錄（handleOnSubmit）', () => {
       cwd: process.cwd(),
     });
 
-    const journals = instinct.query(session.id, { type: 'intent_journal' });
+    const journals = instinct.query(PROJECT_ROOT, session.id, { type: 'intent_journal' });
     expect(journals.length).toBeGreaterThanOrEqual(1);
     const j = journals[journals.length - 1];
     expect(j.trigger).toBe('幫我寫一個登入頁面');
@@ -132,7 +135,7 @@ describe('Feature 4: intent_journal 記錄（handleOnSubmit）', () => {
       cwd: process.cwd(),
     });
 
-    const journals = instinct.query(session.id, { type: 'intent_journal' });
+    const journals = instinct.query(PROJECT_ROOT, session.id, { type: 'intent_journal' });
     expect(journals.length).toBeGreaterThanOrEqual(1);
     const j = journals[journals.length - 1];
     expect(j.action).toContain('無進行中工作流');
@@ -149,7 +152,7 @@ describe('Feature 4: intent_journal 記錄（handleOnSubmit）', () => {
       cwd: process.cwd(),
     });
 
-    const journals = instinct.query(session.id, { type: 'intent_journal' });
+    const journals = instinct.query(PROJECT_ROOT, session.id, { type: 'intent_journal' });
     expect(journals.length).toBeGreaterThanOrEqual(1);
     const j = journals[journals.length - 1];
     expect(j.trigger.length).toBeLessThanOrEqual(500);
@@ -164,7 +167,7 @@ describe('Feature 4: intent_journal 記錄（handleOnSubmit）', () => {
       cwd: process.cwd(),
     });
 
-    const journals = instinct.query(session.id, { type: 'intent_journal' });
+    const journals = instinct.query(PROJECT_ROOT, session.id, { type: 'intent_journal' });
     expect(journals.length).toBeGreaterThanOrEqual(1);
     const j = journals[journals.length - 1];
     expect(j.trigger).toBe('(empty prompt)');
@@ -185,7 +188,7 @@ describe('Feature 4: intent_journal 記錄（handleOnSubmit）', () => {
       cwd: process.cwd(),
     });
 
-    const journals = instinct.query(session.id, { type: 'intent_journal' });
+    const journals = instinct.query(PROJECT_ROOT, session.id, { type: 'intent_journal' });
     expect(journals.length).toBeGreaterThanOrEqual(2);
     // 每筆記錄 id 獨立（skipDedup=true 建立新記錄）
     const ids = journals.map(j => j.id);
@@ -201,7 +204,7 @@ describe('Feature 4: intent_journal 記錄（handleOnSubmit）', () => {
       cwd: process.cwd(),
     });
 
-    const journals = instinct.query(session.id, { type: 'intent_journal' });
+    const journals = instinct.query(PROJECT_ROOT, session.id, { type: 'intent_journal' });
     expect(journals).toHaveLength(0);
   });
 });

@@ -860,7 +860,7 @@ describe('場景 14：agent_performance Instinct 觀察', () => {
     );
 
     // 查詢 agent_performance 觀察
-    const observations = instinct.query(sessionId, { type: 'agent_performance' });
+    const observations = instinct.query(DEFAULT_CWD, sessionId, { type: 'agent_performance' });
     expect(observations.length).toBeGreaterThan(0);
 
     const devObs = observations.find(o => o.tag === 'agent-developer');
@@ -892,7 +892,7 @@ describe('場景 14：agent_performance Instinct 觀察', () => {
       sessionId
     );
 
-    const observations = instinct.query(sessionId, { type: 'agent_performance' });
+    const observations = instinct.query(DEFAULT_CWD, sessionId, { type: 'agent_performance' });
     const testerObs = observations.find(o => o.tag === 'agent-tester');
     expect(testerObs).toBeDefined();
     expect(testerObs.trigger).toContain('tester');
@@ -918,7 +918,7 @@ describe('場景 14：agent_performance Instinct 觀察', () => {
       sessionId
     );
 
-    const observations = instinct.query(sessionId, { type: 'agent_performance' });
+    const observations = instinct.query(DEFAULT_CWD, sessionId, { type: 'agent_performance' });
     const reviewerObs = observations.find(o => o.tag === 'agent-code-reviewer');
     expect(reviewerObs).toBeDefined();
     expect(reviewerObs.trigger).toContain('code-reviewer');
@@ -938,7 +938,7 @@ describe('場景 14：agent_performance Instinct 觀察', () => {
       sessionId
     );
 
-    const first = instinct.query(sessionId, { type: 'agent_performance', tag: 'agent-developer' });
+    const first = instinct.query(DEFAULT_CWD, sessionId, { type: 'agent_performance', tag: 'agent-developer' });
     expect(first.length).toBeGreaterThan(0);
     expect(first[0].count).toBe(1);
     expect(first[0].confidence).toBe(0.3);
@@ -955,7 +955,7 @@ describe('場景 14：agent_performance Instinct 觀察', () => {
       sessionId
     );
 
-    const second = instinct.query(sessionId, { type: 'agent_performance', tag: 'agent-developer' });
+    const second = instinct.query(DEFAULT_CWD, sessionId, { type: 'agent_performance', tag: 'agent-developer' });
     expect(second[0].count).toBe(2);
     expect(second[0].confidence).toBe(0.35); // 0.3 + 0.05
   });

@@ -8,6 +8,8 @@ const { join } = require('path');
 const { SCRIPTS_LIB } = require('../helpers/paths');
 const { observeBashError, extractCommandTag } = require(join(SCRIPTS_LIB, 'post-use-handler'));
 
+const PROJECT_ROOT = process.cwd();
+
 // ── extractCommandTag 測試 ──
 
 describe('extractCommandTag', () => {
@@ -51,7 +53,7 @@ describe('observeBashError', () => {
 
   it('Scenario 1: exit_code=0 時回傳 null（無錯誤）', () => {
     const result = observeBashError(
-      sessionId,
+      PROJECT_ROOT, sessionId,
       { command: 'bun test' },
       { exit_code: 0, stderr: '' }
     );
@@ -60,7 +62,7 @@ describe('observeBashError', () => {
 
   it('Scenario 2: exit_code=undefined 時回傳 null', () => {
     const result = observeBashError(
-      sessionId,
+      PROJECT_ROOT, sessionId,
       { command: 'bun test' },
       {}
     );
@@ -69,7 +71,7 @@ describe('observeBashError', () => {
 
   it('Scenario 3: 空 command 時回傳 null', () => {
     const result = observeBashError(
-      sessionId,
+      PROJECT_ROOT, sessionId,
       { command: '' },
       { exit_code: 1, stderr: 'error' }
     );
@@ -78,7 +80,7 @@ describe('observeBashError', () => {
 
   it('Scenario 4: 重要工具 + 實質 stderr → 回傳自我修復指令', () => {
     const result = observeBashError(
-      sessionId,
+      PROJECT_ROOT, sessionId,
       { command: 'bun test' },
       { exit_code: 1, stderr: 'Module not found: cannot resolve "./missing"' }
     );
@@ -90,7 +92,7 @@ describe('observeBashError', () => {
 
   it('Scenario 5: 重要工具 + 短 stderr（< 20字）→ 回傳 null（非重大）', () => {
     const result = observeBashError(
-      sessionId,
+      PROJECT_ROOT, sessionId,
       { command: 'git push' },
       { exit_code: 1, stderr: 'rejected' }
     );
@@ -99,7 +101,7 @@ describe('observeBashError', () => {
 
   it('Scenario 6: 非重要工具 + 實質 stderr → 回傳 null', () => {
     const result = observeBashError(
-      sessionId,
+      PROJECT_ROOT, sessionId,
       { command: 'curl https://example.com' },
       { exit_code: 6, stderr: 'Could not resolve host: example.com' }
     );
@@ -109,7 +111,7 @@ describe('observeBashError', () => {
   it('Scenario 7: 支援 exitCode（camelCase）和 returncode 格式', () => {
     // exitCode 格式
     const r1 = observeBashError(
-      sessionId,
+      PROJECT_ROOT, sessionId,
       { command: 'bun run' },
       { exitCode: 0, stderr: '' }
     );
@@ -117,7 +119,7 @@ describe('observeBashError', () => {
 
     // returncode 格式
     const r2 = observeBashError(
-      sessionId,
+      PROJECT_ROOT, sessionId,
       { command: 'bun run' },
       { returncode: 0 }
     );
@@ -126,7 +128,7 @@ describe('observeBashError', () => {
 
   it('Scenario 8: 重要工具 + 無 stderr → 回傳 null（雖重要但無實質錯誤訊息）', () => {
     const result = observeBashError(
-      sessionId,
+      PROJECT_ROOT, sessionId,
       { command: 'git push' },
       { exit_code: 128, stderr: '' }
     );
@@ -135,7 +137,7 @@ describe('observeBashError', () => {
 
   it('Scenario 9: 自我修復指令包含 exit code 資訊', () => {
     const result = observeBashError(
-      sessionId,
+      PROJECT_ROOT, sessionId,
       { command: 'bun test' },
       { exit_code: 2, stderr: 'SyntaxError: unexpected token at line 5' }
     );

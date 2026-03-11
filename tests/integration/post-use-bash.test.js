@@ -27,18 +27,20 @@ const ALL_SESSIONS = [SESSION_1, SESSION_2, SESSION_3, SESSION_4, SESSION_5, SES
 
 const instinct = require(join(SCRIPTS_LIB, 'knowledge/instinct'));
 
+const PROJECT_ROOT = process.cwd();
+
 beforeAll(() => {
   // 建立所有 session，確保 instinct.emit 有有效的 session 存在
   for (const sessionId of ALL_SESSIONS) {
-    mkdirSync(paths.sessionDir(sessionId), { recursive: true });
-    state.initState(sessionId, 'quick', ['DEV', 'REVIEW', 'TEST']);
+    mkdirSync(paths.sessionDir(PROJECT_ROOT, sessionId), { recursive: true });
+    state.initState(PROJECT_ROOT, sessionId, 'quick', ['DEV', 'REVIEW', 'TEST']);
   }
 });
 
 afterAll(() => {
   // 清理所有測試 session 目錄
   for (const sessionId of ALL_SESSIONS) {
-    rmSync(paths.sessionDir(sessionId), { recursive: true, force: true });
+    rmSync(paths.sessionDir(PROJECT_ROOT, sessionId), { recursive: true, force: true });
   }
 });
 
@@ -192,7 +194,7 @@ describe('場景 5：search-tools 反面觀察', () => {
     expect(exitCode).toBe(0);
 
     // 驗證 instinct 觀察記錄
-    const observations = instinct.query(SESSION_5, { type: 'tool_preferences', tag: 'search-tools' });
+    const observations = instinct.query(PROJECT_ROOT, SESSION_5, { type: 'tool_preferences', tag: 'search-tools' });
     expect(observations.length).toBeGreaterThan(0);
     expect(observations[0].action).toContain('建議改用 Grep/Glob 工具');
     expect(observations[0].trigger).toContain('grep');
@@ -206,7 +208,7 @@ describe('場景 5：search-tools 反面觀察', () => {
       tool_response: { exit_code: 0, stdout: '"version": "1.0.0"', stderr: '' },
     });
 
-    const observations = instinct.query(SESSION_6, { type: 'tool_preferences', tag: 'search-tools' });
+    const observations = instinct.query(PROJECT_ROOT, SESSION_6, { type: 'tool_preferences', tag: 'search-tools' });
     expect(observations.length).toBeGreaterThan(0);
   });
 
@@ -218,7 +220,7 @@ describe('場景 5：search-tools 反面觀察', () => {
       tool_response: { exit_code: 0, stdout: '', stderr: '' },
     });
 
-    const observations = instinct.query(SESSION_7, { type: 'tool_preferences', tag: 'search-tools' });
+    const observations = instinct.query(PROJECT_ROOT, SESSION_7, { type: 'tool_preferences', tag: 'search-tools' });
     expect(observations.length).toBeGreaterThan(0);
   });
 
@@ -230,21 +232,21 @@ describe('場景 5：search-tools 反面觀察', () => {
       tool_response: { exit_code: 1, stdout: '', stderr: '' },
     });
 
-    const observations = instinct.query(SESSION_8, { type: 'tool_preferences', tag: 'search-tools' });
+    const observations = instinct.query(PROJECT_ROOT, SESSION_8, { type: 'tool_preferences', tag: 'search-tools' });
     expect(observations.length).toBeGreaterThan(0);
   });
 
   test('Grep 工具使用時不記錄 search-tools 觀察', async () => {
     // SESSION_4 使用 Grep 工具（場景 4 已執行）
-    const observations = instinct.query(SESSION_4, { type: 'tool_preferences', tag: 'search-tools' });
+    const observations = instinct.query(PROJECT_ROOT, SESSION_4, { type: 'tool_preferences', tag: 'search-tools' });
     expect(observations.length).toBe(0);
   });
 
   test('Bash 指令含 fingerprint 不觸發（word boundary 匹配）', async () => {
     // 建立獨立 session 避免與其他測試干擾
     const fpSession = `test_post_bash_fp_${Date.now()}`;
-    mkdirSync(paths.sessionDir(fpSession), { recursive: true });
-    state.initState(fpSession, 'quick', ['DEV', 'REVIEW', 'TEST']);
+    mkdirSync(paths.sessionDir(PROJECT_ROOT, fpSession), { recursive: true });
+    state.initState(PROJECT_ROOT, fpSession, 'quick', ['DEV', 'REVIEW', 'TEST']);
 
     try {
       await runHook({
@@ -254,10 +256,10 @@ describe('場景 5：search-tools 反面觀察', () => {
         tool_response: { exit_code: 0, stdout: '', stderr: '' },
       });
 
-      const observations = instinct.query(fpSession, { type: 'tool_preferences', tag: 'search-tools' });
+      const observations = instinct.query(PROJECT_ROOT, fpSession, { type: 'tool_preferences', tag: 'search-tools' });
       expect(observations.length).toBe(0);
     } finally {
-      rmSync(paths.sessionDir(fpSession), { recursive: true, force: true });
+      rmSync(paths.sessionDir(PROJECT_ROOT, fpSession), { recursive: true, force: true });
     }
   });
 });
