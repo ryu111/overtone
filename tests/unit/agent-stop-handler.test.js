@@ -37,6 +37,7 @@ const timeline = require(join(SCRIPTS_LIB, 'timeline'));
 const SESSION_PREFIX = `test_ost_${Date.now()}`;
 let sessionCounter = 0;
 const createdSessions = [];
+const TEST_PROJECT_ROOT = process.cwd();
 
 function newSessionId() {
   const sid = `${SESSION_PREFIX}_${++sessionCounter}`;
@@ -44,15 +45,15 @@ function newSessionId() {
   return sid;
 }
 
-function setupSession(sid, stageList, workflowType = 'quick') {
-  const dir = paths.sessionDir(sid);
+function setupSession(sid, stageList, workflowType = 'quick', projectRoot = TEST_PROJECT_ROOT) {
+  const dir = paths.sessionDir(projectRoot, sid);
   fs.mkdirSync(dir, { recursive: true });
-  return stateLib.initState(sid, workflowType, stageList);
+  return stateLib.initState(projectRoot, sid, workflowType, stageList);
 }
 
 afterAll(() => {
   for (const sid of createdSessions) {
-    const dir = paths.sessionDir(sid);
+    const dir = paths.sessionDir(TEST_PROJECT_ROOT, sid);
     fs.rmSync(dir, { recursive: true, force: true });
   }
 });
@@ -131,7 +132,7 @@ describe('handleAgentStop — 正常 pass 流程', () => {
     setupSession(sid, ['DEV'], 'single');
 
     // 設定 DEV 為 active
-    stateLib.updateStateAtomic(sid, (s) => {
+    stateLib.updateStateAtomic(TEST_PROJECT_ROOT, sid, null, (s) => {
       s.stages['DEV'].status = 'active';
       return s;
     });
@@ -148,7 +149,7 @@ describe('handleAgentStop — 正常 pass 流程', () => {
     // SubagentStop handler 回傳 { output: {} }，result 欄位不存在
     expect(result.output.result).toBeUndefined();
 
-    const state = stateLib.readState(sid);
+    const state = stateLib.readState(TEST_PROJECT_ROOT, sid);
     expect(state.stages['DEV'].status).toBe('completed');
     expect(state.stages['DEV'].result).toBe('pass');
   });
@@ -157,7 +158,7 @@ describe('handleAgentStop — 正常 pass 流程', () => {
     const sid = newSessionId();
     setupSession(sid, ['DEV', 'REVIEW'], 'quick');
 
-    stateLib.updateStateAtomic(sid, (s) => {
+    stateLib.updateStateAtomic(TEST_PROJECT_ROOT, sid, null, (s) => {
       s.stages['DEV'].status = 'completed';
       s.stages['DEV'].result = 'pass';
       s.stages['REVIEW'].status = 'active';
@@ -172,7 +173,7 @@ describe('handleAgentStop — 正常 pass 流程', () => {
       sid
     );
 
-    const state = stateLib.readState(sid);
+    const state = stateLib.readState(TEST_PROJECT_ROOT, sid);
     expect(state.stages['REVIEW'].status).toBe('completed');
     expect(state.stages['REVIEW'].result).toBe('pass');
     expect(result.output.result).toBeUndefined();
@@ -182,7 +183,7 @@ describe('handleAgentStop — 正常 pass 流程', () => {
     const sid = newSessionId();
     setupSession(sid, ['DEV'], 'single');
 
-    stateLib.updateStateAtomic(sid, (s) => {
+    stateLib.updateStateAtomic(TEST_PROJECT_ROOT, sid, null, (s) => {
       s.stages['DEV'].status = 'active';
       s.failCount = 1;
       s.pendingAction = { type: 'fix-fail', stage: 'DEV', agent: 'developer' };
@@ -194,7 +195,7 @@ describe('handleAgentStop — 正常 pass 流程', () => {
       sid
     );
 
-    const state = stateLib.readState(sid);
+    const state = stateLib.readState(TEST_PROJECT_ROOT, sid);
     expect(state.pendingAction).toBeNull();
   });
 });
@@ -206,7 +207,7 @@ describe('handleAgentStop — fail verdict', () => {
     const sid = newSessionId();
     setupSession(sid, ['DEV', 'TEST'], 'tdd');
 
-    stateLib.updateStateAtomic(sid, (s) => {
+    stateLib.updateStateAtomic(TEST_PROJECT_ROOT, sid, null, (s) => {
       s.stages['DEV'].status = 'completed';
       s.stages['DEV'].result = 'pass';
       s.stages['TEST'].status = 'active';
@@ -221,7 +222,7 @@ describe('handleAgentStop — fail verdict', () => {
       sid
     );
 
-    const state = stateLib.readState(sid);
+    const state = stateLib.readState(TEST_PROJECT_ROOT, sid);
     expect(state.stages['TEST'].status).toBe('completed');
     expect(state.stages['TEST'].result).toBe('fail');
     expect(state.failCount).toBeGreaterThan(0);
@@ -232,7 +233,7 @@ describe('handleAgentStop — fail verdict', () => {
     const sid = newSessionId();
     setupSession(sid, ['DEV', 'TEST'], 'tdd');
 
-    stateLib.updateStateAtomic(sid, (s) => {
+    stateLib.updateStateAtomic(TEST_PROJECT_ROOT, sid, null, (s) => {
       s.stages['DEV'].status = 'completed';
       s.stages['DEV'].result = 'pass';
       s.stages['TEST'].status = 'active';
@@ -247,7 +248,7 @@ describe('handleAgentStop — fail verdict', () => {
       sid
     );
 
-    const state = stateLib.readState(sid);
+    const state = stateLib.readState(TEST_PROJECT_ROOT, sid);
     expect(state.pendingAction).not.toBeNull();
     expect(state.pendingAction.type).toBe('fix-fail');
     expect(state.pendingAction.stage).toBe('TEST');
@@ -257,7 +258,7 @@ describe('handleAgentStop — fail verdict', () => {
     const sid = newSessionId();
     setupSession(sid, ['DEV', 'TEST'], 'tdd');
 
-    stateLib.updateStateAtomic(sid, (s) => {
+    stateLib.updateStateAtomic(TEST_PROJECT_ROOT, sid, null, (s) => {
       s.stages['DEV'].status = 'completed';
       s.stages['DEV'].result = 'pass';
       s.stages['TEST'].status = 'active';
@@ -272,7 +273,7 @@ describe('handleAgentStop — fail verdict', () => {
       sid
     );
 
-    const state = stateLib.readState(sid);
+    const state = stateLib.readState(TEST_PROJECT_ROOT, sid);
     expect(state.stages['TEST'].result).toBe('pass');
   });
 });
@@ -284,7 +285,7 @@ describe('handleAgentStop — reject verdict', () => {
     const sid = newSessionId();
     setupSession(sid, ['DEV', 'REVIEW'], 'quick');
 
-    stateLib.updateStateAtomic(sid, (s) => {
+    stateLib.updateStateAtomic(TEST_PROJECT_ROOT, sid, null, (s) => {
       s.stages['DEV'].status = 'completed';
       s.stages['DEV'].result = 'pass';
       s.stages['REVIEW'].status = 'active';
@@ -299,7 +300,7 @@ describe('handleAgentStop — reject verdict', () => {
       sid
     );
 
-    const state = stateLib.readState(sid);
+    const state = stateLib.readState(TEST_PROJECT_ROOT, sid);
     expect(state.stages['REVIEW'].result).toBe('reject');
     expect(state.rejectCount).toBeGreaterThan(0);
   });
@@ -308,7 +309,7 @@ describe('handleAgentStop — reject verdict', () => {
     const sid = newSessionId();
     setupSession(sid, ['DEV', 'REVIEW'], 'quick');
 
-    stateLib.updateStateAtomic(sid, (s) => {
+    stateLib.updateStateAtomic(TEST_PROJECT_ROOT, sid, null, (s) => {
       s.stages['DEV'].status = 'completed';
       s.stages['DEV'].result = 'pass';
       s.stages['REVIEW'].status = 'active';
@@ -323,7 +324,7 @@ describe('handleAgentStop — reject verdict', () => {
       sid
     );
 
-    const state = stateLib.readState(sid);
+    const state = stateLib.readState(TEST_PROJECT_ROOT, sid);
     expect(state.pendingAction).not.toBeNull();
     expect(state.pendingAction.type).toBe('fix-reject');
   });
@@ -332,7 +333,7 @@ describe('handleAgentStop — reject verdict', () => {
     const sid = newSessionId();
     setupSession(sid, ['DEV', 'REVIEW'], 'quick');
 
-    stateLib.updateStateAtomic(sid, (s) => {
+    stateLib.updateStateAtomic(TEST_PROJECT_ROOT, sid, null, (s) => {
       s.stages['DEV'].status = 'completed';
       s.stages['DEV'].result = 'pass';
       s.stages['REVIEW'].status = 'active';
@@ -347,7 +348,7 @@ describe('handleAgentStop — reject verdict', () => {
       sid
     );
 
-    const state = stateLib.readState(sid);
+    const state = stateLib.readState(TEST_PROJECT_ROOT, sid);
     expect(state.stages['REVIEW'].result).toBe('reject');
   });
 
@@ -355,7 +356,7 @@ describe('handleAgentStop — reject verdict', () => {
     const sid = newSessionId();
     setupSession(sid, ['DEV', 'REVIEW'], 'quick');
 
-    stateLib.updateStateAtomic(sid, (s) => {
+    stateLib.updateStateAtomic(TEST_PROJECT_ROOT, sid, null, (s) => {
       s.stages['DEV'].status = 'completed';
       s.stages['DEV'].result = 'pass';
       s.stages['REVIEW'].status = 'active';
@@ -370,7 +371,7 @@ describe('handleAgentStop — reject verdict', () => {
       sid
     );
 
-    const state = stateLib.readState(sid);
+    const state = stateLib.readState(TEST_PROJECT_ROOT, sid);
     expect(state.stages['REVIEW'].result).toBe('pass');
   });
 });
@@ -383,7 +384,7 @@ describe('handleAgentStop — activeAgents 清理', () => {
     setupSession(sid, ['DEV'], 'single');
 
     const instanceId = 'developer:abc123-def456';
-    stateLib.updateStateAtomic(sid, (s) => {
+    stateLib.updateStateAtomic(TEST_PROJECT_ROOT, sid, null, (s) => {
       s.stages['DEV'].status = 'active';
       s.activeAgents[instanceId] = { agentName: 'developer', stage: 'DEV', startedAt: new Date().toISOString() };
       return s;
@@ -397,7 +398,7 @@ describe('handleAgentStop — activeAgents 清理', () => {
       sid
     );
 
-    const state = stateLib.readState(sid);
+    const state = stateLib.readState(TEST_PROJECT_ROOT, sid);
     expect(state.activeAgents[instanceId]).toBeUndefined();
   });
 
@@ -407,7 +408,7 @@ describe('handleAgentStop — activeAgents 清理', () => {
 
     const instanceId1 = 'developer:aaa000-111111';
     const instanceId2 = 'developer:zzz999-222222';
-    stateLib.updateStateAtomic(sid, (s) => {
+    stateLib.updateStateAtomic(TEST_PROJECT_ROOT, sid, null, (s) => {
       s.stages['DEV'].status = 'active';
       s.activeAgents[instanceId1] = { agentName: 'developer', stage: 'DEV', startedAt: new Date().toISOString() };
       s.activeAgents[instanceId2] = { agentName: 'developer', stage: 'DEV', startedAt: new Date().toISOString() };
@@ -423,7 +424,7 @@ describe('handleAgentStop — activeAgents 清理', () => {
     );
 
     // 字典序最小的應被刪除（fallback 取 candidates[0]）
-    const state = stateLib.readState(sid);
+    const state = stateLib.readState(TEST_PROJECT_ROOT, sid);
     expect(state.activeAgents[instanceId1]).toBeUndefined();
     // instanceId2 可能還存在（另一個並行 agent）
     // 注意：enforceInvariants 規則 4 可能因為 active stage 無 activeAgent 而清除 active 狀態
@@ -434,7 +435,7 @@ describe('handleAgentStop — activeAgents 清理', () => {
     const sid = newSessionId();
     setupSession(sid, ['DEV'], 'single');
 
-    stateLib.updateStateAtomic(sid, (s) => {
+    stateLib.updateStateAtomic(TEST_PROJECT_ROOT, sid, null, (s) => {
       s.stages['DEV'].status = 'active';
       // 不設定 activeAgents
       return s;
@@ -459,7 +460,7 @@ describe('handleAgentStop — 並行收斂門', () => {
     // 設置兩個並行 instance（確保 enforceInvariants 規則 4 不將 REVIEW 改為 pending）
     const inst1 = 'code-reviewer:inst1aaaa-bbbbbb';
     const inst2 = 'code-reviewer:inst2cccc-dddddd';
-    stateLib.updateStateAtomic(sid, (s) => {
+    stateLib.updateStateAtomic(TEST_PROJECT_ROOT, sid, null, (s) => {
       // DEV 已完成
       s.stages['DEV'].status = 'completed';
       s.stages['DEV'].result = 'pass';
@@ -481,7 +482,7 @@ describe('handleAgentStop — 並行收斂門', () => {
     );
 
     // 第一個 pass 且 parallelTotal=2 → 尚未收斂，parallelDone 遞增
-    const state = stateLib.readState(sid);
+    const state = stateLib.readState(TEST_PROJECT_ROOT, sid);
     expect(state.stages['REVIEW'].parallelDone).toBeGreaterThanOrEqual(1);
     // stage 仍 active（尚未收斂 — inst2 仍在 activeAgents 中維持 active）
     expect(state.stages['REVIEW'].status).toBe('active');
@@ -492,7 +493,7 @@ describe('handleAgentStop — 並行收斂門', () => {
     setupSession(sid, ['DEV', 'TEST'], 'tdd');
 
     const inst = 'tester:inst2cccc-dddddd';
-    stateLib.updateStateAtomic(sid, (s) => {
+    stateLib.updateStateAtomic(TEST_PROJECT_ROOT, sid, null, (s) => {
       s.stages['DEV'].status = 'completed';
       s.stages['DEV'].result = 'pass';
       s.stages['TEST'].status = 'active';
@@ -509,7 +510,7 @@ describe('handleAgentStop — 並行收斂門', () => {
       sid
     );
 
-    const state = stateLib.readState(sid);
+    const state = stateLib.readState(TEST_PROJECT_ROOT, sid);
     expect(state.stages['TEST'].status).toBe('completed');
     expect(state.stages['TEST'].result).toBe('fail');
   });
@@ -519,7 +520,7 @@ describe('handleAgentStop — 並行收斂門', () => {
     setupSession(sid, ['DEV', 'REVIEW'], 'quick');
 
     const inst = 'code-reviewer:late1111-222222';
-    stateLib.updateStateAtomic(sid, (s) => {
+    stateLib.updateStateAtomic(TEST_PROJECT_ROOT, sid, null, (s) => {
       s.stages['DEV'].status = 'completed';
       s.stages['DEV'].result = 'pass';
       // REVIEW 已被先到者標記 completed
@@ -540,7 +541,7 @@ describe('handleAgentStop — 並行收斂門', () => {
       sid
     );
 
-    const state = stateLib.readState(sid);
+    const state = stateLib.readState(TEST_PROJECT_ROOT, sid);
     // result 不應被後到者改變
     expect(state.stages['REVIEW'].result).toBe('pass');
     // parallelDone 應遞增
@@ -556,9 +557,9 @@ describe('handleAgentStop — timeline 事件正確性', () => {
     setupSession(sid, ['DEV'], 'single');
 
     // 讀取 timeline 前清空（若有舊記錄）
-    const timelinePath = paths.session.timeline(sid);
+    const timelinePath = paths.session.timeline(TEST_PROJECT_ROOT, sid);
 
-    stateLib.updateStateAtomic(sid, (s) => {
+    stateLib.updateStateAtomic(TEST_PROJECT_ROOT, sid, null, (s) => {
       s.stages['DEV'].status = 'active';
       return s;
     });
@@ -582,7 +583,7 @@ describe('handleAgentStop — timeline 事件正確性', () => {
     const sid = newSessionId();
     setupSession(sid, ['DEV', 'TEST'], 'tdd');
 
-    stateLib.updateStateAtomic(sid, (s) => {
+    stateLib.updateStateAtomic(TEST_PROJECT_ROOT, sid, null, (s) => {
       s.stages['DEV'].status = 'completed';
       s.stages['DEV'].result = 'pass';
       s.stages['TEST'].status = 'active';
@@ -594,7 +595,7 @@ describe('handleAgentStop — timeline 事件正確性', () => {
       sid
     );
 
-    const timelinePath = paths.session.timeline(sid);
+    const timelinePath = paths.session.timeline(TEST_PROJECT_ROOT, sid);
     const content = fs.readFileSync(timelinePath, 'utf8');
     const events = content.split('\n').filter(Boolean).map(l => JSON.parse(l));
     const agentError = events.find(e => e.type === 'agent:error');
@@ -606,7 +607,7 @@ describe('handleAgentStop — timeline 事件正確性', () => {
     const sid = newSessionId();
     setupSession(sid, ['DEV'], 'single');
 
-    stateLib.updateStateAtomic(sid, (s) => {
+    stateLib.updateStateAtomic(TEST_PROJECT_ROOT, sid, null, (s) => {
       s.stages['DEV'].status = 'active';
       return s;
     });
@@ -616,7 +617,7 @@ describe('handleAgentStop — timeline 事件正確性', () => {
       sid
     );
 
-    const timelinePath = paths.session.timeline(sid);
+    const timelinePath = paths.session.timeline(TEST_PROJECT_ROOT, sid);
     const content = fs.readFileSync(timelinePath, 'utf8');
     const events = content.split('\n').filter(Boolean).map(l => JSON.parse(l));
     const stageComplete = events.find(e => e.type === 'stage:complete');
@@ -634,7 +635,8 @@ describe('handleAgentStop — tasks.md checkbox 勾選', () => {
     const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ot-tasks-test-'));
 
     try {
-      setupSession(sid, ['DEV'], 'single');
+      // input.cwd = tmpDir → projectRoot = tmpDir
+      setupSession(sid, ['DEV'], 'single', tmpDir);
 
       // 建立 tasks.md
       const featureName = 'test-feature-checkbox';
@@ -645,7 +647,7 @@ describe('handleAgentStop — tasks.md checkbox 勾選', () => {
         '- [ ] DEV\n- [ ] REVIEW\n'
       );
 
-      stateLib.updateStateAtomic(sid, (s) => {
+      stateLib.updateStateAtomic(tmpDir, sid, null, (s) => {
         s.stages['DEV'].status = 'active';
         s.featureName = featureName;
         return s;
@@ -672,7 +674,7 @@ describe('handleAgentStop — tasks.md checkbox 勾選', () => {
     const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ot-tasks-fail-'));
 
     try {
-      setupSession(sid, ['DEV', 'TEST'], 'tdd');
+      setupSession(sid, ['DEV', 'TEST'], 'tdd', tmpDir);
 
       const featureName = 'test-feature-fail';
       const featureDir = path.join(tmpDir, 'specs', 'features', 'in-progress', featureName);
@@ -682,7 +684,7 @@ describe('handleAgentStop — tasks.md checkbox 勾選', () => {
         '- [ ] DEV\n- [ ] TEST\n'
       );
 
-      stateLib.updateStateAtomic(sid, (s) => {
+      stateLib.updateStateAtomic(tmpDir, sid, null, (s) => {
         s.stages['DEV'].status = 'completed';
         s.stages['DEV'].result = 'pass';
         s.stages['TEST'].status = 'active';
@@ -712,7 +714,7 @@ describe('handleAgentStop — tasks.md checkbox 勾選', () => {
     const sid = newSessionId();
     setupSession(sid, ['DEV'], 'single');
 
-    stateLib.updateStateAtomic(sid, (s) => {
+    stateLib.updateStateAtomic(TEST_PROJECT_ROOT, sid, null, (s) => {
       s.stages['DEV'].status = 'active';
       s.featureName = 'nonexistent-feature-xyz';
       return s;
@@ -734,7 +736,7 @@ describe('handleAgentStop — currentStage 推進', () => {
     const sid = newSessionId();
     setupSession(sid, ['DEV', 'REVIEW', 'RETRO', 'DOCS'], 'quick');
 
-    stateLib.updateStateAtomic(sid, (s) => {
+    stateLib.updateStateAtomic(TEST_PROJECT_ROOT, sid, null, (s) => {
       s.stages['DEV'].status = 'active';
       return s;
     });
@@ -744,7 +746,7 @@ describe('handleAgentStop — currentStage 推進', () => {
       sid
     );
 
-    const state = stateLib.readState(sid);
+    const state = stateLib.readState(TEST_PROJECT_ROOT, sid);
     // currentStage 應推進（DEV 完成後指向 REVIEW）
     expect(state.currentStage).toBe('REVIEW');
   });
@@ -757,7 +759,7 @@ describe('handleAgentStop — PM stage queue 自動寫入', () => {
     const sid = newSessionId();
     setupSession(sid, ['PM'], 'discovery');
 
-    stateLib.updateStateAtomic(sid, (s) => {
+    stateLib.updateStateAtomic(TEST_PROJECT_ROOT, sid, null, (s) => {
       s.stages['PM'].status = 'active';
       return s;
     });
@@ -888,7 +890,7 @@ describe('handleAgentStop — RETRO stage issues verdict', () => {
     const sid = newSessionId();
     setupSession(sid, ['DEV', 'RETRO'], 'quick');
 
-    stateLib.updateStateAtomic(sid, (s) => {
+    stateLib.updateStateAtomic(TEST_PROJECT_ROOT, sid, null, (s) => {
       s.stages['DEV'].status = 'completed';
       s.stages['DEV'].result = 'pass';
       s.stages['RETRO'].status = 'active';
@@ -903,7 +905,7 @@ describe('handleAgentStop — RETRO stage issues verdict', () => {
       sid
     );
 
-    const state = stateLib.readState(sid);
+    const state = stateLib.readState(TEST_PROJECT_ROOT, sid);
     // B-1: status=completed + result='issues'
     expect(state.stages['RETRO'].status).toBe('completed');
     expect(state.stages['RETRO'].result).toBe('issues');
@@ -915,7 +917,7 @@ describe('handleAgentStop — RETRO stage issues verdict', () => {
     const sid = newSessionId();
     setupSession(sid, ['DEV', 'RETRO'], 'quick');
 
-    stateLib.updateStateAtomic(sid, (s) => {
+    stateLib.updateStateAtomic(TEST_PROJECT_ROOT, sid, null, (s) => {
       s.stages['DEV'].status = 'completed';
       s.stages['DEV'].result = 'pass';
       s.stages['RETRO'].status = 'active';
@@ -931,7 +933,7 @@ describe('handleAgentStop — RETRO stage issues verdict', () => {
     );
 
     // isConvergedOrFailed=true 的效果：stage:complete 事件被 emit 到 timeline
-    const timelinePath = paths.session.timeline(sid);
+    const timelinePath = paths.session.timeline(TEST_PROJECT_ROOT, sid);
     const content = fs.readFileSync(timelinePath, 'utf8');
     const events = content.split('\n').filter(Boolean).map(l => JSON.parse(l));
     const stageComplete = events.find(e => e.type === 'stage:complete' && e.stage === 'RETRO');
@@ -943,7 +945,7 @@ describe('handleAgentStop — RETRO stage issues verdict', () => {
     const sid = newSessionId();
     setupSession(sid, ['DEV', 'RETRO'], 'quick');
 
-    stateLib.updateStateAtomic(sid, (s) => {
+    stateLib.updateStateAtomic(TEST_PROJECT_ROOT, sid, null, (s) => {
       s.stages['DEV'].status = 'completed';
       s.stages['DEV'].result = 'pass';
       s.stages['RETRO'].status = 'active';
@@ -958,7 +960,7 @@ describe('handleAgentStop — RETRO stage issues verdict', () => {
       sid
     );
 
-    const state = stateLib.readState(sid);
+    const state = stateLib.readState(TEST_PROJECT_ROOT, sid);
     expect(state.stages['RETRO'].status).toBe('completed');
     expect(state.stages['RETRO'].result).toBe('pass');
     expect(state.pendingAction).toBeNull();
@@ -968,7 +970,7 @@ describe('handleAgentStop — RETRO stage issues verdict', () => {
     const sid = newSessionId();
     setupSession(sid, ['DEV', 'RETRO'], 'quick');
 
-    stateLib.updateStateAtomic(sid, (s) => {
+    stateLib.updateStateAtomic(TEST_PROJECT_ROOT, sid, null, (s) => {
       s.stages['DEV'].status = 'completed';
       s.stages['DEV'].result = 'pass';
       s.stages['RETRO'].status = 'active';
@@ -983,7 +985,7 @@ describe('handleAgentStop — RETRO stage issues verdict', () => {
       sid
     );
 
-    const state = stateLib.readState(sid);
+    const state = stateLib.readState(TEST_PROJECT_ROOT, sid);
     expect(state.stages['RETRO'].result).toBe('pass');
   });
 });
@@ -1046,7 +1048,7 @@ describe('handleAgentStop — retry 計數機制', () => {
     const sid = newSessionId();
     setupSession(sid, ['DEV', 'TEST'], 'tdd');
 
-    stateLib.updateStateAtomic(sid, (s) => {
+    stateLib.updateStateAtomic(TEST_PROJECT_ROOT, sid, null, (s) => {
       s.stages['DEV'].status = 'completed';
       s.stages['DEV'].result = 'pass';
       s.stages['TEST'].status = 'active';
@@ -1060,7 +1062,7 @@ describe('handleAgentStop — retry 計數機制', () => {
     );
 
     // 重設 TEST 為 active 模擬 retry
-    stateLib.updateStateAtomic(sid, (s) => {
+    stateLib.updateStateAtomic(TEST_PROJECT_ROOT, sid, null, (s) => {
       s.stages['TEST'].status = 'active';
       delete s.stages['TEST'].result;
       delete s.stages['TEST'].completedAt;
@@ -1073,7 +1075,7 @@ describe('handleAgentStop — retry 計數機制', () => {
       sid
     );
 
-    const state = stateLib.readState(sid);
+    const state = stateLib.readState(TEST_PROJECT_ROOT, sid);
     expect(state.failCount).toBe(2);
   });
 
@@ -1081,7 +1083,7 @@ describe('handleAgentStop — retry 計數機制', () => {
     const sid = newSessionId();
     setupSession(sid, ['DEV', 'TEST'], 'tdd');
 
-    stateLib.updateStateAtomic(sid, (s) => {
+    stateLib.updateStateAtomic(TEST_PROJECT_ROOT, sid, null, (s) => {
       s.stages['DEV'].status = 'completed';
       s.stages['DEV'].result = 'pass';
       s.stages['TEST'].status = 'active';
@@ -1095,7 +1097,7 @@ describe('handleAgentStop — retry 計數機制', () => {
     );
 
     // retry → pass
-    stateLib.updateStateAtomic(sid, (s) => {
+    stateLib.updateStateAtomic(TEST_PROJECT_ROOT, sid, null, (s) => {
       s.stages['TEST'].status = 'active';
       delete s.stages['TEST'].result;
       delete s.stages['TEST'].completedAt;
@@ -1107,7 +1109,7 @@ describe('handleAgentStop — retry 計數機制', () => {
       sid
     );
 
-    const state = stateLib.readState(sid);
+    const state = stateLib.readState(TEST_PROJECT_ROOT, sid);
     // failCount 保留
     expect(state.failCount).toBeGreaterThanOrEqual(1);
     // pendingAction 清除
