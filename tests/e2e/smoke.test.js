@@ -172,9 +172,8 @@ describe('Scenario 3：元件一致性', () => {
 // ────────────────────────────────────────────────────────────────────────────
 
 describe('Scenario 4：Workflow 模板初始化', () => {
-  const { homedir } = require('os');
   const { workflows } = require(join(SCRIPTS_LIB, 'registry'));
-  const SESSIONS_DIR = join(homedir(), '.nova', 'sessions');
+  const SESSIONS_DIR = join(process.cwd(), '.nova', 'sessions');
   const INIT_WORKFLOW = join(SCRIPTS_DIR, 'init-workflow.js');
 
   // 為每個 workflow 模板產生獨立的臨時 sessionId

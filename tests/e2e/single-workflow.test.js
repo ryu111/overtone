@@ -22,7 +22,7 @@ const paths = require(join(SCRIPTS_LIB, 'paths'));
 const SESSION_ID = `e2e-single-${Date.now()}`;
 
 afterAll(() => {
-  rmSync(paths.sessionDir(SESSION_ID), { recursive: true, force: true });
+  rmSync(paths.sessionDir(process.cwd(), SESSION_ID), { recursive: true, force: true });
 });
 
 // ────────────────────────────────────────────────────────────────────────────

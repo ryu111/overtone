@@ -72,6 +72,7 @@ function runPreTask(sessionId, toolInput = {}) {
     session_id: sessionId,
     tool_name: 'Task',
     tool_input: toolInput,
+    cwd: process.cwd(),
   };
   const proc = Bun.spawnSync(['node', PRE_TASK_PATH], {
     stdin: Buffer.from(JSON.stringify(input)),
@@ -157,7 +158,7 @@ function runSessionStop(sessionId, message = '') {
  */
 function runOnStart(sessionId) {
   const proc = Bun.spawnSync(['node', ON_START_PATH], {
-    stdin: Buffer.from(JSON.stringify({ session_id: sessionId })),
+    stdin: Buffer.from(JSON.stringify({ session_id: sessionId, cwd: process.cwd() })),
     env: {
       ...buildEnv(sessionId),
       CLAUDE_SESSION_ID: '',
@@ -204,12 +205,13 @@ function runInitWorkflow(workflowType, sessionId, featureName, projectRoot) {
 /**
  * 讀取 session 的 active-workflow-id
  * @param {string} sessionId
+ * @param {string} [projectRoot=process.cwd()]
  * @returns {string|null}
  */
-function getActiveWorkflowId(sessionId) {
+function getActiveWorkflowId(sessionId, projectRoot = process.cwd()) {
   const paths = require(join(SCRIPTS_LIB, 'paths'));
   try {
-    return readFileSync(paths.session.activeWorkflowId(sessionId), 'utf8').trim();
+    return readFileSync(paths.session.activeWorkflowId(projectRoot, sessionId), 'utf8').trim();
   } catch {
     return null;
   }
@@ -293,10 +295,10 @@ function runPreBashGuard(toolInput = {}) {
  * @param {string} sessionId
  * @returns {object|null}
  */
-function readWorkflowState(sessionId) {
+function readWorkflowState(sessionId, projectRoot = process.cwd()) {
   const stateLib = require(join(SCRIPTS_LIB, 'state'));
-  const workflowId = getActiveWorkflowId(sessionId);
-  return stateLib.readState(sessionId, workflowId);
+  const workflowId = getActiveWorkflowId(sessionId, projectRoot);
+  return stateLib.readState(projectRoot, sessionId, workflowId);
 }
 
 /**
@@ -305,10 +307,10 @@ function readWorkflowState(sessionId) {
  * @param {function} modifier
  * @returns {object}
  */
-function updateWorkflowState(sessionId, modifier) {
+function updateWorkflowState(sessionId, modifier, projectRoot = process.cwd()) {
   const stateLib = require(join(SCRIPTS_LIB, 'state'));
-  const workflowId = getActiveWorkflowId(sessionId);
-  return stateLib.updateStateAtomic(sessionId, workflowId, modifier);
+  const workflowId = getActiveWorkflowId(sessionId, projectRoot);
+  return stateLib.updateStateAtomic(projectRoot, sessionId, workflowId, modifier);
 }
 
 /**
@@ -317,10 +319,10 @@ function updateWorkflowState(sessionId, modifier) {
  * @param {object} filter
  * @returns {Array}
  */
-function queryWorkflowTimeline(sessionId, filter = {}) {
+function queryWorkflowTimeline(sessionId, filter = {}, projectRoot = process.cwd()) {
   const timelineLib = require(join(SCRIPTS_LIB, 'timeline'));
-  const workflowId = getActiveWorkflowId(sessionId);
-  return timelineLib.query(sessionId, workflowId, filter);
+  const workflowId = getActiveWorkflowId(sessionId, projectRoot);
+  return timelineLib.query(projectRoot, sessionId, workflowId, filter);
 }
 
 /**
@@ -328,13 +330,13 @@ function queryWorkflowTimeline(sessionId, filter = {}) {
  * @param {string} sessionId
  * @returns {string}
  */
-function getWorkflowFilePath(sessionId) {
+function getWorkflowFilePath(sessionId, projectRoot = process.cwd()) {
   const pathsLib = require(join(SCRIPTS_LIB, 'paths'));
-  const workflowId = getActiveWorkflowId(sessionId);
+  const workflowId = getActiveWorkflowId(sessionId, projectRoot);
   if (workflowId) {
-    return pathsLib.session.workflowFile(sessionId, workflowId);
+    return pathsLib.session.workflowFile(projectRoot, sessionId, workflowId);
   }
-  return pathsLib.session.workflow(sessionId);
+  return pathsLib.session.workflow(projectRoot, sessionId);
 }
 
 module.exports = {

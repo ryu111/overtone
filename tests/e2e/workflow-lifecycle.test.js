@@ -32,7 +32,7 @@ const SESSION_ID = `e2e-lifecycle-${Date.now()}`;
 // ── 清理 ──
 
 afterAll(() => {
-  const sessionDir = paths.sessionDir(SESSION_ID);
+  const sessionDir = paths.sessionDir(process.cwd(), SESSION_ID);
   rmSync(sessionDir, { recursive: true, force: true });
 });
 
@@ -108,7 +108,7 @@ describe('場景 2：所有 stages 完成後 on-stop 偵測到完成狀態', () 
     const ws = readWorkflowState(SESSION_ID);
     if (ws) {
       for (const stageKey of Object.keys(ws.stages)) {
-        state.updateStage(SESSION_ID, workflowId, stageKey, { status: 'completed', result: 'pass' });
+        state.updateStage(process.cwd(), SESSION_ID, workflowId, stageKey, { status: 'completed', result: 'pass' });
       }
     }
 
@@ -158,7 +158,7 @@ describe('場景 3：完整生命週期後清理驗證', () => {
       const ws = readWorkflowState(cleanSessionId);
       if (ws) {
         for (const stageKey of Object.keys(ws.stages)) {
-          state.updateStage(cleanSessionId, workflowId, stageKey, { status: 'completed', result: 'pass' });
+          state.updateStage(process.cwd(), cleanSessionId, workflowId, stageKey, { status: 'completed', result: 'pass' });
         }
       }
 
@@ -166,7 +166,7 @@ describe('場景 3：完整生命週期後清理驗證', () => {
       expect(stopResult.exitCode).toBe(0);
     } finally {
       // 清理此場景的測試 session 目錄
-      const cleanDir = paths.sessionDir(cleanSessionId);
+      const cleanDir = paths.sessionDir(process.cwd(), cleanSessionId);
       rmSync(cleanDir, { recursive: true, force: true });
     }
   });
@@ -174,7 +174,7 @@ describe('場景 3：完整生命週期後清理驗證', () => {
   test('afterAll 清理後 session 目錄將不存在（由 afterAll 負責）', () => {
     // 此 test 驗證 afterAll 清理的 SESSION_ID 目錄在 afterAll 前仍存在
     // 確保 afterAll 有實際內容可清理
-    const sessionDir = paths.sessionDir(SESSION_ID);
+    const sessionDir = paths.sessionDir(process.cwd(), SESSION_ID);
     expect(existsSync(sessionDir)).toBe(true);
   });
 });
