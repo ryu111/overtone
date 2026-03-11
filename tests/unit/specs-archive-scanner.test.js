@@ -159,10 +159,13 @@ describe('scanAndArchive', () => {
       const result = scanAndArchive(projectRoot, 'test-session-id', { source: 'on-stop' });
       expect(result.count).toBe(1);
       expect(emitArgs).not.toBeNull();
-      expect(emitArgs[0]).toBe('test-session-id');
-      expect(emitArgs[1]).toBe('specs:archive-scan');
-      expect(emitArgs[2].archived).toContain('done-feature');
-      expect(emitArgs[2].source).toBe('on-stop');
+      // timeline.emit(projectRoot, sessionId, workflowId, type, data)
+      expect(emitArgs[0]).toBe(projectRoot);
+      expect(emitArgs[1]).toBe('test-session-id');
+      expect(emitArgs[2]).toBeNull();
+      expect(emitArgs[3]).toBe('specs:archive-scan');
+      expect(emitArgs[4].archived).toContain('done-feature');
+      expect(emitArgs[4].source).toBe('on-stop');
     } finally {
       timelineModule.emit = originalEmit;
     }

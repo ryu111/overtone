@@ -24,7 +24,8 @@ const sessionsToClean = [];
 
 function makeSession(suffix) {
   const id = `test_bl_integ_${suffix}_${TIMESTAMP}`;
-  const dir = join(homedir(), '.nova', 'sessions', id);
+  // 使用 per-project 路徑，與 computeSessionMetrics(TEST_PROJECT_ROOT, sessionId) 對應
+  const dir = paths.sessionDir(TEST_PROJECT_ROOT, id);
   mkdirSync(dir, { recursive: true });
   sessionsToClean.push(dir);
   return { id, dir };

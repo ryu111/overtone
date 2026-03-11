@@ -17,6 +17,10 @@ const paths = require(join(SCRIPTS_LIB, 'paths'));
 const state = require(join(SCRIPTS_LIB, 'state'));
 const instinct = require(join(SCRIPTS_LIB, 'knowledge/instinct'));
 
+// ── project root（per-project API）──
+
+const PROJECT_ROOT = process.cwd();
+
 // ── 輔助函式 ──
 
 /**
@@ -58,6 +62,9 @@ const createdSessions = [];
 
 afterAll(() => {
   for (const sid of createdSessions) {
+    // 清理 per-project 路徑（state 寫入處）
+    rmSync(paths.sessionDir(PROJECT_ROOT, sid), { recursive: true, force: true });
+    // 清理舊全域路徑（instinct emit 寫入處，instinct API 尚未遷移 per-project）
     rmSync(paths.sessionDir(sid), { recursive: true, force: true });
   }
 });
@@ -71,9 +78,9 @@ describe('場景 1：已有進行中 workflow 時記錄 workflow_routing', () =>
     const sessionId = newSessionId();
     createdSessions.push(sessionId);
 
-    mkdirSync(paths.sessionDir(sessionId), { recursive: true });
-    state.initState(sessionId, 'standard', ['PLAN', 'ARCH', 'TEST', 'DEV', 'REVIEW', 'TEST:2', 'RETRO', 'DOCS']);
-    state.updateStateAtomic(sessionId, (s) => {
+    mkdirSync(paths.sessionDir(PROJECT_ROOT, sessionId), { recursive: true });
+    state.initState(PROJECT_ROOT, sessionId, 'standard', ['PLAN', 'ARCH', 'TEST', 'DEV', 'REVIEW', 'TEST:2', 'RETRO', 'DOCS']);
+    state.updateStateAtomic(PROJECT_ROOT, sessionId, null, (s) => {
       s.stages['DEV'].status = 'active';
       s.currentStage = 'DEV';
       return s;
@@ -82,9 +89,10 @@ describe('場景 1：已有進行中 workflow 時記錄 workflow_routing', () =>
     await runHook({
       session_id: sessionId,
       prompt: '請繼續完成開發',
-      cwd: process.cwd(),
+      cwd: PROJECT_ROOT,
     });
 
+    // instinct API 尚未遷移 per-project，emit/query 均以 sessionId 為第一參數
     const observations = instinct.query(sessionId, { type: 'workflow_routing' });
     expect(observations.length).toBeGreaterThan(0);
 
@@ -106,18 +114,18 @@ describe('場景 2：首次 prompt 不記錄 workflow_routing', () => {
     createdSessions.push(sessionId);
 
     // 不建立 workflow state（模擬全新 session）
-    mkdirSync(paths.sessionDir(sessionId), { recursive: true });
+    mkdirSync(paths.sessionDir(PROJECT_ROOT, sessionId), { recursive: true });
 
     const output = await runHook({
       session_id: sessionId,
       prompt: '請幫我實作登入功能',
-      cwd: process.cwd(),
+      cwd: PROJECT_ROOT,
     });
 
     // systemMessage 應注入 auto 指引
     expect(getContext(output)).toContain('/auto');
 
-    // 不應有 workflow_routing 觀察
+    // 不應有 workflow_routing 觀察（instinct API 尚未遷移 per-project）
     const observations = instinct.query(sessionId, { type: 'workflow_routing' });
     expect(observations.length).toBe(0);
   });
@@ -132,9 +140,9 @@ describe('場景 3：prompt 超過 80 字元時截斷', () => {
     const sessionId = newSessionId();
     createdSessions.push(sessionId);
 
-    mkdirSync(paths.sessionDir(sessionId), { recursive: true });
-    state.initState(sessionId, 'quick', ['DEV', 'REVIEW', 'TEST']);
-    state.updateStateAtomic(sessionId, (s) => {
+    mkdirSync(paths.sessionDir(PROJECT_ROOT, sessionId), { recursive: true });
+    state.initState(PROJECT_ROOT, sessionId, 'quick', ['DEV', 'REVIEW', 'TEST']);
+    state.updateStateAtomic(PROJECT_ROOT, sessionId, null, (s) => {
       s.stages['DEV'].status = 'active';
       s.currentStage = 'DEV';
       return s;
@@ -145,9 +153,10 @@ describe('場景 3：prompt 超過 80 字元時截斷', () => {
     await runHook({
       session_id: sessionId,
       prompt: longPrompt,
-      cwd: process.cwd(),
+      cwd: PROJECT_ROOT,
     });
 
+    // instinct API 尚未遷移 per-project
     const observations = instinct.query(sessionId, { type: 'workflow_routing', tag: 'wf-quick' });
     expect(observations.length).toBeGreaterThan(0);
 
@@ -167,9 +176,9 @@ describe('場景 4：空字串 prompt 使用預設 trigger', () => {
     const sessionId = newSessionId();
     createdSessions.push(sessionId);
 
-    mkdirSync(paths.sessionDir(sessionId), { recursive: true });
-    state.initState(sessionId, 'tdd', ['TEST', 'DEV', 'TEST:2']);
-    state.updateStateAtomic(sessionId, (s) => {
+    mkdirSync(paths.sessionDir(PROJECT_ROOT, sessionId), { recursive: true });
+    state.initState(PROJECT_ROOT, sessionId, 'tdd', ['TEST', 'DEV', 'TEST:2']);
+    state.updateStateAtomic(PROJECT_ROOT, sessionId, null, (s) => {
       s.stages['TEST'].status = 'active';
       s.currentStage = 'TEST';
       return s;
@@ -178,9 +187,10 @@ describe('場景 4：空字串 prompt 使用預設 trigger', () => {
     await runHook({
       session_id: sessionId,
       prompt: '',
-      cwd: process.cwd(),
+      cwd: PROJECT_ROOT,
     });
 
+    // instinct API 尚未遷移 per-project
     const observations = instinct.query(sessionId, { type: 'workflow_routing', tag: 'wf-tdd' });
     expect(observations.length).toBeGreaterThan(0);
     expect(observations[0].trigger).toBe('(empty prompt)');
@@ -196,9 +206,9 @@ describe('場景 5：hook 主流程不受 instinct 失敗影響', () => {
     const sessionId = newSessionId();
     createdSessions.push(sessionId);
 
-    mkdirSync(paths.sessionDir(sessionId), { recursive: true });
-    state.initState(sessionId, 'quick', ['DEV', 'REVIEW', 'TEST']);
-    state.updateStateAtomic(sessionId, (s) => {
+    mkdirSync(paths.sessionDir(PROJECT_ROOT, sessionId), { recursive: true });
+    state.initState(PROJECT_ROOT, sessionId, 'quick', ['DEV', 'REVIEW', 'TEST']);
+    state.updateStateAtomic(PROJECT_ROOT, sessionId, null, (s) => {
       s.stages['DEV'].status = 'active';
       s.currentStage = 'DEV';
       return s;
@@ -208,7 +218,7 @@ describe('場景 5：hook 主流程不受 instinct 失敗影響', () => {
     const output = await runHook({
       session_id: sessionId,
       prompt: '繼續開發',
-      cwd: process.cwd(),
+      cwd: PROJECT_ROOT,
     });
 
     // systemMessage 應包含 workflow 狀態資訊

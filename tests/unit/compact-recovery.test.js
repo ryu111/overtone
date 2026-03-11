@@ -16,6 +16,10 @@ const { SCRIPTS_LIB } = require('../helpers/paths');
 const { _checkCompactRecovery, handleOnSubmit } = require(join(SCRIPTS_LIB, 'on-submit-handler'));
 const paths = require(join(SCRIPTS_LIB, 'paths'));
 
+// ── project root（per-project API）──
+
+const PROJECT_ROOT = process.cwd();
+
 /**
  * 建立獨立的測試臨時目錄，並回傳 cleanup 函式
  */
@@ -59,8 +63,8 @@ describe('_checkCompactRecovery', () => {
     const recoveryContent = '[Overtone 狀態恢復（compact 後）]\n工作流：quick\n進度：✅ (1/2)';
 
     // 建立真實 session 目錄（paths 模組讀取）
-    const realSessionDir = join(paths.SESSIONS_DIR, sessionId);
-    const realCompactingPath = paths.session.compacting(sessionId);
+    const realSessionDir = paths.sessionDir(PROJECT_ROOT, sessionId);
+    const realCompactingPath = paths.session.compacting(PROJECT_ROOT, sessionId);
     mkdirSync(realSessionDir, { recursive: true });
 
     // 建立真實 projectRoot 對應的 global dir + compact-recovery.md
@@ -92,24 +96,19 @@ describe('_checkCompactRecovery', () => {
   });
 
   it('Scenario 3: 只有 compacting 標記存在但 compact-recovery.md 不存在 → 清理標記並回傳 null', () => {
-    const realSessionDir = join(paths.SESSIONS_DIR, sessionId);
-    const realCompactingPath = paths.session.compacting(sessionId);
-    mkdirSync(realSessionDir, { recursive: true });
-    // 建立 compacting 標記（但無 compact-recovery.md）
-    writeFileSync(realCompactingPath, '', 'utf8');
-
     const projectRoot = tempDirs.root;
-    // 確認 compact-recovery.md 不存在
+    const testSessionDir = paths.sessionDir(projectRoot, sessionId);
+    const compactingPath = paths.session.compacting(projectRoot, sessionId);
+    mkdirSync(testSessionDir, { recursive: true });
+    // 建立 compacting 標記（但無 compact-recovery.md）
+    writeFileSync(compactingPath, '', 'utf8');
 
     const result = _checkCompactRecovery(sessionId, projectRoot);
 
     // 無 recovery 內容
     expect(result).toBeNull();
     // compacting 殘留標記應被清理
-    expect(existsSync(realCompactingPath)).toBe(false);
-
-    // 清理真實 session 目錄
-    try { rmSync(realSessionDir, { recursive: true, force: true }); } catch { /* 忽略 */ }
+    expect(existsSync(compactingPath)).toBe(false);
   });
 
   it('Scenario 4（競態修復）: compacting 標記已被 statusline 搶先刪除，但 compact-recovery.md 仍存在 → 仍能 recovery', () => {
@@ -143,19 +142,19 @@ describe('handleOnSubmit — compact recovery 注入', () => {
 
   beforeEach(() => {
     sessionId = 'test-submit-compact-' + Date.now();
-    const realSessionDir = join(paths.SESSIONS_DIR, sessionId);
+    const realSessionDir = paths.sessionDir(PROJECT_ROOT, sessionId);
     mkdirSync(realSessionDir, { recursive: true });
   });
 
   afterEach(() => {
     // 清理真實 session 目錄
-    const realSessionDir = join(paths.SESSIONS_DIR, sessionId);
+    const realSessionDir = paths.sessionDir(PROJECT_ROOT, sessionId);
     try { rmSync(realSessionDir, { recursive: true, force: true }); } catch { /* 忽略 */ }
   });
 
   it('Scenario 5: compact 後首次 submit WHEN compact-recovery.md 存在 THEN additionalContext 包含 recovery 內容', () => {
     // 設置 compact-recovery.md（不需要 compacting 標記）
-    const projectRoot = process.cwd();
+    const projectRoot = PROJECT_ROOT;
     const realGlobalDir = paths.global.dir(projectRoot);
     mkdirSync(realGlobalDir, { recursive: true });
     const realRecoveryPath = join(realGlobalDir, 'compact-recovery.md');
@@ -178,7 +177,7 @@ describe('handleOnSubmit — compact recovery 注入', () => {
   });
 
   it('Scenario 6: 無 compact-recovery.md WHEN handleOnSubmit THEN 正常流程（不注入 recovery 內容）', () => {
-    const projectRoot = process.cwd();
+    const projectRoot = PROJECT_ROOT;
 
     const input = {
       session_id: sessionId,

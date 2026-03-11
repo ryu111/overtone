@@ -19,6 +19,10 @@ const paths = require(join(SCRIPTS_LIB, 'paths'));
 const state = require(join(SCRIPTS_LIB, 'state'));
 const { workflows } = require(join(SCRIPTS_LIB, 'registry'));
 
+// ── project root（per-project API）──
+
+const PROJECT_ROOT = process.cwd();
+
 // ── Session 管理 ──
 
 const SESSION_PREFIX = `test_pre_task_upd_${Date.now()}`;
@@ -33,7 +37,7 @@ function newSessionId() {
 
 afterAll(() => {
   for (const sid of createdSessions) {
-    rmSync(paths.sessionDir(sid), { recursive: true, force: true });
+    rmSync(paths.sessionDir(PROJECT_ROOT, sid), { recursive: true, force: true });
   }
 });
 
@@ -67,8 +71,8 @@ function runHook(input, sessionId) {
 
 function initSession(workflowType = 'single') {
   const sessionId = newSessionId();
-  mkdirSync(paths.sessionDir(sessionId), { recursive: true });
-  state.initState(sessionId, workflowType, workflows[workflowType].stages);
+  mkdirSync(paths.sessionDir(PROJECT_ROOT, sessionId), { recursive: true });
+  state.initState(PROJECT_ROOT, sessionId, workflowType, workflows[workflowType].stages);
   return sessionId;
 }
 
@@ -85,7 +89,7 @@ describe('Feature 1c: PreToolUse updatedInput 注入', () => {
 
       const { parsed } = runHook({
         session_id: sessionId,
-        cwd: process.cwd(),
+        cwd: PROJECT_ROOT,
         tool_name: 'Task',
         tool_input: {
           subagent_type: 'developer',
@@ -110,7 +114,7 @@ describe('Feature 1c: PreToolUse updatedInput 注入', () => {
 
       const { parsed } = runHook({
         session_id: sessionId,
-        cwd: process.cwd(),
+        cwd: PROJECT_ROOT,
         tool_name: 'Task',
         tool_input: {
           subagent_type: 'developer',
@@ -129,7 +133,7 @@ describe('Feature 1c: PreToolUse updatedInput 注入', () => {
 
       const { parsed } = runHook({
         session_id: sessionId,
-        cwd: process.cwd(),
+        cwd: PROJECT_ROOT,
         tool_name: 'Task',
         tool_input: {
           subagent_type: 'developer',
@@ -149,7 +153,7 @@ describe('Feature 1c: PreToolUse updatedInput 注入', () => {
 
       const { parsed } = runHook({
         session_id: sessionId,
-        cwd: process.cwd(),
+        cwd: PROJECT_ROOT,
         tool_name: 'Task',
         tool_input: {
           subagent_type: 'developer',
@@ -168,7 +172,7 @@ describe('Feature 1c: PreToolUse updatedInput 注入', () => {
 
       const { parsed } = runHook({
         session_id: sessionId,
-        cwd: process.cwd(),
+        cwd: PROJECT_ROOT,
         tool_name: 'Task',
         tool_input: {
           subagent_type: 'developer',
@@ -205,9 +209,9 @@ describe('Feature 1c: PreToolUse updatedInput 注入', () => {
   describe('Scenario 1c-8: deny 分支時不注入 updatedInput', () => {
     test('有前置未完成 stage 時輸出 deny，不含 updatedInput', () => {
       const sessionId = newSessionId();
-      mkdirSync(paths.sessionDir(sessionId), { recursive: true });
+      mkdirSync(paths.sessionDir(PROJECT_ROOT, sessionId), { recursive: true });
       // standard workflow：PLAN → ARCH → ...
-      state.initState(sessionId, 'standard', workflows['standard'].stages);
+      state.initState(PROJECT_ROOT, sessionId, 'standard', workflows['standard'].stages);
       // PLAN、ARCH 都是 pending，直接跳到 REVIEW → 被阻擋
 
       const { parsed } = runHook({
@@ -234,7 +238,7 @@ describe('Feature 1c: PreToolUse updatedInput 注入', () => {
 
       const { parsed } = runHook({
         session_id: sessionId,
-        cwd: process.cwd(),
+        cwd: PROJECT_ROOT,
         tool_name: 'Task',
         tool_input: {
           subagent_type: 'developer',
@@ -254,7 +258,7 @@ describe('Feature 1c: PreToolUse updatedInput 注入', () => {
 
       const { parsed } = runHook({
         session_id: sessionId,
-        cwd: process.cwd(),
+        cwd: PROJECT_ROOT,
         tool_name: 'Task',
         tool_input: {
           subagent_type: 'developer',

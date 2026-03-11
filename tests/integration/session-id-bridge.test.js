@@ -52,7 +52,9 @@ function runCLI(scriptPath, args, { cwd = PROJECT_ROOT, env = {} } = {}) {
 
 describe('Session ID Bridge — init-workflow.js fallback 讀取', () => {
   const testSessionId = `test-session-${Date.now()}`;
-  const sessionDir = path.join(SESSIONS_DIR, testSessionId);
+  // init-workflow.js 用 process.cwd()=PROJECT_ROOT 作為 projectRoot，
+  // 所以 session 目錄在 per-project 路徑下
+  const sessionDir = path.join(PROJECT_ROOT, '.nova', 'sessions', testSessionId);
 
   beforeEach(() => {
     // 確保 ~/.nova 目錄存在
@@ -158,7 +160,8 @@ describe('Session ID Bridge — init-workflow.js fallback 讀取', () => {
     // 確保 .current-session-id 不存在（或有其他值）
     // 明確傳入 sessionId 應優先於共享文件
     const explicitSessionId = `explicit-session-${Date.now()}`;
-    const explicitSessionDir = path.join(SESSIONS_DIR, explicitSessionId);
+    // init-workflow.js 用 process.cwd()=PROJECT_ROOT 作為 projectRoot
+    const explicitSessionDir = path.join(PROJECT_ROOT, '.nova', 'sessions', explicitSessionId);
 
     try {
       const { stdout, exitCode } = runCLI(

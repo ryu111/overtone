@@ -8,15 +8,18 @@ const paths = require(path.join(os.homedir(), '.claude/scripts/lib/paths'));
 const { extractHandoff } = require(path.join(os.homedir(), '.claude/scripts/lib/hook-utils'));
 const { _loadHandoffContext } = require(path.join(os.homedir(), '.claude/scripts/lib/pre-compact-handler'));
 
+// ── project root（per-project API）──
+const PROJECT_ROOT = process.cwd();
+
 // ── 測試用 session ID ──
 const TEST_SESSION = 'ckpt-test-' + Date.now();
 
 beforeEach(() => {
-  mkdirSync(paths.sessionDir(TEST_SESSION), { recursive: true });
+  mkdirSync(paths.sessionDir(PROJECT_ROOT, TEST_SESSION), { recursive: true });
 });
 
 afterEach(() => {
-  try { rmSync(paths.sessionDir(TEST_SESSION), { recursive: true, force: true }); } catch {}
+  try { rmSync(paths.sessionDir(PROJECT_ROOT, TEST_SESSION), { recursive: true, force: true }); } catch {}
 });
 
 // ══════════════════════════════════════════════════════════════════════════
@@ -131,14 +134,14 @@ ${'- file.ts — 修改\n'.repeat(100)}
 describe('_loadHandoffContext', () => {
   it('無 handoffs 目錄時回傳 null', () => {
     const state = { stages: { DEV: { status: 'active' } }, currentStage: 'DEV' };
-    expect(_loadHandoffContext(TEST_SESSION, null, state)).toBeNull();
+    expect(_loadHandoffContext(PROJECT_ROOT, TEST_SESSION, null, state)).toBeNull();
   });
 
   it('載入最近完成 stage 的 handoff', () => {
     // 建立 handoff 檔案
-    const handoffsDir = paths.session.handoffsDir(TEST_SESSION);
+    const handoffsDir = paths.session.handoffsDir(PROJECT_ROOT, TEST_SESSION);
     mkdirSync(handoffsDir, { recursive: true });
-    writeFileSync(paths.session.handoff(TEST_SESSION, 'ARCH'), '## HANDOFF: architect → developer\n\n### Context\n架構設計完成。');
+    writeFileSync(paths.session.handoff(PROJECT_ROOT, TEST_SESSION, 'ARCH'), '## HANDOFF: architect → developer\n\n### Context\n架構設計完成。');
 
     const state = {
       currentStage: 'DEV',
@@ -148,16 +151,16 @@ describe('_loadHandoffContext', () => {
       },
     };
 
-    const result = _loadHandoffContext(TEST_SESSION, null, state);
+    const result = _loadHandoffContext(PROJECT_ROOT, TEST_SESSION, null, state);
     expect(result).toContain('架構設計完成');
   });
 
   it('只載入最近 2 個已完成 stage', () => {
-    const handoffsDir = paths.session.handoffsDir(TEST_SESSION);
+    const handoffsDir = paths.session.handoffsDir(PROJECT_ROOT, TEST_SESSION);
     mkdirSync(handoffsDir, { recursive: true });
-    writeFileSync(paths.session.handoff(TEST_SESSION, 'PLAN'), 'PLAN handoff');
-    writeFileSync(paths.session.handoff(TEST_SESSION, 'ARCH'), 'ARCH handoff');
-    writeFileSync(paths.session.handoff(TEST_SESSION, 'TEST'), 'TEST handoff');
+    writeFileSync(paths.session.handoff(PROJECT_ROOT, TEST_SESSION, 'PLAN'), 'PLAN handoff');
+    writeFileSync(paths.session.handoff(PROJECT_ROOT, TEST_SESSION, 'ARCH'), 'ARCH handoff');
+    writeFileSync(paths.session.handoff(PROJECT_ROOT, TEST_SESSION, 'TEST'), 'TEST handoff');
 
     const state = {
       currentStage: 'DEV',
@@ -169,7 +172,7 @@ describe('_loadHandoffContext', () => {
       },
     };
 
-    const result = _loadHandoffContext(TEST_SESSION, null, state);
+    const result = _loadHandoffContext(PROJECT_ROOT, TEST_SESSION, null, state);
     // 最近 2 個 = ARCH + TEST
     expect(result).toContain('ARCH handoff');
     expect(result).toContain('TEST handoff');
@@ -177,9 +180,9 @@ describe('_loadHandoffContext', () => {
   });
 
   it('fail 的 stage 不載入', () => {
-    const handoffsDir = paths.session.handoffsDir(TEST_SESSION);
+    const handoffsDir = paths.session.handoffsDir(PROJECT_ROOT, TEST_SESSION);
     mkdirSync(handoffsDir, { recursive: true });
-    writeFileSync(paths.session.handoff(TEST_SESSION, 'TEST'), 'TEST failed handoff');
+    writeFileSync(paths.session.handoff(PROJECT_ROOT, TEST_SESSION, 'TEST'), 'TEST failed handoff');
 
     const state = {
       currentStage: 'DEV',
@@ -189,15 +192,15 @@ describe('_loadHandoffContext', () => {
       },
     };
 
-    const result = _loadHandoffContext(TEST_SESSION, null, state);
+    const result = _loadHandoffContext(PROJECT_ROOT, TEST_SESSION, null, state);
     expect(result).toBeNull();
   });
 
   it('handoff 檔案損壞時靜默跳過', () => {
-    const handoffsDir = paths.session.handoffsDir(TEST_SESSION);
+    const handoffsDir = paths.session.handoffsDir(PROJECT_ROOT, TEST_SESSION);
     mkdirSync(handoffsDir, { recursive: true });
     // 寫一個空檔案
-    writeFileSync(paths.session.handoff(TEST_SESSION, 'ARCH'), '');
+    writeFileSync(paths.session.handoff(PROJECT_ROOT, TEST_SESSION, 'ARCH'), '');
 
     const state = {
       currentStage: 'DEV',
@@ -208,6 +211,6 @@ describe('_loadHandoffContext', () => {
     };
 
     // 不應該拋錯
-    expect(() => _loadHandoffContext(TEST_SESSION, null, state)).not.toThrow();
+    expect(() => _loadHandoffContext(PROJECT_ROOT, TEST_SESSION, null, state)).not.toThrow();
   });
 });

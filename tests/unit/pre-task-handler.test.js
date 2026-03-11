@@ -32,6 +32,10 @@ const { checkSkippedStages, handlePreTask, _buildMoscowWarning } = require(path.
 const stateLib = require(path.join(SCRIPTS_LIB, 'state'));
 const paths = require(path.join(SCRIPTS_LIB, 'paths'));
 
+// ── 並行安全：獨立臨時目錄 ──────────────────────────────────────────────────
+
+const TEST_PROJECT_ROOT = fs.mkdtempSync(path.join(os.tmpdir(), 'ot-pre-task-'));
+
 // ── Session 管理工具 ─────────────────────────────────────────────────────────
 
 const SESSION_PREFIX = `test_ptask_${Date.now()}`;
@@ -45,16 +49,13 @@ function newSessionId() {
 }
 
 function setupSession(sid, stageList, workflowType = 'quick') {
-  const dir = paths.sessionDir(sid);
+  const dir = paths.sessionDir(TEST_PROJECT_ROOT, sid);
   fs.mkdirSync(dir, { recursive: true });
-  return stateLib.initState(sid, workflowType, stageList);
+  return stateLib.initState(TEST_PROJECT_ROOT, sid, workflowType, stageList);
 }
 
 afterAll(() => {
-  for (const sid of createdSessions) {
-    const dir = paths.sessionDir(sid);
-    fs.rmSync(dir, { recursive: true, force: true });
-  }
+  fs.rmSync(TEST_PROJECT_ROOT, { recursive: true, force: true });
 });
 
 // ── checkSkippedStages ───────────────────────────────────────────────────
@@ -350,6 +351,7 @@ describe('handlePreTask — 早期返回路徑', () => {
 
     const result = handlePreTask({
       session_id: sid,
+      cwd: TEST_PROJECT_ROOT,
       tool_input: {
         subagent_type: 'unknown-type',
         description: 'some random task description',
@@ -382,7 +384,7 @@ describe('handlePreTask — agent 辨識', () => {
 
     const result = handlePreTask({
       session_id: sid,
-      cwd: process.cwd(),
+      cwd: TEST_PROJECT_ROOT,
       tool_input: {
         subagent_type: 'developer',
         description: '委派開發',
@@ -421,7 +423,7 @@ describe('handlePreTask — agent 辨識', () => {
     setupSession(sid, ['DEV', 'TEST'], 'tdd');
 
     // DEV 先完成，TEST pending
-    stateLib.updateStateAtomic(sid, (s) => {
+    stateLib.updateStateAtomic(TEST_PROJECT_ROOT, sid, null, (s) => {
       s.stages['DEV'].status = 'completed';
       s.stages['DEV'].result = 'pass';
       return s;
@@ -429,7 +431,7 @@ describe('handlePreTask — agent 辨識', () => {
 
     const result = handlePreTask({
       session_id: sid,
-      cwd: process.cwd(),
+      cwd: TEST_PROJECT_ROOT,
       tool_input: {
         // 無前綴，靠 description fallback
         description: '委派 tester 執行測試',
@@ -454,6 +456,7 @@ describe('handlePreTask — 跳階阻擋', () => {
 
     const result = handlePreTask({
       session_id: sid,
+      cwd: TEST_PROJECT_ROOT,
       tool_input: {
         subagent_type: 'developer',
         description: '委派開發',
@@ -472,6 +475,7 @@ describe('handlePreTask — 跳階阻擋', () => {
 
     const result = handlePreTask({
       session_id: sid,
+      cwd: TEST_PROJECT_ROOT,
       tool_input: {
         subagent_type: 'developer',
         description: '委派開發',
@@ -489,6 +493,7 @@ describe('handlePreTask — 跳階阻擋', () => {
 
     const result = handlePreTask({
       session_id: sid,
+      cwd: TEST_PROJECT_ROOT,
       tool_input: {
         subagent_type: 'developer',
         description: '委派',
@@ -515,7 +520,7 @@ describe('handlePreTask — updatedInput 組裝', () => {
     const originalPrompt = '請實作功能 X，包含單元測試。';
     const result = handlePreTask({
       session_id: sid,
-      cwd: process.cwd(),
+      cwd: TEST_PROJECT_ROOT,
       tool_input: {
         subagent_type: 'developer',
         description: '委派開發',
@@ -536,7 +541,7 @@ describe('handlePreTask — updatedInput 組裝', () => {
 
     const result = handlePreTask({
       session_id: sid,
-      cwd: process.cwd(),
+      cwd: TEST_PROJECT_ROOT,
       tool_input: {
         subagent_type: 'developer',
         description: '委派開發',
@@ -559,7 +564,7 @@ describe('handlePreTask — updatedInput 組裝', () => {
 
     const result = handlePreTask({
       session_id: sid,
-      cwd: process.cwd(),
+      cwd: TEST_PROJECT_ROOT,
       tool_input: {
         subagent_type: 'developer',
         description: '委派開發',
@@ -585,7 +590,7 @@ describe('handlePreTask — instanceId 生成', () => {
 
     handlePreTask({
       session_id: sid,
-      cwd: process.cwd(),
+      cwd: TEST_PROJECT_ROOT,
       tool_input: {
         subagent_type: 'developer',
         description: '委派',
@@ -593,7 +598,7 @@ describe('handlePreTask — instanceId 生成', () => {
       },
     }, sid);
 
-    const state = stateLib.readState(sid);
+    const state = stateLib.readState(TEST_PROJECT_ROOT, sid);
     const keys = Object.keys(state.activeAgents);
     expect(keys.length).toBeGreaterThan(0);
     const devKey = keys.find(k => k.startsWith('developer:'));
@@ -606,7 +611,7 @@ describe('handlePreTask — instanceId 生成', () => {
 
     handlePreTask({
       session_id: sid,
-      cwd: process.cwd(),
+      cwd: TEST_PROJECT_ROOT,
       tool_input: {
         subagent_type: 'developer',
         description: '委派',
@@ -614,7 +619,7 @@ describe('handlePreTask — instanceId 生成', () => {
       },
     }, sid);
 
-    const state = stateLib.readState(sid);
+    const state = stateLib.readState(TEST_PROJECT_ROOT, sid);
     const keys = Object.keys(state.activeAgents);
     const devKey = keys.find(k => k.startsWith('developer:'));
     // 格式：developer:xxxxx-xxxxxx
@@ -629,7 +634,7 @@ describe('handlePreTask — instanceId 生成', () => {
 
     handlePreTask({
       session_id: sid1,
-      cwd: process.cwd(),
+      cwd: TEST_PROJECT_ROOT,
       tool_input: { subagent_type: 'developer', description: '委派 1', prompt: '實作 1' },
     }, sid1);
 
@@ -638,12 +643,12 @@ describe('handlePreTask — instanceId 生成', () => {
 
     handlePreTask({
       session_id: sid2,
-      cwd: process.cwd(),
+      cwd: TEST_PROJECT_ROOT,
       tool_input: { subagent_type: 'developer', description: '委派 2', prompt: '實作 2' },
     }, sid2);
 
-    const state1 = stateLib.readState(sid1);
-    const state2 = stateLib.readState(sid2);
+    const state1 = stateLib.readState(TEST_PROJECT_ROOT, sid1);
+    const state2 = stateLib.readState(TEST_PROJECT_ROOT, sid2);
 
     const keys1 = Object.keys(state1.activeAgents).filter(k => k.startsWith('developer:'));
     const keys2 = Object.keys(state2.activeAgents).filter(k => k.startsWith('developer:'));
@@ -661,7 +666,7 @@ describe('handlePreTask — PARALLEL_TOTAL 注入', () => {
 
     const result = handlePreTask({
       session_id: sid,
-      cwd: process.cwd(),
+      cwd: TEST_PROJECT_ROOT,
       tool_input: {
         subagent_type: 'developer',
         description: '委派開發',
@@ -683,7 +688,7 @@ describe('handlePreTask — PARALLEL_TOTAL 注入', () => {
 
     const result = handlePreTask({
       session_id: sid,
-      cwd: process.cwd(),
+      cwd: TEST_PROJECT_ROOT,
       tool_input: {
         subagent_type: 'developer',
         description: '委派',
@@ -702,7 +707,7 @@ describe('handlePreTask — PARALLEL_TOTAL 注入', () => {
     setupSession(sid, ['DEV'], 'single');
 
     // 先設 parallelTotal = 2
-    stateLib.updateStateAtomic(sid, (s) => {
+    stateLib.updateStateAtomic(TEST_PROJECT_ROOT, sid, null, (s) => {
       s.stages['DEV'].parallelTotal = 2;
       s.stages['DEV'].status = 'pending';
       return s;
@@ -711,7 +716,7 @@ describe('handlePreTask — PARALLEL_TOTAL 注入', () => {
     // 新進來的設 PARALLEL_TOTAL: 5
     handlePreTask({
       session_id: sid,
-      cwd: process.cwd(),
+      cwd: TEST_PROJECT_ROOT,
       tool_input: {
         subagent_type: 'developer',
         description: '委派',
@@ -719,7 +724,7 @@ describe('handlePreTask — PARALLEL_TOTAL 注入', () => {
       },
     }, sid);
 
-    const state = stateLib.readState(sid);
+    const state = stateLib.readState(TEST_PROJECT_ROOT, sid);
     // 取 max(2, 5) = 5
     expect(state.stages['DEV'].parallelTotal).toBe(5);
   });
@@ -732,7 +737,7 @@ describe('handlePreTask — retry 場景', () => {
     const sid = newSessionId();
     setupSession(sid, ['DEV', 'TEST'], 'tdd');
 
-    stateLib.updateStateAtomic(sid, (s) => {
+    stateLib.updateStateAtomic(TEST_PROJECT_ROOT, sid, null, (s) => {
       s.stages['DEV'].status = 'completed';
       s.stages['DEV'].result = 'pass';
       s.stages['TEST'].status = 'completed';
@@ -743,7 +748,7 @@ describe('handlePreTask — retry 場景', () => {
 
     handlePreTask({
       session_id: sid,
-      cwd: process.cwd(),
+      cwd: TEST_PROJECT_ROOT,
       tool_input: {
         subagent_type: 'tester',
         description: '重試測試',
@@ -751,7 +756,7 @@ describe('handlePreTask — retry 場景', () => {
       },
     }, sid);
 
-    const state = stateLib.readState(sid);
+    const state = stateLib.readState(TEST_PROJECT_ROOT, sid);
     // TEST 應被重設為 active
     expect(state.stages['TEST'].status).toBe('active');
     expect(state.stages['TEST'].result).toBeUndefined();
@@ -761,7 +766,7 @@ describe('handlePreTask — retry 場景', () => {
     const sid = newSessionId();
     setupSession(sid, ['DEV', 'REVIEW'], 'quick');
 
-    stateLib.updateStateAtomic(sid, (s) => {
+    stateLib.updateStateAtomic(TEST_PROJECT_ROOT, sid, null, (s) => {
       s.stages['DEV'].status = 'completed';
       s.stages['DEV'].result = 'pass';
       s.stages['REVIEW'].status = 'completed';
@@ -772,7 +777,7 @@ describe('handlePreTask — retry 場景', () => {
 
     handlePreTask({
       session_id: sid,
-      cwd: process.cwd(),
+      cwd: TEST_PROJECT_ROOT,
       tool_input: {
         subagent_type: 'code-reviewer',
         description: '重試審查',
@@ -780,7 +785,7 @@ describe('handlePreTask — retry 場景', () => {
       },
     }, sid);
 
-    const state = stateLib.readState(sid);
+    const state = stateLib.readState(TEST_PROJECT_ROOT, sid);
     expect(state.stages['REVIEW'].status).toBe('active');
   });
 });
@@ -794,7 +799,7 @@ describe('handlePreTask — timeline 事件', () => {
 
     handlePreTask({
       session_id: sid,
-      cwd: process.cwd(),
+      cwd: TEST_PROJECT_ROOT,
       tool_input: {
         subagent_type: 'developer',
         description: '委派開發',
@@ -802,7 +807,7 @@ describe('handlePreTask — timeline 事件', () => {
       },
     }, sid);
 
-    const timelinePath = paths.session.timeline(sid);
+    const timelinePath = paths.session.timeline(TEST_PROJECT_ROOT, sid);
     expect(fs.existsSync(timelinePath)).toBe(true);
     const content = fs.readFileSync(timelinePath, 'utf8');
     const events = content.split('\n').filter(Boolean).map(l => JSON.parse(l));
@@ -820,7 +825,7 @@ describe('handlePreTask — timeline 事件', () => {
 
     handlePreTask({
       session_id: sid,
-      cwd: process.cwd(),
+      cwd: TEST_PROJECT_ROOT,
       tool_input: {
         subagent_type: 'developer',
         description: '委派',
@@ -828,7 +833,7 @@ describe('handlePreTask — timeline 事件', () => {
       },
     }, sid);
 
-    const timelinePath = paths.session.timeline(sid);
+    const timelinePath = paths.session.timeline(TEST_PROJECT_ROOT, sid);
     const content = fs.readFileSync(timelinePath, 'utf8');
     const events = content.split('\n').filter(Boolean).map(l => JSON.parse(l));
     const stageStart = events.find(e => e.type === 'stage:start');
@@ -843,7 +848,7 @@ describe('handlePreTask — timeline 事件', () => {
 
     // 設 DEV 為 active，且有一個 activeAgent（防止 sanitize 把 active 改回 pending）
     const existingInst = 'developer:existing1-aabbcc';
-    stateLib.updateStateAtomic(sid, (s) => {
+    stateLib.updateStateAtomic(TEST_PROJECT_ROOT, sid, null, (s) => {
       s.stages['DEV'].status = 'active';
       s.activeAgents[existingInst] = { agentName: 'developer', stage: 'DEV', startedAt: new Date().toISOString() };
       return s;
@@ -851,7 +856,7 @@ describe('handlePreTask — timeline 事件', () => {
 
     handlePreTask({
       session_id: sid,
-      cwd: process.cwd(),
+      cwd: TEST_PROJECT_ROOT,
       tool_input: {
         subagent_type: 'developer',
         description: '委派',
@@ -859,7 +864,7 @@ describe('handlePreTask — timeline 事件', () => {
       },
     }, sid);
 
-    const timelinePath = paths.session.timeline(sid);
+    const timelinePath = paths.session.timeline(TEST_PROJECT_ROOT, sid);
     if (fs.existsSync(timelinePath)) {
       const content = fs.readFileSync(timelinePath, 'utf8');
       const events = content.split('\n').filter(Boolean).map(l => JSON.parse(l));
@@ -877,11 +882,11 @@ describe('handlePreTask — state 寫入', () => {
     const sid = newSessionId();
     setupSession(sid, ['DEV'], 'single');
 
-    expect(stateLib.readState(sid).stages['DEV'].status).toBe('pending');
+    expect(stateLib.readState(TEST_PROJECT_ROOT, sid).stages['DEV'].status).toBe('pending');
 
     handlePreTask({
       session_id: sid,
-      cwd: process.cwd(),
+      cwd: TEST_PROJECT_ROOT,
       tool_input: {
         subagent_type: 'developer',
         description: '委派',
@@ -889,7 +894,7 @@ describe('handlePreTask — state 寫入', () => {
       },
     }, sid);
 
-    const state = stateLib.readState(sid);
+    const state = stateLib.readState(TEST_PROJECT_ROOT, sid);
     expect(state.stages['DEV'].status).toBe('active');
   });
 
@@ -899,7 +904,7 @@ describe('handlePreTask — state 寫入', () => {
 
     handlePreTask({
       session_id: sid,
-      cwd: process.cwd(),
+      cwd: TEST_PROJECT_ROOT,
       tool_input: {
         subagent_type: 'developer',
         description: '委派',
@@ -907,7 +912,7 @@ describe('handlePreTask — state 寫入', () => {
       },
     }, sid);
 
-    const state = stateLib.readState(sid);
+    const state = stateLib.readState(TEST_PROJECT_ROOT, sid);
     const keys = Object.keys(state.activeAgents);
     expect(keys.length).toBeGreaterThan(0);
 

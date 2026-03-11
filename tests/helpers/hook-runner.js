@@ -65,14 +65,16 @@ function parseJsonOutput(stdout) {
  * 執行 pre-task.js hook（同步）
  * @param {string} sessionId
  * @param {object} toolInput - { description?, prompt? }
+ * @param {object} [extra={}] - 額外的 input 欄位（如 cwd）
  * @returns {{ exitCode: number, stdout: string, stderr: string, parsed: object|null }}
  */
-function runPreTask(sessionId, toolInput = {}) {
+function runPreTask(sessionId, toolInput = {}, extra = {}) {
   const input = {
     session_id: sessionId,
     tool_name: 'Task',
     tool_input: toolInput,
     cwd: process.cwd(),
+    ...extra,
   };
   const proc = Bun.spawnSync(['node', PRE_TASK_PATH], {
     stdin: Buffer.from(JSON.stringify(input)),

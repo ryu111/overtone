@@ -36,6 +36,9 @@ const timeline = require(join(SCRIPTS_LIB, 'timeline'));
 const { shouldSuggestCompact } = require(join(SCRIPTS_LIB, 'hook-utils'));
 const { formatSize } = require(join(SCRIPTS_LIB, 'utils'));
 
+// ── 測試專案根目錄（per-project 隔離）──
+const TEST_PROJECT_ROOT = join(tmpdir(), `compact-suggest-test-${Date.now()}`);
+
 // ── Session ID（加時戳避免衝突）──
 
 const TS = Date.now();
@@ -53,7 +56,7 @@ const SESSION_FAIL    = `${SESSION_BASE}-fail`;
 const SESSION_AFTER2  = `${SESSION_BASE}-after2`;
 
 // 暫存 transcript 檔案目錄
-const TMP_DIR = join(homedir(), '.nova', 'test-tmp', `compact-suggest-${TS}`);
+const TMP_DIR = join(TEST_PROJECT_ROOT, 'test-tmp');
 
 // ── 輔助函式 ──
 
@@ -76,8 +79,9 @@ function createTranscript(name, sizeBytes) {
  */
 function runOnStop(input, extraEnv = {}) {
   const sessionId = input.session_id || '';
+  const fullInput = { cwd: TEST_PROJECT_ROOT, ...input };
   const proc = Bun.spawnSync(['node', ON_STOP_PATH], {
-    stdin: Buffer.from(JSON.stringify(input)),
+    stdin: Buffer.from(JSON.stringify(fullInput)),
     env: {
       ...process.env,
       CLAUDE_SESSION_ID: sessionId,
@@ -99,7 +103,7 @@ function runOnStop(input, extraEnv = {}) {
  * 讀取 timeline.jsonl 並解析所有事件
  */
 function readTimeline(sessionId) {
-  const timelinePath = paths.session.timeline(sessionId);
+  const timelinePath = paths.session.timeline(TEST_PROJECT_ROOT, sessionId);
   if (!existsSync(timelinePath)) return [];
   const raw = readFileSync(timelinePath, 'utf8');
   return raw.trim().split('\n').filter(Boolean).map(line => {
@@ -111,23 +115,18 @@ function readTimeline(sessionId) {
  * 建立 standard workflow 並設定部分 stage 為 completed
  */
 function setupWorkflow(sessionId, stages, completedStages = []) {
-  stateLib.initState(sessionId, 'standard', stages);
+  mkdirSync(paths.sessionDir(TEST_PROJECT_ROOT, sessionId), { recursive: true });
+  stateLib.initState(TEST_PROJECT_ROOT, sessionId, null, 'standard', stages);
   for (const s of completedStages) {
-    stateLib.updateStage(sessionId, s, { status: 'completed', result: 'pass' });
+    stateLib.updateStage(TEST_PROJECT_ROOT, sessionId, null, s, { status: 'completed', result: 'pass' });
   }
 }
 
 // ── 清理 ──
 
 afterAll(() => {
-  const allSessions = [
-    SESSION_ABOVE, SESSION_BELOW, SESSION_LAST, SESSION_RECENT,
-    SESSION_NEVER, SESSION_CUSTOM, SESSION_NOFILE, SESSION_FAIL, SESSION_AFTER2,
-  ];
-  for (const s of allSessions) {
-    rmSync(paths.sessionDir(s), { recursive: true, force: true });
-  }
-  rmSync(TMP_DIR, { recursive: true, force: true });
+  // 清理整個測試專案根目錄（含 sessions、test-tmp 等）
+  rmSync(TEST_PROJECT_ROOT, { recursive: true, force: true });
 });
 
 // ══════════════════════════════════════════════════════════════════
@@ -175,6 +174,7 @@ describe('Scenario 11：transcript_path 為 null', () => {
   test('transcriptPath 為 null 時回傳 { suggest: false }', () => {
     const result = shouldSuggestCompact({
       transcriptPath: null,
+      projectRoot: TEST_PROJECT_ROOT,
       sessionId: `${SESSION_BASE}-null-path`,
     });
     expect(result.suggest).toBe(false);
@@ -182,6 +182,7 @@ describe('Scenario 11：transcript_path 為 null', () => {
 
   test('transcriptPath 未傳入時回傳 { suggest: false }', () => {
     const result = shouldSuggestCompact({
+      projectRoot: TEST_PROJECT_ROOT,
       sessionId: `${SESSION_BASE}-undef-path`,
     });
     expect(result.suggest).toBe(false);
@@ -196,6 +197,7 @@ describe('Scenario 7：transcript_path 不存在', () => {
   test('不存在的 transcript 路徑靜默回傳 { suggest: false }', () => {
     const result = shouldSuggestCompact({
       transcriptPath: '/nonexistent/path/transcript.jsonl',
+      projectRoot: TEST_PROJECT_ROOT,
       sessionId: SESSION_NOFILE,
       thresholdBytes: 1,
     });
@@ -212,6 +214,7 @@ describe('Scenario 2：transcript 小於閾值', () => {
     const transcriptPath = createTranscript('small.jsonl', 1_000);
     const result = shouldSuggestCompact({
       transcriptPath,
+      projectRoot: TEST_PROJECT_ROOT,
       sessionId: SESSION_BELOW,
       thresholdBytes: 5_000_000,
     });
@@ -222,6 +225,7 @@ describe('Scenario 2：transcript 小於閾值', () => {
     const transcriptPath = createTranscript('equal.jsonl', 5_000_000);
     const result = shouldSuggestCompact({
       transcriptPath,
+      projectRoot: TEST_PROJECT_ROOT,
       sessionId: SESSION_BELOW,
       thresholdBytes: 5_000_000,
     });
@@ -238,6 +242,7 @@ describe('Scenario 5：從未 compact 過', () => {
     const transcriptPath = createTranscript('large-never.jsonl', 6_000_000);
     const result = shouldSuggestCompact({
       transcriptPath,
+      projectRoot: TEST_PROJECT_ROOT,
       sessionId: SESSION_NEVER,
       thresholdBytes: 5_000_000,
     });
@@ -254,16 +259,17 @@ describe('Scenario 5：從未 compact 過', () => {
 describe('Scenario 4：剛 compact 過（< 2 stage:complete）', () => {
   beforeAll(() => {
     // 先 emit session:compact 事件
-    mkdirSync(paths.sessionDir(SESSION_RECENT), { recursive: true });
-    timeline.emit(SESSION_RECENT, 'session:compact', { workflowType: 'standard' });
+    mkdirSync(paths.sessionDir(TEST_PROJECT_ROOT, SESSION_RECENT), { recursive: true });
+    timeline.emit(TEST_PROJECT_ROOT, SESSION_RECENT, null, 'session:compact', { workflowType: 'standard' });
     // 只 emit 1 個 stage:complete（< 2）
-    timeline.emit(SESSION_RECENT, 'stage:complete', { stage: 'PLAN', result: 'pass' });
+    timeline.emit(TEST_PROJECT_ROOT, SESSION_RECENT, null, 'stage:complete', { stage: 'PLAN', result: 'pass' });
   });
 
   test('compact 後只有 1 個 stage:complete 時不建議', () => {
     const transcriptPath = createTranscript('large-recent.jsonl', 6_000_000);
     const result = shouldSuggestCompact({
       transcriptPath,
+      projectRoot: TEST_PROJECT_ROOT,
       sessionId: SESSION_RECENT,
       thresholdBytes: 5_000_000,
       minStagesSinceCompact: 2,
@@ -273,19 +279,20 @@ describe('Scenario 4：剛 compact 過（< 2 stage:complete）', () => {
 
   test('compact 後 0 個 stage:complete 時不建議', () => {
     const SESSION_ZERO = `${SESSION_BASE}-zero-stages`;
-    mkdirSync(paths.sessionDir(SESSION_ZERO), { recursive: true });
-    timeline.emit(SESSION_ZERO, 'session:compact', { workflowType: 'standard' });
+    mkdirSync(paths.sessionDir(TEST_PROJECT_ROOT, SESSION_ZERO), { recursive: true });
+    timeline.emit(TEST_PROJECT_ROOT, SESSION_ZERO, null, 'session:compact', { workflowType: 'standard' });
     // 沒有 stage:complete
 
     const transcriptPath = createTranscript('large-zero.jsonl', 6_000_000);
     const result = shouldSuggestCompact({
       transcriptPath,
+      projectRoot: TEST_PROJECT_ROOT,
       sessionId: SESSION_ZERO,
       thresholdBytes: 5_000_000,
       minStagesSinceCompact: 2,
     });
     expect(result.suggest).toBe(false);
-    rmSync(paths.sessionDir(SESSION_ZERO), { recursive: true, force: true });
+    rmSync(paths.sessionDir(TEST_PROJECT_ROOT, SESSION_ZERO), { recursive: true, force: true });
   });
 });
 
@@ -295,18 +302,19 @@ describe('Scenario 4：剛 compact 過（< 2 stage:complete）', () => {
 
 describe('Scenario 12：compact 後 ≥ 2 個 stage:complete', () => {
   beforeAll(() => {
-    mkdirSync(paths.sessionDir(SESSION_AFTER2), { recursive: true });
+    mkdirSync(paths.sessionDir(TEST_PROJECT_ROOT, SESSION_AFTER2), { recursive: true });
     // emit compact 事件
-    timeline.emit(SESSION_AFTER2, 'session:compact', { workflowType: 'standard' });
+    timeline.emit(TEST_PROJECT_ROOT, SESSION_AFTER2, null, 'session:compact', { workflowType: 'standard' });
     // emit 2 個 stage:complete（≥ minStagesSinceCompact）
-    timeline.emit(SESSION_AFTER2, 'stage:complete', { stage: 'PLAN', result: 'pass' });
-    timeline.emit(SESSION_AFTER2, 'stage:complete', { stage: 'ARCH', result: 'pass' });
+    timeline.emit(TEST_PROJECT_ROOT, SESSION_AFTER2, null, 'stage:complete', { stage: 'PLAN', result: 'pass' });
+    timeline.emit(TEST_PROJECT_ROOT, SESSION_AFTER2, null, 'stage:complete', { stage: 'ARCH', result: 'pass' });
   });
 
   test('compact 後已有 2 個 stage:complete 時應建議', () => {
     const transcriptPath = createTranscript('large-after2.jsonl', 6_000_000);
     const result = shouldSuggestCompact({
       transcriptPath,
+      projectRoot: TEST_PROJECT_ROOT,
       sessionId: SESSION_AFTER2,
       thresholdBytes: 5_000_000,
       minStagesSinceCompact: 2,
@@ -325,6 +333,7 @@ describe('Scenario 6：自訂閾值覆蓋', () => {
     const transcriptPath = createTranscript('custom-large.jsonl', 2_000_000);
     const result = shouldSuggestCompact({
       transcriptPath,
+      projectRoot: TEST_PROJECT_ROOT,
       sessionId: SESSION_CUSTOM,
       thresholdBytes: 1_000_000, // 1MB
       minStagesSinceCompact: 0,
@@ -337,6 +346,7 @@ describe('Scenario 6：自訂閾值覆蓋', () => {
     const transcriptPath = createTranscript('custom-small.jsonl', 2_000_000);
     const result = shouldSuggestCompact({
       transcriptPath,
+      projectRoot: TEST_PROJECT_ROOT,
       sessionId: SESSION_CUSTOM,
       thresholdBytes: 10_000_000, // 10MB
     });
@@ -353,7 +363,7 @@ describe('Scenario 1：超過閾值 + 非最後 stage → 建議 + emit timeline
     // standard workflow：PLAN completed，剩餘 ARCH..DOCS 為 pending
     setupWorkflow(SESSION_ABOVE, ['PLAN', 'ARCH', 'TEST', 'DEV', 'REVIEW', 'TEST', 'RETRO', 'DOCS'], ['PLAN']);
     // 將 PLAN 設為 active（模擬 planner agent 正在執行）
-    stateLib.updateStage(SESSION_ABOVE, 'PLAN', { status: 'active', result: null });
+    stateLib.updateStage(TEST_PROJECT_ROOT, SESSION_ABOVE, null, 'PLAN', { status: 'active', result: null });
   });
 
   test('超過閾值時 hook 正常完成（compact 建議透過 timeline 事件記錄）', () => {
@@ -388,7 +398,7 @@ describe('Scenario 3：最後 stage → 不建議', () => {
   beforeAll(() => {
     // single workflow：只有 DEV stage，設為 active
     setupWorkflow(SESSION_LAST, ['DEV'], []);
-    stateLib.updateStage(SESSION_LAST, 'DEV', { status: 'active', result: null });
+    stateLib.updateStage(TEST_PROJECT_ROOT, SESSION_LAST, null, 'DEV', { status: 'active', result: null });
   });
 
   test('所有 stage 完成後（無 nextHint）hook 回傳空物件（不觸發 compact 建議）', () => {
@@ -419,7 +429,7 @@ describe('Scenario 8：fail/reject → 不建議', () => {
   beforeAll(() => {
     // 使用 TEST stage（tester agent），因為 parse-result 對 TEST stage 才會解析 FAIL
     setupWorkflow(SESSION_FAIL, ['TEST', 'DEV', 'REVIEW', 'TEST', 'RETRO', 'DOCS'], []);
-    stateLib.updateStage(SESSION_FAIL, 'TEST', { status: 'active', result: null });
+    stateLib.updateStage(TEST_PROJECT_ROOT, SESSION_FAIL, null, 'TEST', { status: 'active', result: null });
   });
 
   test('agent 結果為 fail 時 hook 回傳空物件（不觸發 compact 建議）', () => {

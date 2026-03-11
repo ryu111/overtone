@@ -242,10 +242,9 @@ describe('Feature 2: state.js 多實例隔離', () => {
     // WHEN 透過 updateStateAtomic 觸發 enforceInvariants（會 emit system:warning）
     state.updateStateAtomic(projectRoot, sid, workflowId, (s) => s);
 
-    // NOTE: enforceInvariants 使用 state.sessionId 和 state.workflowId 呼叫 timeline.emit，
-    // timeline.emit 目前使用舊 API（全域路徑），因此 warning 寫入舊全域 timeline 路徑。
-    // per-project timeline 路徑的支援將在後續 timeline.js 遷移步驟中加入。
-    const workflowTimelinePath = paths.session.workflowTimeline(sid, workflowId);
+    // NOTE: enforceInvariants 使用新 API（有 projectRoot）呼叫 timeline.emit，
+    // 因此 warning 寫入 per-project timeline 路徑。
+    const workflowTimelinePath = paths.session.workflowTimeline(projectRoot, sid, workflowId);
     expect(existsSync(workflowTimelinePath)).toBe(true);
 
     // 讀取 timeline 確認有 system:warning 事件

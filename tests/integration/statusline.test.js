@@ -25,6 +25,10 @@ const PRE_COMPACT_PATH = join(HOOKS_DIR, 'session', 'pre-compact.js');
 const paths = require(join(SCRIPTS_LIB, 'paths'));
 const stateLib = require(join(SCRIPTS_LIB, 'state'));
 
+// ── project root（per-project API）──
+
+const PROJECT_ROOT = process.cwd();
+
 // ANSI 剝離
 function stripAnsi(str) {
   // eslint-disable-next-line no-control-regex
@@ -203,7 +207,7 @@ describe('pre-compact.js compact count 追蹤', () => {
   const SESSION_ACCUM  = `pre-compact-accum-${TS}`;
 
   function initSession(sessionId) {
-    stateLib.initState(sessionId, 'quick', ['DEV', 'REVIEW', 'RETRO']);
+    stateLib.initState(PROJECT_ROOT, sessionId, 'quick', ['DEV', 'REVIEW', 'RETRO']);
   }
 
   function runPreCompact(input = {}) {
@@ -221,7 +225,7 @@ describe('pre-compact.js compact count 追蹤', () => {
 
   afterAll(() => {
     [SESSION_AUTO, SESSION_MANUAL, SESSION_ACCUM].forEach(s => {
-      try { rmSync(paths.sessionDir(s), { recursive: true, force: true }); } catch { /* 靜默 */ }
+      try { rmSync(paths.sessionDir(PROJECT_ROOT, s), { recursive: true, force: true }); } catch { /* 靜默 */ }
     });
   });
 
@@ -230,7 +234,7 @@ describe('pre-compact.js compact count 追蹤', () => {
 
     runPreCompact({ session_id: SESSION_AUTO, trigger: 'auto' });
 
-    const countPath = paths.session.compactCount(SESSION_AUTO);
+    const countPath = paths.session.compactCount(PROJECT_ROOT, SESSION_AUTO);
     expect(existsSync(countPath)).toBe(true);
 
     const data = JSON.parse(readFileSync(countPath, 'utf8'));
@@ -243,7 +247,7 @@ describe('pre-compact.js compact count 追蹤', () => {
 
     runPreCompact({ session_id: SESSION_MANUAL });
 
-    const countPath = paths.session.compactCount(SESSION_MANUAL);
+    const countPath = paths.session.compactCount(PROJECT_ROOT, SESSION_MANUAL);
     expect(existsSync(countPath)).toBe(true);
 
     const data = JSON.parse(readFileSync(countPath, 'utf8'));
@@ -258,7 +262,7 @@ describe('pre-compact.js compact count 追蹤', () => {
     runPreCompact({ session_id: SESSION_ACCUM, trigger: 'auto' });
     runPreCompact({ session_id: SESSION_ACCUM, trigger: 'manual' });
 
-    const countPath = paths.session.compactCount(SESSION_ACCUM);
+    const countPath = paths.session.compactCount(PROJECT_ROOT, SESSION_ACCUM);
     const data = JSON.parse(readFileSync(countPath, 'utf8'));
     expect(data.auto).toBe(2);
     expect(data.manual).toBe(1);

@@ -19,6 +19,10 @@ const paths   = require(join(SCRIPTS_LIB, 'paths'));
 const state   = require(join(SCRIPTS_LIB, 'state'));
 const { workflows } = require(join(SCRIPTS_LIB, 'registry'));
 
+// ── project root（per-project API）──
+
+const PROJECT_ROOT = process.cwd();
+
 // ── session 管理 ──
 
 const SESSION_PREFIX = `test_pre_task_parallel_${Date.now()}`;
@@ -32,17 +36,17 @@ const createdSessions = [];
 
 afterAll(() => {
   for (const sid of createdSessions) {
-    rmSync(paths.sessionDir(sid), { recursive: true, force: true });
+    rmSync(paths.sessionDir(PROJECT_ROOT, sid), { recursive: true, force: true });
   }
 });
 
 function setupQuickWithDevCompleted() {
   const sessionId = newSessionId();
   createdSessions.push(sessionId);
-  mkdirSync(paths.sessionDir(sessionId), { recursive: true });
+  mkdirSync(paths.sessionDir(PROJECT_ROOT, sessionId), { recursive: true });
   // 使用含 DEV + REVIEW + TEST 的自訂 stages（quick 已移除 TEST，但此測試需要並行 REVIEW+TEST 的環境）
-  state.initState(sessionId, 'standard', ['DEV', 'REVIEW', 'TEST', 'RETRO']);
-  state.updateStateAtomic(sessionId, (s) => {
+  state.initState(PROJECT_ROOT, sessionId, 'standard', ['DEV', 'REVIEW', 'TEST', 'RETRO']);
+  state.updateStateAtomic(PROJECT_ROOT, sessionId, null, (s) => {
     s.stages['DEV'].status = 'completed';
     s.stages['DEV'].result = 'pass';
     s.currentStage = 'REVIEW';
@@ -66,7 +70,7 @@ describe('BDD F6：DEV 完成後委派 code-reviewer → 放行，REVIEW 設為 
 
     expect(isAllowed(result.parsed)).toBe(true);
 
-    const ws = state.readState(sessionId);
+    const ws = state.readState(PROJECT_ROOT, sessionId);
     expect(ws.stages['REVIEW'].status).toBe('active');
     // activeAgents key 格式為 instanceId（agentName:timestamp36-random6），以 agentName 欄位驗證
     const reviewerEntry = Object.values(ws.activeAgents).find(e => e.agentName === 'code-reviewer');
@@ -98,7 +102,7 @@ describe('BDD F6：DEV 完成後委派 tester → 放行，TEST 設為 active', 
 
     expect(isAllowed(result.parsed)).toBe(true);
 
-    const ws = state.readState(sessionId);
+    const ws = state.readState(PROJECT_ROOT, sessionId);
     expect(ws.stages['TEST'].status).toBe('active');
     // activeAgents key 格式為 instanceId，以 agentName 欄位驗證
     const testerEntry = Object.values(ws.activeAgents).find(e => e.agentName === 'tester');
@@ -127,7 +131,7 @@ describe('BDD F6：DEV 完成後同時委派 code-reviewer 和 tester → 兩者
     expect(isAllowed(r2.parsed)).toBe(true);
 
     // 兩個 stage 均為 active
-    const ws = state.readState(sessionId);
+    const ws = state.readState(PROJECT_ROOT, sessionId);
     expect(ws.stages['REVIEW'].status).toBe('active');
     expect(ws.stages['TEST'].status).toBe('active');
 
@@ -147,9 +151,9 @@ describe('BDD F6：前置 stage 未完成時委派後置 stage agent → 阻擋'
   test('DEV pending → 委派 code-reviewer → deny，permissionDecisionReason 含 DEV', () => {
     const sessionId = newSessionId();
     createdSessions.push(sessionId);
-    mkdirSync(paths.sessionDir(sessionId), { recursive: true });
+    mkdirSync(paths.sessionDir(PROJECT_ROOT, sessionId), { recursive: true });
     // quick workflow，DEV 保持 pending（預設）
-    state.initState(sessionId, 'quick', workflows['quick'].stages);
+    state.initState(PROJECT_ROOT, sessionId, 'quick', workflows['quick'].stages);
 
     const result = runPreTask(sessionId, {
       description: '委派 code-reviewer agent 審查',
@@ -181,7 +185,7 @@ describe('BDD F6：prompt 含 .test.js 路徑時不誤判為 tester', () => {
     expect(result.parsed?.decision).toBeUndefined();
 
     // TEST.status 仍為 pending（未被誤設為 active）
-    const ws = state.readState(sessionId);
+    const ws = state.readState(PROJECT_ROOT, sessionId);
     expect(ws.stages['TEST'].status).toBe('pending');
 
     // activeAgents 不包含 tester（instanceId 格式，以 agentName 欄位驗證）

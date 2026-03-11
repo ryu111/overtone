@@ -292,27 +292,31 @@ describe('buildCompactMessage', () => {
 
 const { describe: describeI, it: itI, expect: expectI, beforeEach, afterEach } = require('bun:test');
 const fsPc = require('fs');
-const { homedir: homedirPc } = require('os');
+const { mkdtempSync: mkdtempSyncPc } = require('fs');
 const { join: joinPc } = require('path');
+const { tmpdir: tmpdirPc } = require('os');
 const stateLibPc = require(join(SCRIPTS_LIB, 'state'));
 const pathsPc = require(join(SCRIPTS_LIB, 'paths'));
 const { handlePreCompact } = require(join(SCRIPTS_LIB, 'pre-compact-handler'));
 
-function makePcSession(suffix) {
+function makePcSession(projectRoot, suffix) {
   const id = `test_pch_${suffix}_${Date.now()}`;
-  return { id, dir: joinPc(homedirPc(), '.nova', 'sessions', id) };
+  const dir = joinPc(projectRoot, '.nova', 'sessions', id);
+  return { id, dir };
 }
 
 describeI('handlePreCompact', () => {
   let sess;
+  let testProjectRoot;
 
   beforeEach(() => {
-    sess = makePcSession(`s${Date.now().toString(36)}`);
+    testProjectRoot = mkdtempSyncPc(joinPc(tmpdirPc(), 'pch-test-'));
+    sess = makePcSession(testProjectRoot, `s${Date.now().toString(36)}`);
     fsPc.mkdirSync(sess.dir, { recursive: true });
   });
 
   afterEach(() => {
-    fsPc.rmSync(sess.dir, { recursive: true, force: true });
+    fsPc.rmSync(testProjectRoot, { recursive: true, force: true });
   });
 
   itI('無 sessionId 且 input 為空物件 → 回傳空 output', () => {
@@ -321,83 +325,83 @@ describeI('handlePreCompact', () => {
   });
 
   itI('有 sessionId 但無 workflow state → 回傳空 output', () => {
-    const result = handlePreCompact({ session_id: sess.id });
+    const result = handlePreCompact({ session_id: sess.id, cwd: testProjectRoot });
     expectI(result.output).toEqual({});
   });
 
   itI('有 workflow state → 回傳 systemMessage', () => {
-    stateLibPc.initState(sess.id, 'quick', ['DEV', 'REVIEW']);
-    const result = handlePreCompact({ session_id: sess.id, cwd: '/tmp' });
+    stateLibPc.initState(testProjectRoot, sess.id, 'quick', ['DEV', 'REVIEW']);
+    const result = handlePreCompact({ session_id: sess.id, cwd: testProjectRoot });
     expectI(result.output).toHaveProperty('systemMessage');
     expectI(result.output.systemMessage).toContain('Overtone 狀態恢復');
   });
 
   itI('auto trigger → compact-count.json auto 遞增', () => {
-    stateLibPc.initState(sess.id, 'quick', ['DEV']);
-    handlePreCompact({ session_id: sess.id, trigger: 'auto', cwd: '/tmp' });
-    const compactPath = pathsPc.session.compactCount(sess.id);
+    stateLibPc.initState(testProjectRoot, sess.id, 'quick', ['DEV']);
+    handlePreCompact({ session_id: sess.id, trigger: 'auto', cwd: testProjectRoot });
+    const compactPath = pathsPc.session.compactCount(testProjectRoot, sess.id);
     const counts = JSON.parse(fsPc.readFileSync(compactPath, 'utf8'));
     expectI(counts.auto).toBe(1);
     expectI(counts.manual).toBe(0);
   });
 
   itI('manual trigger → compact-count.json manual 遞增', () => {
-    stateLibPc.initState(sess.id, 'quick', ['DEV']);
-    handlePreCompact({ session_id: sess.id, trigger: 'manual', cwd: '/tmp' });
-    const compactPath = pathsPc.session.compactCount(sess.id);
+    stateLibPc.initState(testProjectRoot, sess.id, 'quick', ['DEV']);
+    handlePreCompact({ session_id: sess.id, trigger: 'manual', cwd: testProjectRoot });
+    const compactPath = pathsPc.session.compactCount(testProjectRoot, sess.id);
     const counts = JSON.parse(fsPc.readFileSync(compactPath, 'utf8'));
     expectI(counts.manual).toBe(1);
     expectI(counts.auto).toBe(0);
   });
 
   itI('多次 auto compact → 計數累積', () => {
-    stateLibPc.initState(sess.id, 'quick', ['DEV']);
-    handlePreCompact({ session_id: sess.id, trigger: 'auto', cwd: '/tmp' });
-    handlePreCompact({ session_id: sess.id, trigger: 'auto', cwd: '/tmp' });
-    const compactPath = pathsPc.session.compactCount(sess.id);
+    stateLibPc.initState(testProjectRoot, sess.id, 'quick', ['DEV']);
+    handlePreCompact({ session_id: sess.id, trigger: 'auto', cwd: testProjectRoot });
+    handlePreCompact({ session_id: sess.id, trigger: 'auto', cwd: testProjectRoot });
+    const compactPath = pathsPc.session.compactCount(testProjectRoot, sess.id);
     const counts = JSON.parse(fsPc.readFileSync(compactPath, 'utf8'));
     expectI(counts.auto).toBe(2);
   });
 
   itI('compact 後 activeAgents 被清空', () => {
-    stateLibPc.initState(sess.id, 'quick', ['DEV']);
+    stateLibPc.initState(testProjectRoot, sess.id, 'quick', ['DEV']);
     // 先寫入一個 activeAgent
-    stateLibPc.updateStateAtomic(sess.id, (s) => {
+    stateLibPc.updateStateAtomic(testProjectRoot, sess.id, null, (s) => {
       s.activeAgents['inst_test'] = { stage: 'DEV', agentName: 'developer' };
       return s;
     });
-    handlePreCompact({ session_id: sess.id, trigger: 'auto', cwd: '/tmp' });
-    const st = stateLibPc.readState(sess.id);
+    handlePreCompact({ session_id: sess.id, trigger: 'auto', cwd: testProjectRoot });
+    const st = stateLibPc.readState(testProjectRoot, sess.id);
     expectI(Object.keys(st.activeAgents)).toHaveLength(0);
   });
 
   itI('compact 後 active stage（無 completedAt）被標回 pending', () => {
-    stateLibPc.initState(sess.id, 'quick', ['DEV', 'REVIEW']);
+    stateLibPc.initState(testProjectRoot, sess.id, 'quick', ['DEV', 'REVIEW']);
     // 手動將 DEV stage 設為 active（模擬 agent 執行中）
-    stateLibPc.updateStateAtomic(sess.id, (s) => {
+    stateLibPc.updateStateAtomic(testProjectRoot, sess.id, null, (s) => {
       if (s.stages && s.stages.DEV) {
         s.stages.DEV.status = 'active';
         delete s.stages.DEV.completedAt;
       }
       return s;
     });
-    handlePreCompact({ session_id: sess.id, trigger: 'auto', cwd: '/tmp' });
-    const st = stateLibPc.readState(sess.id);
+    handlePreCompact({ session_id: sess.id, trigger: 'auto', cwd: testProjectRoot });
+    const st = stateLibPc.readState(testProjectRoot, sess.id);
     expectI(st.stages.DEV.status).toBe('pending');
   });
 
   itI('compact 後 active stage 有 completedAt 者不改（enforceInvariants 負責）', () => {
-    stateLibPc.initState(sess.id, 'quick', ['DEV', 'REVIEW']);
+    stateLibPc.initState(testProjectRoot, sess.id, 'quick', ['DEV', 'REVIEW']);
     // 手動將 DEV stage 設為 active 但有 completedAt（極端邊界情況）
-    stateLibPc.updateStateAtomic(sess.id, (s) => {
+    stateLibPc.updateStateAtomic(testProjectRoot, sess.id, null, (s) => {
       if (s.stages && s.stages.DEV) {
         s.stages.DEV.status = 'active';
         s.stages.DEV.completedAt = new Date().toISOString();
       }
       return s;
     });
-    handlePreCompact({ session_id: sess.id, trigger: 'auto', cwd: '/tmp' });
-    const st = stateLibPc.readState(sess.id);
+    handlePreCompact({ session_id: sess.id, trigger: 'auto', cwd: testProjectRoot });
+    const st = stateLibPc.readState(testProjectRoot, sess.id);
     // 有 completedAt 的 active stage 不被 pre-compact 改回 pending
     // enforceInvariants 稍後會把它標為 completed
     expectI(st.stages.DEV.status).not.toBe('pending');
@@ -472,32 +476,36 @@ describeA('detectFrequencyAnomaly', () => {
 
 const { describe: describeB, it: itB, expect: expectB, beforeEach: beforeEachB, afterEach: afterEachB } = require('bun:test');
 const fsPc2 = require('fs');
-const { homedir: homedirPc2 } = require('os');
+const { mkdtempSync: mkdtempSyncPc2 } = require('fs');
 const { join: joinPc2 } = require('path');
+const { tmpdir: tmpdirPc2 } = require('os');
 const stateLibPc2 = require(join(SCRIPTS_LIB, 'state'));
 const pathsPc2 = require(join(SCRIPTS_LIB, 'paths'));
 
-function makePcSession2(suffix) {
+function makePcSession2(projectRoot, suffix) {
   const id = `test_pch2_${suffix}_${Date.now()}`;
-  return { id, dir: joinPc2(homedirPc2(), '.nova', 'sessions', id) };
+  const dir = joinPc2(projectRoot, '.nova', 'sessions', id);
+  return { id, dir };
 }
 
 describeB('autoTimestamps 追蹤', () => {
   let sess2;
+  let testProjectRoot2;
 
   beforeEachB(() => {
-    sess2 = makePcSession2(`b${Date.now().toString(36)}`);
+    testProjectRoot2 = mkdtempSyncPc2(joinPc2(tmpdirPc2(), 'pch2-test-'));
+    sess2 = makePcSession2(testProjectRoot2, `b${Date.now().toString(36)}`);
     fsPc2.mkdirSync(sess2.dir, { recursive: true });
   });
 
   afterEachB(() => {
-    fsPc2.rmSync(sess2.dir, { recursive: true, force: true });
+    fsPc2.rmSync(testProjectRoot2, { recursive: true, force: true });
   });
 
   itB('Scenario B-1: 首次 auto-compact 寫入 autoTimestamps', () => {
-    stateLibPc2.initState(sess2.id, 'quick', ['DEV']);
-    handlePreCompact({ session_id: sess2.id, trigger: 'auto', cwd: '/tmp' });
-    const compactPath = pathsPc2.session.compactCount(sess2.id);
+    stateLibPc2.initState(testProjectRoot2, sess2.id, 'quick', ['DEV']);
+    handlePreCompact({ session_id: sess2.id, trigger: 'auto', cwd: testProjectRoot2 });
+    const compactPath = pathsPc2.session.compactCount(testProjectRoot2, sess2.id);
     const counts = JSON.parse(fsPc2.readFileSync(compactPath, 'utf8'));
     expectB(Array.isArray(counts.autoTimestamps)).toBe(true);
     expectB(counts.autoTimestamps.length).toBe(1);
@@ -506,13 +514,13 @@ describeB('autoTimestamps 追蹤', () => {
   });
 
   itB('Scenario B-2: 舊格式 compact-count.json 向後相容', () => {
-    stateLibPc2.initState(sess2.id, 'quick', ['DEV']);
+    stateLibPc2.initState(testProjectRoot2, sess2.id, 'quick', ['DEV']);
     // 寫入舊格式（無 autoTimestamps）
-    const compactPath = pathsPc2.session.compactCount(sess2.id);
+    const compactPath = pathsPc2.session.compactCount(testProjectRoot2, sess2.id);
     fsPc2.writeFileSync(compactPath, JSON.stringify({ auto: 5, manual: 2 }));
     let threw = false;
     try {
-      handlePreCompact({ session_id: sess2.id, trigger: 'auto', cwd: '/tmp' });
+      handlePreCompact({ session_id: sess2.id, trigger: 'auto', cwd: testProjectRoot2 });
     } catch {
       threw = true;
     }
@@ -524,14 +532,14 @@ describeB('autoTimestamps 追蹤', () => {
   });
 
   itB('Scenario B-3: autoTimestamps 超過 20 筆時 FIFO 截斷', () => {
-    stateLibPc2.initState(sess2.id, 'quick', ['DEV']);
+    stateLibPc2.initState(testProjectRoot2, sess2.id, 'quick', ['DEV']);
     // 寫入已有 20 筆的 autoTimestamps
-    const compactPath = pathsPc2.session.compactCount(sess2.id);
+    const compactPath = pathsPc2.session.compactCount(testProjectRoot2, sess2.id);
     const old20 = Array.from({ length: 20 }, (_, i) =>
       new Date(Date.now() - (20 - i) * 60000).toISOString()
     );
     fsPc2.writeFileSync(compactPath, JSON.stringify({ auto: 20, manual: 0, autoTimestamps: old20 }));
-    handlePreCompact({ session_id: sess2.id, trigger: 'auto', cwd: '/tmp' });
+    handlePreCompact({ session_id: sess2.id, trigger: 'auto', cwd: testProjectRoot2 });
     const counts = JSON.parse(fsPc2.readFileSync(compactPath, 'utf8'));
     expectB(counts.autoTimestamps.length).toBe(20);
     // 最新的在末尾（時間最大）
@@ -541,10 +549,10 @@ describeB('autoTimestamps 追蹤', () => {
   });
 
   itB('Scenario B-4: manual compact 不寫入 autoTimestamps', () => {
-    stateLibPc2.initState(sess2.id, 'quick', ['DEV']);
-    const compactPath = pathsPc2.session.compactCount(sess2.id);
+    stateLibPc2.initState(testProjectRoot2, sess2.id, 'quick', ['DEV']);
+    const compactPath = pathsPc2.session.compactCount(testProjectRoot2, sess2.id);
     fsPc2.writeFileSync(compactPath, JSON.stringify({ auto: 0, manual: 0, autoTimestamps: [] }));
-    handlePreCompact({ session_id: sess2.id, trigger: 'manual', cwd: '/tmp' });
+    handlePreCompact({ session_id: sess2.id, trigger: 'manual', cwd: testProjectRoot2 });
     const counts = JSON.parse(fsPc2.readFileSync(compactPath, 'utf8'));
     expectB(counts.autoTimestamps.length).toBe(0);
     expectB(counts.manual).toBe(1);
@@ -555,31 +563,35 @@ describeB('autoTimestamps 追蹤', () => {
 
 const { describe: describeC, it: itC, expect: expectC, beforeEach: beforeEachC, afterEach: afterEachC } = require('bun:test');
 const fsPc3 = require('fs');
-const { homedir: homedirPc3 } = require('os');
+const { mkdtempSync: mkdtempSyncPc3 } = require('fs');
 const { join: joinPc3 } = require('path');
+const { tmpdir: tmpdirPc3 } = require('os');
 const stateLibPc3 = require(join(SCRIPTS_LIB, 'state'));
 const pathsPc3 = require(join(SCRIPTS_LIB, 'paths'));
 
-function makePcSession3(suffix) {
+function makePcSession3(projectRoot, suffix) {
   const id = `test_pch3_${suffix}_${Date.now()}`;
-  return { id, dir: joinPc3(homedirPc3(), '.nova', 'sessions', id) };
+  const dir = joinPc3(projectRoot, '.nova', 'sessions', id);
+  return { id, dir };
 }
 
 describeC('Feature C: timeline event emit', () => {
   let sess3;
+  let testProjectRoot3;
 
   beforeEachC(() => {
-    sess3 = makePcSession3(`c${Date.now().toString(36)}`);
+    testProjectRoot3 = mkdtempSyncPc3(joinPc3(tmpdirPc3(), 'pch3-test-'));
+    sess3 = makePcSession3(testProjectRoot3, `c${Date.now().toString(36)}`);
     fsPc3.mkdirSync(sess3.dir, { recursive: true });
   });
 
   afterEachC(() => {
-    fsPc3.rmSync(sess3.dir, { recursive: true, force: true });
+    fsPc3.rmSync(testProjectRoot3, { recursive: true, force: true });
   });
 
   itC('Scenario C-1: 偵測到頻率異常時 emit quality:compact-frequency 事件', () => {
-    stateLibPc3.initState(sess3.id, 'quick', ['DEV']);
-    const compactPath = pathsPc3.session.compactCount(sess3.id);
+    stateLibPc3.initState(testProjectRoot3, sess3.id, 'quick', ['DEV']);
+    const compactPath = pathsPc3.session.compactCount(testProjectRoot3, sess3.id);
     // 寫入 3 筆最近 autoTimestamps（已達門檻）
     const timestamps = [
       new Date(Date.now() - 180000).toISOString(),
@@ -588,9 +600,9 @@ describeC('Feature C: timeline event emit', () => {
     ];
     fsPc3.writeFileSync(compactPath, JSON.stringify({ auto: 3, manual: 0, autoTimestamps: timestamps }));
     // 第 4 次 auto-compact，加入後達到 4 筆 → 異常
-    handlePreCompact({ session_id: sess3.id, trigger: 'auto', cwd: '/tmp' });
+    handlePreCompact({ session_id: sess3.id, trigger: 'auto', cwd: testProjectRoot3 });
     // 驗證 timeline.jsonl 包含 quality:compact-frequency
-    const timelinePath = joinPc3(sess3.dir, 'timeline.jsonl');
+    const timelinePath = pathsPc3.session.timeline(testProjectRoot3, sess3.id);
     const lines = fsPc3.readFileSync(timelinePath, 'utf8').trim().split('\n');
     const qualityEvents = lines
       .map((l) => { try { return JSON.parse(l); } catch { return null; } })
@@ -605,13 +617,13 @@ describeC('Feature C: timeline event emit', () => {
   });
 
   itC('Scenario C-2: 未達異常門檻時不 emit 事件', () => {
-    stateLibPc3.initState(sess3.id, 'quick', ['DEV']);
-    const compactPath = pathsPc3.session.compactCount(sess3.id);
+    stateLibPc3.initState(testProjectRoot3, sess3.id, 'quick', ['DEV']);
+    const compactPath = pathsPc3.session.compactCount(testProjectRoot3, sess3.id);
     // 只有 1 筆 autoTimestamps（未達門檻 3）
     const timestamps = [new Date(Date.now() - 60000).toISOString()];
     fsPc3.writeFileSync(compactPath, JSON.stringify({ auto: 1, manual: 0, autoTimestamps: timestamps }));
-    handlePreCompact({ session_id: sess3.id, trigger: 'auto', cwd: '/tmp' });
-    const timelinePath = joinPc3(sess3.dir, 'timeline.jsonl');
+    handlePreCompact({ session_id: sess3.id, trigger: 'auto', cwd: testProjectRoot3 });
+    const timelinePath = pathsPc3.session.timeline(testProjectRoot3, sess3.id);
     let qualityEvents = [];
     try {
       const lines = fsPc3.readFileSync(timelinePath, 'utf8').trim().split('\n');

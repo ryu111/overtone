@@ -2,12 +2,15 @@
 const { test, expect, describe, beforeAll, afterAll } = require('bun:test');
 const { mkdirSync, rmSync, writeFileSync } = require('fs');
 const { join } = require('path');
-const { homedir } = require('os');
+const { homedir, tmpdir } = require('os');
 const { HOOKS_DIR, SCRIPTS_LIB } = require('../helpers/paths');
 
 // ── 路徑設定 ──
 
 const HOOK_PATH = join(HOOKS_DIR, 'prompt', 'on-submit.js');
+
+// ── 測試專案根目錄（per-project 隔離）──
+const TEST_PROJECT_ROOT = join(tmpdir(), `on-submit-test-${Date.now()}`);
 
 // ── 輔助函式 ──
 
@@ -18,8 +21,9 @@ const HOOK_PATH = join(HOOKS_DIR, 'prompt', 'on-submit.js');
  * @returns {Promise<object>} 解析後的 JSON（hookSpecificOutput 格式）
  */
 async function runHook(input, env = {}) {
+  const fullInput = { cwd: TEST_PROJECT_ROOT, ...input };
   const proc = Bun.spawn(['node', HOOK_PATH], {
-    stdin: Buffer.from(JSON.stringify(input)),
+    stdin: Buffer.from(JSON.stringify(fullInput)),
     env: { ...process.env, ...env },
     stdout: 'pipe',
     stderr: 'pipe',
@@ -42,19 +46,19 @@ function getContext(result) {
 
 const TEST_SESSION = `test_on_submit_${Date.now()}`;
 const paths = require(join(SCRIPTS_LIB, 'paths'));
-const SESSION_DIR = paths.sessionDir(TEST_SESSION);
+const SESSION_DIR = paths.sessionDir(TEST_PROJECT_ROOT, TEST_SESSION);
 const state = require(join(SCRIPTS_LIB, 'state'));
 
 beforeAll(() => {
   // 建立測試 session 目錄，供場景 8 使用
   mkdirSync(SESSION_DIR, { recursive: true });
   // 初始化 workflow state（quick: DEV → REVIEW → TEST）
-  state.initState(TEST_SESSION, 'quick', ['DEV', 'REVIEW', 'TEST']);
+  state.initState(TEST_PROJECT_ROOT, TEST_SESSION, null, 'quick', ['DEV', 'REVIEW', 'TEST']);
 });
 
 afterAll(() => {
-  // 清理測試 session 目錄
-  rmSync(SESSION_DIR, { recursive: true, force: true });
+  // 清理測試專案根目錄（含所有 session 目錄）
+  rmSync(TEST_PROJECT_ROOT, { recursive: true, force: true });
 });
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -256,7 +260,7 @@ describe('有進行中 workflow — 注入狀態摘要', () => {
   });
 
   test('場景 8d：failCount > 0 時仍輸出簡短格式（失敗次數由 get-workflow-context.js 顯示）', async () => {
-    state.updateStateAtomic(TEST_SESSION, (s) => {
+    state.updateStateAtomic(TEST_PROJECT_ROOT, TEST_SESSION, null, (s) => {
       s.failCount = 2;
       return s;
     });
@@ -270,7 +274,7 @@ describe('有進行中 workflow — 注入狀態摘要', () => {
     expect(ctx).toContain('工作流進行中');
     expect(ctx).toContain('/auto');
 
-    state.updateStateAtomic(TEST_SESSION, (s) => {
+    state.updateStateAtomic(TEST_PROJECT_ROOT, TEST_SESSION, null, (s) => {
       s.failCount = 0;
       return s;
     });

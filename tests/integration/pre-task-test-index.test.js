@@ -11,6 +11,7 @@
 const { describe, it, expect, afterAll } = require('bun:test');
 const { mkdirSync, rmSync } = require('fs');
 const { join } = require('path');
+const os = require('os');
 const { SCRIPTS_LIB, HOOKS_DIR } = require('../helpers/paths');
 const { isAllowed } = require('../helpers/hook-runner');
 
@@ -22,8 +23,9 @@ const paths = require(join(SCRIPTS_LIB, 'paths'));
 const state = require(join(SCRIPTS_LIB, 'state'));
 const { workflows } = require(join(SCRIPTS_LIB, 'registry'));
 
-// 真實專案根目錄（包含 tests/）
+// 真實專案根目錄（包含 tests/）— 同時作為 per-project state 的 projectRoot
 const PROJECT_ROOT = join(__dirname, '..', '..');
+const TEST_PROJECT_ROOT = PROJECT_ROOT;
 
 // ── 測試共用輔助 ──
 
@@ -58,18 +60,19 @@ async function runHook(input, sessionId) {
 
 const SESSION_PREFIX = `test_pre_task_ti_${Date.now()}`;
 let counter = 0;
+
 const createdSessions = [];
 
 function newSession() {
   const sid = `${SESSION_PREFIX}_${++counter}`;
   createdSessions.push(sid);
-  mkdirSync(paths.sessionDir(sid), { recursive: true });
+  mkdirSync(paths.sessionDir(TEST_PROJECT_ROOT, sid), { recursive: true });
   return sid;
 }
 
 afterAll(() => {
   for (const sid of createdSessions) {
-    rmSync(paths.sessionDir(sid), { recursive: true, force: true });
+    rmSync(paths.sessionDir(TEST_PROJECT_ROOT, sid), { recursive: true, force: true });
   }
 });
 
@@ -83,9 +86,9 @@ afterAll(() => {
  * @param {string[]} completedStageKeys - 要設為 completed 的 stage key（如 ['DEV']）
  */
 function initQuickWorkflow(sessionId, completedStageKeys = []) {
-  state.initState(sessionId, 'quick', workflows['quick'].stages);
+  state.initState(TEST_PROJECT_ROOT, sessionId, 'quick', workflows['quick'].stages);
   if (completedStageKeys.length > 0) {
-    state.updateStateAtomic(sessionId, (s) => {
+    state.updateStateAtomic(TEST_PROJECT_ROOT, sessionId, null, (s) => {
       for (const key of completedStageKeys) {
         if (s.stages[key]) {
           s.stages[key].status = 'completed';
@@ -188,7 +191,7 @@ describe('Scenario: tester agent 委派時注入 test-index 摘要', () => {
 describe('Scenario: developer agent 委派時注入 test-index 摘要', () => {
   it('updatedInput.prompt 包含 [Test Index] 開頭的區塊', async () => {
     const sessionId = newSession();
-    state.initState(sessionId, 'single', workflows['single'].stages);
+    state.initState(TEST_PROJECT_ROOT, sessionId, 'single', workflows['single'].stages);
 
     const result = await runHook(
       {
@@ -215,7 +218,7 @@ describe('Scenario: developer agent 委派時注入 test-index 摘要', () => {
 describe('Scenario: 非 tester/developer agent 不注入 test-index 摘要', () => {
   it('planner agent 委派時不包含 [Test Index] 區塊', async () => {
     const sessionId = newSession();
-    state.initState(sessionId, 'standard', workflows['standard'].stages);
+    state.initState(TEST_PROJECT_ROOT, sessionId, 'standard', workflows['standard'].stages);
 
     const result = await runHook(
       {
@@ -273,7 +276,7 @@ describe('Scenario: 非 tester/developer agent 不注入 test-index 摘要', () 
 describe('Scenario: 識別不到 targetAgent 時不注入 test-index 摘要', () => {
   it('無法辨識 agent → hook 正常結束，結果為空字串', async () => {
     const sessionId = newSession();
-    state.initState(sessionId, 'single', workflows['single'].stages);
+    state.initState(TEST_PROJECT_ROOT, sessionId, 'single', workflows['single'].stages);
 
     const result = await runHook(
       {
@@ -330,13 +333,13 @@ describe('Scenario: tests/ 目錄不存在時靜默降級', () => {
   it('其他功能（skip 阻擋機制）不受影響', async () => {
     const sessionId = newSession();
     // quick workflow，DEV 未完成，委派 code-reviewer 應被擋
-    state.initState(sessionId, 'quick', workflows['quick'].stages);
+    state.initState(TEST_PROJECT_ROOT, sessionId, 'quick', workflows['quick'].stages);
 
     const result = await runHook(
       {
         session_id: sessionId,
         tool_name: 'Task',
-        cwd: '/nonexistent/path',
+        cwd: TEST_PROJECT_ROOT, // state 存在此目錄，hook 能正確讀取並執行 deny
         tool_input: {
           subagent_type: 'code-reviewer',
           description: '委派 code-reviewer',
@@ -346,7 +349,7 @@ describe('Scenario: tests/ 目錄不存在時靜默降級', () => {
       sessionId
     );
 
-    // DEV 未完成 → 應被擋（不受 cwd 不存在影響）
+    // DEV 未完成 → 應被擋
     expect(result?.hookSpecificOutput?.permissionDecision).toBe('deny');
   });
 });
@@ -355,7 +358,7 @@ describe('Scenario: tests/ 目錄不存在時靜默降級', () => {
 describe('Scenario: 注入後保留所有原始 toolInput 欄位', () => {
   it('subagent_type、description 等原始欄位保留在 updatedInput 中', async () => {
     const sessionId = newSession();
-    state.initState(sessionId, 'single', workflows['single'].stages);
+    state.initState(TEST_PROJECT_ROOT, sessionId, 'single', workflows['single'].stages);
 
     const ORIGINAL_SUBAGENT_TYPE = 'developer';
     const ORIGINAL_DESCRIPTION = '開發任務描述（原始）';
@@ -384,7 +387,7 @@ describe('Scenario: 注入後保留所有原始 toolInput 欄位', () => {
 
   it('只有 prompt 欄位被修改（追加 test-index 摘要）', async () => {
     const sessionId = newSession();
-    state.initState(sessionId, 'single', workflows['single'].stages);
+    state.initState(TEST_PROJECT_ROOT, sessionId, 'single', workflows['single'].stages);
 
     const ORIGINAL_PROMPT = '原始 developer 任務指令';
 

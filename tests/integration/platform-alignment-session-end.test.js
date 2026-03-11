@@ -11,12 +11,16 @@
 
 const { describe, test, expect, afterAll } = require('bun:test');
 const { join } = require('path');
+const os = require('os');
 const { mkdirSync, rmSync, writeFileSync, readFileSync, existsSync } = require('fs');
 const { HOOKS_DIR, SCRIPTS_LIB } = require('../helpers/paths');
 
 const HOOK_PATH = join(HOOKS_DIR, 'session', 'on-session-end.js');
 const paths = require(join(SCRIPTS_LIB, 'paths'));
 const timeline = require(join(SCRIPTS_LIB, 'timeline'));
+
+// ── 測試隔離：每次測試使用獨立的 projectRoot（per-project API）
+const TEST_PROJECT_ROOT = join(os.tmpdir(), `overtone-session-end-test-${Date.now()}`);
 
 // ── Session 管理 ──
 
@@ -31,9 +35,8 @@ function newSessionId() {
 }
 
 afterAll(() => {
-  for (const sid of createdSessions) {
-    rmSync(paths.sessionDir(sid), { recursive: true, force: true });
-  }
+  // 清理 per-project 測試目錄
+  rmSync(join(TEST_PROJECT_ROOT, '.nova'), { recursive: true, force: true });
 });
 
 // ── 輔助函式 ──
@@ -49,8 +52,11 @@ function runHook(input, sessionId) {
     envConfig.CLAUDE_SESSION_ID = sessionId;
   }
 
+  // 加入 cwd 讓 resolveProjectRoot 能解析到 TEST_PROJECT_ROOT
+  const inputWithCwd = { cwd: TEST_PROJECT_ROOT, ...input };
+
   const proc = Bun.spawnSync(['node', HOOK_PATH], {
-    stdin: Buffer.from(JSON.stringify(input)),
+    stdin: Buffer.from(JSON.stringify(inputWithCwd)),
     env: envConfig,
     stdout: 'pipe',
     stderr: 'pipe',
@@ -68,16 +74,16 @@ function runHook(input, sessionId) {
 }
 
 function initSessionDir(sessionId) {
-  mkdirSync(paths.sessionDir(sessionId), { recursive: true });
+  mkdirSync(paths.sessionDir(TEST_PROJECT_ROOT, sessionId), { recursive: true });
 }
 
 function writeLoopJson(sessionId, data) {
-  writeFileSync(paths.session.loop(sessionId), JSON.stringify(data, null, 2), 'utf8');
+  writeFileSync(paths.session.loop(TEST_PROJECT_ROOT, sessionId), JSON.stringify(data, null, 2), 'utf8');
 }
 
 function readLoopJson(sessionId) {
   try {
-    return JSON.parse(readFileSync(paths.session.loop(sessionId), 'utf8'));
+    return JSON.parse(readFileSync(paths.session.loop(TEST_PROJECT_ROOT, sessionId), 'utf8'));
   } catch {
     return null;
   }
@@ -85,7 +91,7 @@ function readLoopJson(sessionId) {
 
 function readTimeline(sessionId) {
   try {
-    const content = readFileSync(paths.session.timeline(sessionId), 'utf8');
+    const content = readFileSync(paths.session.timeline(TEST_PROJECT_ROOT, sessionId), 'utf8');
     return content.trim().split('\n').filter(Boolean).map(line => JSON.parse(line));
   } catch {
     return [];

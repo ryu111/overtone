@@ -27,6 +27,10 @@ const paths = require(join(SCRIPTS_LIB, 'paths'));
 const stateLib = require(join(SCRIPTS_LIB, 'state'));
 const loopLib = require(join(SCRIPTS_LIB, 'loop'));
 
+// ── project root（per-project API）──
+
+const PROJECT_ROOT = process.cwd();
+
 // ── 時戳前綴，確保測試 session ID 唯一 ──
 
 const TS = Date.now();
@@ -64,7 +68,7 @@ function runPreCompact(input, extraEnv = {}) {
  */
 function readCompactCount(sessionId) {
   try {
-    const raw = readFileSync(paths.session.compactCount(sessionId), 'utf8');
+    const raw = readFileSync(paths.session.compactCount(PROJECT_ROOT, sessionId), 'utf8');
     return JSON.parse(raw);
   } catch {
     return null;
@@ -77,7 +81,7 @@ function readCompactCount(sessionId) {
 
 describe('1. Loop Restart State Recovery — 跨 session 狀態讀取', () => {
   const SESSION_LOOP = `cs-loop-${TS}`;
-  const SESSION_DIR = paths.sessionDir(SESSION_LOOP);
+  const SESSION_DIR = paths.sessionDir(PROJECT_ROOT, SESSION_LOOP);
 
   beforeEach(() => {
     mkdirSync(SESSION_DIR, { recursive: true });
@@ -94,9 +98,9 @@ describe('1. Loop Restart State Recovery — 跨 session 狀態讀取', () => {
       consecutiveErrors: 2,
       startedAt: new Date().toISOString(),
     };
-    writeFileSync(paths.session.loop(SESSION_LOOP), JSON.stringify(loopData, null, 2), 'utf8');
+    writeFileSync(paths.session.loop(PROJECT_ROOT, SESSION_LOOP), JSON.stringify(loopData, null, 2), 'utf8');
 
-    const result = loopLib.readLoop(SESSION_LOOP);
+    const result = loopLib.readLoop(PROJECT_ROOT, SESSION_LOOP);
     expect(result.iteration).toBe(7);
     expect(result.stopped).toBe(false);
     expect(result.consecutiveErrors).toBe(2);
@@ -110,8 +114,8 @@ describe('1. Loop Restart State Recovery — 跨 session 狀態讀取', () => {
       startedAt: '2026-03-01T10:00:00.000Z',
       stopReason: undefined,
     };
-    loopLib.writeLoop(SESSION_LOOP, originalData);
-    const readBack = loopLib.readLoop(SESSION_LOOP);
+    loopLib.writeLoop(PROJECT_ROOT, SESSION_LOOP, originalData);
+    const readBack = loopLib.readLoop(PROJECT_ROOT, SESSION_LOOP);
 
     expect(readBack.iteration).toBe(12);
     expect(readBack.stopped).toBe(false);
@@ -120,12 +124,12 @@ describe('1. Loop Restart State Recovery — 跨 session 狀態讀取', () => {
   });
 
   test('loop.json 不存在時 readLoop 自動初始化並回傳正確預設值', () => {
-    const result = loopLib.readLoop(SESSION_LOOP);
+    const result = loopLib.readLoop(PROJECT_ROOT, SESSION_LOOP);
     expect(result.iteration).toBe(0);
     expect(result.stopped).toBe(false);
     expect(result.consecutiveErrors).toBe(0);
     expect(typeof result.startedAt).toBe('string');
-    expect(existsSync(paths.session.loop(SESSION_LOOP))).toBe(true);
+    expect(existsSync(paths.session.loop(PROJECT_ROOT, SESSION_LOOP))).toBe(true);
   });
 
   test('stopped=true 的既有 loop 狀態被 readLoop 正確讀回', () => {
@@ -137,8 +141,8 @@ describe('1. Loop Restart State Recovery — 跨 session 狀態讀取', () => {
       stoppedAt: new Date().toISOString(),
       stopReason: '工作流完成',
     };
-    loopLib.writeLoop(SESSION_LOOP, stoppedData);
-    const result = loopLib.readLoop(SESSION_LOOP);
+    loopLib.writeLoop(PROJECT_ROOT, SESSION_LOOP, stoppedData);
+    const result = loopLib.readLoop(PROJECT_ROOT, SESSION_LOOP);
 
     expect(result.stopped).toBe(true);
     expect(result.stopReason).toBe('工作流完成');
@@ -152,20 +156,20 @@ describe('1. Loop Restart State Recovery — 跨 session 狀態讀取', () => {
       consecutiveErrors: 0,
       startedAt: new Date().toISOString(),
     };
-    loopLib.writeLoop(SESSION_LOOP, loopData);
-    loopLib.exitLoop(SESSION_LOOP, loopData, '測試完成');
+    loopLib.writeLoop(PROJECT_ROOT, SESSION_LOOP, loopData);
+    loopLib.exitLoop(PROJECT_ROOT, SESSION_LOOP, loopData, '測試完成');
 
     expect(loopData.stopped).toBe(true);
     expect(loopData.stopReason).toBe('測試完成');
 
-    const savedData = loopLib.readLoop(SESSION_LOOP);
+    const savedData = loopLib.readLoop(PROJECT_ROOT, SESSION_LOOP);
     expect(savedData.stopped).toBe(true);
     expect(savedData.stopReason).toBe('測試完成');
     expect(typeof savedData.stoppedAt).toBe('string');
   });
 
   test('writeLoop 使用 atomic write，不留殘餘 .tmp 檔案', () => {
-    loopLib.writeLoop(SESSION_LOOP, { iteration: 0, stopped: false });
+    loopLib.writeLoop(PROJECT_ROOT, SESSION_LOOP, { iteration: 0, stopped: false });
     const files = require('fs').readdirSync(SESSION_DIR);
     const tmpFiles = files.filter(f => f.endsWith('.tmp'));
     expect(tmpFiles.length).toBe(0);
@@ -184,13 +188,13 @@ describe('2. Compact-Count.json 精確度', () => {
 
   beforeAll(() => {
     for (const sid of [SESSION_COUNT_AUTO, SESSION_COUNT_MANUAL, SESSION_COUNT_MIXED, SESSION_COUNT_MULTI]) {
-      stateLib.initState(sid, 'single', ['DEV']);
+      stateLib.initState(PROJECT_ROOT, sid, 'single', ['DEV']);
     }
   });
 
   afterAll(() => {
     for (const sid of [SESSION_COUNT_AUTO, SESSION_COUNT_MANUAL, SESSION_COUNT_MIXED, SESSION_COUNT_MULTI]) {
-      rmSync(paths.sessionDir(sid), { recursive: true, force: true });
+      rmSync(paths.sessionDir(PROJECT_ROOT, sid), { recursive: true, force: true });
     }
   });
 
@@ -237,7 +241,7 @@ describe('2. Compact-Count.json 精確度', () => {
 
   test('2 auto + 1 manual compact 後 auto=2, manual=1', () => {
     const SESSION_MIX2 = `cs-count-mix2-${TS}`;
-    stateLib.initState(SESSION_MIX2, 'single', ['DEV']);
+    stateLib.initState(PROJECT_ROOT, SESSION_MIX2, 'single', ['DEV']);
     try {
       runPreCompact({ session_id: SESSION_MIX2, trigger: 'auto' });
       runPreCompact({ session_id: SESSION_MIX2, trigger: 'auto' });
@@ -248,19 +252,19 @@ describe('2. Compact-Count.json 精確度', () => {
       expect(countData.auto).toBe(2);
       expect(countData.manual).toBe(1);
     } finally {
-      rmSync(paths.sessionDir(SESSION_MIX2), { recursive: true, force: true });
+      rmSync(paths.sessionDir(PROJECT_ROOT, SESSION_MIX2), { recursive: true, force: true });
     }
   });
 
   test('compact-count.json 位於 ~/.nova/sessions/{sessionId}/compact-count.json', () => {
     const SESSION_PATH_CHECK = `cs-count-path-${TS}`;
-    stateLib.initState(SESSION_PATH_CHECK, 'single', ['DEV']);
+    stateLib.initState(PROJECT_ROOT, SESSION_PATH_CHECK, 'single', ['DEV']);
     try {
       runPreCompact({ session_id: SESSION_PATH_CHECK, trigger: 'auto' });
-      const expectedPath = paths.session.compactCount(SESSION_PATH_CHECK);
+      const expectedPath = paths.session.compactCount(PROJECT_ROOT, SESSION_PATH_CHECK);
       expect(existsSync(expectedPath)).toBe(true);
     } finally {
-      rmSync(paths.sessionDir(SESSION_PATH_CHECK), { recursive: true, force: true });
+      rmSync(paths.sessionDir(PROJECT_ROOT, SESSION_PATH_CHECK), { recursive: true, force: true });
     }
   });
 });

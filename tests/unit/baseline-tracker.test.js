@@ -444,10 +444,13 @@ describe('自動截斷', () => {
     }
     writeFileSync(blPath, records.map(r => JSON.stringify(r)).join('\n') + '\n', 'utf8');
 
-    // 再存一筆觸發 trimIfNeeded
-    const session = makeSession('trim-trigger');
-    setupCompleteWorkflow(session, { durationMs: 10000 });
-    baselineTracker.saveBaseline(session.id, trimProject);
+    // 再存一筆觸發 trimIfNeeded（session 建在 trimProject 下才能被 saveBaseline 找到）
+    const trimSessionId = `test_bl_trim-trigger_${TIMESTAMP}`;
+    const trimSessionDir = paths.sessionDir(trimProject, trimSessionId);
+    mkdirSync(trimSessionDir, { recursive: true });
+    const trimSession = { id: trimSessionId, dir: trimSessionDir };
+    setupCompleteWorkflow(trimSession, { durationMs: 10000 });
+    baselineTracker.saveBaseline(trimSessionId, trimProject);
 
     // 讀回確認不超過上限 + 1（剛存的那筆）
     const content = readFileSync(blPath, 'utf8').trim();

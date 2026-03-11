@@ -22,6 +22,10 @@ const state = require(join(SCRIPTS_LIB, 'state'));
 const scoreEngine = require(join(SCRIPTS_LIB, 'score-engine'));
 const { workflows } = require(join(SCRIPTS_LIB, 'registry'));
 
+// ── project root（per-project API）──
+
+const PROJECT_ROOT = process.cwd();
+
 // ── 輔助函式 ──
 
 /**
@@ -87,7 +91,7 @@ const createdProjects = [];
 
 afterAll(() => {
   for (const sid of createdSessions) {
-    const dir = paths.sessionDir(sid);
+    const dir = paths.sessionDir(PROJECT_ROOT, sid);
     rmSync(dir, { recursive: true, force: true });
   }
   for (const proj of createdProjects) {
@@ -106,10 +110,10 @@ describe('Feature 1: pre-task.js 注入 score context', () => {
     const tmpProject = makeTmpProject('scores');
     createdProjects.push(tmpProject);
 
-    // 初始化 quick workflow
-    mkdirSync(paths.sessionDir(sessionId), { recursive: true });
+    // 初始化 quick workflow（寫入 tmpProject，與 hook cwd 一致）
+    mkdirSync(paths.sessionDir(tmpProject, sessionId), { recursive: true });
     const quickWorkflow = workflows['quick'];
-    state.initState(sessionId, 'quick', quickWorkflow.stages);
+    state.initState(tmpProject, sessionId, 'quick', quickWorkflow.stages);
 
     // 寫入 DEV 分數記錄
     const record = {
@@ -151,10 +155,10 @@ describe('Feature 1: pre-task.js 注入 score context', () => {
     const tmpProject = makeTmpProject('no-scores');
     createdProjects.push(tmpProject);
 
-    // 初始化 quick workflow
-    mkdirSync(paths.sessionDir(sessionId), { recursive: true });
+    // 初始化 quick workflow（寫入 tmpProject，與 hook cwd 一致）
+    mkdirSync(paths.sessionDir(tmpProject, sessionId), { recursive: true });
     const quickWorkflow = workflows['quick'];
-    state.initState(sessionId, 'quick', quickWorkflow.stages);
+    state.initState(tmpProject, sessionId, 'quick', quickWorkflow.stages);
 
     const input = {
       tool_input: {
@@ -183,10 +187,10 @@ describe('Feature 1: pre-task.js 注入 score context', () => {
     const tmpProject = makeTmpProject('preserve-fields');
     createdProjects.push(tmpProject);
 
-    // 初始化 quick workflow
-    mkdirSync(paths.sessionDir(sessionId), { recursive: true });
+    // 初始化 quick workflow（寫入 tmpProject，與 hook cwd 一致）
+    mkdirSync(paths.sessionDir(tmpProject, sessionId), { recursive: true });
     const quickWorkflow = workflows['quick'];
-    state.initState(sessionId, 'quick', quickWorkflow.stages);
+    state.initState(tmpProject, sessionId, 'quick', quickWorkflow.stages);
 
     // 寫入分數
     scoreEngine.saveScore(tmpProject, {
@@ -228,7 +232,7 @@ describe('Feature 2: on-session-end.js 執行 instinct decay', () => {
     createdSessions.push(sessionId);
 
     // 建立 session 目錄（模擬 session 存在）
-    mkdirSync(paths.sessionDir(sessionId), { recursive: true });
+    mkdirSync(paths.sessionDir(PROJECT_ROOT, sessionId), { recursive: true });
 
     const input = { reason: 'other' };
 
@@ -246,11 +250,11 @@ describe('Feature 2: on-session-end.js 執行 instinct decay', () => {
     createdSessions.push(sessionId);
 
     // 建立 session 目錄
-    const sessionDir = paths.sessionDir(sessionId);
+    const sessionDir = paths.sessionDir(PROJECT_ROOT, sessionId);
     mkdirSync(sessionDir, { recursive: true });
 
     // 寫入一筆最近的 instinct 觀察（信心 0.5，最近更新）
-    const obsPath = paths.session.observations(sessionId);
+    const obsPath = paths.session.observations(PROJECT_ROOT, sessionId);
     const obs = {
       id: `inst_${Date.now().toString(36)}_abcd`,
       ts: new Date().toISOString(),
