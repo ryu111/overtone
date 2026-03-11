@@ -269,17 +269,17 @@ describe('Discovery 模式守衛', () => {
   let origReadState;
   const GUARD_SESSION_ID = 'test-discovery-guard-' + Date.now();
 
-  // 輔助：為 guardDiscoveryMode 建立 activeWorkflowId 檔案
+  // 輔助：為 guardDiscoveryMode 建立 activeWorkflowId 檔案（per-project 路徑）
   function setupDiscoverySession(sessionId, workflowId) {
-    const sessionDir = paths.sessionDir(sessionId);
+    const sessionDir = paths.sessionDir(TEST_PROJECT, sessionId);
     mkdirSync(sessionDir, { recursive: true });
-    writeFileSync(paths.session.activeWorkflowId(sessionId), workflowId);
+    writeFileSync(paths.session.activeWorkflowId(TEST_PROJECT, sessionId), workflowId);
   }
 
-  // 輔助：清理 session 目錄
+  // 輔助：清理 session 目錄（per-project 路徑）
   function cleanupDiscoverySession(sessionId) {
     try {
-      rmSync(paths.sessionDir(sessionId), { recursive: true, force: true });
+      rmSync(paths.sessionDir(TEST_PROJECT, sessionId), { recursive: true, force: true });
     } catch { /* ignore */ }
   }
 
