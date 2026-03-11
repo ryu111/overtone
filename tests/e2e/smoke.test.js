@@ -34,7 +34,7 @@ const SPAWN_TIMEOUT = 30_000;
 function spawnSync(args, opts = {}) {
   const proc = Bun.spawnSync(args, {
     cwd: PROJECT_ROOT,
-    env: { ...process.env, OVERTONE_NO_DASHBOARD: '1', OVERTONE_TEST: '1' },
+    env: { ...process.env, NOVA_NO_DASHBOARD: '1', NOVA_TEST: '1' },
     timeout: SPAWN_TIMEOUT,
     ...opts,
   });
@@ -174,7 +174,7 @@ describe('Scenario 3：元件一致性', () => {
 describe('Scenario 4：Workflow 模板初始化', () => {
   const { homedir } = require('os');
   const { workflows } = require(join(SCRIPTS_LIB, 'registry'));
-  const SESSIONS_DIR = join(homedir(), '.overtone', 'sessions');
+  const SESSIONS_DIR = join(homedir(), '.nova', 'sessions');
   const INIT_WORKFLOW = join(SCRIPTS_DIR, 'init-workflow.js');
 
   // 為每個 workflow 模板產生獨立的臨時 sessionId

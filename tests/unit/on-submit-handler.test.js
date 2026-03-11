@@ -92,7 +92,7 @@ describe('buildSystemMessage', () => {
 
 function makeSession(suffix) {
   const id = `test_submit_j_${suffix}_${Date.now()}`;
-  const dir = join(homedir(), '.overtone', 'sessions', id);
+  const dir = join(homedir(), '.nova', 'sessions', id);
   return { id, dir };
 }
 

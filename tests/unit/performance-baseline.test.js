@@ -39,7 +39,7 @@ function runHookTimed(hookPath, stdinInput, extraEnv = {}) {
     env: {
       ...process.env,
       CLAUDE_SESSION_ID: '',
-      OVERTONE_NO_DASHBOARD: '1',
+      NOVA_NO_DASHBOARD: '1',
       ...extraEnv,
     },
     stdout: 'pipe',
@@ -58,7 +58,7 @@ function runHookTimed(hookPath, stdinInput, extraEnv = {}) {
  */
 function makeSession(suffix) {
   const id = `test_perf_${suffix}_${TIMESTAMP}`;
-  const dir = join(homedir(), '.overtone', 'sessions', id);
+  const dir = join(homedir(), '.nova', 'sessions', id);
   mkdirSync(dir, { recursive: true });
   return { id, dir };
 }

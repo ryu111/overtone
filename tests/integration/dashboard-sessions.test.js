@@ -5,7 +5,7 @@ const { join } = require('path');
 const { homedir } = require('os');
 const { SCRIPTS_LIB } = require('../helpers/paths');
 
-const SESSIONS_BASE = join(homedir(), '.overtone', 'sessions');
+const SESSIONS_BASE = join(homedir(), '.nova', 'sessions');
 
 // 使用獨立的測試 session ID 避免污染
 const TEST_SESSION = `test_sessions_${Date.now()}`;

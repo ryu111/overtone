@@ -39,7 +39,7 @@ const N = 10;
 async function spawnAll(scripts) {
   const procs = scripts.map((script) =>
     Bun.spawn(['bun', '-e', script], {
-      env: { ...process.env, OVERTONE_NO_DASHBOARD: '1' },
+      env: { ...process.env, NOVA_NO_DASHBOARD: '1' },
       stdout: 'pipe',
       stderr: 'pipe',
     })
@@ -235,7 +235,7 @@ describe('S2-5: atomicWrite tmp 路徑唯一性（_atomicCounter 遞增）', () 
 describe('S2-6: 高並發下 CAS 最終一致性（多子進程 updateStateAtomic）', () => {
   it('5 個子進程同時 updateStateAtomic counter++，最終 counter >= 1 且 JSON 不損壞', async () => {
     const sessionId = `stress-cas-${Date.now()}`;
-    const sessionDir = join(require('os').homedir(), '.overtone', 'sessions', sessionId);
+    const sessionDir = join(require('os').homedir(), '.nova', 'sessions', sessionId);
     mkdirSync(sessionDir, { recursive: true });
 
     // 初始化 workflow.json（最小有效 state）

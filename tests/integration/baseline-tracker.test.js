@@ -19,12 +19,12 @@ const paths = require(join(SCRIPTS_LIB, 'paths'));
 // ── 測試基礎設施 ──
 
 const TIMESTAMP = Date.now();
-const TEST_PROJECT_ROOT = join(homedir(), '.overtone', 'test-bl-integ-' + TIMESTAMP);
+const TEST_PROJECT_ROOT = join(homedir(), '.nova', 'test-bl-integ-' + TIMESTAMP);
 const sessionsToClean = [];
 
 function makeSession(suffix) {
   const id = `test_bl_integ_${suffix}_${TIMESTAMP}`;
-  const dir = join(homedir(), '.overtone', 'sessions', id);
+  const dir = join(homedir(), '.nova', 'sessions', id);
   mkdirSync(dir, { recursive: true });
   sessionsToClean.push(dir);
   return { id, dir };
@@ -195,7 +195,7 @@ describe('on-session-end hook 整合', () => {
         ...process.env,
         CLAUDE_SESSION_ID: session.id,
         CLAUDE_PROJECT_ROOT: TEST_PROJECT_ROOT,
-        OVERTONE_NO_DASHBOARD: '1',
+        NOVA_NO_DASHBOARD: '1',
       },
       stdout: 'pipe',
       stderr: 'pipe',

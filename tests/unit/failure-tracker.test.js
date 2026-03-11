@@ -11,7 +11,7 @@
  *   5. formatFailureSummary：無資料空字串 + 有資料 Markdown
  *   6. _trimIfNeeded：超過 maxRecords 時截斷
  *   7. 損壞 JSON 行靜默跳過
- *   8. OVERTONE_TEST 隔離保護
+ *   8. NOVA_TEST 隔離保護
  *   9. recordResolution — 已解決過濾
  *  10. formatFailureSummary — 時間範圍顯示
  */
@@ -29,7 +29,7 @@ const { failureDefaults } = require(join(SCRIPTS_LIB, 'registry'));
 // ── 測試基礎設施 ──
 
 const TIMESTAMP = Date.now();
-const TEST_PROJECT_ROOT = join(homedir(), '.overtone', 'test-failure-project-' + TIMESTAMP);
+const TEST_PROJECT_ROOT = join(homedir(), '.nova', 'test-failure-project-' + TIMESTAMP);
 const dirsToClean = [TEST_PROJECT_ROOT];
 
 /**
@@ -86,13 +86,13 @@ afterAll(() => {
 // ────────────────────────────────────────────────────────────────────────────
 
 describe('recordFailure — JSONL append', () => {
-  // 暫時清除 OVERTONE_TEST，讓 recordFailure 能實際寫入（驗證寫入行為）
+  // 暫時清除 NOVA_TEST，讓 recordFailure 能實際寫入（驗證寫入行為）
   let savedOvertoneTest;
-  beforeEach(() => { savedOvertoneTest = process.env.OVERTONE_TEST; delete process.env.OVERTONE_TEST; });
-  afterEach(() => { if (savedOvertoneTest !== undefined) process.env.OVERTONE_TEST = savedOvertoneTest; else delete process.env.OVERTONE_TEST; });
+  beforeEach(() => { savedOvertoneTest = process.env.NOVA_TEST; delete process.env.NOVA_TEST; });
+  afterEach(() => { if (savedOvertoneTest !== undefined) process.env.NOVA_TEST = savedOvertoneTest; else delete process.env.NOVA_TEST; });
 
   test('1-1 正確 append 一筆記錄到 JSONL', () => {
-    const project = join(homedir(), '.overtone', 'test-fail-append-' + TIMESTAMP);
+    const project = join(homedir(), '.nova', 'test-fail-append-' + TIMESTAMP);
     dirsToClean.push(project);
     clearFailures(project);
 
@@ -113,7 +113,7 @@ describe('recordFailure — JSONL append', () => {
   });
 
   test('1-3 記錄 reason 欄位（可選）', () => {
-    const project = join(homedir(), '.overtone', 'test-fail-reason-' + TIMESTAMP);
+    const project = join(homedir(), '.nova', 'test-fail-reason-' + TIMESTAMP);
     dirsToClean.push(project);
     clearFailures(project);
 
@@ -127,7 +127,7 @@ describe('recordFailure — JSONL append', () => {
   });
 
   test('1-4 reason 為 null 時正常寫入（不影響現有欄位）', () => {
-    const project = join(homedir(), '.overtone', 'test-fail-reason-null-' + TIMESTAMP);
+    const project = join(homedir(), '.nova', 'test-fail-reason-null-' + TIMESTAMP);
     dirsToClean.push(project);
     clearFailures(project);
 
@@ -142,7 +142,7 @@ describe('recordFailure — JSONL append', () => {
   });
 
   test('1-2 多次呼叫累積多筆記錄', () => {
-    const project = join(homedir(), '.overtone', 'test-fail-multi-' + TIMESTAMP);
+    const project = join(homedir(), '.nova', 'test-fail-multi-' + TIMESTAMP);
     dirsToClean.push(project);
     clearFailures(project);
 
@@ -167,7 +167,7 @@ describe('recordFailure — JSONL append', () => {
 
 describe('recordFailure — 欄位驗證', () => {
   test('2-1 缺少必要欄位時不寫入', () => {
-    const project = join(homedir(), '.overtone', 'test-fail-validate-' + TIMESTAMP);
+    const project = join(homedir(), '.nova', 'test-fail-validate-' + TIMESTAMP);
     dirsToClean.push(project);
     clearFailures(project);
 
@@ -197,7 +197,7 @@ describe('recordFailure — 欄位驗證', () => {
 
 describe('getFailurePatterns — 聚合邏輯', () => {
   test('3-1 正確聚合 byStage', () => {
-    const project = join(homedir(), '.overtone', 'test-fail-stage-' + TIMESTAMP);
+    const project = join(homedir(), '.nova', 'test-fail-stage-' + TIMESTAMP);
     dirsToClean.push(project);
 
     writeFailures(project, [
@@ -216,7 +216,7 @@ describe('getFailurePatterns — 聚合邏輯', () => {
   });
 
   test('3-2 正確聚合 byAgent', () => {
-    const project = join(homedir(), '.overtone', 'test-fail-agent-' + TIMESTAMP);
+    const project = join(homedir(), '.nova', 'test-fail-agent-' + TIMESTAMP);
     dirsToClean.push(project);
 
     writeFailures(project, [
@@ -231,7 +231,7 @@ describe('getFailurePatterns — 聚合邏輯', () => {
   });
 
   test('3-3 正確識別 topPattern（stage + agent 組合）', () => {
-    const project = join(homedir(), '.overtone', 'test-fail-top-' + TIMESTAMP);
+    const project = join(homedir(), '.nova', 'test-fail-top-' + TIMESTAMP);
     dirsToClean.push(project);
 
     writeFailures(project, [
@@ -257,7 +257,7 @@ describe('getFailurePatterns — 聚合邏輯', () => {
   });
 
   test('3-5 window 參數正確截取最近 N 筆', () => {
-    const project = join(homedir(), '.overtone', 'test-fail-window-' + TIMESTAMP);
+    const project = join(homedir(), '.nova', 'test-fail-window-' + TIMESTAMP);
     dirsToClean.push(project);
 
     // 寫入 10 筆（前 7 筆 DEV，後 3 筆 REVIEW）
@@ -286,7 +286,7 @@ describe('getFailurePatterns — 聚合邏輯', () => {
 
 describe('formatFailureWarnings — threshold 控制', () => {
   test('4-1 有足夠失敗次數時產生警告', () => {
-    const project = join(homedir(), '.overtone', 'test-fail-warn-yes-' + TIMESTAMP);
+    const project = join(homedir(), '.nova', 'test-fail-warn-yes-' + TIMESTAMP);
     dirsToClean.push(project);
 
     // 寫入 warningThreshold 筆同 stage 失敗
@@ -304,7 +304,7 @@ describe('formatFailureWarnings — threshold 控制', () => {
   });
 
   test('4-2 低於 warningThreshold 時回傳 null', () => {
-    const project = join(homedir(), '.overtone', 'test-fail-warn-no-' + TIMESTAMP);
+    const project = join(homedir(), '.nova', 'test-fail-warn-no-' + TIMESTAMP);
     dirsToClean.push(project);
 
     // 只有 threshold - 1 筆
@@ -319,7 +319,7 @@ describe('formatFailureWarnings — threshold 控制', () => {
   });
 
   test('4-3 targetStage 無相關失敗時回傳 null', () => {
-    const project = join(homedir(), '.overtone', 'test-fail-warn-other-' + TIMESTAMP);
+    const project = join(homedir(), '.nova', 'test-fail-warn-other-' + TIMESTAMP);
     dirsToClean.push(project);
 
     // 只有 REVIEW 的失敗
@@ -340,7 +340,7 @@ describe('formatFailureWarnings — threshold 控制', () => {
   });
 
   test('4-5 警告包含建議文字', () => {
-    const project = join(homedir(), '.overtone', 'test-fail-warn-text-' + TIMESTAMP);
+    const project = join(homedir(), '.nova', 'test-fail-warn-text-' + TIMESTAMP);
     dirsToClean.push(project);
 
     const records = [];
@@ -355,7 +355,7 @@ describe('formatFailureWarnings — threshold 控制', () => {
   });
 
   test('4-6 有 reason 時警告包含根因文字', () => {
-    const project = join(homedir(), '.overtone', 'test-fail-warn-reason-' + TIMESTAMP);
+    const project = join(homedir(), '.nova', 'test-fail-warn-reason-' + TIMESTAMP);
     dirsToClean.push(project);
 
     const records = [
@@ -373,7 +373,7 @@ describe('formatFailureWarnings — threshold 控制', () => {
   });
 
   test('4-7 無 reason 欄位時警告不含根因區塊', () => {
-    const project = join(homedir(), '.overtone', 'test-fail-warn-no-reason-' + TIMESTAMP);
+    const project = join(homedir(), '.nova', 'test-fail-warn-no-reason-' + TIMESTAMP);
     dirsToClean.push(project);
 
     const records = [
@@ -389,7 +389,7 @@ describe('formatFailureWarnings — threshold 控制', () => {
   });
 
   test('4-8 reason 去重後最多顯示 3 個', () => {
-    const project = join(homedir(), '.overtone', 'test-fail-warn-dedup-' + TIMESTAMP);
+    const project = join(homedir(), '.nova', 'test-fail-warn-dedup-' + TIMESTAMP);
     dirsToClean.push(project);
 
     const records = [
@@ -425,7 +425,7 @@ describe('formatFailureSummary — 摘要格式', () => {
   });
 
   test('5-2 有資料時回傳 Markdown 摘要', () => {
-    const project = join(homedir(), '.overtone', 'test-fail-summary-' + TIMESTAMP);
+    const project = join(homedir(), '.nova', 'test-fail-summary-' + TIMESTAMP);
     dirsToClean.push(project);
 
     writeFailures(project, [
@@ -445,7 +445,7 @@ describe('formatFailureSummary — 摘要格式', () => {
   });
 
   test('5-3 摘要包含 topPattern', () => {
-    const project = join(homedir(), '.overtone', 'test-fail-summary-top-' + TIMESTAMP);
+    const project = join(homedir(), '.nova', 'test-fail-summary-top-' + TIMESTAMP);
     dirsToClean.push(project);
 
     writeFailures(project, [
@@ -470,13 +470,13 @@ describe('formatFailureSummary — 摘要格式', () => {
 // ────────────────────────────────────────────────────────────────────────────
 
 describe('_trimIfNeeded — 自動截斷', () => {
-  // 暫時清除 OVERTONE_TEST，讓 recordFailure 能實際寫入（觸發 trim）
+  // 暫時清除 NOVA_TEST，讓 recordFailure 能實際寫入（觸發 trim）
   let savedOvertoneTest;
-  beforeEach(() => { savedOvertoneTest = process.env.OVERTONE_TEST; delete process.env.OVERTONE_TEST; });
-  afterEach(() => { if (savedOvertoneTest !== undefined) process.env.OVERTONE_TEST = savedOvertoneTest; else delete process.env.OVERTONE_TEST; });
+  beforeEach(() => { savedOvertoneTest = process.env.NOVA_TEST; delete process.env.NOVA_TEST; });
+  afterEach(() => { if (savedOvertoneTest !== undefined) process.env.NOVA_TEST = savedOvertoneTest; else delete process.env.NOVA_TEST; });
 
   test('6-1 超過 maxRecords 時截斷至上限', () => {
-    const project = join(homedir(), '.overtone', 'test-fail-trim-' + TIMESTAMP);
+    const project = join(homedir(), '.nova', 'test-fail-trim-' + TIMESTAMP);
     dirsToClean.push(project);
 
     // 寫入 maxRecords + 10 筆
@@ -503,7 +503,7 @@ describe('_trimIfNeeded — 自動截斷', () => {
 
 describe('損壞 JSON 行靜默跳過', () => {
   test('7-1 損壞行不影響讀取其他記錄', () => {
-    const project = join(homedir(), '.overtone', 'test-fail-corrupt-' + TIMESTAMP);
+    const project = join(homedir(), '.nova', 'test-fail-corrupt-' + TIMESTAMP);
     dirsToClean.push(project);
     dirsToClean.push(paths.global.dir(project));
 
@@ -526,18 +526,18 @@ describe('損壞 JSON 行靜默跳過', () => {
 });
 
 // ────────────────────────────────────────────────────────────────────────────
-// 8. OVERTONE_TEST 隔離保護
+// 8. NOVA_TEST 隔離保護
 // ────────────────────────────────────────────────────────────────────────────
 
-describe('OVERTONE_TEST 隔離保護', () => {
-  test('8-1 OVERTONE_TEST=1 時 recordFailure 不寫入檔案', () => {
-    const project = join(homedir(), '.overtone', 'test-fail-isolation-' + TIMESTAMP);
+describe('NOVA_TEST 隔離保護', () => {
+  test('8-1 NOVA_TEST=1 時 recordFailure 不寫入檔案', () => {
+    const project = join(homedir(), '.nova', 'test-fail-isolation-' + TIMESTAMP);
     dirsToClean.push(project);
     clearFailures(project);
 
-    // 確保 OVERTONE_TEST 已設置（setup.js 已設置）
-    const saved = process.env.OVERTONE_TEST;
-    process.env.OVERTONE_TEST = '1';
+    // 確保 NOVA_TEST 已設置（setup.js 已設置）
+    const saved = process.env.NOVA_TEST;
+    process.env.NOVA_TEST = '1';
 
     const record = makeRecord({ stage: 'DEV', agent: 'developer', verdict: 'fail' });
     failureTracker.recordFailure(project, record);
@@ -546,18 +546,18 @@ describe('OVERTONE_TEST 隔離保護', () => {
     expect(existsSync(getFailurePath(project))).toBe(false);
 
     // 恢復
-    if (saved !== undefined) process.env.OVERTONE_TEST = saved;
-    else delete process.env.OVERTONE_TEST;
+    if (saved !== undefined) process.env.NOVA_TEST = saved;
+    else delete process.env.NOVA_TEST;
   });
 
-  test('8-2 清除 OVERTONE_TEST 後 recordFailure 正常寫入', () => {
-    const project = join(homedir(), '.overtone', 'test-fail-isolation-write-' + TIMESTAMP);
+  test('8-2 清除 NOVA_TEST 後 recordFailure 正常寫入', () => {
+    const project = join(homedir(), '.nova', 'test-fail-isolation-write-' + TIMESTAMP);
     dirsToClean.push(project);
     clearFailures(project);
 
     // 暫時清除保護
-    const saved = process.env.OVERTONE_TEST;
-    delete process.env.OVERTONE_TEST;
+    const saved = process.env.NOVA_TEST;
+    delete process.env.NOVA_TEST;
 
     const record = makeRecord({ stage: 'DEV', agent: 'developer', verdict: 'fail' });
     failureTracker.recordFailure(project, record);
@@ -566,8 +566,8 @@ describe('OVERTONE_TEST 隔離保護', () => {
     expect(existsSync(getFailurePath(project))).toBe(true);
 
     // 恢復
-    if (saved !== undefined) process.env.OVERTONE_TEST = saved;
-    else delete process.env.OVERTONE_TEST;
+    if (saved !== undefined) process.env.NOVA_TEST = saved;
+    else delete process.env.NOVA_TEST;
   });
 });
 
@@ -577,7 +577,7 @@ describe('OVERTONE_TEST 隔離保護', () => {
 
 describe('recordResolution — 已解決過濾', () => {
   test('9-1 有 resolved 記錄時，該 session+stage 的 fail 被排除', () => {
-    const project = join(homedir(), '.overtone', 'test-fail-resolved-' + TIMESTAMP);
+    const project = join(homedir(), '.nova', 'test-fail-resolved-' + TIMESTAMP);
     dirsToClean.push(project);
 
     const sid = 'sess-resolved-' + TIMESTAMP;
@@ -596,7 +596,7 @@ describe('recordResolution — 已解決過濾', () => {
   });
 
   test('9-2 不同 session 的 fail 不受 resolved 影響', () => {
-    const project = join(homedir(), '.overtone', 'test-fail-resolved-other-' + TIMESTAMP);
+    const project = join(homedir(), '.nova', 'test-fail-resolved-other-' + TIMESTAMP);
     dirsToClean.push(project);
 
     const sid1 = 'sess-a-' + TIMESTAMP;
@@ -616,7 +616,7 @@ describe('recordResolution — 已解決過濾', () => {
   });
 
   test('9-3 不同 stage 的 resolved 只影響對應 stage', () => {
-    const project = join(homedir(), '.overtone', 'test-fail-resolved-stage-' + TIMESTAMP);
+    const project = join(homedir(), '.nova', 'test-fail-resolved-stage-' + TIMESTAMP);
     dirsToClean.push(project);
 
     const sid = 'sess-mixed-' + TIMESTAMP;
@@ -641,7 +641,7 @@ describe('recordResolution — 已解決過濾', () => {
 
 describe('formatFailureSummary — 時間範圍顯示', () => {
   test('10-1 有多筆不同日期的失敗時，摘要包含時間範圍', () => {
-    const project = join(homedir(), '.overtone', 'test-fail-timerange-' + TIMESTAMP);
+    const project = join(homedir(), '.nova', 'test-fail-timerange-' + TIMESTAMP);
     dirsToClean.push(project);
 
     writeFailures(project, [
@@ -657,7 +657,7 @@ describe('formatFailureSummary — 時間範圍顯示', () => {
   });
 
   test('10-2 只有一個日期時，顯示單一日期而非範圍', () => {
-    const project = join(homedir(), '.overtone', 'test-fail-singledate-' + TIMESTAMP);
+    const project = join(homedir(), '.nova', 'test-fail-singledate-' + TIMESTAMP);
     dirsToClean.push(project);
 
     writeFailures(project, [
@@ -689,7 +689,7 @@ describe('getWorkflowFailureRates', () => {
   });
 
   test('B-2 有失敗記錄時正確按 workflowType 聚合', () => {
-    const project = join(homedir(), '.overtone', 'test-wf-rates-b2-' + TIMESTAMP);
+    const project = join(homedir(), '.nova', 'test-wf-rates-b2-' + TIMESTAMP);
     dirsToClean.push(project);
 
     writeFailures(project, [
@@ -709,7 +709,7 @@ describe('getWorkflowFailureRates', () => {
   });
 
   test('B-3 workflowType 為 null 的記錄跳過不計入', () => {
-    const project = join(homedir(), '.overtone', 'test-wf-rates-b3-' + TIMESTAMP);
+    const project = join(homedir(), '.nova', 'test-wf-rates-b3-' + TIMESTAMP);
     dirsToClean.push(project);
 
     writeFailures(project, [
@@ -725,7 +725,7 @@ describe('getWorkflowFailureRates', () => {
   });
 
   test('B-4 回傳的 rate 四捨五入至小數點後 4 位（1/3 → 0.3333）', () => {
-    const project = join(homedir(), '.overtone', 'test-wf-rates-b4-' + TIMESTAMP);
+    const project = join(homedir(), '.nova', 'test-wf-rates-b4-' + TIMESTAMP);
     dirsToClean.push(project);
 
     writeFailures(project, [
@@ -740,7 +740,7 @@ describe('getWorkflowFailureRates', () => {
     expect(result.quick.rate).toBe(0.25);
 
     // 驗證 1/3 情境（精確測試四捨五入行為）
-    const project2 = join(homedir(), '.overtone', 'test-wf-rates-b4b-' + TIMESTAMP);
+    const project2 = join(homedir(), '.nova', 'test-wf-rates-b4b-' + TIMESTAMP);
     dirsToClean.push(project2);
     writeFailures(project2, [
       makeRecord({ workflowType: 'standard', verdict: 'fail' }),
@@ -755,7 +755,7 @@ describe('getWorkflowFailureRates', () => {
   });
 
   test('B-5 已 resolved 的失敗記錄不計入失敗率', () => {
-    const project = join(homedir(), '.overtone', 'test-wf-rates-b5-' + TIMESTAMP);
+    const project = join(homedir(), '.nova', 'test-wf-rates-b5-' + TIMESTAMP);
     dirsToClean.push(project);
 
     const sessionId = 'test-session-resolved-' + TIMESTAMP;

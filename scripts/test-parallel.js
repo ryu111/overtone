@@ -22,13 +22,13 @@ const { cpus } = require('os');
 const PROJECT_ROOT = join(__dirname, '..');
 const TEST_DIRS = ['tests/unit', 'tests/integration', 'tests/e2e'];
 
-// 確保子進程繼承正確的 OVERTONE_PLUGIN_ROOT（指向 ~/.claude SoT）
+// 確保子進程繼承正確的 NOVA_PLUGIN_ROOT（指向 ~/.claude SoT）
 // 若外部已設定則保留（CI 環境可能指向不同路徑）
 // 注意：Bun.spawn 不自動繼承 process.env 動態賦值，需在 spawn options.env 中明確傳遞
 const { homedir } = require('os');
 const CHILD_ENV = {
   ...process.env,
-  OVERTONE_PLUGIN_ROOT: process.env.OVERTONE_PLUGIN_ROOT || join(homedir(), '.claude'),
+  NOVA_PLUGIN_ROOT: process.env.NOVA_PLUGIN_ROOT || join(homedir(), '.claude'),
 };
 
 // 已知重量級檔案（ms，來自實測）——定期用 --calibrate 更新

@@ -10,7 +10,7 @@ const PROJECT_ROOT = join(__dirname, '..', '..');
 
 // Plugin 根目錄
 // 優先使用環境變數（支援 CI 和全域安裝場景），fallback 到 homedir()/.claude
-const PLUGIN_ROOT = process.env.OVERTONE_PLUGIN_ROOT || join(homedir(), '.claude');
+const PLUGIN_ROOT = process.env.NOVA_PLUGIN_ROOT || join(homedir(), '.claude');
 
 // 核心函式庫目錄（{PLUGIN_ROOT}/scripts/lib/）
 const SCRIPTS_LIB = join(PLUGIN_ROOT, 'scripts', 'lib');

@@ -21,7 +21,7 @@ const paths = require(join(SCRIPTS_LIB, 'paths'));
 const executionQueue = require(join(SCRIPTS_LIB, 'execution-queue'));
 
 const TIMESTAMP = Date.now();
-const TEST_PROJECT = join(homedir(), '.overtone', 'test-queue-cli-' + TIMESTAMP);
+const TEST_PROJECT = join(homedir(), '.nova', 'test-queue-cli-' + TIMESTAMP);
 
 afterAll(() => {
   rmSync(paths.global.dir(TEST_PROJECT), { recursive: true, force: true });

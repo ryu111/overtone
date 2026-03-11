@@ -40,7 +40,7 @@ afterAll(() => {
 function runHook(input, sessionId) {
   const envConfig = {
     ...process.env,
-    OVERTONE_NO_DASHBOARD: '1',
+    NOVA_NO_DASHBOARD: '1',
   };
   delete envConfig.CLAUDE_SESSION_ID;
   if (sessionId) {
@@ -353,7 +353,7 @@ describe('Feature 1e: PostToolUseFailure hook（post-use-failure.js）', () => {
     test('畸形 JSON 時輸出 {} 且 exit 0', () => {
       const envConfig = {
         ...process.env,
-        OVERTONE_NO_DASHBOARD: '1',
+        NOVA_NO_DASHBOARD: '1',
       };
       delete envConfig.CLAUDE_SESSION_ID;
 
@@ -391,7 +391,7 @@ describe('Feature 1e: PostToolUseFailure hook（post-use-failure.js）', () => {
     test('exit code 永遠為 0', () => {
       const envConfig = {
         ...process.env,
-        OVERTONE_NO_DASHBOARD: '1',
+        NOVA_NO_DASHBOARD: '1',
       };
       delete envConfig.CLAUDE_SESSION_ID;
 

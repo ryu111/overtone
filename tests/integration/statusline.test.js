@@ -6,7 +6,7 @@
  *   - 完整 stdin JSON 模擬（context_window + transcript_path + session_id）
  *   - workflow.json 讀取與格式化（agent-first + 中文模式）
  *   - compact-count.json 讀取
- *   - pre-compact.js compact count 追蹤（使用真實 ~/.overtone 路徑）
+ *   - pre-compact.js compact count 追蹤（使用真實 ~/.nova 路徑）
  *   - paths.session.compactCount 路徑正確
  */
 
@@ -21,7 +21,7 @@ const { SCRIPTS_DIR, HOOKS_DIR, SCRIPTS_LIB } = require('../helpers/paths');
 const STATUSLINE_PATH = join(SCRIPTS_DIR, 'statusline.js');
 const PRE_COMPACT_PATH = join(HOOKS_DIR, 'session', 'pre-compact.js');
 
-// paths 模組（使用真實 ~/.overtone 路徑，和 pre-compact.js 一致）
+// paths 模組（使用真實 ~/.nova 路徑，和 pre-compact.js 一致）
 const paths = require(join(SCRIPTS_LIB, 'paths'));
 const stateLib = require(join(SCRIPTS_LIB, 'state'));
 
@@ -44,7 +44,7 @@ describe('完整 stdin 輸入格式', () => {
   beforeEach(() => {
     tmpHome = path.join(os.tmpdir(), `home-statusline-intg-${Date.now()}-${Math.random().toString(36).slice(2)}`);
     sessionId = `statusline-intg-${Date.now()}`;
-    sessionDir = path.join(tmpHome, '.overtone', 'sessions', sessionId);
+    sessionDir = path.join(tmpHome, '.nova', 'sessions', sessionId);
     mkdirSync(sessionDir, { recursive: true });
   });
 
@@ -149,7 +149,7 @@ describe('compact-count.json 整合（statusline 讀取）', () => {
   beforeEach(() => {
     tmpHome = path.join(os.tmpdir(), `home-ccount-${Date.now()}-${Math.random().toString(36).slice(2)}`);
     sessionId = `ccount-statusline-${Date.now()}`;
-    sessionDir = path.join(tmpHome, '.overtone', 'sessions', sessionId);
+    sessionDir = path.join(tmpHome, '.nova', 'sessions', sessionId);
     mkdirSync(sessionDir, { recursive: true });
   });
 
@@ -193,8 +193,8 @@ describe('compact-count.json 整合（statusline 讀取）', () => {
   });
 });
 
-// ── Feature 3: pre-compact.js compact count 追蹤（使用真實 ~/.overtone 路徑）──
-// 注意：pre-compact.js 使用 require paths.js，paths.js 在 load 時固定 OVERTONE_HOME
+// ── Feature 3: pre-compact.js compact count 追蹤（使用真實 ~/.nova 路徑）──
+// 注意：pre-compact.js 使用 require paths.js，paths.js 在 load 時固定 NOVA_HOME
 // 所以 HOME 覆寫對 pre-compact.js 無效，必須使用真實路徑
 
 describe('pre-compact.js compact count 追蹤', () => {
@@ -214,7 +214,7 @@ describe('pre-compact.js compact count 追蹤', () => {
       env: {
         ...process.env,
         CLAUDE_SESSION_ID: '',
-        OVERTONE_NO_DASHBOARD: '1',
+        NOVA_NO_DASHBOARD: '1',
       },
     });
   }

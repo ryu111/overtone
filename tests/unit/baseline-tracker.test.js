@@ -26,13 +26,13 @@ const { baselineDefaults } = require(join(SCRIPTS_LIB, 'registry'));
 // ── 測試基礎設施 ──
 
 const TIMESTAMP = Date.now();
-const TEST_PROJECT_ROOT = join(homedir(), '.overtone', 'test-baseline-project-' + TIMESTAMP);
+const TEST_PROJECT_ROOT = join(homedir(), '.nova', 'test-baseline-project-' + TIMESTAMP);
 const sessionsToClean = [];
 const dirsToClean = [TEST_PROJECT_ROOT];
 
 function makeSession(suffix) {
   const id = `test_bl_${suffix}_${TIMESTAMP}`;
-  const dir = join(homedir(), '.overtone', 'sessions', id);
+  const dir = join(homedir(), '.nova', 'sessions', id);
   mkdirSync(dir, { recursive: true });
   sessionsToClean.push(dir);
   return { id, dir };
@@ -421,7 +421,7 @@ describe('formatBaselineSummary', () => {
 
 describe('自動截斷', () => {
   test('超過 maxRecordsPerType 時自動截斷', () => {
-    const trimProject = join(homedir(), '.overtone', 'test-trim-project-' + TIMESTAMP);
+    const trimProject = join(homedir(), '.nova', 'test-trim-project-' + TIMESTAMP);
     dirsToClean.push(trimProject);
 
     const blPath = paths.global.baselines(trimProject);
@@ -463,7 +463,7 @@ describe('自動截斷', () => {
 
 describe('邊界情況', () => {
   test('baselines.jsonl 包含無效 JSON 行時不崩潰', () => {
-    const corruptProject = join(homedir(), '.overtone', 'test-corrupt-' + TIMESTAMP);
+    const corruptProject = join(homedir(), '.nova', 'test-corrupt-' + TIMESTAMP);
     dirsToClean.push(corruptProject);
 
     const blPath = paths.global.baselines(corruptProject);

@@ -42,7 +42,7 @@ afterAll(() => {
 function runHook(input, sessionId) {
   const envConfig = {
     ...process.env,
-    OVERTONE_NO_DASHBOARD: '1',
+    NOVA_NO_DASHBOARD: '1',
   };
   delete envConfig.CLAUDE_SESSION_ID;
   if (sessionId !== undefined) {

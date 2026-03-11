@@ -20,7 +20,7 @@ const SCRIPT = join(SCRIPTS_DIR, 'get-workflow-context.js');
 
 /**
  * 執行 get-workflow-context.js 並捕捉 stdout/stderr/exitCode。
- * @param {string} fakeHome - 假的 HOME 目錄（含 .overtone/ 結構）
+ * @param {string} fakeHome - 假的 HOME 目錄（含 .nova/ 結構）
  * @param {object} [extraEnv] - 額外環境變數
  */
 function runScript(fakeHome, extraEnv = {}) {
@@ -43,11 +43,11 @@ function runScript(fakeHome, extraEnv = {}) {
 }
 
 /**
- * 建立臨時目錄，初始化 .overtone/ 結構。
+ * 建立臨時目錄，初始化 .nova/ 結構。
  */
 function makeTmpHome() {
   const dir = join(tmpdir(), `gwc-test-${Date.now()}-${Math.random().toString(36).slice(2)}`);
-  mkdirSync(join(dir, '.overtone'), { recursive: true });
+  mkdirSync(join(dir, '.nova'), { recursive: true });
   return dir;
 }
 
@@ -55,14 +55,14 @@ function makeTmpHome() {
  * 寫入 .current-session-id 共享文件。
  */
 function writeSessionId(home, sessionId) {
-  writeFileSync(join(home, '.overtone', '.current-session-id'), sessionId, 'utf8');
+  writeFileSync(join(home, '.nova', '.current-session-id'), sessionId, 'utf8');
 }
 
 /**
- * 寫入 workflow.json 到 ~/.overtone/sessions/{sessionId}/。
+ * 寫入 workflow.json 到 ~/.nova/sessions/{sessionId}/。
  */
 function writeWorkflowState(home, sessionId, state) {
-  const sessionDir = join(home, '.overtone', 'sessions', sessionId);
+  const sessionDir = join(home, '.nova', 'sessions', sessionId);
   mkdirSync(sessionDir, { recursive: true });
   writeFileSync(join(sessionDir, 'workflow.json'), JSON.stringify(state), 'utf8');
 }

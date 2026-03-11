@@ -20,7 +20,7 @@ const AUTO_DISCOVERED_PATH = join(TEST_DIR, 'auto-discovered.md');
 const PROJECT_ROOT = join(TEST_DIR, 'project');
 
 // mock score-engine 和 global-instinct 的路徑
-const GLOBAL_DIR_PATH = join(require('os').homedir(), '.overtone', 'global');
+const GLOBAL_DIR_PATH = join(require('os').homedir(), '.nova', 'global');
 
 // 建立測試用的 global store 目錄
 const crypto = require('crypto');

@@ -18,8 +18,8 @@ const paths = require(path.join(SCRIPTS_LIB, 'paths'));
 const { atomicWrite } = require(path.join(SCRIPTS_LIB, 'utils'));
 
 const TIMESTAMP = Date.now();
-const TEST_PROJECT = path.join(homedir(), '.overtone', 'test-qcli-enh-' + TIMESTAMP);
-const NO_QUEUE_PROJECT = path.join(homedir(), '.overtone', 'test-qcli-noq-' + TIMESTAMP);
+const TEST_PROJECT = path.join(homedir(), '.nova', 'test-qcli-enh-' + TIMESTAMP);
+const NO_QUEUE_PROJECT = path.join(homedir(), '.nova', 'test-qcli-noq-' + TIMESTAMP);
 
 afterAll(() => {
   rmSync(paths.global.dir(TEST_PROJECT), { recursive: true, force: true });
@@ -30,7 +30,7 @@ afterAll(() => {
 function runQueue(args = []) {
   const proc = Bun.spawnSync(['bun', QUEUE_SCRIPT, ...args, '--project-root', TEST_PROJECT], {
     cwd: path.join(SCRIPTS_DIR, '..'),
-    env: { ...process.env, OVERTONE_NO_DASHBOARD: '1' },
+    env: { ...process.env, NOVA_NO_DASHBOARD: '1' },
     stdout: 'pipe',
     stderr: 'pipe',
   });
@@ -46,7 +46,7 @@ function runQueue(args = []) {
 function runQueueNoProject(args = []) {
   const proc = Bun.spawnSync(['bun', QUEUE_SCRIPT, ...args, '--project-root', NO_QUEUE_PROJECT], {
     cwd: path.join(SCRIPTS_DIR, '..'),
-    env: { ...process.env, OVERTONE_NO_DASHBOARD: '1' },
+    env: { ...process.env, NOVA_NO_DASHBOARD: '1' },
     stdout: 'pipe',
     stderr: 'pipe',
   });

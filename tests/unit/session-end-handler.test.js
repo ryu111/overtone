@@ -121,7 +121,7 @@ describe('Feature 5: resolveSessionResult', () => {
 
 function makeSession(suffix) {
   const id = `test_sehj_${suffix}_${Date.now()}`;
-  const dir = join(homedir(), '.overtone', 'sessions', id);
+  const dir = join(homedir(), '.nova', 'sessions', id);
   return { id, dir };
 }
 
@@ -248,7 +248,7 @@ const timelineE = require(join(SCRIPTS_LIB, 'timeline'));
 
 function makeSehSession(suffix) {
   const id = `test_seh_${suffix}_${Date.now()}`;
-  return { id, dir: join(homedir(), '.overtone', 'sessions', id) };
+  return { id, dir: join(homedir(), '.nova', 'sessions', id) };
 }
 
 describeE('Feature 7: handleSessionEnd 有 sessionId', () => {

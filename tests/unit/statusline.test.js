@@ -207,7 +207,7 @@ describe('agent 顯示與中文模式', () => {
 
   const tmpHome = path.join(os.tmpdir(), `home-statusline-test-${Date.now()}`);
   const sessionId = `statusline-unit-${Date.now()}`;
-  const sessionDir = path.join(tmpHome, '.overtone', 'sessions', sessionId);
+  const sessionDir = path.join(tmpHome, '.nova', 'sessions', sessionId);
 
   function writeWorkflow(data) {
     mkdirSync(sessionDir, { recursive: true });
@@ -451,7 +451,7 @@ describe('readWorkflow workflowId 路由', () => {
 
   const tmpHome = path.join(os.tmpdir(), `home-wid-route-test-${Date.now()}`);
   const sessionId = `wid-route-${Date.now()}`;
-  const sessionDir = path.join(tmpHome, '.overtone', 'sessions', sessionId);
+  const sessionDir = path.join(tmpHome, '.nova', 'sessions', sessionId);
 
   function runWithSession(stdinData = {}) {
     return spawnSync('node', [STATUSLINE_PATH], {
@@ -490,7 +490,7 @@ describe('readWorkflow workflowId 路由', () => {
   it('無 active-workflow-id 時 fallback 到 session 層級 workflow.json', () => {
     // 確保無 active-workflow-id（先做好隔離）
     const isolatedSessionId = `wid-fallback-${Date.now()}`;
-    const isolatedSessionDir = path.join(tmpHome, '.overtone', 'sessions', isolatedSessionId);
+    const isolatedSessionDir = path.join(tmpHome, '.nova', 'sessions', isolatedSessionId);
     mkdirSync(isolatedSessionDir, { recursive: true });
     writeFileSync(path.join(isolatedSessionDir, 'workflow.json'), JSON.stringify({
       workflowType: 'standard',
@@ -514,7 +514,7 @@ describe('readWorkflow workflowId 路由', () => {
   it('active-workflow-id 指向的 workflow.json 不存在時回傳 null（顯示單行）', () => {
     const badWid = 'non-existent-wid';
     const isolatedSessionId = `wid-missing-${Date.now()}`;
-    const isolatedSessionDir = path.join(tmpHome, '.overtone', 'sessions', isolatedSessionId);
+    const isolatedSessionDir = path.join(tmpHome, '.nova', 'sessions', isolatedSessionId);
     mkdirSync(isolatedSessionDir, { recursive: true });
     writeFileSync(path.join(isolatedSessionDir, 'active-workflow-id'), badWid);
     // 不寫 workflows/{badWid}/workflow.json
@@ -534,7 +534,7 @@ describe('readWorkflow workflowId 路由', () => {
 
   it('active-workflow-id 為空字串時 fallback 到 session 層級', () => {
     const isolatedSessionId = `wid-empty-${Date.now()}`;
-    const isolatedSessionDir = path.join(tmpHome, '.overtone', 'sessions', isolatedSessionId);
+    const isolatedSessionDir = path.join(tmpHome, '.nova', 'sessions', isolatedSessionId);
     mkdirSync(isolatedSessionDir, { recursive: true });
     writeFileSync(path.join(isolatedSessionDir, 'active-workflow-id'), '');
     writeFileSync(path.join(isolatedSessionDir, 'workflow.json'), JSON.stringify({
@@ -565,7 +565,7 @@ describe('compacting 標記偵測', () => {
 
   const tmpHome = path.join(os.tmpdir(), `home-compacting-test-${Date.now()}`);
   const sessionId = `compacting-${Date.now()}`;
-  const sessionDir = path.join(tmpHome, '.overtone', 'sessions', sessionId);
+  const sessionDir = path.join(tmpHome, '.nova', 'sessions', sessionId);
 
   function runWithSession(stdinData = {}) {
     return spawnSync('node', [STATUSLINE_PATH], {
@@ -619,12 +619,12 @@ describe('佇列進度顯示', () => {
 
   const tmpHome = path.join(os.tmpdir(), `home-queue-statusline-test-${Date.now()}`);
   const sessionId = `queue-statusline-${Date.now()}`;
-  const sessionDir = path.join(tmpHome, '.overtone', 'sessions', sessionId);
+  const sessionDir = path.join(tmpHome, '.nova', 'sessions', sessionId);
 
   // 計算 execution-queue.json 路徑（與 paths.js projectHash 邏輯一致）
   function queueDir(projectRoot) {
     const hash = crypto.createHash('sha256').update(projectRoot).digest('hex').slice(0, 8);
-    return path.join(tmpHome, '.overtone', 'global', hash);
+    return path.join(tmpHome, '.nova', 'global', hash);
   }
 
   function writeWorkflow(data) {
@@ -797,8 +797,8 @@ describe('本地模型狀態顯示', () => {
 
   const tmpHome = path.join(os.tmpdir(), `home-model-status-test-${Date.now()}`);
   const sessionId = `model-status-${Date.now()}`;
-  const sessionDir = path.join(tmpHome, '.overtone', 'sessions', sessionId);
-  const overtoneHome = path.join(tmpHome, '.overtone');
+  const sessionDir = path.join(tmpHome, '.nova', 'sessions', sessionId);
+  const novaHome = path.join(tmpHome, '.nova');
 
   function writeWorkflow(data) {
     mkdirSync(sessionDir, { recursive: true });
@@ -806,8 +806,8 @@ describe('本地模型狀態顯示', () => {
   }
 
   function writeModelStatus(status) {
-    mkdirSync(overtoneHome, { recursive: true });
-    writeFileSync(path.join(overtoneHome, 'local-model-status.json'), JSON.stringify(status));
+    mkdirSync(novaHome, { recursive: true });
+    writeFileSync(path.join(novaHome, 'local-model-status.json'), JSON.stringify(status));
   }
 
   function runWithSession(stdinData = {}) {
@@ -897,7 +897,7 @@ describe('本地模型狀態顯示', () => {
     // 使用不同的 tmpHome（不寫 local-model-status.json）
     const noStatusHome = path.join(os.tmpdir(), `home-no-model-status-${Date.now()}`);
     const noStatusSessionId = `no-model-${Date.now()}`;
-    const noStatusSessionDir = path.join(noStatusHome, '.overtone', 'sessions', noStatusSessionId);
+    const noStatusSessionDir = path.join(noStatusHome, '.nova', 'sessions', noStatusSessionId);
     mkdirSync(noStatusSessionDir, { recursive: true });
     writeFileSync(path.join(noStatusSessionDir, 'workflow.json'), JSON.stringify({
       workflowType: 'quick',

@@ -7,7 +7,7 @@
  *   cleanupOrphanFiles   — orphan 暫存檔清理
  *   runCleanup           — 一鍵清理入口
  *
- * 策略：所有操作使用 mkdtempSync 建立的臨時目錄，不操作真實 ~/.overtone/sessions/。
+ * 策略：所有操作使用 mkdtempSync 建立的臨時目錄，不操作真實 ~/.nova/sessions/。
  */
 
 const { describe, test, expect, beforeEach, afterEach } = require('bun:test');
@@ -294,7 +294,7 @@ describe('cleanupOrphanFiles — orphan 暫存檔清理', () => {
     expect(fs.existsSync(mdFile)).toBe(true);
   });
 
-  test('overtoneHome 不存在時回傳空結果（不拋例外）', () => {
+  test('novaHome 不存在時回傳空結果（不拋例外）', () => {
     const nonExistentDir = path.join(tmpDir, 'no-such-dir');
 
     const result = cleanupOrphanFiles(nonExistentDir, { maxAgeHours: 1 });

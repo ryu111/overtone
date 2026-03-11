@@ -8,7 +8,7 @@
  *   Scenario 3:  最後 stage（無 nextHint）→ 不建議
  *   Scenario 4:  剛 compact 過（< 2 stage:complete）→ 跳過
  *   Scenario 5:  從未 compact → 允許首次觸發
- *   Scenario 6:  自訂閾值（OVERTONE_COMPACT_THRESHOLD_MB 環境變數）
+ *   Scenario 6:  自訂閾值（NOVA_COMPACT_THRESHOLD_MB 環境變數）
  *   Scenario 7:  transcript_path 不存在 → 靜默降級
  *   Scenario 8:  fail/reject → 不建議
  *   Scenario 9:  formatSize 格式化正確
@@ -53,7 +53,7 @@ const SESSION_FAIL    = `${SESSION_BASE}-fail`;
 const SESSION_AFTER2  = `${SESSION_BASE}-after2`;
 
 // 暫存 transcript 檔案目錄
-const TMP_DIR = join(homedir(), '.overtone', 'test-tmp', `compact-suggest-${TS}`);
+const TMP_DIR = join(homedir(), '.nova', 'test-tmp', `compact-suggest-${TS}`);
 
 // ── 輔助函式 ──
 
@@ -81,8 +81,8 @@ function runOnStop(input, extraEnv = {}) {
     env: {
       ...process.env,
       CLAUDE_SESSION_ID: sessionId,
-      OVERTONE_NO_DASHBOARD: '1',
-      OVERTONE_TEST: '1',
+      NOVA_NO_DASHBOARD: '1',
+      NOVA_TEST: '1',
       ...extraEnv,
     },
     stdout: 'pipe',
@@ -317,7 +317,7 @@ describe('Scenario 12：compact 後 ≥ 2 個 stage:complete', () => {
 });
 
 // ══════════════════════════════════════════════════════════════════
-// Scenario 6: 自訂閾值（OVERTONE_COMPACT_THRESHOLD_MB）
+// Scenario 6: 自訂閾值（NOVA_COMPACT_THRESHOLD_MB）
 // ══════════════════════════════════════════════════════════════════
 
 describe('Scenario 6：自訂閾值覆蓋', () => {
@@ -364,7 +364,7 @@ describe('Scenario 1：超過閾值 + 非最後 stage → 建議 + emit timeline
       last_assistant_message: 'PASS\n- [x] 任務完成\n依賴順序確認',
       transcript_path: transcriptPath,
     }, {
-      OVERTONE_COMPACT_THRESHOLD_MB: '5',
+      NOVA_COMPACT_THRESHOLD_MB: '5',
     });
 
     expect(result.exitCode).toBe(0);
@@ -399,7 +399,7 @@ describe('Scenario 3：最後 stage → 不建議', () => {
       last_assistant_message: 'PASS',
       transcript_path: transcriptPath,
     }, {
-      OVERTONE_COMPACT_THRESHOLD_MB: '1',
+      NOVA_COMPACT_THRESHOLD_MB: '1',
     });
 
     expect(result.exitCode).toBe(0);
@@ -431,7 +431,7 @@ describe('Scenario 8：fail/reject → 不建議', () => {
       last_assistant_message: '<!-- VERDICT: {"result": "FAIL"} -->',
       transcript_path: transcriptPath,
     }, {
-      OVERTONE_COMPACT_THRESHOLD_MB: '1',
+      NOVA_COMPACT_THRESHOLD_MB: '1',
     });
 
     expect(result.exitCode).toBe(0);

@@ -139,7 +139,7 @@ describe('parsePathsExports', () => {
     expect(Array.isArray(keys)).toBe(true);
     expect(keys.length).toBeGreaterThan(0);
     // paths.js 已知有 session、project 等 export
-    expect(keys.some((k) => ['OVERTONE_HOME', 'sessionDir', 'session', 'project'].includes(k))).toBe(true);
+    expect(keys.some((k) => ['NOVA_HOME', 'sessionDir', 'session', 'project'].includes(k))).toBe(true);
   });
 
   test('沒有 module.exports 時回傳空陣列', () => {

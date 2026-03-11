@@ -208,13 +208,13 @@ describe('Feature 2: heartbeat.js CLI — start / stop / status', () => {
     expect(exitCode).toBe(0);
   });
 
-  // Scenario 2-3b: start 遞迴防護 — OVERTONE_SPAWNED=1 時拒絕啟動
-  test('Scenario 2-3b: start — OVERTONE_SPAWNED=1 時拒絕啟動（防遞迴）', () => {
+  // Scenario 2-3b: start 遞迴防護 — NOVA_SPAWNED=1 時拒絕啟動
+  test('Scenario 2-3b: start — NOVA_SPAWNED=1 時拒絕啟動（防遞迴）', () => {
     let exitCode = null;
     let spawnCalled = false;
 
-    const origSpawned = process.env.OVERTONE_SPAWNED;
-    process.env.OVERTONE_SPAWNED = '1';
+    const origSpawned = process.env.NOVA_SPAWNED;
+    process.env.NOVA_SPAWNED = '1';
 
     try {
       const deps = {
@@ -228,8 +228,8 @@ describe('Feature 2: heartbeat.js CLI — start / stop / status', () => {
       expect(spawnCalled).toBe(false);
       expect(exitCode).toBe(1);
     } finally {
-      if (origSpawned !== undefined) process.env.OVERTONE_SPAWNED = origSpawned;
-      else delete process.env.OVERTONE_SPAWNED;
+      if (origSpawned !== undefined) process.env.NOVA_SPAWNED = origSpawned;
+      else delete process.env.NOVA_SPAWNED;
     }
   });
 
@@ -780,7 +780,7 @@ describe('Feature 7: TelegramAdapter.notify() 公開方法', () => {
 describe('Feature 8: execution-queue.js — failCurrent()', () => {
   const { rmSync } = require('fs');
   const TIMESTAMP = Date.now();
-  const TEST_PROJECT = join(homedir(), '.overtone', 'test-fail-current-' + TIMESTAMP);
+  const TEST_PROJECT = join(homedir(), '.nova', 'test-fail-current-' + TIMESTAMP);
 
   const cleanup = () => {
     try {
@@ -869,26 +869,26 @@ describe('Feature 8: execution-queue.js — failCurrent()', () => {
 describe('Feature 9: paths.js — HEARTBEAT 路徑常數', () => {
 
   // Scenario 9-1: HEARTBEAT_PID_FILE 路徑指向正確位置
-  test('Scenario 9-1: HEARTBEAT_PID_FILE 含 .overtone 且以 heartbeat.pid 結尾', () => {
+  test('Scenario 9-1: HEARTBEAT_PID_FILE 含 .nova 且以 heartbeat.pid 結尾', () => {
     expect(paths.HEARTBEAT_PID_FILE).toBeTruthy();
-    expect(paths.HEARTBEAT_PID_FILE).toContain('.overtone');
+    expect(paths.HEARTBEAT_PID_FILE).toContain('.nova');
     expect(paths.HEARTBEAT_PID_FILE).toMatch(/heartbeat\.pid$/);
   });
 
   // Scenario 9-2: HEARTBEAT_STATE_FILE 路徑指向正確位置
-  test('Scenario 9-2: HEARTBEAT_STATE_FILE 含 .overtone 且以 heartbeat-state.json 結尾', () => {
+  test('Scenario 9-2: HEARTBEAT_STATE_FILE 含 .nova 且以 heartbeat-state.json 結尾', () => {
     expect(paths.HEARTBEAT_STATE_FILE).toBeTruthy();
-    expect(paths.HEARTBEAT_STATE_FILE).toContain('.overtone');
+    expect(paths.HEARTBEAT_STATE_FILE).toContain('.nova');
     expect(paths.HEARTBEAT_STATE_FILE).toMatch(/heartbeat-state\.json$/);
   });
 
   // Scenario 9-3: heartbeat.js 使用 paths 常數（不魔術字串）
-  test('Scenario 9-3: heartbeat.js 不包含 hardcoded ~/.overtone/heartbeat.pid 字串', () => {
+  test('Scenario 9-3: heartbeat.js 不包含 hardcoded ~/.nova/heartbeat.pid 字串', () => {
     const { readFileSync } = require('fs');
     const heartbeatSrc = readFileSync(join(SCRIPTS_DIR, 'heartbeat.js'), 'utf8');
 
-    expect(heartbeatSrc).not.toContain("'~/.overtone/heartbeat.pid'");
-    expect(heartbeatSrc).not.toContain('"~/.overtone/heartbeat.pid"');
+    expect(heartbeatSrc).not.toContain("'~/.nova/heartbeat.pid'");
+    expect(heartbeatSrc).not.toContain('"~/.nova/heartbeat.pid"');
     expect(heartbeatSrc).toContain('paths');
   });
 });

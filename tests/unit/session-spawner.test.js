@@ -230,8 +230,8 @@ describe('Feature 1: session-spawner.js — Claude Code session 啟動封裝', (
     return result.outcome.catch(() => {});
   });
 
-  // Scenario 1-10: spawned session 設定 OVERTONE_SPAWNED env var
-  test('Scenario 1-10: spawn 的 child env 包含 OVERTONE_SPAWNED=1', () => {
+  // Scenario 1-10: spawned session 設定 NOVA_SPAWNED env var
+  test('Scenario 1-10: spawn 的 child env 包含 NOVA_SPAWNED=1', () => {
     const child = makeMockChild();
     const mockSpawn = makeMockSpawn(child);
 
@@ -240,7 +240,7 @@ describe('Feature 1: session-spawner.js — Claude Code session 啟動封裝', (
     expect(mockSpawn.calls).toHaveLength(1);
     const spawnOpts = mockSpawn.calls[0].opts;
     expect(spawnOpts.env).toBeDefined();
-    expect(spawnOpts.env.OVERTONE_SPAWNED).toBe('1');
+    expect(spawnOpts.env.NOVA_SPAWNED).toBe('1');
 
     // 清理
     return child.stdout.emit('close');

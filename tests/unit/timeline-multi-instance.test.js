@@ -23,7 +23,7 @@ const paths = require(join(SCRIPTS_LIB, 'paths'));
 // 建立獨立的 session（prefix test_ 以免被 cleanupOldSessions 清除）
 function makeSession(suffix) {
   const id = `test_tlmi_${suffix}_${Date.now()}`;
-  const dir = join(homedir(), '.overtone', 'sessions', id);
+  const dir = join(homedir(), '.nova', 'sessions', id);
   return { id, dir };
 }
 

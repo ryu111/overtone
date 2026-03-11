@@ -26,8 +26,8 @@ const { scoringConfig, scoringDefaults } = require(join(SCRIPTS_LIB, 'registry')
 // ── 測試基礎設施 ──
 
 const TIMESTAMP = Date.now();
-const TEST_PROJECT_ROOT = join(homedir(), '.overtone', 'test-score-project-' + TIMESTAMP);
-const TEST_PROJECT_ROOT_B = join(homedir(), '.overtone', 'test-score-project-b-' + TIMESTAMP);
+const TEST_PROJECT_ROOT = join(homedir(), '.nova', 'test-score-project-' + TIMESTAMP);
+const TEST_PROJECT_ROOT_B = join(homedir(), '.nova', 'test-score-project-b-' + TIMESTAMP);
 const dirsToClean = [TEST_PROJECT_ROOT, TEST_PROJECT_ROOT_B];
 
 // 建立基本有效的評分記錄
@@ -122,7 +122,7 @@ describe('Feature 1: saveScore — 評分記錄寫入', () => {
 
   test('Scenario 1-5: 分數目錄不存在時自動建立', () => {
     // 使用全新的專案根目錄
-    const freshRoot = join(homedir(), '.overtone', 'test-score-fresh-' + TIMESTAMP + '-new');
+    const freshRoot = join(homedir(), '.nova', 'test-score-fresh-' + TIMESTAMP + '-new');
     dirsToClean.push(freshRoot);
     try {
       const record = makeRecord();
@@ -474,7 +474,7 @@ describe('Feature 10: paths.js 全域評分路徑', () => {
     const scorePath = paths.global.scores(projectRoot);
     expect(scorePath).toMatch(/scores\.jsonl$/);
     expect(scorePath).not.toContain(projectRoot); // 應包含 hash 而非原路徑
-    expect(scorePath).toMatch(/\.overtone\/global\/[a-f0-9]{8}\/scores\.jsonl$/);
+    expect(scorePath).toMatch(/\.nova\/global\/[a-f0-9]{8}\/scores\.jsonl$/);
   });
 
   test('Scenario 10-2: 相同 projectRoot 多次呼叫回傳相同路徑（穩定性）', () => {

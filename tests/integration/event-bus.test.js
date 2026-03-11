@@ -21,7 +21,7 @@ const loop = require(join(SCRIPTS_LIB, 'loop'));
 
 // 測試用 session ID（全域唯一，避免衝突）
 const TEST_SESSION = `test_event_bus_${Date.now()}`;
-const SESSION_DIR = join(homedir(), '.overtone', 'sessions', TEST_SESSION);
+const SESSION_DIR = join(homedir(), '.nova', 'sessions', TEST_SESSION);
 
 beforeAll(() => {
   mkdirSync(SESSION_DIR, { recursive: true });

@@ -4,7 +4,7 @@
  * dashboard-pid.test.js — 整合測試
  *
  * 驗證 dashboard/pid.js 的讀寫行為。
- * DASHBOARD_FILE 路徑為 ~/.overtone/dashboard.json，
+ * DASHBOARD_FILE 路徑為 ~/.nova/dashboard.json，
  * 測試前備份、測試後還原，避免污染真實環境。
  */
 const { test, expect, describe, beforeEach, afterEach } = require('bun:test');
@@ -16,7 +16,7 @@ const { SCRIPTS_LIB } = require('../helpers/paths');
 const pid = require(join(SCRIPTS_LIB, 'dashboard', 'pid'));
 
 // dashboard.json 的真實路徑
-const DASHBOARD_FILE = join(homedir(), '.overtone', 'dashboard.json');
+const DASHBOARD_FILE = join(homedir(), '.nova', 'dashboard.json');
 
 // 每個測試前備份、每個測試後還原
 let backup = null;

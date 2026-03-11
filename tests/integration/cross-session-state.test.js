@@ -44,7 +44,7 @@ function runPreCompact(input, extraEnv = {}) {
     env: {
       ...process.env,
       CLAUDE_SESSION_ID: '',
-      OVERTONE_NO_DASHBOARD: '1',
+      NOVA_NO_DASHBOARD: '1',
       ...extraEnv,
     },
     stdout: 'pipe',
@@ -252,7 +252,7 @@ describe('2. Compact-Count.json 精確度', () => {
     }
   });
 
-  test('compact-count.json 位於 ~/.overtone/sessions/{sessionId}/compact-count.json', () => {
+  test('compact-count.json 位於 ~/.nova/sessions/{sessionId}/compact-count.json', () => {
     const SESSION_PATH_CHECK = `cs-count-path-${TS}`;
     stateLib.initState(SESSION_PATH_CHECK, 'single', ['DEV']);
     try {

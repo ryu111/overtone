@@ -41,7 +41,7 @@ afterAll(() => {
 function runHook(input, sessionId) {
   const envConfig = {
     ...process.env,
-    OVERTONE_NO_DASHBOARD: '1',
+    NOVA_NO_DASHBOARD: '1',
   };
   // 刪除既有環境變數
   delete envConfig.CLAUDE_SESSION_ID;
@@ -246,7 +246,7 @@ describe('Feature 1d: SessionEnd hook（on-session-end.js）', () => {
     test('畸形 JSON 時輸出 {}', () => {
       const envConfig = {
         ...process.env,
-        OVERTONE_NO_DASHBOARD: '1',
+        NOVA_NO_DASHBOARD: '1',
       };
       delete envConfig.CLAUDE_SESSION_ID;
 
@@ -311,7 +311,7 @@ describe('Feature 1d: SessionEnd hook（on-session-end.js）', () => {
       // 使用畸形 JSON 觸發錯誤路徑
       const envConfig = {
         ...process.env,
-        OVERTONE_NO_DASHBOARD: '1',
+        NOVA_NO_DASHBOARD: '1',
       };
       delete envConfig.CLAUDE_SESSION_ID;
 

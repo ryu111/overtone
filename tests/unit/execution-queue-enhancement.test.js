@@ -21,8 +21,8 @@ const paths = require(join(SCRIPTS_LIB, 'paths'));
 const { atomicWrite } = require(join(SCRIPTS_LIB, 'utils'));
 
 const TIMESTAMP = Date.now();
-const TEST_PROJECT = join(homedir(), '.overtone', 'test-eq-enh-' + TIMESTAMP);
-const NO_QUEUE_PROJECT = join(homedir(), '.overtone', 'test-eq-enh-noq-' + TIMESTAMP);
+const TEST_PROJECT = join(homedir(), '.nova', 'test-eq-enh-' + TIMESTAMP);
+const NO_QUEUE_PROJECT = join(homedir(), '.nova', 'test-eq-enh-noq-' + TIMESTAMP);
 
 afterAll(() => {
   rmSync(paths.global.dir(TEST_PROJECT), { recursive: true, force: true });

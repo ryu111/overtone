@@ -19,7 +19,7 @@ const { queryPastInterviews, extractInsights, QUESTION_BANK } = require(join(SCR
 // ── 測試輔助 ──
 
 const TEST_PROJECT_ROOT = '/tmp/pm-memory-test-project';
-const SESSIONS_DIR = path.join(os.homedir(), '.overtone', 'sessions');
+const SESSIONS_DIR = path.join(os.homedir(), '.nova', 'sessions');
 
 // 建立的 session 目錄清單（供 afterAll 清理）
 const createdSessionDirs = [];

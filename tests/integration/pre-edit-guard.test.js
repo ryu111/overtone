@@ -394,14 +394,14 @@ describe('PreEditGuard: checkWorkflowRequired', () => {
   }
 
   beforeEach(() => {
-    savedSpawned = process.env.OVERTONE_SPAWNED;
-    delete process.env.OVERTONE_SPAWNED;
+    savedSpawned = process.env.NOVA_SPAWNED;
+    delete process.env.NOVA_SPAWNED;
   });
   afterEach(() => {
     if (savedSpawned !== undefined) {
-      process.env.OVERTONE_SPAWNED = savedSpawned;
+      process.env.NOVA_SPAWNED = savedSpawned;
     } else {
-      delete process.env.OVERTONE_SPAWNED;
+      delete process.env.NOVA_SPAWNED;
     }
   });
 
@@ -410,8 +410,8 @@ describe('PreEditGuard: checkWorkflowRequired', () => {
     expect(checkWorkflowRequired({ session_id: '' })).toBeNull();
   });
 
-  test('OVERTONE_SPAWNED=1 → null（放行）', () => {
-    process.env.OVERTONE_SPAWNED = '1';
+  test('NOVA_SPAWNED=1 → null（放行）', () => {
+    process.env.NOVA_SPAWNED = '1';
     expect(checkWorkflowRequired({ session_id: TEST_SESSION_ID })).toBeNull();
   });
 

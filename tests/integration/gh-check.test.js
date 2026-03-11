@@ -37,8 +37,8 @@ function runHook(input, extraEnv = {}) {
     env: {
       ...process.env,
       CLAUDE_SESSION_ID: '',
-      OVERTONE_NO_DASHBOARD: '1',
-      OVERTONE_TEST: '1',
+      NOVA_NO_DASHBOARD: '1',
+      NOVA_TEST: '1',
       ...extraEnv,
     },
     stdout: 'pipe',
@@ -83,7 +83,7 @@ afterAll(() => {
 const { mkdirSync, writeFileSync, chmodSync } = require('fs');
 const { homedir } = require('os');
 
-const MOCK_BIN_DIR = join(homedir(), '.overtone', 'test-tmp', `gh-mock-bin-${TIMESTAMP}`);
+const MOCK_BIN_DIR = join(homedir(), '.nova', 'test-tmp', `gh-mock-bin-${TIMESTAMP}`);
 
 afterAll(() => {
   rmSync(MOCK_BIN_DIR, { recursive: true, force: true });

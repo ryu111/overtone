@@ -32,7 +32,7 @@ const paths = require(join(SCRIPTS_LIB, 'paths'));
 
 function makeSession(suffix) {
   const id = `test_passk_${suffix}_${Date.now()}`;
-  const dir = join(homedir(), '.overtone', 'sessions', id);
+  const dir = join(homedir(), '.nova', 'sessions', id);
   return { id, dir };
 }
 

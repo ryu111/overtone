@@ -56,7 +56,7 @@ describe('Scenario 1：三層觸發完整性', () => {
     test('cleanupStaleSessions 接受自訂目錄參數', () => {
       const { cleanupStaleSessions } = require(join(SCRIPTS_LIB, 'session-cleanup'));
       // 傳入不存在的目錄不應拋出例外
-      const result = cleanupStaleSessions({ overtoneHome: '/tmp/non-existent-overtone-test' });
+      const result = cleanupStaleSessions({ novaHome: '/tmp/non-existent-overtone-test' });
       expect(result).toBeDefined();
       expect(typeof result.cleaned).toBe('number');
     });

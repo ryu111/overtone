@@ -4,7 +4,7 @@
  * session-id-bridge.test.js — Session ID 橋接機制整合測試
  *
  * 驗證：
- *   1. on-submit.js 將 sessionId 寫入 ~/.overtone/.current-session-id
+ *   1. on-submit.js 將 sessionId 寫入 ~/.nova/.current-session-id
  *   2. init-workflow.js 在未傳入 sessionId 時從共享文件讀取 fallback
  */
 
@@ -24,10 +24,10 @@ const { SCRIPTS_LIB, SCRIPTS_DIR, HOOKS_DIR, PROJECT_ROOT } = require('../helper
 // ── 路徑常數 ──
 
 const pathsMod = require(path.join(SCRIPTS_LIB, 'paths'));
-const OVERTONE_HOME = path.join(os.homedir(), '.overtone');
-const CURRENT_SESSION_FILE = path.join(OVERTONE_HOME, '.current-session-id');
+const NOVA_HOME = path.join(os.homedir(), '.nova');
+const CURRENT_SESSION_FILE = path.join(NOVA_HOME, '.current-session-id');
 const PER_PROJECT_SESSION_FILE = pathsMod.currentSessionFile(PROJECT_ROOT);
-const SESSIONS_DIR = path.join(OVERTONE_HOME, 'sessions');
+const SESSIONS_DIR = path.join(NOVA_HOME, 'sessions');
 
 // ── 工具函式 ──
 
@@ -55,8 +55,8 @@ describe('Session ID Bridge — init-workflow.js fallback 讀取', () => {
   const sessionDir = path.join(SESSIONS_DIR, testSessionId);
 
   beforeEach(() => {
-    // 確保 ~/.overtone 目錄存在
-    mkdirSync(OVERTONE_HOME, { recursive: true });
+    // 確保 ~/.nova 目錄存在
+    mkdirSync(NOVA_HOME, { recursive: true });
   });
 
   afterEach(() => {
@@ -197,7 +197,7 @@ describe('paths.js — session ID 路徑已正確 export', () => {
     const paths = require(path.join(SCRIPTS_LIB, 'paths'));
 
     expect(paths.CURRENT_SESSION_FILE).toBeDefined();
-    expect(paths.CURRENT_SESSION_FILE).toContain('.overtone');
+    expect(paths.CURRENT_SESSION_FILE).toContain('.nova');
     expect(paths.CURRENT_SESSION_FILE).toContain('.current-session-id');
   });
 
@@ -206,15 +206,15 @@ describe('paths.js — session ID 路徑已正確 export', () => {
 
     expect(typeof paths.currentSessionFile).toBe('function');
     const result = paths.currentSessionFile('/tmp/test-project');
-    expect(result).toContain('.overtone');
+    expect(result).toContain('.nova');
     expect(result).toContain('global');
     expect(result).toContain('.current-session-id');
   });
 
-  test('OVERTONE_HOME 應被 export', () => {
+  test('NOVA_HOME 應被 export', () => {
     const paths = require(path.join(SCRIPTS_LIB, 'paths'));
-    expect(paths.OVERTONE_HOME).toBeDefined();
-    expect(paths.OVERTONE_HOME).toContain('.overtone');
+    expect(paths.NOVA_HOME).toBeDefined();
+    expect(paths.NOVA_HOME).toContain('.nova');
   });
 });
 

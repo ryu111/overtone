@@ -20,7 +20,7 @@ const { SCRIPTS_LIB } = require('../helpers/paths');
 // ── 效能優化：在 require session-start-handler 之前 monkey-patch 昂貴的 I/O 模組 ──
 // 策略：只 mock 對測試行為無關的 I/O，保留 state/globalInstinct（Features 7/9/13 需要）
 //
-// 根因：setup.js 設定 OVERTONE_TEST=1，讓 dep cache 強制 skipCache=true，
+// 根因：setup.js 設定 NOVA_TEST=1，讓 dep cache 強制 skipCache=true，
 //   每次 handleSessionStart 都重跑 execSync('which agent-browser/gh') + 'gh auth status'，
 //   三個 execSync 在 bun test 下各約 140ms，31 次呼叫累積 13 秒。
 
@@ -548,7 +548,7 @@ const homedir9 = require('os').homedir;
 
 function makeSession9(suffix) {
   const id = `test_ssh_f9_${suffix}_${Date.now().toString(36)}`;
-  const dir = pathMod.join(homedir9(), '.overtone', 'sessions', id);
+  const dir = pathMod.join(homedir9(), '.nova', 'sessions', id);
   mkdirSyncF9(dir, { recursive: true });
   // 初始化空白 workflow.json，讓 updateStateAtomic 可以讀取到狀態
   writeFileSyncF9(paths9.session.workflow(id), JSON.stringify({}), 'utf8');
@@ -748,7 +748,7 @@ const paths13 = require(join(SCRIPTS_LIB, 'paths'));
 
 function makeSession13(suffix) {
   const id = `test_ssh_f13_${suffix}_${Date.now().toString(36)}`;
-  const dir = pathMod.join(os.homedir(), '.overtone', 'sessions', id);
+  const dir = pathMod.join(os.homedir(), '.nova', 'sessions', id);
   mkdirSyncF13(dir, { recursive: true });
   return { id, dir };
 }

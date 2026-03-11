@@ -17,7 +17,7 @@ const { checkOsTools } = require(join(SCRIPTS_DIR, 'health-check'));
 const { getCachedRunAllChecks } = require('../helpers/health-check-cache');
 
 // heartbeat PID 檔路徑（與 paths.js 一致）
-const HEARTBEAT_PID_FILE = path.join(os.homedir(), '.overtone', 'heartbeat.pid');
+const HEARTBEAT_PID_FILE = path.join(os.homedir(), '.nova', 'heartbeat.pid');
 
 // ══════════════════════════════════════════════════════════════════
 // Feature 4: screencapture 偵測
@@ -111,7 +111,7 @@ describe('checkOsTools: heartbeat daemon 狀態偵測', () => {
 
     // 寫入一個確定不存在的 PID（使用極大的數值）
     const stalePid = 99999999;
-    const overtoneDir = path.join(os.homedir(), '.overtone');
+    const overtoneDir = path.join(os.homedir(), '.nova');
 
     // 備份現有 PID 檔
     let originalContent = null;
@@ -179,7 +179,7 @@ describe('checkOsTools: heartbeat daemon 狀態偵測', () => {
       originalContent = readFileSync(HEARTBEAT_PID_FILE, 'utf8');
     }
 
-    const overtoneDir = path.join(os.homedir(), '.overtone');
+    const overtoneDir = path.join(os.homedir(), '.nova');
     try {
       if (!existsSync(overtoneDir)) {
         mkdirSync(overtoneDir, { recursive: true });

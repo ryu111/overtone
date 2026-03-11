@@ -26,7 +26,7 @@ const { workflows, stages, retryDefaults, parallelGroups } = require(join(SCRIPT
 // ── 測試基礎設施 ──
 
 const TIMESTAMP = Date.now();
-const TEST_PROJECT_ROOT = join(homedir(), '.overtone', 'test-grader-score-' + TIMESTAMP);
+const TEST_PROJECT_ROOT = join(homedir(), '.nova', 'test-grader-score-' + TIMESTAMP);
 
 // 基本有效的 buildStopMessages ctx
 function makeCtx(overrides = {}) {

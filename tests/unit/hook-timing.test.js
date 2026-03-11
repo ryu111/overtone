@@ -92,7 +92,7 @@ describe('Feature 5: hook:timing 事件結構（timeline.emit 直接呼叫）', 
 // ── 子進程輔助工具 ─────────────────────────────────────────────────────────
 
 /**
- * 建立 overtone session 目錄（寫到真實的 ~/.overtone/sessions/<sid>/）
+ * 建立 overtone session 目錄（寫到真實的 ~/.nova/sessions/<sid>/）
  * 回傳 sessionId 和清理函式
  */
 function createSession(prefix = 'hook-timing-test') {
@@ -121,7 +121,7 @@ function runHook(hookPath, stdinData) {
     timeout: 10000,
     env: {
       ...process.env,
-      OVERTONE_NO_DASHBOARD: '1',
+      NOVA_NO_DASHBOARD: '1',
     },
   });
 

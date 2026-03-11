@@ -22,7 +22,7 @@ const paths = require(join(SCRIPTS_LIB, 'paths'));
 // ── 測試基礎設施 ──
 
 const TIMESTAMP = Date.now();
-const TEST_PROJECT_ROOT = join(homedir(), '.overtone', 'test-trend-project-' + TIMESTAMP);
+const TEST_PROJECT_ROOT = join(homedir(), '.nova', 'test-trend-project-' + TIMESTAMP);
 
 function ensureDir(p) {
   mkdirSync(require('path').dirname(p), { recursive: true });

@@ -31,7 +31,7 @@ const PROJECT_ROOT = join(__dirname, '..', '..');
  * 執行 pre-task.js hook（非同步，使用 Bun.spawn）
  */
 async function runHook(input, sessionId) {
-  const env = { ...process.env, OVERTONE_NO_DASHBOARD: '1' };
+  const env = { ...process.env, NOVA_NO_DASHBOARD: '1' };
   delete env.CLAUDE_SESSION_ID;
   if (sessionId !== undefined) {
     env.CLAUDE_SESSION_ID = sessionId;

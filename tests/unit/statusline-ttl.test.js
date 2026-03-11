@@ -28,7 +28,7 @@ function stripAnsi(str) {
 function setupTmpSession(workflowData) {
   const tmpHome = join(tmpdir(), `statusline-ttl-test-${Date.now()}-${Math.random().toString(36).slice(2)}`);
   const sessionId = `ttl-test-${Date.now()}`;
-  const sessionDir = join(tmpHome, '.overtone', 'sessions', sessionId);
+  const sessionDir = join(tmpHome, '.nova', 'sessions', sessionId);
   mkdirSync(sessionDir, { recursive: true });
   writeFileSync(join(sessionDir, 'workflow.json'), JSON.stringify(workflowData));
   return { tmpHome, sessionId, sessionDir, cleanup: () => { try { rmSync(tmpHome, { recursive: true, force: true }); } catch { /* 靜默 */ } } };

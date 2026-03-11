@@ -300,7 +300,7 @@ const { handlePreCompact } = require(join(SCRIPTS_LIB, 'pre-compact-handler'));
 
 function makePcSession(suffix) {
   const id = `test_pch_${suffix}_${Date.now()}`;
-  return { id, dir: joinPc(homedirPc(), '.overtone', 'sessions', id) };
+  return { id, dir: joinPc(homedirPc(), '.nova', 'sessions', id) };
 }
 
 describeI('handlePreCompact', () => {
@@ -479,7 +479,7 @@ const pathsPc2 = require(join(SCRIPTS_LIB, 'paths'));
 
 function makePcSession2(suffix) {
   const id = `test_pch2_${suffix}_${Date.now()}`;
-  return { id, dir: joinPc2(homedirPc2(), '.overtone', 'sessions', id) };
+  return { id, dir: joinPc2(homedirPc2(), '.nova', 'sessions', id) };
 }
 
 describeB('autoTimestamps 追蹤', () => {
@@ -562,7 +562,7 @@ const pathsPc3 = require(join(SCRIPTS_LIB, 'paths'));
 
 function makePcSession3(suffix) {
   const id = `test_pch3_${suffix}_${Date.now()}`;
-  return { id, dir: joinPc3(homedirPc3(), '.overtone', 'sessions', id) };
+  return { id, dir: joinPc3(homedirPc3(), '.nova', 'sessions', id) };
 }
 
 describeC('Feature C: timeline event emit', () => {

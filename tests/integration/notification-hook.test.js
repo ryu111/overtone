@@ -20,7 +20,7 @@ const HOOK_PATH = join(HOOKS_DIR, 'notification', 'on-notification.js');
 function runHook(input) {
   const envConfig = {
     ...process.env,
-    OVERTONE_NO_DASHBOARD: '1',
+    NOVA_NO_DASHBOARD: '1',
   };
   delete envConfig.CLAUDE_SESSION_ID;
 
@@ -45,7 +45,7 @@ function runHook(input) {
 function runHookRaw(rawInput) {
   const envConfig = {
     ...process.env,
-    OVERTONE_NO_DASHBOARD: '1',
+    NOVA_NO_DASHBOARD: '1',
   };
   delete envConfig.CLAUDE_SESSION_ID;
 

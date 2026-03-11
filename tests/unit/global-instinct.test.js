@@ -39,7 +39,7 @@ function makeTmpProject(suffix = '') {
  */
 function makeTmpSession(suffix = '') {
   const id = `test_gi_${suffix}_${Date.now()}`;
-  const dir = join(homedir(), '.overtone', 'sessions', id);
+  const dir = join(homedir(), '.nova', 'sessions', id);
   mkdirSync(dir, { recursive: true });
   return { id, dir };
 }
@@ -87,7 +87,7 @@ describe('Feature 1: 畢業機制（graduate）', () => {
   afterEach(() => {
     rmSync(projectRoot, { recursive: true, force: true });
     rmSync(session.dir, { recursive: true, force: true });
-    // 清理全域 hash 目錄，避免 ~/.overtone/global/{hash}/ 洩漏
+    // 清理全域 hash 目錄，避免 ~/.nova/global/{hash}/ 洩漏
     rmSync(paths.global.dir(projectRoot), { recursive: true, force: true });
   });
 
@@ -409,8 +409,8 @@ describe('Feature 6: 路徑與設定', () => {
   test('Scenario 6-1: paths.global.dir() 回傳正確路徑', () => {
     const dir = paths.global.dir(testRoot);
     const homeDir = os.homedir();
-    // 路徑應以 ~/.overtone/global 開頭
-    expect(dir.startsWith(path.join(homeDir, '.overtone', 'global'))).toBe(true);
+    // 路徑應以 ~/.nova/global 開頭
+    expect(dir.startsWith(path.join(homeDir, '.nova', 'global'))).toBe(true);
     // 路徑應包含 8 字元 hex hash（不重複同一個 root 的 hash）
     const hashPart = paths.projectHash(testRoot);
     expect(dir).toContain(hashPart);
@@ -421,7 +421,7 @@ describe('Feature 6: 路徑與設定', () => {
   // Scenario 6-2
   test('Scenario 6-2: paths.global.observations() 回傳正確路徑', () => {
     const obsPath = paths.global.observations(testRoot);
-    expect(obsPath).toContain('.overtone');
+    expect(obsPath).toContain('.nova');
     expect(obsPath).toContain('global');
     expect(obsPath).toEndWith('observations.jsonl');
   });
@@ -679,9 +679,9 @@ describe('Feature 9: 專案維度隔離（projectHash）', () => {
     expect(pathA).not.toBe(pathB);
     expect(pathA).toContain('observations.jsonl');
     expect(pathB).toContain('observations.jsonl');
-    // 路徑格式：~/.overtone/global/{hash}/observations.jsonl
+    // 路徑格式：~/.nova/global/{hash}/observations.jsonl
     const homeDir = os.homedir();
-    expect(pathA).toContain(path.join(homeDir, '.overtone', 'global'));
+    expect(pathA).toContain(path.join(homeDir, '.nova', 'global'));
   });
 
   // Scenario 9-4

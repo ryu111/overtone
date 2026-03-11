@@ -167,7 +167,7 @@ const { handlePostUse, detectWordingMismatch, WORDING_RULES } = require(join(SCR
 
 function makeTestSession(suffix) {
   const id = `test_puh_${suffix}_${Date.now().toString(36)}`;
-  const dir = path.join(os.homedir(), '.overtone', 'sessions', id);
+  const dir = path.join(os.homedir(), '.nova', 'sessions', id);
   mkdirSync(dir, { recursive: true });
   return { id, dir };
 }

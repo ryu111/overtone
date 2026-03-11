@@ -7,7 +7,7 @@ const { SCRIPTS_LIB } = require('../helpers/paths');
 
 // 使用獨立的測試 session ID 避免污染
 const TEST_SESSION = `test_state_${Date.now()}`;
-const SESSION_DIR = join(homedir(), '.overtone', 'sessions', TEST_SESSION);
+const SESSION_DIR = join(homedir(), '.nova', 'sessions', TEST_SESSION);
 
 const state = require(join(SCRIPTS_LIB, 'state'));
 

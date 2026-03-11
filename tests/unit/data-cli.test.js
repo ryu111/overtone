@@ -101,7 +101,7 @@ function makeMockDeps(overrides = {}) {
     },
     sessionCleanup: {
       cleanupStaleGlobalDirs: (opts) => {
-        if (opts && opts.dryRun) return { cleaned: 0, dryRunList: ['/tmp/.overtone/global/abc12345'], errors: [], skipped: 0 };
+        if (opts && opts.dryRun) return { cleaned: 0, dryRunList: ['/tmp/.nova/global/abc12345'], errors: [], skipped: 0 };
         return { cleaned: 1, dryRunList: [], errors: [], skipped: 2 };
       },
       ...((overrides.sessionCleanup) || {}),

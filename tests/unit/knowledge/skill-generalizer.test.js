@@ -178,7 +178,7 @@ describe('Feature 2: skill-generalizer — 移除專案特定內容', () => {
 
     it('絕對路徑 /Users/ 的段落被移除', () => {
       const content = [
-        '設定檔位於 /Users/sbu/.overtone/sessions/abc123/workflow.json。',
+        '設定檔位於 /Users/sbu/.nova/sessions/abc123/workflow.json。',
         '',
         '工作流狀態追蹤是自動化的核心機制，確保任務不會遺失。',
       ].join('\n');

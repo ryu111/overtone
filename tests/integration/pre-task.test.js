@@ -485,7 +485,7 @@ describe('場景 8：全域觀察注入 subagent', () => {
     );
   }
 
-  const OBS_PROJECT_ROOT = pathJoin(homedir(), '.overtone', 'test-pre-task-global-obs-' + Date.now());
+  const OBS_PROJECT_ROOT = pathJoin(homedir(), '.nova', 'test-pre-task-global-obs-' + Date.now());
 
   afterAll(() => {
     rmSyncHelper(OBS_PROJECT_ROOT, { recursive: true, force: true });
@@ -541,7 +541,7 @@ describe('場景 8：全域觀察注入 subagent', () => {
     state.initState(sessionId, 'single', workflows['single'].stages);
 
     // 使用無全域觀察的獨立空目錄
-    const emptyProject = pathJoin(homedir(), '.overtone', 'test-pre-task-empty-obs-' + Date.now());
+    const emptyProject = pathJoin(homedir(), '.nova', 'test-pre-task-empty-obs-' + Date.now());
 
     const result = await runHook(
       {

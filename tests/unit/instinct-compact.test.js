@@ -20,7 +20,7 @@ const paths = require(join(SCRIPTS_LIB, 'paths'));
 // 每個 describe 使用獨立 session，避免測試間污染
 function makeSession(suffix) {
   const id = `test_compact_${suffix}_${Date.now()}`;
-  const dir = join(homedir(), '.overtone', 'sessions', id);
+  const dir = join(homedir(), '.nova', 'sessions', id);
   return { id, dir };
 }
 

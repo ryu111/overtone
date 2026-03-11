@@ -31,7 +31,7 @@ function makeTmpProject(suffix = '') {
 
 function makeTmpSession(suffix = '') {
   const id = `test_csm_${suffix}_${Date.now()}`;
-  const dir = join(homedir(), '.overtone', 'sessions', id);
+  const dir = join(homedir(), '.nova', 'sessions', id);
   mkdirSync(dir, { recursive: true });
   return { id, dir };
 }

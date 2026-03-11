@@ -4,7 +4,7 @@
  *
  * 提供統一的 hook 執行介面，處理：
  *   - Bun.spawn / spawnSync 的 stdin pipe
- *   - 共用環境變數（OVERTONE_NO_DASHBOARD、CLAUDE_SESSION_ID）
+ *   - 共用環境變數（NOVA_NO_DASHBOARD、CLAUDE_SESSION_ID）
  *   - JSON 解析輸出
  */
 
@@ -32,8 +32,8 @@ const INIT_WORKFLOW_PATH = join(SCRIPTS_DIR, 'init-workflow.js');
 function buildEnv(sessionId) {
   const env = {
     ...process.env,
-    OVERTONE_NO_DASHBOARD: '1', // 防止 on-start 啟動 Dashboard
-    OVERTONE_TEST: '1',          // 防止 failure-tracker 寫入真實 failures.jsonl
+    NOVA_NO_DASHBOARD: '1', // 防止 on-start 啟動 Dashboard
+    NOVA_TEST: '1',          // 防止 failure-tracker 寫入真實 failures.jsonl
   };
   // 移除可能干擾測試的 session 環境變數
   delete env.CLAUDE_SESSION_ID;

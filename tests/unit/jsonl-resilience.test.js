@@ -28,7 +28,7 @@ const instinct = require(join(SCRIPTS_LIB, 'knowledge/instinct'));
 
 function makeSession(suffix) {
   const id = `test_resilience_${suffix}_${Date.now()}`;
-  const dir = join(homedir(), '.overtone', 'sessions', id);
+  const dir = join(homedir(), '.nova', 'sessions', id);
   return { id, dir };
 }
 

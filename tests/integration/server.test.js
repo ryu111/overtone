@@ -21,7 +21,7 @@ const BASE_URL = `http://localhost:${TEST_PORT}`;
 
 // 測試 session ID（使用固定前綴 + timestamp 確保唯一性）
 const TEST_SESSION = `test_server_${Date.now()}`;
-const SESSION_DIR = join(homedir(), '.overtone', 'sessions', TEST_SESSION);
+const SESSION_DIR = join(homedir(), '.nova', 'sessions', TEST_SESSION);
 const NONEXISTENT_SESSION = `test_server_nonexistent_${Date.now()}`;
 
 let serverProcess = null;
@@ -97,7 +97,7 @@ beforeAll(async () => {
   serverProcess = Bun.spawn(['bun', serverScript], {
     env: {
       ...process.env,
-      OVERTONE_PORT: String(TEST_PORT),
+      NOVA_PORT: String(TEST_PORT),
     },
     stdout: 'ignore',
     stderr: 'ignore',

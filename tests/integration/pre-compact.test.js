@@ -42,10 +42,10 @@ const SESSION_EMPTY_TASKS = `pre-compact-empty-${TS}`;
 const SESSION_ON_START = `pre-compact-onstart-${TS}`;
 
 // 暫存 projectRoot（specs 目錄隔離）
-const TMP_ROOT = join(homedir(), '.overtone', 'test-tmp', `pre-compact-${TS}`);
-const TMP_ROOT_TRUNC = join(homedir(), '.overtone', 'test-tmp', `pre-compact-trunc-${TS}`);
-const TMP_ROOT_EMPTY = join(homedir(), '.overtone', 'test-tmp', `pre-compact-empty-${TS}`);
-const TMP_ROOT_ONSTART = join(homedir(), '.overtone', 'test-tmp', `pre-compact-onstart-${TS}`);
+const TMP_ROOT = join(homedir(), '.nova', 'test-tmp', `pre-compact-${TS}`);
+const TMP_ROOT_TRUNC = join(homedir(), '.nova', 'test-tmp', `pre-compact-trunc-${TS}`);
+const TMP_ROOT_EMPTY = join(homedir(), '.nova', 'test-tmp', `pre-compact-empty-${TS}`);
+const TMP_ROOT_ONSTART = join(homedir(), '.nova', 'test-tmp', `pre-compact-onstart-${TS}`);
 
 // ── 標準 workflow state（standard workflow，2 個已完成，6 個未完成）──
 
@@ -62,7 +62,7 @@ function runHook(input, extraEnv = {}) {
     env: {
       ...process.env,
       CLAUDE_SESSION_ID: '',
-      OVERTONE_NO_DASHBOARD: '1',
+      NOVA_NO_DASHBOARD: '1',
       ...extraEnv,
     },
     stdout: 'pipe',
@@ -84,7 +84,7 @@ function runOnStart(input, extraEnv = {}) {
     env: {
       ...process.env,
       CLAUDE_SESSION_ID: '',
-      OVERTONE_NO_DASHBOARD: '1',
+      NOVA_NO_DASHBOARD: '1',
       ...extraEnv,
     },
     stdout: 'pipe',
@@ -174,7 +174,7 @@ describe('Feature 1：無 sessionId 時靜默退出', () => {
   test('stdin 空字串時安全退出', () => {
     const proc = Bun.spawnSync(['node', HOOK_PATH], {
       stdin: Buffer.from(''),
-      env: { ...process.env, CLAUDE_SESSION_ID: '', OVERTONE_NO_DASHBOARD: '1' },
+      env: { ...process.env, CLAUDE_SESSION_ID: '', NOVA_NO_DASHBOARD: '1' },
       stdout: 'pipe',
       stderr: 'pipe',
     });
@@ -187,7 +187,7 @@ describe('Feature 1：無 sessionId 時靜默退出', () => {
   test('stdin 畸形 JSON 時安全退出', () => {
     const proc = Bun.spawnSync(['node', HOOK_PATH], {
       stdin: Buffer.from('{broken'),
-      env: { ...process.env, CLAUDE_SESSION_ID: '', OVERTONE_NO_DASHBOARD: '1' },
+      env: { ...process.env, CLAUDE_SESSION_ID: '', NOVA_NO_DASHBOARD: '1' },
       stdout: 'pipe',
       stderr: 'pipe',
     });
@@ -368,7 +368,7 @@ describe('Feature 3：有活躍 feature 時注入未完成任務清單', () => {
 
   // Scenario 3.2: 超過 5 個未完成任務時截斷
   test('超過 5 個未完成任務時只顯示前 5 個 + 剩餘計數', () => {
-    const ROOT_8 = join(homedir(), '.overtone', 'test-tmp', `pre-compact-8tasks-${TS}`);
+    const ROOT_8 = join(homedir(), '.nova', 'test-tmp', `pre-compact-8tasks-${TS}`);
     const SESSION_8 = `pre-compact-8tasks-${TS}`;
     stateLib.initState(SESSION_8, 'quick', ['DEV', 'REVIEW', 'TEST', 'RETRO']);
     createFeature(ROOT_8, 'eight-task-feature', [
@@ -405,7 +405,7 @@ describe('Feature 3：有活躍 feature 時注入未完成任務清單', () => {
 
   // Scenario 3.4: 無活躍 feature 時不注入任務清單
   test('無活躍 feature 時 systemMessage 不包含未完成任務段落', () => {
-    const ROOT_EMPTY_DIR = join(homedir(), '.overtone', 'test-tmp', `pre-compact-no-feature-${TS}`);
+    const ROOT_EMPTY_DIR = join(homedir(), '.nova', 'test-tmp', `pre-compact-no-feature-${TS}`);
     const SESSION_NO_FEAT = `pre-compact-no-feat-${TS}`;
     stateLib.initState(SESSION_NO_FEAT, 'quick', ['DEV', 'REVIEW', 'TEST', 'RETRO']);
     mkdirSync(join(ROOT_EMPTY_DIR, 'specs', 'features', 'in-progress'), { recursive: true });
@@ -451,7 +451,7 @@ describe('Feature 4：systemMessage 長度截斷保護', () => {
   // Scenario 4.2: 超過 2000 字元時截斷
   test('systemMessage 超過 2000 字元時截斷並附提示', () => {
     const SESSION_LONG = `pre-compact-long-${TS}`;
-    const ROOT_LONG = join(homedir(), '.overtone', 'test-tmp', `pre-compact-long-${TS}`);
+    const ROOT_LONG = join(homedir(), '.nova', 'test-tmp', `pre-compact-long-${TS}`);
     stateLib.initState(SESSION_LONG, 'full', ['PLAN', 'ARCH', 'DESIGN', 'TEST', 'DEV', 'REVIEW', 'TEST', 'QA', 'E2E', 'RETRO', 'DOCS']);
     // buildPendingTasksMessage 最多顯示 5 個任務，所以讓每個任務名稱非常長（各 ~400 字元）
     const longName = '這是一個極度冗長的任務名稱用來撐爆 systemMessage 的長度限制測試項目。'.repeat(12);
@@ -571,7 +571,7 @@ describe('Feature 6：任何失敗 fallback 到 { result: \'\' }', () => {
     // 傳入損壞的 stdin
     const proc = Bun.spawnSync(['node', HOOK_PATH], {
       stdin: Buffer.from('{broken'),
-      env: { ...process.env, CLAUDE_SESSION_ID: 'x', OVERTONE_NO_DASHBOARD: '1' },
+      env: { ...process.env, CLAUDE_SESSION_ID: 'x', NOVA_NO_DASHBOARD: '1' },
       stdout: 'pipe',
       stderr: 'pipe',
     });
@@ -590,7 +590,7 @@ describe('Feature 6：任何失敗 fallback 到 { result: \'\' }', () => {
 describe('Feature 7：buildPendingTasksMessage 共用函式', () => {
   const hookUtils = require(join(SCRIPTS_LIB, 'hook-utils'));
 
-  const FEAT_ROOT = join(homedir(), '.overtone', 'test-tmp', `pre-compact-hook-utils-${TS}`);
+  const FEAT_ROOT = join(homedir(), '.nova', 'test-tmp', `pre-compact-hook-utils-${TS}`);
 
   afterAll(() => {
     rmSync(FEAT_ROOT, { recursive: true, force: true });
@@ -621,7 +621,7 @@ describe('Feature 7：buildPendingTasksMessage 共用函式', () => {
 
   // Scenario 7.2: 無活躍 feature 時回傳 null
   test('無活躍 feature 時回傳 null', () => {
-    const emptyRoot = join(homedir(), '.overtone', 'test-tmp', `empty-feat-${TS}`);
+    const emptyRoot = join(homedir(), '.nova', 'test-tmp', `empty-feat-${TS}`);
     mkdirSync(join(emptyRoot, 'specs', 'features', 'in-progress'), { recursive: true });
     const result = hookUtils.buildPendingTasksMessage(emptyRoot);
     expect(result).toBeNull();
@@ -630,7 +630,7 @@ describe('Feature 7：buildPendingTasksMessage 共用函式', () => {
 
   // Scenario 7.3: 所有任務完成時回傳 null
   test('所有任務完成時回傳 null', () => {
-    const doneRoot = join(homedir(), '.overtone', 'test-tmp', `done-feat-${TS}`);
+    const doneRoot = join(homedir(), '.nova', 'test-tmp', `done-feat-${TS}`);
     createFeature(doneRoot, 'done-feature', ['- [x] 任務 A', '- [x] 任務 B']);
     const result = hookUtils.buildPendingTasksMessage(doneRoot);
     expect(result).toBeNull();
@@ -684,7 +684,7 @@ describe('Feature 8：on-start.js 重構後行為不變', () => {
 
   // Scenario 8.2: 無活躍 feature 時仍輸出 plugin context（via buildPluginContext）
   test('on-start.js 無活躍 feature 時仍輸出 plugin context systemMessage', () => {
-    const NO_FEAT_ROOT = join(homedir(), '.overtone', 'test-tmp', `on-start-no-feat-${TS}`);
+    const NO_FEAT_ROOT = join(homedir(), '.nova', 'test-tmp', `on-start-no-feat-${TS}`);
     mkdirSync(join(NO_FEAT_ROOT, 'specs', 'features', 'in-progress'), { recursive: true });
     const result = runOnStart({ cwd: NO_FEAT_ROOT });
     expect(result.exitCode).toBe(0);

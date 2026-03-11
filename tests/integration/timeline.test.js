@@ -10,7 +10,7 @@ const paths = require(join(SCRIPTS_LIB, 'paths'));
 
 // 使用獨立的測試 session ID 避免污染
 const TEST_SESSION = `test_timeline_${Date.now()}`;
-const SESSION_DIR = join(homedir(), '.overtone', 'sessions', TEST_SESSION);
+const SESSION_DIR = join(homedir(), '.nova', 'sessions', TEST_SESSION);
 
 // 輔助函式：直接寫入假的 stage:complete 事件到 JSONL
 function writeEvent(sessionId, stage, result, ts) {
@@ -58,7 +58,7 @@ describe('emit()', () => {
 
   beforeEach(() => {
     sessionId = `test_emit_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
-    sessionDir = join(homedir(), '.overtone', 'sessions', sessionId);
+    sessionDir = join(homedir(), '.nova', 'sessions', sessionId);
     mkdirSync(sessionDir, { recursive: true });
   });
 
@@ -124,7 +124,7 @@ describe('query()', () => {
 
   beforeEach(() => {
     sessionId = `test_query_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
-    sessionDir = join(homedir(), '.overtone', 'sessions', sessionId);
+    sessionDir = join(homedir(), '.nova', 'sessions', sessionId);
     mkdirSync(sessionDir, { recursive: true });
 
     // 預先寫入一組混合事件供各測試共用
@@ -197,7 +197,7 @@ describe('latest()', () => {
 
   beforeEach(() => {
     sessionId = `test_latest_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
-    sessionDir = join(homedir(), '.overtone', 'sessions', sessionId);
+    sessionDir = join(homedir(), '.nova', 'sessions', sessionId);
     mkdirSync(sessionDir, { recursive: true });
   });
 

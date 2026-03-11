@@ -21,7 +21,7 @@ const paths = require(join(SCRIPTS_LIB, 'paths'));
 // 為每個測試建立獨立 session
 function makeSession(suffix) {
   const id = `test_tlcount_${suffix}_${Date.now()}`;
-  const dir = join(homedir(), '.overtone', 'sessions', id);
+  const dir = join(homedir(), '.nova', 'sessions', id);
   return { id, dir };
 }
 

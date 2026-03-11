@@ -28,7 +28,7 @@ const MAX_EVENTS = 2000;
 // 為每個測試建立獨立 session
 function makeSession(suffix) {
   const id = `test_emitctr_${suffix}_${Date.now()}`;
-  const dir = join(homedir(), '.overtone', 'sessions', id);
+  const dir = join(homedir(), '.nova', 'sessions', id);
   return { id, dir };
 }
 
