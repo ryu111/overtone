@@ -5,6 +5,9 @@ node_modules/
 .DS_Store
 Thumbs.db
 
+# IDE
+.nova/
+
 # Runtime state
 *.log
 /tmp/
