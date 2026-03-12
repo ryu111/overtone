@@ -10,29 +10,14 @@
  * Scenario 3-4: query 帶 workflowId 只查對應 timeline
  */
 const { test, expect, beforeEach, afterEach, describe } = require('bun:test');
-const { mkdirSync, rmSync, existsSync, readFileSync, appendFileSync } = require('fs');
+const { mkdirSync, rmSync, existsSync, readFileSync } = require('fs');
 const { join } = require('path');
-const { homedir } = require('os');
-const { mkdtempSync } = require('fs');
-const { tmpdir } = require('os');
 const { SCRIPTS_LIB } = require('../helpers/paths');
+const { makeTmpProject, createCtx, cleanupProject } = require('../helpers/session-factory');
 
 const timeline = require(join(SCRIPTS_LIB, 'timeline'));
+const SessionContext = require(join(SCRIPTS_LIB, 'session-context'));
 const paths = require(join(SCRIPTS_LIB, 'paths'));
-
-// 建立獨立的 session（prefix test_ 以免被 cleanupOldSessions 清除）
-function makeSession(suffix) {
-  const id = `test_tlmi_${suffix}_${Date.now()}`;
-  const dir = join(homedir(), '.nova', 'sessions', id);
-  return { id, dir };
-}
-
-// 建立 workflow 目錄結構
-function makeWorkflowDir(session, workflowId) {
-  const wfDir = paths.session.workflowDir(session.id, workflowId);
-  mkdirSync(wfDir, { recursive: true });
-  return wfDir;
-}
 
 // 計算 timeline 檔案行數
 function countLines(filePath) {
@@ -47,35 +32,36 @@ function countLines(filePath) {
 // ════════════════════════════════════════════════════════
 
 describe('Scenario 3-1: emit 帶 workflowId 寫入新路徑', () => {
-  let session;
+  let projectRoot;
   const workflowId = 'wf-test-3-1';
+  let ctx;
 
   beforeEach(() => {
-    session = makeSession('s31');
-    mkdirSync(session.dir, { recursive: true });
-    makeWorkflowDir(session, workflowId);
+    projectRoot = makeTmpProject('tlmi-s31');
+    ctx = createCtx(projectRoot, undefined, workflowId);
+    mkdirSync(paths.session.workflowDir(projectRoot, ctx.sessionId, workflowId), { recursive: true });
   });
   afterEach(() => {
-    rmSync(session.dir, { recursive: true, force: true });
+    cleanupProject(projectRoot);
   });
 
   test('事件寫入 workflows/{workflowId}/timeline.jsonl', () => {
-    timeline.emit(session.id, workflowId, 'workflow:start', { wfType: 'standard' });
-    const wfTimelinePath = paths.session.workflowTimeline(session.id, workflowId);
+    timeline.emitCtx(ctx, 'workflow:start', { wfType: 'standard' });
+    const wfTimelinePath = paths.session.workflowTimeline(projectRoot, ctx.sessionId, workflowId);
     expect(existsSync(wfTimelinePath)).toBe(true);
     expect(countLines(wfTimelinePath)).toBe(1);
   });
 
   test('根層 timeline.jsonl 不受影響', () => {
-    const rootTimelinePath = paths.session.timeline(session.id);
+    const rootTimelinePath = paths.session.timeline(projectRoot, ctx.sessionId);
     const rootBefore = existsSync(rootTimelinePath) ? countLines(rootTimelinePath) : 0;
-    timeline.emit(session.id, workflowId, 'workflow:start', {});
+    timeline.emitCtx(ctx, 'workflow:start', {});
     const rootAfter = existsSync(rootTimelinePath) ? countLines(rootTimelinePath) : 0;
     expect(rootAfter).toBe(rootBefore);
   });
 
   test('emit 回傳包含正確欄位的事件物件', () => {
-    const event = timeline.emit(session.id, workflowId, 'workflow:start', { extra: 'data' });
+    const event = timeline.emitCtx(ctx, 'workflow:start', { extra: 'data' });
     expect(event.type).toBe('workflow:start');
     expect(event.category).toBe('workflow');
     expect(event.ts).toMatch(/^\d{4}-\d{2}-\d{2}T/);
@@ -83,8 +69,8 @@ describe('Scenario 3-1: emit 帶 workflowId 寫入新路徑', () => {
   });
 
   test('寫入的事件可用 query 讀回', () => {
-    timeline.emit(session.id, workflowId, 'workflow:start', { wfType: 'standard' });
-    const events = timeline.query(session.id, workflowId);
+    timeline.emitCtx(ctx, 'workflow:start', { wfType: 'standard' });
+    const events = timeline.queryCtx(ctx);
     expect(events.length).toBe(1);
     expect(events[0].type).toBe('workflow:start');
     expect(events[0].wfType).toBe('standard');
@@ -96,30 +82,32 @@ describe('Scenario 3-1: emit 帶 workflowId 寫入新路徑', () => {
 // ════════════════════════════════════════════════════════
 
 describe('Scenario 3-2: emit 無 workflowId 時 fallback 至根層', () => {
-  let session;
+  let projectRoot;
+  let ctxNoWf;
 
   beforeEach(() => {
-    session = makeSession('s32');
-    mkdirSync(session.dir, { recursive: true });
+    projectRoot = makeTmpProject('tlmi-s32');
+    ctxNoWf = createCtx(projectRoot); // workflowId = null
   });
   afterEach(() => {
-    rmSync(session.dir, { recursive: true, force: true });
+    cleanupProject(projectRoot);
   });
 
   test('workflowId 為 null 時寫入根層 timeline.jsonl', () => {
-    timeline.emit(session.id, null, 'workflow:start', {});
-    const rootTimelinePath = paths.session.timeline(session.id);
+    timeline.emitCtx(ctxNoWf, 'workflow:start', {});
+    const rootTimelinePath = paths.session.timeline(projectRoot, ctxNoWf.sessionId);
     expect(existsSync(rootTimelinePath)).toBe(true);
     expect(countLines(rootTimelinePath)).toBe(1);
   });
 
   test('workflowId 為 null 時不拋錯誤', () => {
-    expect(() => timeline.emit(session.id, null, 'workflow:start', {})).not.toThrow();
+    expect(() => timeline.emitCtx(ctxNoWf, 'workflow:start', {})).not.toThrow();
   });
 
-  test('舊 API（2 參數）仍寫入根層', () => {
-    timeline.emit(session.id, 'workflow:start', {});
-    const rootTimelinePath = paths.session.timeline(session.id);
+  test('ctx.workflowId 為 null 時寫入根層（等同舊 API 2 參數行為）', () => {
+    const ctx = new SessionContext(projectRoot, ctxNoWf.sessionId, null);
+    timeline.emitCtx(ctx, 'workflow:start', {});
+    const rootTimelinePath = paths.session.timeline(projectRoot, ctx.sessionId);
     expect(existsSync(rootTimelinePath)).toBe(true);
     expect(countLines(rootTimelinePath)).toBe(1);
   });
@@ -130,48 +118,52 @@ describe('Scenario 3-2: emit 無 workflowId 時 fallback 至根層', () => {
 // ════════════════════════════════════════════════════════
 
 describe('Scenario 3-3: 兩個 workflow 的 timeline 互不影響', () => {
-  let session;
+  let projectRoot;
   const workflowIdA = 'wf-A-test-3-3';
   const workflowIdB = 'wf-B-test-3-3';
+  let ctxA, ctxB;
 
   beforeEach(() => {
-    session = makeSession('s33');
-    mkdirSync(session.dir, { recursive: true });
-    makeWorkflowDir(session, workflowIdA);
-    makeWorkflowDir(session, workflowIdB);
+    projectRoot = makeTmpProject('tlmi-s33');
+    const sessionId = `test-tlmi-s33-${Date.now()}`;
+    mkdirSync(paths.sessionDir(projectRoot, sessionId), { recursive: true });
+    mkdirSync(paths.session.workflowDir(projectRoot, sessionId, workflowIdA), { recursive: true });
+    mkdirSync(paths.session.workflowDir(projectRoot, sessionId, workflowIdB), { recursive: true });
+    ctxA = new SessionContext(projectRoot, sessionId, workflowIdA);
+    ctxB = new SessionContext(projectRoot, sessionId, workflowIdB);
   });
   afterEach(() => {
-    rmSync(session.dir, { recursive: true, force: true });
+    cleanupProject(projectRoot);
   });
 
   test('對 A emit 3 筆，對 B emit 2 筆，query 各自正確', () => {
-    timeline.emit(session.id, workflowIdA, 'workflow:start', { wf: 'A' });
-    timeline.emit(session.id, workflowIdA, 'stage:start', { stage: 'DEV' });
-    timeline.emit(session.id, workflowIdA, 'stage:complete', { stage: 'DEV', result: 'pass' });
+    timeline.emitCtx(ctxA, 'workflow:start', { wf: 'A' });
+    timeline.emitCtx(ctxA, 'stage:start', { stage: 'DEV' });
+    timeline.emitCtx(ctxA, 'stage:complete', { stage: 'DEV', result: 'pass' });
 
-    timeline.emit(session.id, workflowIdB, 'workflow:start', { wf: 'B' });
-    timeline.emit(session.id, workflowIdB, 'workflow:complete', { wf: 'B' });
+    timeline.emitCtx(ctxB, 'workflow:start', { wf: 'B' });
+    timeline.emitCtx(ctxB, 'workflow:complete', { wf: 'B' });
 
-    const eventsA = timeline.query(session.id, workflowIdA);
-    const eventsB = timeline.query(session.id, workflowIdB);
+    const eventsA = timeline.queryCtx(ctxA);
+    const eventsB = timeline.queryCtx(ctxB);
 
     expect(eventsA.length).toBe(3);
     expect(eventsB.length).toBe(2);
   });
 
   test('A 的事件不出現在 B 的 query 結果', () => {
-    timeline.emit(session.id, workflowIdA, 'workflow:start', { marker: 'only-in-A' });
-    timeline.emit(session.id, workflowIdB, 'workflow:start', { marker: 'only-in-B' });
+    timeline.emitCtx(ctxA, 'workflow:start', { marker: 'only-in-A' });
+    timeline.emitCtx(ctxB, 'workflow:start', { marker: 'only-in-B' });
 
-    const eventsB = timeline.query(session.id, workflowIdB);
+    const eventsB = timeline.queryCtx(ctxB);
     expect(eventsB.every(e => e.marker !== 'only-in-A')).toBe(true);
   });
 
   test('B 的事件不出現在 A 的 query 結果', () => {
-    timeline.emit(session.id, workflowIdA, 'workflow:start', { marker: 'only-in-A' });
-    timeline.emit(session.id, workflowIdB, 'workflow:start', { marker: 'only-in-B' });
+    timeline.emitCtx(ctxA, 'workflow:start', { marker: 'only-in-A' });
+    timeline.emitCtx(ctxB, 'workflow:start', { marker: 'only-in-B' });
 
-    const eventsA = timeline.query(session.id, workflowIdA);
+    const eventsA = timeline.queryCtx(ctxA);
     expect(eventsA.every(e => e.marker !== 'only-in-B')).toBe(true);
   });
 });
@@ -181,45 +173,49 @@ describe('Scenario 3-3: 兩個 workflow 的 timeline 互不影響', () => {
 // ════════════════════════════════════════════════════════
 
 describe('Scenario 3-4: query 帶 workflowId 只查對應 timeline', () => {
-  let session;
+  let projectRoot;
   const workflowId = 'wf-test-3-4';
+  let ctxWf, ctxNoWf;
 
   beforeEach(() => {
-    session = makeSession('s34');
-    mkdirSync(session.dir, { recursive: true });
-    makeWorkflowDir(session, workflowId);
+    projectRoot = makeTmpProject('tlmi-s34');
+    const sessionId = `test-tlmi-s34-${Date.now()}`;
+    mkdirSync(paths.sessionDir(projectRoot, sessionId), { recursive: true });
+    mkdirSync(paths.session.workflowDir(projectRoot, sessionId, workflowId), { recursive: true });
+    ctxWf = new SessionContext(projectRoot, sessionId, workflowId);
+    ctxNoWf = new SessionContext(projectRoot, sessionId, null);
 
     // 預填 workflow timeline：5 筆
     for (let i = 0; i < 5; i++) {
-      timeline.emit(session.id, workflowId, 'workflow:start', { seq: i });
+      timeline.emitCtx(ctxWf, 'workflow:start', { seq: i });
     }
-    // 預填根層 timeline：3 筆（舊格式）
-    timeline.emit(session.id, 'workflow:start', {});
-    timeline.emit(session.id, 'workflow:complete', {});
-    timeline.emit(session.id, 'stage:start', { stage: 'DEV' });
+    // 預填根層 timeline：3 筆（舊格式，用 ctxNoWf 模擬）
+    timeline.emitCtx(ctxNoWf, 'workflow:start', {});
+    timeline.emitCtx(ctxNoWf, 'workflow:complete', {});
+    timeline.emitCtx(ctxNoWf, 'stage:start', { stage: 'DEV' });
   });
   afterEach(() => {
-    rmSync(session.dir, { recursive: true, force: true });
+    cleanupProject(projectRoot);
   });
 
   test('query 帶 workflowId 回傳 5 筆（新路徑事件）', () => {
-    const events = timeline.query(session.id, workflowId);
+    const events = timeline.queryCtx(ctxWf);
     expect(events.length).toBe(5);
   });
 
   test('query 帶 workflowId 不混入根層舊事件', () => {
-    const events = timeline.query(session.id, workflowId);
+    const events = timeline.queryCtx(ctxWf);
     // workflow timeline 的事件有 seq 欄位，根層沒有
     expect(events.every(e => e.seq !== undefined)).toBe(true);
   });
 
-  test('query 不帶 workflowId（舊 API）回傳根層 3 筆', () => {
-    const events = timeline.query(session.id);
+  test('query 不帶 workflowId（ctxNoWf）回傳根層 3 筆', () => {
+    const events = timeline.queryCtx(ctxNoWf);
     expect(events.length).toBe(3);
   });
 
   test('query 帶 workflowId 支援 filter', () => {
-    const events = timeline.query(session.id, workflowId, { type: 'workflow:start' });
+    const events = timeline.queryCtx(ctxWf, { type: 'workflow:start' });
     expect(events.length).toBe(5);
     expect(events.every(e => e.type === 'workflow:start')).toBe(true);
   });

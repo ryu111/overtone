@@ -13,6 +13,7 @@ const SESSION_DIR = join(SESSIONS_BASE, TEST_SESSION);
 
 const sessions = require(join(SCRIPTS_LIB, 'dashboard', 'sessions'));
 const state = require(join(SCRIPTS_LIB, 'state'));
+const SessionContext = require(join(SCRIPTS_LIB, 'session-context'));
 
 describe('dashboard/sessions.js', () => {
   describe('Scenario 1: 無任何 session 目錄時 listSessions() 回傳空陣列', () => {
@@ -32,7 +33,7 @@ describe('dashboard/sessions.js', () => {
     beforeEach(() => {
       // 建立 session 目錄並初始化 quick workflow state
       mkdirSync(SESSION_DIR, { recursive: true });
-      state.initState(TEST_SESSION, 'quick', ['DEV', 'REVIEW', 'TEST']);
+      state.initStateCtx(new SessionContext(require('os').homedir(), TEST_SESSION), 'quick', ['DEV', 'REVIEW', 'TEST']);
     });
 
     afterEach(() => {

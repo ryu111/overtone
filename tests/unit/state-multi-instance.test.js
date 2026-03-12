@@ -29,6 +29,7 @@ const { tmpdir } = require('os');
 const { SCRIPTS_LIB } = require('../helpers/paths');
 
 const state = require(join(SCRIPTS_LIB, 'state'));
+const SessionContext = require(join(SCRIPTS_LIB, 'session-context'));
 const paths = require(join(SCRIPTS_LIB, 'paths'));
 const timeline = require(join(SCRIPTS_LIB, 'timeline'));
 
@@ -82,7 +83,7 @@ describe('Feature 2: state.js 多實例隔離', () => {
     writeFileSync(paths.session.workflowFile(projectRoot, sid, workflowId), JSON.stringify(mockState));
 
     // WHEN 呼叫 readState(projectRoot, sessionId, workflowId)
-    const result = state.readState(projectRoot, sid, workflowId);
+    const result = state.readStateCtx(new SessionContext(projectRoot, sid, workflowId));
 
     // THEN 回傳對應的 state 物件
     expect(result).not.toBeNull();
@@ -97,7 +98,7 @@ describe('Feature 2: state.js 多實例隔離', () => {
     const workflowId = newWorkflowId();
 
     // WHEN 呼叫 readState(projectRoot, sessionId, workflowId)
-    const result = state.readState(projectRoot, sid, workflowId);
+    const result = state.readStateCtx(new SessionContext(projectRoot, sid, workflowId));
 
     // THEN 回傳 null
     expect(result).toBeNull();
@@ -117,7 +118,7 @@ describe('Feature 2: state.js 多實例隔離', () => {
     writeFileSync(paths.session.workflow(projectRoot, sid), JSON.stringify(oldState));
 
     // WHEN 呼叫 readState(projectRoot, sessionId, null)
-    const result = state.readState(projectRoot, sid, null);
+    const result = state.readStateCtx(new SessionContext(projectRoot, sid, null));
 
     // THEN 回傳根層 workflow.json 的 state 物件，不拋出錯誤
     expect(result).not.toBeNull();
@@ -130,7 +131,7 @@ describe('Feature 2: state.js 多實例隔離', () => {
     const { projectRoot, sid } = newSession();
 
     // WHEN 呼叫 readState(projectRoot, sessionId, null)
-    const result = state.readState(projectRoot, sid, null);
+    const result = state.readStateCtx(new SessionContext(projectRoot, sid, null));
 
     // THEN 回傳 null
     expect(result).toBeNull();
@@ -142,7 +143,7 @@ describe('Feature 2: state.js 多實例隔離', () => {
     const workflowId = newWorkflowId();
 
     // WHEN 呼叫 initState(projectRoot, sessionId, workflowId, "standard", ["DEV", "TEST"], {})
-    const result = state.initState(projectRoot, sid, workflowId, 'standard', ['DEV', 'TEST'], {});
+    const result = state.initStateCtx(new SessionContext(projectRoot, sid, workflowId), 'standard', ['DEV', 'TEST'], {});
 
     // THEN 在 workflows/{workflowId}/workflow.json 建立 state 檔案
     const stateFilePath = paths.session.workflowFile(projectRoot, sid, workflowId);
@@ -167,19 +168,19 @@ describe('Feature 2: state.js 多實例隔離', () => {
     const workflowIdB = newWorkflowId();
 
     // 建立 workflowA
-    state.initState(projectRoot, sid, workflowIdA, 'standard', ['DEV', 'REVIEW'], {});
+    state.initStateCtx(new SessionContext(projectRoot, sid, workflowIdA), 'standard', ['DEV', 'REVIEW'], {});
     // 建立 workflowB
-    state.initState(projectRoot, sid, workflowIdB, 'quick', ['DEV', 'REVIEW'], {});
+    state.initStateCtx(new SessionContext(projectRoot, sid, workflowIdB), 'quick', ['DEV', 'REVIEW'], {});
 
     // WHEN 呼叫 updateStage(projectRoot, sessionId, workflowId-A, "DEV", { status: "completed" })
-    state.updateStage(projectRoot, sid, workflowIdA, 'DEV', { status: 'completed', result: 'pass' });
+    state.updateStageCtx(new SessionContext(projectRoot, sid, workflowIdA), 'DEV', { status: 'completed', result: 'pass' });
 
     // THEN workflowId-A 的 workflow.json 中 DEV stage 狀態為 completed
-    const stateA = state.readState(projectRoot, sid, workflowIdA);
+    const stateA = state.readStateCtx(new SessionContext(projectRoot, sid, workflowIdA));
     expect(stateA.stages['DEV'].status).toBe('completed');
 
     // AND workflowId-B 的 workflow.json 未被修改
-    const stateB = state.readState(projectRoot, sid, workflowIdB);
+    const stateB = state.readStateCtx(new SessionContext(projectRoot, sid, workflowIdB));
     expect(stateB.stages['DEV'].status).toBe('pending');
   });
 
@@ -189,9 +190,9 @@ describe('Feature 2: state.js 多實例隔離', () => {
     const workflowId = newWorkflowId();
 
     // 建立包含不一致狀態的 state（有 completedAt 但 status 不是 completed）
-    state.initState(projectRoot, sid, workflowId, 'quick', ['DEV', 'REVIEW'], {});
+    state.initStateCtx(new SessionContext(projectRoot, sid, workflowId), 'quick', ['DEV', 'REVIEW'], {});
     const brokenState = {
-      ...state.readState(projectRoot, sid, workflowId),
+      ...state.readStateCtx(new SessionContext(projectRoot, sid, workflowId)),
       stages: {
         DEV: {
           status: 'active', // 應為 completed，但被錯誤設定
@@ -208,14 +209,14 @@ describe('Feature 2: state.js 多實例隔離', () => {
     );
 
     // WHEN 呼叫 sanitize(projectRoot, sessionId, workflowId)
-    const result = state.sanitize(projectRoot, sid, workflowId);
+    const result = state.sanitizeCtx(new SessionContext(projectRoot, sid, workflowId));
 
     // THEN 回傳 { fixed, state } 物件
     expect(result).not.toBeNull();
     expect(Array.isArray(result.fixed)).toBe(true);
 
     // AND 修復套用至正確的 workflows/{workflowId}/workflow.json
-    const repairedState = state.readState(projectRoot, sid, workflowId);
+    const repairedState = state.readStateCtx(new SessionContext(projectRoot, sid, workflowId));
     expect(repairedState.stages['DEV'].status).toBe('completed');
   });
 
@@ -225,10 +226,10 @@ describe('Feature 2: state.js 多實例隔離', () => {
     const workflowId = newWorkflowId();
 
     // 建立 workflow state
-    state.initState(projectRoot, sid, workflowId, 'quick', ['DEV', 'REVIEW'], {});
+    state.initStateCtx(new SessionContext(projectRoot, sid, workflowId), 'quick', ['DEV', 'REVIEW'], {});
 
     // 注入孤兒 activeAgent（會觸發 enforceInvariants 產生 violations → emit timeline）
-    const currentSt = state.readState(projectRoot, sid, workflowId);
+    const currentSt = state.readStateCtx(new SessionContext(projectRoot, sid, workflowId));
     currentSt.activeAgents['tester:orphan_999'] = {
       agentName: 'tester',
       stage: 'TEST:999', // 孤兒（不存在於 stages）
@@ -240,7 +241,7 @@ describe('Feature 2: state.js 多實例隔離', () => {
     );
 
     // WHEN 透過 updateStateAtomic 觸發 enforceInvariants（會 emit system:warning）
-    state.updateStateAtomic(projectRoot, sid, workflowId, (s) => s);
+    state.updateStateAtomicCtx(new SessionContext(projectRoot, sid, workflowId), (s) => s);
 
     // NOTE: enforceInvariants 使用新 API（有 projectRoot）呼叫 timeline.emit，
     // 因此 warning 寫入 per-project timeline 路徑。

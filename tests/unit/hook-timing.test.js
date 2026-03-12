@@ -43,9 +43,10 @@ describe('Feature 1: registry 中 hook:timing 事件定義', () => {
 
 // ── Feature 5: timeline.emit 直接呼叫驗證事件結構 ─────────────────────────
 
-describe('Feature 5: hook:timing 事件結構（timeline.emit 直接呼叫）', () => {
+describe('Feature 5: hook:timing 事件結構（timeline.emitCtx 直接呼叫）', () => {
   const timeline = require(join(SCRIPTS_LIB, 'timeline'));
   const paths = require(join(SCRIPTS_LIB, 'paths'));
+  const SessionContext = require(join(SCRIPTS_LIB, 'session-context'));
 
   // 使用固定 prefix 讓 afterAll 能精確清理
   const sid = 'hook-timing-struct-' + Date.now().toString(36);
@@ -56,13 +57,13 @@ describe('Feature 5: hook:timing 事件結構（timeline.emit 直接呼叫）', 
     fs.rmSync(structProjectRoot, { recursive: true, force: true });
   });
 
-  test('emit hook:timing → 事件寫入 timeline.jsonl 且包含必要欄位', () => {
+  test('emitCtx hook:timing → 事件寫入 timeline.jsonl 且包含必要欄位', () => {
     const startTime = Date.now();
 
     // 確保 session 目錄存在（per-project）
     fs.mkdirSync(paths.sessionDir(structProjectRoot, sid), { recursive: true });
 
-    const evt = timeline.emit(structProjectRoot, sid, null, 'hook:timing', {
+    const evt = timeline.emitCtx(new SessionContext(structProjectRoot, sid, null), 'hook:timing', {
       hook: 'test-hook',
       event: 'TestEvent',
       durationMs: 42,

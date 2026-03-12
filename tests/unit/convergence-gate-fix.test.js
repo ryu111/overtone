@@ -23,6 +23,7 @@ const { mkdirSync, rmSync } = require('fs');
 
 const { SCRIPTS_LIB } = require('../helpers/paths');
 const state = require(join(SCRIPTS_LIB, 'state'));
+const SessionContext = require(join(SCRIPTS_LIB, 'session-context'));
 const paths = require(join(SCRIPTS_LIB, 'paths'));
 const { makeTmpProject, createCtx, setupWorkflow, cleanupProject } = require('../helpers/session-factory');
 
@@ -76,7 +77,7 @@ describe('Feature A: 收斂門根因修復（findActualStageKey 移入 updateSta
 
     // 模擬第一個 agent 完成（TEST:1）— 在 callback 內解析 actualStageKey
     let firstResolved = null;
-    state.updateStateAtomic(currentProjectRoot, ctx.sessionId, ctx.workflowId, (s) => {
+    state.updateStateAtomicCtx(new SessionContext(currentProjectRoot, ctx.sessionId, ctx.workflowId), (s) => {
       const { findActualStageKey, checkSameStageConvergence } = require(join(SCRIPTS_LIB, 'state'));
       firstResolved = findActualStageKey(s, 'TEST');
       if (!firstResolved) return s;
@@ -95,7 +96,7 @@ describe('Feature A: 收斂門根因修復（findActualStageKey 移入 updateSta
 
     // 模擬第二個 agent 完成（TEST:2）
     let secondResolved = null;
-    state.updateStateAtomic(currentProjectRoot, ctx.sessionId, ctx.workflowId, (s) => {
+    state.updateStateAtomicCtx(new SessionContext(currentProjectRoot, ctx.sessionId, ctx.workflowId), (s) => {
       const { findActualStageKey, checkSameStageConvergence } = require(join(SCRIPTS_LIB, 'state'));
       secondResolved = findActualStageKey(s, 'TEST');
       if (!secondResolved) return s;
@@ -136,7 +137,7 @@ describe('Feature A: 收斂門根因修復（findActualStageKey 移入 updateSta
 
     // 後到者呼叫，stageKey = 'TEST'，findActualStageKey 找不到 active，走補位邏輯
     let resolvedKey = null;
-    state.updateStateAtomic(currentProjectRoot, ctx.sessionId, ctx.workflowId, (s) => {
+    state.updateStateAtomicCtx(new SessionContext(currentProjectRoot, ctx.sessionId, ctx.workflowId), (s) => {
       const { findActualStageKey } = require(join(SCRIPTS_LIB, 'state'));
       resolvedKey = findActualStageKey(s, 'TEST');
       if (!resolvedKey) {
@@ -167,7 +168,7 @@ describe('Feature A: 收斂門根因修復（findActualStageKey 移入 updateSta
     let resolvedKey = null;
     let callbackCalled = false;
     expect(() => {
-      state.updateStateAtomic(currentProjectRoot, ctx.sessionId, ctx.workflowId, (s) => {
+      state.updateStateAtomicCtx(new SessionContext(currentProjectRoot, ctx.sessionId, ctx.workflowId), (s) => {
         callbackCalled = true;
         const { findActualStageKey } = require(join(SCRIPTS_LIB, 'state'));
         resolvedKey = findActualStageKey(s, 'TEST');
@@ -214,7 +215,7 @@ describe('Feature B: Mid-session sanitize（pre-task 委派前觸發）', () => 
     });
 
     // 呼叫 sanitize（模擬 handlePreTask 在 updateStateAtomic 前呼叫）
-    const result = state.sanitize(currentProjectRoot, ctx.sessionId, ctx.workflowId);
+    const result = state.sanitizeCtx(new SessionContext(currentProjectRoot, ctx.sessionId, ctx.workflowId));
 
     expect(result).not.toBeNull();
     expect(result.fixed.some(msg => msg.includes('孤兒 active stage') && msg.includes('DEV'))).toBe(true);
@@ -232,7 +233,7 @@ describe('Feature B: Mid-session sanitize（pre-task 委派前觸發）', () => 
     let caughtError = null;
     let result = null;
     try {
-      result = state.sanitize(currentProjectRoot, 'nonexistent-session-xyz', null);
+      result = state.sanitizeCtx(new SessionContext(currentProjectRoot, 'nonexistent-session-xyz', null));
     } catch (err) {
       caughtError = err;
     }
@@ -278,7 +279,7 @@ describe('Feature C: 退化場景', () => {
     });
 
     expect(() => {
-      state.updateStateAtomic(currentProjectRoot, ctx.sessionId, ctx.workflowId, (s) => {
+      state.updateStateAtomicCtx(new SessionContext(currentProjectRoot, ctx.sessionId, ctx.workflowId), (s) => {
         const { findActualStageKey, checkSameStageConvergence } = require(join(SCRIPTS_LIB, 'state'));
         const key = findActualStageKey(s, 'DEV');
         if (!key) return s;

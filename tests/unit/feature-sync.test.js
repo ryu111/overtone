@@ -19,6 +19,7 @@ const { mkdirSync, rmSync } = require('fs');
 const { SCRIPTS_LIB } = require('../helpers/paths');
 
 const state = require(join(SCRIPTS_LIB, 'state'));
+const SessionContext = require(join(SCRIPTS_LIB, 'session-context'));
 const paths = require(join(SCRIPTS_LIB, 'paths'));
 const { syncFeatureName } = require(join(SCRIPTS_LIB, 'feature-sync'));
 
@@ -73,7 +74,7 @@ describe('syncFeatureName', () => {
     const emptyRoot = join(tmpdir(), `overtone_empty_${Date.now()}`);
     mkdirSync(join(emptyRoot, 'specs', 'features', 'in-progress'), { recursive: true });
     const sid = newSessionId(emptyRoot);
-    state.initState(emptyRoot, sid, 'quick', ['DEV']);
+    state.initStateCtx(new SessionContext(emptyRoot, sid), 'quick', ['DEV']);
 
     const result = syncFeatureName(emptyRoot, sid);
     expect(result).toBeNull();
@@ -94,14 +95,14 @@ describe('syncFeatureName', () => {
   it('Scenario 5: workflow state 已有 featureName 時不覆寫，回傳 null', () => {
     setupMockFeature(MOCK_FEATURE);
     const sid = newSessionId(MOCK_PROJECT_ROOT);
-    state.initState(MOCK_PROJECT_ROOT, sid, 'quick', ['DEV']);
+    state.initStateCtx(new SessionContext(MOCK_PROJECT_ROOT, sid), 'quick', ['DEV']);
     state.setFeatureName(MOCK_PROJECT_ROOT, sid, null, 'existing-feature');
 
     const result = syncFeatureName(MOCK_PROJECT_ROOT, sid);
     expect(result).toBeNull();
 
     // 確認 featureName 未被覆寫
-    const ws = state.readState(MOCK_PROJECT_ROOT, sid);
+    const ws = state.readStateCtx(new SessionContext(MOCK_PROJECT_ROOT, sid));
     expect(ws.featureName).toBe('existing-feature');
   });
 
@@ -109,16 +110,16 @@ describe('syncFeatureName', () => {
   it('Scenario 6: workflow state 無 featureName 時設定並回傳 featureName', () => {
     setupMockFeature(MOCK_FEATURE);
     const sid = newSessionId(MOCK_PROJECT_ROOT);
-    state.initState(MOCK_PROJECT_ROOT, sid, 'quick', ['DEV']);
+    state.initStateCtx(new SessionContext(MOCK_PROJECT_ROOT, sid), 'quick', ['DEV']);
 
     // 確認初始 featureName 為 null（initState 預設值）
-    expect(state.readState(MOCK_PROJECT_ROOT, sid).featureName).toBeNull();
+    expect(state.readStateCtx(new SessionContext(MOCK_PROJECT_ROOT, sid)).featureName).toBeNull();
 
     const result = syncFeatureName(MOCK_PROJECT_ROOT, sid);
     expect(result).toBe(MOCK_FEATURE);
 
     // 確認已寫入 workflow.json
-    const ws = state.readState(MOCK_PROJECT_ROOT, sid);
+    const ws = state.readStateCtx(new SessionContext(MOCK_PROJECT_ROOT, sid));
     expect(ws.featureName).toBe(MOCK_FEATURE);
   });
 
@@ -128,7 +129,7 @@ describe('syncFeatureName', () => {
     const noSpecsRoot = join(tmpdir(), `overtone_nospec_${Date.now()}`);
     mkdirSync(noSpecsRoot, { recursive: true });
     const sid = newSessionId(noSpecsRoot);
-    state.initState(noSpecsRoot, sid, 'quick', ['DEV']);
+    state.initStateCtx(new SessionContext(noSpecsRoot, sid), 'quick', ['DEV']);
 
     // getActiveFeature 會靜默回傳 null（目錄不存在）而非拋出
     // 此處驗證整體 syncFeatureName 回傳 null 且不拋出

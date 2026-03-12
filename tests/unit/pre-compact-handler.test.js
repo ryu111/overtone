@@ -298,6 +298,7 @@ const { tmpdir: tmpdirPc } = require('os');
 const stateLibPc = require(join(SCRIPTS_LIB, 'state'));
 const pathsPc = require(join(SCRIPTS_LIB, 'paths'));
 const { handlePreCompact } = require(join(SCRIPTS_LIB, 'pre-compact-handler'));
+const SessionContextPc = require(join(SCRIPTS_LIB, 'session-context'));
 
 function makePcSession(projectRoot, suffix) {
   const id = `test_pch_${suffix}_${Date.now()}`;
@@ -330,14 +331,14 @@ describeI('handlePreCompact', () => {
   });
 
   itI('有 workflow state → 回傳 systemMessage', () => {
-    stateLibPc.initState(testProjectRoot, sess.id, 'quick', ['DEV', 'REVIEW']);
+    stateLibPc.initStateCtx(new SessionContextPc(testProjectRoot, sess.id), 'quick', ['DEV', 'REVIEW']);
     const result = handlePreCompact({ session_id: sess.id, cwd: testProjectRoot });
     expectI(result.output).toHaveProperty('systemMessage');
     expectI(result.output.systemMessage).toContain('Overtone 狀態恢復');
   });
 
   itI('auto trigger → compact-count.json auto 遞增', () => {
-    stateLibPc.initState(testProjectRoot, sess.id, 'quick', ['DEV']);
+    stateLibPc.initStateCtx(new SessionContextPc(testProjectRoot, sess.id), 'quick', ['DEV']);
     handlePreCompact({ session_id: sess.id, trigger: 'auto', cwd: testProjectRoot });
     const compactPath = pathsPc.session.compactCount(testProjectRoot, sess.id);
     const counts = JSON.parse(fsPc.readFileSync(compactPath, 'utf8'));
@@ -346,7 +347,7 @@ describeI('handlePreCompact', () => {
   });
 
   itI('manual trigger → compact-count.json manual 遞增', () => {
-    stateLibPc.initState(testProjectRoot, sess.id, 'quick', ['DEV']);
+    stateLibPc.initStateCtx(new SessionContextPc(testProjectRoot, sess.id), 'quick', ['DEV']);
     handlePreCompact({ session_id: sess.id, trigger: 'manual', cwd: testProjectRoot });
     const compactPath = pathsPc.session.compactCount(testProjectRoot, sess.id);
     const counts = JSON.parse(fsPc.readFileSync(compactPath, 'utf8'));
@@ -355,7 +356,7 @@ describeI('handlePreCompact', () => {
   });
 
   itI('多次 auto compact → 計數累積', () => {
-    stateLibPc.initState(testProjectRoot, sess.id, 'quick', ['DEV']);
+    stateLibPc.initStateCtx(new SessionContextPc(testProjectRoot, sess.id), 'quick', ['DEV']);
     handlePreCompact({ session_id: sess.id, trigger: 'auto', cwd: testProjectRoot });
     handlePreCompact({ session_id: sess.id, trigger: 'auto', cwd: testProjectRoot });
     const compactPath = pathsPc.session.compactCount(testProjectRoot, sess.id);
@@ -364,21 +365,21 @@ describeI('handlePreCompact', () => {
   });
 
   itI('compact 後 activeAgents 被清空', () => {
-    stateLibPc.initState(testProjectRoot, sess.id, 'quick', ['DEV']);
+    stateLibPc.initStateCtx(new SessionContextPc(testProjectRoot, sess.id), 'quick', ['DEV']);
     // 先寫入一個 activeAgent
-    stateLibPc.updateStateAtomic(testProjectRoot, sess.id, null, (s) => {
+    stateLibPc.updateStateAtomicCtx(new SessionContextPc(testProjectRoot, sess.id), (s) => {
       s.activeAgents['inst_test'] = { stage: 'DEV', agentName: 'developer' };
       return s;
     });
     handlePreCompact({ session_id: sess.id, trigger: 'auto', cwd: testProjectRoot });
-    const st = stateLibPc.readState(testProjectRoot, sess.id);
+    const st = stateLibPc.readStateCtx(new SessionContextPc(testProjectRoot, sess.id));
     expectI(Object.keys(st.activeAgents)).toHaveLength(0);
   });
 
   itI('compact 後 active stage（無 completedAt）被標回 pending', () => {
-    stateLibPc.initState(testProjectRoot, sess.id, 'quick', ['DEV', 'REVIEW']);
+    stateLibPc.initStateCtx(new SessionContextPc(testProjectRoot, sess.id), 'quick', ['DEV', 'REVIEW']);
     // 手動將 DEV stage 設為 active（模擬 agent 執行中）
-    stateLibPc.updateStateAtomic(testProjectRoot, sess.id, null, (s) => {
+    stateLibPc.updateStateAtomicCtx(new SessionContextPc(testProjectRoot, sess.id), (s) => {
       if (s.stages && s.stages.DEV) {
         s.stages.DEV.status = 'active';
         delete s.stages.DEV.completedAt;
@@ -386,14 +387,14 @@ describeI('handlePreCompact', () => {
       return s;
     });
     handlePreCompact({ session_id: sess.id, trigger: 'auto', cwd: testProjectRoot });
-    const st = stateLibPc.readState(testProjectRoot, sess.id);
+    const st = stateLibPc.readStateCtx(new SessionContextPc(testProjectRoot, sess.id));
     expectI(st.stages.DEV.status).toBe('pending');
   });
 
   itI('compact 後 active stage 有 completedAt 者不改（enforceInvariants 負責）', () => {
-    stateLibPc.initState(testProjectRoot, sess.id, 'quick', ['DEV', 'REVIEW']);
+    stateLibPc.initStateCtx(new SessionContextPc(testProjectRoot, sess.id), 'quick', ['DEV', 'REVIEW']);
     // 手動將 DEV stage 設為 active 但有 completedAt（極端邊界情況）
-    stateLibPc.updateStateAtomic(testProjectRoot, sess.id, null, (s) => {
+    stateLibPc.updateStateAtomicCtx(new SessionContextPc(testProjectRoot, sess.id), (s) => {
       if (s.stages && s.stages.DEV) {
         s.stages.DEV.status = 'active';
         s.stages.DEV.completedAt = new Date().toISOString();
@@ -401,7 +402,7 @@ describeI('handlePreCompact', () => {
       return s;
     });
     handlePreCompact({ session_id: sess.id, trigger: 'auto', cwd: testProjectRoot });
-    const st = stateLibPc.readState(testProjectRoot, sess.id);
+    const st = stateLibPc.readStateCtx(new SessionContextPc(testProjectRoot, sess.id));
     // 有 completedAt 的 active stage 不被 pre-compact 改回 pending
     // enforceInvariants 稍後會把它標為 completed
     expectI(st.stages.DEV.status).not.toBe('pending');
@@ -481,6 +482,7 @@ const { join: joinPc2 } = require('path');
 const { tmpdir: tmpdirPc2 } = require('os');
 const stateLibPc2 = require(join(SCRIPTS_LIB, 'state'));
 const pathsPc2 = require(join(SCRIPTS_LIB, 'paths'));
+const SessionContextPc2 = require(join(SCRIPTS_LIB, 'session-context'));
 
 function makePcSession2(projectRoot, suffix) {
   const id = `test_pch2_${suffix}_${Date.now()}`;
@@ -503,7 +505,7 @@ describeB('autoTimestamps 追蹤', () => {
   });
 
   itB('Scenario B-1: 首次 auto-compact 寫入 autoTimestamps', () => {
-    stateLibPc2.initState(testProjectRoot2, sess2.id, 'quick', ['DEV']);
+    stateLibPc2.initStateCtx(new SessionContextPc2(testProjectRoot2, sess2.id), 'quick', ['DEV']);
     handlePreCompact({ session_id: sess2.id, trigger: 'auto', cwd: testProjectRoot2 });
     const compactPath = pathsPc2.session.compactCount(testProjectRoot2, sess2.id);
     const counts = JSON.parse(fsPc2.readFileSync(compactPath, 'utf8'));
@@ -514,7 +516,7 @@ describeB('autoTimestamps 追蹤', () => {
   });
 
   itB('Scenario B-2: 舊格式 compact-count.json 向後相容', () => {
-    stateLibPc2.initState(testProjectRoot2, sess2.id, 'quick', ['DEV']);
+    stateLibPc2.initStateCtx(new SessionContextPc2(testProjectRoot2, sess2.id), 'quick', ['DEV']);
     // 寫入舊格式（無 autoTimestamps）
     const compactPath = pathsPc2.session.compactCount(testProjectRoot2, sess2.id);
     fsPc2.writeFileSync(compactPath, JSON.stringify({ auto: 5, manual: 2 }));
@@ -532,7 +534,7 @@ describeB('autoTimestamps 追蹤', () => {
   });
 
   itB('Scenario B-3: autoTimestamps 超過 20 筆時 FIFO 截斷', () => {
-    stateLibPc2.initState(testProjectRoot2, sess2.id, 'quick', ['DEV']);
+    stateLibPc2.initStateCtx(new SessionContextPc2(testProjectRoot2, sess2.id), 'quick', ['DEV']);
     // 寫入已有 20 筆的 autoTimestamps
     const compactPath = pathsPc2.session.compactCount(testProjectRoot2, sess2.id);
     const old20 = Array.from({ length: 20 }, (_, i) =>
@@ -549,7 +551,7 @@ describeB('autoTimestamps 追蹤', () => {
   });
 
   itB('Scenario B-4: manual compact 不寫入 autoTimestamps', () => {
-    stateLibPc2.initState(testProjectRoot2, sess2.id, 'quick', ['DEV']);
+    stateLibPc2.initStateCtx(new SessionContextPc2(testProjectRoot2, sess2.id), 'quick', ['DEV']);
     const compactPath = pathsPc2.session.compactCount(testProjectRoot2, sess2.id);
     fsPc2.writeFileSync(compactPath, JSON.stringify({ auto: 0, manual: 0, autoTimestamps: [] }));
     handlePreCompact({ session_id: sess2.id, trigger: 'manual', cwd: testProjectRoot2 });
@@ -568,6 +570,7 @@ const { join: joinPc3 } = require('path');
 const { tmpdir: tmpdirPc3 } = require('os');
 const stateLibPc3 = require(join(SCRIPTS_LIB, 'state'));
 const pathsPc3 = require(join(SCRIPTS_LIB, 'paths'));
+const SessionContextPc3 = require(join(SCRIPTS_LIB, 'session-context'));
 
 function makePcSession3(projectRoot, suffix) {
   const id = `test_pch3_${suffix}_${Date.now()}`;
@@ -590,7 +593,7 @@ describeC('Feature C: timeline event emit', () => {
   });
 
   itC('Scenario C-1: 偵測到頻率異常時 emit quality:compact-frequency 事件', () => {
-    stateLibPc3.initState(testProjectRoot3, sess3.id, 'quick', ['DEV']);
+    stateLibPc3.initStateCtx(new SessionContextPc3(testProjectRoot3, sess3.id), 'quick', ['DEV']);
     const compactPath = pathsPc3.session.compactCount(testProjectRoot3, sess3.id);
     // 寫入 3 筆最近 autoTimestamps（已達門檻）
     const timestamps = [
@@ -617,7 +620,7 @@ describeC('Feature C: timeline event emit', () => {
   });
 
   itC('Scenario C-2: 未達異常門檻時不 emit 事件', () => {
-    stateLibPc3.initState(testProjectRoot3, sess3.id, 'quick', ['DEV']);
+    stateLibPc3.initStateCtx(new SessionContextPc3(testProjectRoot3, sess3.id), 'quick', ['DEV']);
     const compactPath = pathsPc3.session.compactCount(testProjectRoot3, sess3.id);
     // 只有 1 筆 autoTimestamps（未達門檻 3）
     const timestamps = [new Date(Date.now() - 60000).toISOString()];

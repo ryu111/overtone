@@ -19,12 +19,14 @@
 
 const { test, expect, describe, beforeEach, afterEach } = require('bun:test');
 const { mkdirSync, rmSync, existsSync } = require('fs');
+const { homedir } = require('os');
 const { join } = require('path');
 const { SCRIPTS_LIB, PLUGIN_ROOT } = require('../helpers/paths');
 const { parseFrontmatter } = require('../helpers/frontmatter');
 
 const registry = require(join(SCRIPTS_LIB, 'registry'));
 const state = require(join(SCRIPTS_LIB, 'state'));
+const SessionContext = require(join(SCRIPTS_LIB, 'session-context'));
 const paths = require(join(SCRIPTS_LIB, 'paths'));
 
 const AGENTS_DIR = join(PLUGIN_ROOT, 'agents');
@@ -33,7 +35,8 @@ const SKILLS_DIR = join(PLUGIN_ROOT, 'skills');
 // ── 測試 session 管理 ──
 
 const TEST_SESSION = `test_closed_loop_${Date.now()}`;
-const SESSION_DIR = paths.sessionDir(TEST_SESSION);
+const TEST_PROJECT_ROOT = homedir();
+const SESSION_DIR = paths.sessionDir(TEST_PROJECT_ROOT, TEST_SESSION);
 
 beforeEach(() => {
   mkdirSync(SESSION_DIR, { recursive: true });
@@ -220,7 +223,7 @@ describe('D. quick workflow 完整鏈路驗證', () => {
 
 describe('E. State 生命週期閉環（quick workflow）', () => {
   test('initState 後 readState 驗證初始狀態正確', () => {
-    const s = state.initState(TEST_SESSION, 'quick', ['DEV', 'REVIEW', 'RETRO', 'DOCS']);
+    const s = state.initStateCtx(new SessionContext(TEST_PROJECT_ROOT, TEST_SESSION), 'quick', ['DEV', 'REVIEW', 'RETRO', 'DOCS']);
 
     expect(s.workflowType).toBe('quick');
     expect(s.currentStage).toBe('DEV');
@@ -232,14 +235,14 @@ describe('E. State 生命週期閉環（quick workflow）', () => {
     }
 
     // 讀回驗證持久化正確
-    const read = state.readState(TEST_SESSION);
+    const read = state.readStateCtx(new SessionContext(TEST_PROJECT_ROOT, TEST_SESSION));
     expect(read).toEqual(s);
   });
 
   test('updateStateAtomic 更新 DEV stage → currentStage 推進到 REVIEW', () => {
-    state.initState(TEST_SESSION, 'quick', ['DEV', 'REVIEW', 'RETRO', 'DOCS']);
+    state.initStateCtx(new SessionContext(TEST_PROJECT_ROOT, TEST_SESSION), 'quick', ['DEV', 'REVIEW', 'RETRO', 'DOCS']);
 
-    const updated = state.updateStateAtomic(TEST_SESSION, (s) => {
+    const updated = state.updateStateAtomicCtx(new SessionContext(TEST_PROJECT_ROOT, TEST_SESSION), (s) => {
       s.stages.DEV.status = 'completed';
       s.stages.DEV.result = 'pass';
       const keys = Object.keys(s.stages);
@@ -253,17 +256,17 @@ describe('E. State 生命週期閉環（quick workflow）', () => {
     expect(updated.currentStage).toBe('REVIEW');
 
     // 讀回確認持久化
-    const read = state.readState(TEST_SESSION);
+    const read = state.readStateCtx(new SessionContext(TEST_PROJECT_ROOT, TEST_SESSION));
     expect(read.stages.DEV.status).toBe('completed');
     expect(read.currentStage).toBe('REVIEW');
   });
 
   test('所有 stages 完成後完成度為 100%（currentStage 不再有 pending）', () => {
-    state.initState(TEST_SESSION, 'quick', ['DEV', 'REVIEW', 'RETRO', 'DOCS']);
+    state.initStateCtx(new SessionContext(TEST_PROJECT_ROOT, TEST_SESSION), 'quick', ['DEV', 'REVIEW', 'RETRO', 'DOCS']);
 
     const stageList = ['DEV', 'REVIEW', 'RETRO', 'DOCS'];
     for (const stageKey of stageList) {
-      state.updateStateAtomic(TEST_SESSION, (s) => {
+      state.updateStateAtomicCtx(new SessionContext(TEST_PROJECT_ROOT, TEST_SESSION), (s) => {
         s.stages[stageKey].status = 'completed';
         s.stages[stageKey].result = 'pass';
         const keys = Object.keys(s.stages);
@@ -273,7 +276,7 @@ describe('E. State 生命週期閉環（quick workflow）', () => {
       });
     }
 
-    const final = state.readState(TEST_SESSION);
+    const final = state.readStateCtx(new SessionContext(TEST_PROJECT_ROOT, TEST_SESSION));
     const pendingCount = Object.values(final.stages).filter(
       (s) => s.status === 'pending'
     ).length;
@@ -289,8 +292,7 @@ describe('E. State 生命週期閉環（quick workflow）', () => {
   });
 
   test('standard workflow TEST stage 正確標記 spec/verify mode', () => {
-    const s = state.initState(TEST_SESSION, 'standard',
-      ['PLAN', 'ARCH', 'TEST', 'DEV', 'REVIEW', 'TEST']);
+    const s = state.initStateCtx(new SessionContext(TEST_PROJECT_ROOT, TEST_SESSION), 'standard', ['PLAN', 'ARCH', 'TEST', 'DEV', 'REVIEW', 'TEST']);
 
     // 第一個 TEST（在 DEV 之前）→ spec mode
     expect(s.stages.TEST.mode).toBe('spec');

@@ -12,6 +12,7 @@ const { homedir } = require('os');
 const { SCRIPTS_LIB, SCRIPTS_DIR } = require('../helpers/paths');
 
 const state = require(join(SCRIPTS_LIB, 'state'));
+const SessionContext = require(join(SCRIPTS_LIB, 'session-context'));
 const paths = require(join(SCRIPTS_LIB, 'paths'));
 
 // ── 常數 ──
@@ -85,7 +86,7 @@ function writeStageCompleteEvent(sessionId, stage, result, ts) {
 beforeAll(async () => {
   // 建立測試 session
   mkdirSync(SESSION_DIR, { recursive: true });
-  state.initState(TEST_SESSION, 'quick', ['DEV', 'REVIEW', 'TEST']);
+  state.initStateCtx(new SessionContext(require('os').homedir(), TEST_SESSION), 'quick', ['DEV', 'REVIEW', 'TEST']);
 
   // 寫入幾筆 timeline 事件
   writeStageCompleteEvent(TEST_SESSION, 'DEV', 'pass', '2026-02-26T00:00:00.000Z');

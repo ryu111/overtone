@@ -119,15 +119,15 @@ describe('Scenario 2：核心模組 require 成功', () => {
     expect(Array.isArray(Object.keys(registry.workflows))).toBe(true);
   });
 
-  test('state 匯出 readState / writeState（核心 API 存在）', () => {
+  test('state 匯出 readStateCtx / writeStateCtx（核心 API 存在）', () => {
     const state = require(join(SCRIPTS_LIB, 'state'));
-    expect(typeof state.readState).toBe('function');
-    expect(typeof state.writeState).toBe('function');
+    expect(typeof state.readStateCtx).toBe('function');
+    expect(typeof state.writeStateCtx).toBe('function');
   });
 
-  test('timeline 匯出 emit（核心 API 存在）', () => {
+  test('timeline 匯出 emitCtx（核心 API 存在）', () => {
     const timeline = require(join(SCRIPTS_LIB, 'timeline'));
-    expect(typeof timeline.emit).toBe('function');
+    expect(typeof timeline.emitCtx).toBe('function');
   });
 
   test('paths 匯出 sessionDir（核心 API 存在）', () => {

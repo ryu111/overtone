@@ -13,6 +13,7 @@ const { test, expect, describe, beforeAll, afterAll } = require('bun:test');
 const { existsSync, rmSync } = require('fs');
 const { SCRIPTS_LIB } = require('../helpers/paths');
 const { join } = require('path');
+const SessionContext = require(join(SCRIPTS_LIB, 'session-context'));
 
 const {
   runOnStart,
@@ -108,7 +109,7 @@ describe('場景 2：所有 stages 完成後 on-stop 偵測到完成狀態', () 
     const ws = readWorkflowState(SESSION_ID);
     if (ws) {
       for (const stageKey of Object.keys(ws.stages)) {
-        state.updateStage(process.cwd(), SESSION_ID, workflowId, stageKey, { status: 'completed', result: 'pass' });
+        state.updateStageCtx(new SessionContext(process.cwd(), SESSION_ID, workflowId), stageKey, { status: 'completed', result: 'pass' });
       }
     }
 
@@ -158,7 +159,7 @@ describe('場景 3：完整生命週期後清理驗證', () => {
       const ws = readWorkflowState(cleanSessionId);
       if (ws) {
         for (const stageKey of Object.keys(ws.stages)) {
-          state.updateStage(process.cwd(), cleanSessionId, workflowId, stageKey, { status: 'completed', result: 'pass' });
+          state.updateStageCtx(new SessionContext(process.cwd(), cleanSessionId, workflowId), stageKey, { status: 'completed', result: 'pass' });
         }
       }
 

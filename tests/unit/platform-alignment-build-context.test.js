@@ -15,6 +15,7 @@ const { SCRIPTS_LIB } = require('../helpers/paths');
 const { makeTmpProject, createCtx, setupWorkflow, cleanupProject } = require('../helpers/session-factory');
 
 const state = require(join(SCRIPTS_LIB, 'state'));
+const SessionContext = require(join(SCRIPTS_LIB, 'session-context'));
 const { workflows } = require(join(SCRIPTS_LIB, 'registry'));
 const { buildWorkflowContext } = require(join(SCRIPTS_LIB, 'hook-utils'));
 
@@ -91,7 +92,7 @@ describe('Feature 1f: buildWorkflowContext 函式', () => {
     test('context 超過 maxLength 時被截斷', () => {
       const ctx = newSession('standard');
       // 加入大量前階段摘要製造長字串
-      state.updateStateAtomic(ctx.projectRoot, ctx.sessionId, ctx.workflowId, (s) => {
+      state.updateStateAtomicCtx(new SessionContext(ctx.projectRoot, ctx.sessionId, ctx.workflowId), (s) => {
         const firstStage = Object.keys(s.stages)[0];
         if (firstStage) {
           s.stages[firstStage].status = 'completed';
@@ -106,7 +107,7 @@ describe('Feature 1f: buildWorkflowContext 函式', () => {
 
     test('截斷後字串末尾包含 ... (已截斷)', () => {
       const ctx = newSession('standard');
-      state.updateStateAtomic(ctx.projectRoot, ctx.sessionId, ctx.workflowId, (s) => {
+      state.updateStateAtomicCtx(new SessionContext(ctx.projectRoot, ctx.sessionId, ctx.workflowId), (s) => {
         const firstStage = Object.keys(s.stages)[0];
         if (firstStage) {
           s.stages[firstStage].status = 'completed';
@@ -144,7 +145,7 @@ describe('Feature 1f: buildWorkflowContext 函式', () => {
     test('已完成 stage 有 result 時 context 包含前階段摘要', () => {
       const ctx = newSession('standard');
       // 將 PLAN 和 ARCH 設為 completed 並附 result
-      state.updateStateAtomic(ctx.projectRoot, ctx.sessionId, ctx.workflowId, (s) => {
+      state.updateStateAtomicCtx(new SessionContext(ctx.projectRoot, ctx.sessionId, ctx.workflowId), (s) => {
         if (s.stages['PLAN']) {
           s.stages['PLAN'].status = 'completed';
           s.stages['PLAN'].result = 'pass';
@@ -205,7 +206,7 @@ describe('Feature 1c: workflow context 結構驗證', () => {
     test('maxLength: 1500 截斷超長 context', () => {
       const ctx = newSession('standard');
       // 製造長 result 超出 1500 字元
-      state.updateStateAtomic(ctx.projectRoot, ctx.sessionId, ctx.workflowId, (s) => {
+      state.updateStateAtomicCtx(new SessionContext(ctx.projectRoot, ctx.sessionId, ctx.workflowId), (s) => {
         const firstStage = Object.keys(s.stages)[0];
         if (firstStage) {
           s.stages[firstStage].status = 'completed';

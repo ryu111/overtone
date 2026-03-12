@@ -249,6 +249,7 @@ const fsE = require('fs');
 const pathsE = require(join(SCRIPTS_LIB, 'paths'));
 const stateLibE = require(join(SCRIPTS_LIB, 'state'));
 const timelineE = require(join(SCRIPTS_LIB, 'timeline'));
+const SessionContextE = require(join(SCRIPTS_LIB, 'session-context'));
 
 const TEST_CWD = join(homedir(), '.nova', 'test-seh-project-' + Date.now());
 
@@ -308,7 +309,7 @@ describeE('Feature 7: handleSessionEnd 有 sessionId', () => {
   });
 
   testE('有 workflow state → 不拋出例外', () => {
-    stateLibE.initState(TEST_CWD, sess.id, 'quick', ['DEV', 'REVIEW']);
+    stateLibE.initStateCtx(new SessionContextE(TEST_CWD, sess.id), 'quick', ['DEV', 'REVIEW']);
     expect(() => handleSessionEnd({ reason: 'other', cwd: TEST_CWD }, sess.id)).not.toThrow();
     const result = handleSessionEnd({ reason: 'other', cwd: TEST_CWD }, sess.id);
     expectE(result.output.result).toBeUndefined();
@@ -364,30 +365,30 @@ describeE('Feature 8: resolveSessionResult 整合', () => {
   });
 
   testE('workflow state 有 completedStages → resolveSessionResult 回傳 pass', () => {
-    const s = stateLibE.initState(TEST_CWD, sess2.id, 'quick', ['DEV', 'REVIEW']);
+    const s = stateLibE.initStateCtx(new SessionContextE(TEST_CWD, sess2.id), 'quick', ['DEV', 'REVIEW']);
     // 手動寫入 completedStages
     s.completedStages = ['DEV'];
-    stateLibE.writeState(TEST_CWD, sess2.id, s);
+    stateLibE.writeStateCtx(new SessionContextE(TEST_CWD, sess2.id), s);
 
-    const result = resolveSessionResult(stateLibE.readState(TEST_CWD, sess2.id));
+    const result = resolveSessionResult(stateLibE.readStateCtx(new SessionContextE(TEST_CWD, sess2.id)));
     expectE(result).toBe('pass');
   });
 
   testE('workflow state 無 completedStages → resolveSessionResult 回傳 fail', () => {
-    stateLibE.initState(TEST_CWD, sess2.id, 'quick', ['DEV', 'REVIEW']);
-    const result = resolveSessionResult(stateLibE.readState(TEST_CWD, sess2.id));
+    stateLibE.initStateCtx(new SessionContextE(TEST_CWD, sess2.id), 'quick', ['DEV', 'REVIEW']);
+    const result = resolveSessionResult(stateLibE.readStateCtx(new SessionContextE(TEST_CWD, sess2.id)));
     // initState 不設 completedStages，預設 undefined → fail
     expectE(['fail', 'abort']).toContain(result);
   });
 
   testE('handleSessionEnd 有 workflow state → 不拋出且回傳空 output', () => {
-    stateLibE.initState(TEST_CWD, sess2.id, 'quick', ['DEV', 'REVIEW']);
+    stateLibE.initStateCtx(new SessionContextE(TEST_CWD, sess2.id), 'quick', ['DEV', 'REVIEW']);
     const result = handleSessionEnd({ reason: 'clear', cwd: TEST_CWD }, sess2.id);
     expectE(result.output.result).toBeUndefined();
   });
 
   testE('reason=clear 與 reason=other 都能正常處理', () => {
-    stateLibE.initState(TEST_CWD, sess2.id, 'single', ['DEV']);
+    stateLibE.initStateCtx(new SessionContextE(TEST_CWD, sess2.id), 'single', ['DEV']);
     expect(() => handleSessionEnd({ reason: 'clear', cwd: TEST_CWD }, sess2.id)).not.toThrow();
     // 再次呼叫不同 reason
     expect(() => handleSessionEnd({ reason: 'other', cwd: TEST_CWD }, sess2.id)).not.toThrow();

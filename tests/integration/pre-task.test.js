@@ -505,7 +505,7 @@ describe('場景 8：全域觀察注入 subagent', () => {
 
     // 場景 8 使用 OBS_PROJECT_ROOT，因為需要讀取該專案的全域觀察
     mkdirSync(paths.sessionDir(OBS_PROJECT_ROOT, sessionId), { recursive: true });
-    state.initState(OBS_PROJECT_ROOT, sessionId, 'single', workflows['single'].stages);
+    state.initStateCtx(new SessionContext(OBS_PROJECT_ROOT, sessionId), 'single', workflows['single'].stages);
 
     // 寫入高信心全域觀察
     writeGlobalObs(OBS_PROJECT_ROOT, [
@@ -549,7 +549,7 @@ describe('場景 8：全域觀察注入 subagent', () => {
     // 使用無全域觀察的獨立空目錄
     const emptyProject = pathJoin(homedir(), '.nova', 'test-pre-task-empty-obs-' + Date.now());
     mkdirSync(paths.sessionDir(emptyProject, sessionId), { recursive: true });
-    state.initState(emptyProject, sessionId, 'single', workflows['single'].stages);
+    state.initStateCtx(new SessionContext(emptyProject, sessionId), 'single', workflows['single'].stages);
 
     const result = await runHook(
       {
