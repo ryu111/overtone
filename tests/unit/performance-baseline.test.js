@@ -17,6 +17,7 @@ const { mkdirSync, rmSync, writeFileSync } = require('fs');
 const { join } = require('path');
 const { homedir } = require('os');
 const { HOOKS_DIR, SCRIPTS_LIB } = require('../helpers/paths');
+const { makeTmpProject, createCtx, cleanupProject } = require('../helpers/session-factory');
 
 // ── 路徑常數 ──
 
@@ -194,20 +195,20 @@ describe('Hook Chain 延遲 — 慢路徑（有 workflow state） < 300ms', () =
 describe('Timeline JSONL 效能 — 100 筆 emit < 500ms', () => {
   const timeline = require(join(SCRIPTS_LIB, 'timeline'));
 
-  let session;
+  let perfProjectRoot;
+  let perfCtx;
   beforeEach(() => {
-    session = makeSession('timeline');
-    sessionsToClean.push(session.dir);
+    perfProjectRoot = makeTmpProject('ot-perfbl-tl');
+    perfCtx = createCtx(perfProjectRoot);
   });
   afterEach(() => {
-    rmSync(session.dir, { recursive: true, force: true });
-    // 移除已清理的 dir，避免 afterAll 重複清理（不影響正確性，只是衛生）
+    cleanupProject(perfProjectRoot);
   });
 
   test('100 筆 emit 總時間 < 500ms', () => {
     const start = Date.now();
     for (let i = 0; i < 100; i++) {
-      timeline.emit(session.id, 'stage:start', { stage: 'DEV', iteration: i });
+      timeline.emitCtx(perfCtx, 'stage:start', { stage: 'DEV', iteration: i });
     }
     const elapsed = Date.now() - start;
 
@@ -218,11 +219,11 @@ describe('Timeline JSONL 效能 — 100 筆 emit < 500ms', () => {
   test('寫入 100 筆後 query() 回傳正確筆數（< 200ms）', () => {
     // 先寫入 100 筆
     for (let i = 0; i < 100; i++) {
-      timeline.emit(session.id, 'stage:start', { stage: 'DEV', iteration: i });
+      timeline.emitCtx(perfCtx, 'stage:start', { stage: 'DEV', iteration: i });
     }
 
     const start = Date.now();
-    const events = timeline.query(session.id);
+    const events = timeline.queryCtx(perfCtx);
     const elapsed = Date.now() - start;
 
     expect(events.length).toBe(100);
@@ -232,11 +233,11 @@ describe('Timeline JSONL 效能 — 100 筆 emit < 500ms', () => {
   test('query() 帶 limit 快速路徑 < 50ms', () => {
     // 先寫入 50 筆
     for (let i = 0; i < 50; i++) {
-      timeline.emit(session.id, 'agent:delegate', { agent: 'developer', iteration: i });
+      timeline.emitCtx(perfCtx, 'agent:delegate', { agent: 'developer', iteration: i });
     }
 
     const start = Date.now();
-    const events = timeline.query(session.id, { limit: 10 });
+    const events = timeline.queryCtx(perfCtx, { limit: 10 });
     const elapsed = Date.now() - start;
 
     expect(events.length).toBe(10);
@@ -246,13 +247,13 @@ describe('Timeline JSONL 效能 — 100 筆 emit < 500ms', () => {
 
   test('latest() 反向掃描 < 50ms（100 筆中找最後一筆）', () => {
     for (let i = 0; i < 100; i++) {
-      timeline.emit(session.id, 'stage:start', { stage: 'DEV', iteration: i });
+      timeline.emitCtx(perfCtx, 'stage:start', { stage: 'DEV', iteration: i });
     }
     // 在最後加一筆不同的事件
-    timeline.emit(session.id, 'workflow:start', {});
+    timeline.emitCtx(perfCtx, 'workflow:start', {});
 
     const start = Date.now();
-    const event = timeline.latest(session.id, 'workflow:start');
+    const event = timeline.latestCtx(perfCtx, 'workflow:start');
     const elapsed = Date.now() - start;
 
     expect(event).not.toBeNull();

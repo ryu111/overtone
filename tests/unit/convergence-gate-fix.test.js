@@ -17,46 +17,39 @@
  *   Scenario C-1: parallelTotal=1 時正常完成（非並行路徑）
  */
 
-const { describe, it, expect, afterAll } = require('bun:test');
+const { describe, it, expect, beforeEach, afterEach } = require('bun:test');
 const { join } = require('path');
-const { mkdirSync, rmSync, existsSync, readFileSync } = require('fs');
+const { mkdirSync, rmSync } = require('fs');
 
 const { SCRIPTS_LIB } = require('../helpers/paths');
 const state = require(join(SCRIPTS_LIB, 'state'));
 const paths = require(join(SCRIPTS_LIB, 'paths'));
+const { makeTmpProject, createCtx, setupWorkflow, cleanupProject } = require('../helpers/session-factory');
 
-// ── session 管理 ──
+// ── session 管理（並行安全：每個 test 有獨立 projectRoot）──
 
-const SESSION_PREFIX = `test_convergence_${Date.now()}`;
-let counter = 0;
-const createdSessions = [];
+let currentProjectRoot = null;
 
-function newSessionId() {
-  const sid = `${SESSION_PREFIX}_${++counter}`;
-  createdSessions.push(sid);
-  return sid;
-}
+beforeEach(() => {
+  currentProjectRoot = makeTmpProject('ot-cgfix');
+});
 
-afterAll(() => {
-  for (const sid of createdSessions) {
-    rmSync(paths.sessionDir(sid), { recursive: true, force: true });
-  }
+afterEach(() => {
+  cleanupProject(currentProjectRoot);
+  currentProjectRoot = null;
 });
 
 // ── 輔助函式 ──
 
-function initSession(sessionId, workflowType, stageList, stateOverride = {}) {
-  mkdirSync(paths.sessionDir(sessionId), { recursive: true });
-  state.initState(sessionId, workflowType, stageList);
+function initSession(projectRoot, workflowType, stageList, stateOverride = {}) {
+  const ctx = createCtx(projectRoot);
+  setupWorkflow(ctx, workflowType, stageList);
   if (Object.keys(stateOverride).length > 0) {
-    const current = state.readState(sessionId);
-    state.writeState(sessionId, { ...current, ...stateOverride });
+    const current = state.readStateCtx(ctx);
+    state.writeStateCtx(ctx, { ...current, ...stateOverride });
   }
-  return state.readState(sessionId);
+  return { ctx, current: state.readStateCtx(ctx) };
 }
-
-// ── 建立模擬 handleAgentStop 環境（直接操作 state，不需要完整 hook 輸出）──
-// 測試核心邏輯：findActualStageKey 在 callback 內解析，補位邏輯正確運作
 
 // ──────────────────────────────────────────────────────────────────────────────
 // Feature A: 收斂門根因修復
@@ -65,12 +58,11 @@ function initSession(sessionId, workflowType, stageList, stateOverride = {}) {
 describe('Feature A: 收斂門根因修復（findActualStageKey 移入 updateStateAtomic）', () => {
 
   it('Scenario A-1: 兩個並行 agent 依序完成，parallelDone 正確累計為 2 且 stage 標記 completed', () => {
-    const sid = newSessionId();
-    initSession(sid, 'quick', ['DEV', 'REVIEW']);
+    const { ctx } = initSession(currentProjectRoot, 'quick', ['DEV', 'REVIEW']);
 
     // 模擬並行 TEST stage（parallelTotal=2，兩個 instance 均 active）
-    state.writeState(sid, {
-      ...state.readState(sid),
+    state.writeStateCtx(ctx, {
+      ...state.readStateCtx(ctx),
       stages: {
         'TEST:1': { status: 'active', parallelTotal: 2, parallelDone: 0 },
         'TEST:2': { status: 'active', parallelTotal: 2, parallelDone: 0 },
@@ -84,7 +76,7 @@ describe('Feature A: 收斂門根因修復（findActualStageKey 移入 updateSta
 
     // 模擬第一個 agent 完成（TEST:1）— 在 callback 內解析 actualStageKey
     let firstResolved = null;
-    state.updateStateAtomic(sid, (s) => {
+    state.updateStateAtomic(currentProjectRoot, ctx.sessionId, ctx.workflowId, (s) => {
       const { findActualStageKey, checkSameStageConvergence } = require(join(SCRIPTS_LIB, 'state'));
       firstResolved = findActualStageKey(s, 'TEST');
       if (!firstResolved) return s;
@@ -95,7 +87,7 @@ describe('Feature A: 收斂門根因修復（findActualStageKey 移入 updateSta
       return s;
     });
 
-    const afterFirst = state.readState(sid);
+    const afterFirst = state.readStateCtx(ctx);
     expect(firstResolved).not.toBeNull();
     // 第一個完成後 parallelDone=1，未到 parallelTotal=2，stage 仍 active
     expect(afterFirst.stages[firstResolved].parallelDone).toBe(1);
@@ -103,7 +95,7 @@ describe('Feature A: 收斂門根因修復（findActualStageKey 移入 updateSta
 
     // 模擬第二個 agent 完成（TEST:2）
     let secondResolved = null;
-    state.updateStateAtomic(sid, (s) => {
+    state.updateStateAtomic(currentProjectRoot, ctx.sessionId, ctx.workflowId, (s) => {
       const { findActualStageKey, checkSameStageConvergence } = require(join(SCRIPTS_LIB, 'state'));
       secondResolved = findActualStageKey(s, 'TEST');
       if (!secondResolved) return s;
@@ -114,7 +106,7 @@ describe('Feature A: 收斂門根因修復（findActualStageKey 移入 updateSta
       return s;
     });
 
-    const afterSecond = state.readState(sid);
+    const afterSecond = state.readStateCtx(ctx);
     expect(secondResolved).not.toBeNull();
     // 兩個 instance 使用同一個 stage key（第一個 active 的）
     const stageEntry = afterSecond.stages[secondResolved] || afterSecond.stages[firstResolved];
@@ -124,12 +116,11 @@ describe('Feature A: 收斂門根因修復（findActualStageKey 移入 updateSta
   });
 
   it('Scenario A-2: 後到者補位 — 先到者已標記 completed+pass，parallelDone 正確遞增', () => {
-    const sid = newSessionId();
-    initSession(sid, 'quick', ['DEV', 'REVIEW']);
+    const { ctx } = initSession(currentProjectRoot, 'quick', ['DEV', 'REVIEW']);
 
     // 先到者已完成 TEST:1，parallelDone=1
-    state.writeState(sid, {
-      ...state.readState(sid),
+    state.writeStateCtx(ctx, {
+      ...state.readStateCtx(ctx),
       stages: {
         'TEST:1': {
           status: 'completed',
@@ -145,7 +136,7 @@ describe('Feature A: 收斂門根因修復（findActualStageKey 移入 updateSta
 
     // 後到者呼叫，stageKey = 'TEST'，findActualStageKey 找不到 active，走補位邏輯
     let resolvedKey = null;
-    state.updateStateAtomic(sid, (s) => {
+    state.updateStateAtomic(currentProjectRoot, ctx.sessionId, ctx.workflowId, (s) => {
       const { findActualStageKey } = require(join(SCRIPTS_LIB, 'state'));
       resolvedKey = findActualStageKey(s, 'TEST');
       if (!resolvedKey) {
@@ -161,23 +152,22 @@ describe('Feature A: 收斂門根因修復（findActualStageKey 移入 updateSta
       return s;
     });
 
-    const finalState = state.readState(sid);
+    const finalState = state.readStateCtx(ctx);
     expect(resolvedKey).toBe('TEST:1');
     expect(finalState.stages['TEST:1'].parallelDone).toBe(2);
     expect(finalState.stages['TEST:1'].parallelDone).toBe(finalState.stages['TEST:1'].parallelTotal);
   });
 
   it('Scenario A-3: callback 內無匹配 stage，安全 early exit，state 不變', () => {
-    const sid = newSessionId();
-    initSession(sid, 'quick', ['DEV', 'REVIEW']);
+    const { ctx } = initSession(currentProjectRoot, 'quick', ['DEV', 'REVIEW']);
 
     // 初始 state 中沒有任何 TEST stage
-    const before = state.readState(sid);
+    const before = state.readStateCtx(ctx);
 
     let resolvedKey = null;
     let callbackCalled = false;
     expect(() => {
-      state.updateStateAtomic(sid, (s) => {
+      state.updateStateAtomic(currentProjectRoot, ctx.sessionId, ctx.workflowId, (s) => {
         callbackCalled = true;
         const { findActualStageKey } = require(join(SCRIPTS_LIB, 'state'));
         resolvedKey = findActualStageKey(s, 'TEST');
@@ -197,7 +187,7 @@ describe('Feature A: 收斂門根因修復（findActualStageKey 移入 updateSta
     expect(resolvedKey).toBeNull();
 
     // state 的 stages 結構應與 before 相同（DEV 和 REVIEW，無 TEST）
-    const after = state.readState(sid);
+    const after = state.readStateCtx(ctx);
     expect(Object.keys(after.stages)).toEqual(Object.keys(before.stages));
   });
 
@@ -210,12 +200,11 @@ describe('Feature A: 收斂門根因修復（findActualStageKey 移入 updateSta
 describe('Feature B: Mid-session sanitize（pre-task 委派前觸發）', () => {
 
   it('Scenario B-1: sanitize 修復孤兒 active stage（無對應 activeAgents entry）', () => {
-    const sid = newSessionId();
-    initSession(sid, 'quick', ['DEV', 'REVIEW']);
+    const { ctx } = initSession(currentProjectRoot, 'quick', ['DEV', 'REVIEW']);
 
     // 製造孤兒 active stage：DEV 為 active 但 activeAgents 為空
-    state.writeState(sid, {
-      ...state.readState(sid),
+    state.writeStateCtx(ctx, {
+      ...state.readStateCtx(ctx),
       stages: {
         DEV: { status: 'active', parallelTotal: null, parallelDone: 0 },
         REVIEW: { status: 'pending' },
@@ -225,25 +214,25 @@ describe('Feature B: Mid-session sanitize（pre-task 委派前觸發）', () => 
     });
 
     // 呼叫 sanitize（模擬 handlePreTask 在 updateStateAtomic 前呼叫）
-    const result = state.sanitize(sid);
+    const result = state.sanitize(currentProjectRoot, ctx.sessionId, ctx.workflowId);
 
     expect(result).not.toBeNull();
     expect(result.fixed.some(msg => msg.includes('孤兒 active stage') && msg.includes('DEV'))).toBe(true);
 
-    const after = state.readState(sid);
+    const after = state.readStateCtx(ctx);
     // 無 completedAt → 應修正為 pending
     expect(after.stages.DEV.status).toBe('pending');
   });
 
   it('Scenario B-2: sanitize 靜默處理 — workflow.json 不存在時回傳 null 不 throw', () => {
-    const sid = newSessionId();
+    const sessionDir = paths.sessionDir(currentProjectRoot, 'nonexistent-session-xyz');
     // 建立 session 目錄但不寫入 workflow.json
-    mkdirSync(paths.sessionDir(sid), { recursive: true });
+    mkdirSync(sessionDir, { recursive: true });
 
     let caughtError = null;
     let result = null;
     try {
-      result = state.sanitize(sid);
+      result = state.sanitize(currentProjectRoot, 'nonexistent-session-xyz', null);
     } catch (err) {
       caughtError = err;
     }
@@ -277,11 +266,10 @@ describe('Feature C: 退化場景', () => {
   });
 
   it('Scenario C-1b: parallelTotal=1 stage 正確標記 completed，不因 parallelTotal 缺失觸發錯誤', () => {
-    const sid = newSessionId();
-    initSession(sid, 'quick', ['DEV', 'REVIEW']);
+    const { ctx } = initSession(currentProjectRoot, 'quick', ['DEV', 'REVIEW']);
 
-    state.writeState(sid, {
-      ...state.readState(sid),
+    state.writeStateCtx(ctx, {
+      ...state.readStateCtx(ctx),
       stages: {
         DEV: { status: 'active', parallelTotal: null, parallelDone: 0 },
         REVIEW: { status: 'pending' },
@@ -290,7 +278,7 @@ describe('Feature C: 退化場景', () => {
     });
 
     expect(() => {
-      state.updateStateAtomic(sid, (s) => {
+      state.updateStateAtomic(currentProjectRoot, ctx.sessionId, ctx.workflowId, (s) => {
         const { findActualStageKey, checkSameStageConvergence } = require(join(SCRIPTS_LIB, 'state'));
         const key = findActualStageKey(s, 'DEV');
         if (!key) return s;
@@ -305,7 +293,7 @@ describe('Feature C: 退化場景', () => {
       });
     }).not.toThrow();
 
-    const after = state.readState(sid);
+    const after = state.readStateCtx(ctx);
     expect(after.stages.DEV.status).toBe('completed');
     expect(after.stages.DEV.result).toBe('pass');
     expect(after.currentStage).toBe('REVIEW');

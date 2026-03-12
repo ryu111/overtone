@@ -15,6 +15,7 @@ const { mkdirSync, rmSync, existsSync } = require('fs');
 const { join } = require('path');
 const os = require('os');
 const { SCRIPTS_LIB } = require('../helpers/paths');
+const SessionContext = require(join(SCRIPTS_LIB, 'session-context'));
 const { runSubagentStop } = require('../helpers/hook-runner');
 const { atomicWrite } = require(join(SCRIPTS_LIB, 'utils'));
 
@@ -54,12 +55,12 @@ describe('on-stop stale agent cleanup — findActualStageKey null 時', () => {
     const sessionId = newSessionId();
     createdSessions.push(sessionId);
     mkdirSync(paths.sessionDir(TEST_PROJECT_ROOT, sessionId), { recursive: true });
-    state.initState(TEST_PROJECT_ROOT, sessionId, 'quick', workflows['quick'].stages);
+    state.initStateCtx(new SessionContext(TEST_PROJECT_ROOT, sessionId), 'quick', workflows['quick'].stages);
 
     const instanceId = 'developer:stale001-retropatch';
 
     // 模擬 DEV 已 completed+pass，但 activeAgents 有殘留 entry
-    state.updateStateAtomic(TEST_PROJECT_ROOT, sessionId, null, (s) => {
+    state.updateStateAtomicCtx(new SessionContext(TEST_PROJECT_ROOT, sessionId), (s) => {
       s.stages['DEV'].status = 'completed';
       s.stages['DEV'].result = 'pass';
       s.stages['REVIEW'].status = 'pending';
@@ -75,7 +76,7 @@ describe('on-stop stale agent cleanup — findActualStageKey null 時', () => {
     // 觸發 on-stop（帶 INSTANCE_ID）— findActualStageKey 會找不到 active DEV
     runSubagentStop(sessionId, 'developer', `VERDICT: pass 修補完成\n\nINSTANCE_ID: ${instanceId}`, { cwd: TEST_PROJECT_ROOT });
 
-    const ws = state.readState(TEST_PROJECT_ROOT, sessionId);
+    const ws = state.readStateCtx(new SessionContext(TEST_PROJECT_ROOT, sessionId));
     // activeAgents entry 應被清除（即使 findActualStageKey 回傳 null）
     expect(ws.activeAgents[instanceId]).toBeUndefined();
     // DEV stage 結果不應被改變（仍 completed+pass）
@@ -88,10 +89,10 @@ describe('on-stop stale agent cleanup — findActualStageKey null 時', () => {
     const sessionId = newSessionId();
     createdSessions.push(sessionId);
     mkdirSync(paths.sessionDir(TEST_PROJECT_ROOT, sessionId), { recursive: true });
-    state.initState(TEST_PROJECT_ROOT, sessionId, 'quick', workflows['quick'].stages);
+    state.initStateCtx(new SessionContext(TEST_PROJECT_ROOT, sessionId), 'quick', workflows['quick'].stages);
 
     // aaaa 字典序 < bbbb
-    state.updateStateAtomic(TEST_PROJECT_ROOT, sessionId, null, (s) => {
+    state.updateStateAtomicCtx(new SessionContext(TEST_PROJECT_ROOT, sessionId), (s) => {
       s.stages['DEV'].status = 'completed';
       s.stages['DEV'].result = 'pass';
       s.activeAgents['developer:aaaa01-stale'] = {
@@ -110,7 +111,7 @@ describe('on-stop stale agent cleanup — findActualStageKey null 時', () => {
     // 不含 INSTANCE_ID → fallback 清除字典序最小的 key
     runSubagentStop(sessionId, 'developer', 'VERDICT: pass 修補完成（無 INSTANCE_ID）', { cwd: TEST_PROJECT_ROOT });
 
-    const ws = state.readState(TEST_PROJECT_ROOT, sessionId);
+    const ws = state.readStateCtx(new SessionContext(TEST_PROJECT_ROOT, sessionId));
     // aaaa 被清除（字典序最小），bbbb 保留
     expect(ws.activeAgents['developer:aaaa01-stale']).toBeUndefined();
     expect(ws.activeAgents['developer:bbbb02-stale']).toBeDefined();
@@ -121,11 +122,11 @@ describe('on-stop stale agent cleanup — findActualStageKey null 時', () => {
     const sessionId = newSessionId();
     createdSessions.push(sessionId);
     mkdirSync(paths.sessionDir(TEST_PROJECT_ROOT, sessionId), { recursive: true });
-    state.initState(TEST_PROJECT_ROOT, sessionId, 'quick', workflows['quick'].stages);
+    state.initStateCtx(new SessionContext(TEST_PROJECT_ROOT, sessionId), 'quick', workflows['quick'].stages);
 
     const instanceId = 'developer:solo001-stale';
 
-    state.updateStateAtomic(TEST_PROJECT_ROOT, sessionId, null, (s) => {
+    state.updateStateAtomicCtx(new SessionContext(TEST_PROJECT_ROOT, sessionId), (s) => {
       s.stages['DEV'].status = 'completed';
       s.stages['DEV'].result = 'pass';
       // 只有一個殘留 entry
@@ -140,7 +141,7 @@ describe('on-stop stale agent cleanup — findActualStageKey null 時', () => {
     // 執行 on-stop
     runSubagentStop(sessionId, 'developer', `VERDICT: pass\n\nINSTANCE_ID: ${instanceId}`, { cwd: TEST_PROJECT_ROOT });
 
-    const ws = state.readState(TEST_PROJECT_ROOT, sessionId);
+    const ws = state.readStateCtx(new SessionContext(TEST_PROJECT_ROOT, sessionId));
     // activeAgents entry 已被清除
     expect(ws.activeAgents[instanceId]).toBeUndefined();
     // active-agent.json 不再由 on-stop 管理（已移除），不需驗證
@@ -151,9 +152,9 @@ describe('on-stop stale agent cleanup — findActualStageKey null 時', () => {
     const sessionId = newSessionId();
     createdSessions.push(sessionId);
     mkdirSync(paths.sessionDir(TEST_PROJECT_ROOT, sessionId), { recursive: true });
-    state.initState(TEST_PROJECT_ROOT, sessionId, 'quick', workflows['quick'].stages);
+    state.initStateCtx(new SessionContext(TEST_PROJECT_ROOT, sessionId), 'quick', workflows['quick'].stages);
 
-    state.updateStateAtomic(TEST_PROJECT_ROOT, sessionId, null, (s) => {
+    state.updateStateAtomicCtx(new SessionContext(TEST_PROJECT_ROOT, sessionId), (s) => {
       // DEV 已 completed（因某 agent fail 觸發）
       s.stages['DEV'].status = 'completed';
       s.stages['DEV'].result = 'fail';
@@ -176,7 +177,7 @@ describe('on-stop stale agent cleanup — findActualStageKey null 時', () => {
     // 第 1 個 instance 的 on-stop
     runSubagentStop(sessionId, 'developer', 'VERDICT: pass inst1\n\nINSTANCE_ID: developer:first001-inst', { cwd: TEST_PROJECT_ROOT });
 
-    const ws = state.readState(TEST_PROJECT_ROOT, sessionId);
+    const ws = state.readStateCtx(new SessionContext(TEST_PROJECT_ROOT, sessionId));
     // first001 被清除
     expect(ws.activeAgents['developer:first001-inst']).toBeUndefined();
     // second002 仍在（尚未完成）

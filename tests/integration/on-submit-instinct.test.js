@@ -9,6 +9,7 @@ const { test, expect, describe, beforeAll, afterAll } = require('bun:test');
 const { mkdirSync, rmSync } = require('fs');
 const { join } = require('path');
 const { HOOKS_DIR, SCRIPTS_LIB } = require('../helpers/paths');
+const SessionContext = require(join(SCRIPTS_LIB, 'session-context'));
 
 // ── 路徑設定 ──
 
@@ -76,8 +77,8 @@ describe('場景 1：已有進行中 workflow 時記錄 workflow_routing', () =>
     createdSessions.push(sessionId);
 
     mkdirSync(paths.sessionDir(PROJECT_ROOT, sessionId), { recursive: true });
-    state.initState(PROJECT_ROOT, sessionId, 'standard', ['PLAN', 'ARCH', 'TEST', 'DEV', 'REVIEW', 'TEST:2', 'RETRO', 'DOCS']);
-    state.updateStateAtomic(PROJECT_ROOT, sessionId, null, (s) => {
+    state.initStateCtx(new SessionContext(PROJECT_ROOT, sessionId), 'standard', ['PLAN', 'ARCH', 'TEST', 'DEV', 'REVIEW', 'TEST:2', 'RETRO', 'DOCS']);
+    state.updateStateAtomicCtx(new SessionContext(PROJECT_ROOT, sessionId), (s) => {
       s.stages['DEV'].status = 'active';
       s.currentStage = 'DEV';
       return s;
@@ -137,8 +138,8 @@ describe('場景 3：prompt 超過 80 字元時截斷', () => {
     createdSessions.push(sessionId);
 
     mkdirSync(paths.sessionDir(PROJECT_ROOT, sessionId), { recursive: true });
-    state.initState(PROJECT_ROOT, sessionId, 'quick', ['DEV', 'REVIEW', 'TEST']);
-    state.updateStateAtomic(PROJECT_ROOT, sessionId, null, (s) => {
+    state.initStateCtx(new SessionContext(PROJECT_ROOT, sessionId), 'quick', ['DEV', 'REVIEW', 'TEST']);
+    state.updateStateAtomicCtx(new SessionContext(PROJECT_ROOT, sessionId), (s) => {
       s.stages['DEV'].status = 'active';
       s.currentStage = 'DEV';
       return s;
@@ -172,8 +173,8 @@ describe('場景 4：空字串 prompt 使用預設 trigger', () => {
     createdSessions.push(sessionId);
 
     mkdirSync(paths.sessionDir(PROJECT_ROOT, sessionId), { recursive: true });
-    state.initState(PROJECT_ROOT, sessionId, 'tdd', ['TEST', 'DEV', 'TEST:2']);
-    state.updateStateAtomic(PROJECT_ROOT, sessionId, null, (s) => {
+    state.initStateCtx(new SessionContext(PROJECT_ROOT, sessionId), 'tdd', ['TEST', 'DEV', 'TEST:2']);
+    state.updateStateAtomicCtx(new SessionContext(PROJECT_ROOT, sessionId), (s) => {
       s.stages['TEST'].status = 'active';
       s.currentStage = 'TEST';
       return s;
@@ -201,8 +202,8 @@ describe('場景 5：hook 主流程不受 instinct 失敗影響', () => {
     createdSessions.push(sessionId);
 
     mkdirSync(paths.sessionDir(PROJECT_ROOT, sessionId), { recursive: true });
-    state.initState(PROJECT_ROOT, sessionId, 'quick', ['DEV', 'REVIEW', 'TEST']);
-    state.updateStateAtomic(PROJECT_ROOT, sessionId, null, (s) => {
+    state.initStateCtx(new SessionContext(PROJECT_ROOT, sessionId), 'quick', ['DEV', 'REVIEW', 'TEST']);
+    state.updateStateAtomicCtx(new SessionContext(PROJECT_ROOT, sessionId), (s) => {
       s.stages['DEV'].status = 'active';
       s.currentStage = 'DEV';
       return s;

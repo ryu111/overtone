@@ -12,6 +12,7 @@ const { describe, test, expect, afterAll } = require('bun:test');
 const { join } = require('path');
 const { mkdirSync, rmSync } = require('fs');
 const { HOOKS_DIR, SCRIPTS_LIB } = require('../helpers/paths');
+const SessionContext = require(join(SCRIPTS_LIB, 'session-context'));
 const { isAllowed } = require('../helpers/hook-runner');
 
 const HOOK_PATH = join(HOOKS_DIR, 'tool', 'pre-task.js');
@@ -72,7 +73,7 @@ function runHook(input, sessionId) {
 function initSession(workflowType = 'single') {
   const sessionId = newSessionId();
   mkdirSync(paths.sessionDir(PROJECT_ROOT, sessionId), { recursive: true });
-  state.initState(PROJECT_ROOT, sessionId, workflowType, workflows[workflowType].stages);
+  state.initStateCtx(new SessionContext(PROJECT_ROOT, sessionId), workflowType, workflows[workflowType].stages);
   return sessionId;
 }
 
@@ -211,7 +212,7 @@ describe('Feature 1c: PreToolUse updatedInput 注入', () => {
       const sessionId = newSessionId();
       mkdirSync(paths.sessionDir(PROJECT_ROOT, sessionId), { recursive: true });
       // standard workflow：PLAN → ARCH → ...
-      state.initState(PROJECT_ROOT, sessionId, 'standard', workflows['standard'].stages);
+      state.initStateCtx(new SessionContext(PROJECT_ROOT, sessionId), 'standard', workflows['standard'].stages);
       // PLAN、ARCH 都是 pending，直接跳到 REVIEW → 被阻擋
 
       const { parsed } = runHook({

@@ -23,6 +23,8 @@ const { mkdirSync, rmSync } = require('fs');
 const { SCRIPTS_LIB } = require('../helpers/paths');
 
 const state = require(join(SCRIPTS_LIB, 'state'));
+const SessionContext = require(join(SCRIPTS_LIB, 'session-context'));
+const { homedir } = require('os');
 const paths = require(join(SCRIPTS_LIB, 'paths'));
 const { stages, parallelGroups } = require(join(SCRIPTS_LIB, 'registry'));
 
@@ -56,7 +58,7 @@ afterAll(() => {
  * @param {number|null} parallelTotal - 並行總數，null 為單 agent
  */
 function simulatePreTask(sessionId, instanceId, agentName, stageBase, parallelTotal = null) {
-  state.updateStateAtomic(sessionId, (s) => {
+  state.updateStateAtomicCtx(new SessionContext(homedir(), sessionId), (s) => {
     s.activeAgents[instanceId] = {
       agentName,
       stage: stageBase,
@@ -88,7 +90,7 @@ function simulatePreTask(sessionId, instanceId, agentName, stageBase, parallelTo
  */
 function simulateOnStop(sessionId, instanceId, agentName, stageBase, verdict = 'pass') {
   // activeAgents cleanup
-  state.updateStateAtomic(sessionId, (s) => {
+  state.updateStateAtomicCtx(new SessionContext(homedir(), sessionId), (s) => {
     if (instanceId && s.activeAgents[instanceId]) {
       delete s.activeAgents[instanceId];
     } else {
@@ -105,7 +107,7 @@ function simulateOnStop(sessionId, instanceId, agentName, stageBase, verdict = '
   });
 
   // stage 狀態更新
-  state.updateStateAtomic(sessionId, (s) => {
+  state.updateStateAtomicCtx(new SessionContext(homedir(), sessionId), (s) => {
     const stageKey = Object.keys(s.stages).find((k) => {
       const base = k.split(':')[0];
       return base === stageBase && (s.stages[k].status === 'active' || s.stages[k].status === 'pending');
@@ -141,14 +143,14 @@ describe('D1: pre-task → on-stop 全鏈路', () => {
   // Scenario 1-1: 單一 agent 全鏈路
   it('Scenario 1-1: 單一 agent 全鏈路 — pre-task 建立 entry → on-stop 清除 entry → activeAgents 為空', () => {
     const sessionId = newSessionId();
-    state.initState(sessionId, 'quick', ['DEV', 'REVIEW']);
+    state.initStateCtx(new SessionContext(homedir(), sessionId), 'quick', ['DEV', 'REVIEW']);
 
     const instanceId = 'developer:abc123-xyz';
 
     // 模擬 pre-task
     simulatePreTask(sessionId, instanceId, 'developer', 'DEV');
 
-    let ws = state.readState(sessionId);
+    let ws = state.readStateCtx(new SessionContext(homedir(), sessionId));
     // activeAgents 應有此 entry
     expect(ws.activeAgents[instanceId]).toBeDefined();
     expect(ws.activeAgents[instanceId].agentName).toBe('developer');
@@ -158,7 +160,7 @@ describe('D1: pre-task → on-stop 全鏈路', () => {
     // 模擬 on-stop
     simulateOnStop(sessionId, instanceId, 'developer', 'DEV', 'pass');
 
-    ws = state.readState(sessionId);
+    ws = state.readStateCtx(new SessionContext(homedir(), sessionId));
     // activeAgents 應清空
     expect(ws.activeAgents[instanceId]).toBeUndefined();
     expect(Object.keys(ws.activeAgents)).toHaveLength(0);
@@ -170,7 +172,7 @@ describe('D1: pre-task → on-stop 全鏈路', () => {
   // Scenario 1-2: 並行 agent 全鏈路
   it('Scenario 1-2: 並行 agent 全鏈路 — 第 1 個 on-stop 只清除對應 entry，第 2 個清除剩餘', () => {
     const sessionId = newSessionId();
-    state.initState(sessionId, 'quick', ['DEV', 'REVIEW']);
+    state.initStateCtx(new SessionContext(homedir(), sessionId), 'quick', ['DEV', 'REVIEW']);
 
     const instanceId1 = 'developer:parallel001-aaa';
     const instanceId2 = 'developer:parallel002-bbb';
@@ -179,14 +181,14 @@ describe('D1: pre-task → on-stop 全鏈路', () => {
     simulatePreTask(sessionId, instanceId1, 'developer', 'DEV', 2);
     simulatePreTask(sessionId, instanceId2, 'developer', 'DEV', 2);
 
-    let ws = state.readState(sessionId);
+    let ws = state.readStateCtx(new SessionContext(homedir(), sessionId));
     expect(Object.keys(ws.activeAgents)).toHaveLength(2);
     expect(ws.stages['DEV'].parallelTotal).toBe(2);
 
     // 第 1 個 on-stop
     simulateOnStop(sessionId, instanceId1, 'developer', 'DEV', 'pass');
 
-    ws = state.readState(sessionId);
+    ws = state.readStateCtx(new SessionContext(homedir(), sessionId));
     // 第 1 個 entry 被清除，第 2 個仍在
     expect(ws.activeAgents[instanceId1]).toBeUndefined();
     expect(ws.activeAgents[instanceId2]).toBeDefined();
@@ -197,7 +199,7 @@ describe('D1: pre-task → on-stop 全鏈路', () => {
     // 第 2 個 on-stop
     simulateOnStop(sessionId, instanceId2, 'developer', 'DEV', 'pass');
 
-    ws = state.readState(sessionId);
+    ws = state.readStateCtx(new SessionContext(homedir(), sessionId));
     // 兩個 entry 都被清除
     expect(Object.keys(ws.activeAgents)).toHaveLength(0);
     // 已收斂，stage 完成
@@ -209,22 +211,22 @@ describe('D1: pre-task → on-stop 全鏈路', () => {
   // Scenario 1-3: Stage 狀態轉換
   it('Scenario 1-3: Stage 狀態轉換 — pre-task 設 active → on-stop 設 completed（pass verdict）', () => {
     const sessionId = newSessionId();
-    state.initState(sessionId, 'single', ['DEV']);
+    state.initStateCtx(new SessionContext(homedir(), sessionId), 'single', ['DEV']);
 
     const instanceId = 'developer:stateflow001';
 
     // 初始狀態
-    let ws = state.readState(sessionId);
+    let ws = state.readStateCtx(new SessionContext(homedir(), sessionId));
     expect(ws.stages['DEV'].status).toBe('pending');
 
     // pre-task 後狀態
     simulatePreTask(sessionId, instanceId, 'developer', 'DEV');
-    ws = state.readState(sessionId);
+    ws = state.readStateCtx(new SessionContext(homedir(), sessionId));
     expect(ws.stages['DEV'].status).toBe('active');
 
     // on-stop 後狀態
     simulateOnStop(sessionId, instanceId, 'developer', 'DEV', 'pass');
-    ws = state.readState(sessionId);
+    ws = state.readStateCtx(new SessionContext(homedir(), sessionId));
     expect(ws.stages['DEV'].status).toBe('completed');
     expect(ws.stages['DEV'].result).toBe('pass');
     expect(ws.stages['DEV'].completedAt).toBeDefined();
@@ -233,14 +235,14 @@ describe('D1: pre-task → on-stop 全鏈路', () => {
   // Scenario 1-4: 失敗不清除殘留 — on-stop fail 後 stage 正確標記
   it('Scenario 1-4: on-stop fail 後 stage 標記 fail，failCount 遞增', () => {
     const sessionId = newSessionId();
-    state.initState(sessionId, 'quick', ['DEV', 'REVIEW']);
+    state.initStateCtx(new SessionContext(homedir(), sessionId), 'quick', ['DEV', 'REVIEW']);
 
     const instanceId = 'developer:failtest001';
 
     simulatePreTask(sessionId, instanceId, 'developer', 'DEV');
     simulateOnStop(sessionId, instanceId, 'developer', 'DEV', 'fail');
 
-    const ws = state.readState(sessionId);
+    const ws = state.readStateCtx(new SessionContext(homedir(), sessionId));
     // activeAgents 清除（on-stop 仍清除 activeAgent）
     expect(ws.activeAgents[instanceId]).toBeUndefined();
     // stage 標記 fail
@@ -260,10 +262,10 @@ describe('D2: PreCompact → 恢復鏈路', () => {
   // Scenario 2-1: PreCompact 清空 activeAgents
   it('Scenario 2-1: PreCompact 清空 activeAgents → workflow.json activeAgents 為空', () => {
     const sessionId = newSessionId();
-    state.initState(sessionId, 'quick', ['DEV', 'REVIEW']);
+    state.initStateCtx(new SessionContext(homedir(), sessionId), 'quick', ['DEV', 'REVIEW']);
 
     // 注入一個 activeAgent（模擬壓縮前正在執行的 agent）
-    state.updateStateAtomic(sessionId, (s) => {
+    state.updateStateAtomicCtx(new SessionContext(homedir(), sessionId), (s) => {
       s.activeAgents['developer:before-compact'] = {
         agentName: 'developer',
         stage: 'DEV',
@@ -272,29 +274,29 @@ describe('D2: PreCompact → 恢復鏈路', () => {
       return s;
     });
 
-    let ws = state.readState(sessionId);
+    let ws = state.readStateCtx(new SessionContext(homedir(), sessionId));
     expect(Object.keys(ws.activeAgents)).toHaveLength(1);
 
     // 模擬 PreCompact 清空 activeAgents（pre-compact.js 的行為）
-    state.updateStateAtomic(sessionId, (s) => { s.activeAgents = {}; return s; });
+    state.updateStateAtomicCtx(new SessionContext(homedir(), sessionId), (s) => { s.activeAgents = {}; return s; });
 
-    ws = state.readState(sessionId);
+    ws = state.readStateCtx(new SessionContext(homedir(), sessionId));
     expect(Object.keys(ws.activeAgents)).toHaveLength(0);
   });
 
   // Scenario 2-2: 新的 pre-task（清空後）寫入新 entry → 正常顯示
   it('Scenario 2-2: 壓縮後新的 pre-task 可正常寫入新 entry', () => {
     const sessionId = newSessionId();
-    state.initState(sessionId, 'quick', ['DEV', 'REVIEW']);
+    state.initStateCtx(new SessionContext(homedir(), sessionId), 'quick', ['DEV', 'REVIEW']);
 
     // 模擬 PreCompact 清空
-    state.updateStateAtomic(sessionId, (s) => { s.activeAgents = {}; return s; });
+    state.updateStateAtomicCtx(new SessionContext(homedir(), sessionId), (s) => { s.activeAgents = {}; return s; });
 
     // 壓縮後新的 pre-task
     const newInstanceId = 'developer:after-compact001';
     simulatePreTask(sessionId, newInstanceId, 'developer', 'DEV');
 
-    const ws = state.readState(sessionId);
+    const ws = state.readStateCtx(new SessionContext(homedir(), sessionId));
     expect(ws.activeAgents[newInstanceId]).toBeDefined();
     expect(ws.activeAgents[newInstanceId].agentName).toBe('developer');
   });
@@ -302,13 +304,13 @@ describe('D2: PreCompact → 恢復鏈路', () => {
   // Scenario 2-3: enforceInvariants 不阻擋合法的新 entry
   it('Scenario 2-3: enforceInvariants 不阻擋壓縮後合法的新 activeAgent entry', () => {
     const sessionId = newSessionId();
-    state.initState(sessionId, 'quick', ['DEV', 'REVIEW']);
+    state.initStateCtx(new SessionContext(homedir(), sessionId), 'quick', ['DEV', 'REVIEW']);
 
     // 模擬 PreCompact 清空
-    state.updateStateAtomic(sessionId, (s) => { s.activeAgents = {}; return s; });
+    state.updateStateAtomicCtx(new SessionContext(homedir(), sessionId), (s) => { s.activeAgents = {}; return s; });
 
     // 注入合法 activeAgent（stage DEV 存在於 stages 中）
-    state.updateStateAtomic(sessionId, (s) => {
+    state.updateStateAtomicCtx(new SessionContext(homedir(), sessionId), (s) => {
       s.activeAgents['developer:legit001'] = {
         agentName: 'developer',
         stage: 'DEV',
@@ -318,19 +320,19 @@ describe('D2: PreCompact → 恢復鏈路', () => {
     });
 
     // enforceInvariants 透過 updateStateAtomic 觸發，合法 entry 不被移除
-    state.updateStateAtomic(sessionId, (s) => s);
+    state.updateStateAtomicCtx(new SessionContext(homedir(), sessionId), (s) => s);
 
-    const ws = state.readState(sessionId);
+    const ws = state.readStateCtx(new SessionContext(homedir(), sessionId));
     expect(ws.activeAgents['developer:legit001']).toBeDefined();
   });
 
   // Scenario 2-4: getNextStageHint 壓縮後正確提示（不再「等待」已清除的 agent）
   it('Scenario 2-4: getNextStageHint 壓縮後不顯示等待已清除 agent 的提示', () => {
     const sessionId = newSessionId();
-    state.initState(sessionId, 'quick', ['DEV', 'REVIEW']);
+    state.initStateCtx(new SessionContext(homedir(), sessionId), 'quick', ['DEV', 'REVIEW']);
 
     // 注入一個 activeAgent（壓縮前有 agent 在執行）
-    state.updateStateAtomic(sessionId, (s) => {
+    state.updateStateAtomicCtx(new SessionContext(homedir(), sessionId), (s) => {
       s.activeAgents['developer:before-compact'] = {
         agentName: 'developer',
         stage: 'DEV',
@@ -339,15 +341,15 @@ describe('D2: PreCompact → 恢復鏈路', () => {
       return s;
     });
 
-    let ws = state.readState(sessionId);
+    let ws = state.readStateCtx(new SessionContext(homedir(), sessionId));
     // 壓縮前 hint 顯示「等待並行 agent 完成」
     const hintBefore = state.getNextStageHint(ws, { stages, parallelGroups });
     expect(hintBefore).toContain('等待');
 
     // 模擬 PreCompact 清空 activeAgents
-    state.updateStateAtomic(sessionId, (s) => { s.activeAgents = {}; return s; });
+    state.updateStateAtomicCtx(new SessionContext(homedir(), sessionId), (s) => { s.activeAgents = {}; return s; });
 
-    ws = state.readState(sessionId);
+    ws = state.readStateCtx(new SessionContext(homedir(), sessionId));
     // 壓縮後 hint 不再顯示等待
     const hintAfter = state.getNextStageHint(ws, { stages, parallelGroups });
     expect(hintAfter).not.toContain('等待');

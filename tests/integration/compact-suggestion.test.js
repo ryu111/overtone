@@ -29,6 +29,7 @@ const ON_STOP_PATH = join(HOOKS_DIR, 'agent', 'on-stop.js');
 const paths = require(join(SCRIPTS_LIB, 'paths'));
 const stateLib = require(join(SCRIPTS_LIB, 'state'));
 const timeline = require(join(SCRIPTS_LIB, 'timeline'));
+const SessionContext = require(join(SCRIPTS_LIB, 'session-context'));
 
 // ── 直接 import 函式（unit-level 測試）──
 // shouldSuggestCompact 已搬遷至 hook-utils.js
@@ -260,9 +261,9 @@ describe('Scenario 4：剛 compact 過（< 2 stage:complete）', () => {
   beforeAll(() => {
     // 先 emit session:compact 事件
     mkdirSync(paths.sessionDir(TEST_PROJECT_ROOT, SESSION_RECENT), { recursive: true });
-    timeline.emit(TEST_PROJECT_ROOT, SESSION_RECENT, null, 'session:compact', { workflowType: 'standard' });
+    timeline.emitCtx(new SessionContext(TEST_PROJECT_ROOT, SESSION_RECENT), 'session:compact', { workflowType: 'standard' });
     // 只 emit 1 個 stage:complete（< 2）
-    timeline.emit(TEST_PROJECT_ROOT, SESSION_RECENT, null, 'stage:complete', { stage: 'PLAN', result: 'pass' });
+    timeline.emitCtx(new SessionContext(TEST_PROJECT_ROOT, SESSION_RECENT), 'stage:complete', { stage: 'PLAN', result: 'pass' });
   });
 
   test('compact 後只有 1 個 stage:complete 時不建議', () => {
@@ -280,7 +281,7 @@ describe('Scenario 4：剛 compact 過（< 2 stage:complete）', () => {
   test('compact 後 0 個 stage:complete 時不建議', () => {
     const SESSION_ZERO = `${SESSION_BASE}-zero-stages`;
     mkdirSync(paths.sessionDir(TEST_PROJECT_ROOT, SESSION_ZERO), { recursive: true });
-    timeline.emit(TEST_PROJECT_ROOT, SESSION_ZERO, null, 'session:compact', { workflowType: 'standard' });
+    timeline.emitCtx(new SessionContext(TEST_PROJECT_ROOT, SESSION_ZERO), 'session:compact', { workflowType: 'standard' });
     // 沒有 stage:complete
 
     const transcriptPath = createTranscript('large-zero.jsonl', 6_000_000);
@@ -304,10 +305,10 @@ describe('Scenario 12：compact 後 ≥ 2 個 stage:complete', () => {
   beforeAll(() => {
     mkdirSync(paths.sessionDir(TEST_PROJECT_ROOT, SESSION_AFTER2), { recursive: true });
     // emit compact 事件
-    timeline.emit(TEST_PROJECT_ROOT, SESSION_AFTER2, null, 'session:compact', { workflowType: 'standard' });
+    timeline.emitCtx(new SessionContext(TEST_PROJECT_ROOT, SESSION_AFTER2), 'session:compact', { workflowType: 'standard' });
     // emit 2 個 stage:complete（≥ minStagesSinceCompact）
-    timeline.emit(TEST_PROJECT_ROOT, SESSION_AFTER2, null, 'stage:complete', { stage: 'PLAN', result: 'pass' });
-    timeline.emit(TEST_PROJECT_ROOT, SESSION_AFTER2, null, 'stage:complete', { stage: 'ARCH', result: 'pass' });
+    timeline.emitCtx(new SessionContext(TEST_PROJECT_ROOT, SESSION_AFTER2), 'stage:complete', { stage: 'PLAN', result: 'pass' });
+    timeline.emitCtx(new SessionContext(TEST_PROJECT_ROOT, SESSION_AFTER2), 'stage:complete', { stage: 'ARCH', result: 'pass' });
   });
 
   test('compact 後已有 2 個 stage:complete 時應建議', () => {

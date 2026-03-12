@@ -17,6 +17,8 @@ const { join } = require('path');
 const os = require('os');
 const { HOOKS_DIR, SCRIPTS_LIB } = require('../helpers/paths');
 
+const SessionContext = require(join(SCRIPTS_LIB, 'session-context'));
+
 // ── 路徑設定 ──
 
 const HOOK_PATH = join(HOOKS_DIR, 'session', 'on-stop.js');
@@ -66,7 +68,7 @@ function newSessionId() {
  */
 function setupState(projectRoot, sessionId, workflowType, stageList, extra = {}) {
   mkdirSync(paths.sessionDir(projectRoot, sessionId), { recursive: true });
-  return state.initState(projectRoot, sessionId, workflowType, stageList, extra);
+  return state.initStateCtx(new SessionContext(projectRoot, sessionId), workflowType, stageList, extra);
 }
 
 // ── 清理所有測試 session ──
@@ -138,7 +140,7 @@ describe('Stop hook 場景 2：有未完成 stages → block', () => {
     createdSessions.push({ projectRoot: DEFAULT_PROJECT_ROOT, sid: sessionId });
 
     setupState(DEFAULT_PROJECT_ROOT, sessionId, 'quick', ['DEV', 'REVIEW', 'TEST', 'RETRO']);
-    state.updateStateAtomic(DEFAULT_PROJECT_ROOT, sessionId, null, (s) => {
+    state.updateStateAtomicCtx(new SessionContext(DEFAULT_PROJECT_ROOT, sessionId), (s) => {
       s.stages['DEV'].status = 'completed';
       s.stages['DEV'].result = 'pass';
       return s;
@@ -193,7 +195,7 @@ describe('Stop hook 場景 4：所有 stages 完成 → 允許退出', () => {
     createdSessions.push({ projectRoot: DEFAULT_PROJECT_ROOT, sid: sessionId });
 
     setupState(DEFAULT_PROJECT_ROOT, sessionId, 'single', ['DEV']);
-    state.updateStateAtomic(DEFAULT_PROJECT_ROOT, sessionId, null, (s) => {
+    state.updateStateAtomicCtx(new SessionContext(DEFAULT_PROJECT_ROOT, sessionId), (s) => {
       s.stages['DEV'].status = 'completed';
       s.stages['DEV'].result = 'pass';
       return s;
@@ -260,7 +262,7 @@ describe('Stop hook 場景 6：Specs archive 整合', () => {
 
     // 初始化 single workflow（DEV）並標記完成
     setupState(projectRoot, sessionId, 'single', ['DEV'], { featureName: 'my-feature' });
-    state.updateStateAtomic(projectRoot, sessionId, null, (s) => {
+    state.updateStateAtomicCtx(new SessionContext(projectRoot, sessionId), (s) => {
       s.stages['DEV'].status = 'completed';
       s.stages['DEV'].result = 'pass';
       return s;
@@ -290,7 +292,7 @@ describe('Stop hook 場景 6：Specs archive 整合', () => {
     createdTmpDirs.push(projectRoot);
 
     setupState(projectRoot, sessionId, 'single', ['DEV'], { featureName: 'missing-feature' });
-    state.updateStateAtomic(projectRoot, sessionId, null, (s) => {
+    state.updateStateAtomicCtx(new SessionContext(projectRoot, sessionId), (s) => {
       s.stages['DEV'].status = 'completed';
       s.stages['DEV'].result = 'pass';
       return s;
@@ -335,7 +337,7 @@ describe('Stop hook 場景 7：修復 2 — 歸檔前 workflow 匹配驗證', ()
     ].join('\n'));
 
     setupState(projectRoot, sessionId, 'standard', ['PLAN', 'ARCH', 'TEST', 'DEV', 'REVIEW', 'TEST:2', 'RETRO', 'DOCS'], { featureName: 'my-feature' });
-    state.updateStateAtomic(projectRoot, sessionId, null, (s) => {
+    state.updateStateAtomicCtx(new SessionContext(projectRoot, sessionId), (s) => {
       for (const k of Object.keys(s.stages)) {
         s.stages[k].status = 'completed';
         s.stages[k].result = 'pass';
@@ -357,7 +359,7 @@ describe('Stop hook 場景 7：修復 2 — 歸檔前 workflow 匹配驗證', ()
     expect(existsSync(specs.featurePath(projectRoot, 'my-feature'))).toBe(true);
 
     // timeline 應有 specs:archive-skipped 事件
-    const events = timeline.query(projectRoot, sessionId, null, { type: 'specs:archive-skipped' });
+    const events = timeline.queryCtx(new SessionContext(projectRoot, sessionId), { type: 'specs:archive-skipped' });
     expect(events.length).toBeGreaterThan(0);
     expect(events[0].featureName).toBe('my-feature');
     expect(events[0].reason).toBe('workflow-mismatch');
@@ -384,7 +386,7 @@ describe('Stop hook 場景 7：修復 2 — 歸檔前 workflow 匹配驗證', ()
     ].join('\n'));
 
     setupState(projectRoot, sessionId, 'standard', ['PLAN', 'ARCH', 'TEST', 'DEV', 'REVIEW', 'TEST:2', 'RETRO', 'DOCS'], { featureName: 'my-feature' });
-    state.updateStateAtomic(projectRoot, sessionId, null, (s) => {
+    state.updateStateAtomicCtx(new SessionContext(projectRoot, sessionId), (s) => {
       for (const k of Object.keys(s.stages)) {
         s.stages[k].status = 'completed';
         s.stages[k].result = 'pass';
@@ -406,7 +408,7 @@ describe('Stop hook 場景 7：修復 2 — 歸檔前 workflow 匹配驗證', ()
     expect(existsSync(specs.featurePath(projectRoot, 'my-feature'))).toBe(false);
 
     // timeline 應有 specs:archive 事件（不是 skipped）
-    const archiveEvents = timeline.query(projectRoot, sessionId, null, { type: 'specs:archive' });
+    const archiveEvents = timeline.queryCtx(new SessionContext(projectRoot, sessionId), { type: 'specs:archive' });
     expect(archiveEvents.length).toBeGreaterThan(0);
   });
 });
@@ -425,7 +427,7 @@ describe('Stop hook 場景 8：修復 3 — tasksStatus null 診斷警告', () =
     createdTmpDirs.push(projectRoot);
 
     setupState(projectRoot, sessionId, 'standard', ['PLAN', 'ARCH', 'TEST', 'DEV', 'REVIEW', 'TEST:2', 'RETRO', 'DOCS'], { featureName: 'my-feature' });
-    state.updateStateAtomic(projectRoot, sessionId, null, (s) => {
+    state.updateStateAtomicCtx(new SessionContext(projectRoot, sessionId), (s) => {
       s.stages['PLAN'].status = 'completed';
       s.stages['PLAN'].result = 'pass';
       return s;
@@ -440,7 +442,7 @@ describe('Stop hook 場景 8：修復 3 — tasksStatus null 診斷警告', () =
     expect(exitCode).toBe(0);
 
     // timeline 應有 specs:tasks-missing 事件
-    const events = timeline.query(projectRoot, sessionId, null, { type: 'specs:tasks-missing' });
+    const events = timeline.queryCtx(new SessionContext(projectRoot, sessionId), { type: 'specs:tasks-missing' });
     expect(events.length).toBeGreaterThan(0);
     expect(events[0].featureName).toBe('my-feature');
     expect(events[0].workflowType).toBe('standard');
@@ -453,7 +455,7 @@ describe('Stop hook 場景 8：修復 3 — tasksStatus null 診斷警告', () =
     createdTmpDirs.push(projectRoot);
 
     setupState(projectRoot, sessionId, 'single', ['DEV'], { featureName: 'my-feature' });
-    state.updateStateAtomic(projectRoot, sessionId, null, (s) => {
+    state.updateStateAtomicCtx(new SessionContext(projectRoot, sessionId), (s) => {
       s.stages['DEV'].status = 'completed';
       s.stages['DEV'].result = 'pass';
       return s;
@@ -467,7 +469,7 @@ describe('Stop hook 場景 8：修復 3 — tasksStatus null 診斷警告', () =
     expect(exitCode).toBe(0);
 
     // single workflow → specsConfig['single'].length === 0 → 不 emit
-    const events = timeline.query(projectRoot, sessionId, null, { type: 'specs:tasks-missing' });
+    const events = timeline.queryCtx(new SessionContext(projectRoot, sessionId), { type: 'specs:tasks-missing' });
     expect(events.length).toBe(0);
   });
 });

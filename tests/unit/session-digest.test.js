@@ -59,7 +59,7 @@ const MOCK_STATE = {
 function makeMockDeps(overrides = {}) {
   return {
     timeline: {
-      query: (projectRoot, sessionId, workflowId, filter) => {
+      queryCtx: (ctx, filter) => {
         if (filter && filter.type === 'stage:complete') {
           return MOCK_TIMELINE_EVENTS.filter(e => e.type === 'stage:complete');
         }
@@ -77,7 +77,7 @@ function makeMockDeps(overrides = {}) {
       ...((overrides.failureTracker) || {}),
     },
     state: {
-      readState: () => MOCK_STATE,
+      readStateCtx: () => MOCK_STATE,
       ...((overrides.state) || {}),
     },
     paths: {
@@ -85,6 +85,13 @@ function makeMockDeps(overrides = {}) {
         digests: (projectRoot) => join(projectRoot, 'digests.jsonl'),
       },
       ...((overrides.paths) || {}),
+    },
+    SessionContext: class MockSessionContext {
+      constructor(projectRoot, sessionId, workflowId) {
+        this.projectRoot = projectRoot;
+        this.sessionId = sessionId;
+        this.workflowId = workflowId;
+      }
     },
   };
 }
@@ -151,7 +158,7 @@ describe('generateDigest — 空 timeline', () => {
   test('空 timeline 時 totalEvents = 0', () => {
     const deps = makeMockDeps({
       timeline: {
-        query: () => [],
+        queryCtx: () => [],
       },
     });
     const result = sessionDigest.generateDigest(TEST_SESSION_ID, TEST_PROJECT_ROOT, deps);
@@ -162,7 +169,7 @@ describe('generateDigest — 空 timeline', () => {
   test('空 timeline 時 byCategory 為空物件', () => {
     const deps = makeMockDeps({
       timeline: {
-        query: () => [],
+        queryCtx: () => [],
       },
     });
     const result = sessionDigest.generateDigest(TEST_SESSION_ID, TEST_PROJECT_ROOT, deps);
@@ -173,7 +180,7 @@ describe('generateDigest — 空 timeline', () => {
   test('空 timeline 時 durationMs 為 null', () => {
     const deps = makeMockDeps({
       timeline: {
-        query: () => [],
+        queryCtx: () => [],
       },
     });
     const result = sessionDigest.generateDigest(TEST_SESSION_ID, TEST_PROJECT_ROOT, deps);
@@ -181,10 +188,10 @@ describe('generateDigest — 空 timeline', () => {
     expect(result.durationMs).toBeNull();
   });
 
-  test('timeline.query 拋出錯誤時靜默降級', () => {
+  test('timeline.queryCtx 拋出錯誤時靜默降級', () => {
     const deps = makeMockDeps({
       timeline: {
-        query: () => { throw new Error('timeline 讀取失敗'); },
+        queryCtx: () => { throw new Error('timeline 讀取失敗'); },
       },
     });
 
@@ -258,7 +265,7 @@ describe('generateDigest — stage 執行結果統計', () => {
   test('全部 pass 時正確計數', () => {
     const deps = makeMockDeps({
       timeline: {
-        query: (projectRoot, sessionId, workflowId, filter) => {
+        queryCtx: (ctx, filter) => {
           if (filter && filter.type === 'stage:complete') {
             return [
               { ts: '2024-01-01T00:05:00.000Z', type: 'stage:complete', stage: 'DEV', result: 'pass' },
@@ -280,7 +287,7 @@ describe('generateDigest — stage 執行結果統計', () => {
   test('混合結果時正確計數', () => {
     const deps = makeMockDeps({
       timeline: {
-        query: (projectRoot, sessionId, workflowId, filter) => {
+        queryCtx: (ctx, filter) => {
           if (filter && filter.type === 'stage:complete') {
             return [
               { ts: '2024-01-01T00:05:00.000Z', type: 'stage:complete', stage: 'DEV', result: 'pass' },
@@ -303,7 +310,7 @@ describe('generateDigest — stage 執行結果統計', () => {
   test('無 stage:complete 事件時全為 0', () => {
     const deps = makeMockDeps({
       timeline: {
-        query: (projectRoot, sessionId, workflowId, filter) => {
+        queryCtx: (ctx, filter) => {
           if (filter && filter.type === 'stage:complete') {
             return [];
           }
@@ -328,7 +335,7 @@ describe('generateDigest — workflowType 和 featureName', () => {
   test('從 state 讀取 workflowType 和 featureName', () => {
     const deps = makeMockDeps({
       state: {
-        readState: () => ({
+        readStateCtx: () => ({
           workflowType: 'standard',
           featureName: 'cool-feature',
         }),
@@ -340,10 +347,10 @@ describe('generateDigest — workflowType 和 featureName', () => {
     expect(result.featureName).toBe('cool-feature');
   });
 
-  test('state.readState 回傳 null 時欄位為 null', () => {
+  test('state.readStateCtx 回傳 null 時欄位為 null', () => {
     const deps = makeMockDeps({
       state: {
-        readState: () => null,
+        readStateCtx: () => null,
       },
     });
     const result = sessionDigest.generateDigest(TEST_SESSION_ID, TEST_PROJECT_ROOT, deps);
@@ -352,10 +359,10 @@ describe('generateDigest — workflowType 和 featureName', () => {
     expect(result.featureName).toBeNull();
   });
 
-  test('state.readState 拋出錯誤時靜默降級', () => {
+  test('state.readStateCtx 拋出錯誤時靜默降級', () => {
     const deps = makeMockDeps({
       state: {
-        readState: () => { throw new Error('state 讀取失敗'); },
+        readStateCtx: () => { throw new Error('state 讀取失敗'); },
       },
     });
 

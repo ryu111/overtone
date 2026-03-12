@@ -4,6 +4,7 @@ const { mkdirSync, rmSync, writeFileSync } = require('fs');
 const { join } = require('path');
 const { homedir, tmpdir } = require('os');
 const { HOOKS_DIR, SCRIPTS_LIB } = require('../helpers/paths');
+const SessionContext = require(join(SCRIPTS_LIB, 'session-context'));
 
 // ── 路徑設定 ──
 
@@ -53,7 +54,7 @@ beforeAll(() => {
   // 建立測試 session 目錄，供場景 8 使用
   mkdirSync(SESSION_DIR, { recursive: true });
   // 初始化 workflow state（quick: DEV → REVIEW → TEST）
-  state.initState(TEST_PROJECT_ROOT, TEST_SESSION, null, 'quick', ['DEV', 'REVIEW', 'TEST']);
+  state.initStateCtx(new SessionContext(TEST_PROJECT_ROOT, TEST_SESSION), 'quick', ['DEV', 'REVIEW', 'TEST']);
 });
 
 afterAll(() => {
@@ -260,7 +261,7 @@ describe('有進行中 workflow — 注入狀態摘要', () => {
   });
 
   test('場景 8d：failCount > 0 時仍輸出簡短格式（失敗次數由 get-workflow-context.js 顯示）', async () => {
-    state.updateStateAtomic(TEST_PROJECT_ROOT, TEST_SESSION, null, (s) => {
+    state.updateStateAtomicCtx(new SessionContext(TEST_PROJECT_ROOT, TEST_SESSION), (s) => {
       s.failCount = 2;
       return s;
     });
@@ -274,7 +275,7 @@ describe('有進行中 workflow — 注入狀態摘要', () => {
     expect(ctx).toContain('工作流進行中');
     expect(ctx).toContain('/auto');
 
-    state.updateStateAtomic(TEST_PROJECT_ROOT, TEST_SESSION, null, (s) => {
+    state.updateStateAtomicCtx(new SessionContext(TEST_PROJECT_ROOT, TEST_SESSION), (s) => {
       s.failCount = 0;
       return s;
     });

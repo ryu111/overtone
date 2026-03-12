@@ -20,8 +20,14 @@ const HOOK_PATH = join(HOOKS_DIR, 'agent', 'on-stop.js');
 const paths = require(join(SCRIPTS_LIB, 'paths'));
 const state = require(join(SCRIPTS_LIB, 'state'));
 const timeline = require(join(SCRIPTS_LIB, 'timeline'));
+const SessionContext = require(join(SCRIPTS_LIB, 'session-context'));
 const { workflows } = require(join(SCRIPTS_LIB, 'registry'));
 const DEFAULT_CWD = process.cwd();
+
+// ── 輔助：建立 SessionContext（減少重複 new SessionContext(...)）──
+function makeCtx(sessionId, projectRoot) {
+  return new SessionContext(projectRoot || DEFAULT_CWD, sessionId);
+}
 
 // ── 輔助函式 ──
 
@@ -59,9 +65,10 @@ async function runHook(input, sessionId) {
  */
 function setupWorkflowWithActiveStage(sessionId, workflowType, activeStageKey, overrides = {}, projectRoot = DEFAULT_CWD) {
   const stageList = workflows[workflowType].stages;
-  state.initState(projectRoot, sessionId, workflowType, stageList);
+  const ctx = new SessionContext(projectRoot, sessionId);
+  state.initStateCtx(ctx, workflowType, stageList);
 
-  return state.updateStateAtomic(projectRoot, sessionId, null, (s) => {
+  return state.updateStateAtomicCtx(ctx, (s) => {
     // 將指定 stage 設為 active
     if (s.stages[activeStageKey]) {
       s.stages[activeStageKey].status = 'active';
@@ -110,11 +117,11 @@ describe('場景 1：PASS — developer agent 完成', () => {
     );
 
     // state 中 DEV stage 的 status 應變為 completed
-    const updatedState = state.readState(DEFAULT_CWD, sessionId);
+    const updatedState = state.readStateCtx(makeCtx(sessionId));
     expect(updatedState.stages['DEV'].status).toBe('completed');
 
     // timeline 應有 agent:complete 事件
-    const events = timeline.query(DEFAULT_CWD, sessionId, null, { type: 'agent:complete' });
+    const events = timeline.queryCtx(makeCtx(sessionId), { type: 'agent:complete' });
     expect(events.length).toBeGreaterThan(0);
     expect(events[events.length - 1].agent).toBe('developer');
     expect(events[events.length - 1].stage).toBe('DEV');
@@ -134,8 +141,8 @@ describe('場景 2：FAIL — tester agent 失敗', () => {
     mkdirSync(paths.sessionDir(DEFAULT_CWD, sessionId), { recursive: true });
     // quick workflow: DEV → REVIEW → TEST
     // 將 DEV 和 REVIEW 標記為 completed，TEST 設為 active
-    state.initState(DEFAULT_CWD, sessionId, 'quick', ['DEV', 'REVIEW', 'TEST']);
-    state.updateStateAtomic(DEFAULT_CWD, sessionId, null, (s) => {
+    state.initStateCtx(makeCtx(sessionId), 'quick', ['DEV', 'REVIEW', 'TEST']);
+    state.updateStateAtomicCtx(makeCtx(sessionId), (s) => {
       s.stages['DEV'].status = 'completed';
       s.stages['DEV'].result = 'pass';
       s.stages['REVIEW'].status = 'completed';
@@ -151,7 +158,7 @@ describe('場景 2：FAIL — tester agent 失敗', () => {
     );
 
     // state 中 failCount = 1
-    const updatedState = state.readState(DEFAULT_CWD, sessionId);
+    const updatedState = state.readStateCtx(makeCtx(sessionId));
     expect(updatedState.failCount).toBe(1);
   });
 });
@@ -167,8 +174,8 @@ describe('場景 3：REJECT — code-reviewer 拒絕', () => {
 
     mkdirSync(paths.sessionDir(DEFAULT_CWD, sessionId), { recursive: true });
     // quick workflow: DEV → REVIEW → TEST
-    state.initState(DEFAULT_CWD, sessionId, 'quick', ['DEV', 'REVIEW', 'TEST']);
-    state.updateStateAtomic(DEFAULT_CWD, sessionId, null, (s) => {
+    state.initStateCtx(makeCtx(sessionId), 'quick', ['DEV', 'REVIEW', 'TEST']);
+    state.updateStateAtomicCtx(makeCtx(sessionId), (s) => {
       s.stages['DEV'].status = 'completed';
       s.stages['DEV'].result = 'pass';
       s.stages['REVIEW'].status = 'active';
@@ -182,7 +189,7 @@ describe('場景 3：REJECT — code-reviewer 拒絕', () => {
     );
 
     // state 中 rejectCount = 1
-    const updatedState = state.readState(DEFAULT_CWD, sessionId);
+    const updatedState = state.readStateCtx(makeCtx(sessionId));
     expect(updatedState.rejectCount).toBe(1);
   });
 });
@@ -198,8 +205,8 @@ describe('場景 4：FAIL 達到上限', () => {
 
     mkdirSync(paths.sessionDir(DEFAULT_CWD, sessionId), { recursive: true });
     // quick workflow，TEST 設為 active，failCount 預設為 2（再 +1 就達到上限 3）
-    state.initState(DEFAULT_CWD, sessionId, 'quick', ['DEV', 'REVIEW', 'TEST']);
-    state.updateStateAtomic(DEFAULT_CWD, sessionId, null, (s) => {
+    state.initStateCtx(makeCtx(sessionId), 'quick', ['DEV', 'REVIEW', 'TEST']);
+    state.updateStateAtomicCtx(makeCtx(sessionId), (s) => {
       s.stages['DEV'].status = 'completed';
       s.stages['DEV'].result = 'pass';
       s.stages['REVIEW'].status = 'completed';
@@ -216,7 +223,7 @@ describe('場景 4：FAIL 達到上限', () => {
     );
 
     // state failCount 應為 3
-    const updatedState = state.readState(DEFAULT_CWD, sessionId);
+    const updatedState = state.readStateCtx(makeCtx(sessionId));
     expect(updatedState.failCount).toBe(3);
   });
 });
@@ -256,7 +263,7 @@ describe('場景 6：非 Overtone agent 跳過', () => {
     createdSessions.push(sessionId);
 
     mkdirSync(paths.sessionDir(DEFAULT_CWD, sessionId), { recursive: true });
-    state.initState(DEFAULT_CWD, sessionId, 'quick', ['DEV', 'REVIEW', 'TEST']);
+    state.initStateCtx(makeCtx(sessionId), 'quick', ['DEV', 'REVIEW', 'TEST']);
 
     const result = await runHook(
       { agent_type: 'unknown-agent', last_assistant_message: '未知的 agent 輸出' },
@@ -271,7 +278,7 @@ describe('場景 6：非 Overtone agent 跳過', () => {
     createdSessions.push(sessionId);
 
     mkdirSync(paths.sessionDir(DEFAULT_CWD, sessionId), { recursive: true });
-    state.initState(DEFAULT_CWD, sessionId, 'quick', ['DEV', 'REVIEW', 'TEST']);
+    state.initStateCtx(makeCtx(sessionId), 'quick', ['DEV', 'REVIEW', 'TEST']);
 
     const result = await runHook(
       { agent_type: '', last_assistant_message: '任意輸出' },
@@ -293,8 +300,8 @@ describe('場景 7：PASS — 所有 stages 完成', () => {
 
     mkdirSync(paths.sessionDir(DEFAULT_CWD, sessionId), { recursive: true });
     // single workflow：只有 DEV 一個 stage
-    state.initState(DEFAULT_CWD, sessionId, 'single', ['DEV']);
-    state.updateStateAtomic(DEFAULT_CWD, sessionId, null, (s) => {
+    state.initStateCtx(makeCtx(sessionId), 'single', ['DEV']);
+    state.updateStateAtomicCtx(makeCtx(sessionId), (s) => {
       s.stages['DEV'].status = 'active';
       return s;
     });
@@ -305,7 +312,7 @@ describe('場景 7：PASS — 所有 stages 完成', () => {
     );
 
     // state 中 DEV 應標記為 completed
-    const updatedState = state.readState(DEFAULT_CWD, sessionId);
+    const updatedState = state.readStateCtx(makeCtx(sessionId));
     expect(updatedState.stages['DEV'].status).toBe('completed');
     expect(result).toEqual({});
   });
@@ -322,8 +329,8 @@ describe('場景 8：並行收斂偵測', () => {
 
     mkdirSync(paths.sessionDir(DEFAULT_CWD, sessionId), { recursive: true });
     // quick workflow: DEV → REVIEW → TEST
-    state.initState(DEFAULT_CWD, sessionId, 'quick', ['DEV', 'REVIEW', 'TEST']);
-    state.updateStateAtomic(DEFAULT_CWD, sessionId, null, (s) => {
+    state.initStateCtx(makeCtx(sessionId), 'quick', ['DEV', 'REVIEW', 'TEST']);
+    state.updateStateAtomicCtx(makeCtx(sessionId), (s) => {
       s.stages['DEV'].status = 'completed';
       s.stages['DEV'].result = 'pass';
       // 兩個都設為 active（模擬並行）
@@ -343,7 +350,7 @@ describe('場景 8：並行收斂偵測', () => {
     );
 
     // 還有 TEST 未完成，REVIEW 應標記為 completed，TEST 仍為 active
-    const updatedState = state.readState(DEFAULT_CWD, sessionId);
+    const updatedState = state.readStateCtx(makeCtx(sessionId));
     expect(updatedState.stages['REVIEW'].status).toBe('completed');
     expect(updatedState.stages['TEST'].status).toBe('active');
   });
@@ -354,8 +361,8 @@ describe('場景 8：並行收斂偵測', () => {
 
     mkdirSync(paths.sessionDir(DEFAULT_CWD, sessionId), { recursive: true });
     // quick workflow: DEV → REVIEW → TEST
-    state.initState(DEFAULT_CWD, sessionId, 'quick', ['DEV', 'REVIEW', 'TEST']);
-    state.updateStateAtomic(DEFAULT_CWD, sessionId, null, (s) => {
+    state.initStateCtx(makeCtx(sessionId), 'quick', ['DEV', 'REVIEW', 'TEST']);
+    state.updateStateAtomicCtx(makeCtx(sessionId), (s) => {
       s.stages['DEV'].status = 'completed';
       s.stages['DEV'].result = 'pass';
       s.stages['REVIEW'].status = 'completed';
@@ -374,7 +381,7 @@ describe('場景 8：並行收斂偵測', () => {
 
     // 因為 REVIEW 已在本次前就 completed，TEST 完成後全部都 completed
     // 應有並行收斂提示或全部完成提示
-    const updatedState = state.readState(DEFAULT_CWD, sessionId);
+    const updatedState = state.readStateCtx(makeCtx(sessionId));
     const allDone = Object.values(updatedState.stages).every(s => s.status === 'completed');
     expect(allDone).toBe(true);
   });
@@ -390,8 +397,8 @@ describe('場景 9：timeline 事件驗證', () => {
     createdSessions.push(sessionId);
 
     mkdirSync(paths.sessionDir(DEFAULT_CWD, sessionId), { recursive: true });
-    state.initState(DEFAULT_CWD, sessionId, 'quick', ['DEV', 'REVIEW', 'TEST']);
-    state.updateStateAtomic(DEFAULT_CWD, sessionId, null, (s) => {
+    state.initStateCtx(makeCtx(sessionId), 'quick', ['DEV', 'REVIEW', 'TEST']);
+    state.updateStateAtomicCtx(makeCtx(sessionId), (s) => {
       s.stages['DEV'].status = 'active';
       return s;
     });
@@ -401,7 +408,7 @@ describe('場景 9：timeline 事件驗證', () => {
       sessionId
     );
 
-    const stageEvents = timeline.query(DEFAULT_CWD, sessionId, null, { type: 'stage:complete' });
+    const stageEvents = timeline.queryCtx(makeCtx(sessionId), { type: 'stage:complete' });
     expect(stageEvents.length).toBeGreaterThan(0);
     expect(stageEvents[stageEvents.length - 1].stage).toBe('DEV');
   });
@@ -411,8 +418,8 @@ describe('場景 9：timeline 事件驗證', () => {
     createdSessions.push(sessionId);
 
     mkdirSync(paths.sessionDir(DEFAULT_CWD, sessionId), { recursive: true });
-    state.initState(DEFAULT_CWD, sessionId, 'quick', ['DEV', 'REVIEW', 'TEST']);
-    state.updateStateAtomic(DEFAULT_CWD, sessionId, null, (s) => {
+    state.initStateCtx(makeCtx(sessionId), 'quick', ['DEV', 'REVIEW', 'TEST']);
+    state.updateStateAtomicCtx(makeCtx(sessionId), (s) => {
       s.stages['DEV'].status = 'completed';
       s.stages['DEV'].result = 'pass';
       s.stages['REVIEW'].status = 'completed';
@@ -427,7 +434,7 @@ describe('場景 9：timeline 事件驗證', () => {
       sessionId
     );
 
-    const retryEvents = timeline.query(DEFAULT_CWD, sessionId, null, { type: 'stage:retry' });
+    const retryEvents = timeline.queryCtx(makeCtx(sessionId), { type: 'stage:retry' });
     expect(retryEvents.length).toBeGreaterThan(0);
   });
 
@@ -436,8 +443,8 @@ describe('場景 9：timeline 事件驗證', () => {
     createdSessions.push(sessionId);
 
     mkdirSync(paths.sessionDir(DEFAULT_CWD, sessionId), { recursive: true });
-    state.initState(DEFAULT_CWD, sessionId, 'quick', ['DEV', 'REVIEW', 'TEST']);
-    state.updateStateAtomic(DEFAULT_CWD, sessionId, null, (s) => {
+    state.initStateCtx(makeCtx(sessionId), 'quick', ['DEV', 'REVIEW', 'TEST']);
+    state.updateStateAtomicCtx(makeCtx(sessionId), (s) => {
       s.stages['DEV'].status = 'completed';
       s.stages['DEV'].result = 'pass';
       s.stages['REVIEW'].status = 'completed';
@@ -453,7 +460,7 @@ describe('場景 9：timeline 事件驗證', () => {
       sessionId
     );
 
-    const fatalEvents = timeline.query(DEFAULT_CWD, sessionId, null, { type: 'error:fatal' });
+    const fatalEvents = timeline.queryCtx(makeCtx(sessionId), { type: 'error:fatal' });
     expect(fatalEvents.length).toBeGreaterThan(0);
   });
 });
@@ -486,8 +493,8 @@ describe('場景 15：featureName auto-sync', () => {
 
     // 建立 workflow state（不帶 featureName）— handler 用 cwd: tmpProject 解析 projectRoot
     mkdirSync(paths.sessionDir(tmpProject, sessionId), { recursive: true });
-    state.initState(tmpProject, sessionId, 'quick', ['DEV', 'REVIEW', 'TEST']);
-    state.updateStateAtomic(tmpProject, sessionId, null, (s) => {
+    state.initStateCtx(makeCtx(sessionId, tmpProject), 'quick', ['DEV', 'REVIEW', 'TEST']);
+    state.updateStateAtomicCtx(makeCtx(sessionId, tmpProject), (s) => {
       s.stages['DEV'].status = 'active';
       s.featureName = null;
       return s;
@@ -514,7 +521,7 @@ describe('場景 15：featureName auto-sync', () => {
     expect(updatedContent).toContain('- [x] DEV');
 
     // state 中 featureName 應被同步（per-project 路徑）
-    const updatedState = state.readState(tmpProject, sessionId);
+    const updatedState = state.readStateCtx(makeCtx(sessionId, tmpProject));
     expect(updatedState.featureName).toBe('my-feature');
 
     // 清理臨時目錄
@@ -530,8 +537,8 @@ describe('場景 15：featureName auto-sync', () => {
 
     // handler 用 cwd: tmpProject 解析 projectRoot
     mkdirSync(paths.sessionDir(tmpProject, sessionId), { recursive: true });
-    state.initState(tmpProject, sessionId, 'quick', ['DEV', 'REVIEW', 'TEST']);
-    state.updateStateAtomic(tmpProject, sessionId, null, (s) => {
+    state.initStateCtx(makeCtx(sessionId, tmpProject), 'quick', ['DEV', 'REVIEW', 'TEST']);
+    state.updateStateAtomicCtx(makeCtx(sessionId, tmpProject), (s) => {
       s.stages['DEV'].status = 'active';
       s.featureName = null;
       return s;
@@ -553,7 +560,7 @@ describe('場景 15：featureName auto-sync', () => {
     const result = JSON.parse(output);
 
     // state featureName 維持 null
-    const updatedState = state.readState(tmpProject, sessionId);
+    const updatedState = state.readStateCtx(makeCtx(sessionId, tmpProject));
     expect(updatedState.featureName).toBeNull();
 
     rmSync(tmpProject, { recursive: true, force: true });
@@ -571,8 +578,8 @@ describe('場景 11：RETRO — 迭代回顧', () => {
 
     mkdirSync(paths.sessionDir(DEFAULT_CWD, sessionId), { recursive: true });
     // quick workflow 含 RETRO stage：DEV → REVIEW → TEST → RETRO
-    state.initState(DEFAULT_CWD, sessionId, 'quick', ['DEV', 'REVIEW', 'TEST', 'RETRO']);
-    state.updateStateAtomic(DEFAULT_CWD, sessionId, null, (s) => {
+    state.initStateCtx(makeCtx(sessionId), 'quick', ['DEV', 'REVIEW', 'TEST', 'RETRO']);
+    state.updateStateAtomicCtx(makeCtx(sessionId), (s) => {
       s.stages['DEV'].status = 'completed';
       s.stages['DEV'].result = 'pass';
       s.stages['REVIEW'].status = 'completed';
@@ -590,7 +597,7 @@ describe('場景 11：RETRO — 迭代回顧', () => {
     );
 
     // retroCount 不應遞增（PASS 不計）
-    const updatedState = state.readState(DEFAULT_CWD, sessionId);
+    const updatedState = state.readStateCtx(makeCtx(sessionId));
     expect(updatedState.retroCount || 0).toBe(0);
   });
 
@@ -599,8 +606,8 @@ describe('場景 11：RETRO — 迭代回顧', () => {
     createdSessions.push(sessionId);
 
     mkdirSync(paths.sessionDir(DEFAULT_CWD, sessionId), { recursive: true });
-    state.initState(DEFAULT_CWD, sessionId, 'quick', ['DEV', 'REVIEW', 'TEST', 'RETRO']);
-    state.updateStateAtomic(DEFAULT_CWD, sessionId, null, (s) => {
+    state.initStateCtx(makeCtx(sessionId), 'quick', ['DEV', 'REVIEW', 'TEST', 'RETRO']);
+    state.updateStateAtomicCtx(makeCtx(sessionId), (s) => {
       s.stages['DEV'].status = 'completed';
       s.stages['DEV'].result = 'pass';
       s.stages['REVIEW'].status = 'completed';
@@ -618,7 +625,7 @@ describe('場景 11：RETRO — 迭代回顧', () => {
     );
 
     // retroCount 應遞增為 1
-    const updatedState = state.readState(DEFAULT_CWD, sessionId);
+    const updatedState = state.readStateCtx(makeCtx(sessionId));
     expect(updatedState.retroCount).toBe(1);
   });
 
@@ -627,8 +634,8 @@ describe('場景 11：RETRO — 迭代回顧', () => {
     createdSessions.push(sessionId);
 
     mkdirSync(paths.sessionDir(DEFAULT_CWD, sessionId), { recursive: true });
-    state.initState(DEFAULT_CWD, sessionId, 'quick', ['DEV', 'REVIEW', 'TEST', 'RETRO']);
-    state.updateStateAtomic(DEFAULT_CWD, sessionId, null, (s) => {
+    state.initStateCtx(makeCtx(sessionId), 'quick', ['DEV', 'REVIEW', 'TEST', 'RETRO']);
+    state.updateStateAtomicCtx(makeCtx(sessionId), (s) => {
       s.stages['DEV'].status = 'completed';
       s.stages['DEV'].result = 'pass';
       s.stages['REVIEW'].status = 'completed';
@@ -647,7 +654,7 @@ describe('場景 11：RETRO — 迭代回顧', () => {
     );
 
     // retroCount 應為 3
-    const updatedState = state.readState(DEFAULT_CWD, sessionId);
+    const updatedState = state.readStateCtx(makeCtx(sessionId));
     expect(updatedState.retroCount).toBe(3);
   });
 });
@@ -662,8 +669,8 @@ describe('場景 10：REJECT 達到上限', () => {
     createdSessions.push(sessionId);
 
     mkdirSync(paths.sessionDir(DEFAULT_CWD, sessionId), { recursive: true });
-    state.initState(DEFAULT_CWD, sessionId, 'quick', ['DEV', 'REVIEW', 'TEST']);
-    state.updateStateAtomic(DEFAULT_CWD, sessionId, null, (s) => {
+    state.initStateCtx(makeCtx(sessionId), 'quick', ['DEV', 'REVIEW', 'TEST']);
+    state.updateStateAtomicCtx(makeCtx(sessionId), (s) => {
       s.stages['DEV'].status = 'completed';
       s.stages['DEV'].result = 'pass';
       s.stages['REVIEW'].status = 'active';
@@ -678,7 +685,7 @@ describe('場景 10：REJECT 達到上限', () => {
     );
 
     // state rejectCount 應為 3
-    const updatedState = state.readState(DEFAULT_CWD, sessionId);
+    const updatedState = state.readStateCtx(makeCtx(sessionId));
     expect(updatedState.rejectCount).toBe(3);
   });
 });
@@ -694,8 +701,8 @@ describe('場景 12：D2 — 並行 agent 未完成時 hint 等待', () => {
 
     mkdirSync(paths.sessionDir(DEFAULT_CWD, sessionId), { recursive: true });
     // quick workflow: DEV → REVIEW → TEST
-    state.initState(DEFAULT_CWD, sessionId, 'quick', ['DEV', 'REVIEW', 'TEST']);
-    state.updateStateAtomic(DEFAULT_CWD, sessionId, null, (s) => {
+    state.initStateCtx(makeCtx(sessionId), 'quick', ['DEV', 'REVIEW', 'TEST']);
+    state.updateStateAtomicCtx(makeCtx(sessionId), (s) => {
       s.stages['DEV'].status = 'completed';
       s.stages['DEV'].result = 'pass';
       // 兩個都 active（模擬並行）
@@ -714,7 +721,7 @@ describe('場景 12：D2 — 並行 agent 未完成時 hint 等待', () => {
     );
 
     // 因 tester 仍 active，REVIEW 應標記 completed，TEST 維持 active
-    const updatedState = state.readState(DEFAULT_CWD, sessionId);
+    const updatedState = state.readStateCtx(makeCtx(sessionId));
     expect(updatedState.stages['REVIEW'].status).toBe('completed');
     expect(updatedState.stages['TEST'].status).toBe('active');
   });
@@ -725,8 +732,8 @@ describe('場景 12：D2 — 並行 agent 未完成時 hint 等待', () => {
 
     mkdirSync(paths.sessionDir(DEFAULT_CWD, sessionId), { recursive: true });
     // quick workflow: DEV → REVIEW → TEST → RETRO
-    state.initState(DEFAULT_CWD, sessionId, 'quick', ['DEV', 'REVIEW', 'TEST', 'RETRO']);
-    state.updateStateAtomic(DEFAULT_CWD, sessionId, null, (s) => {
+    state.initStateCtx(makeCtx(sessionId), 'quick', ['DEV', 'REVIEW', 'TEST', 'RETRO']);
+    state.updateStateAtomicCtx(makeCtx(sessionId), (s) => {
       s.stages['DEV'].status = 'completed';
       s.stages['DEV'].result = 'pass';
       s.stages['REVIEW'].status = 'active';
@@ -743,7 +750,7 @@ describe('場景 12：D2 — 並行 agent 未完成時 hint 等待', () => {
     );
 
     // REVIEW 應標記 completed
-    const updatedState = state.readState(DEFAULT_CWD, sessionId);
+    const updatedState = state.readStateCtx(makeCtx(sessionId));
     expect(updatedState.stages['REVIEW'].status).toBe('completed');
   });
 });
@@ -758,8 +765,8 @@ describe('場景 13：D3 — 雙重失敗協調提示', () => {
     createdSessions.push(sessionId);
 
     mkdirSync(paths.sessionDir(DEFAULT_CWD, sessionId), { recursive: true });
-    state.initState(DEFAULT_CWD, sessionId, 'quick', ['DEV', 'REVIEW', 'TEST']);
-    state.updateStateAtomic(DEFAULT_CWD, sessionId, null, (s) => {
+    state.initStateCtx(makeCtx(sessionId), 'quick', ['DEV', 'REVIEW', 'TEST']);
+    state.updateStateAtomicCtx(makeCtx(sessionId), (s) => {
       s.stages['DEV'].status = 'completed';
       s.stages['DEV'].result = 'pass';
       s.stages['REVIEW'].status = 'completed';
@@ -777,7 +784,7 @@ describe('場景 13：D3 — 雙重失敗協調提示', () => {
     );
 
     // failCount 遞增（雙重失敗：rejectCount=1 + testFail=1）
-    const updatedState = state.readState(DEFAULT_CWD, sessionId);
+    const updatedState = state.readStateCtx(makeCtx(sessionId));
     expect(updatedState.failCount).toBe(1);
     expect(updatedState.rejectCount).toBe(1);
   });
@@ -787,8 +794,8 @@ describe('場景 13：D3 — 雙重失敗協調提示', () => {
     createdSessions.push(sessionId);
 
     mkdirSync(paths.sessionDir(DEFAULT_CWD, sessionId), { recursive: true });
-    state.initState(DEFAULT_CWD, sessionId, 'quick', ['DEV', 'REVIEW', 'TEST']);
-    state.updateStateAtomic(DEFAULT_CWD, sessionId, null, (s) => {
+    state.initStateCtx(makeCtx(sessionId), 'quick', ['DEV', 'REVIEW', 'TEST']);
+    state.updateStateAtomicCtx(makeCtx(sessionId), (s) => {
       s.stages['DEV'].status = 'completed';
       s.stages['DEV'].result = 'pass';
       s.stages['REVIEW'].status = 'active';
@@ -806,7 +813,7 @@ describe('場景 13：D3 — 雙重失敗協調提示', () => {
     );
 
     // rejectCount 遞增（雙重失敗：failCount=1 + rejectFail=1）
-    const updatedState = state.readState(DEFAULT_CWD, sessionId);
+    const updatedState = state.readStateCtx(makeCtx(sessionId));
     expect(updatedState.rejectCount).toBe(1);
     expect(updatedState.failCount).toBe(1);
   });
@@ -816,8 +823,8 @@ describe('場景 13：D3 — 雙重失敗協調提示', () => {
     createdSessions.push(sessionId);
 
     mkdirSync(paths.sessionDir(DEFAULT_CWD, sessionId), { recursive: true });
-    state.initState(DEFAULT_CWD, sessionId, 'quick', ['DEV', 'REVIEW', 'TEST']);
-    state.updateStateAtomic(DEFAULT_CWD, sessionId, null, (s) => {
+    state.initStateCtx(makeCtx(sessionId), 'quick', ['DEV', 'REVIEW', 'TEST']);
+    state.updateStateAtomicCtx(makeCtx(sessionId), (s) => {
       s.stages['DEV'].status = 'completed';
       s.stages['DEV'].result = 'pass';
       s.stages['REVIEW'].status = 'completed';
@@ -834,7 +841,7 @@ describe('場景 13：D3 — 雙重失敗協調提示', () => {
     );
 
     // failCount 遞增（無雙重失敗）
-    const updatedState = state.readState(DEFAULT_CWD, sessionId);
+    const updatedState = state.readStateCtx(makeCtx(sessionId));
     expect(updatedState.failCount).toBe(1);
     expect(updatedState.rejectCount).toBe(0);
   });
@@ -876,8 +883,8 @@ describe('場景 14：agent_performance Instinct 觀察', () => {
     createdSessions.push(sessionId);
 
     mkdirSync(paths.sessionDir(DEFAULT_CWD, sessionId), { recursive: true });
-    state.initState(DEFAULT_CWD, sessionId, 'quick', ['DEV', 'REVIEW', 'TEST']);
-    state.updateStateAtomic(DEFAULT_CWD, sessionId, null, (s) => {
+    state.initStateCtx(makeCtx(sessionId), 'quick', ['DEV', 'REVIEW', 'TEST']);
+    state.updateStateAtomicCtx(makeCtx(sessionId), (s) => {
       s.stages['DEV'].status = 'completed';
       s.stages['DEV'].result = 'pass';
       s.stages['REVIEW'].status = 'completed';
@@ -904,8 +911,8 @@ describe('場景 14：agent_performance Instinct 觀察', () => {
     createdSessions.push(sessionId);
 
     mkdirSync(paths.sessionDir(DEFAULT_CWD, sessionId), { recursive: true });
-    state.initState(DEFAULT_CWD, sessionId, 'quick', ['DEV', 'REVIEW', 'TEST']);
-    state.updateStateAtomic(DEFAULT_CWD, sessionId, null, (s) => {
+    state.initStateCtx(makeCtx(sessionId), 'quick', ['DEV', 'REVIEW', 'TEST']);
+    state.updateStateAtomicCtx(makeCtx(sessionId), (s) => {
       s.stages['DEV'].status = 'completed';
       s.stages['DEV'].result = 'pass';
       s.stages['REVIEW'].status = 'active';
@@ -944,7 +951,7 @@ describe('場景 14：agent_performance Instinct 觀察', () => {
     expect(first[0].confidence).toBe(0.3);
 
     // 第二次完成（需要重設 stage 為 active，同時清除 completedAt 以通過不變量守衛）
-    state.updateStateAtomic(DEFAULT_CWD, sessionId, null, (s) => {
+    state.updateStateAtomicCtx(makeCtx(sessionId), (s) => {
       s.stages['DEV'].status = 'active';
       delete s.stages['DEV'].completedAt;
       delete s.stages['DEV'].result;
@@ -968,8 +975,8 @@ describe('場景 14：agent_performance Instinct 觀察', () => {
 describe('場景 17：RETRO stage — hook result 不含 dead code 掃描（P3 純化）', () => {
   // 建立 RETRO stage active 的 state
   function setupRetroActiveState(sessionId) {
-    state.initState(DEFAULT_CWD, sessionId, 'quick', ['DEV', 'REVIEW', 'TEST', 'RETRO']);
-    state.updateStateAtomic(DEFAULT_CWD, sessionId, null, (s) => {
+    state.initStateCtx(makeCtx(sessionId), 'quick', ['DEV', 'REVIEW', 'TEST', 'RETRO']);
+    state.updateStateAtomicCtx(makeCtx(sessionId), (s) => {
       ['DEV', 'REVIEW', 'TEST'].forEach(k => {
         s.stages[k].status = 'completed';
         s.stages[k].result = 'pass';
@@ -993,7 +1000,7 @@ describe('場景 17：RETRO stage — hook result 不含 dead code 掃描（P3 �
     );
 
     // state RETRO 應標記為 completed
-    const updatedState = state.readState(DEFAULT_CWD, sessionId);
+    const updatedState = state.readStateCtx(makeCtx(sessionId));
     expect(updatedState.stages['RETRO'].status).toBe('completed');
     expect(result).toEqual({});
   });
@@ -1037,8 +1044,8 @@ describe('場景 17：RETRO stage — hook result 不含 dead code 掃描（P3 �
 describe('場景 16：DOCS stage — hook result 不含 docs-sync 結果（P3 純化）', () => {
   // 準備 DOCS stage 全部前置 stages 完成的 state
   function setupDocsActiveState(sessionId) {
-    state.initState(DEFAULT_CWD, sessionId, 'quick', ['DEV', 'REVIEW', 'TEST', 'RETRO', 'DOCS']);
-    state.updateStateAtomic(DEFAULT_CWD, sessionId, null, (s) => {
+    state.initStateCtx(makeCtx(sessionId), 'quick', ['DEV', 'REVIEW', 'TEST', 'RETRO', 'DOCS']);
+    state.updateStateAtomicCtx(makeCtx(sessionId), (s) => {
       ['DEV', 'REVIEW', 'TEST', 'RETRO'].forEach(k => {
         s.stages[k].status = 'completed';
         s.stages[k].result = 'pass';
@@ -1062,7 +1069,7 @@ describe('場景 16：DOCS stage — hook result 不含 docs-sync 結果（P3 �
     );
 
     // state DOCS 應標記為 completed
-    const updatedState = state.readState(DEFAULT_CWD, sessionId);
+    const updatedState = state.readStateCtx(makeCtx(sessionId));
     expect(updatedState.stages['DOCS'].status).toBe('completed');
     expect(result).toEqual({});
   });
@@ -1138,8 +1145,8 @@ describe('場景 18：Knowledge Engine — 知識歸檔', () => {
     createdSessions.push(sessionId);
 
     mkdirSync(paths.sessionDir(DEFAULT_CWD, sessionId), { recursive: true });
-    state.initState(DEFAULT_CWD, sessionId, 'quick', ['DEV', 'REVIEW', 'TEST']);
-    state.updateStateAtomic(DEFAULT_CWD, sessionId, null, (s) => {
+    state.initStateCtx(makeCtx(sessionId), 'quick', ['DEV', 'REVIEW', 'TEST']);
+    state.updateStateAtomicCtx(makeCtx(sessionId), (s) => {
       s.stages['DEV'].status = 'completed';
       s.stages['DEV'].result = 'pass';
       s.stages['REVIEW'].status = 'completed';
@@ -1159,7 +1166,7 @@ describe('場景 18：Knowledge Engine — 知識歸檔', () => {
     );
 
     // hook 正常完成，state failCount 遞增
-    const updatedState = state.readState(DEFAULT_CWD, sessionId);
+    const updatedState = state.readStateCtx(makeCtx(sessionId));
     expect(updatedState.failCount).toBe(1);
   });
 
@@ -1168,8 +1175,8 @@ describe('場景 18：Knowledge Engine — 知識歸檔', () => {
     createdSessions.push(sessionId);
 
     mkdirSync(paths.sessionDir(DEFAULT_CWD, sessionId), { recursive: true });
-    state.initState(DEFAULT_CWD, sessionId, 'quick', ['DEV', 'REVIEW', 'TEST']);
-    state.updateStateAtomic(DEFAULT_CWD, sessionId, null, (s) => {
+    state.initStateCtx(makeCtx(sessionId), 'quick', ['DEV', 'REVIEW', 'TEST']);
+    state.updateStateAtomicCtx(makeCtx(sessionId), (s) => {
       s.stages['DEV'].status = 'completed';
       s.stages['DEV'].result = 'pass';
       s.stages['REVIEW'].status = 'active';
@@ -1194,8 +1201,8 @@ describe('場景 18：Knowledge Engine — 知識歸檔', () => {
     createdSessions.push(sessionId);
 
     mkdirSync(paths.sessionDir(DEFAULT_CWD, sessionId), { recursive: true });
-    state.initState(DEFAULT_CWD, sessionId, 'quick', ['DEV', 'REVIEW', 'TEST', 'RETRO']);
-    state.updateStateAtomic(DEFAULT_CWD, sessionId, null, (s) => {
+    state.initStateCtx(makeCtx(sessionId), 'quick', ['DEV', 'REVIEW', 'TEST', 'RETRO']);
+    state.updateStateAtomicCtx(makeCtx(sessionId), (s) => {
       ['DEV', 'REVIEW', 'TEST'].forEach(k => {
         s.stages[k].status = 'completed';
         s.stages[k].result = 'pass';
@@ -1245,8 +1252,8 @@ describe('場景 19：auto-sync specsConfig 過濾', () => {
 
     // 建立 single workflow state（不帶 featureName）— handler 用 cwd: tmpProject
     mkdirSync(paths.sessionDir(tmpProject, sessionId), { recursive: true });
-    state.initState(tmpProject, sessionId, 'single', ['DEV']);
-    state.updateStateAtomic(tmpProject, sessionId, null, (s) => {
+    state.initStateCtx(makeCtx(sessionId, tmpProject), 'single', ['DEV']);
+    state.updateStateAtomicCtx(makeCtx(sessionId, tmpProject), (s) => {
       s.stages['DEV'].status = 'active';
       s.featureName = null;
       return s;
@@ -1272,7 +1279,7 @@ describe('場景 19：auto-sync specsConfig 過濾', () => {
     expect(result).toEqual({});
 
     // single workflow → specsConfig['single'].length === 0 → auto-sync 不執行
-    const updatedState = state.readState(tmpProject, sessionId);
+    const updatedState = state.readStateCtx(makeCtx(sessionId, tmpProject));
     expect(updatedState.featureName).toBeNull();
 
     rmSync(tmpProject, { recursive: true, force: true });
@@ -1288,8 +1295,8 @@ describe('場景 19：auto-sync specsConfig 過濾', () => {
 
     // 建立 standard workflow state（不帶 featureName）— handler 用 cwd: tmpProject
     mkdirSync(paths.sessionDir(tmpProject, sessionId), { recursive: true });
-    state.initState(tmpProject, sessionId, 'standard', ['PLAN', 'ARCH', 'TEST', 'DEV', 'REVIEW', 'TEST:2', 'RETRO', 'DOCS']);
-    state.updateStateAtomic(tmpProject, sessionId, null, (s) => {
+    state.initStateCtx(makeCtx(sessionId, tmpProject), 'standard', ['PLAN', 'ARCH', 'TEST', 'DEV', 'REVIEW', 'TEST:2', 'RETRO', 'DOCS']);
+    state.updateStateAtomicCtx(makeCtx(sessionId, tmpProject), (s) => {
       s.stages['DEV'].status = 'active';
       s.featureName = null;
       return s;
@@ -1315,7 +1322,7 @@ describe('場景 19：auto-sync specsConfig 過濾', () => {
     expect(result).toEqual({});
 
     // standard workflow → specsConfig['standard'].length > 0 → auto-sync 執行
-    const updatedState = state.readState(tmpProject, sessionId);
+    const updatedState = state.readStateCtx(makeCtx(sessionId, tmpProject));
     expect(updatedState.featureName).toBe('my-feature');
 
     rmSync(tmpProject, { recursive: true, force: true });

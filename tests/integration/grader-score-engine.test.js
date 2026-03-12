@@ -21,6 +21,7 @@ const { buildStopMessages } = require(join(SCRIPTS_LIB, 'stop-message-builder'))
 const { scoringConfig } = require(join(SCRIPTS_LIB, 'registry'));
 const paths = require(join(SCRIPTS_LIB, 'paths'));
 const state = require(join(SCRIPTS_LIB, 'state'));
+const SessionContext = require(join(SCRIPTS_LIB, 'session-context'));
 const { workflows, stages, retryDefaults, parallelGroups } = require(join(SCRIPTS_LIB, 'registry'));
 
 // ── 測試基礎設施 ──
@@ -261,8 +262,8 @@ describe('Feature 7: 低分閾值觸發 instinct quality_signal', () => {
 
     // 初始化一個 quick workflow，DEV stage 為 active
     const stageList = workflows['quick'].stages;
-    state.initState(sessionId, 'quick', stageList);
-    state.updateStateAtomic(sessionId, (s) => {
+    state.initStateCtx(new SessionContext(homedir(), sessionId), 'quick', stageList);
+    state.updateStateAtomicCtx(new SessionContext(homedir(), sessionId), (s) => {
       if (s.stages['DEV']) s.stages['DEV'].status = 'active';
       return s;
     });

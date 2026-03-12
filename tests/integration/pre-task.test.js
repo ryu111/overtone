@@ -13,6 +13,7 @@ const { mkdirSync, mkdtempSync, rmSync } = require('fs');
 const { join } = require('path');
 const { tmpdir } = require('os');
 const { HOOKS_DIR, SCRIPTS_LIB } = require('../helpers/paths');
+const SessionContext = require(join(SCRIPTS_LIB, 'session-context'));
 const { isAllowed } = require('../helpers/hook-runner');
 
 // ── 路徑設定 ──
@@ -86,10 +87,10 @@ describe('場景 1：前置 stage 已完成 → 允許通過', () => {
     // 初始化 quick workflow（DEV → REVIEW → TEST → RETRO）
     mkdirSync(paths.sessionDir(TEST_PROJECT_ROOT, sessionId), { recursive: true });
     const stageList = workflows['quick'].stages;
-    state.initState(TEST_PROJECT_ROOT, sessionId, 'quick', stageList);
+    state.initStateCtx(new SessionContext(TEST_PROJECT_ROOT, sessionId), 'quick', stageList);
 
     // 將 DEV 設為 completed
-    state.updateStateAtomic(TEST_PROJECT_ROOT, sessionId, null, (s) => {
+    state.updateStateAtomicCtx(new SessionContext(TEST_PROJECT_ROOT, sessionId), (s) => {
       s.stages['DEV'].status = 'completed';
       s.stages['DEV'].result = 'pass';
       return s;
@@ -126,7 +127,7 @@ describe('場景 2：前置 stage 未完成 → 阻擋並警告', () => {
     // 初始化 quick workflow，DEV 保持 pending（預設）
     mkdirSync(paths.sessionDir(TEST_PROJECT_ROOT, sessionId), { recursive: true });
     const stageList = workflows['quick'].stages;
-    state.initState(TEST_PROJECT_ROOT, sessionId, 'quick', stageList);
+    state.initStateCtx(new SessionContext(TEST_PROJECT_ROOT, sessionId), 'quick', stageList);
 
     // 以 subagent_type ot:code-reviewer 指向 REVIEW stage（DEV 尚未完成）
     const result = await runHook(
@@ -165,7 +166,7 @@ describe('場景 3：無法辨識的 agent → 允許通過', () => {
 
     // 初始化任意 workflow state
     mkdirSync(paths.sessionDir(TEST_PROJECT_ROOT, sessionId), { recursive: true });
-    state.initState(TEST_PROJECT_ROOT, sessionId, 'quick', workflows['quick'].stages);
+    state.initStateCtx(new SessionContext(TEST_PROJECT_ROOT, sessionId), 'quick', workflows['quick'].stages);
 
     // 描述中包含完全未知的 agent 名稱
     const result = await runHook(
@@ -217,7 +218,7 @@ describe('場景 5：subagent_type ot: 前綴 → 確定性映射（L1）', () =
 
     // 初始化 single workflow（只有 DEV stage）
     mkdirSync(paths.sessionDir(TEST_PROJECT_ROOT, sessionId), { recursive: true });
-    state.initState(TEST_PROJECT_ROOT, sessionId, 'single', workflows['single'].stages);
+    state.initStateCtx(new SessionContext(TEST_PROJECT_ROOT, sessionId), 'single', workflows['single'].stages);
 
     // subagent_type 明確指定，prompt 無相關關鍵字
     const result = await runHook(
@@ -243,7 +244,7 @@ describe('場景 5：subagent_type ot: 前綴 → 確定性映射（L1）', () =
 
     // 初始化 standard workflow（PLAN → ARCH → ...）
     mkdirSync(paths.sessionDir(TEST_PROJECT_ROOT, sessionId), { recursive: true });
-    state.initState(TEST_PROJECT_ROOT, sessionId, 'standard', workflows['standard'].stages);
+    state.initStateCtx(new SessionContext(TEST_PROJECT_ROOT, sessionId), 'standard', workflows['standard'].stages);
 
     // subagent_type 為 planner，但 prompt 中提及另一個 agent（誤判場景）
     const result = await runHook(
@@ -269,10 +270,10 @@ describe('場景 5：subagent_type ot: 前綴 → 確定性映射（L1）', () =
 
     // 初始化 quick workflow
     mkdirSync(paths.sessionDir(TEST_PROJECT_ROOT, sessionId), { recursive: true });
-    state.initState(TEST_PROJECT_ROOT, sessionId, 'quick', workflows['quick'].stages);
+    state.initStateCtx(new SessionContext(TEST_PROJECT_ROOT, sessionId), 'quick', workflows['quick'].stages);
 
     // 將 DEV 設為 completed，使 REVIEW 可通過
-    state.updateStateAtomic(TEST_PROJECT_ROOT, sessionId, null, (s) => {
+    state.updateStateAtomicCtx(new SessionContext(TEST_PROJECT_ROOT, sessionId), (s) => {
       s.stages['DEV'].status = 'completed';
       s.stages['DEV'].result = 'pass';
       return s;
@@ -302,7 +303,7 @@ describe('場景 5：subagent_type ot: 前綴 → 確定性映射（L1）', () =
 
     // 初始化任意 workflow
     mkdirSync(paths.sessionDir(TEST_PROJECT_ROOT, sessionId), { recursive: true });
-    state.initState(TEST_PROJECT_ROOT, sessionId, 'quick', workflows['quick'].stages);
+    state.initStateCtx(new SessionContext(TEST_PROJECT_ROOT, sessionId), 'quick', workflows['quick'].stages);
 
     // subagent_type 有 ot: 前綴但 agent 名稱未知 → fallback 到 identifyAgent
     const result = await runHook(
@@ -333,7 +334,7 @@ describe('場景 6：Knowledge Engine — skillContext 注入', () => {
     createdSessions.push(sessionId);
 
     mkdirSync(paths.sessionDir(TEST_PROJECT_ROOT, sessionId), { recursive: true });
-    state.initState(TEST_PROJECT_ROOT, sessionId, 'single', workflows['single'].stages);
+    state.initStateCtx(new SessionContext(TEST_PROJECT_ROOT, sessionId), 'single', workflows['single'].stages);
 
     const result = await runHook(
       {
@@ -362,7 +363,7 @@ describe('場景 6：Knowledge Engine — skillContext 注入', () => {
 
     mkdirSync(paths.sessionDir(TEST_PROJECT_ROOT, sessionId), { recursive: true });
     // tdd workflow: TEST:spec → DEV → TEST:verify
-    state.initState(TEST_PROJECT_ROOT, sessionId, 'tdd', workflows['tdd'].stages);
+    state.initStateCtx(new SessionContext(TEST_PROJECT_ROOT, sessionId), 'tdd', workflows['tdd'].stages);
 
     const result = await runHook(
       {
@@ -388,7 +389,7 @@ describe('場景 6：Knowledge Engine — skillContext 注入', () => {
     createdSessions.push(sessionId);
 
     mkdirSync(paths.sessionDir(TEST_PROJECT_ROOT, sessionId), { recursive: true });
-    state.initState(TEST_PROJECT_ROOT, sessionId, 'single', workflows['single'].stages);
+    state.initStateCtx(new SessionContext(TEST_PROJECT_ROOT, sessionId), 'single', workflows['single'].stages);
 
     // 使用不存在的 cwd 觸發 skill context 讀取失敗
     const result = await runHook(
@@ -416,7 +417,7 @@ describe('場景 7：Knowledge Engine — gapWarnings 注入', () => {
     createdSessions.push(sessionId);
 
     mkdirSync(paths.sessionDir(TEST_PROJECT_ROOT, sessionId), { recursive: true });
-    state.initState(TEST_PROJECT_ROOT, sessionId, 'single', workflows['single'].stages);
+    state.initStateCtx(new SessionContext(TEST_PROJECT_ROOT, sessionId), 'single', workflows['single'].stages);
 
     // doc-updater 無 security-kb skill，但 prompt 含 security 關鍵詞
     const result = await runHook(
@@ -444,7 +445,7 @@ describe('場景 7：Knowledge Engine — gapWarnings 注入', () => {
     createdSessions.push(sessionId);
 
     mkdirSync(paths.sessionDir(TEST_PROJECT_ROOT, sessionId), { recursive: true });
-    state.initState(TEST_PROJECT_ROOT, sessionId, 'single', workflows['single'].stages);
+    state.initStateCtx(new SessionContext(TEST_PROJECT_ROOT, sessionId), 'single', workflows['single'].stages);
 
     const result = await runHook(
       {
@@ -582,10 +583,10 @@ describe('場景 20：retry — completed + reject/fail 時重新委派', () => 
 
     mkdirSync(paths.sessionDir(TEST_PROJECT_ROOT, sessionId), { recursive: true });
     const stageList = workflows['quick'].stages;
-    state.initState(TEST_PROJECT_ROOT, sessionId, 'quick', stageList);
+    state.initStateCtx(new SessionContext(TEST_PROJECT_ROOT, sessionId), 'quick', stageList);
 
     // 模擬 DEV 完成 + REVIEW reject
-    state.updateStateAtomic(TEST_PROJECT_ROOT, sessionId, null, (s) => {
+    state.updateStateAtomicCtx(new SessionContext(TEST_PROJECT_ROOT, sessionId), (s) => {
       s.stages['DEV'].status = 'completed';
       s.stages['DEV'].result = 'pass';
       s.stages['REVIEW'].status = 'completed';
@@ -610,7 +611,7 @@ describe('場景 20：retry — completed + reject/fail 時重新委派', () => 
     expect(isAllowed(result)).toBe(true);
 
     // 驗證 stage 已 reset 為 active，舊 reject 結果已清除
-    const updated = state.readState(TEST_PROJECT_ROOT, sessionId);
+    const updated = state.readStateCtx(new SessionContext(TEST_PROJECT_ROOT, sessionId));
     expect(updated.stages['REVIEW'].status).toBe('active');
     expect(updated.stages['REVIEW'].result).toBeUndefined();
   });
@@ -621,10 +622,10 @@ describe('場景 20：retry — completed + reject/fail 時重新委派', () => 
 
     mkdirSync(paths.sessionDir(TEST_PROJECT_ROOT, sessionId), { recursive: true });
     // 使用含 TEST 的自訂 stages（quick 已移除 TEST）
-    state.initState(TEST_PROJECT_ROOT, sessionId, 'standard', ['DEV', 'REVIEW', 'TEST', 'RETRO']);
+    state.initStateCtx(new SessionContext(TEST_PROJECT_ROOT, sessionId), 'standard', ['DEV', 'REVIEW', 'TEST', 'RETRO']);
 
     // 模擬 DEV + REVIEW 完成 + TEST fail
-    state.updateStateAtomic(TEST_PROJECT_ROOT, sessionId, null, (s) => {
+    state.updateStateAtomicCtx(new SessionContext(TEST_PROJECT_ROOT, sessionId), (s) => {
       s.stages['DEV'].status = 'completed';
       s.stages['DEV'].result = 'pass';
       s.stages['REVIEW'].status = 'completed';
@@ -650,7 +651,7 @@ describe('場景 20：retry — completed + reject/fail 時重新委派', () => 
 
     expect(isAllowed(result)).toBe(true);
 
-    const updated = state.readState(TEST_PROJECT_ROOT, sessionId);
+    const updated = state.readStateCtx(new SessionContext(TEST_PROJECT_ROOT, sessionId));
     expect(updated.stages['TEST'].status).toBe('active');
     expect(updated.stages['TEST'].result).toBeUndefined();
   });
@@ -661,10 +662,10 @@ describe('場景 20：retry — completed + reject/fail 時重新委派', () => 
 
     mkdirSync(paths.sessionDir(TEST_PROJECT_ROOT, sessionId), { recursive: true });
     const stageList = workflows['quick'].stages;
-    state.initState(TEST_PROJECT_ROOT, sessionId, 'quick', stageList);
+    state.initStateCtx(new SessionContext(TEST_PROJECT_ROOT, sessionId), 'quick', stageList);
 
     // 模擬 DEV 完成 + REVIEW pass
-    state.updateStateAtomic(TEST_PROJECT_ROOT, sessionId, null, (s) => {
+    state.updateStateAtomicCtx(new SessionContext(TEST_PROJECT_ROOT, sessionId), (s) => {
       s.stages['DEV'].status = 'completed';
       s.stages['DEV'].result = 'pass';
       s.stages['REVIEW'].status = 'completed';
@@ -688,7 +689,7 @@ describe('場景 20：retry — completed + reject/fail 時重新委派', () => 
 
     // 通過（不阻擋），但 stage 不會被 reset
     expect(isAllowed(result)).toBe(true);
-    const updated = state.readState(TEST_PROJECT_ROOT, sessionId);
+    const updated = state.readStateCtx(new SessionContext(TEST_PROJECT_ROOT, sessionId));
     // pass 的 stage 不被 retry 機制影響
     expect(updated.stages['REVIEW'].result).toBe('pass');
   });

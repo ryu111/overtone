@@ -17,6 +17,7 @@ const { mkdirSync, mkdtempSync, rmSync, existsSync } = require('fs');
 const { join } = require('path');
 const { tmpdir } = require('os');
 const { SCRIPTS_LIB } = require('../helpers/paths');
+const SessionContext = require(join(SCRIPTS_LIB, 'session-context'));
 const { runPreTask, runSubagentStop, isAllowed } = require('../helpers/hook-runner');
 
 const paths = require(join(SCRIPTS_LIB, 'paths'));
@@ -52,7 +53,7 @@ function setupSession(workflowType = 'single') {
   const sessionId = newSessionId();
   createdSessions.push(sessionId);
   mkdirSync(paths.sessionDir(TEST_PROJECT_ROOT, sessionId), { recursive: true });
-  state.initState(TEST_PROJECT_ROOT, sessionId, workflowType, workflows[workflowType].stages);
+  state.initStateCtx(new SessionContext(TEST_PROJECT_ROOT, sessionId), workflowType, workflows[workflowType].stages);
   return sessionId;
 }
 
@@ -74,7 +75,7 @@ describe('Feature 2：pre-task.js PARALLEL_TOTAL 解析與注入', () => {
 
     expect(isAllowed(result.parsed)).toBe(true);
 
-    const ws = state.readState(TEST_PROJECT_ROOT, sessionId);
+    const ws = state.readStateCtx(new SessionContext(TEST_PROJECT_ROOT, sessionId));
     expect(ws.stages['DEV'].parallelTotal).toBe(3);
   });
 
@@ -90,7 +91,7 @@ describe('Feature 2：pre-task.js PARALLEL_TOTAL 解析與注入', () => {
 
     expect(isAllowed(result.parsed)).toBe(true);
 
-    const ws = state.readState(TEST_PROJECT_ROOT, sessionId);
+    const ws = state.readStateCtx(new SessionContext(TEST_PROJECT_ROOT, sessionId));
     expect(ws.stages['DEV'].parallelTotal).toBeUndefined();
   });
 
@@ -128,10 +129,10 @@ describe('Feature 2：pre-task.js PARALLEL_TOTAL 解析與注入', () => {
     const sessionId = newSessionId();
     createdSessions.push(sessionId);
     mkdirSync(paths.sessionDir(TEST_PROJECT_ROOT, sessionId), { recursive: true });
-    state.initState(TEST_PROJECT_ROOT, sessionId, 'single', workflows['single'].stages);
+    state.initStateCtx(new SessionContext(TEST_PROJECT_ROOT, sessionId), 'single', workflows['single'].stages);
 
     // 預先模擬第一個 pre-task 已將 parallelTotal 設為 2（DEV 仍 pending）
-    state.updateStateAtomic(TEST_PROJECT_ROOT, sessionId, null, (s) => {
+    state.updateStateAtomicCtx(new SessionContext(TEST_PROJECT_ROOT, sessionId), (s) => {
       s.stages['DEV'].parallelTotal = 2;
       // DEV 保持 pending，讓 actualKey 能找到
       return s;
@@ -146,7 +147,7 @@ describe('Feature 2：pre-task.js PARALLEL_TOTAL 解析與注入', () => {
 
     expect(isAllowed(result.parsed)).toBe(true);
 
-    const ws = state.readState(TEST_PROJECT_ROOT, sessionId);
+    const ws = state.readStateCtx(new SessionContext(TEST_PROJECT_ROOT, sessionId));
     // 取 Math.max(2, 3) = 3
     expect(ws.stages['DEV'].parallelTotal).toBe(3);
   });
@@ -165,10 +166,10 @@ describe('Feature 3：on-stop.js 並行收斂門 — 3 個 developer 全部 pass
     const sessionId = newSessionId();
     createdSessions.push(sessionId);
     mkdirSync(paths.sessionDir(TEST_PROJECT_ROOT, sessionId), { recursive: true });
-    state.initState(TEST_PROJECT_ROOT, sessionId, 'single', workflows['single'].stages);
+    state.initStateCtx(new SessionContext(TEST_PROJECT_ROOT, sessionId), 'single', workflows['single'].stages);
 
     // 手動設定 DEV stage 為 active，parallelTotal = 3
-    state.updateStateAtomic(TEST_PROJECT_ROOT, sessionId, null, (s) => {
+    state.updateStateAtomicCtx(new SessionContext(TEST_PROJECT_ROOT, sessionId), (s) => {
       s.stages['DEV'].status = 'active';
       s.stages['DEV'].parallelTotal = 3;
       s.stages['DEV'].parallelDone = 0;
@@ -182,7 +183,7 @@ describe('Feature 3：on-stop.js 並行收斂門 — 3 個 developer 全部 pass
     // 第 1 個 instance 完成（帶 INSTANCE_ID）
     runSubagentStop(sessionId, 'developer', 'VERDICT: pass 任務一完成\n\nINSTANCE_ID: developer:aaa001-inst1', { cwd: TEST_PROJECT_ROOT });
 
-    const ws1 = state.readState(TEST_PROJECT_ROOT, sessionId);
+    const ws1 = state.readStateCtx(new SessionContext(TEST_PROJECT_ROOT, sessionId));
     // 未收斂：stage 仍 active（parallelDone = 1，parallelTotal = 3）
     expect(ws1.stages['DEV'].status).toBe('active');
     expect(ws1.stages['DEV'].parallelDone).toBe(1);
@@ -190,7 +191,7 @@ describe('Feature 3：on-stop.js 並行收斂門 — 3 個 developer 全部 pass
     // 第 2 個 instance 完成
     runSubagentStop(sessionId, 'developer', 'VERDICT: pass 任務二完成\n\nINSTANCE_ID: developer:bbb002-inst2', { cwd: TEST_PROJECT_ROOT });
 
-    const ws2 = state.readState(TEST_PROJECT_ROOT, sessionId);
+    const ws2 = state.readStateCtx(new SessionContext(TEST_PROJECT_ROOT, sessionId));
     // 仍未收斂
     expect(ws2.stages['DEV'].status).toBe('active');
     expect(ws2.stages['DEV'].parallelDone).toBe(2);
@@ -198,7 +199,7 @@ describe('Feature 3：on-stop.js 並行收斂門 — 3 個 developer 全部 pass
     // 第 3 個 instance 完成（最後一個，觸發收斂）
     runSubagentStop(sessionId, 'developer', 'VERDICT: pass 任務三完成\n\nINSTANCE_ID: developer:ccc003-inst3', { cwd: TEST_PROJECT_ROOT });
 
-    const ws3 = state.readState(TEST_PROJECT_ROOT, sessionId);
+    const ws3 = state.readStateCtx(new SessionContext(TEST_PROJECT_ROOT, sessionId));
     // 已收斂：stage 標記 completed + pass
     expect(ws3.stages['DEV'].status).toBe('completed');
     expect(ws3.stages['DEV'].result).toBe('pass');
@@ -217,9 +218,9 @@ describe('Feature 3：on-stop.js 收斂門 — fail 立即觸發', () => {
     createdSessions.push(sessionId);
     mkdirSync(paths.sessionDir(TEST_PROJECT_ROOT, sessionId), { recursive: true });
     // 建立含 DEV + TEST 的自訂 workflow（DEV 後有 REVIEW + TEST 並行）
-    state.initState(TEST_PROJECT_ROOT, sessionId, 'standard', ['DEV', 'REVIEW', 'TEST', 'RETRO']);
+    state.initStateCtx(new SessionContext(TEST_PROJECT_ROOT, sessionId), 'standard', ['DEV', 'REVIEW', 'TEST', 'RETRO']);
 
-    state.updateStateAtomic(TEST_PROJECT_ROOT, sessionId, null, (s) => {
+    state.updateStateAtomicCtx(new SessionContext(TEST_PROJECT_ROOT, sessionId), (s) => {
       s.stages['DEV'].status = 'completed';
       s.stages['DEV'].result = 'pass';
       s.stages['REVIEW'].status = 'active';
@@ -235,7 +236,7 @@ describe('Feature 3：on-stop.js 收斂門 — fail 立即觸發', () => {
     // 第 2 個 tester instance fail（TEST stage 會判定 fail）
     runSubagentStop(sessionId, 'tester', '3 tests failed with errors\n\nINSTANCE_ID: tester:bbb002-inst2', { cwd: TEST_PROJECT_ROOT });
 
-    const ws = state.readState(TEST_PROJECT_ROOT, sessionId);
+    const ws = state.readStateCtx(new SessionContext(TEST_PROJECT_ROOT, sessionId));
     // 立即標記 completed + fail
     expect(ws.stages['TEST'].status).toBe('completed');
     expect(ws.stages['TEST'].result).toBe('fail');
@@ -250,10 +251,10 @@ describe('Feature 3：on-stop.js 收斂門 — fail 立即觸發', () => {
     const sessionId = newSessionId();
     createdSessions.push(sessionId);
     mkdirSync(paths.sessionDir(TEST_PROJECT_ROOT, sessionId), { recursive: true });
-    state.initState(TEST_PROJECT_ROOT, sessionId, 'single', workflows['single'].stages);
+    state.initStateCtx(new SessionContext(TEST_PROJECT_ROOT, sessionId), 'single', workflows['single'].stages);
 
     // 模擬已 completed + fail（任一機制觸發，直接手動設定）
-    state.updateStateAtomic(TEST_PROJECT_ROOT, sessionId, null, (s) => {
+    state.updateStateAtomicCtx(new SessionContext(TEST_PROJECT_ROOT, sessionId), (s) => {
       s.stages['DEV'].status = 'completed';
       s.stages['DEV'].result = 'fail';
       s.stages['DEV'].parallelTotal = 3;
@@ -266,7 +267,7 @@ describe('Feature 3：on-stop.js 收斂門 — fail 立即觸發', () => {
     // 後續到達的 inst3（DEV 永遠 pass，但 stage 已 completed → 只做 cleanup）
     runSubagentStop(sessionId, 'developer', 'VERDICT: pass 任務三完成\n\nINSTANCE_ID: developer:ccc003-inst3', { cwd: TEST_PROJECT_ROOT });
 
-    const ws = state.readState(TEST_PROJECT_ROOT, sessionId);
+    const ws = state.readStateCtx(new SessionContext(TEST_PROJECT_ROOT, sessionId));
     // 結果維持 fail（不被 pass 覆蓋）
     expect(ws.stages['DEV'].result).toBe('fail');
     expect(ws.stages['DEV'].status).toBe('completed');
@@ -282,10 +283,10 @@ describe('Feature 3：on-stop.js 收斂門 — instanceId 解析', () => {
     const sessionId = newSessionId();
     createdSessions.push(sessionId);
     mkdirSync(paths.sessionDir(TEST_PROJECT_ROOT, sessionId), { recursive: true });
-    state.initState(TEST_PROJECT_ROOT, sessionId, 'single', workflows['single'].stages);
+    state.initStateCtx(new SessionContext(TEST_PROJECT_ROOT, sessionId), 'single', workflows['single'].stages);
 
     const instanceId = 'developer:m3xap2k-f7r9qz';
-    state.updateStateAtomic(TEST_PROJECT_ROOT, sessionId, null, (s) => {
+    state.updateStateAtomicCtx(new SessionContext(TEST_PROJECT_ROOT, sessionId), (s) => {
       s.stages['DEV'].status = 'active';
       s.stages['DEV'].parallelTotal = 2;
       s.stages['DEV'].parallelDone = 0;
@@ -296,7 +297,7 @@ describe('Feature 3：on-stop.js 收斂門 — instanceId 解析', () => {
 
     runSubagentStop(sessionId, 'developer', `VERDICT: pass 完成\n\nINSTANCE_ID: ${instanceId}`, { cwd: TEST_PROJECT_ROOT });
 
-    const ws = state.readState(TEST_PROJECT_ROOT, sessionId);
+    const ws = state.readStateCtx(new SessionContext(TEST_PROJECT_ROOT, sessionId));
     // 對應的 instanceId entry 被清除，另一個仍存在
     expect(ws.activeAgents[instanceId]).toBeUndefined();
     expect(ws.activeAgents['developer:zzzzzz-other']).toBeDefined();
@@ -307,10 +308,10 @@ describe('Feature 3：on-stop.js 收斂門 — instanceId 解析', () => {
     const sessionId = newSessionId();
     createdSessions.push(sessionId);
     mkdirSync(paths.sessionDir(TEST_PROJECT_ROOT, sessionId), { recursive: true });
-    state.initState(TEST_PROJECT_ROOT, sessionId, 'single', workflows['single'].stages);
+    state.initStateCtx(new SessionContext(TEST_PROJECT_ROOT, sessionId), 'single', workflows['single'].stages);
 
     // aaaa01 字典序 < bbbb02
-    state.updateStateAtomic(TEST_PROJECT_ROOT, sessionId, null, (s) => {
+    state.updateStateAtomicCtx(new SessionContext(TEST_PROJECT_ROOT, sessionId), (s) => {
       s.stages['DEV'].status = 'active';
       s.stages['DEV'].parallelTotal = 2;
       s.stages['DEV'].parallelDone = 0;
@@ -322,7 +323,7 @@ describe('Feature 3：on-stop.js 收斂門 — instanceId 解析', () => {
     // agentOutput 不含 INSTANCE_ID
     runSubagentStop(sessionId, 'developer', 'VERDICT: pass 完成（無 instanceId）', { cwd: TEST_PROJECT_ROOT });
 
-    const ws = state.readState(TEST_PROJECT_ROOT, sessionId);
+    const ws = state.readStateCtx(new SessionContext(TEST_PROJECT_ROOT, sessionId));
     // aaaa01 被清除（字典序最小），bbbb02 保留
     expect(ws.activeAgents['developer:aaaa01-xxx']).toBeUndefined();
     expect(ws.activeAgents['developer:bbbb02-yyy']).toBeDefined();
@@ -336,9 +337,9 @@ describe('Feature 3：on-stop.js 收斂門 — activeAgents 生命週期', () =>
     const sessionId = newSessionId();
     createdSessions.push(sessionId);
     mkdirSync(paths.sessionDir(TEST_PROJECT_ROOT, sessionId), { recursive: true });
-    state.initState(TEST_PROJECT_ROOT, sessionId, 'single', workflows['single'].stages);
+    state.initStateCtx(new SessionContext(TEST_PROJECT_ROOT, sessionId), 'single', workflows['single'].stages);
 
-    state.updateStateAtomic(TEST_PROJECT_ROOT, sessionId, null, (s) => {
+    state.updateStateAtomicCtx(new SessionContext(TEST_PROJECT_ROOT, sessionId), (s) => {
       s.stages['DEV'].status = 'active';
       s.stages['DEV'].parallelTotal = 3;
       s.stages['DEV'].parallelDone = 0;
@@ -351,7 +352,7 @@ describe('Feature 3：on-stop.js 收斂門 — activeAgents 生命週期', () =>
     // 第 1 個完成（parallelDone = 1，parallelTotal = 3，未收斂）
     runSubagentStop(sessionId, 'developer', 'VERDICT: pass 任務一\n\nINSTANCE_ID: developer:aaa001-inst1', { cwd: TEST_PROJECT_ROOT });
 
-    const ws1 = state.readState(TEST_PROJECT_ROOT, sessionId);
+    const ws1 = state.readStateCtx(new SessionContext(TEST_PROJECT_ROOT, sessionId));
     expect(ws1.stages['DEV'].parallelDone).toBe(1);
     // 未收斂 — stage 仍為 active，aaa001 entry 被清除，其他兩個仍在
     expect(ws1.stages['DEV'].status).toBe('active');
@@ -360,14 +361,14 @@ describe('Feature 3：on-stop.js 收斂門 — activeAgents 生命週期', () =>
 
     // 第 2 個完成（parallelDone = 2，未收斂）
     runSubagentStop(sessionId, 'developer', 'VERDICT: pass 任務二\n\nINSTANCE_ID: developer:bbb002-inst2', { cwd: TEST_PROJECT_ROOT });
-    const ws2 = state.readState(TEST_PROJECT_ROOT, sessionId);
+    const ws2 = state.readStateCtx(new SessionContext(TEST_PROJECT_ROOT, sessionId));
     expect(ws2.stages['DEV'].parallelDone).toBe(2);
     expect(ws2.stages['DEV'].status).toBe('active');
 
     // 第 3 個完成（parallelDone = 3，已收斂）
     runSubagentStop(sessionId, 'developer', 'VERDICT: pass 任務三\n\nINSTANCE_ID: developer:ccc003-inst3', { cwd: TEST_PROJECT_ROOT });
 
-    const ws3 = state.readState(TEST_PROJECT_ROOT, sessionId);
+    const ws3 = state.readStateCtx(new SessionContext(TEST_PROJECT_ROOT, sessionId));
     expect(ws3.stages['DEV'].status).toBe('completed');
     // 收斂後 activeAgents 中的所有 DEV entry 都被清除
     const devEntries = Object.entries(ws3.activeAgents || {}).filter(([, info]) => info.stage === 'DEV');
@@ -382,9 +383,9 @@ describe('Feature 3：on-stop.js timeline — 每個 instance emit agent:complet
     const sessionId = newSessionId();
     createdSessions.push(sessionId);
     mkdirSync(paths.sessionDir(TEST_PROJECT_ROOT, sessionId), { recursive: true });
-    state.initState(TEST_PROJECT_ROOT, sessionId, 'single', workflows['single'].stages);
+    state.initStateCtx(new SessionContext(TEST_PROJECT_ROOT, sessionId), 'single', workflows['single'].stages);
 
-    state.updateStateAtomic(TEST_PROJECT_ROOT, sessionId, null, (s) => {
+    state.updateStateAtomicCtx(new SessionContext(TEST_PROJECT_ROOT, sessionId), (s) => {
       s.stages['DEV'].status = 'active';
       s.stages['DEV'].parallelTotal = 3;
       s.stages['DEV'].parallelDone = 0;
@@ -397,8 +398,8 @@ describe('Feature 3：on-stop.js timeline — 每個 instance emit agent:complet
     // 第 1 個完成
     runSubagentStop(sessionId, 'developer', 'VERDICT: pass inst1\n\nINSTANCE_ID: developer:a1-inst1', { cwd: TEST_PROJECT_ROOT });
 
-    const stageEvents1 = timeline.query(TEST_PROJECT_ROOT, sessionId, null, { type: 'stage:complete' });
-    const agentEvents1 = timeline.query(TEST_PROJECT_ROOT, sessionId, null, { type: 'agent:complete' });
+    const stageEvents1 = timeline.queryCtx(new SessionContext(TEST_PROJECT_ROOT, sessionId), { type: 'stage:complete' });
+    const agentEvents1 = timeline.queryCtx(new SessionContext(TEST_PROJECT_ROOT, sessionId), { type: 'agent:complete' });
     // 只有 agent:complete，沒有 stage:complete
     expect(agentEvents1.length).toBe(1);
     expect(stageEvents1.length).toBe(0);
@@ -406,16 +407,16 @@ describe('Feature 3：on-stop.js timeline — 每個 instance emit agent:complet
     // 第 2 個完成
     runSubagentStop(sessionId, 'developer', 'VERDICT: pass inst2\n\nINSTANCE_ID: developer:b2-inst2', { cwd: TEST_PROJECT_ROOT });
 
-    const stageEvents2 = timeline.query(TEST_PROJECT_ROOT, sessionId, null, { type: 'stage:complete' });
-    const agentEvents2 = timeline.query(TEST_PROJECT_ROOT, sessionId, null, { type: 'agent:complete' });
+    const stageEvents2 = timeline.queryCtx(new SessionContext(TEST_PROJECT_ROOT, sessionId), { type: 'stage:complete' });
+    const agentEvents2 = timeline.queryCtx(new SessionContext(TEST_PROJECT_ROOT, sessionId), { type: 'agent:complete' });
     expect(agentEvents2.length).toBe(2);
     expect(stageEvents2.length).toBe(0); // 仍無 stage:complete
 
     // 第 3 個完成（收斂）
     runSubagentStop(sessionId, 'developer', 'VERDICT: pass inst3\n\nINSTANCE_ID: developer:c3-inst3', { cwd: TEST_PROJECT_ROOT });
 
-    const stageEvents3 = timeline.query(TEST_PROJECT_ROOT, sessionId, null, { type: 'stage:complete' });
-    const agentEvents3 = timeline.query(TEST_PROJECT_ROOT, sessionId, null, { type: 'agent:complete' });
+    const stageEvents3 = timeline.queryCtx(new SessionContext(TEST_PROJECT_ROOT, sessionId), { type: 'stage:complete' });
+    const agentEvents3 = timeline.queryCtx(new SessionContext(TEST_PROJECT_ROOT, sessionId), { type: 'agent:complete' });
     expect(agentEvents3.length).toBe(3); // 3 個 agent:complete
     expect(stageEvents3.length).toBe(1); // 收斂後 1 個 stage:complete
     expect(stageEvents3[0].stage).toBe('DEV');
@@ -427,9 +428,9 @@ describe('Feature 3：on-stop.js timeline — 每個 instance emit agent:complet
     const sessionId = newSessionId();
     createdSessions.push(sessionId);
     mkdirSync(paths.sessionDir(TEST_PROJECT_ROOT, sessionId), { recursive: true });
-    state.initState(TEST_PROJECT_ROOT, sessionId, 'single', workflows['single'].stages);
+    state.initStateCtx(new SessionContext(TEST_PROJECT_ROOT, sessionId), 'single', workflows['single'].stages);
 
-    state.updateStateAtomic(TEST_PROJECT_ROOT, sessionId, null, (s) => {
+    state.updateStateAtomicCtx(new SessionContext(TEST_PROJECT_ROOT, sessionId), (s) => {
       s.stages['DEV'].status = 'active';
       // 不設定 parallelTotal
       return s;
@@ -437,12 +438,12 @@ describe('Feature 3：on-stop.js timeline — 每個 instance emit agent:complet
 
     runSubagentStop(sessionId, 'developer', 'VERDICT: pass 完成', { cwd: TEST_PROJECT_ROOT });
 
-    const ws = state.readState(TEST_PROJECT_ROOT, sessionId);
+    const ws = state.readStateCtx(new SessionContext(TEST_PROJECT_ROOT, sessionId));
     expect(ws.stages['DEV'].status).toBe('completed');
     expect(ws.stages['DEV'].result).toBe('pass');
 
     // stage:complete 有記錄
-    const stageEvents = timeline.query(TEST_PROJECT_ROOT, sessionId, null, { type: 'stage:complete' });
+    const stageEvents = timeline.queryCtx(new SessionContext(TEST_PROJECT_ROOT, sessionId), { type: 'stage:complete' });
     expect(stageEvents.length).toBeGreaterThan(0);
   });
 });
@@ -469,7 +470,7 @@ describe('Feature 7：邊界案例', () => {
 
     expect(isAllowed(result.parsed)).toBe(true);
 
-    const ws = state.readState(TEST_PROJECT_ROOT, sessionId);
+    const ws = state.readStateCtx(new SessionContext(TEST_PROJECT_ROOT, sessionId));
     // parallelTotal 不寫入（parseInt('abc') = NaN）
     expect(ws.stages['DEV'].parallelTotal).toBeUndefined();
   });
@@ -479,9 +480,9 @@ describe('Feature 7：邊界案例', () => {
     const sessionId = newSessionId();
     createdSessions.push(sessionId);
     mkdirSync(paths.sessionDir(TEST_PROJECT_ROOT, sessionId), { recursive: true });
-    state.initState(TEST_PROJECT_ROOT, sessionId, 'single', workflows['single'].stages);
+    state.initStateCtx(new SessionContext(TEST_PROJECT_ROOT, sessionId), 'single', workflows['single'].stages);
 
-    state.updateStateAtomic(TEST_PROJECT_ROOT, sessionId, null, (s) => {
+    state.updateStateAtomicCtx(new SessionContext(TEST_PROJECT_ROOT, sessionId), (s) => {
       s.stages['DEV'].status = 'active';
       // activeAgents 為空物件
       s.activeAgents = {};
@@ -497,7 +498,7 @@ describe('Feature 7：邊界案例', () => {
     // hook 正常退出（exit code 0）
     expect(result.exitCode).toBe(0);
     // stage 仍正常處理（收斂）
-    const ws = state.readState(TEST_PROJECT_ROOT, sessionId);
+    const ws = state.readStateCtx(new SessionContext(TEST_PROJECT_ROOT, sessionId));
     expect(ws.stages['DEV'].status).toBe('completed');
   });
 
@@ -506,9 +507,9 @@ describe('Feature 7：邊界案例', () => {
     const sessionId = newSessionId();
     createdSessions.push(sessionId);
     mkdirSync(paths.sessionDir(TEST_PROJECT_ROOT, sessionId), { recursive: true });
-    state.initState(TEST_PROJECT_ROOT, sessionId, 'single', workflows['single'].stages);
+    state.initStateCtx(new SessionContext(TEST_PROJECT_ROOT, sessionId), 'single', workflows['single'].stages);
 
-    state.updateStateAtomic(TEST_PROJECT_ROOT, sessionId, null, (s) => {
+    state.updateStateAtomicCtx(new SessionContext(TEST_PROJECT_ROOT, sessionId), (s) => {
       s.stages['DEV'].status = 'completed';
       s.stages['DEV'].result = 'fail';
       s.stages['DEV'].parallelTotal = 3;
@@ -520,14 +521,14 @@ describe('Feature 7：邊界案例', () => {
     // inst2 的 on-stop 在 stage 已 completed 後到達
     runSubagentStop(sessionId, 'developer', 'VERDICT: pass inst2\n\nINSTANCE_ID: developer:bbb002-inst2', { cwd: TEST_PROJECT_ROOT });
 
-    const ws = state.readState(TEST_PROJECT_ROOT, sessionId);
+    const ws = state.readStateCtx(new SessionContext(TEST_PROJECT_ROOT, sessionId));
     // 結果不改變
     expect(ws.stages['DEV'].result).toBe('fail');
     expect(ws.stages['DEV'].status).toBe('completed');
     // activeAgents 中的 inst2 被清除
     expect(ws.activeAgents['developer:bbb002-inst2']).toBeUndefined();
     // agent:complete 仍有記錄（不重複記錄 stage:complete）
-    const agentEvents = timeline.query(TEST_PROJECT_ROOT, sessionId, null, { type: 'agent:complete' });
+    const agentEvents = timeline.queryCtx(new SessionContext(TEST_PROJECT_ROOT, sessionId), { type: 'agent:complete' });
     expect(agentEvents.length).toBeGreaterThan(0);
   });
 });

@@ -83,8 +83,9 @@ function _findTopPattern(records) {
  */
 function makeMockTimeline(eventsPerSession = {}) {
   return {
-    query: (projectRoot, sessionId, workflowId, filter = {}) => {
-      const events = eventsPerSession[sessionId] || [];
+    queryCtx: (ctx, filter = {}) => {
+      const sessionId = ctx && ctx.sessionId ? ctx.sessionId : null;
+      const events = sessionId ? (eventsPerSession[sessionId] || []) : [];
       if (!filter.type) return events;
       return events.filter(e => e.type === filter.type);
     },
@@ -264,10 +265,10 @@ describe('analyzeHookOverhead', () => {
     expect(result.sessionId).toBe(SESSION_ID);
   });
 
-  test('邊界情況：timeline.query 拋出例外時回傳空 hooks', () => {
+  test('邊界情況：timeline.queryCtx 拋出例外時回傳空 hooks', () => {
     const deps = {
       timeline: {
-        query: () => { throw new Error('讀取失敗'); },
+        queryCtx: () => { throw new Error('讀取失敗'); },
       },
       failureTracker: makeMockFailureTracker(),
     };

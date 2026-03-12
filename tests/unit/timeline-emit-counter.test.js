@@ -15,33 +15,36 @@
  * counter 累積值跨測試連續，這符合「模組級跨 session 累積」的設計行為。
  */
 const { test, expect, beforeEach, afterEach, describe } = require('bun:test');
-const { mkdirSync, rmSync, readFileSync, existsSync, appendFileSync } = require('fs');
+const { mkdirSync, rmSync, readFileSync, existsSync, appendFileSync, writeFileSync } = require('fs');
 const { join } = require('path');
-const { homedir } = require('os');
 const { SCRIPTS_LIB } = require('../helpers/paths');
+const { makeTmpProject, createCtx, cleanupProject } = require('../helpers/session-factory');
 
 const timeline = require(join(SCRIPTS_LIB, 'timeline'));
-const paths = require(join(SCRIPTS_LIB, 'paths'));
 
 const MAX_EVENTS = 2000;
 
-// 為每個測試建立獨立 session
+// 為每個測試建立獨立 session（使用 Ctx API）
 function makeSession(suffix) {
-  const id = `test_emitctr_${suffix}_${Date.now()}`;
-  const dir = join(homedir(), '.nova', 'sessions', id);
-  return { id, dir };
+  const projectRoot = makeTmpProject(`ot-emitctr-${suffix}`);
+  const ctx = createCtx(projectRoot);
+  return { projectRoot, ctx };
+}
+
+function cleanupSession(session) {
+  cleanupProject(session.projectRoot);
 }
 
 // 直接 append 行到 timeline JSONL（繞過 emit() 的 counter 邏輯，用於預填事件）
-function appendRawEvent(sessionId, event) {
-  const filePath = paths.session.timeline(sessionId);
+function appendRawEvent(ctx, event) {
+  const filePath = ctx.timelineFile();
   mkdirSync(require('path').dirname(filePath), { recursive: true });
   appendFileSync(filePath, JSON.stringify(event) + '\n', 'utf8');
 }
 
 // 計算 timeline 檔案行數
-function countLines(sessionId) {
-  const filePath = paths.session.timeline(sessionId);
+function countLines(ctx) {
+  const filePath = ctx.timelineFile();
   if (!existsSync(filePath)) return 0;
   const content = readFileSync(filePath, 'utf8').trim();
   if (!content) return 0;
@@ -49,14 +52,14 @@ function countLines(sessionId) {
 }
 
 // 預填超過 MAX_EVENTS 筆事件（直接寫入，繞過 counter）
-function prefillOverMax(sessionId, count) {
-  const filePath = paths.session.timeline(sessionId);
+function prefillOverMax(ctx, count) {
+  const filePath = ctx.timelineFile();
   mkdirSync(require('path').dirname(filePath), { recursive: true });
   const lines = [];
   for (let i = 0; i < count; i++) {
     lines.push(JSON.stringify({ ts: new Date().toISOString(), type: 'workflow:start', category: 'workflow', label: 'workflow:start' }));
   }
-  require('fs').writeFileSync(filePath, lines.join('\n') + '\n', 'utf8');
+  writeFileSync(filePath, lines.join('\n') + '\n', 'utf8');
 }
 
 // ════════════════════════════════════════════════════════
@@ -67,14 +70,13 @@ describe('Feature 4：emit 正常寫入，counter 對呼叫者透明', () => {
   let session;
   beforeEach(() => {
     session = makeSession('write');
-    mkdirSync(session.dir, { recursive: true });
   });
   afterEach(() => {
-    rmSync(session.dir, { recursive: true, force: true });
+    cleanupSession(session);
   });
 
   test('emit 回傳包含 ts、type、category、label 的事件物件', () => {
-    const event = timeline.emit(session.id, 'workflow:start', {});
+    const event = timeline.emitCtx(session.ctx, 'workflow:start', {});
     expect(event).toMatchObject({
       type: 'workflow:start',
       category: 'workflow',
@@ -84,15 +86,15 @@ describe('Feature 4：emit 正常寫入，counter 對呼叫者透明', () => {
   });
 
   test('emit 後 timeline JSONL 新增一行', () => {
-    const before = countLines(session.id);
-    timeline.emit(session.id, 'workflow:start', {});
-    const after = countLines(session.id);
+    const before = countLines(session.ctx);
+    timeline.emitCtx(session.ctx, 'workflow:start', {});
+    const after = countLines(session.ctx);
     expect(after).toBe(before + 1);
   });
 
   test('emit 寫入的事件可被 query() 讀回', () => {
-    timeline.emit(session.id, 'workflow:start', { note: 'test' });
-    const events = timeline.query(session.id, { type: 'workflow:start' });
+    timeline.emitCtx(session.ctx, 'workflow:start', { note: 'test' });
+    const events = timeline.queryCtx(session.ctx, { type: 'workflow:start' });
     expect(events.length).toBeGreaterThanOrEqual(1);
     const last = events[events.length - 1];
     expect(last.type).toBe('workflow:start');
@@ -108,20 +110,19 @@ describe('Feature 4：emit 使用未知 eventType 拋出錯誤', () => {
   let session;
   beforeEach(() => {
     session = makeSession('error');
-    mkdirSync(session.dir, { recursive: true });
   });
   afterEach(() => {
-    rmSync(session.dir, { recursive: true, force: true });
+    cleanupSession(session);
   });
 
   test('未知 eventType 拋出包含「未知的 timeline 事件類型」的錯誤', () => {
-    expect(() => timeline.emit(session.id, 'unknown:type:xyz', {})).toThrow('未知的 timeline 事件類型');
+    expect(() => timeline.emitCtx(session.ctx, 'unknown:type:xyz', {})).toThrow('未知的 timeline 事件類型');
   });
 
   test('未知 eventType 拋出錯誤且不寫入任何行', () => {
-    const before = countLines(session.id);
-    expect(() => timeline.emit(session.id, 'nonexistent:event', {})).toThrow();
-    const after = countLines(session.id);
+    const before = countLines(session.ctx);
+    expect(() => timeline.emitCtx(session.ctx, 'nonexistent:event', {})).toThrow();
+    const after = countLines(session.ctx);
     expect(after).toBe(before);
   });
 });
@@ -139,18 +140,16 @@ describe('Feature 4：emit counter — 截斷觸發機制（模組級）', () =>
   beforeEach(() => {
     sessionA = makeSession('trimA');
     sessionB = makeSession('trimB');
-    mkdirSync(sessionA.dir, { recursive: true });
-    mkdirSync(sessionB.dir, { recursive: true });
   });
   afterEach(() => {
-    rmSync(sessionA.dir, { recursive: true, force: true });
-    rmSync(sessionB.dir, { recursive: true, force: true });
+    cleanupSession(sessionA);
+    cleanupSession(sessionB);
   });
 
   test('Scenario 1：連續呼叫到 100 倍數時，超過 MAX_EVENTS 的 timeline 被截斷', () => {
     // 先預填 sessionA 為超過 MAX_EVENTS 的檔案
-    prefillOverMax(sessionA.id, MAX_EVENTS + 50);
-    const beforeCount = countLines(sessionA.id);
+    prefillOverMax(sessionA.ctx, MAX_EVENTS + 50);
+    const beforeCount = countLines(sessionA.ctx);
     expect(beforeCount).toBe(MAX_EVENTS + 50);
 
     // 計算從當前 counter 值到下一個 100 倍數需要幾次
@@ -158,8 +157,8 @@ describe('Feature 4：emit counter — 截斷觸發機制（模組級）', () =>
     // 為安全起見，最多呼叫 200 次找到下一個截斷點
     let triggered = false;
     for (let i = 0; i < 200; i++) {
-      timeline.emit(sessionA.id, 'workflow:start', {});
-      const current = countLines(sessionA.id);
+      timeline.emitCtx(sessionA.ctx, 'workflow:start', {});
+      const current = countLines(sessionA.ctx);
       // 若行數 <= MAX_EVENTS，代表截斷已觸發
       if (current <= MAX_EVENTS) {
         triggered = true;
@@ -169,23 +168,23 @@ describe('Feature 4：emit counter — 截斷觸發機制（模組級）', () =>
 
     expect(triggered).toBe(true);
     // 截斷後行數應 <= MAX_EVENTS（trimIfNeeded 保留最新 MAX_EVENTS 筆）
-    expect(countLines(sessionA.id)).toBeLessThanOrEqual(MAX_EVENTS);
+    expect(countLines(sessionA.ctx)).toBeLessThanOrEqual(MAX_EVENTS);
   });
 
   test('Scenario 2：非 100 倍數的 emit 不觸發截斷（行數持續增加）', () => {
     // 先預填剛好 MAX_EVENTS 筆（不超過，不會被截斷）
-    prefillOverMax(sessionB.id, MAX_EVENTS - 1);
-    const startCount = countLines(sessionB.id);
+    prefillOverMax(sessionB.ctx, MAX_EVENTS - 1);
+    const startCount = countLines(sessionB.ctx);
 
     // 呼叫 1 次 emit → 應增加到 MAX_EVENTS（除非剛好是 100 倍數，行為也正確：截斷後保留 MAX_EVENTS）
-    timeline.emit(sessionB.id, 'stage:start', { stage: 'DEV' });
-    const afterOneEmit = countLines(sessionB.id);
+    timeline.emitCtx(sessionB.ctx, 'stage:start', { stage: 'DEV' });
+    const afterOneEmit = countLines(sessionB.ctx);
     // 即使觸發截斷，結果也是 MAX_EVENTS，不會比 startCount 少
     expect(afterOneEmit).toBeGreaterThanOrEqual(startCount);
   });
 
   test('Scenario 3：counter 透明 — emit 回傳值不包含 counter 資訊', () => {
-    const event = timeline.emit(sessionA.id, 'workflow:start', {});
+    const event = timeline.emitCtx(sessionA.ctx, 'workflow:start', {});
     // 回傳的事件物件不應暴露 counter
     expect(event._counter).toBeUndefined();
     expect(event.counter).toBeUndefined();
@@ -205,25 +204,23 @@ describe('Feature 4：counter 跨 session 累積 — 兩 session 事件各自正
   beforeEach(() => {
     sessionX = makeSession('crossX');
     sessionY = makeSession('crossY');
-    mkdirSync(sessionX.dir, { recursive: true });
-    mkdirSync(sessionY.dir, { recursive: true });
   });
   afterEach(() => {
-    rmSync(sessionX.dir, { recursive: true, force: true });
-    rmSync(sessionY.dir, { recursive: true, force: true });
+    cleanupSession(sessionX);
+    cleanupSession(sessionY);
   });
 
   test('交替對兩個 session emit，兩個 timeline 都正確寫入', () => {
     // 交替呼叫 6 次（每個 session 3 次）
-    timeline.emit(sessionX.id, 'workflow:start', { note: 'x1' });
-    timeline.emit(sessionY.id, 'workflow:start', { note: 'y1' });
-    timeline.emit(sessionX.id, 'stage:start', { stage: 'DEV' });
-    timeline.emit(sessionY.id, 'stage:start', { stage: 'DEV' });
-    timeline.emit(sessionX.id, 'stage:complete', { stage: 'DEV', result: 'pass' });
-    timeline.emit(sessionY.id, 'stage:complete', { stage: 'DEV', result: 'pass' });
+    timeline.emitCtx(sessionX.ctx, 'workflow:start', { note: 'x1' });
+    timeline.emitCtx(sessionY.ctx, 'workflow:start', { note: 'y1' });
+    timeline.emitCtx(sessionX.ctx, 'stage:start', { stage: 'DEV' });
+    timeline.emitCtx(sessionY.ctx, 'stage:start', { stage: 'DEV' });
+    timeline.emitCtx(sessionX.ctx, 'stage:complete', { stage: 'DEV', result: 'pass' });
+    timeline.emitCtx(sessionY.ctx, 'stage:complete', { stage: 'DEV', result: 'pass' });
 
-    const xEvents = timeline.query(sessionX.id);
-    const yEvents = timeline.query(sessionY.id);
+    const xEvents = timeline.queryCtx(sessionX.ctx);
+    const yEvents = timeline.queryCtx(sessionY.ctx);
 
     // 各自應有 3 筆事件
     expect(xEvents.length).toBe(3);
@@ -236,22 +233,22 @@ describe('Feature 4：counter 跨 session 累積 — 兩 session 事件各自正
 
   test('一個 session 超過 MAX_EVENTS 被截斷，不影響另一個 session', () => {
     // sessionX 預填超量
-    prefillOverMax(sessionX.id, MAX_EVENTS + 50);
+    prefillOverMax(sessionX.ctx, MAX_EVENTS + 50);
     // sessionY 寫入少量事件
-    timeline.emit(sessionY.id, 'workflow:start', {});
-    timeline.emit(sessionY.id, 'workflow:complete', {});
+    timeline.emitCtx(sessionY.ctx, 'workflow:start', {});
+    timeline.emitCtx(sessionY.ctx, 'workflow:complete', {});
 
-    const yCountBefore = countLines(sessionY.id);
+    const yCountBefore = countLines(sessionY.ctx);
     expect(yCountBefore).toBe(2);
 
     // 呼叫 emit 直到觸發截斷（最多 200 次）
     for (let i = 0; i < 200; i++) {
-      timeline.emit(sessionX.id, 'workflow:start', {});
-      if (countLines(sessionX.id) <= MAX_EVENTS) break;
+      timeline.emitCtx(sessionX.ctx, 'workflow:start', {});
+      if (countLines(sessionX.ctx) <= MAX_EVENTS) break;
     }
 
     // sessionY 的事件數量不受影響
-    const yCountAfter = countLines(sessionY.id);
+    const yCountAfter = countLines(sessionY.ctx);
     expect(yCountAfter).toBe(2);
   });
 });

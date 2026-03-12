@@ -3,6 +3,7 @@ const { test, expect, describe, beforeAll, afterAll } = require('bun:test');
 const { mkdirSync, rmSync } = require('fs');
 const { join } = require('path');
 const { HOOKS_DIR, SCRIPTS_LIB } = require('../helpers/paths');
+const SessionContext = require(join(SCRIPTS_LIB, 'session-context'));
 
 // ── 路徑設定 ──
 
@@ -33,7 +34,7 @@ beforeAll(() => {
   // 建立所有 session，確保 instinct.emit 有有效的 session 存在
   for (const sessionId of ALL_SESSIONS) {
     mkdirSync(paths.sessionDir(PROJECT_ROOT, sessionId), { recursive: true });
-    state.initState(PROJECT_ROOT, sessionId, 'quick', ['DEV', 'REVIEW', 'TEST']);
+    state.initStateCtx(new SessionContext(PROJECT_ROOT, sessionId), 'quick', ['DEV', 'REVIEW', 'TEST']);
   }
 });
 
@@ -246,7 +247,7 @@ describe('場景 5：search-tools 反面觀察', () => {
     // 建立獨立 session 避免與其他測試干擾
     const fpSession = `test_post_bash_fp_${Date.now()}`;
     mkdirSync(paths.sessionDir(PROJECT_ROOT, fpSession), { recursive: true });
-    state.initState(PROJECT_ROOT, fpSession, 'quick', ['DEV', 'REVIEW', 'TEST']);
+    state.initStateCtx(new SessionContext(PROJECT_ROOT, fpSession), 'quick', ['DEV', 'REVIEW', 'TEST']);
 
     try {
       await runHook({

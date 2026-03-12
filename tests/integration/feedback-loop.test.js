@@ -11,6 +11,7 @@ const { mkdirSync, rmSync, appendFileSync, existsSync, readFileSync } = require(
 const { join } = require('path');
 const os = require('os');
 const { HOOKS_DIR, SCRIPTS_LIB } = require('../helpers/paths');
+const SessionContext = require(join(SCRIPTS_LIB, 'session-context'));
 
 // ── 路徑設定 ──
 
@@ -113,7 +114,7 @@ describe('Feature 1: pre-task.js 注入 score context', () => {
     // 初始化 quick workflow（寫入 tmpProject，與 hook cwd 一致）
     mkdirSync(paths.sessionDir(tmpProject, sessionId), { recursive: true });
     const quickWorkflow = workflows['quick'];
-    state.initState(tmpProject, sessionId, 'quick', quickWorkflow.stages);
+    state.initStateCtx(new SessionContext(tmpProject, sessionId), 'quick', quickWorkflow.stages);
 
     // 寫入 DEV 分數記錄
     const record = {
@@ -158,7 +159,7 @@ describe('Feature 1: pre-task.js 注入 score context', () => {
     // 初始化 quick workflow（寫入 tmpProject，與 hook cwd 一致）
     mkdirSync(paths.sessionDir(tmpProject, sessionId), { recursive: true });
     const quickWorkflow = workflows['quick'];
-    state.initState(tmpProject, sessionId, 'quick', quickWorkflow.stages);
+    state.initStateCtx(new SessionContext(tmpProject, sessionId), 'quick', quickWorkflow.stages);
 
     const input = {
       tool_input: {
@@ -190,7 +191,7 @@ describe('Feature 1: pre-task.js 注入 score context', () => {
     // 初始化 quick workflow（寫入 tmpProject，與 hook cwd 一致）
     mkdirSync(paths.sessionDir(tmpProject, sessionId), { recursive: true });
     const quickWorkflow = workflows['quick'];
-    state.initState(tmpProject, sessionId, 'quick', quickWorkflow.stages);
+    state.initStateCtx(new SessionContext(tmpProject, sessionId), 'quick', quickWorkflow.stages);
 
     // 寫入分數
     scoreEngine.saveScore(tmpProject, {

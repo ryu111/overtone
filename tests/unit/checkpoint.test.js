@@ -1,26 +1,33 @@
 'use strict';
 const { describe, it, expect, beforeEach, afterEach } = require('bun:test');
-const { mkdirSync, writeFileSync, readFileSync, existsSync, rmSync } = require('fs');
+const { mkdirSync, writeFileSync, readFileSync, existsSync, rmSync, mkdtempSync } = require('fs');
 const path = require('path');
 const os = require('os');
 
 const paths = require(path.join(os.homedir(), '.claude/scripts/lib/paths'));
+const SessionContext = require(path.join(os.homedir(), '.claude/scripts/lib/session-context'));
 const { extractHandoff } = require(path.join(os.homedir(), '.claude/scripts/lib/hook-utils'));
 const { _loadHandoffContext } = require(path.join(os.homedir(), '.claude/scripts/lib/pre-compact-handler'));
-
-// ── project root（per-project API）──
-const PROJECT_ROOT = process.cwd();
 
 // ── 測試用 session ID ──
 const TEST_SESSION = 'ckpt-test-' + Date.now();
 
+// ── project root（per-test 隔離）──
+let PROJECT_ROOT;
+
 beforeEach(() => {
+  PROJECT_ROOT = mkdtempSync(path.join(os.tmpdir(), 'ot-ckpt-'));
   mkdirSync(paths.sessionDir(PROJECT_ROOT, TEST_SESSION), { recursive: true });
 });
 
 afterEach(() => {
-  try { rmSync(paths.sessionDir(PROJECT_ROOT, TEST_SESSION), { recursive: true, force: true }); } catch {}
+  try { rmSync(PROJECT_ROOT, { recursive: true, force: true }); } catch {}
 });
+
+// ── 測試輔助：建立 ctx ──
+function makeCtx(workflowId = null) {
+  return new SessionContext(PROJECT_ROOT, TEST_SESSION, workflowId);
+}
 
 // ══════════════════════════════════════════════════════════════════════════
 // paths.js — handoff 路徑 helpers
@@ -134,7 +141,7 @@ ${'- file.ts — 修改\n'.repeat(100)}
 describe('_loadHandoffContext', () => {
   it('無 handoffs 目錄時回傳 null', () => {
     const state = { stages: { DEV: { status: 'active' } }, currentStage: 'DEV' };
-    expect(_loadHandoffContext(PROJECT_ROOT, TEST_SESSION, null, state)).toBeNull();
+    expect(_loadHandoffContext(makeCtx(), state)).toBeNull();
   });
 
   it('載入最近完成 stage 的 handoff', () => {
@@ -151,7 +158,7 @@ describe('_loadHandoffContext', () => {
       },
     };
 
-    const result = _loadHandoffContext(PROJECT_ROOT, TEST_SESSION, null, state);
+    const result = _loadHandoffContext(makeCtx(), state);
     expect(result).toContain('架構設計完成');
   });
 
@@ -172,7 +179,7 @@ describe('_loadHandoffContext', () => {
       },
     };
 
-    const result = _loadHandoffContext(PROJECT_ROOT, TEST_SESSION, null, state);
+    const result = _loadHandoffContext(makeCtx(), state);
     // 最近 2 個 = ARCH + TEST
     expect(result).toContain('ARCH handoff');
     expect(result).toContain('TEST handoff');
@@ -192,7 +199,7 @@ describe('_loadHandoffContext', () => {
       },
     };
 
-    const result = _loadHandoffContext(PROJECT_ROOT, TEST_SESSION, null, state);
+    const result = _loadHandoffContext(makeCtx(), state);
     expect(result).toBeNull();
   });
 
@@ -211,6 +218,6 @@ describe('_loadHandoffContext', () => {
     };
 
     // 不應該拋錯
-    expect(() => _loadHandoffContext(PROJECT_ROOT, TEST_SESSION, null, state)).not.toThrow();
+    expect(() => _loadHandoffContext(makeCtx(), state)).not.toThrow();
   });
 });

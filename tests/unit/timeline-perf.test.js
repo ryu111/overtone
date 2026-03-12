@@ -11,22 +11,25 @@
 const { test, expect, beforeEach, afterEach, describe } = require('bun:test');
 const { mkdirSync, rmSync, appendFileSync, writeFileSync, existsSync } = require('fs');
 const { join } = require('path');
-const { homedir } = require('os');
 const { SCRIPTS_LIB } = require('../helpers/paths');
+const { makeTmpProject, createCtx, cleanupProject } = require('../helpers/session-factory');
 
 const timeline = require(join(SCRIPTS_LIB, 'timeline'));
-const paths = require(join(SCRIPTS_LIB, 'paths'));
 
 // 為每個測試建立獨立 session
 function makeSession(suffix) {
-  const id = `test_tlperf_${suffix}_${Date.now()}`;
-  const dir = join(homedir(), '.nova', 'sessions', id);
-  return { id, dir };
+  const projectRoot = makeTmpProject(`ot-tlperf-${suffix}`);
+  const ctx = createCtx(projectRoot);
+  return { projectRoot, ctx };
+}
+
+function cleanupSession(session) {
+  cleanupProject(session.projectRoot);
 }
 
 // 直接 append 一行到 timeline JSONL（繞過 emit() 的 counter 邏輯）
-function appendEvent(sessionId, event) {
-  const filePath = paths.session.timeline(sessionId);
+function appendEvent(ctx, event) {
+  const filePath = ctx.timelineFile();
   mkdirSync(require('path').dirname(filePath), { recursive: true });
   appendFileSync(filePath, JSON.stringify(event) + '\n', 'utf8');
 }
@@ -43,16 +46,15 @@ describe('latest() — 反向掃描正確性', () => {
   let session;
   beforeEach(() => {
     session = makeSession('latest');
-    mkdirSync(session.dir, { recursive: true });
   });
   afterEach(() => {
-    rmSync(session.dir, { recursive: true, force: true });
+    cleanupSession(session);
   });
 
   test('單筆 stage:complete → latest() 回傳該筆，type 正確', () => {
-    appendEvent(session.id, makeEvent('stage:complete', 'stage', { stage: 'DEV', result: 'pass' }));
+    appendEvent(session.ctx, makeEvent('stage:complete', 'stage', { stage: 'DEV', result: 'pass' }));
 
-    const result = timeline.latest(session.id, 'stage:complete');
+    const result = timeline.latestCtx(session.ctx, 'stage:complete');
     expect(result).not.toBeNull();
     expect(result.type).toBe('stage:complete');
     expect(result.stage).toBe('DEV');
@@ -60,11 +62,11 @@ describe('latest() — 反向掃描正確性', () => {
   });
 
   test('多筆相同 type → latest() 回傳最後一筆', () => {
-    appendEvent(session.id, makeEvent('stage:complete', 'stage', { stage: 'DEV', result: 'fail', ts: '2026-01-01T00:00:00.000Z' }));
-    appendEvent(session.id, makeEvent('stage:complete', 'stage', { stage: 'DEV', result: 'pass', ts: '2026-01-01T00:01:00.000Z' }));
-    appendEvent(session.id, makeEvent('stage:complete', 'stage', { stage: 'REVIEW', result: 'pass', ts: '2026-01-01T00:02:00.000Z' }));
+    appendEvent(session.ctx, makeEvent('stage:complete', 'stage', { stage: 'DEV', result: 'fail', ts: '2026-01-01T00:00:00.000Z' }));
+    appendEvent(session.ctx, makeEvent('stage:complete', 'stage', { stage: 'DEV', result: 'pass', ts: '2026-01-01T00:01:00.000Z' }));
+    appendEvent(session.ctx, makeEvent('stage:complete', 'stage', { stage: 'REVIEW', result: 'pass', ts: '2026-01-01T00:02:00.000Z' }));
 
-    const result = timeline.latest(session.id, 'stage:complete');
+    const result = timeline.latestCtx(session.ctx, 'stage:complete');
     expect(result).not.toBeNull();
     // 應回傳最後一筆：REVIEW pass
     expect(result.stage).toBe('REVIEW');
@@ -72,25 +74,25 @@ describe('latest() — 反向掃描正確性', () => {
   });
 
   test('混合 type 時 latest() 跳過不匹配的行', () => {
-    appendEvent(session.id, makeEvent('workflow:start', 'workflow'));
-    appendEvent(session.id, makeEvent('stage:start', 'stage', { stage: 'DEV' }));
-    appendEvent(session.id, makeEvent('agent:delegate', 'agent', { agent: 'developer' }));
-    appendEvent(session.id, makeEvent('stage:complete', 'stage', { stage: 'DEV', result: 'pass' }));
-    appendEvent(session.id, makeEvent('workflow:complete', 'workflow'));
+    appendEvent(session.ctx, makeEvent('workflow:start', 'workflow'));
+    appendEvent(session.ctx, makeEvent('stage:start', 'stage', { stage: 'DEV' }));
+    appendEvent(session.ctx, makeEvent('agent:delegate', 'agent', { agent: 'developer' }));
+    appendEvent(session.ctx, makeEvent('stage:complete', 'stage', { stage: 'DEV', result: 'pass' }));
+    appendEvent(session.ctx, makeEvent('workflow:complete', 'workflow'));
 
-    const result = timeline.latest(session.id, 'stage:complete');
+    const result = timeline.latestCtx(session.ctx, 'stage:complete');
     expect(result).not.toBeNull();
     expect(result.type).toBe('stage:complete');
     expect(result.stage).toBe('DEV');
   });
 
   test('latest() 結果與 query({ type, limit: 1 }) 一致', () => {
-    appendEvent(session.id, makeEvent('stage:complete', 'stage', { stage: 'DEV', result: 'fail' }));
-    appendEvent(session.id, makeEvent('agent:done', 'agent'));
-    appendEvent(session.id, makeEvent('stage:complete', 'stage', { stage: 'REVIEW', result: 'pass' }));
+    appendEvent(session.ctx, makeEvent('stage:complete', 'stage', { stage: 'DEV', result: 'fail' }));
+    appendEvent(session.ctx, makeEvent('agent:done', 'agent'));
+    appendEvent(session.ctx, makeEvent('stage:complete', 'stage', { stage: 'REVIEW', result: 'pass' }));
 
-    const fromLatest = timeline.latest(session.id, 'stage:complete');
-    const fromQuery = timeline.query(session.id, { type: 'stage:complete', limit: 1 });
+    const fromLatest = timeline.latestCtx(session.ctx, 'stage:complete');
+    const fromQuery = timeline.queryCtx(session.ctx, { type: 'stage:complete', limit: 1 });
 
     expect(fromLatest).not.toBeNull();
     expect(fromQuery.length).toBe(1);
@@ -108,31 +110,30 @@ describe('latest() — null 情境', () => {
   let session;
   beforeEach(() => {
     session = makeSession('null');
-    mkdirSync(session.dir, { recursive: true });
   });
   afterEach(() => {
-    rmSync(session.dir, { recursive: true, force: true });
+    cleanupSession(session);
   });
 
   test('無匹配 type 時回傳 null', () => {
-    appendEvent(session.id, makeEvent('workflow:start', 'workflow'));
-    appendEvent(session.id, makeEvent('stage:start', 'stage', { stage: 'DEV' }));
+    appendEvent(session.ctx, makeEvent('workflow:start', 'workflow'));
+    appendEvent(session.ctx, makeEvent('stage:start', 'stage', { stage: 'DEV' }));
 
-    const result = timeline.latest(session.id, 'workflow:complete');
+    const result = timeline.latestCtx(session.ctx, 'workflow:complete');
     expect(result).toBeNull();
   });
 
   test('timeline 檔案不存在時回傳 null', () => {
-    const result = timeline.latest(session.id, 'stage:complete');
+    const result = timeline.latestCtx(session.ctx, 'stage:complete');
     expect(result).toBeNull();
   });
 
   test('timeline 檔案存在但為空時回傳 null', () => {
-    const filePath = paths.session.timeline(session.id);
+    const filePath = session.ctx.timelineFile();
     mkdirSync(require('path').dirname(filePath), { recursive: true });
     writeFileSync(filePath, '', 'utf8');
 
-    const result = timeline.latest(session.id, 'stage:complete');
+    const result = timeline.latestCtx(session.ctx, 'stage:complete');
     expect(result).toBeNull();
   });
 });
@@ -144,40 +145,39 @@ describe('query() — limit 快速路徑', () => {
   let session;
   beforeEach(() => {
     session = makeSession('limit');
-    mkdirSync(session.dir, { recursive: true });
 
     // 寫入 5 筆不同 type 事件
-    appendEvent(session.id, makeEvent('workflow:start', 'workflow'));
-    appendEvent(session.id, makeEvent('stage:start', 'stage', { stage: 'DEV' }));
-    appendEvent(session.id, makeEvent('agent:delegate', 'agent', { agent: 'developer' }));
-    appendEvent(session.id, makeEvent('agent:complete', 'agent', { agent: 'developer' }));
-    appendEvent(session.id, makeEvent('workflow:complete', 'workflow'));
+    appendEvent(session.ctx, makeEvent('workflow:start', 'workflow'));
+    appendEvent(session.ctx, makeEvent('stage:start', 'stage', { stage: 'DEV' }));
+    appendEvent(session.ctx, makeEvent('agent:delegate', 'agent', { agent: 'developer' }));
+    appendEvent(session.ctx, makeEvent('agent:complete', 'agent', { agent: 'developer' }));
+    appendEvent(session.ctx, makeEvent('workflow:complete', 'workflow'));
   });
   afterEach(() => {
-    rmSync(session.dir, { recursive: true, force: true });
+    cleanupSession(session);
   });
 
   test('limit:2 無 type/category → 回傳最後 2 筆', () => {
-    const result = timeline.query(session.id, { limit: 2 });
+    const result = timeline.queryCtx(session.ctx, { limit: 2 });
     expect(result.length).toBe(2);
     expect(result[0].type).toBe('agent:complete');
     expect(result[1].type).toBe('workflow:complete');
   });
 
   test('limit:1 無 type/category → 回傳最後 1 筆', () => {
-    const result = timeline.query(session.id, { limit: 1 });
+    const result = timeline.queryCtx(session.ctx, { limit: 1 });
     expect(result.length).toBe(1);
     expect(result[0].type).toBe('workflow:complete');
   });
 
   test('limit 超過總數 → 回傳所有事件', () => {
-    const result = timeline.query(session.id, { limit: 100 });
+    const result = timeline.queryCtx(session.ctx, { limit: 100 });
     expect(result.length).toBe(5);
   });
 
   test('limit:0 視為 falsy → 回傳所有事件（不走快速路徑）', () => {
     // filter.limit = 0 is falsy，不走快速路徑，也不做 slice
-    const result = timeline.query(session.id, { limit: 0 });
+    const result = timeline.queryCtx(session.ctx, { limit: 0 });
     expect(result.length).toBe(5);
   });
 
@@ -185,7 +185,7 @@ describe('query() — limit 快速路徑', () => {
     // 完整路徑：先全量解析再 slice
     // 快速路徑：先 slice 再解析
     // 兩者應得到相同結果
-    const fastPath = timeline.query(session.id, { limit: 3 });
+    const fastPath = timeline.queryCtx(session.ctx, { limit: 3 });
     // 驗證順序和型態
     expect(fastPath.length).toBe(3);
     expect(fastPath[0].type).toBe('agent:delegate');
@@ -201,21 +201,20 @@ describe('query() — type + limit 完整路徑', () => {
   let session;
   beforeEach(() => {
     session = makeSession('type-limit');
-    mkdirSync(session.dir, { recursive: true });
 
     // 寫入多筆，包含多個 stage:complete
-    appendEvent(session.id, makeEvent('workflow:start', 'workflow'));
-    appendEvent(session.id, makeEvent('stage:complete', 'stage', { stage: 'DEV', result: 'fail' }));
-    appendEvent(session.id, makeEvent('stage:complete', 'stage', { stage: 'DEV', result: 'pass' }));
-    appendEvent(session.id, makeEvent('stage:complete', 'stage', { stage: 'REVIEW', result: 'pass' }));
-    appendEvent(session.id, makeEvent('workflow:complete', 'workflow'));
+    appendEvent(session.ctx, makeEvent('workflow:start', 'workflow'));
+    appendEvent(session.ctx, makeEvent('stage:complete', 'stage', { stage: 'DEV', result: 'fail' }));
+    appendEvent(session.ctx, makeEvent('stage:complete', 'stage', { stage: 'DEV', result: 'pass' }));
+    appendEvent(session.ctx, makeEvent('stage:complete', 'stage', { stage: 'REVIEW', result: 'pass' }));
+    appendEvent(session.ctx, makeEvent('workflow:complete', 'workflow'));
   });
   afterEach(() => {
-    rmSync(session.dir, { recursive: true, force: true });
+    cleanupSession(session);
   });
 
   test('type + limit:1 → 回傳最後一筆匹配的 stage:complete', () => {
-    const result = timeline.query(session.id, { type: 'stage:complete', limit: 1 });
+    const result = timeline.queryCtx(session.ctx, { type: 'stage:complete', limit: 1 });
     expect(result.length).toBe(1);
     expect(result[0].type).toBe('stage:complete');
     expect(result[0].stage).toBe('REVIEW');
@@ -223,7 +222,7 @@ describe('query() — type + limit 完整路徑', () => {
   });
 
   test('type + limit:2 → 回傳最後 2 筆匹配的 stage:complete', () => {
-    const result = timeline.query(session.id, { type: 'stage:complete', limit: 2 });
+    const result = timeline.queryCtx(session.ctx, { type: 'stage:complete', limit: 2 });
     expect(result.length).toBe(2);
     expect(result[0].stage).toBe('DEV');
     expect(result[0].result).toBe('pass');
@@ -231,18 +230,18 @@ describe('query() — type + limit 完整路徑', () => {
   });
 
   test('category + limit:1 走完整路徑，回傳最後 1 筆 workflow 事件', () => {
-    const result = timeline.query(session.id, { category: 'workflow', limit: 1 });
+    const result = timeline.queryCtx(session.ctx, { category: 'workflow', limit: 1 });
     expect(result.length).toBe(1);
     expect(result[0].type).toBe('workflow:complete');
   });
 
   test('type 不存在 + limit → 回傳空陣列', () => {
-    const result = timeline.query(session.id, { type: 'nonexistent:type', limit: 5 });
+    const result = timeline.queryCtx(session.ctx, { type: 'nonexistent:type', limit: 5 });
     expect(result).toEqual([]);
   });
 
   test('type:stage:complete 無 limit → 回傳所有 3 筆', () => {
-    const result = timeline.query(session.id, { type: 'stage:complete' });
+    const result = timeline.queryCtx(session.ctx, { type: 'stage:complete' });
     expect(result.length).toBe(3);
   });
 });

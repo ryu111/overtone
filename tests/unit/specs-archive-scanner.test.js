@@ -127,64 +127,64 @@ describe('scanAndArchive', () => {
 
   // ── Scenario 4: sessionId 為 null 時不 emit timeline ──
 
-  it('Scenario 4: sessionId 為 null 時不呼叫 timeline.emit', () => {
+  it('Scenario 4: sessionId 為 null 時不呼叫 timeline.emitCtx', () => {
     createFeature(projectRoot, 'done-feature', true);
 
-    // 攔截 timeline.emit — 透過 require cache 替換
+    // 攔截 timeline.emitCtx — 透過 require cache 替換
     const timelinePath = join(SCRIPTS_LIB, 'timeline');
     const timelineModule = require(timelinePath);
-    const originalEmit = timelineModule.emit;
+    const originalEmitCtx = timelineModule.emitCtx;
     let emitCalled = false;
-    timelineModule.emit = () => { emitCalled = true; };
+    timelineModule.emitCtx = () => { emitCalled = true; };
 
     try {
       const result = scanAndArchive(projectRoot, null);
       expect(result.count).toBe(1);
       expect(emitCalled).toBe(false);
     } finally {
-      timelineModule.emit = originalEmit;
+      timelineModule.emitCtx = originalEmitCtx;
     }
   });
 
-  it('Scenario 4b: sessionId 有值且有歸檔時呼叫 timeline.emit', () => {
+  it('Scenario 4b: sessionId 有值且有歸檔時呼叫 timeline.emitCtx', () => {
     createFeature(projectRoot, 'done-feature', true);
 
     const timelinePath = join(SCRIPTS_LIB, 'timeline');
     const timelineModule = require(timelinePath);
-    const originalEmit = timelineModule.emit;
+    const originalEmitCtx = timelineModule.emitCtx;
     let emitArgs = null;
-    timelineModule.emit = (...args) => { emitArgs = args; };
+    timelineModule.emitCtx = (...args) => { emitArgs = args; };
 
     try {
       const result = scanAndArchive(projectRoot, 'test-session-id', { source: 'on-stop' });
       expect(result.count).toBe(1);
       expect(emitArgs).not.toBeNull();
-      // timeline.emit(projectRoot, sessionId, workflowId, type, data)
-      expect(emitArgs[0]).toBe(projectRoot);
-      expect(emitArgs[1]).toBe('test-session-id');
-      expect(emitArgs[2]).toBeNull();
-      expect(emitArgs[3]).toBe('specs:archive-scan');
-      expect(emitArgs[4].archived).toContain('done-feature');
-      expect(emitArgs[4].source).toBe('on-stop');
+      // timeline.emitCtx(ctx, type, data)
+      expect(emitArgs[0].projectRoot).toBe(projectRoot);
+      expect(emitArgs[0].sessionId).toBe('test-session-id');
+      expect(emitArgs[0].workflowId).toBeNull();
+      expect(emitArgs[1]).toBe('specs:archive-scan');
+      expect(emitArgs[2].archived).toContain('done-feature');
+      expect(emitArgs[2].source).toBe('on-stop');
     } finally {
-      timelineModule.emit = originalEmit;
+      timelineModule.emitCtx = originalEmitCtx;
     }
   });
 
-  it('Scenario 4c: sessionId 有值但無歸檔時不呼叫 timeline.emit', () => {
+  it('Scenario 4c: sessionId 有值但無歸檔時不呼叫 timeline.emitCtx', () => {
     // in-progress 為空 → archived = []，不 emit
     const timelinePath = join(SCRIPTS_LIB, 'timeline');
     const timelineModule = require(timelinePath);
-    const originalEmit = timelineModule.emit;
+    const originalEmitCtx = timelineModule.emitCtx;
     let emitCalled = false;
-    timelineModule.emit = () => { emitCalled = true; };
+    timelineModule.emitCtx = () => { emitCalled = true; };
 
     try {
       const result = scanAndArchive(projectRoot, 'test-session-id');
       expect(result.count).toBe(0);
       expect(emitCalled).toBe(false);
     } finally {
-      timelineModule.emit = originalEmit;
+      timelineModule.emitCtx = originalEmitCtx;
     }
   });
 
