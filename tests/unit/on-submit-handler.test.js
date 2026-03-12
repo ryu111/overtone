@@ -407,3 +407,106 @@ describe('Feature 6: buildSystemMessage — 進階邊界', () => {
     expect(result).toContain(workflows.quick.label || 'quick');
   });
 });
+
+// ════════════════════════════════════════════════════════
+// Feature 15: handleOnSubmit — workflow toggle 開關
+// ════════════════════════════════════════════════════════
+
+describe('Feature 15: handleOnSubmit — workflow toggle 開關', () => {
+  let session;
+  let tmpDir;
+  let flagPath;
+
+  beforeEach(() => {
+    session = makeSession('f15');
+    mkdirSync(session.dir, { recursive: true });
+    // 取得此 cwd 對應的 global dir 和 flag 路徑
+    const globalDir = paths.global.dir(process.cwd());
+    flagPath = require('path').join(globalDir, '.workflow-disabled');
+    tmpDir = globalDir;
+    // 確保 flag 檔案不存在（避免前次測試殘留）
+    const { existsSync: eSync, unlinkSync: uSync } = require('fs');
+    if (eSync(flagPath)) uSync(flagPath);
+  });
+
+  afterEach(() => {
+    rmSync(session.dir, { recursive: true, force: true });
+    // 清理 flag 檔案
+    const { existsSync: eSync, unlinkSync: uSync } = require('fs');
+    if (eSync(flagPath)) uSync(flagPath);
+  });
+
+  test('Scenario 15-1: flag 檔案不存在時正常注入 systemMessage', () => {
+    const result = handleOnSubmit({
+      session_id: session.id,
+      prompt: '開發新功能',
+      cwd: process.cwd(),
+    });
+    // 沒有 flag → 正常注入
+    expect(result.systemMessage).toBeDefined();
+    expect(result.systemMessage).toContain('/auto');
+  });
+
+  test('Scenario 15-2: flag 檔案存在時回傳空物件（不注入 systemMessage）', () => {
+    const { mkdirSync: mkDir, writeFileSync: wFile } = require('fs');
+    mkDir(tmpDir, { recursive: true });
+    wFile(flagPath, '', 'utf8');
+
+    const result = handleOnSubmit({
+      session_id: session.id,
+      prompt: '開發新功能',
+      cwd: process.cwd(),
+    });
+    // 有 flag → 停用，回傳空物件
+    expect(result.systemMessage).toBeUndefined();
+    expect(result.hookSpecificOutput).toBeUndefined();
+  });
+
+  test('Scenario 15-3: flag 存在時 /wf 指令不觸發 workflow 注入', () => {
+    const { mkdirSync: mkDir, writeFileSync: wFile } = require('fs');
+    mkDir(tmpDir, { recursive: true });
+    wFile(flagPath, '', 'utf8');
+
+    const result = handleOnSubmit({
+      session_id: session.id,
+      prompt: '/wf status',
+      cwd: process.cwd(),
+    });
+    expect(result.systemMessage).toBeUndefined();
+  });
+
+  test('Scenario 15-4: /wf 指令在未停用時也回傳空物件（knownCommandNames 包含 wf）', () => {
+    // flag 不存在，但 /wf 是 known command → early return
+    const result = handleOnSubmit({
+      session_id: session.id,
+      prompt: '/wf on',
+      cwd: process.cwd(),
+    });
+    expect(result.systemMessage).toBeUndefined();
+    expect(result.hookSpecificOutput).toBeUndefined();
+  });
+
+  test('Scenario 15-5: 停用後刪除 flag 檔案，systemMessage 恢復注入', () => {
+    const { mkdirSync: mkDir, writeFileSync: wFile, unlinkSync: uSync } = require('fs');
+    mkDir(tmpDir, { recursive: true });
+    wFile(flagPath, '', 'utf8');
+
+    // 停用時：空物件
+    const disabled = handleOnSubmit({
+      session_id: session.id,
+      prompt: '需求 A',
+      cwd: process.cwd(),
+    });
+    expect(disabled.systemMessage).toBeUndefined();
+
+    // 刪除 flag → 恢復啟用
+    uSync(flagPath);
+
+    const enabled = handleOnSubmit({
+      session_id: session.id,
+      prompt: '需求 B',
+      cwd: process.cwd(),
+    });
+    expect(enabled.systemMessage).toBeDefined();
+  });
+});
