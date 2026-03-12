@@ -169,7 +169,7 @@ describe('Feature: Workflow command 可呼叫性', () => {
   // 非 workflow commands — 應保持 disable-model-invocation: true
   const nonWorkflowCommands = [
     'architect', 'audit', 'design', 'plan', 'qa', 'mul-agent',
-    'dashboard', 'doc-sync', 'remote', 'status', 'stop',
+    'doc-sync', 'remote', 'status', 'stop',
   ];
 
   for (const cmd of workflowCommands) {

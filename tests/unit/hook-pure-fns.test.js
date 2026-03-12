@@ -79,7 +79,7 @@ describe('on-start.js 純函數', () => {
   const { buildBanner, buildStartOutput } = require(path.join(HOOKS_ROOT, 'session/on-start'));
 
   describe('buildBanner', () => {
-    test('包含版本號、sessionId、port', () => {
+    test('包含版本號與 sessionId（dashboard 已移除，port 不再顯示）', () => {
       const result = buildBanner('0.28.43', 'sess-123', 7777, {
         agentBrowserStatus: '  🌐 agent-browser: 已安裝',
         ghStatus: '  🐙 gh CLI: 已安裝且已認證',
@@ -87,7 +87,6 @@ describe('on-start.js 純函數', () => {
       });
       expect(result).toContain('0.28.43');
       expect(result).toContain('sess-123');
-      expect(result).toContain('7777');
     });
 
     test('deps 為空物件時不拋出例外，回傳字串', () => {
@@ -101,9 +100,10 @@ describe('on-start.js 純函數', () => {
       expect(typeof result).toBe('string');
     });
 
-    test('port 為 null 時不顯示 Dashboard URL', () => {
-      const result = buildBanner('0.28.0', 'sess-abc', null, {});
+    test('banner 不包含 Dashboard URL（dashboard 已移除）', () => {
+      const result = buildBanner('0.28.0', 'sess-abc', 7777, {});
       expect(result).not.toContain('Dashboard');
+      expect(result).not.toContain('localhost');
     });
   });
 

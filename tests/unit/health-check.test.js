@@ -75,10 +75,10 @@ describe('collectJsFiles', () => {
 
   test('遞迴收集子目錄', () => {
     const files = collectJsFiles(SCRIPTS_LIB);
-    // scripts/lib 有 dashboard/ 和 remote/ 子目錄
-    const hasDashboard = files.some((f) => f.includes('dashboard'));
-    const hasRemote = files.some((f) => f.includes('remote'));
-    expect(hasDashboard || hasRemote).toBe(true);
+    // scripts/lib 有 analyzers/ 和 knowledge/ 子目錄
+    const hasAnalyzers = files.some((f) => f.includes('analyzers'));
+    const hasKnowledge = files.some((f) => f.includes('knowledge'));
+    expect(hasAnalyzers || hasKnowledge).toBe(true);
   });
 });
 

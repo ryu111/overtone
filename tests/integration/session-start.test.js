@@ -383,14 +383,10 @@ describe('場景 6：banner 字串格式（純函數 buildBanner）', () => {
     expect(banner).toContain('abcdef12');
   });
 
-  test('buildBanner 包含 Dashboard URL（有 port 時）', () => {
+  test('buildBanner 不包含 Dashboard URL（dashboard 已移除）', () => {
     const banner = buildBanner('1.0.0', 'test-session', 7777, {});
-    expect(banner).toContain('http://localhost:7777/');
-  });
-
-  test('buildBanner 無 port 時不顯示 Dashboard URL', () => {
-    const banner = buildBanner('1.0.0', 'test-session', null, {});
-    expect(banner).not.toContain('Dashboard:');
+    expect(banner).not.toContain('localhost');
+    expect(banner).not.toContain('Dashboard');
   });
 
   test('buildBanner 包含 agentBrowserStatus（非 null 時）', () => {

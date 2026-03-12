@@ -130,15 +130,16 @@ describe('[workflow:xxx] 覆寫語法 — 有效 key', () => {
 // ────────────────────────────────────────────────────────────────────────────
 
 describe('[workflow:xxx] 覆寫語法 — 無效 key 降級', () => {
-  test('場景 5：[workflow:invalid] → 降級到一般 auto 注入（不 crash）', async () => {
+  test('場景 5：[workflow:invalid] → 降級，不 crash，不注入 workflow 資訊', async () => {
     const result = await runHook(
       { user_prompt: '請執行 [workflow:invalid]' },
       { CLAUDE_SESSION_ID: '' }
     );
     const ctx = getContext(result);
-    expect(ctx).toBeTruthy();
-    expect(ctx).toContain('/auto');
+    // v0.30：無 workflow 時不強制注入，Main Agent 自行判斷
+    expect(ctx).toBe('');
     expect(ctx).not.toContain('工作流進行中');
+    expect(ctx).not.toContain('/invalid');
   });
 
   test('場景 5b：[workflow:xyz123] → 降級，不包含 xyz123 覆寫資訊', async () => {
@@ -147,7 +148,8 @@ describe('[workflow:xxx] 覆寫語法 — 無效 key 降級', () => {
       { CLAUDE_SESSION_ID: '' }
     );
     const ctx = getContext(result);
-    expect(ctx).toBeTruthy();
+    // v0.30：無有效 workflow 覆寫時不注入任何 systemMessage
+    expect(ctx).toBe('');
     expect(ctx).not.toContain('/xyz123');
   });
 });
@@ -184,16 +186,15 @@ describe('[workflow:xxx] 大小寫不敏感', () => {
 // 場景 7：無 workflow、無 sessionId — 純 auto 注入
 // ────────────────────────────────────────────────────────────────────────────
 
-describe('無 workflow 狀態 — 注入 auto 指引', () => {
-  test('場景 7：普通文字 prompt（無 sessionId）→ 注入 auto 指引', async () => {
+describe('無 workflow 狀態 — 不注入 auto 指引（v0.30 新行為）', () => {
+  test('場景 7：普通文字 prompt（無 sessionId）→ 不注入 auto 指引（Main Agent 自行判斷）', async () => {
     const result = await runHook(
       { user_prompt: '請幫我修改程式碼' },
       { CLAUDE_SESSION_ID: '' }
     );
     const ctx = getContext(result);
-    expect(ctx).toBeTruthy();
-    expect(ctx).toContain('/auto');
-    expect(ctx).toContain('[Overtone]');
+    // v0.30：無進行中 workflow 時回傳 null，不強制 /auto 指引
+    expect(ctx).toBe('');
   });
 
   test('場景 7b：prompt 為空字串且無 session → 抑制 auto 指引（空白 prompt 不需要注入）', async () => {
@@ -206,7 +207,7 @@ describe('無 workflow 狀態 — 注入 auto 指引', () => {
     expect(ctx).toBe('');
   });
 
-  test('場景 7c：缺少 CLAUDE_SESSION_ID 環境變數 → 注入 auto 指引', async () => {
+  test('場景 7c：缺少 CLAUDE_SESSION_ID 環境變數 → 不注入 auto 指引（v0.30 新行為）', async () => {
     const { CLAUDE_SESSION_ID: _, ...envWithoutSession } = process.env;
     const proc = Bun.spawn(['node', HOOK_PATH], {
       stdin: Buffer.from(JSON.stringify({ user_prompt: '你好' })),
@@ -218,8 +219,8 @@ describe('無 workflow 狀態 — 注入 auto 指引', () => {
     await proc.exited;
     const result = JSON.parse(output);
     const ctx = getContext(result);
-    expect(ctx).toBeTruthy();
-    expect(ctx).toContain('/auto');
+    // v0.30：無 session + 無 workflow → buildSystemMessage 回傳 null，不注入 /auto
+    expect(ctx).toBe('');
   });
 });
 

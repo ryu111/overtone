@@ -27,7 +27,7 @@ describe('buildSystemMessage', () => {
     });
     expect(result).toContain('quick');
     expect(result).toContain('/quick');
-    expect(result).toContain('MUST 依照 workflow command 指引委派 agent');
+    expect(result).toContain('讀取對應的 workflow command 取得完整執行指引');
   });
 
   it('Scenario 2: 有進行中 workflow 時回傳狀態摘要', () => {
@@ -51,41 +51,40 @@ describe('buildSystemMessage', () => {
     expect(result).toContain('my-feature');
   });
 
-  it('Scenario 4: 無進行中 workflow 時回傳 auto 引導訊息', () => {
+  it('Scenario 4: 無進行中 workflow 時回傳 null（不強制引導）', () => {
     const result = buildSystemMessage({
       validWorkflowOverride: null,
       currentState: null,
       activeFeatureContext: '',
       workflows,
     });
-    expect(result).toContain('/auto');
-    expect(result).toContain('workflow');
+    expect(result).toBeNull();
   });
 
-  it('Scenario 5: activeFeatureContext 在無 workflow 時也包含', () => {
+  it('Scenario 5: 無 workflow 時回傳 null（不論是否有 activeFeatureContext）', () => {
     const result = buildSystemMessage({
       validWorkflowOverride: null,
       currentState: null,
       activeFeatureContext: '📂 活躍 Feature：test-feature',
       workflows,
     });
-    expect(result).toContain('test-feature');
+    expect(result).toBeNull();
   });
 
-  it('Scenario 6: currentState 有 currentStage 才視為進行中', () => {
-    // currentState 存在但無 currentStage → 應回傳 auto 引導
+  it('Scenario 6: currentState 有 currentStage 才視為進行中，否則回傳 null', () => {
+    // currentState 存在但無 currentStage → 應回傳 null
     const result = buildSystemMessage({
       validWorkflowOverride: null,
       currentState: { workflowType: 'quick' }, // 無 currentStage
       activeFeatureContext: '',
       workflows,
     });
-    expect(result).toContain('/auto');
+    expect(result).toBeNull();
   });
 
-  it('Scenario 7: opts 為 null 時回傳預設 auto 引導', () => {
+  it('Scenario 7: opts 為 null 時回傳 null', () => {
     const result = buildSystemMessage(null);
-    expect(result).toContain('/auto');
+    expect(result).toBeNull();
   });
 });
 
@@ -236,14 +235,14 @@ describe('Feature 5: handleOnSubmit — workflow 覆寫語法', () => {
     expect(result.systemMessage).toContain('/quick');
   });
 
-  test('Scenario 5-2: [workflow:invalid] 使用無效 key 時退回 /auto 引導', () => {
+  test('Scenario 5-2: [workflow:invalid] 使用無效 key 時回傳 null systemMessage（無強制引導）', () => {
     const result = handleOnSubmit({
       session_id: session.id,
       prompt: '幫我開發功能 [workflow:invalid_xyz]',
       cwd: process.cwd(),
     });
-    // 無效 workflow key → validWorkflowOverride 為 null → 回傳 auto 引導
-    expect(result.systemMessage).toContain('/auto');
+    // 無效 workflow key → validWorkflowOverride 為 null → buildSystemMessage 回傳 null
+    expect(result.systemMessage).toBeFalsy();
   });
 
   test('Scenario 5-3: 已知 workflow command 提早返回，無 systemMessage', () => {
@@ -343,24 +342,25 @@ describe('Feature 14: handleOnSubmit — hookSpecificOutput 格式', () => {
 // ════════════════════════════════════════════════════════
 
 describe('Feature 6: buildSystemMessage — 進階邊界', () => {
-  test('Scenario 6-1: validWorkflowOverride 的 workflow 指引包含 TaskCreate 提示', () => {
+  test('Scenario 6-1: validWorkflowOverride 的 workflow 指引包含 workflow command 讀取提示', () => {
     const result = buildSystemMessage({
       validWorkflowOverride: 'standard',
       currentState: null,
       activeFeatureContext: '',
       workflows,
     });
-    expect(result).toContain('TaskCreate');
+    expect(result).toContain('/standard');
+    expect(result).toContain('讀取對應的 workflow command 取得完整執行指引');
   });
 
-  test('Scenario 6-2: 無進行中 workflow 時指引包含 TaskCreate 提示', () => {
+  test('Scenario 6-2: 無進行中 workflow 時回傳 null（Main Agent 自行判斷）', () => {
     const result = buildSystemMessage({
       validWorkflowOverride: null,
       currentState: null,
       activeFeatureContext: '',
       workflows,
     });
-    expect(result).toContain('TaskCreate');
+    expect(result).toBeNull();
   });
 
   test('Scenario 6-3: 進行中 workflow 的訊息包含 /auto 查詢提示', () => {
@@ -436,15 +436,16 @@ describe('Feature 15: handleOnSubmit — workflow toggle 開關', () => {
     if (eSync(flagPath)) uSync(flagPath);
   });
 
-  test('Scenario 15-1: flag 檔案不存在時正常注入 systemMessage', () => {
+  test('Scenario 15-1: flag 檔案不存在時正常執行（無 workflow 時 systemMessage 為 null）', () => {
     const result = handleOnSubmit({
       session_id: session.id,
       prompt: '開發新功能',
       cwd: process.cwd(),
     });
-    // 沒有 flag → 正常注入
-    expect(result.systemMessage).toBeDefined();
-    expect(result.systemMessage).toContain('/auto');
+    // 沒有 flag → 正常執行（無進行中 workflow → buildSystemMessage 回傳 null）
+    // result 不是空物件（不因 toggle 停用），systemMessage 存在但可能為 null
+    expect(result).toBeDefined();
+    expect(result).not.toBeUndefined();
   });
 
   test('Scenario 15-2: flag 檔案存在時回傳空物件（不注入 systemMessage）', () => {

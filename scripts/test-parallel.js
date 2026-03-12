@@ -86,7 +86,6 @@ const SEQUENTIAL_GROUPS = {
 const SEQUENTIAL_FILES = new Set([
   // integration
   'tests/integration/session-id-bridge.test.js',
-  'tests/integration/dashboard-pid.test.js',
   'tests/integration/health-check.test.js',
   'tests/integration/platform-alignment-post-failure.test.js',
   // unit (health-check 系列 — compact-frequency 和 principles 已不需互斥，但仍需 @sequential)
