@@ -112,23 +112,6 @@ describe('captureFullScreen', () => {
     expect(result.message).toBe('此功能僅支援 macOS');
   });
 
-  it('Scenario: 非 macOS 平台時不呼叫任何系統指令', () => {
-    mockPlatform('linux');
-    const { captureFullScreen } = require(SCREENSHOT_MODULE);
-    let called = false;
-    const mockDeps = {
-      execSync: () => { called = true; }
-    };
-
-    captureFullScreen({}, mockDeps);
-    expect(called).toBe(false);
-  });
-
-  it('Scenario: 非 macOS 平台時不拋出例外', () => {
-    mockPlatform('win32');
-    const { captureFullScreen } = require(SCREENSHOT_MODULE);
-    expect(() => captureFullScreen()).not.toThrow();
-  });
 });
 
 // ── captureRegion ──

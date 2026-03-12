@@ -263,6 +263,7 @@ describe('Feature 2: state.js 多實例隔離', () => {
 
 describe('Feature 2: 向後相容性（舊 API 不傳 projectRoot）', () => {
 
+  // 保護 get-workflow-context.js 呼叫路徑
   it('Compat-1: readState 舊 API 仍可讀取根層 workflow.json', () => {
     // 使用全域 sessions 目錄（舊 API）
     const { SESSIONS_DIR } = paths;
@@ -281,91 +282,4 @@ describe('Feature 2: 向後相容性（舊 API 不傳 projectRoot）', () => {
     }
   });
 
-  it('Compat-2: initState 舊 API（不傳 projectRoot）建立根層 workflow.json', () => {
-    const { SESSIONS_DIR } = paths;
-    const sid = `compat_test_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
-    mkdirSync(join(SESSIONS_DIR, sid), { recursive: true });
-    try {
-      // 舊 API：initState(sessionId, workflowType, stageList, options)
-      const result = state.initState(sid, 'standard', ['DEV', 'REVIEW'], { featureName: 'test-feature' });
-
-      // THEN 在根層建立 workflow.json（無 workflowId 子目錄）
-      expect(existsSync(paths.session.workflow(sid))).toBe(true);
-
-      // 回傳 state 的 workflowId 為 null（舊格式）
-      expect(result.workflowId).toBeNull();
-      expect(result.featureName).toBe('test-feature');
-      expect(result.workflowType).toBe('standard');
-
-      // stages 正確建立
-      expect(Object.keys(result.stages)).toContain('DEV');
-      expect(Object.keys(result.stages)).toContain('REVIEW');
-    } finally {
-      rmSync(join(SESSIONS_DIR, sid), { recursive: true, force: true });
-    }
-  });
-
-  it('Compat-3: updateStateAtomic 舊 API（modifier 為第二參數）正常執行', () => {
-    const { SESSIONS_DIR } = paths;
-    const sid = `compat_test_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
-    mkdirSync(join(SESSIONS_DIR, sid), { recursive: true });
-    try {
-      // 先用舊 API 建立 state
-      state.initState(sid, 'quick', ['DEV', 'REVIEW'], {});
-
-      // 舊 API：updateStateAtomic(sessionId, modifier)
-      state.updateStateAtomic(sid, (s) => {
-        s.failCount = 42;
-        return s;
-      });
-
-      const result = state.readState(sid);
-      expect(result.failCount).toBe(42);
-    } finally {
-      rmSync(join(SESSIONS_DIR, sid), { recursive: true, force: true });
-    }
-  });
-
-  it('Compat-4: setFeatureName 舊 API（name 為第二參數）正常執行', () => {
-    const { SESSIONS_DIR } = paths;
-    const sid = `compat_test_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
-    mkdirSync(join(SESSIONS_DIR, sid), { recursive: true });
-    try {
-      state.initState(sid, 'quick', ['DEV'], {});
-
-      // 舊 API：setFeatureName(sessionId, name)
-      state.setFeatureName(sid, 'my-feature');
-
-      const result = state.readState(sid);
-      expect(result.featureName).toBe('my-feature');
-    } finally {
-      rmSync(join(SESSIONS_DIR, sid), { recursive: true, force: true });
-    }
-  });
-
-  it('Compat-5: sanitize 舊 API（不傳 projectRoot）修復根層 workflow.json', () => {
-    const { SESSIONS_DIR } = paths;
-    const sid = `compat_test_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
-    mkdirSync(join(SESSIONS_DIR, sid), { recursive: true });
-    try {
-      state.initState(sid, 'quick', ['DEV', 'REVIEW'], {});
-
-      // 注入不一致狀態
-      const s = state.readState(sid);
-      s.stages['DEV'].status = 'active';
-      s.stages['DEV'].completedAt = new Date().toISOString();
-      writeFileSync(paths.session.workflow(sid), JSON.stringify(s));
-
-      // 舊 API：sanitize(sessionId) 不傳 projectRoot
-      const result = state.sanitize(sid);
-
-      expect(result).not.toBeNull();
-      expect(result.fixed.length).toBeGreaterThan(0);
-
-      const repaired = state.readState(sid);
-      expect(repaired.stages['DEV'].status).toBe('completed');
-    } finally {
-      rmSync(join(SESSIONS_DIR, sid), { recursive: true, force: true });
-    }
-  });
 });

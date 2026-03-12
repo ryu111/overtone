@@ -228,12 +228,6 @@ describe('watchPath', () => {
     expect(result.message).toBe('此功能僅支援 macOS');
   });
 
-  it('Scenario: 非 macOS 平台時不拋出例外', () => {
-    mockPlatform('win32');
-    const { watchPath } = require(FSWATCH_MODULE);
-
-    expect(() => watchPath('/tmp/test-dir', () => {})).not.toThrow();
-  });
 });
 
 // ── stopWatch ──

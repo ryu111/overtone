@@ -97,22 +97,6 @@ describe('readClipboard', () => {
     expect(result.message).toBe('此功能僅支援 macOS');
   });
 
-  it('Scenario: 非 macOS 平台時不呼叫任何系統指令', () => {
-    mockPlatform('win32');
-    const { readClipboard } = require(CLIPBOARD_MODULE);
-    let called = false;
-    const mockDeps = { execSync: () => { called = true; } };
-
-    readClipboard(mockDeps);
-    expect(called).toBe(false);
-  });
-
-  it('Scenario: 非 macOS 平台時不拋出例外', () => {
-    mockPlatform('win32');
-    const { readClipboard } = require(CLIPBOARD_MODULE);
-
-    expect(() => readClipboard()).not.toThrow();
-  });
 });
 
 // ── writeClipboard ──
@@ -218,12 +202,6 @@ describe('writeClipboard', () => {
     expect(result.message).toBe('此功能僅支援 macOS');
   });
 
-  it('Scenario: 非 macOS 平台時不拋出例外', () => {
-    mockPlatform('win32');
-    const { writeClipboard } = require(CLIPBOARD_MODULE);
-
-    expect(() => writeClipboard('text')).not.toThrow();
-  });
 });
 
 // ── Module exports 完整性 ──

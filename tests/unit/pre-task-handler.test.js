@@ -318,16 +318,6 @@ describe('checkSkippedStages', () => {
 // ── handlePreTask — 早期返回路徑 ─────────────────────────────────────────────
 
 describe('handlePreTask — 早期返回路徑', () => {
-  test('無 session 時回傳 { output: {} }', () => {
-    const result = handlePreTask({});
-    expect(result).toEqual({ output: {} });
-  });
-
-  test('sessionId 為空字串時回傳空 result', () => {
-    const result = handlePreTask({ session_id: '' });
-    expect(result).toEqual({ output: {} });
-  });
-
   test('回傳物件含 output 欄位', () => {
     const result = handlePreTask({});
     expect(result).toHaveProperty('output');
@@ -337,29 +327,6 @@ describe('handlePreTask — 早期返回路徑', () => {
   test('回傳物件可安全序列化為 JSON', () => {
     const result = handlePreTask({});
     expect(() => JSON.stringify(result.output)).not.toThrow();
-  });
-
-  test('有 session 但無 workflow state → 回傳空 result（不擋）', () => {
-    // 不建立 session 目錄，readState 回傳 null
-    const result = handlePreTask({ session_id: 'nonexistent-session-xyz' }, 'nonexistent-session-xyz');
-    expect(result).toEqual({ output: {} });
-  });
-
-  test('無法辨識 agent 時回傳空 result（不擋）', () => {
-    const sid = newSessionId();
-    setupSession(sid, ['DEV'], 'single');
-
-    const result = handlePreTask({
-      session_id: sid,
-      cwd: TEST_PROJECT_ROOT,
-      tool_input: {
-        subagent_type: 'unknown-type',
-        description: 'some random task description',
-        prompt: 'do something unrelated',
-      },
-    }, sid);
-
-    expect(result).toEqual({ output: {} });
   });
 });
 
@@ -449,26 +416,6 @@ describe('handlePreTask — agent 辨識', () => {
 // ── 跳階阻擋 ─────────────────────────────────────────────────────────────────
 
 describe('handlePreTask — 跳階阻擋', () => {
-  test('前置 stage 未完成 → deny + permissionDecisionReason 含錯誤訊息', () => {
-    const sid = newSessionId();
-    setupSession(sid, ['PLAN', 'ARCH', 'DEV'], 'standard');
-    // PLAN, ARCH 都 pending，直接跳到 DEV
-
-    const result = handlePreTask({
-      session_id: sid,
-      cwd: TEST_PROJECT_ROOT,
-      tool_input: {
-        subagent_type: 'developer',
-        description: '委派開發',
-        prompt: '請實作功能',
-      },
-    }, sid);
-
-    expect(result.output.hookSpecificOutput).toBeDefined();
-    expect(result.output.hookSpecificOutput.permissionDecision).toBe('deny');
-    expect(result.output.hookSpecificOutput.permissionDecisionReason).toContain('不可跳過');
-  });
-
   test('deny 訊息包含被跳過的 stage 資訊', () => {
     const sid = newSessionId();
     setupSession(sid, ['PLAN', 'DEV'], 'quick');

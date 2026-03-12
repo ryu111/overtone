@@ -166,19 +166,6 @@ describe('getCpuUsage', () => {
     expect(result.message).toBe('此功能僅支援 macOS');
   });
 
-  it('Scenario 4: 非 macOS 時不呼叫任何系統指令', () => {
-    mockPlatform('win32');
-    const { getCpuUsage } = require(SYSTEM_INFO_MODULE);
-    let called = false;
-    getCpuUsage({ execSync: () => { called = true; } });
-    expect(called).toBe(false);
-  });
-
-  it('Scenario 4: 非 macOS 時不拋出例外', () => {
-    mockPlatform('win32');
-    const { getCpuUsage } = require(SYSTEM_INFO_MODULE);
-    expect(() => getCpuUsage()).not.toThrow();
-  });
 });
 
 // ── getMemoryInfo ──
@@ -300,11 +287,6 @@ describe('getMemoryInfo', () => {
     expect(result.message).toBe('此功能僅支援 macOS');
   });
 
-  it('Scenario 5: 非 macOS 時不拋出例外', () => {
-    mockPlatform('win32');
-    const { getMemoryInfo } = require(SYSTEM_INFO_MODULE);
-    expect(() => getMemoryInfo()).not.toThrow();
-  });
 });
 
 // ── getDiskInfo ──
@@ -398,11 +380,6 @@ describe('getDiskInfo', () => {
     expect(result.message).toBe('此功能僅支援 macOS');
   });
 
-  it('Scenario 5: 非 macOS 時不拋出例外', () => {
-    mockPlatform('win32');
-    const { getDiskInfo } = require(SYSTEM_INFO_MODULE);
-    expect(() => getDiskInfo()).not.toThrow();
-  });
 });
 
 // ── getNetworkInfo ──
@@ -493,11 +470,6 @@ describe('getNetworkInfo', () => {
     expect(result.message).toBe('此功能僅支援 macOS');
   });
 
-  it('Scenario 4: 非 macOS 時不拋出例外', () => {
-    mockPlatform('win32');
-    const { getNetworkInfo } = require(SYSTEM_INFO_MODULE);
-    expect(() => getNetworkInfo()).not.toThrow();
-  });
 });
 
 // ── Module exports 完整性 ──

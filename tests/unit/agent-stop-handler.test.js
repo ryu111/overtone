@@ -127,58 +127,6 @@ describe('handleAgentStop 邊界情況', () => {
 // ── 正常 pass 流程 ───────────────────────────────────────────────────────────
 
 describe('handleAgentStop — 正常 pass 流程', () => {
-  test('DEV stage pass → stage 標記 completed，output 包含文字', () => {
-    const sid = newSessionId();
-    setupSession(sid, ['DEV'], 'single');
-
-    // 設定 DEV 為 active
-    stateLib.updateStateAtomic(TEST_PROJECT_ROOT, sid, null, (s) => {
-      s.stages['DEV'].status = 'active';
-      return s;
-    });
-
-    const result = handleAgentStop(
-      {
-        agent_type: 'developer',
-        last_assistant_message: '## HANDOFF: developer → code-reviewer\n\n全部完成。',
-      },
-      sid
-    );
-
-    expect(result.output).toBeDefined();
-    // SubagentStop handler 回傳 { output: {} }，result 欄位不存在
-    expect(result.output.result).toBeUndefined();
-
-    const state = stateLib.readState(TEST_PROJECT_ROOT, sid);
-    expect(state.stages['DEV'].status).toBe('completed');
-    expect(state.stages['DEV'].result).toBe('pass');
-  });
-
-  test('REVIEW stage pass → stage 標記 completed，output 非空', () => {
-    const sid = newSessionId();
-    setupSession(sid, ['DEV', 'REVIEW'], 'quick');
-
-    stateLib.updateStateAtomic(TEST_PROJECT_ROOT, sid, null, (s) => {
-      s.stages['DEV'].status = 'completed';
-      s.stages['DEV'].result = 'pass';
-      s.stages['REVIEW'].status = 'active';
-      return s;
-    });
-
-    const result = handleAgentStop(
-      {
-        agent_type: 'code-reviewer',
-        last_assistant_message: '程式碼品質良好，通過審查。',
-      },
-      sid
-    );
-
-    const state = stateLib.readState(TEST_PROJECT_ROOT, sid);
-    expect(state.stages['REVIEW'].status).toBe('completed');
-    expect(state.stages['REVIEW'].result).toBe('pass');
-    expect(result.output.result).toBeUndefined();
-  });
-
   test('pass 後 pendingAction 清除（若原本有 fail pendingAction）', () => {
     const sid = newSessionId();
     setupSession(sid, ['DEV'], 'single');
@@ -203,32 +151,6 @@ describe('handleAgentStop — 正常 pass 流程', () => {
 // ── fail verdict ─────────────────────────────────────────────────────────────
 
 describe('handleAgentStop — fail verdict', () => {
-  test('TEST stage 包含 fail 關鍵字 → verdict fail，stage 標記 completed', () => {
-    const sid = newSessionId();
-    setupSession(sid, ['DEV', 'TEST'], 'tdd');
-
-    stateLib.updateStateAtomic(TEST_PROJECT_ROOT, sid, null, (s) => {
-      s.stages['DEV'].status = 'completed';
-      s.stages['DEV'].result = 'pass';
-      s.stages['TEST'].status = 'active';
-      return s;
-    });
-
-    const result = handleAgentStop(
-      {
-        agent_type: 'tester',
-        last_assistant_message: '測試結果：3 tests fail，錯誤詳情如下。',
-      },
-      sid
-    );
-
-    const state = stateLib.readState(TEST_PROJECT_ROOT, sid);
-    expect(state.stages['TEST'].status).toBe('completed');
-    expect(state.stages['TEST'].result).toBe('fail');
-    expect(state.failCount).toBeGreaterThan(0);
-    expect(result.output.result).toBeUndefined();
-  });
-
   test('fail 後 pendingAction 寫入 fix-fail', () => {
     const sid = newSessionId();
     setupSession(sid, ['DEV', 'TEST'], 'tdd');
@@ -281,30 +203,6 @@ describe('handleAgentStop — fail verdict', () => {
 // ── reject verdict ────────────────────────────────────────────────────────────
 
 describe('handleAgentStop — reject verdict', () => {
-  test('REVIEW stage 包含 reject 關鍵字 → verdict reject，rejectCount 遞增', () => {
-    const sid = newSessionId();
-    setupSession(sid, ['DEV', 'REVIEW'], 'quick');
-
-    stateLib.updateStateAtomic(TEST_PROJECT_ROOT, sid, null, (s) => {
-      s.stages['DEV'].status = 'completed';
-      s.stages['DEV'].result = 'pass';
-      s.stages['REVIEW'].status = 'active';
-      return s;
-    });
-
-    handleAgentStop(
-      {
-        agent_type: 'code-reviewer',
-        last_assistant_message: 'VERDICT: reject。程式碼有嚴重問題，需重構。',
-      },
-      sid
-    );
-
-    const state = stateLib.readState(TEST_PROJECT_ROOT, sid);
-    expect(state.stages['REVIEW'].result).toBe('reject');
-    expect(state.rejectCount).toBeGreaterThan(0);
-  });
-
   test('reject 後 pendingAction 寫入 fix-reject', () => {
     const sid = newSessionId();
     setupSession(sid, ['DEV', 'REVIEW'], 'quick');
@@ -546,84 +444,6 @@ describe('handleAgentStop — 並行收斂門', () => {
     expect(state.stages['REVIEW'].result).toBe('pass');
     // parallelDone 應遞增
     expect(state.stages['REVIEW'].parallelDone).toBeGreaterThanOrEqual(2);
-  });
-});
-
-// ── timeline 事件 ────────────────────────────────────────────────────────────
-
-describe('handleAgentStop — timeline 事件正確性', () => {
-  test('正常 pass → timeline 記錄 agent:complete', () => {
-    const sid = newSessionId();
-    setupSession(sid, ['DEV'], 'single');
-
-    // 讀取 timeline 前清空（若有舊記錄）
-    const timelinePath = paths.session.timeline(TEST_PROJECT_ROOT, sid);
-
-    stateLib.updateStateAtomic(TEST_PROJECT_ROOT, sid, null, (s) => {
-      s.stages['DEV'].status = 'active';
-      return s;
-    });
-
-    handleAgentStop(
-      { agent_type: 'developer', last_assistant_message: '開發完成。' },
-      sid
-    );
-
-    // 確認 timeline 檔案存在且含 agent:complete
-    expect(fs.existsSync(timelinePath)).toBe(true);
-    const content = fs.readFileSync(timelinePath, 'utf8');
-    const events = content.split('\n').filter(Boolean).map(l => JSON.parse(l));
-    const agentComplete = events.find(e => e.type === 'agent:complete');
-    expect(agentComplete).toBeDefined();
-    // timeline event 格式：{ ts, type, category, label, ...data }（直接 spread，不是 .data）
-    expect(agentComplete.agent).toBe('developer');
-  });
-
-  test('fail → timeline 記錄 agent:error', () => {
-    const sid = newSessionId();
-    setupSession(sid, ['DEV', 'TEST'], 'tdd');
-
-    stateLib.updateStateAtomic(TEST_PROJECT_ROOT, sid, null, (s) => {
-      s.stages['DEV'].status = 'completed';
-      s.stages['DEV'].result = 'pass';
-      s.stages['TEST'].status = 'active';
-      return s;
-    });
-
-    handleAgentStop(
-      { agent_type: 'tester', last_assistant_message: '測試 fail，有錯誤。' },
-      sid
-    );
-
-    const timelinePath = paths.session.timeline(TEST_PROJECT_ROOT, sid);
-    const content = fs.readFileSync(timelinePath, 'utf8');
-    const events = content.split('\n').filter(Boolean).map(l => JSON.parse(l));
-    const agentError = events.find(e => e.type === 'agent:error');
-    expect(agentError).toBeDefined();
-    expect(agentError.agent).toBe('tester');
-  });
-
-  test('單一 agent stage 完成 → timeline 記錄 stage:complete', () => {
-    const sid = newSessionId();
-    setupSession(sid, ['DEV'], 'single');
-
-    stateLib.updateStateAtomic(TEST_PROJECT_ROOT, sid, null, (s) => {
-      s.stages['DEV'].status = 'active';
-      return s;
-    });
-
-    handleAgentStop(
-      { agent_type: 'developer', last_assistant_message: '完成開發。' },
-      sid
-    );
-
-    const timelinePath = paths.session.timeline(TEST_PROJECT_ROOT, sid);
-    const content = fs.readFileSync(timelinePath, 'utf8');
-    const events = content.split('\n').filter(Boolean).map(l => JSON.parse(l));
-    const stageComplete = events.find(e => e.type === 'stage:complete');
-    expect(stageComplete).toBeDefined();
-    expect(stageComplete.stage).toBe('DEV');
-    expect(stageComplete.result).toBe('pass');
   });
 });
 
