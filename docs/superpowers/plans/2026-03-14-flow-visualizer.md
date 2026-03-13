@@ -12,9 +12,9 @@
 | Port | 3456 被 model-router 佔用 → flow server 用 **3457** |
 | session_id | `input.session_id` 從 hook stdin 取得（SessionStart + PreToolUse 皆有） |
 | model | 僅 SessionStart 的 `input.model` 有 main model；agent model 需從 `agents/*.md` frontmatter 推斷 |
-| hooks | v0.30 `settings.json` 的 `hooks: {}` 是空的 — 事件寫入不走 hook，走 **直接呼叫** |
+| hooks | `settings.json` 的 `hooks: {}` 是空的 — 事件寫入不走 hook，走 **直接呼叫** |
 | skills_failed | pre-task-handler L454-477 已有 gap detection 邏輯，flow-event-writer 可複用 |
-| commands | 全部 `.bak` — /flow 是 v0.30 後第一個新 command |
+| commands | 全部 `.bak` — /flow 是架構重設計後第一個新 command |
 
 ## 架構決策
 
@@ -329,4 +329,4 @@ T17（審查，依賴全部）
 | D3 CDN 離線時前端壞掉 | client.html 頂部加 fallback 提示：「無法載入 D3，請確認網路」 |
 | flow-events.jsonl 無限增長 | server.js 啟動時 truncate 超過 7 天的事件；或 watcher 只讀最近 1000 行 |
 | model-router 未啟動時 port 3457 衝突 | 無衝突，3456 是 router、3457 是 flow，獨立 port |
-| v0.30 hooks 為空，事件無法觸發 | 不依賴 hook 攔截 — 直接在 handler 層呼叫 writer（D1 決策） |
+| hooks 為空，事件無法觸發 | 不依賴 hook 攔截 — 直接在 handler 層呼叫 writer（D1 決策） |
