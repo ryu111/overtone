@@ -95,7 +95,7 @@
 
 **選項 A**：改為統計 `~/.claude/`（PLUGIN_ROOT），但 `~/.claude/` 可能有使用者自訂的額外 agents/commands，數字可能不等於 Overtone 官方數量。
 
-**選項 B**：保留 `plugins/overtone/` 作為「純計數用」的薄殼目錄（只保留 agents/*.md、skills/*/SKILL.md、commands/*.md 等 .md 檔，刪除所有 scripts/ 程式碼），讓 docs-sync.test.js 繼續統計正確數字。
+**選項 B**：保留 `plugins/overtone/` 作為「純計數用」的thin wrapper目錄（只保留 agents/*.md、skills/*/SKILL.md、commands/*.md 等 .md 檔，刪除所有 scripts/ 程式碼），讓 docs-sync.test.js 繼續統計正確數字。
 
 **選項 C**：在 `plugin.json` 或 `docs/status.md` 旁邊新增一個 `overtone-manifest.json`，記錄官方元件數量，docs-sync.test.js 改從此 manifest 讀取而非掃目錄。
 
@@ -163,7 +163,7 @@
 
 ## 開放問題
 
-1. **docs-sync.test.js SOURCE_PLUGIN_ROOT 策略**（最關鍵）：選項 A（改統計 ~/.claude/，容忍使用者個人化偏差）、選項 B（保留薄殼目錄只含 .md 檔）、選項 C（新增 overtone-manifest.json）？推薦 C，最乾淨但需要新增檔案。
+1. **docs-sync.test.js SOURCE_PLUGIN_ROOT 策略**（最關鍵）：選項 A（改統計 ~/.claude/，容忍使用者個人化偏差）、選項 B（保留thin wrapper目錄只含 .md 檔）、選項 C（新增 overtone-manifest.json）？推薦 C，最乾淨但需要新增檔案。
 
 2. **session-spawner.test.js 的 `plugins/overtone` 期望**：`expect(pluginDirValue).toContain('plugins/overtone')` 這個測試在刪除後應改為什麼？`pluginDir` 的值是從 `session-spawner.js` 自動偵測出來的，需確認 spawner 邏輯是否仍需更新。
 

@@ -3,7 +3,7 @@
 ## 技術摘要（What & Why）
 
 - **方案**：`skill-forge.js` 作為獨立引擎模組，接受 `forgeSkill(domainName, context, options)` 呼叫，內部執行知識萃取 → SKILL.md 組裝 → config-api.js create skill → validate-agents 驗證的完整流程。
-- **理由**：與 gap-fixer.js 的策略選擇 pattern 一致（模組封裝邏輯，CLI 薄殼呼叫）；使用 `Bun.spawnSync` 呼叫 manage-component.js 和 validate-agents.js，避免循環依賴並保持邊界清晰。
+- **理由**：與 gap-fixer.js 的策略選擇 pattern 一致（模組封裝邏輯，CLI thin wrapper呼叫）；使用 `Bun.spawnSync` 呼叫 manage-component.js 和 validate-agents.js，避免循環依賴並保持邊界清晰。
 - **取捨**：知識萃取僅掃描靜態 codebase（SKILL.md 模式 + auto-discovered.md + CLAUDE.md），不讀 observations.jsonl（原因見決策 1）。自動生成的 SKILL.md 品質有限，接受「結構合法即可用」原則，內容由人工後續補充。
 
 ## Open Questions 決策

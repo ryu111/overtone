@@ -1,4 +1,4 @@
-# 06 — `claudemd-dev` Skill 設計
+# C3 — `claudemd-dev` Skill 設計
 
 > 狀態：🔍 待確認
 

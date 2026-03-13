@@ -38,9 +38,9 @@ describe('Feature 2: skill-generalizer — 移除專案特定內容', () => {
   describe('Scenario 2-2: 包含版本號的段落被移除', () => {
     it('移除含 v0.28.49 版本號的段落', () => {
       const content = [
-        '薄殼化架構在 v0.28.49 版本引入，大幅降低 hook 耦合度。',
+        'thin wrapper化架構在 v0.28.49 版本引入，大幅降低 hook 耦合度。',
         '',
-        '薄殼化是一種設計模式，將業務邏輯與 I/O 操作分離，提高可測試性。',
+        'thin wrapper化是一種設計模式，將業務邏輯與 I/O 操作分離，提高可測試性。',
       ].join('\n');
 
       const result = generalizeEntry(content);
@@ -48,7 +48,7 @@ describe('Feature 2: skill-generalizer — 移除專案特定內容', () => {
       expect(result.generalized).not.toContain('v0.28.49');
       expect(result.removed).toHaveLength(1);
       expect(result.removed[0]).toContain('v0.28.49');
-      expect(result.generalized).toContain('薄殼化是一種設計模式');
+      expect(result.generalized).toContain('thin wrapper化是一種設計模式');
     });
   });
 

@@ -1,4 +1,4 @@
-# 03 — AI Workflow 方法論比較
+# B1 — AI Workflow 方法論比較
 
 > 狀態：✅ 已確認
 

@@ -15,8 +15,6 @@
 
 每次迭代完成後，📋 MUST commit 並 push 兩個 repo 的變更。
 
-當前進度：L1 ✅ L2 ✅ L3 🟡（L3.6 Acid Test 待執行）L4 ⬜
-
 > 定位、架構概要、工作流觸發、常用管理指令詳見全域 `~/.claude/CLAUDE.md`。
 
 ## 文件生命週期

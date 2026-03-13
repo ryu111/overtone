@@ -164,7 +164,7 @@ describe('Feature 1: adjustConfidenceByIds', () => {
 describe('Feature 2: 品質反饋邏輯（靜態分析）', () => {
   const { readFileSync } = require('fs');
   const { SCRIPTS_LIB } = require('../helpers/paths');
-  // 薄殼化後，業務邏輯在 session-end-handler.js
+  // thin wrapper化後，業務邏輯在 session-end-handler.js
   const sessionEndSrc = readFileSync(join(SCRIPTS_LIB, 'session-end-handler.js'), 'utf8');
 
   test('Scenario 2-1: improving 條件觸發 feedbackBoost', () => {
@@ -193,7 +193,7 @@ describe('Feature 2: 品質反饋邏輯（靜態分析）', () => {
 describe('Feature 3: appliedObservationIds 存入 session state（靜態分析）', () => {
   const { readFileSync } = require('fs');
   const { SCRIPTS_LIB } = require('../helpers/paths');
-  // 薄殼化後，業務邏輯在 session-start-handler.js
+  // thin wrapper化後，業務邏輯在 session-start-handler.js
   const sessionStartSrc = readFileSync(join(SCRIPTS_LIB, 'session-start-handler.js'), 'utf8');
 
   test('Scenario 3-1: on-start.js 在注入全域觀察後記錄 appliedObservationIds', () => {

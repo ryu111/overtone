@@ -11,23 +11,44 @@
 | ⏳ Pending | 依賴其他章節完成才能推進 |
 | ❌ 排除 | 研究後決定不採用 |
 
-## 章節索引
+---
+
+## A. Claude Code 平台功能
+
+每個功能獨立成章，方便查閱。
 
 | # | 章節 | 狀態 | 說明 |
 |---|------|------|------|
-| 1 | [dotclaude-結構研究](./01-dotclaude-結構研究.md) | ✅ 已確認 | `.claude/` 完整目錄結構與功能分類 |
-| 2 | [CLAUDE-md-最佳寫法](./02-CLAUDE-md-最佳寫法.md) | ✅ 已確認 | 官方+社群共識的寫法指南 |
-| 3 | [AI-Workflow-方法論比較](./03-AI-Workflow-方法論比較.md) | ✅ 已確認 | 9 大方法論完整比較 |
-| 4 | [現有-Skill-盤點](./04-現有-Skill-盤點.md) | ✅ 已確認 | 28 個 skill + 相關元件盤點 |
-| 5 | [rules-系統研究](./05-rules-系統研究.md) | 🔍 待確認 | `.claude/rules/` 條件載入機制 |
-| 6 | [claudemd-dev-Skill-設計](./06-claudemd-dev-Skill-設計.md) | 🔍 待確認 | 二合一 skill 設計草案 |
-| 7 | [v030-架構決策](./07-v030-架構決策.md) | ⏳ Pending | 依賴 1-6 完成後整合 |
-| 8 | [Notion-架構討論整合](./08-Notion-架構討論整合.md) | ✅ 已確認 | Notion 頁面完整內容（P1-P6、三角色、Hook 13 節點、遷移路線） |
-| 9 | [生態系工具總覽](./09-生態系工具總覽.md) | ✅ 已確認 | 100+ 工具分類（Agent 框架/Workflow/Rules/MCP/Claude 生態） |
+| A1 | [指令系統](./A1-指令系統.md) | ✅ 已確認 | CLAUDE.md 四層優先順序 + @import + 最佳寫法 |
+| A2 | [設定系統](./A2-設定系統.md) | ✅ 已確認 | settings.json 五層 + 完整欄位分類 |
+| A3 | [rules 條件規則](./A3-rules-條件規則.md) | 🔍 待確認 | 深度研究 + 已知 bugs + 社群範例 + 採用策略 |
+| A4 | [Hook 系統](./A4-Hook-系統.md) | ✅ 已確認 | 18 事件 + 4 handler 類型 + matcher + 新功能 |
+| A5 | [Memory 系統](./A5-Memory-系統.md) | ✅ 已確認 | auto memory + agent-memory 三範圍 + projects/ |
+| A6 | [Agent 與 Subagent](./A6-Agent-與-Subagent.md) | ✅ 已確認 | frontmatter + isolation:worktree + teams |
+| A7 | [Skills 與 Commands](./A7-Skills-與-Commands.md) | ✅ 已確認 | SKILL.md 格式 + 觸發機制 + 內建 skills |
+| A8 | [MCP 整合](./A8-MCP-整合.md) | ✅ 已確認 | 傳輸類型 + 配置位置 + OAuth + tool search |
+
+## B. 方法論與生態系
+
+| # | 章節 | 狀態 | 說明 |
+|---|------|------|------|
+| B1 | [AI Workflow 方法論](./B1-AI-Workflow-方法論.md) | ✅ 已確認 | 9 大方法論 + 共通模式 + Overtone 定位 |
+| B2 | [生態系工具總覽](./B2-生態系工具總覽.md) | ✅ 已確認 | 100+ 工具分類（Agent/Workflow/Rules/MCP/Claude） |
+
+## C. Overtone 現況與設計
+
+| # | 章節 | 狀態 | 說明 |
+|---|------|------|------|
+| C1 | [現有元件盤點](./C1-現有元件盤點.md) | ✅ 已確認 | 28 skills + 13 hooks + 52 scripts/lib |
+| C2 | [v0.30 架構設計](./C2-v030-架構設計.md) | ✅ 已確認 | 三角色 + D0-D4 + P1-P6 + JSON 合約 + 遷移路線 |
+| C3 | [claudemd-dev 設計](./C3-claudemd-dev-設計.md) | 🔍 待確認 | CLAUDE.md 生命週期管理 skill 設計草案 |
+| C4 | [v0.30 決策待辦](./C4-v030-決策待辦.md) | ⏳ Pending | 6 項待決策 + 實作順序 |
+
+---
 
 ## 工作流
 
 ```
 整理素材 → 標記狀態 → 逐章確認 → 整合精練 → 動工實作
-         （目前在這）
+              （目前在這）
 ```

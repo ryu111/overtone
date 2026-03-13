@@ -27,7 +27,7 @@ const { join } = require('path');
 const { HOOKS_DIR, SCRIPTS_LIB } = require('../helpers/paths');
 
 // 讀取原始碼（靜態分析用）
-// 注意：薄殼化重構後，業務邏輯移至 handler 模組，靜態分析目標也需跟進
+// 注意：thin wrapper化重構後，業務邏輯移至 handler 模組，靜態分析目標也需跟進
 const sessionEndSrc = readFileSync(join(SCRIPTS_LIB, 'session-end-handler.js'), 'utf8');
 const sessionStartSrc = readFileSync(join(SCRIPTS_LIB, 'session-start-handler.js'), 'utf8');
 const preTaskSrc = readFileSync(join(SCRIPTS_LIB, 'pre-task-handler.js'), 'utf8');
