@@ -843,9 +843,9 @@
 
 ## [0.28.49] - 2026-03-05
 
-### Hook 薄殼化重構完成 + 遠端控制增強（Telegram /run + PM 佇列自動寫入 + Env Filter）
+### Hook thin wrapper化重構完成 + 遠端控制增強（Telegram /run + PM 佇列自動寫入 + Env Filter）
 
-#### Hook 薄殼化重構（9 個 hook）
+#### Hook thin wrapper化重構（9 個 hook）
 - session-start hook → session-start-handler.js（Init + Dashboard spawn）
 - session-stop hook → session-stop-handler.js（Session 停止流程）
 - session-end hook → session-end-handler.js（Session 結束收尾）
@@ -855,7 +855,7 @@
 - post-tool-use hook → post-use-handler.js（Tool 執行後觀察）
 - post-tool-use-failure hook → post-use-failure-handler.js（Tool 失敗處理）
 - pre-compact hook → pre-compact-handler.js（Context 壓縮前恢復）
-- 平均行數：~250 行 → ~29 行（薄殼化）
+- 平均行數：~250 行 → ~29 行（thin wrapper化）
 
 #### 新增 Handler 模組（scripts/lib/）
 - session-start-handler、session-stop-handler、session-end-handler

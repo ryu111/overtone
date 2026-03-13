@@ -1,0 +1,479 @@
+# Overtone v0.30 — 架構重設計
+
+> 從「16 角色 Pipeline」到「單腦 + 工具 + 輕量 Worker」
+
+**狀態**：設計提案（Draft）
+**日期**：2026-03-12
+**前提**：業界研究（Scaling Agent Systems 論文、Anthropic 官方指南）+ 實測數據（233k tokens vs 預估 70k）
+
+---
+
+## 1. 問題陳述
+
+### 1.1 現行架構的核心假設
+
+Overtone v0.21-0.29 建立在一個假設上：**專職角色分工產生更好的結果**。
+
+```
+使用者需求 → /auto 選擇 workflow → N 個 stage → 每個 stage 委派 specialized agent
+                                                    ↓
+                                              agent 啟動 → 重建 context → 執行 → Handoff
+                                                    ↓
+                                              Main Agent 解讀 → 傳遞給下一個 agent
+```
+
+### 1.2 實測數據否定此假設
+
+| 指標 | 觀測值 | 合理值 | 浪費倍率 |
+|------|--------|--------|----------|
+| `/quick` 加 flag 檔案 | 233k tokens | ~70k | 3.3x |
+| RETRO stage（說 PASS） | 35k tokens | 0 | ∞ |
+| DOCS stage（不用更新） | 56k tokens | 0 | ∞ |
+| Context 重建（per agent） | ~15-20k tokens | 0（Main 已知） | ∞ |
+
+### 1.3 業界佐證
+
+| 來源 | 結論 |
+|------|------|
+| Scaling Agent Systems（180 配置） | 多 agent 有 3.6x token 懲罰、錯誤放大 4.4-17.2x |
+| LLM Code Review 研究 | False negative 73-88%、22% 幻覺評論 |
+| OpenHands | "Don't Sleep on Single-Agent Systems" |
+| Anthropic 官方 | 「只有簡單方案不足時才加多步驟」 |
+| SWE-bench 前 3 名 | 全是 read → write → test → iterate 單循環 |
+
+### 1.4 根因分析
+
+浪費不是因為 agent 品質差，而是架構性的：
+
+1. **Context 重建稅**：每個 subagent 啟動時必須重新理解 Main Agent 已知的內容（~15k tokens/次）
+2. **固定成本 stage**：RETRO、DOCS 無論是否有實質工作都消耗啟動成本
+3. **Handoff 損耗**：Main Agent 理解 Handoff → 摘要 → 傳給下一個 agent 的過程本身消耗 tokens
+4. **角色扮演開銷**：agent prompt（2-4k tokens）注入一個「人設」，但核心價值是知識而非人設
+
+---
+
+## 2. 設計原則
+
+| 代號 | 原則 | 說明 |
+|------|------|------|
+| **P1** | 預設單腦 | Main Agent 自己完成任務。只在有明確收益時才分裂 |
+| **P2** | 驗證靠執行 | 跑測試 > LLM review。測試通過 = 驗證完成 |
+| **P3** | 知識與角色分離 | agent prompt 裡的最佳實踐 → Skill 知識。角色人設 → 刪除 |
+| **P4** | 並行靠工具 | 多檔案修改 → 多 tool call。獨立子任務 → 背景 agent（無 persona） |
+| **P5** | 成本意識 | 每個新增的 stage/agent 必須論證 token 成本 < 品質提升 |
+
+---
+
+## 3. 新架構：單腦 + 工具 + Worker
+
+### 3.1 執行模型
+
+```
+使用者需求
+    ↓
+Main Agent（單腦）
+    ├── 自己寫碼（大多數情況）
+    ├── 跑測試（Bash 背景任務）
+    ├── 需要獨立視角？→ 委派 reviewer worker
+    ├── 需要並行修改？→ 委派 N 個 edit worker（worktree 隔離）
+    └── 需要安全掃描？→ 委派 security worker
+```
+
+### 3.2 Worker 定義（取代 Agent）
+
+Worker 是**無角色的輕量子任務執行者**。與現行 Agent 的差異：
+
+| | 現行 Agent | Worker |
+|---|-----------|--------|
+| Prompt 大小 | 2-4k tokens（含人設、規則、技巧） | 200-500 tokens（純任務指令） |
+| Context 來源 | 重建（重讀檔案） | Main 直接傳遞（已知內容） |
+| 輸出格式 | Handoff（5 欄位） | 自由格式（Main 直接讀結果） |
+| 啟動成本 | ~50k tokens | ~5-10k tokens |
+| 決策權 | 獨立判斷（可 reject/fail） | 執行後回報（Main 判斷） |
+
+### 3.3 保留的 Worker 類型（3 個）
+
+#### 1. `developer` — 並行編碼 Worker
+
+**何時使用**：需要在 worktree 隔離中修改多組檔案（真正的並行）
+**不使用**：單檔案修改、小改動（Main 自己做）
+
+```
+Main: "在 worktree 中修改 auth 模組，同時我改 UI 層"
+→ developer worker: 收到精確指令 + 需要知道的 context
+→ 回報：改了什麼、測試結果
+→ Main: merge worktree
+```
+
+#### 2. `reviewer` — 獨立審查 Worker
+
+**何時使用**：
+- 改動影響 >5 個檔案
+- 涉及安全敏感邏輯（auth、payment、crypto）
+- 使用者明確要求 review
+
+**不使用**：
+- 改動 <3 個檔案（Main self-review + 測試足矣）
+- 純重構（測試覆蓋即驗證）
+
+#### 3. `security` — 安全掃描 Worker
+
+**何時使用**：涉及認證、授權、加密、使用者輸入處理
+**觸發方式**：Main 自動判斷或使用者 `/secure` 明確要求
+
+### 3.4 刪除的 Agent（13 個）
+
+| Agent | 原因 | 知識去向 |
+|-------|------|----------|
+| planner | Main 自己規劃 | 刪除（Main 原生能力） |
+| architect | Main 自己設計 | 提取關鍵檢查清單到 Skill |
+| designer | UI 設計極少使用 | 保留 Skill 知識，刪除 agent |
+| tester | Main 跑測試 + 寫測試 | 測試最佳實踐留在 testing skill |
+| debugger | Main 自己除錯 | 刪除（Main 原生能力） |
+| doc-updater | Main 自己判斷是否需更新 | 刪除 |
+| retrospective | 價值不足以支撐成本 | 刪除 |
+| qa | 測試覆蓋取代 | 刪除 |
+| e2e-runner | Main 直接跑 e2e | 保留 e2e skill 知識 |
+| refactor-cleaner | Main 自己做 | 保留 dead-code skill |
+| database-reviewer | 極少使用 | 保留 database skill |
+| build-error-resolver | Main 自己修 | 刪除（Main 原生能力） |
+| product-manager | Main 自己做 PM | 保留 PM skill 知識 |
+
+### 3.5 知識遷移策略
+
+現行 agent prompt 中的**可提取知識**（最佳實踐、檢查清單）→ 升級為 Skill reference：
+
+| 來源 Agent | 提取內容 | 目標 Skill |
+|------------|----------|------------|
+| code-reviewer | Review 檢查清單 | code-review skill（已有，增補） |
+| security-reviewer | OWASP checklist | security-kb skill（已有） |
+| architect | 架構決策檢查點 | 新增 architecture skill |
+| tester | BDD 寫法、測試策略 | testing skill（已有，增補） |
+| database-reviewer | SQL 最佳實踐 | database skill（已有） |
+| designer | UI/UX 原則 | 保留現有 design skill |
+
+---
+
+## 4. Workflow 系統重設計
+
+### 4.1 從 Pipeline 到深度等級
+
+現行：
+```
+/standard → PLAN → ARCH → TEST:spec → DEV → [REVIEW + TEST:verify] → [RETRO + DOCS]
+```
+
+v0.30：
+```
+使用者需求 → Main Agent 判斷深度 → 自己執行 → 需要時委派 worker
+```
+
+### 4.2 深度等級（取代 workflow 模板）
+
+Main Agent 根據任務規模自動選擇深度，不需要使用者選 workflow：
+
+| 深度 | 觸發條件 | Main Agent 行為 |
+|------|----------|-----------------|
+| **D0: 直接做** | 改設定、一行修改、格式調整 | 直接 Edit，不跑測試 |
+| **D1: 做 + 測試** | 小功能、bug fix、≤3 檔案 | 寫碼 → 跑測試 → 迭代直到通過 |
+| **D2: 規劃 + 做 + 測試** | 中型功能、跨模組 | 思考架構 → 寫碼 → 測試 → self-review |
+| **D3: 規劃 + 做 + 測試 + 審查** | 大型功能、安全敏感 | 思考 → 寫碼 → 測試 → 委派 reviewer |
+| **D4: 並行開發** | 多人天工作量、可分解 | 分解 → 多 worker 並行 → merge → 測試 |
+
+### 4.3 命令簡化
+
+**保留 6 個**（有明確語意價值）：
+
+| 命令 | 語意 | v0.30 行為 |
+|------|------|------------|
+| `/auto` | 自動判斷 | 分析需求 → 建議深度 → 執行 |
+| `/secure` | 安全敏感 | 強制 D3 + security worker |
+| `/tdd` | 測試先行 | 先寫測試 → 實作 → 驗證 |
+| `/review` | 要求審查 | 委派 reviewer worker |
+| `/security` | 安全掃描 | 委派 security worker |
+| `/pm` | 需求探索 | Main 自己做 PM，用 PM skill 知識 |
+
+**刪除 12 個**：`/dev`、`/quick`、`/standard`、`/full`、`/debug`、`/refactor`、`/build-fix`、`/e2e`、`/test`、`/diagnose`、`/db-review`、`/clean`
+
+### 4.4 狀態追蹤簡化
+
+現行 workflow state（~30 欄位，含 stages、activeAgents、failCount、parallelTotal...）→ 簡化為 task state：
+
+```javascript
+{
+  sessionId,
+  taskId,        // 取代 workflowId
+  description,   // 使用者原始需求
+  depth,         // D0-D4
+  status,        // 'active' | 'completed' | 'failed'
+  workers: {     // 只在有 worker 時存在
+    'reviewer:abc123': { status, result }
+  },
+  createdAt,
+  completedAt
+}
+```
+
+---
+
+## 5. Hook 系統調整
+
+### 5.1 保留（價值獨立於多 agent 假設）
+
+| Hook | 原因 |
+|------|------|
+| `pre-bash-guard` | 確定性安全防禦，永遠需要 |
+| `pre-edit-guard` | 元件保護（agents/hooks/skills 直接編輯防護） |
+| `on-start` (SessionStart) | Session 初始化、context 注入 |
+| `on-submit` (UserPromptSubmit) | 深度建議注入、instinct 記錄 |
+| `pre-compact` (PreCompact) | Context 壓縮前狀態保存 |
+| `post-use` (PostToolUse) | 觀察記錄（instinct） |
+| `post-use-failure` (PostToolUseFailure) | 錯誤追蹤 |
+| `on-notification` | 通知系統 |
+
+### 5.2 調整
+
+| Hook | 變更 |
+|------|------|
+| `pre-edit-guard` | **移除**「必須有 workflow 才能寫檔」限制。保留元件保護和 MEMORY.md 行數限制 |
+| `on-submit` | **移除** workflow 強制注入。改為深度建議（非強制） |
+| `on-stop` (SubagentStop) | 簡化為 worker 完成記錄（移除 Handoff 解析、stage 推進、並行收斂邏輯） |
+| `pre-task` | 簡化（移除 workflow stage 驗證） |
+
+### 5.3 pre-edit-guard 重設計
+
+```
+現行邏輯：                          v0.30 邏輯：
+┌─ 有 workflow？                   ┌─ 元件保護（agents/*.md 等）
+│  ├─ 有 → 檢查 DEV stage            │  → 強制 manage-component.js
+│  └─ 沒有 → DENY                    ├─ MEMORY.md 行數 ≤200
+└─ 檢查元件保護                       ├─ 閉環提示（非阻擋）
+                                      └─ 其他 → ALLOW
+```
+
+**關鍵改變**：移除「必須有 workflow」和「Main 不能自己寫碼」的限制。
+
+---
+
+## 6. Registry 簡化
+
+### 6.1 移除
+
+| 區塊 | 現行 | v0.30 |
+|------|------|-------|
+| Stage 定義 | 16 個 | 0（無 pipeline stage） |
+| Workflow 定義 | 18 個 | 0（改用深度等級） |
+| Parallel groups | 4 個 | 0（Main 自己決定並行） |
+| specsConfig | 5 個 | 0（Main 自己判斷） |
+| Agent 定義 | 18 個 | 3 個 worker |
+
+### 6.2 新增
+
+```javascript
+const DEPTH_LEVELS = {
+  D0: { label: '直接做', test: false, review: false },
+  D1: { label: '做+測試', test: true, review: false },
+  D2: { label: '規劃+做+測試', test: true, review: false },
+  D3: { label: '規劃+做+測試+審查', test: true, review: true },
+  D4: { label: '並行開發', test: true, review: true, parallel: true },
+};
+
+const WORKERS = {
+  developer: { model: 'sonnet', description: '並行編碼 worker' },
+  reviewer: { model: 'opus', description: '獨立審查 worker' },
+  security: { model: 'sonnet', description: '安全掃描 worker' },
+};
+```
+
+---
+
+## 7. Handoff 協定處置
+
+### 7.1 刪除
+
+- 五欄位格式（Context / Findings / Verified Facts / Files Modified / Open Questions）
+- Handoff 鏈傳遞（agent A → Main → agent B）
+- parseResult 判定邏輯（Main 自己讀 worker 輸出）
+
+### 7.2 Worker 通訊格式
+
+無格式要求。Main 直接讀取 worker 輸出文字：
+
+```
+Main → Worker: "審查以下 diff，重點看 [具體關注點]。列出問題（如有）。"
+Worker → Main: "發現 2 個問題：1. ... 2. ..."
+Main: 判斷是否修復
+```
+
+---
+
+## 8. 遷移計劃
+
+### Phase 1: 解除枷鎖（立即可做）
+
+**目標**：讓 Main Agent 可以不走 pipeline 直接工作
+
+| # | 任務 | 檔案 |
+|---|------|------|
+| 1 | 移除 pre-edit-guard「必須有 workflow」限制 | `hooks/scripts/tool/pre-edit-guard.js` |
+| 2 | 移除 on-submit workflow 強制注入 | `scripts/lib/on-submit-handler.js` |
+| 3 | 改 /auto 為深度判斷器 | `commands/auto.md` |
+| 4 | wf-toggle 整合到 pre-edit-guard | `scripts/wf-toggle.js` → guard |
+
+**驗收**：使用者輸入需求 → Main Agent 自己完成 → 不被 guard 攔截
+
+### Phase 2: Worker 化（1-2 sessions）
+
+**目標**：將 3 個保留的 agent 轉為輕量 worker
+
+| # | 任務 | 檔案 |
+|---|------|------|
+| 5 | 簡化 developer agent prompt | `agents/developer.md` |
+| 6 | 簡化 code-reviewer → reviewer worker | `agents/code-reviewer.md` |
+| 7 | 簡化 security-reviewer → security worker | `agents/security-reviewer.md` |
+| 8 | 簡化 SubagentStop handler | `scripts/lib/agent-stop-handler.js` |
+
+### Phase 3: 知識提取（1-2 sessions）
+
+**目標**：將 13 個待刪除 agent 的知識遷移到 skills
+
+| # | 任務 | 來源 → 目標 |
+|---|------|-------------|
+| 9 | 提取架構知識 | architect → 新 architecture skill |
+| 10 | 補充 review 知識 | code-reviewer → code-review skill |
+| 11 | 補充測試知識 | tester → testing skill |
+| 12 | 補充安全知識 | security-reviewer → security-kb skill |
+| 13 | 驗證遷移完畢 → 刪除 13 個 agent | agents/*.md |
+
+### Phase 4: 系統清理（1 session）
+
+**目標**：移除不再需要的基礎設施
+
+| # | 任務 | 檔案 |
+|---|------|------|
+| 14 | 簡化 registry.js（移除 stages/workflows/parallelGroups） | `scripts/lib/registry.js` + `registry-data.json` |
+| 15 | 簡化 state.js → task state | `scripts/lib/state.js` |
+| 16 | 移除 init-workflow.js | `scripts/init-workflow.js` |
+| 17 | 移除 parseResult.js | `scripts/lib/parse-result.js` |
+| 18 | 刪除不用的 commands（12 個） | `commands/*.md` |
+| 19 | 更新 specs 文件 | `docs/spec/` |
+| 20 | Version bump 0.30.0 | `plugin.json` |
+
+### Phase 5: 測試遷移（1-2 sessions）
+
+**目標**：測試套件適配新架構
+
+| # | 任務 |
+|---|------|
+| 21 | 刪除 workflow pipeline 測試 |
+| 22 | 刪除 Handoff/parseResult 測試 |
+| 23 | 新增 depth 判斷測試 |
+| 24 | 新增 worker 通訊測試 |
+| 25 | 確認全套測試通過 |
+
+---
+
+## 9. 風險與緩解
+
+| 風險 | 嚴重度 | 緩解 |
+|------|--------|------|
+| **Main 沒有 reviewer 獨立視角** | 中 | D1-D2 靠測試。D3+ 委派 reviewer。LLM review false negative 73-88%，獨立視角價值被高估 |
+| **知識遷移遺漏** | 低 | Phase 3 逐一提取。Git history 可復原。「人設」無價值 |
+| **使用者習慣改變** | 低 | Phase 1 不刪命令，兩種模式並存。漸進遷移 |
+| **回歸困難** | 低 | 每 Phase 獨立可部署。Phase 1 只解鎖不刪除。Git branch 隔離 |
+
+---
+
+## 10. 成功指標
+
+| 指標 | 現行 | 目標 |
+|------|------|------|
+| 「加 flag 檔案」級任務 token 消耗 | 233k | <80k |
+| 小 bug fix 端到端時間 | ~3 min | <1 min |
+| Agent 定義數量 | 18 | 3 |
+| Workflow 模板數量 | 18 | 0 |
+| Command 數量 | 32 | ~15 |
+| registry.js 行數 | ~550 | ~200 |
+
+---
+
+## 11. 不在範圍內
+
+- Queue 系統：仍有價值，不動
+- Instinct / 進化引擎：觀察和學習機制不動
+- Timeline 系統：事件記錄不動
+- Skill 系統本身：只是遷入更多知識，架構不變
+- Health-check：調整檢查項目但不重寫
+
+---
+
+## 12. 開放問題
+
+### Q1: BDD spec 流程
+
+**建議**：Main 自己寫 BDD spec → 自己實作 → 跑測試。`/tdd` 保留為語意提示，不需要獨立 tester agent。
+
+### Q2: PM 探索
+
+**建議**：保留 `/pm` 命令但不委派 agent。Main 自己做 PM 探索，使用 PM skill 知識注入。
+
+### Q3: 深度判斷準確性
+
+**建議**：on-submit hook 注入提示（建議深度），Main 可覆蓋。寧可低估（做完再加 review）也不要高估（浪費 token）。
+
+### Q4: claude-developer agent
+
+**待定**：Plugin 元件管理（manage-component.js）的知識比較特殊，可能仍需獨立 agent 或轉為專門的 skill。
+
+---
+
+## 附錄 A: 元件處置總表
+
+### Agents（18 → 3）
+
+| Agent | 處置 | 知識去向 |
+|-------|------|----------|
+| developer | ✂️ 簡化為 worker | — |
+| code-reviewer | ✂️ 簡化為 reviewer worker | code-review skill |
+| security-reviewer | ✂️ 簡化為 security worker | security-kb skill |
+| architect | 🗑️ 刪除 | 新 architecture skill |
+| planner | 🗑️ 刪除 | Main 原生能力 |
+| designer | 🗑️ 刪除 | 保留 design skill |
+| tester | 🗑️ 刪除 | testing skill |
+| debugger | 🗑️ 刪除 | Main 原生能力 |
+| doc-updater | 🗑️ 刪除 | Main 原生能力 |
+| retrospective | 🗑️ 刪除 | 刪除 |
+| qa | 🗑️ 刪除 | 測試覆蓋取代 |
+| e2e-runner | 🗑️ 刪除 | 保留 e2e skill |
+| refactor-cleaner | 🗑️ 刪除 | 保留 dead-code skill |
+| database-reviewer | 🗑️ 刪除 | 保留 database skill |
+| build-error-resolver | 🗑️ 刪除 | Main 原生能力 |
+| product-manager | 🗑️ 刪除 | 保留 PM skill |
+| claude-developer | ❓ 待定 | Plugin 元件管理特殊 |
+| grader | 🗑️ 刪除 | 不再需要 |
+
+### Commands（32 → ~15）
+
+刪除 12 個 workflow commands，保留 6 個有語意價值的 + 非 workflow commands。
+
+### Hook Handlers（8 → 6）
+
+保留核心守衛和觀察。簡化 SubagentStop 和 pre-task。
+
+### Scripts/lib 模組
+
+| 模組 | 處置 |
+|------|------|
+| registry.js / registry-data.json | ✂️ 大幅簡化 |
+| state.js | ✂️ 簡化為 task state |
+| init-workflow.js | 🗑️ 刪除 |
+| parse-result.js | 🗑️ 刪除 |
+| agent-stop-handler.js | ✂️ 簡化 |
+| on-submit-handler.js | ✂️ 簡化 |
+| pre-edit-handler.js | ✂️ 簡化 |
+| timeline.js | ✅ 保留 |
+| paths.js | ✅ 保留 |
+| hook-utils.js | ✅ 保留 |
+| specs.js | ✅ 保留（但不再由 workflow 驅動） |
+| queue.js | ✅ 保留 |
+| instinct 相關 | ✅ 保留 |

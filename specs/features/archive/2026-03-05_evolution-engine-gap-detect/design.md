@@ -8,7 +8,7 @@ created: 2026-03-05
 
 ## 技術摘要（What & Why）
 
-- **方案**：建立薄殼化的 gap-analyzer.js（lib/）+ evolution.js（scripts/）。gap-analyzer 純粹組合 health-check 的四個 check 函式，不重複邏輯。
+- **方案**：建立thin wrapper化的 gap-analyzer.js（lib/）+ evolution.js（scripts/）。gap-analyzer 純粹組合 health-check 的四個 check 函式，不重複邏輯。
 - **理由**：Overtone 架構慣例是「邏輯在 lib/，CLI 入口在 scripts/」（如 impact.js → dependency-graph.js）；直接 require health-check 的已導出函式，零重複程式碼。
 - **取捨**：gap-analyzer 直接 `require('../health-check')` 而非接受 check 函式作為參數注入 — 因為 health-check 已是穩定內部模組，不需要額外抽象。_deps 只注入 I/O 層（console, process）以支援測試。
 
