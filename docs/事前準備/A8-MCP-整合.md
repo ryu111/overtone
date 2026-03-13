@@ -1,5 +1,28 @@
 # A8 — MCP 整合
 
+## 執行策略
+
+| 文件 | 執行策略 |
+|------|---------|
+| 8 個 Plugin MCP | 活躍 → 維持現狀 |
+| 專案級 `.mcp.json` | 未使用 → v0.30 評估是否引入 |
+| Subagent inline MCP | Agent frontmatter 可帶 mcpServers → v0.30 Worker 評估 |
+| 新功能（OAuth/Tool Search/Resources） | 觀望 → 按需採用 |
+| Claude as MCP server | `claude mcp serve` → 評估跨工具整合場景 |
+
+## 執行步驟
+
+**Step 1：研究 MCP 能力** ✅
+- [x] 盤點 4 種傳輸類型（HTTP/stdio/WebSocket/SSE deprecated）
+- [x] 確認 6 種配置位置及優先順序
+- [x] 記錄新功能（OAuth 2.0 / Tool Search / Resources / Prompts / list_changed）
+- [x] 確認相關 settings 欄位
+
+**Step 2：評估 v0.30 MCP 策略** ⬜
+- [ ] 決定是否引入專案級 `.mcp.json`
+- [ ] 評估 Subagent inline MCP 對 Worker 隔離的價值
+- [ ] 確認 Tool Search 自動啟用門檻是否影響效能
+
 > 狀態：✅ 已確認
 
 ---

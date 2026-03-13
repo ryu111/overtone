@@ -8,9 +8,9 @@
 
 ## 雙 Repo 管理
 
-| Repo | 路徑 | GitHub | 內容 |
-|------|------|--------|------|
-| **nova** | `~/.claude/` | `ryu111/nova` | nova 全域專案 SoT |
+| Repo         | 路徑                   | GitHub            | 內容                         |
+| ------------ | ---------------------- | ----------------- | ---------------------------- |
+| **nova**     | `~/.claude/`           | `ryu111/nova`     | nova 全域專案 SoT            |
 | **overtone** | `~/projects/overtone/` | `ryu111/overtone` | 開發輔助（tests/docs/specs） |
 
 每次迭代完成後，📋 MUST commit 並 push 兩個 repo 的變更。
@@ -26,8 +26,7 @@
 ## 常用指令
 
 ```bash
-bun scripts/test-parallel.js    # 並行測試（~21s）
-bun test                         # 單進程測試（~53s）
+bun test                         # 單進程測試（~20ms）
 ```
 
 ## 開發規範
@@ -38,6 +37,7 @@ bun test                         # 單進程測試（~53s）
 ## Hook 改動驗收
 
 Hook 腳本修改和 settings.json 設定變更皆在同一 session 即時生效（無需重啟）。驗收方式：
+
 - **單元測試**：`require()` handler 驗證 output 格式
 - **Hook stdout 驗收**：pipe stdin 到 hook 腳本，檢查 JSON 有 `hookSpecificOutput.additionalContext`
 
@@ -47,8 +47,8 @@ echo '{"prompt":"test","cwd":"'$PWD'"}' | bun ~/.claude/hooks/scripts/prompt/on-
 
 ## 關鍵文件
 
-| 文件 | 用途 |
-|------|------|
-| `docs/spec/overtone.md` | 完整規格索引 |
-| `docs/spec/overtone-decision-points.md` | 控制流決策點快查 |
-| `~/.claude/scripts/lib/registry.js` | SoT — 所有映射定義 |
+| 文件                                    | 用途               |
+| --------------------------------------- | ------------------ |
+| `docs/spec/overtone.md`                 | 完整規格索引       |
+| `docs/spec/overtone-decision-points.md` | 控制流決策點快查   |
+| `~/.claude/scripts/lib/registry.js`     | SoT — 所有映射定義 |

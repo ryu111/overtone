@@ -1,6 +1,37 @@
 # B1 — AI Workflow 方法論比較
 
+## 執行策略
+
+| 文件 | 執行策略 |
+|------|---------|
+| 九大方法論總覽 | 橫向比較 Stars/結構化/學習曲線 → 定位 Overtone 在方法論光譜中的位置 |
+| 共通模式 | 5 個收斂模式（先文件後程式碼、任務原子化等） → Overtone 已全部具備 |
+| Overtone 定位 | 已有能力 vs 缺少能力 → rules/ 條件載入、CLAUDE.md 審計、spec 格式 三項待補 |
+| 可借鑑做法 | 6 項具體做法逐一評估 → 大部分已有等價機制，Property-based Testing 可考慮 |
+
+## 執行步驟
+
+**Step 1：研究 9 大方法論核心思想** ✅ 已完成
+- [x] 蒐集 Stars、結構化程度、學習曲線等維度
+- [x] 與 Overtone 現有機制逐一對照
+
+**Step 2：萃取共通模式** ✅ 已完成
+- [x] 歸納 5 個所有方法論收斂的核心模式
+- [x] 確認 Overtone 是否已具備
+
+**Step 3：識別 Overtone 缺口** ✅ 已完成
+- [x] rules/ 條件載入 → 已移交 A3 處理
+- [x] CLAUDE.md 審計機制 → 已移交 C3 claudemd-dev 設計
+- [x] 標準化 spec 格式 → 評估為非必要（BDD 已足夠）
+
+**Step 4：評估可借鑑做法** 🔍 待確認
+- [ ] 最終決定是否採用 Property-based Testing → 見 C4 D6
+- [x] constitution.md → 已有 CLAUDE.md ⛔ 規則等價
+- [x] EARS 格式 → 評估為過重
+
 > 狀態：✅ 已確認
+
+---
 
 ## 九大方法論總覽
 

@@ -1,6 +1,36 @@
 # C3 — `claudemd-dev` Skill 設計
 
+## 執行策略
+
+| 文件 | 執行策略 |
+|------|---------|
+| 功能矩陣 | 確認 3 模式（init/audit/optimize）scope → 輸入 C4 D2 |
+| SKILL.md 草案 | 待確認後作為建立骨架的輸入 |
+| References 規劃 | 5 個 reference 檔案 — 2 個從 onboard 搬移、3 個新建 |
+| 與現有 Skill 關係 | onboard 被整合、wording 引用、claude-dev 互補 |
+| 開放問題 | 3 題待決策 → 輸入 C4 |
+
+## 執行步驟
+
+**Step 1：設計確認** 🟡
+- [x] 定位與功能矩陣設計
+- [x] SKILL.md 草案撰寫
+- [x] References 規劃（5 檔案）
+- [ ] 確認開放問題（onboard 刪除策略、audit 觸發方式、diff 模式）
+
+**Step 2：建立 Skill** ⬜
+- [ ] 用 `claude-api:skill-creator` 產生骨架
+- [ ] 從 onboard 搬入 claudemd-skeleton.md + stack-detection.md
+- [ ] 新建 best-practices.md、anti-patterns.md、rules-guide.md
+
+**Step 3：驗證** ⬜
+- [ ] 用 `skill-judge` 評分驗證
+- [ ] 測試 init/audit/optimize 三種模式
+- [ ] 刪除或 .bak 舊的 onboard skill
+
 > 狀態：🔍 待確認
+
+---
 
 ## 定位
 

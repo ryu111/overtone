@@ -1,4 +1,31 @@
-# A7 — Skills 與 Commands 系統
+# A5 — Skills 與 Commands 系統
+
+## 執行策略
+
+| 文件 | 執行策略 |
+|------|---------|
+| 28 個 Skills | 活躍 → v0.30 評估精簡或重組 |
+| 31 個 Commands | 全部 .bak → 已合併進 Skills，不恢復 |
+| Plugin 系統 | 8 個啟用 → 維持，評估自建 Plugin 可能 |
+| Skill Frontmatter | 完整欄位已盤點 → v0.30 善用 context/hooks/references |
+| 字串替換與 References | 漸進式揭露機制 → 繼續使用 |
+
+## 執行步驟
+
+**Step 1：研究 Skill/Command/Plugin 機制** ✅
+- [x] 盤點 SKILL.md Frontmatter 完整欄位
+- [x] 確認字串替換語法和 References 機制
+- [x] 記錄 Plugin 系統架構（plugin.json / 元件目錄 / Marketplace）
+- [x] 確認 Commands 已併入 Skills（同名時 skill 勝出）
+
+**Step 2：規劃 v0.30 Skill 架構** ⬜
+- [ ] 評估 28 個 Skills 的保留/合併/刪除
+- [ ] 決定是否用 `context: fork` 讓特定 Skill 在 subagent 執行
+- [ ] 評估 frontmatter hooks（`once: true`）取代部分初始化邏輯
+
+**Step 3：驗證元件閉環** ⬜
+- [ ] 確認 Skill → Agent 消費 → Hook 注入的依賴鏈完整
+- [ ] 盤點結果整合到 C1-現有元件盤點
 
 > 狀態：✅ 已確認
 

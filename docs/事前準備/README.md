@@ -22,10 +22,10 @@
 | A1 | [指令系統](./A1-指令系統.md) | ✅ 已確認 | CLAUDE.md 四層優先順序 + @import + 最佳寫法 |
 | A2 | [設定系統](./A2-設定系統.md) | ✅ 已確認 | settings.json 五層 + 完整欄位分類 |
 | A3 | [rules 條件規則](./A3-rules-條件規則.md) | 🔍 待確認 | 深度研究 + 已知 bugs + 社群範例 + 採用策略 |
-| A4 | [Hook 系統](./A4-Hook-系統.md) | ✅ 已確認 | 18 事件 + 4 handler 類型 + matcher + 新功能 |
-| A5 | [Memory 系統](./A5-Memory-系統.md) | ✅ 已確認 | auto memory + agent-memory 三範圍 + projects/ |
-| A6 | [Agent 與 Subagent](./A6-Agent-與-Subagent.md) | ✅ 已確認 | frontmatter + isolation:worktree + teams |
-| A7 | [Skills 與 Commands](./A7-Skills-與-Commands.md) | ✅ 已確認 | SKILL.md 格式 + 觸發機制 + 內建 skills |
+| A4 | [Agent 與 Subagent](./A4-Agent-與-Subagent.md) | ✅ 已確認 | frontmatter + isolation:worktree + teams |
+| A5 | [Skills 與 Commands](./A5-Skills-與-Commands.md) | ✅ 已確認 | SKILL.md 格式 + 觸發機制 + 內建 skills |
+| A6 | [Hook 系統](./A6-Hook-系統.md) | ✅ 已確認 | 18 事件 + 4 handler 類型 + matcher + 新功能 |
+| A7 | [Memory 系統](./A7-Memory-系統.md) | ✅ 已確認 | auto memory + agent-memory 三範圍 + projects/ |
 | A8 | [MCP 整合](./A8-MCP-整合.md) | ✅ 已確認 | 傳輸類型 + 配置位置 + OAuth + tool search |
 
 ## B. 方法論與生態系

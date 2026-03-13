@@ -1,4 +1,31 @@
-# A4 — Hook 系統
+# A6 — Hook 系統
+
+## 執行策略
+
+| 文件 | 執行策略 |
+|------|---------|
+| 18 個 Hook 事件 | 完整盤點完成 → v0.30 選用必要事件 |
+| 4 種 Handler 類型 | command 為主、prompt 為輔 → v0.30 維持 |
+| 13 個現有 Hook | v0.30 重設計中 → 見 C2-v030-架構設計 |
+| Hook Output 雙通道 | systemMessage（UI）vs additionalContext（Model）→ 繼續使用 |
+| 新功能（async/once/frontmatter hooks） | 評估 v0.30 是否採用 |
+
+## 執行步驟
+
+**Step 1：研究 Hook 能力邊界** ✅
+- [x] 列出 18 個事件的觸發時機、可阻擋性、Matcher 支援
+- [x] 確認 Handler 類型 × 事件支援矩陣
+- [x] 記錄 Hook Output 雙通道機制
+- [x] 記錄新功能（async、once、frontmatter hooks、CLAUDE_ENV_FILE）
+
+**Step 2：評估 v0.30 Hook 架構** ⬜
+- [ ] 決定 13 個現有 Hook 的保留/合併/刪除
+- [ ] 評估 frontmatter hooks 是否取代部分全域 Hook
+- [ ] 確認 async hook 對效能的影響
+
+**Step 3：應用到 v0.30 設計** ⬜
+- [ ] 將 Hook 變更計劃整合到 C2-v030-架構設計
+- [ ] 確認 Hook 與 Agent/Skill 的閉環依賴
 
 > 狀態：✅ 已確認
 

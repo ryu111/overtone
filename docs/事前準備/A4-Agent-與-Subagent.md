@@ -1,4 +1,31 @@
-# A6 — Agent 與 Subagent 系統
+# A4 — Agent 與 Subagent 系統
+
+## 執行策略
+
+| 文件 | 執行策略 |
+|------|---------|
+| 18 個現有 Agent | 全部 .bak → v0.30 重設計為 3 角色 |
+| Agent Frontmatter | 完整欄位已盤點 → v0.30 選用必要欄位 |
+| Worktree 隔離 | 官方支援 → v0.30 評估並行 Worker 使用 |
+| Agent Teams（實驗性） | 觀望 → 不納入 v0.30 初版 |
+| 背景 Subagent | 可用 → v0.30 評估非同步任務場景 |
+
+## 執行步驟
+
+**Step 1：研究 Agent 能力** ✅
+- [x] 列出 6 個內建 Subagent 及其工具限制
+- [x] 盤點 Agent Frontmatter 完整欄位（name/model/tools/skills/isolation 等）
+- [x] 記錄 Worktree 隔離機制和 Agent Teams 實驗功能
+- [x] 確認 Agent 定義位置優先順序
+
+**Step 2：設計 v0.30 Agent 架構** ✅
+- [x] 定義 3 角色（Planner/Executor/Reviewer）的 frontmatter（見 C2 三角色 Worker）
+- [x] 決定 Worker 是否使用 worktree 隔離（均不預設，D4 由呼叫方決定）
+- [ ] 規劃 Main → Worker 委派的深度路由整合
+
+**Step 3：驗證 Agent 閉環** ⬜
+- [ ] 確認 Agent → Skill 注入 → Hook 保護的依賴鏈
+- [ ] 測試 Worker 可見性（全域 rules ✅、paths rules ❌）
 
 > 狀態：✅ 已確認
 
@@ -29,7 +56,7 @@
 | `skills` | 否 | 啟動時注入的 skill 內容 |
 | `maxTurns` | 否 | 最大 agentic turns |
 | `permissionMode` | 否 | `default`/`acceptEdits`/`dontAsk`/`bypassPermissions`/`plan` |
-| `memory` | 否 | `user`/`project`/`local`（見 [A5](./A5-Memory-系統.md)） |
+| `memory` | 否 | `user`/`project`/`local`（見 [A7](./A7-Memory-系統.md)） |
 | `isolation` | 否 | `worktree` — 在獨立 git worktree 中執行 |
 | `background` | 否 | `true` — 永遠背景執行 |
 | `mcpServers` | 否 | 專屬 MCP server（inline 或 reference） |

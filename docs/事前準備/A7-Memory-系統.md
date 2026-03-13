@@ -1,4 +1,25 @@
-# A5 — Memory 系統
+# A7 — Memory 系統
+
+## 執行策略
+
+| 文件 | 執行策略 |
+|------|---------|
+| Auto Memory（MEMORY.md） | 200 行上限 → 已瘦身，維持精簡 |
+| Agent Memory（3 種範圍） | v0.30 agent 已 .bak → 重設計時重新規劃 |
+| CLAUDE.md 手動記憶 | 全域 76 行 + 專案 57 行 → 維持 |
+| Hook 強制規則 | 限制可記內容 → 繼續執行 |
+
+## 執行步驟
+
+**Step 1：研究記憶機制** ✅
+- [x] 盤點三種記憶機制（Auto Memory / Agent Memory / CLAUDE.md）
+- [x] 確認 Agent Memory 三種範圍（user/project/local）
+- [x] 記錄 200 行上限和 Compaction 重讀行為
+
+**Step 2：規劃 v0.30 記憶策略** ⬜
+- [ ] 決定 v0.30 Agent 使用哪種 Memory 範圍
+- [ ] 評估 Auto Memory 寫入品質（避免記不重要的事）
+- [ ] 確認 MEMORY.md 與 SKILL.md 的知識分界
 
 > 狀態：✅ 已確認
 
