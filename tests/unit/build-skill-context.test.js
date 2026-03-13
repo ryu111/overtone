@@ -47,9 +47,9 @@ afterEach(() => {
 // ── Feature 1: buildSkillContext ──
 
 describe('buildSkillContext — Scenario 1-1: Agent 有 skills 欄位時載入 SKILL.md 摘要', () => {
-  it('回傳字串包含 developer agent 的前幾個 skill 區塊標頭', () => {
-    // developer.md 有 14 個 skills，maxTotalChars=2400 限制下只載入前幾個
-    const result = buildSkillContext('developer', PLUGIN_ROOT);
+  it('回傳字串包含 executor agent 的 skill 區塊標頭', () => {
+    // executor.md 有 testing/security-kb 等 skills
+    const result = buildSkillContext('executor', PLUGIN_ROOT);
     expect(result).not.toBeNull();
     expect(typeof result).toBe('string');
     // 檢查至少包含第一個 skill（testing）的區塊標頭
@@ -57,7 +57,7 @@ describe('buildSkillContext — Scenario 1-1: Agent 有 skills 欄位時載入 S
   });
 
   it('回傳字串以 [Skill 知識摘要] 開頭', () => {
-    const result = buildSkillContext('developer', PLUGIN_ROOT);
+    const result = buildSkillContext('executor', PLUGIN_ROOT);
     expect(result).not.toBeNull();
     expect(result.startsWith('[Skill 知識摘要]')).toBe(true);
   });
