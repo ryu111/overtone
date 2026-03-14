@@ -37,14 +37,18 @@
 
 ## 章文件索引
 
-> 章文件在功能歸檔時自動產生，初始為空。
 > 歸檔流程見 `~/.claude/skills/nova-spec/references/archive-protocol.md`
+
+| 領域 | 摘要 | 章文件 | 更新日期 |
+|------|------|--------|---------|
+| 常駐服務 | Nova Server daemon + hook-client 防呆 + 可觀測層 | `docs/常駐服務.md` | 2026-03-15 |
+| 架構演進 | Pipeline → 深度路由、Agent 18 → Worker 3 | `docs/架構演進.md` | 2026-03-15 |
+| 製作規範 | 完全閉環 + 自動修復 + 補全能力 | `docs/製作規範.md` | 2026-03-15 |
 
 ## 相關文件
 
 | 文件 | 位置 | 說明 |
 |------|------|------|
-| 架構重設計 | `docs/spec/架構重設計.md` | Pipeline → 深度路由分析 |
-| L1-L2 實作計劃 | `docs/spec/L1-L2-守衛與閉環-實作計劃.md` | R1 詳細設計 |
-| Hook Dispatcher | `docs/spec/hook-dispatcher-架構.md` | Dispatcher 架構規格 |
+| L1-L2 實作計劃 | `docs/spec/L1-L2-守衛與閉環-實作計劃.md` | R1 詳細設計（backlog） |
+| Flow Visualizer v3 | `docs/spec/flow-visualizer-ui-v3.md` | UI 改善規格（backlog） |
 | 五層願景 | `docs/vision.md` | L1-L5 定義 |
