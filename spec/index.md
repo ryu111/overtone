@@ -33,7 +33,7 @@
 - **Skills** 29 個 — 知識庫（含 nova-spec、closed-loop）
 - **Agents** 3 個 — planner / executor / reviewer
 - **Flow Visualizer** — hooks 事件 → SSE → 即時顯示
-- **Guards** 2 個 — pre-bash-guard + pre-edit-guard
+- **Guards** — `guards.js` 統一模組（Bash 黑名單 + 元件保護）
 
 ## 章文件索引
 

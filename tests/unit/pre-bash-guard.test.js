@@ -2,7 +2,7 @@ import { describe, test, expect } from 'bun:test';
 import { homedir } from 'os';
 import { join } from 'path';
 
-const { evaluate } = await import(join(homedir(), '.claude/hooks/scripts/tool/pre-bash-guard.js'));
+const { evaluateBash: evaluate } = await import(join(homedir(), '.claude/hooks/modules/guards.js'));
 
 describe('pre-bash-guard', () => {
   describe('危險命令阻擋', () => {

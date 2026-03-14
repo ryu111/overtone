@@ -2,7 +2,7 @@ import { describe, test, expect } from 'bun:test';
 import { homedir } from 'os';
 import { join } from 'path';
 
-const { evaluate } = await import(join(homedir(), '.claude/hooks/scripts/tool/pre-edit-guard.js'));
+const { evaluateEdit: evaluate } = await import(join(homedir(), '.claude/hooks/modules/guards.js'));
 
 const CLAUDE_DIR = join(homedir(), '.claude');
 

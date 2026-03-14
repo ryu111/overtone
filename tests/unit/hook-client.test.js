@@ -5,78 +5,61 @@ import { existsSync } from 'fs';
 
 const CLAUDE_DIR = join(homedir(), '.claude');
 
-const FALLBACK_SCRIPTS = {
-  'PreToolUse:Bash': 'hooks/scripts/tool/pre-bash-guard.js',
-  'PreToolUse:Write': 'hooks/scripts/tool/pre-edit-guard.js',
-  'PreToolUse:Edit': 'hooks/scripts/tool/pre-edit-guard.js',
-  'PreToolUse:Agent': 'hooks/scripts/tool/pre-agent-flow.js',
-  'PostToolUse': 'hooks/scripts/tool/post-tool-flow.js',
-  'SessionStart': 'hooks/scripts/session/on-start-flow.js',
-  'SubagentStop': 'hooks/scripts/session/on-stop-flow.js',
-  'UserPromptSubmit': 'hooks/scripts/prompt/on-submit-flow.js',
-  'SessionEnd': 'hooks/scripts/session/on-end-flow.js',
-  'Notification': 'hooks/scripts/notification/on-notification.js',
+const FALLBACK_MODULES = {
+  'PreToolUse:Bash': { path: 'hooks/modules/guards.js', fn: 'evaluateBash' },
+  'PreToolUse:Write': { path: 'hooks/modules/guards.js', fn: 'evaluateEdit' },
+  'PreToolUse:Edit': { path: 'hooks/modules/guards.js', fn: 'evaluateEdit' },
 };
 
-describe('Hook Client fallback 腳本對應', () => {
-  test('每個 fallback 腳本都存在', () => {
-    for (const [, script] of Object.entries(FALLBACK_SCRIPTS)) {
-      const fullPath = join(CLAUDE_DIR, script);
-      expect(existsSync(fullPath)).toBe(true);
+describe('Hook Client fallback 模組對應', () => {
+  test('每個 fallback 模組都存在', () => {
+    const paths = new Set(Object.values(FALLBACK_MODULES).map(m => m.path));
+    for (const p of paths) {
+      expect(existsSync(join(CLAUDE_DIR, p))).toBe(true);
     }
   });
 
   test('精確 key 查找', () => {
-    expect(FALLBACK_SCRIPTS['PreToolUse:Bash']).toBe('hooks/scripts/tool/pre-bash-guard.js');
-    expect(FALLBACK_SCRIPTS['PreToolUse:Write']).toBe('hooks/scripts/tool/pre-edit-guard.js');
-    expect(FALLBACK_SCRIPTS['PreToolUse:Edit']).toBe('hooks/scripts/tool/pre-edit-guard.js');
-    expect(FALLBACK_SCRIPTS['PreToolUse:Agent']).toBe('hooks/scripts/tool/pre-agent-flow.js');
-  });
-
-  test('寬鬆 key 查找', () => {
-    expect(FALLBACK_SCRIPTS['PostToolUse']).toBe('hooks/scripts/tool/post-tool-flow.js');
-    expect(FALLBACK_SCRIPTS['SessionStart']).toBe('hooks/scripts/session/on-start-flow.js');
-    expect(FALLBACK_SCRIPTS['Notification']).toBe('hooks/scripts/notification/on-notification.js');
+    expect(FALLBACK_MODULES['PreToolUse:Bash'].fn).toBe('evaluateBash');
+    expect(FALLBACK_MODULES['PreToolUse:Write'].fn).toBe('evaluateEdit');
+    expect(FALLBACK_MODULES['PreToolUse:Edit'].fn).toBe('evaluateEdit');
   });
 
   test('Write|Edit matcher 可找到兩個 fallback', () => {
     const matcher = 'Write|Edit';
-    const found = matcher.split('|').map(m => FALLBACK_SCRIPTS[`PreToolUse:${m}`]);
-    expect(found).toEqual([
-      'hooks/scripts/tool/pre-edit-guard.js',
-      'hooks/scripts/tool/pre-edit-guard.js',
-    ]);
+    const found = matcher.split('|').map(m => FALLBACK_MODULES[`PreToolUse:${m}`]);
+    expect(found.every(f => f.fn === 'evaluateEdit')).toBe(true);
   });
 });
 
 describe('Hook Client fallback evaluate 執行', () => {
   test('bash-guard block 危險命令', async () => {
-    const { evaluate } = await import(join(CLAUDE_DIR, 'hooks/scripts/tool/pre-bash-guard.js'));
-    const result = evaluate({ tool_input: { command: 'rm -rf /' } });
+    const { evaluateBash } = await import(join(CLAUDE_DIR, 'hooks/modules/guards.js'));
+    const result = evaluateBash({ tool_input: { command: 'rm -rf /' } });
     expect(result.decision).toBe('block');
   });
 
   test('bash-guard allow 安全命令', async () => {
-    const { evaluate } = await import(join(CLAUDE_DIR, 'hooks/scripts/tool/pre-bash-guard.js'));
-    const result = evaluate({ tool_input: { command: 'ls -la' } });
+    const { evaluateBash } = await import(join(CLAUDE_DIR, 'hooks/modules/guards.js'));
+    const result = evaluateBash({ tool_input: { command: 'ls -la' } });
     expect(result.decision).toBe('allow');
   });
 
   test('edit-guard block 保護路徑', async () => {
-    const { evaluate } = await import(join(CLAUDE_DIR, 'hooks/scripts/tool/pre-edit-guard.js'));
-    const result = evaluate({ tool_input: { file_path: join(CLAUDE_DIR, 'settings.json') } });
+    const { evaluateEdit } = await import(join(CLAUDE_DIR, 'hooks/modules/guards.js'));
+    const result = evaluateEdit({ tool_input: { file_path: join(CLAUDE_DIR, 'settings.json') } });
     expect(result.decision).toBe('block');
   });
 
   test('edit-guard allow 非保護路徑', async () => {
-    const { evaluate } = await import(join(CLAUDE_DIR, 'hooks/scripts/tool/pre-edit-guard.js'));
-    const result = evaluate({ tool_input: { file_path: '/tmp/safe-file.txt' } });
+    const { evaluateEdit } = await import(join(CLAUDE_DIR, 'hooks/modules/guards.js'));
+    const result = evaluateEdit({ tool_input: { file_path: '/tmp/safe-file.txt' } });
     expect(result.decision).toBe('allow');
   });
 });
 
 describe('Hook Client HTTP dispatch', () => {
-  test('dispatcher 連線測試（容許未啟動）', async () => {
+  test('nova-server 連線測試（容許未啟動）', async () => {
     let connected = false;
     try {
       const res = await fetch('http://127.0.0.1:3457/health', {
@@ -84,7 +67,6 @@ describe('Hook Client HTTP dispatch', () => {
       });
       if (res.ok) connected = true;
     } catch {}
-    // dispatcher 可能已啟動也可能沒有，兩種情況都合理
     expect(typeof connected).toBe('boolean');
   });
 });
@@ -102,7 +84,6 @@ describe('Hook Client E2E（stdin → stdout）', () => {
     const exitCode = await proc.exited;
     expect(exitCode).toBe(0);
 
-    // 不管走 dispatcher 還是 fallback，都應該 block
     if (output.trim()) {
       const result = JSON.parse(output.trim());
       expect(result.decision).toBe('block');
@@ -120,7 +101,6 @@ describe('Hook Client E2E（stdin → stdout）', () => {
     const output = await new Response(proc.stdout).text();
     const exitCode = await proc.exited;
     expect(exitCode).toBe(0);
-    // allow 時不應有 stdout 輸出（或輸出 allow 但不是 block）
     if (output.trim()) {
       const result = JSON.parse(output.trim());
       expect(result.decision).not.toBe('block');
