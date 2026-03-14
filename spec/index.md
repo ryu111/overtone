@@ -29,8 +29,8 @@
 
 ### 現有基礎
 
-- **Rules** 12 個 — 全域行為規範
-- **Skills** 28 個 — 知識庫（SKILL.md + references 完整）
+- **Rules** 13 個 — 全域行為規範（含 paths 觸發的元件閉環）
+- **Skills** 29 個 — 知識庫（含 nova-spec、closed-loop）
 - **Agents** 3 個 — planner / executor / reviewer
 - **Flow Visualizer** — hooks 事件 → SSE → 即時顯示
 - **Guards** 2 個 — pre-bash-guard + pre-edit-guard
