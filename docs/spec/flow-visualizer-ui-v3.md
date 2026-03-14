@@ -125,3 +125,7 @@ Main Agent 站點後面加一個脈動的「...」指示器，表示正在處理
 - 3.1 Header 資訊
 - 3.2 科技感
 - 3.3 鍵盤快捷鍵
+
+---
+
+> 實作計劃見 `docs/superpowers/plans/2026-03-14-flow-visualizer.md`。

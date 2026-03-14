@@ -235,7 +235,7 @@ v0.30+ 採用「單腦 + 深度路由 + 輕量 Worker」模式（見 `docs/spec/
 
 ### R3.4 Project Orchestrator
 
-**現狀**：specs skill 有 references，但 orchestrator 腳本已刪。
+**現狀**：nova-spec skill 已建立（取代舊 specs skill），但 orchestrator 腳本已刪。
 **目標**：恢復 Skill Forge + PM + 無限迭代的串聯。
 
 | 任務 | 類型 | 說明 |
@@ -342,7 +342,7 @@ v0.30+ 採用「單腦 + 深度路由 + 輕量 Worker」模式（見 `docs/spec/
 | evolve | 2 個 | evolution.js + gap-*.js | R3.1 |
 | instinct | 2 個 | global-instinct.js | R1.3 |
 | pm | 3 個 | interview.js | R3.3 |
-| specs | 3 個 | project-orchestrator.js | R3.4 |
+| nova-spec | 3 個 references + 2 個 examples + 3 個 scripts | project-orchestrator.js | R3.4 |
 | workflow-core | 4 個 | 不重建（Pipeline 知識，改適配深度路由） |
 
 ### 有知識、有執行層（完整閉環）

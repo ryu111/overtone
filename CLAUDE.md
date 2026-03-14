@@ -19,9 +19,9 @@
 
 ## 文件生命週期
 
-- `docs/backlog/`：待做（bug + 設計提案）→ 完成後轉入 spec/ 或 CLAUDE.md，或直接刪除
-- `docs/spec/`：活的產品規格
-- `docs/archive/`：死的歷史參考
+- `spec/`：產品規格（主文件 index.md + roadmap + change/ 進行中 + archive/ 歸檔）
+- `docs/spec/`：設計規格（架構文件）
+- `docs/archive/`：歷史參考
 
 ## 常用指令
 
@@ -47,8 +47,10 @@ echo '{"prompt":"test","cwd":"'$PWD'"}' | bun ~/.claude/hooks/scripts/prompt/on-
 
 ## 關鍵文件
 
-| 文件                                    | 用途               |
-| --------------------------------------- | ------------------ |
-| `docs/spec/overtone.md`                 | 完整規格索引       |
-| `docs/spec/overtone-decision-points.md` | 控制流決策點快查   |
-| `~/.claude/scripts/lib/registry.js`     | SoT — 所有映射定義 |
+| 文件                                         | 用途                       |
+| -------------------------------------------- | -------------------------- |
+| `spec/index.md`                              | 產品規格主文件（架構地圖）  |
+| `spec/roadmap.md`                            | 重建路線圖（R0-R5）        |
+| `docs/vision.md`                             | 五層願景定義               |
+| `docs/spec/架構重設計.md`                     | Pipeline → 深度路由分析     |
+| `docs/spec/L1-L2-守衛與閉環-實作計劃.md`      | R1 詳細實作設計             |
