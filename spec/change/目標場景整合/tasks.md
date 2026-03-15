@@ -179,3 +179,4 @@ Phase 5: 回歸驗證 + 文件閉環（D0）
 | Q12 | 研究實作：結構化 feedback + 方向性梯度（R8 發現） | generateImprovements 改 JSON 格式 + TextGrad 啟發的維度方向指引。617 pass |
 | Q13 | 研究實作：Post-update 驗證（R4 發現） | verifyConsistency() 更新後 re-scan 確認舊值已清除 + 3 個測試。620 pass |
 | Q14 | 研究實作：Session Resilience --resume（R6 發現） | executeTask 重試迴圈（最多 3 次）+ spawnSession 支援 resumeSessionId。620 pass |
+| Q15 | 研究實作：Skill 使用率追蹤 + 預警（R10 發現） | collect 掃描 skills vs agents 引用、簡報預警 unreferenced > 5。620 pass |

@@ -889,3 +889,98 @@ if (slope > 0.5 && latest < 5) {
 - [Selector: AIOps 4 Components](https://www.selector.ai/learning-center/aiops-in-2025-4-components-and-4-key-capabilities/)
 - [Quinnox: AIOps Predictive Analytics](https://www.quinnox.com/blogs/aiops-leverages-predictive-analytics-to-accelerate-incident-management-and-prevent-downtime/)
 - [AI Anomaly Detection Guide](https://www.techmagic.co/blog/ai-anomaly-detection)
+
+---
+
+## R10 — 場景三深入 + R4 前哨：動態 Skill 組合（2026-03-17）
+
+### 搜尋主題
+
+Dynamic MCP tool composition、agent skill auto-discovery、runtime skill selection、skill library size limits
+
+### 發現摘要
+
+#### 1. MCP 動態發現 — 2026 產業標準
+
+**核心概念**：AI agent 在對話中**按需**搜尋和載入 MCP server，不需要預先設定。
+
+**技術棧**：
+- **MCP Catalog**：Docker 維護的 MCP server 索引
+- **MCP Gateway & Registry**：用 FAISS + sentence transformers 做**語意搜尋**（自然語言 → 匹配工具）
+- **Dynamic MCP**：Claude Code 已支援動態加入 MCP server
+
+**與 Nova R4 的關聯**：
+- R4 目標：「動態 MCP + 跨領域自主運作」
+- 動態發現已有標準方案：agent 描述需求 → 語意搜尋 → 找到 MCP server → 自動連接
+- Nova 不需要自建發現機制，用 MCP Catalog + 語意搜尋即可
+
+**整合評估**：✅ R4 核心
+- 第一步：在 CLAUDE.md 或 skills/ 中加入「如何搜尋和連接 MCP server」的知識
+- 第二步：heartbeat 的 buildPrompt 根據任務類型推薦相關 MCP server
+
+#### 2. Skill Library Size Limit — 相變現象
+
+**關鍵發現**（2026 論文）：多 agent 系統可以「編譯」為單 agent + skill library，token 和延遲大幅降低。**但超過臨界 library 大小後，skill 選擇準確度急劇下降**（phase transition）。
+
+**含義**：
+- 不能無限加 skill — 存在一個上限
+- 超過上限後，agent 會**選錯 skill**（比不用 skill 還差）
+- 需要 skill pruning（修剪）和分層載入機制
+
+**與 Nova 的關聯**：
+- Nova 目前 29 個 skills — 需要評估是否已接近上限
+- Skill Lifecycle 會自動生成新 skill — 如果不修剪，library 會無限增長
+- **需要加入 skill 淘汰機制**：使用率低 + 品質分數低 → 自動歸檔
+
+**整合評估**：⚠️ 中等價值但重要預警
+- 在 Learner 中追蹤 skill 使用頻率
+- 超過 N 個 skill 時觸發 pruning（歸檔低使用率 skill）
+- N 的值需要實驗確定（論文建議 20-50 是 sweet spot）
+
+#### 3. 意圖 → 工具映射（Nova R4 核心）
+
+**業界做法**：
+- **Spring AI Agent Skills**：根據任務目標自動選擇 skill 組合
+- **agentskills.io**：開放標準，SKILL.md 格式跨平台可攜（和 Nova 完全一致！）
+- **單 agent + skill library vs 多 agent**：單 agent 在 skill < 臨界值時更高效
+
+**與 Nova 的關聯**：
+- Nova 已用 SKILL.md 格式（和業界標準完全一致 ✅）
+- R4 需要的「意圖 → 工具映射」= 根據 Notion 任務描述，自動選擇要載入的 skills + MCP servers
+- 目前 executor agent 的 `skills[]` 是靜態的 — R4 應改為動態注入
+
+**整合評估**：✅ R4 核心設計方向
+
+#### 4. Single-Agent Skill 的實際限制
+
+**論文結論**：single-agent + skill library 比 multi-agent 更高效，但有三個前提：
+1. Skill library 不超過臨界大小
+2. 每個 skill 有清晰的觸發條件
+3. Skill 之間沒有衝突
+
+**與 Nova 的關聯**：
+- Nova 的 SKILL.md 有 `description` 但缺少明確的**觸發條件**
+- 需要在 SKILL.md frontmatter 加入 `triggers:` 欄位（什麼任務/關鍵詞時載入）
+- Skill 衝突檢測目前不存在 — 如果兩個 skill 給出矛盾建議怎麼辦？
+
+### 可行動項目
+
+| 優先序 | 項目 | 影響場景 | 預估工作量 | 階段 |
+|:------:|------|:-------:|:---------:|:----:|
+| 1 | Skill 使用率追蹤 | 二+三 | ~20 行 | 現在 |
+| 2 | Skill pruning 機制（低使用率歸檔） | 二+三 | ~40 行 | 現在 |
+| 3 | SKILL.md triggers 欄位定義 | 三 | 規格 | R4 |
+| 4 | 動態 skill 注入（基於任務描述） | 三 | ~50 行 | R4 |
+| 5 | MCP 動態發現整合 | 一+三 | ~100 行 | R4 |
+
+### 參考來源
+
+- [Dynamic Tool Discovery: Azure + MCP](https://techcommunity.microsoft.com/blog/azure-ai-foundry-blog/dynamic-tool-discovery-azure-ai-agent-service--mcp-server-integration/4412651)
+- [MCP Gateway & Registry (FAISS)](https://github.com/agentic-community/mcp-gateway-registry/blob/main/docs/dynamic-tool-discovery.md)
+- [Docker Dynamic MCP](https://docs.docker.com/ai/mcp-catalog-and-toolkit/dynamic-mcp/)
+- [MCP Tool Discovery Guide](https://obot.ai/resources/learning-center/mcp-tool-discovery/)
+- [When Single-Agent Skills Replace Multi-Agent Systems (and Fail)](https://arxiv.org/pdf/2601.04748)
+- [Agent Skills: Architecture, Acquisition, Security (Survey)](https://arxiv.org/html/2602.12430v3)
+- [Agent Skills Open Standard](https://agentskills.io/specification)
+- [Spring AI Agent Skills](https://spring.io/blog/2026/01/13/spring-ai-generic-agent-skills/)
+- [Claude Skills Deep Dive](https://leehanchung.github.io/blogs/2025/10/26/claude-skills-deep-dive/)
