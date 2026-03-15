@@ -42,7 +42,7 @@ v0.30+ 採用「單腦 + 深度路由 + 輕量 Worker + 本地模型背景 agent
 | R0.3 | 全域 CLAUDE.md + 專案 CLAUDE.md 重組 | ✅ |
 | R0.4 | Rules 14 個全域行為規範 | ✅ |
 | R0.5 | Flow Visualizer 閉環（hooks → event-writer → SSE → client） | ✅ |
-| R0.6 | Hooks 4 模組（guards + flow-observer + notification + metrics） | ✅ |
+| R0.6 | Hooks 5 模組（guards + flow-observer + context-injector + notification + metrics） | ✅ |
 
 ---
 

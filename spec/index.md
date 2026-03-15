@@ -34,6 +34,7 @@
 - **Agents** 3 個 — planner / executor / reviewer
 - **Nova Server** — hook dispatch + Flow Visualizer + SSE + metrics
 - **Guards** — `guards.js` 統一模組（Bash 黑名單 + 元件保護）
+- **Context Injector** — SessionStart 上下文聚合（簡報 + 行為 + 品質 + 錯誤 + 建議）
 - **背景 Agent** — maintainer.js + learner.js（SessionEnd 本地模型，零 API token）
 - **Notion** — Nova Roadmap database + 雙向同步
 

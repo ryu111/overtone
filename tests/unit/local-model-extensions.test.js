@@ -243,56 +243,54 @@ describe('Skill 改善建議', () => {
   });
 });
 
-// ─── 4. Flow Observer 簡報注入 ──────────────────────────────────────────────
+// ─── 4. 模組職責分離驗證 ────────────────────────────────────────────────────
 
-describe('Flow Observer 簡報注入', () => {
-  const BRIEFING_FILE = join(homedir(), '.claude/data/session-briefing.md');
-  const IMPROVEMENTS_FILE = join(homedir(), '.claude/data/improvements.jsonl');
-  let originalBriefing = null;
-  let originalImprovements = null;
-
-  beforeEach(() => {
-    // 保存原始檔案
-    try { originalBriefing = readFileSync(BRIEFING_FILE, 'utf-8'); } catch { originalBriefing = null; }
-    try { originalImprovements = readFileSync(IMPROVEMENTS_FILE, 'utf-8'); } catch { originalImprovements = null; }
-  });
-
-  afterEach(() => {
-    // 恢復原始檔案
-    if (originalBriefing !== null) {
-      writeFileSync(BRIEFING_FILE, originalBriefing);
-    } else {
-      try { require('fs').unlinkSync(BRIEFING_FILE); } catch {}
-    }
-    if (originalImprovements !== null) {
-      writeFileSync(IMPROVEMENTS_FILE, originalImprovements);
-    } else {
-      try { require('fs').unlinkSync(IMPROVEMENTS_FILE); } catch {}
-    }
-  });
-
-  test('flow-observer.js 載入不出錯', async () => {
-    const mod = await import(join(homedir(), '.claude/hooks/modules/flow-observer.js'));
-    expect(mod.on).toBeDefined();
+describe('模組職責分離', () => {
+  test('flow-observer.js 純觀察 — 無 inject 函式', async () => {
+    const mod = await import(join(homedir(), '.claude/hooks/modules/flow-observer.js') + `?t=${Date.now()}`);
+    const src = readFileSync(join(homedir(), '.claude/hooks/modules/flow-observer.js'), 'utf-8');
+    // 不應包含任何 inject 函式
+    expect(src).not.toContain('function inject');
+    // 應有 6 個 handler keys
     expect(mod.on.SessionStart).toBeDefined();
+    expect(mod.on.SessionEnd).toBeDefined();
+    expect(mod.on.UserPromptSubmit).toBeDefined();
+    expect(mod.on.SubagentStop).toBeDefined();
+    expect(mod.on['PreToolUse:Agent']).toBeDefined();
+    expect(mod.on.PostToolUse).toBeDefined();
   });
 
-  test('SessionStart handler 回傳 decision=allow', async () => {
-    const mod = await import(join(homedir(), '.claude/hooks/modules/flow-observer.js'));
+  test('flow-observer SessionStart 不注入 additionalContext', async () => {
+    const mod = await import(join(homedir(), '.claude/hooks/modules/flow-observer.js') + `?t=${Date.now()}`);
     const result = mod.on.SessionStart({ session_id: 'test', model: 'opus', cwd: '/tmp' });
+    expect(result.decision).toBe('allow');
+    expect(result.hookSpecificOutput).toBeUndefined();
+  });
+
+  test('context-injector.js 純注入 — 只有 SessionStart handler', async () => {
+    const mod = await import(join(homedir(), '.claude/hooks/modules/context-injector.js') + `?t=${Date.now()}`);
+    expect(mod.on.SessionStart).toBeDefined();
+    // 不應有其他 handler keys
+    const keys = Object.keys(mod.on);
+    expect(keys.length).toBe(1);
+    expect(keys[0]).toBe('SessionStart');
+  });
+
+  test('context-injector SessionStart 回傳 decision=allow', async () => {
+    const mod = await import(join(homedir(), '.claude/hooks/modules/context-injector.js') + `?t=${Date.now()}`);
+    const result = mod.on.SessionStart({ session_id: 'test' });
     expect(result.decision).toBe('allow');
   });
 
-  test('有 briefing 檔案時 SessionStart 注入 additionalContext', async () => {
-    const briefing = '# Nova Session 簡報\n> test briefing\n\n## 上次 Session\n測試摘要\n';
-    mkdirSync(join(homedir(), '.claude/data'), { recursive: true });
-    writeFileSync(BRIEFING_FILE, briefing);
-
-    // 需要重新載入模組（清除 cache）
-    // 由於 Bun 的模組快取，直接呼叫函式測試
-    const content = readFileSync(BRIEFING_FILE, 'utf-8').trim();
-    expect(content).toContain('Nova Session 簡報');
-    expect(content).toContain('測試摘要');
+  test('context-injector 原始碼包含 5 個 inject 函式', () => {
+    const src = readFileSync(join(homedir(), '.claude/hooks/modules/context-injector.js'), 'utf-8');
+    const injectFns = src.match(/function inject\w+/g) || [];
+    expect(injectFns.length).toBe(5);
+    expect(src).toContain('function injectBriefing');
+    expect(src).toContain('function injectLearnerContext');
+    expect(src).toContain('function injectJudgeContext');
+    expect(src).toContain('function injectHookErrors');
+    expect(src).toContain('function injectImprovements');
   });
 
   test('improvements JSONL 可被正確解析', () => {
@@ -300,10 +298,11 @@ describe('Flow Observer 簡報注入', () => {
       { date: '2026-03-15', path: 'skills/a', type: 'skill', score: 30, suggestions: ['- 建議 A1'] },
       { date: '2026-03-15', path: 'rules/b.md', type: 'rule', score: 40, suggestions: ['- 建議 B1', '- 建議 B2'] },
     ];
-    mkdirSync(join(homedir(), '.claude/data'), { recursive: true });
-    writeFileSync(IMPROVEMENTS_FILE, entries.map(e => JSON.stringify(e)).join('\n') + '\n');
+    const file = join(TMP_DIR, 'improvements-parse.jsonl');
+    mkdirSync(join(TMP_DIR), { recursive: true });
+    writeFileSync(file, entries.map(e => JSON.stringify(e)).join('\n') + '\n');
 
-    const raw = readFileSync(IMPROVEMENTS_FILE, 'utf-8').trim();
+    const raw = readFileSync(file, 'utf-8').trim();
     const parsed = raw.split('\n').map(l => JSON.parse(l));
     expect(parsed.length).toBe(2);
     expect(parsed[0].suggestions[0]).toContain('建議 A1');
