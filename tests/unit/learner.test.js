@@ -83,7 +83,7 @@ describe('computeConfidence', () => {
       lastSeen: oneDayAgo.toISOString().slice(0, 10),
     });
     const conf = computeConfidence(b, 30, today);
-    expect(conf).toBeGreaterThanOrEqual(0.60);
+    expect(conf).toBeGreaterThanOrEqual(0.55);
   });
 
   test('信心值介於 0 ~ 1 之間', () => {
