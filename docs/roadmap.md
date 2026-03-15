@@ -119,15 +119,63 @@ v0.30+ 採用「單腦 + 深度路由 + 輕量 Worker」模式（見 `docs/spec/
 > - 漸進式擴展 — Phase 1-5 逐步增加能力，每階段獨立可驗證
 > - 本地模型不可用時 → 只做確定性部分，跳過語意判斷
 
-### R1.3 學習框架
+### R1.3 Learner — 行為習慣偵測器
 
-**現狀**：instinct skill 知識文件完整（SKILL.md + 2 references），但 global-instinct.js / score-engine.js / baseline-tracker.js 已刪。
-**目標**：恢復觀察 → 記憶 → 改進的閉環。
+**現狀**：instinct skill 知識層完整（信心分數演算法、進化決策樹已定義），執行層已刪。
+**目標**：SessionEnd 背景 agent，偵測重複行為（習慣 + 反模式），追蹤概念成熟度，在對的時機建議固化或修正。
+
+**執行機制**：`learner.js` — 跟 maintainer.js 同模式，SessionEnd hook 觸發，自我分離背景執行，本地模型。
 
 | 任務 | 類型 | 說明 |
 |------|------|------|
-| global-instinct.js | 重建 | 5 API + projectHash 隔離（JSONL 持久化） |
-| 學習框架測試 | 重建 | 觀察記錄 + 查詢 + 衰減邏輯 |
+| learner.js | 新建 | SessionEnd → 提取行為序列 → 比對歷史 → 信心更新 → 建議輸出 |
+| flow-observer 擴充 | 修改 | tool_use 事件加入 file_path，提供更精確的行為指紋 |
+| SessionStart 注入 | 修改 | 高信心條目注入 additionalContext |
+| learner 測試 | 新建 | 信心公式 + 極性分類 + 行為比對 |
+
+**行為分類**：
+
+| 極性 | 信號 | 門檻 | 動作 |
+|:----:|------|:----:|------|
+| +1 正向（習慣） | 正常工具序列重複出現 | 0.60 | 建議固化為 Rule/Skill/自動化 |
+| -1 負向（反模式） | block/error/修正關鍵詞重複 | 0.40 | ⚠️ P0 警告 + 建議根因修復 |
+
+**信心公式**（無加減分，基於出現率 × 跨度 × 最近性）：
+
+```javascript
+frequencyScore = log2(occurrences + 1) / log2(totalSessions + 1)
+spanScore = min(spanDays / 3, 1)           // 3 天算穩定
+recency = 1 / (1 + daysSinceLastSeen / 3)  // 3 天沒出現信心減半
+confidence = frequencyScore * spanScore * recency
+// forgetThreshold: 0.10 → 自動刪除
+```
+
+**資料格式**（`~/.claude/data/behaviors.jsonl`）：
+
+```jsonl
+{"id":"rename-grep-update","polarity":1,"pattern":["Edit","Grep","Edit"],
+ "description":"改名後搜尋引用並更新","firstSeen":"2026-03-10",
+ "lastSeen":"2026-03-15","occurrences":[5,7,8,9,10,11],"confidence":0.72,
+ "suggestion":{"type":"rule","content":"...","priority":"P2"}}
+```
+
+**執行流程**：
+
+```
+SessionEnd → spawn learner.js（背景）
+  1. 提取行為序列（確定性）— flow events → toolSequence + toolCounts + promptKeywords
+  2. 分類極性（確定性）— block/error/修正關鍵詞 → 反模式，否則 → 習慣
+  3. 比對歷史（確定性 + 本地模型）— 工具子序列比對 + 語意相似度
+  4. 更新信心（確定性）— 出現率 × 跨度 × 最近性
+  5. 建議輸出（本地模型）— 信心達門檻時：「應該成為 Rule/Skill？」或「根因是什麼？」
+  → process 退出
+```
+
+> **設計決策**：
+> - 不用加減分 — 改用出現率 × 跨度 × 最近性，避免低頻場景信心漲不上去
+> - 時間尺度校正 — 3 天穩定（非 14 天），符合高頻開發節奏
+> - 反模式更急 — 門檻 0.40（vs 習慣 0.60），優先序 P0
+> - 與 R1.2 互補 — maintainer 管文件/git/Notion，learner 管行為偵測/信心追蹤
 
 ### R1.4 評分框架
 
@@ -491,7 +539,7 @@ v0.30+ 採用「單腦 + 深度路由 + 輕量 Worker」模式（見 `docs/spec/
 ```
 R1.1 守衛框架 ✅ ───────────────────────────────────┐
 R1.2 Maintainer P1 ✅ → P2 → P3 → P4 → P5 ────────┤
-R1.3 學習框架 → R1.4 評分框架 → R1.6 回饋迴路 ────┤→ R2 可開始
+R1.3 Learner（行為偵測）→ R1.4 評分框架 → R1.6 回饋迴路 ────┤→ R2 可開始
 R1.5 收斂框架 ──────────────────────────────────────┤
                                                      │
 R2.1 Gap 偵測 → R2.2 Skill Forge ─────────────────┐│
