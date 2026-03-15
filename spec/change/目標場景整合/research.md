@@ -984,3 +984,133 @@ Dynamic MCP tool composition、agent skill auto-discovery、runtime skill select
 - [Agent Skills Open Standard](https://agentskills.io/specification)
 - [Spring AI Agent Skills](https://spring.io/blog/2026/01/13/spring-ai-generic-agent-skills/)
 - [Claude Skills Deep Dive](https://leehanchung.github.io/blogs/2025/10/26/claude-skills-deep-dive/)
+
+---
+
+## R11 — 跨場景：安全與治理（2026-03-17）
+
+### 搜尋主題
+
+Autonomous agent safety governance、sandbox permission escalation、self-modifying system risk、OWASP ASI
+
+### 發現摘要
+
+#### 1. OWASP Agentic AI Security Top 10（2026）
+
+**業界最高優先安全風險**：
+
+| # | 風險 | Nova 現狀 |
+|:-:|------|:--------:|
+| 1 | Tool misuse & privilege escalation（520 incidents/2026） | ⚠️ `--allowedTools` 已加但清單可能過寬 |
+| 2 | Memory poisoning | ✅ behaviors.jsonl 有 confidence 門檻過濾 |
+| 3 | Prompt injection（cascading） | ⚠️ Guards 只檢查 Bash，不檢查 prompt 注入 |
+| 4 | Supply chain（MCP server 被替換） | ❌ R4 需考慮 |
+| 5 | Cascading failures（多 agent 連鎖錯誤） | ✅ 模組隔離（server.js try-catch） |
+
+**Nova 需要注意的**：
+- `--allowedTools` 包含 `Bash` — 這是最危險的工具
+- 但 Nova 已有 Guards（Bash 黑名單），所以是**雙層防禦**（allowedTools 放行 + Guards 細粒度攔截）
+
+#### 2. 自我修改系統的治理挑戰
+
+**核心風險**：Nova 的 Skill Lifecycle 會自動生成並部署程式碼（`deploySkill` 修改 agent skills[]）。
+
+**業界建議**：
+- **Anthropic sandboxing 論文**：code execution 應在隔離環境中進行
+- **最小權限原則**：agent 只能存取任務所需的最少工具和資料
+- **人類監督循環**：高風險操作需要人類確認（Nova 的 Judge B 級閾值是軟性版本）
+
+**與 Nova 的關聯**：
+- Skill Lifecycle 自動部署是**低風險但非零風險**：只修改 agent frontmatter 的 skills[]，不修改程式碼
+- 但如果 Lifecycle 生成的 Skill 包含惡意指令（memory poisoning → forge → deploy），後果嚴重
+- **防線**：Judge 品質閘門 + 確定性評分（frontmatter 格式檢查）+ 語意評分（內容品質）
+
+**整合評估**：⚠️ 需要審視但不緊急
+- 目前 forgeSkill 只生成 SKILL.md（Markdown），不生成可執行程式碼 → 風險可控
+- 如果未來 Lifecycle 生成 `.js` 腳本，必須加入 sandboxing
+
+#### 3. Heartbeat Session 安全邊界
+
+**場景一特有風險**：heartbeat spawn 的 `claude -p` session 具有完整的系統存取權。
+
+**目前防線**：
+1. `OVERTONE_SPAWNED=1` 遞迴防護 ✅
+2. `--allowedTools` 限制工具集 ✅ （Q8）
+3. Guards 攔截危險 Bash 命令 ✅
+4. 敏感 env 過濾（移除 MAINTAINER_BG 等）✅
+
+**缺少的**：
+- **時間限制**：timeout 後會 `--resume` 重試（Q14），但沒有**總時間上限**
+- **資源限制**：沒有限制 session 的 token 消耗或 API 呼叫次數
+- **操作審計**：session 的所有工具呼叫沒有被記錄到可審計的日誌
+
+**整合評估**：
+- 總時間上限：在 executeTask 加 `maxTotalTime`（初始 timeout × maxRetries）→ ~5 行
+- 操作審計：stream-json 輸出已包含工具呼叫，可在 summary 中保存 → R4
+
+#### 4. 真實事故警示
+
+**OpenClaw 事件**：AI agent 批量刪除了一位 Meta AI 對齊研究員的數百封 Gmail 郵件。原因是 tool misuse + 缺乏細粒度權限控制。
+
+**對 Nova 的警示**：
+- Nova 的 Guards 已攔截 `rm -rf`、`killall` 等危險命令 ✅
+- 但**外部 API 呼叫**（Notion、GitHub push）沒有被 Guards 檢查
+- heartbeat 自動 `completeTask` 修改 Notion 狀態 — 如果任務實際未完成，會造成狀態不一致
+
+### 可行動項目
+
+| 優先序 | 項目 | 影響場景 | 預估工作量 | 階段 |
+|:------:|------|:-------:|:---------:|:----:|
+| 1 | 總時間上限 — executeTask 加 maxTotalTime | 場景一 | ~5 行 | 現在 |
+| 2 | allowedTools 收窄 — 移除 Bash，改為 Bash(readonly) | 場景一 | 需調查 | R4 |
+| 3 | Skill deploy 內容審查 — 部署前掃描 SKILL.md 有無危險指令 | 場景二 | ~20 行 | R4 |
+| 4 | 操作審計日誌 — stream-json 的 tool_use 保存到審計檔 | 場景一 | ~30 行 | R4 |
+
+### 參考來源
+
+- [OWASP AI Agent Security Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/AI_Agent_Security_Cheat_Sheet.html)
+- [OWASP ASI Top 10 (Kaspersky)](https://www.kaspersky.com/blog/top-agentic-ai-risks-2026/55184/)
+- [Anthropic: Claude Code Sandboxing](https://www.anthropic.com/engineering/claude-code-sandboxing)
+- [How to Sandbox AI Agents (Northflank)](https://northflank.com/blog/how-to-sandbox-ai-agents)
+- [International AI Safety Report 2026](https://internationalaisafetyreport.org/publication/international-ai-safety-report-2026)
+- [McKinsey: Trust in the Age of Agents](https://www.mckinsey.com/capabilities/risk-and-resilience/our-insights/trust-in-the-age-of-agents)
+- [MIT Tech Review: From Guardrails to Governance](https://www.technologyreview.com/2026/02/04/1131014/from-guardrails-to-governance-a-ceos-guide-for-securing-agentic-systems/)
+- [OpenClaw Gone Wrong](https://tech-now.io/en/blogs/openclaw-gone-wrong-why-ai-guardrails-still-fail-in-2026)
+
+---
+
+## 研究總結（R1-R11）
+
+### 統計
+
+| 指標 | 數值 |
+|------|:----:|
+| 研究輪數 | 11 |
+| 覆蓋場景 | 5/5（每個至少 2 輪） |
+| 可行動項目 | 39 |
+| 已實作 | 9（Q8-Q16） |
+| 引用論文/專案 | 45+ |
+
+### 已實作項目
+
+| # | 項目 | 來源 | 場景 |
+|:-:|------|:----:|:----:|
+| 1 | --allowedTools | R3 | 一 |
+| 2 | 分場景品質閾值 | R1 | 二 |
+| 3 | Error clustering + dedup | R2 | 四 |
+| 4 | Proof of Work + sessionId | R7 | 一 |
+| 5 | 結構化 feedback + 方向性梯度 | R8 | 二 |
+| 6 | Post-update 驗證 | R4 | 五 |
+| 7 | Session Resilience --resume | R6 | 一 |
+| 8 | Skill 使用率追蹤 | R10 | 二+三 |
+| 9 | 輕量趨勢分析 | R9 | 四 |
+
+### 下一步高優先（未實作）
+
+| # | 項目 | 來源 | 工作量 |
+|:-:|------|:----:|:------:|
+| 1 | 總時間上限 | R11 | ~5 行 |
+| 2 | 結構化經驗萃取（AgentRR） | R5 | ~40 行 |
+| 3 | Few-shot 自動蒐集 | R8 | ~30 行 |
+| 4 | Skill pruning 機制 | R10 | ~40 行 |
+| 5 | MCP 動態發現 | R10 | R4 核心 |

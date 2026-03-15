@@ -181,3 +181,4 @@ Phase 5: 回歸驗證 + 文件閉環（D0）
 | Q14 | 研究實作：Session Resilience --resume（R6 發現） | executeTask 重試迴圈（最多 3 次）+ spawnSession 支援 resumeSessionId。620 pass |
 | Q15 | 研究實作：Skill 使用率追蹤 + 預警（R10 發現） | collect 掃描 skills vs agents 引用、簡報預警 unreferenced > 5。620 pass |
 | Q16 | 研究實作：輕量趨勢分析（R9 發現） | 7 天 hook error 日計數 + 線性斜率，趨勢上升時簡報預警。620 pass |
+| Q17 | 研究實作：總時間上限（R11 發現） | executeTask 加 maxTotalTime，超時停止 --resume 重試。620 pass |
