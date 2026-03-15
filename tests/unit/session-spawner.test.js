@@ -16,16 +16,16 @@ describe('buildPrompt', () => {
     expect(prompt).toContain('P1');
   });
 
-  test('包含深度路由說明', () => {
+  test('包含深度建議', () => {
     const task = { name: '任務', priority: 'P0' };
     const prompt = buildPrompt(task);
-    expect(prompt).toContain('深度路由');
+    expect(prompt).toContain('建議深度');
   });
 
-  test('包含 commit 說明', () => {
+  test('包含 Commit 說明', () => {
     const task = { name: '任務', priority: 'P0' };
     const prompt = buildPrompt(task);
-    expect(prompt).toContain('commit');
+    expect(prompt).toContain('Commit');
   });
 
   test('包含 scope 欄位（若有）', () => {

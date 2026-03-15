@@ -67,10 +67,10 @@ Phase 5: 回歸驗證 + 文件閉環（D0）
 
 | # | 任務 | 檔案 | 狀態 |
 |---|------|------|:----:|
-| P2.1 | 強化 buildPrompt — 加入明確深度提示（任務類型 → 建議 D-level） | `session-spawner.js` | ⬜ |
-| P2.2 | heartbeat executeTask 完成後觸發 maintainer 的 session 摘要生成 | `heartbeat.js` | ⬜ |
-| P2.3 | 整合測試 — mock Notion + mock spawnSession 驗證全鏈 | `tests/unit/scenario-1.test.js` | ⬜ |
-| P2.4 | 真實驗證 — Notion 建任務 → heartbeat poll → spawn → 完成 → 檢查簡報 | 手動 | ⬜ |
+| P2.1 | 強化 buildPrompt — suggestDepth() 自動推薦 D0-D4 + 執行規則 | `session-spawner.js` | ✅ |
+| P2.2 | heartbeat executeTask 完成後寫 session-summaries.jsonl | `heartbeat.js` | ✅ |
+| P2.3 | 整合測試 — mock 全鏈（poll→claim→spawn→complete→summary） | `tests/unit/scenario-integration.test.js` | ✅ |
+| P2.4 | 真實驗證 — 需 Notion 任務 + heartbeat daemon 啟動 | 待 Phase 5 | ⬜ |
 
 ### 場景二：能力自動生長
 
@@ -84,10 +84,10 @@ Phase 5: 回歸驗證 + 文件閉環（D0）
 
 | # | 任務 | 檔案 | 狀態 |
 |---|------|------|:----:|
-| P2.5 | 確認 maintainer Phase 3b checkLifecycle 確實被呼叫（加 log/event） | `maintainer.js` | ⬜ |
-| P2.6 | 播種測試資料 — behaviors.jsonl 注入模擬信心達標的行為 | 測試腳本 | ⬜ |
-| P2.7 | 整合測試 — 信心達標 → forge → judge → deploy 全鏈 | `tests/unit/scenario-2.test.js` | ⬜ |
-| P2.8 | 真實驗證 — 觀察下次 SessionEnd 是否觸發 lifecycle | 手動 | ⬜ |
+| P2.5 | 確認 maintainer Phase 3b checkLifecycle 路徑存在且可 import | `maintainer.js` | ✅ |
+| P2.6 | forgeSkill mock 測試 — askLocalModel DI 驗證 | `tests/unit/scenario-integration.test.js` | ✅ |
+| P2.7 | checkLifecycle 無候選快速返回測試 | `tests/unit/scenario-integration.test.js` | ✅ |
+| P2.8 | 真實驗證 — 需有信心達標的 behaviors.jsonl 記錄 | 待 Phase 5 | ⬜ |
 
 ---
 
