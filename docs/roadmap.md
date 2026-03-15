@@ -70,7 +70,7 @@ SessionEnd 背景 agent：數字同步 → 狀態檢查 → metrics 分析 → H
 | P2 | 本地模型 roadmap 狀態正確性 + metrics 分析 + Hook Error 自動修復 | ✅ |
 | P3 | 本地模型判斷 backlog 完成度 → 搬遷 spec/docs/ + 引用更新 | ✅ |
 | P4 | Notion 雙向推送/拉取 + token fallback（~/.zshrc） | ✅ |
-| P5 | Notion SoT 遷移（反轉：Notion → 生成本地文件） | ⬜ |
+| P5 | Notion SoT 遷移（反轉：Notion → 生成本地文件） | ✅ |
 
 吸收了：R2.1 Gap 偵測（元件完整性 = Maintainer Step 2d）、R3.2 佇列（→ Notion database）。
 
