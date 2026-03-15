@@ -2,7 +2,6 @@ import { describe, test, expect, beforeEach, afterEach } from 'bun:test';
 import { execSync } from 'child_process';
 import {
   existsSync,
-  mkdirSync,
   writeFileSync,
   readFileSync,
   unlinkSync,
@@ -97,7 +96,7 @@ function syncNumbers(content, actualRules, actualSkills) {
 }
 
 // commitAndPush 核心邏輯（無網路呼叫版本，用於測試）
-async function commitAndPushLocal(repoDir, repoName, mockCommitMsg) {
+async function commitAndPushLocal(repoDir, _repoName, mockCommitMsg) {
   // git add -A
   const addResult = git('add -A', repoDir);
   if (addResult === null) return { skipped: true, reason: 'add-failed' };
