@@ -6,6 +6,7 @@ import {
 	formatReport,
 	groupByFile,
 	searchImpacts,
+	verifyConsistency,
 } from "/Users/sbu/.claude/scripts/impact-analyzer.js";
 
 describe("extractKeywords", () => {
@@ -224,5 +225,46 @@ describe("formatReport", () => {
 		expect(report).toContain("2 個檔案");
 		expect(report).toContain("rule");
 		expect(report).toContain("script");
+	});
+});
+
+describe("verifyConsistency", () => {
+	test("舊值已完全清除 → consistent: true", () => {
+		const result = verifyConsistency("old-pattern", "new-pattern", {
+			execSync: (cmd) => {
+				if (cmd.includes("old-pattern")) throw new Error("no match");
+				if (cmd.includes("new-pattern"))
+					return "/mock/rules/a.md:5:new-pattern used\n";
+				return "";
+			},
+			existsSync: () => true,
+			searchDirs: ["/mock"],
+		});
+
+		expect(result.consistent).toBe(true);
+		expect(result.remaining).toBe(0);
+	});
+
+	test("舊值仍殘留 → consistent: false + 列出檔案", () => {
+		const result = verifyConsistency("old-value", "new-value", {
+			execSync: (cmd) => {
+				if (cmd.includes("old-value"))
+					return "/mock/scripts/a.js:10:still has old-value\n/mock/rules/b.md:3:old-value here\n";
+				if (cmd.includes("new-value"))
+					return "/mock/rules/b.md:3:now has new-value\n";
+				return "";
+			},
+			existsSync: () => true,
+			searchDirs: ["/mock"],
+		});
+
+		expect(result.consistent).toBe(false);
+		expect(result.remaining).toBe(2);
+		expect(result.files).toContain("/mock/scripts/a.js");
+	});
+
+	test("空 oldValue → 直接返回 consistent", () => {
+		const result = verifyConsistency("", "new");
+		expect(result.consistent).toBe(true);
 	});
 });
