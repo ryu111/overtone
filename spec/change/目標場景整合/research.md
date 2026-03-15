@@ -612,3 +612,98 @@ Session timeout recovery、claude --continue/--resume、agent checkpoint pattern
 - [Agent Tracking and Resume (DeepWiki)](https://deepwiki.com/glittercowboy/get-shit-done/5.8-agent-tracking-and-resume)
 - [KeepGoing MCP Server](https://glama.ai/mcp/servers/keepgoing-dev/mcp-server)
 - [AI Agent Context Management Breakthroughs](https://bytebridge.medium.com/ai-agents-context-management-breakthroughs-and-long-running-task-execution-d5cee32aeaa4)
+
+---
+
+## R7 — 跨場景綜合：業界框架對標（2026-03-17）
+
+### 搜尋主題
+
+Agent orchestration frameworks 2026、Claude Code hooks best practices、daemon + issue tracker integration
+
+### 發現摘要
+
+#### 1. OpenAI Symphony — 最接近 Nova 的開源框架（2026-03-05 發布）
+
+**核心概念**：daemon 輪詢 issue tracker → spawn agent → 自主完成 → 提 PR。
+
+**架構對比**：
+
+| 維度 | Symphony | Nova |
+|------|----------|------|
+| Runtime | Elixir/BEAM | Bun/JS |
+| 任務來源 | Linear（polling） | Notion（polling） |
+| Agent | OpenAI models | Claude Code (`-p`) |
+| 狀態管理 | PostgreSQL | JSONL files |
+| 隔離 | 每任務獨立 workspace | 每 session 獨立 env |
+| 完成驗證 | CI + tests + PR review | `bun test` + commit |
+| 設定 | WORKFLOW.md（in-repo） | CLAUDE.md + rules/ |
+| 併發 | BEAM supervision trees（數百個並行） | 單任務序列 |
+
+**Nova 優於 Symphony 的**：
+- **自我進化**：Learner → Skill Lifecycle → Judge（Symphony 無）
+- **品質閘門**：分場景閾值、Judge 評分（Symphony 只靠 CI）
+- **本地模型**：零 token 背景維護（Symphony 全用 OpenAI API）
+- **行為學習**：跨 session 行為偵測、信心追蹤（Symphony 無）
+
+**Symphony 優於 Nova 的**：
+- **併發**：BEAM 天然支援數百個獨立 run，Nova 單任務序列
+- **Proof of Work**：結構化的完成證據（CI status + test results + PR review + walkthrough）
+- **WORKFLOW.md**：agent 行為設定版本化隨 branch，Nova 的 CLAUDE.md 是全域的
+- **確定性 workspace**：每個 issue 有獨立目錄，防止並行衝突
+
+**可借鑑項目**：
+
+| # | 項目 | 影響場景 | 難度 |
+|:-:|------|:-------:|:----:|
+| 1 | **Proof of Work 結構化** — session 完成時輸出 {tests_passed, files_changed, commit_hash} | 場景一 | ~20 行 |
+| 2 | **Per-task workspace** — heartbeat spawn 時 `--cwd` 指定任務專屬目錄 | 場景一 | ~15 行 |
+| 3 | **WORKFLOW.md 分支化** — 不同 branch 可以有不同 agent 行為 | 場景三 | R4 |
+
+#### 2. Claude Code 5-Layer QA System（社區最佳實踐）
+
+**來源**：一位開發者在 68 次 Claude Code 失敗後建立的 5 層品質保障系統。
+
+**5 層結構**：
+1. **PreToolUse hooks** — 阻擋危險操作（≈ Nova Guards）
+2. **PostToolUse hooks** — 自動修正（≈ Nova flow-observer）
+3. **Stop hooks** — 完成前自動審查（≈ 無，Nova 缺這層）
+4. **Notification hooks** — 需要人類注意時通知（≈ Nova notification.js）
+5. **SessionEnd hooks** — 背景維護（≈ Nova maintainer/learner/judge）
+
+**Nova 缺少的**：**Stop hook 自動審查** — session 結束前 spawn 一個 reviewer subagent 檢查變更。
+
+**整合評估**：⚠️ 中等價值
+- 在 Stop hook 加入「spawn reviewer 檢查本次 session 的 git diff」
+- 但可能影響 session 結束時間（reviewer 需要 30-60 秒）
+
+#### 3. Hook 優先序和多層配置
+
+**2026 社區共識**：managed policies → global → project → plugin/skill hooks，按順序執行。
+
+**與 Nova 的關聯**：
+- Nova 的 hook 模組（guards, flow-observer, context-injector, notification, metrics）都在 server.js 統一 dispatch
+- 目前沒有優先序概念 — 所有模組平等處理
+- 如果未來加入 Stop hook reviewer，需要確保它在 maintainer/learner/judge 之前或之後執行
+
+**整合評估**：💡 低優先（架構參考）
+
+### 關鍵洞察
+
+**Nova 的獨特定位**：在 2026 年的 agent 框架生態中，Nova 是少數同時具備以下三個特徵的系統：
+1. **自我進化**（SICA/SkillRL 級別的 Skill Lifecycle）
+2. **零成本維護**（本地模型背景 agent）
+3. **行為學習**（Learner 信心追蹤 + 跨領域遷移）
+
+Symphony 規模更大（併發、PostgreSQL、BEAM），但缺乏進化能力。Mission Control 更輕量但也缺乏學習能力。**Nova 的護城河是「學習 + 進化」**，不是「執行 + 調度」。
+
+### 參考來源
+
+- [OpenAI Symphony](https://github.com/openai/symphony)
+- [Symphony SPEC.md](https://github.com/openai/symphony/blob/main/SPEC.md)
+- [Symphony: From Issue to PR](https://www.heyuan110.com/posts/ai/2026-03-05-openai-symphony-autonomous-coding/)
+- [Symphony HN Discussion](https://news.ycombinator.com/item?id=47252045)
+- [5-Layer QA System (Issue #29795)](https://github.com/anthropics/claude-code/issues/29795)
+- [Claude Code Hooks Guide 2026](https://www.pixelmojo.io/blogs/claude-code-hooks-production-quality-ci-cd-patterns)
+- [Claude Code Best Practices](https://code.claude.com/docs/en/best-practices)
+- [Ruflo: Agent Orchestration for Claude](https://github.com/ruvnet/ruflo)

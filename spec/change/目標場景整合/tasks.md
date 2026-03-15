@@ -175,3 +175,4 @@ Phase 5: 回歸驗證 + 文件閉環（D0）
 | Q8 | 研究實作：--allowedTools（R3 發現） | spawnSession 加 allowedTools 參數，預設放行 8 個工具，防止無人值守 session 卡在權限提示。612 pass |
 | Q9 | 研究實作：分場景品質閾值（R1 發現） | automation/fix 需 A 級，rule/skill 需 B 級。getDeployGrades() + 5 個測試。617 pass |
 | Q10 | 研究實作：Error clustering + dedup（R2 發現） | 聚類相同根因、24h dedup 防重複建 Notion 任務。617 pass |
+| Q11 | 研究實作：Proof of Work + sessionId（R7 發現） | executeTask 回傳 proofOfWork、parseStreamJson 捕獲 sessionId。修 flaky test（時區漂移）。617 pass |
