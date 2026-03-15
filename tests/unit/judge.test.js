@@ -1,9 +1,8 @@
 // judge.test.js — R1.4 Judge 單元測試
 import { describe, test, expect, beforeEach, afterEach } from 'bun:test';
-import { writeFileSync, appendFileSync, mkdirSync, rmSync, existsSync, readFileSync } from 'fs';
+import { writeFileSync, appendFileSync, mkdirSync, rmSync, existsSync } from 'fs';
 import { join } from 'path';
 import { tmpdir, homedir } from 'os';
-import { execSync } from 'child_process';
 
 // 直接 import 純函式（import.meta.main 機制讓 spawn 只在直接執行時觸發）
 import {
@@ -11,7 +10,6 @@ import {
   grade,
   shouldRun,
   getTrend,
-  saveScore,
   readScores,
 } from '/Users/sbu/.claude/scripts/judge.js';
 
@@ -147,7 +145,6 @@ describe('scoreDeterministic — agent', () => {
     const fakeSkillDir = join(homedir(), '.claude/skills/nova-spec');
     const skillExists = existsSync(join(fakeSkillDir, 'SKILL.md'));
 
-    const skills = skillExists ? 'nova-spec' : '# 無 skills（跳過驗證）';
     const skillsSection = skillExists
       ? `skills:\n  - nova-spec`
       : 'skills: []';

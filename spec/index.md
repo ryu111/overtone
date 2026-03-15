@@ -21,7 +21,7 @@
 
 | Layer | 名稱 | 模組（9 個） | 狀態 |
 |:-----:|------|------------|:----:|
-| 1 | 核心大腦 | Guards ✅ + Maintainer ✅ + Learner ✅ + Judge ⬜ | 🟡 3/4 |
+| 1 | 核心大腦 | Guards ✅ + Maintainer ✅ + Learner ✅ + Judge ✅ | ✅ 4/4 |
 | 2 | 自我進化 | Skill Lifecycle ⬜ + Acid Test ⬜ | 🔴 0/2 |
 | 3 | 感知操控 | 心跳 ⬜ + OS 腳本 ⬜ + 操控層 ⬜ | 🔴 0/3 |
 | 4 | 通用代理人 | 動態 MCP + 跨領域自主運作 | ⬜ |
