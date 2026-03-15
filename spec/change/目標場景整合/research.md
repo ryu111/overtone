@@ -798,3 +798,94 @@ Prompt automatic optimization、DSPy/TextGrad、Self-Refine iterative refinement
 - [Reflection Pattern Guide](https://fast.io/resources/reflection-pattern-self-correcting-agents/)
 - [Self-Refine Tutorial (LearnPrompting)](https://learnprompting.org/docs/advanced/self_criticism/self_refine)
 - [Meta-Prompting Protocol](https://arxiv.org/html/2512.15053)
+
+---
+
+## R9 — 場景四深入：預測性自我修復（2026-03-17）
+
+### 搜尋主題
+
+Predictive anomaly detection、AIOps proactive remediation、error trend forecasting、preemptive repair
+
+### 發現摘要
+
+#### 1. AIOps 三階段模型：偵測 → 預測 → 預防
+
+**業界共識**（Splunk、PagerDuty、LogicMonitor）：
+
+| 階段 | 能力 | Nova 現狀 |
+|:----:|------|:--------:|
+| 偵測（Reactive） | 發生問題後偵測 | ✅ hook-errors.jsonl |
+| 預測（Predictive） | 趨勢分析預測即將發生的問題 | ❌ |
+| 預防（Proactive） | 問題發生前自動修復 | ❌ |
+
+**關鍵技術**：
+- 基線偏差偵測：學習正常行為基線，偏離時預警
+- 時序預測：LSTM 或簡單的移動平均線預測未來趨勢
+- 早期預警：問題升級前數小時到數天發出信號
+
+**與 Nova 的關聯**：
+- Nova 目前只做**階段 1**（偵測）：hookErrors ≥ 5 → 建 Notion 任務
+- **缺少階段 2**：不追蹤錯誤率趨勢（如「過去 3 天 error rate 從 2/hr 升到 8/hr」）
+- **缺少階段 3**：不能在問題惡化前預防（如「JSONL 增長率 → 預測何時讀取會劣化」）
+
+**整合評估**：✅ 高價值（輕量版可行）
+- 不需要 LSTM — 簡單的移動平均 + 趨勢斜率就足夠
+- 在 maintainer Phase 1 collect 時計算 error rate 趨勢
+- 趨勢上升且未達閾值時，在簡報中預警（而非等到 ≥ 5 才建任務）
+
+#### 2. 輕量趨勢分析設計
+
+**適合 Nova 的方案**（不用 ML 框架）：
+
+```
+// 過去 7 天的 hook error 日計數
+const dailyCounts = [2, 3, 2, 5, 7, 4, 8]
+
+// 簡單線性回歸斜率
+const slope = linearSlope(dailyCounts)  // > 0 = 趨勢上升
+
+// 預警邏輯
+if (slope > 0.5 && latest < 5) {
+  // 趨勢上升但未達建任務閾值 → 簡報預警
+  briefing.push("⚠️ hook error 趨勢上升，預計 2 天內達到建任務閾值")
+}
+```
+
+**資料來源**：
+- hook-errors.jsonl 已有 timestamp，可以聚合為日計數
+- scores.jsonl 已有歷史評分，可以偵測品質下降趨勢
+- behaviors.jsonl 已有信心分數歷史
+
+**整合評估**：✅ 可立即行動
+- 在 maintainer.js collect 階段加入趨勢計算（~30 行）
+- 在 generateBriefing 中加入趨勢預警（~15 行）
+
+#### 3. 「修復後回饋」閉環
+
+**AIOps 的完整迴路**：偵測 → 修復 → 驗證修復有效 → 更新偵測規則。
+
+**Nova 缺少的環節**：
+- 場景四目前：偵測 error → 建任務 → heartbeat 修復 → ✅ 完成
+- 缺少：修復後**驗證 error rate 是否下降** + **更新偵測閾值**
+
+**整合評估**：⚠️ 中等價值
+- 在 completeTask 後追蹤 24h 的 error rate，確認修復有效
+- 如果修復後 error rate 未下降 → 重新建立更高優先級的任務
+
+### 可行動項目
+
+| 優先序 | 項目 | 影響範圍 | 預估工作量 |
+|:------:|------|---------|:---------:|
+| 1 | 輕量趨勢分析 — 日計數 + 線性斜率 + 預警 | maintainer.js | ~45 行 |
+| 2 | 品質趨勢預警 — scores.jsonl 連續 3 次下降 → 預警 | maintainer.js generateBriefing | ~15 行 |
+| 3 | 修復效果追蹤 — 建任務 24h 後檢查 error rate 變化 | maintainer.js Phase 3c | ~30 行 |
+
+### 參考來源
+
+- [Splunk: AIOps Explained](https://www.splunk.com/en_us/blog/learn/aiops.html)
+- [PagerDuty: ML for Incident Prediction](https://www.pagerduty.com/resources/aiops/learn/using-machine-learning-incident-prediction/)
+- [LogicMonitor: Agentic AIOps Use Cases](https://www.logicmonitor.com/blog/agentic-aiops-use-cases)
+- [Selector: AIOps 4 Components](https://www.selector.ai/learning-center/aiops-in-2025-4-components-and-4-key-capabilities/)
+- [Quinnox: AIOps Predictive Analytics](https://www.quinnox.com/blogs/aiops-leverages-predictive-analytics-to-accelerate-incident-management-and-prevent-downtime/)
+- [AI Anomaly Detection Guide](https://www.techmagic.co/blog/ai-anomaly-detection)
