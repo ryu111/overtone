@@ -509,3 +509,106 @@ Cross-domain transfer learning、experience replay for agents、skill library ev
 - [NGENT: Next-Gen AI Agents for AGI](https://arxiv.org/html/2504.21433v1)
 - [Cross-Domain Knowledge Transfer in Large Models](https://www.intechopen.com/online-first/1209560)
 - [Contextual Experience Replay for Continual Learning (ICLR 2025)](https://yitaoliu17.com/assets/pdf/ICLR_2025_CER.pdf)
+
+---
+
+## R6 — 場景一深入：Session Resilience（2026-03-17）
+
+### 搜尋主題
+
+Session timeout recovery、claude --continue/--resume、agent checkpoint patterns、long-running task management
+
+### 發現摘要
+
+#### 1. Claude Code `--continue` / `--resume` — 原生支援
+
+**核心發現**：Claude Code 已內建 session 延續功能！
+
+- `claude --continue`：自動找到同目錄最近的 session 並延續
+- `claude --resume <session-id>`：指定 session ID 延續
+- 延續時 agent 保有完整上下文（已讀檔案、已做分析、已做決策）
+
+**與 Nova 的關聯**：
+- Nova 的 heartbeat 目前 spawn `claude -p`，timeout 後直接標失敗
+- **應改為**：timeout 後用 `claude --continue` 或 `claude --resume <sid>` re-spawn 延續
+- 需要從 stream-json 輸出中捕獲 session ID，存入 state file
+
+**整合方案**：
+```
+第一次 spawn：claude -p --output-format stream-json → 記錄 session_id
+如果 timeout 或 max turns：
+  claude --resume <session_id> -p "繼續上次的任務" --output-format stream-json
+  最多重試 3 次
+全部失敗 → 標記任務失敗，建 Notion 修復任務
+```
+
+**整合評估**：✅ 最高價值
+- 使用 Claude Code 原生功能，不需要自己做 checkpoint
+- 預估 ~30 行改動（heartbeat.js executeTask）
+
+#### 2. Agent State Checkpointing（業界模式）
+
+**核心概念**：Checkpoint = graph state snapshot，包含：
+- config + metadata
+- state channel values（變數狀態）
+- next nodes（下一步要執行什麼）
+- task information（目標、已完成步驟、剩餘步驟）
+
+**業界做法**：
+- **LangGraph + DynamoDB**：每個 super-step 自動 checkpoint
+- **Microsoft Agent Framework**：`save_checkpoint()` / `load_checkpoint()` API
+- **Get-Shit-Done**：tracking file 跨 session 持久化，啟動時自動檢查未完成任務
+
+**與 Nova 的關聯**：
+- 由於 Claude Code 已有 `--resume`，Nova **不需要自己實作 checkpointing**
+- 但 `--resume` 只保留 Claude 的內部上下文，不保留 Nova 的外部狀態（如「這是 Notion 任務 X」）
+- Nova 需要的是**任務級別**的追蹤，不是 session 級別的 checkpoint
+
+**整合評估**：💡 不需要自建
+- Claude `--resume` 處理 session 層面
+- Nova 的 heartbeat state file 處理任務層面（`activeTask`、`consecutiveFailures`）
+- 兩層搭配已足夠
+
+#### 3. KeepGoing MCP Server — 防止 Session 過早結束
+
+**核心概念**：MCP server 注入「繼續工作」指令，防止 Claude Code 在任務未完成時停下。
+
+**機制**：agent 的 system prompt 或 MCP 回應中注入「你還沒完成，繼續」的信號。
+
+**與 Nova 的關聯**：
+- Nova 的 heartbeat session 用 `-p`（單次 prompt），不需要持續互動
+- 但如果任務複雜需要多輪，可以考慮在 buildPrompt 中加入「必須完成所有步驟才能退出」的強指令
+- 目前 buildPrompt 已有類似指令（「如遇阻塞，記錄後退出」）
+
+**整合評估**：💡 已有類似機制
+
+#### 4. 背景 Agent + Async Workflows
+
+**2025-2026 新功能**：Claude Code 支援 async agent execution — spawn sub-agent 後可以 background 執行。
+
+**與 Nova 的關聯**：
+- Nova 的 heartbeat 用外部 daemon spawn `claude -p`，本質上就是 async
+- 新的 async 功能更適合**在 session 內**的並行（D4 多 executor），不是 heartbeat 的場景
+
+**整合評估**：💡 R4 時考慮（D4 並行 executor 可用 async agents）
+
+### 可行動項目
+
+| 優先序 | 項目 | 影響範圍 | 預估工作量 |
+|:------:|------|---------|:---------:|
+| 1 | Session Resilience — timeout 後用 --resume re-spawn | heartbeat.js executeTask | ~30 行 |
+| 2 | 捕獲 session_id 從 stream-json 輸出 | session-spawner.js parseStreamJson | ~10 行 |
+| 3 | buildPrompt 強化「必須完成」指令 | session-spawner.js | ~5 行 |
+
+### 參考來源
+
+- [Claude Code: How It Works (Sessions)](https://code.claude.com/docs/en/how-claude-code-works)
+- [Claude API: Work with Sessions](https://platform.claude.com/docs/en/agent-sdk/sessions)
+- [Session Persistence in Claude Code](https://github.com/ruvnet/ruflo/wiki/session-persistence)
+- [Claude Code Async Workflows](https://claudefa.st/blog/guide/agents/async-workflows)
+- [Auto-Resume Agentic Tasks Discussion](https://github.com/AndyMik90/Auto-Claude/discussions/1851)
+- [Agent State Checkpointing Guide](https://fast.io/resources/ai-agent-state-checkpointing/)
+- [Durable AI Agents with LangGraph + DynamoDB](https://aws.amazon.com/blogs/database/build-durable-ai-agents-with-langgraph-and-amazon-dynamodb/)
+- [Agent Tracking and Resume (DeepWiki)](https://deepwiki.com/glittercowboy/get-shit-done/5.8-agent-tracking-and-resume)
+- [KeepGoing MCP Server](https://glama.ai/mcp/servers/keepgoing-dev/mcp-server)
+- [AI Agent Context Management Breakthroughs](https://bytebridge.medium.com/ai-agents-context-management-breakthroughs-and-long-running-task-execution-d5cee32aeaa4)

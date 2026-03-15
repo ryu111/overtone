@@ -5,7 +5,7 @@ import { join } from 'path';
 import { tmpdir } from 'os';
 
 import { forgeSkill, improveSkill, deploySkill } from '/Users/sbu/.claude/scripts/skill-forge.js';
-import { checkLifecycle } from '/Users/sbu/.claude/scripts/lifecycle-orchestrator.js';
+import { checkLifecycle, getDeployGrades } from '/Users/sbu/.claude/scripts/lifecycle-orchestrator.js';
 
 // ─── 測試環境 ─────────────────────────────────────────────────────────────────
 
@@ -519,5 +519,34 @@ describe('graceful degradation', () => {
     // 原始檔案未被修改
     const content = readFileSync(join(skillDir, 'SKILL.md'), 'utf-8');
     expect(content).toBe(originalContent);
+  });
+});
+
+// ─── getDeployGrades 分場景閾值測試 ──────────────────────────────────────────
+
+describe('getDeployGrades', () => {
+  test('automation 類型只允許 A 級', () => {
+    const grades = getDeployGrades({ suggestion: { type: 'automation' } });
+    expect(grades).toEqual(['A']);
+  });
+
+  test('fix 類型只允許 A 級', () => {
+    const grades = getDeployGrades({ suggestion: { type: 'fix' } });
+    expect(grades).toEqual(['A']);
+  });
+
+  test('rule 類型允許 A 和 B 級', () => {
+    const grades = getDeployGrades({ suggestion: { type: 'rule' } });
+    expect(grades).toEqual(['A', 'B']);
+  });
+
+  test('skill 類型允許 A 和 B 級', () => {
+    const grades = getDeployGrades({ suggestion: { type: 'skill' } });
+    expect(grades).toEqual(['A', 'B']);
+  });
+
+  test('無 suggestion 時預設允許 A 和 B', () => {
+    const grades = getDeployGrades({});
+    expect(grades).toEqual(['A', 'B']);
   });
 });
