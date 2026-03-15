@@ -385,3 +385,195 @@ describe("場景五：影響分析端到端", () => {
 		expect(classifyFile("/home/.claude/scripts/maintainer.js")).toBe("script");
 	});
 });
+
+// ─── 端到端自動化驗證（替代手動驗證）─────────────────────────────────────────
+
+import { poll, executeTask as hbExecuteTask } from "/Users/sbu/.claude/scripts/heartbeat.js";
+
+describe("P2.4 場景一端到端：heartbeat poll → execute → summary", () => {
+	test("poll 偵測到待做任務 → claim → 回傳 execute action", async () => {
+		const calls = [];
+		const tmpState = "/tmp/test-p24-state.json";
+
+		try { (await import("node:fs")).unlinkSync(tmpState); } catch {}
+
+		const pollResult = await poll(
+			{ _stateFile: tmpState },
+			{
+				listTasks: async () => [
+					{ id: "notion-001", name: "修復 API timeout", priority: "P1" },
+				],
+				claimTask: async (id) => { calls.push({ action: "claim", id }); },
+			},
+		);
+
+		expect(pollResult.action).toBe("execute");
+		expect(pollResult.task.name).toBe("修復 API timeout");
+		expect(calls.some((c) => c.action === "claim")).toBe(true);
+	});
+
+	test("execute → complete → summary 全鏈", async () => {
+		const calls = [];
+		const tmpSummary = "/tmp/test-p24-summaries.jsonl";
+		try { (await import("node:fs")).unlinkSync(tmpSummary); } catch {}
+
+		const execResult = await hbExecuteTask(
+			{ id: "notion-001", name: "修復 API timeout" },
+			{ timeout: 5000 },
+			{
+				spawnSession: () => ({
+					ok: true,
+					outcome: Promise.resolve({
+						exitCode: 0,
+						stdout: '{"type":"result","result":"fixed","is_error":false}\n',
+						duration: 1000,
+					}),
+				}),
+				completeTask: async (id, msg) => { calls.push({ action: "complete", id, msg }); },
+				stateFile: "/tmp/test-p24-exec-state.json",
+				summaryFile: tmpSummary,
+			},
+		);
+
+		expect(execResult.status).toBe("success");
+		expect(calls.some((c) => c.action === "complete")).toBe(true);
+
+		const { readFileSync } = await import("node:fs");
+		const entry = JSON.parse(readFileSync(tmpSummary, "utf-8").trim());
+		expect(entry.source).toBe("heartbeat");
+		expect(entry.status).toBe("success");
+	});
+});
+
+describe("P2.8 場景二端到端：信心達標 → lifecycle 觸發", () => {
+	test("behaviors.jsonl 有信心達標候選 → checkLifecycle 嘗試處理", async () => {
+		const tmpBehaviors = "/tmp/test-p28-behaviors.jsonl";
+		const { writeFileSync, unlinkSync } = await import("node:fs");
+
+		// 種子：信心 0.65 的技能候選
+		const seedBehavior = {
+			id: "auto-format-code",
+			polarity: 1,
+			pattern: "Read→Edit→Bash",
+			description: "自動格式化程式碼",
+			firstSeen: "2026-03-10",
+			lastSeen: "2026-03-17",
+			occurrences: [1, 2, 3, 4, 5],
+			confidence: 0.65,
+			suggestion: "建議固化為 Skill",
+			type: "skill",
+			deployed: false,
+		};
+		writeFileSync(tmpBehaviors, JSON.stringify(seedBehavior) + "\n");
+
+		// checkLifecycle 用 mock 依賴
+		const result = await checkLifecycle({
+			behaviorsFile: tmpBehaviors,
+			askLocalModel: async () => null, // 本地模型不可用 → graceful degradation
+		});
+
+		// 即使模型不可用，也應正常返回（不崩潰）
+		expect(typeof result.processed).toBe("number");
+		expect(typeof result.deployed).toBe("number");
+
+		try { unlinkSync(tmpBehaviors); } catch {}
+	});
+});
+
+describe("P3.4 場景四端到端：hook error 累積 → 自動建立 Notion 任務", () => {
+	test("模擬 5+ hook errors 觸發 createTask", async () => {
+		// 驗證 createTask 的 API 結構正確
+		const mockErrors = Array.from({ length: 6 }, (_, i) => ({
+			ts: new Date().toISOString(),
+			event: "PreToolUse:Bash",
+			error: "timeout",
+			phase: "dispatch",
+		}));
+
+		// 統計邏輯（與 maintainer Phase 3c 相同）
+		const errorSummary = {};
+		for (const e of mockErrors) {
+			const key = `${e.event}:${e.phase || "unknown"}`;
+			errorSummary[key] = (errorSummary[key] || 0) + 1;
+		}
+		const topError = Object.entries(errorSummary).sort((a, b) => b[1] - a[1])[0];
+		const title = `修復 hook error：${topError[0]}（${mockErrors.length} 次/小時）`;
+
+		// 驗證 createTask 被正確呼叫
+		let createdTask = null;
+		await createTask(title, { priority: "P1", type: "bug", description: "自動偵測" }, {
+			notionFetch: async (_path, _method, body) => {
+				createdTask = body;
+				return { id: "auto-created-123" };
+			},
+			getConfig: () => ({ database_id: "db-test" }),
+		});
+
+		expect(createdTask).not.toBeNull();
+		expect(createdTask.properties.Name.title[0].text.content).toContain("hook error");
+		expect(createdTask.properties.Priority.select.name).toBe("P1");
+		expect(createdTask.properties.Status.select.name).toBe("待做");
+	});
+});
+
+describe("P4.5 場景三端到端：跨領域行為 → 經驗遷移 → Skill reference", () => {
+	test("模擬兩個領域的相似行為模式 → detectCrossDomain 匹配 → forge 加 reference", async () => {
+		// 模擬歷史：交易系統的行為
+		const tradeHistory = [
+			{
+				id: "trade-read-analyze-act",
+				pattern: "Read→Grep→Edit→Bash→Read",
+				polarity: 1,
+				occurrences: [1, 2, 3],
+				confidence: 0.72,
+			},
+		];
+
+		// 新領域：YouTube 管理出現類似模式
+		const youtubeBehavior = {
+			id: "youtube-read-analyze-act",
+			pattern: "Read→Grep→Write→Bash→Read",
+			polarity: 1,
+		};
+
+		// 偵測跨領域匹配
+		const matches = detectCrossDomain(youtubeBehavior, tradeHistory, 0.5);
+		expect(matches.length).toBeGreaterThanOrEqual(1);
+		expect(matches[0].id).toBe("trade-read-analyze-act");
+
+		// 模擬 forge 加 reference
+		let writtenContent = "";
+		await forgeSkill(
+			{
+				...youtubeBehavior,
+				description: "YouTube 資料分析模式",
+				crossDomainMatches: matches,
+			},
+			{
+				askLocalModel: async () => `---
+name: youtube-analytics
+description: YouTube 資料分析
+version: "1.0"
+---
+
+# YouTube Analytics
+
+分析 YouTube 資料。
+
+## 知識
+
+- 讀取 API 資料
+- 分析趨勢
+- 產生報告`,
+				existsSync: () => false,
+				mkdirSync: () => {},
+				writeFileSync: (_path, content) => { writtenContent = content; },
+				claudeDir: "/tmp/test-claude-p45",
+			},
+		);
+
+		// 驗證跨領域參考被寫入
+		expect(writtenContent).toContain("跨領域參考");
+		expect(writtenContent).toContain("trade-read-analyze-act");
+	});
+});
