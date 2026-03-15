@@ -210,9 +210,10 @@ Agent 越專一 → 任務越簡單 → 可用更小的 model → 成本降低
 ### 8. 即時可見性
 
 ```
-Flow Visualizer = 系統在做什麼（即時 SSE）
-Notion Dashboard = 專案進度如何（隨時可查）
-SessionStart 注入 = AI 記得什麼（行為觀察 + 品質趨勢）
+Statusline          = 基礎設施狀態（nova-server + 本地 LLM，3 秒更新）
+Flow Visualizer     = 系統在做什麼（即時 SSE）
+Notion Dashboard    = 專案進度如何（隨時可查）
+SessionStart 注入   = AI 記得什麼（簡報 + 行為觀察 + 品質趨勢 + 改善建議）
 ```
 
 透明度是信任的基礎，但過度揭露反而降低效率 — 找到正確的抽象層級。
