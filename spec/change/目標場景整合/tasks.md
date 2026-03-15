@@ -174,3 +174,4 @@ Phase 5: 回歸驗證 + 文件閉環（D0）
 | Q7 | 錯誤處理：LLM JSON 解析 2 個空 catch | lifecycle-orchestrator + judge 的 parseScoreResult 加 log + raw 輸出。612 pass |
 | Q8 | 研究實作：--allowedTools（R3 發現） | spawnSession 加 allowedTools 參數，預設放行 8 個工具，防止無人值守 session 卡在權限提示。612 pass |
 | Q9 | 研究實作：分場景品質閾值（R1 發現） | automation/fix 需 A 級，rule/skill 需 B 級。getDeployGrades() + 5 個測試。617 pass |
+| Q10 | 研究實作：Error clustering + dedup（R2 發現） | 聚類相同根因、24h dedup 防重複建 Notion 任務。617 pass |
