@@ -52,7 +52,7 @@ v0.30+ 採用「單腦 + 深度路由 + 輕量 Worker」模式（見 `docs/spec/
 
 ---
 
-## R1：核心重建（Layer 1 — 🟡 進行中 1/6）
+## R1：核心重建（Layer 1 — 🟡 進行中 2/6）
 
 > 目標：恢復 Main Agent 的自動化框架能力。
 > 原則：不再重建 Pipeline，而是為「單腦 + 深度路由」模式建立配套。
@@ -67,7 +67,7 @@ v0.30+ 採用「單腦 + 深度路由 + 輕量 Worker」模式（見 `docs/spec/
 
 ### R1.2 Maintainer — 本地模型驅動的觀測與維護 agent
 
-**現狀**：metrics.js 記錄 dispatch/error/block 數值。maintainer.js Phase 1 已完成（數字同步 + commit + push）。文件搬遷、內容檢查、Notion 整合尚未啟用。
+**現狀**：P1-P4 已完成。maintainer.js 每次 SessionEnd 自動：數字同步 → 狀態檢查 → metrics 分析 → 文件搬遷 → Notion 雙向同步 → git commit/push。
 **目標**：SessionEnd 背景 agent，漸進式擴展，最終將文件與專案管理完全遷移至 Notion。全程本地模型，零 API token。
 
 **執行機制**：`maintainer.js` — SessionEnd hook 觸發，自我分離背景執行，做完退出。

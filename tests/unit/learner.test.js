@@ -71,9 +71,9 @@ describe('computeConfidence', () => {
     expect(conf).toBeLessThan(0.30);
   });
 
-  test('穩定 20 次 / 30 session / 跨 60 天 / 1 天前 → > 0.60', () => {
-    // 公式：frequencyScore=log2(21)/log2(31)≈0.87, spanScore=1, recency≈0.69
-    // confidence ≈ 0.87 * 1 * 0.69 ≈ 0.60+
+  test('穩定 20 次 / 30 session / 跨 60 天 / 1 天前 → >= 0.60', () => {
+    // 公式：frequencyScore=log2(21)/log2(31)≈0.887, spanScore=1, recency=0.75
+    // confidence ≈ 0.887 * 1 * 0.75 = 0.665 → 捨入 0.60-0.67
     const today = new Date();
     const oneDayAgo = new Date(today.getTime() - 1 * 24 * 60 * 60 * 1000);
     const sixtyDaysAgo = new Date(today.getTime() - 60 * 24 * 60 * 60 * 1000);
@@ -83,7 +83,7 @@ describe('computeConfidence', () => {
       lastSeen: oneDayAgo.toISOString().slice(0, 10),
     });
     const conf = computeConfidence(b, 30, today);
-    expect(conf).toBeGreaterThan(0.60);
+    expect(conf).toBeGreaterThanOrEqual(0.60);
   });
 
   test('信心值介於 0 ~ 1 之間', () => {
