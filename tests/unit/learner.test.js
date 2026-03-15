@@ -261,17 +261,6 @@ describe('extractSessionBehavior', () => {
 // ─── 4. 行為歷史比對測試 ─────────────────────────────────────────────────────
 
 describe('analyzeAndUpdate — 行為歷史比對', () => {
-  const tmpDir = join(tmpdir(), `learner-test-${Date.now()}`);
-  const tmpBehaviorFile = join(tmpDir, 'behaviors.jsonl');
-
-  function setup() {
-    if (!existsSync(tmpDir)) mkdirSync(tmpDir, { recursive: true });
-  }
-
-  function cleanup() {
-    try { rmSync(tmpDir, { recursive: true }); } catch {}
-  }
-
   test('新行為 → 建立新條目', () => {
     const session = {
       sid: 10,
