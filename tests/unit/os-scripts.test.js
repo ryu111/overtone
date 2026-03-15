@@ -58,7 +58,7 @@ describe('screenshot.js', () => {
   describe('captureScreen', () => {
     it('成功截圖，回傳路徑與大小', () => {
       const deps = {
-        ...mockExec(''),
+        execFileSync: () => '',
         statSync: (_path) => ({ size: 1024 }),
         mkdirSync: () => {},
       };
@@ -70,7 +70,7 @@ describe('screenshot.js', () => {
 
     it('指令失敗回傳 COMMAND_FAILED', () => {
       const deps = {
-        ...mockExecThrows('screencapture: permission denied'),
+        execFileSync: () => { throw new Error('screencapture: permission denied'); },
         statSync: () => { throw new Error('not found'); },
         mkdirSync: () => {},
       };
@@ -80,35 +80,36 @@ describe('screenshot.js', () => {
     });
 
     it('未指定路徑時自動產生路徑', () => {
-      const capturedPaths = [];
+      const capturedArgs = [];
       const deps = {
-        execSync: (cmd) => { capturedPaths.push(cmd); return ''; },
+        execFileSync: (_cmd, args) => { capturedArgs.push(args); return ''; },
         statSync: () => ({ size: 512 }),
         mkdirSync: () => {},
       };
       const result = captureScreen(undefined, deps);
       expect(result.ok).toBe(true);
       expect(result.path).toMatch(/\/tmp\/overtone-screenshots\/screen-\d+\.png/);
-      expect(capturedPaths[0]).toContain('screencapture -x');
+      expect(capturedArgs[0]).toContain('-x');
     });
 
-    it('指令包含 -x 旗標（靜音截圖）', () => {
-      const commands = [];
+    it('使用 execFileSync 陣列參數（防止 shell injection）', () => {
+      const calls = [];
       const deps = {
-        execSync: (cmd) => { commands.push(cmd); return ''; },
+        execFileSync: (cmd, args) => { calls.push({ cmd, args }); return ''; },
         statSync: () => ({ size: 100 }),
         mkdirSync: () => {},
       };
       captureScreen('/tmp/out.png', deps);
-      expect(commands[0]).toContain('-x');
-      expect(commands[0]).toContain('/tmp/out.png');
+      expect(calls[0].cmd).toBe('screencapture');
+      expect(calls[0].args).toContain('-x');
+      expect(calls[0].args).toContain('/tmp/out.png');
     });
   });
 
   describe('captureWindow', () => {
     it('成功回傳路徑', () => {
       const deps = {
-        ...mockExec(''),
+        execFileSync: () => '',
         mkdirSync: () => {},
       };
       const result = captureWindow('/tmp/win.png', deps);
@@ -117,18 +118,18 @@ describe('screenshot.js', () => {
     });
 
     it('指令包含 -w 旗標', () => {
-      const commands = [];
+      const calls = [];
       const deps = {
-        execSync: (cmd) => { commands.push(cmd); return ''; },
+        execFileSync: (_cmd, args) => { calls.push(args); return ''; },
         mkdirSync: () => {},
       };
       captureWindow('/tmp/win.png', deps);
-      expect(commands[0]).toContain('-w');
+      expect(calls[0]).toContain('-w');
     });
 
     it('指令失敗回傳 COMMAND_FAILED', () => {
       const deps = {
-        ...mockExecThrows('timeout'),
+        execFileSync: () => { throw new Error('timeout'); },
         mkdirSync: () => {},
       };
       const result = captureWindow('/tmp/win.png', deps);
@@ -139,15 +140,15 @@ describe('screenshot.js', () => {
 
   describe('captureRegion', () => {
     it('成功截取指定區域', () => {
-      const commands = [];
+      const calls = [];
       const deps = {
-        execSync: (cmd) => { commands.push(cmd); return ''; },
+        execFileSync: (_cmd, args) => { calls.push(args); return ''; },
         mkdirSync: () => {},
       };
       const result = captureRegion(10, 20, 300, 200, '/tmp/region.png', deps);
       expect(result.ok).toBe(true);
       expect(result.path).toBe('/tmp/region.png');
-      expect(commands[0]).toContain('-R10,20,300,200');
+      expect(calls[0].some(a => a.includes('-R10,20,300,200'))).toBe(true);
     });
 
     it('負數寬高回傳 INVALID_ARGS', () => {
@@ -177,14 +178,14 @@ describe('screenshot.js', () => {
 
   describe('checkPermission', () => {
     it('指令成功回傳 granted: true', () => {
-      const deps = mockExec('');
+      const deps = { execFileSync: () => '', unlinkSync: () => {} };
       const result = checkPermission(deps);
       expect(result.ok).toBe(true);
       expect(result.granted).toBe(true);
     });
 
     it('指令失敗回傳 granted: false', () => {
-      const deps = mockExecThrows('permission denied');
+      const deps = { execFileSync: () => { throw new Error('permission denied'); } };
       const result = checkPermission(deps);
       expect(result.ok).toBe(true);
       expect(result.granted).toBe(false);

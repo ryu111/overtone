@@ -167,3 +167,4 @@ Phase 5: 回歸驗證 + 文件閉環（D0）
 | 3 | P2.4, P2.8, P3.4, P4.5, P5.6 | 4 個手動驗證改自動化測試 + commit 閉環。30/30 完成 |
 | Q1 | 測試覆蓋：generateSuggestions | learner.js 加 _deps DI，補 6 個測試。609 pass |
 | Q2 | 測試覆蓋：saveScore | judge.js 加 fileOverride 參數，補 3 個測試（寫入/追加/自動建目錄）。612 pass。維度 1 清零 |
+| Q3 | 安全：screenshot.js shell injection | execSync 字串拼接 → execFileSync 陣列參數。filePath 不再經過 shell 解析。612 pass |

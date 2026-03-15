@@ -105,3 +105,98 @@ Self-evolving AI agents、automatic skill/tool creation、quality gate patterns�
 - [Adaptive Confidence Gating in Multi-Agent Collaboration](https://arxiv.org/html/2601.21469)
 - [Why Your AI Agent Needs a Quality Gate](https://dev.to/yurukusa/why-your-ai-agent-needs-a-quality-gate-not-just-tests-42eo)
 - [Yohei Nakajima: Better Ways to Build Self-Improving AI Agents](https://yoheinakajima.com/better-ways-to-build-self-improving-ai-agents/)
+
+---
+
+## R2 — 場景四：自我修復（2026-03-17）
+
+### 搜尋主題
+
+Self-healing software systems、autonomous bug repair agents、observability-driven auto-remediation、error pattern clustering
+
+### 發現摘要
+
+#### 1. 生物啟發的自我修復架構
+
+**核心概念**：仿照人體免疫系統 — 偵測異常 → 診斷根因 → 執行修復 → 學習改善。
+
+**四層架構**：
+- **Anomaly Detection**：偏離預期行為的偵測
+- **Automated Diagnosis**：推理或模式識別判定根因
+- **Self-Repair**：執行程式碼修復或設定變更
+- **Learning**：透過 feedback loop 改善未來回應
+
+**與 Nova 的關聯**：
+- Nova 場景四已有前 3 層（hook error 偵測 → maintainer 診斷 → heartbeat 修復）
+- 第 4 層（Learning）= Learner 記錄反模式，但**缺少從修復結果回饋到偵測規則的閉環**
+- 業界數據：40% IT 主管報告導入後停機時間減少，62% 在 18 個月內看到 ROI
+
+**整合評估**：✅ 高價值
+- 加入「修復後驗證 → 更新偵測規則」的回饋迴路（maintainer 修復成功 → 自動加入 hook error 白名單/修正閾值）
+
+#### 2. RepairAgent — 自主 LLM 修復 Agent（ISSTA 2024）
+
+**核心概念**：LLM 作為自主 agent，自由交錯執行三種動作：
+1. **蒐集 bug 資訊**（讀日誌、trace）
+2. **蒐集修復素材**（搜尋相關程式碼）
+3. **驗證修復**（跑測試）
+
+**關鍵設計**：不預設固定流程，agent 根據回饋自己決定下一步。在 Defects4J 上修復 164 個 bug，含 39 個前人未修的。
+
+**與 Nova 的關聯**：
+- Nova 的 heartbeat → spawn session 目前用固定 prompt（buildPrompt），session 內 Main Agent 自己決定修復策略
+- RepairAgent 的「自由交錯」模式和 Nova 的深度路由（Main Agent 判斷 D-level）哲學一致
+- **關鍵差異**：RepairAgent 有明確的 tool set（蒐集/素材/驗證），Nova 的 spawn session 沒有限制 tool set
+
+**整合評估**：💡 中等價值
+- 可以在 buildPrompt 中為修復任務加入 RepairAgent 的三步驟提示（「先讀 error log → 搜尋相關程式碼 → 修復後跑 bun test」）
+- 不需要改架構，只需改 prompt
+
+#### 3. 錯誤模式聚類（Error Pattern Clustering）
+
+**核心概念**：AIOps 系統將大量錯誤事件聚類為「situations」，降噪後再分析。
+
+**業界做法**：
+- **BMC Helix AIOps**：ML 智慧事件聚類 + 噪音降低
+- **Mezmo MCP Server**：去重、聚類、豐富化 telemetry → 再送 LLM 分析（避免用原始資料灌 LLM）
+- **ScienceLogic Skylar**：ML 觀察 log 事件模式和異常
+
+**與 Nova 的關聯**：
+- Nova 的 `hook-errors.jsonl` 目前只做簡單統計（`summary[e.event]++`）
+- **缺少聚類**：相同根因的不同錯誤訊息被當作不同事件
+- Mezmo 的「先聚類再分析」模式直接適用 — 在送給本地模型前先做 error dedup
+
+**整合評估**：✅ 高價值
+- 在 maintainer.js Phase 3c 前加入 error clustering（同 event+phase 的合併、相似 message 的聚類）
+- 避免為同一根因建立多個 Notion 任務
+
+#### 4. 修復任務的深度提示強化
+
+**來自 RepairAgent + SWE-bench 排行榜的啟發**：
+
+排行榜上的系統（W&B Programmer、Blackbox AI、CodeStory）共同特徵：
+1. 動態與本地環境互動（不只讀 error，還主動搜尋相關程式碼）
+2. 迭代驗證修復結果（修 → 跑測試 → 不過 → 再修）
+3. 結構化的修復流程（而非自由形式 prompt）
+
+**整合評估**：✅ 可立即行動
+- 強化 `buildPrompt` 的修復任務模板：加入 RepairAgent 的三步驟 + 迭代驗證指示
+
+### 可行動項目
+
+| 優先序 | 項目 | 影響範圍 | 預估工作量 |
+|:------:|------|---------|:---------:|
+| 1 | Error clustering — 相同根因合併，避免重複建 Notion 任務 | maintainer.js Phase 3c | ~30 行 |
+| 2 | 修復任務 prompt 強化 — 加入三步驟 + 迭代驗證 | session-spawner.js buildPrompt | ~15 行 |
+| 3 | 修復後回饋迴路 — 成功修復 → 更新偵測閾值 | maintainer.js | ~40 行 |
+| 4 | Telemetry 預處理 — error dedup 後再送本地模型分析 | maintainer.js Phase 2 | ~25 行 |
+
+### 參考來源
+
+- [Self-Healing Software Systems: Lessons from Nature, Powered by AI](https://arxiv.org/abs/2504.20093)
+- [RepairAgent: Autonomous LLM-Based Agent for Program Repair](https://arxiv.org/abs/2403.17134)
+- [LLM-based Agents for Automated Bug Fixing: How Far Are We?](https://arxiv.org/abs/2411.10213)
+- [Awesome LLM for Automated Program Repair](https://github.com/iSEngLab/AwesomeLLM4APR)
+- [Lumigo Copilot AI: Automate RCA and Remediation](https://lumigo.io/blog/lumigo-copilot-ai-launches-to-automate-root-cause-analysis-and-remediation/)
+- [Mezmo AI SRE for Root Cause Analysis](https://www.mezmo.com/blog/launching-an-agentic-sre-for-root-cause-analysis)
+- [ScienceLogic Automated Root Cause Analysis](https://sciencelogic.com/articles/automated-root-cause-analysis)
