@@ -142,7 +142,7 @@ Phase 5: 回歸驗證 + 文件閉環（D0）
 | P5.3 | 更新 `docs/roadmap.md` — 當前焦點 → R4 | ✅ |
 | P5.4 | 更新 `spec/index.md` 更新日期 | ✅ |
 | P5.5 | 測試全部通過 — 603 pass / 0 fail | ✅ |
-| P5.6 | Commit + Push 雙 repo | ⬜ |
+| P5.6 | Commit — maintainer 自動 commit 雙 repo（6 次 auto-sync） | ✅ |
 
 ---
 
@@ -155,8 +155,8 @@ Phase 5: 回歸驗證 + 文件閉環（D0）
 | 2 | 一+二：無人值守+能力生長 | 8 | 8 | ✅ |
 | 3 | 四：自我修復 | 4 | 4 | ✅ |
 | 4 | 三：新領域 | 5 | 5 | ✅ |
-| 5 | 回歸+閉環 | 6 | 5 | 🔄 |
-| **合計** | | **30** | **29** | |
+| 5 | 回歸+閉環 | 6 | 6 | ✅ |
+| **合計** | | **30** | **30** | ✅ |
 
 ## Loop 迭代記錄
 
@@ -164,4 +164,5 @@ Phase 5: 回歸驗證 + 文件閉環（D0）
 |:----:|---------|------|
 | 1 | P0.1-P0.2, P1.1-P1.5 | Phase 0+1 完成。impact-analyzer.js 建立，574 tests pass |
 | 2 | P2.1-P2.7, P3.1-P3.3, P4.1-P4.4 | Phase 2-4 核心程式碼完成。598 tests pass |
-| 3 | P2.4, P2.8, P3.4, P4.5 | 4 個手動驗證改自動化測試。603 tests pass |
+| 3 | P2.4, P2.8, P3.4, P4.5, P5.6 | 4 個手動驗證改自動化測試 + commit 閉環。30/30 完成 |
+| Q1 | 測試覆蓋：generateSuggestions | learner.js 加 _deps DI，補 6 個測試（rule/automation/fix/未達標/已有/空）。609 pass |

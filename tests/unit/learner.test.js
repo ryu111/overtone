@@ -12,6 +12,7 @@ import {
   readBehaviors,
   writeBehaviors,
   extractSessionBehavior,
+  generateSuggestions,
 } from '/Users/sbu/.claude/scripts/learner.js';
 
 // ─── 1. 信心公式測試 ───────────────────────────────────────────────────────────
@@ -489,5 +490,122 @@ describe('readBehaviors / writeBehaviors', () => {
     writeBehaviors([{ id: 'x', polarity: 1 }], deepFile);
     expect(existsSync(deepFile)).toBe(true);
     rmSync(tmpDir, { recursive: true });
+  });
+});
+
+// ─── 5. generateSuggestions 測試 ───────────────────────────────────────────────
+
+describe('generateSuggestions', () => {
+  test('信心達標 + 正向行為 → 生成 rule 建議', async () => {
+    const behaviors = [
+      {
+        id: 'read-edit-bash',
+        polarity: 1,
+        pattern: 'Read→Edit→Bash',
+        firstSeen: '2026-03-10',
+        lastSeen: '2026-03-17',
+        occurrences: [1, 2, 3, 4, 5],
+        confidence: 0.65,
+        suggestion: null,
+        description: '',
+      },
+    ];
+
+    const mockAsk = async (_prompt, fallback) => '1. 建議固化為 Rule，因為是格式規範';
+    await generateSuggestions(behaviors, { askLocalModel: mockAsk });
+
+    expect(behaviors[0].suggestion).not.toBeNull();
+    expect(behaviors[0].suggestion.type).toBe('rule');
+    expect(behaviors[0].suggestion.priority).toBe('P2');
+    expect(behaviors[0].description).toContain('Rule');
+  });
+
+  test('正向行為 + 模型回覆 2 → automation 類型', async () => {
+    const behaviors = [
+      {
+        id: 'auto-format',
+        polarity: 1,
+        pattern: 'Read→Edit→Bash',
+        firstSeen: '2026-03-10',
+        lastSeen: '2026-03-17',
+        occurrences: [1, 2, 3],
+        confidence: 0.7,
+        suggestion: null,
+        description: '',
+      },
+    ];
+
+    const mockAsk = async () => '2. 應自動化為腳本';
+    await generateSuggestions(behaviors, { askLocalModel: mockAsk });
+
+    expect(behaviors[0].suggestion.type).toBe('automation');
+  });
+
+  test('信心達標 + 反模式 → 生成 fix 建議', async () => {
+    const behaviors = [
+      {
+        id: 'anti-pattern-1',
+        polarity: -1,
+        pattern: 'anti-pattern',
+        signals: { blocks: 3, errors: 2, fixKeywords: 1 },
+        firstSeen: '2026-03-10',
+        lastSeen: '2026-03-17',
+        occurrences: [1, 2, 3],
+        confidence: 0.45,
+        suggestion: null,
+        description: '',
+      },
+    ];
+
+    const mockAsk = async () => 'guard 規則衝突導致誤判';
+    await generateSuggestions(behaviors, { askLocalModel: mockAsk });
+
+    expect(behaviors[0].suggestion).not.toBeNull();
+    expect(behaviors[0].suggestion.type).toBe('fix');
+    expect(behaviors[0].suggestion.priority).toBe('P0');
+  });
+
+  test('信心未達標 → 不生成建議', async () => {
+    const behaviors = [
+      {
+        id: 'low-confidence',
+        polarity: 1,
+        pattern: 'Read→Write',
+        firstSeen: '2026-03-16',
+        lastSeen: '2026-03-16',
+        occurrences: [1],
+        confidence: 0.2,
+        suggestion: null,
+        description: '',
+      },
+    ];
+
+    await generateSuggestions(behaviors);
+
+    expect(behaviors[0].suggestion).toBeNull();
+  });
+
+  test('已有 suggestion → 跳過', async () => {
+    const existingSuggestion = { type: 'rule', content: '已有建議', priority: 'P2' };
+    const behaviors = [
+      {
+        id: 'already-suggested',
+        polarity: 1,
+        pattern: 'A→B',
+        confidence: 0.8,
+        suggestion: existingSuggestion,
+        description: '',
+      },
+    ];
+
+    await generateSuggestions(behaviors);
+
+    // suggestion 不應被覆蓋
+    expect(behaviors[0].suggestion).toBe(existingSuggestion);
+  });
+
+  test('空行為列表不崩潰', async () => {
+    await generateSuggestions([]);
+    // 無 error = 通過
   });
 });
