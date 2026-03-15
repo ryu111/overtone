@@ -309,3 +309,105 @@ Webhook：Notion → POST /webhook → nova-server → spawn
 - [Notion Webhooks API](https://developers.notion.com/reference/webhooks)
 - [Notion Webhooks Guide (2025)](https://softwareengineeringstandard.com/2025/08/31/notion-webhooks/)
 - [Notion API Version 2025-09-03](https://developers.notion.com/docs/upgrade-guide-2025-09-03)
+
+---
+
+## R4 — 場景五：一句話永久生效（2026-03-17）
+
+### 搜尋主題
+
+Change impact analysis、configuration drift detection、multi-file codemod、rule propagation patterns
+
+### 發現摘要
+
+#### 1. RIVA — LLM Agent 設定漂移偵測（2026 論文）
+
+**核心概念**：雙 agent 架構偵測 Infrastructure-as-Code 的設定漂移：
+- **Verifier Agent**：檢查設定是否符合預期
+- **Tool Generation Agent**：自動生成檢查工具
+- 兩者透過**迭代交叉驗證**協作
+
+**與 Nova 的關聯**：
+- Nova 的場景五是「規則變更 → 影響分析 → 多檔案更新」
+- RIVA 的**交叉驗證**概念可用於驗證更新後的一致性：更新完所有檔案後，用第二個 agent 確認「這些檔案現在都反映了新規則」
+- 目前 Nova 的 impact-analyzer.js 只做**偵測**（grep 找引用），缺少**驗證**（更新後確認一致性）
+
+**整合評估**：⚠️ 中等價值
+- 加入 post-update 驗證步驟（更新後再跑一次 impact analysis，確認所有引用已同步）
+- 不需要雙 agent，單次 re-scan 即可
+
+#### 2. 呼叫圖（Call Graph）級影響分析
+
+**核心概念**：不只搜尋文字引用，而是分析程式碼的呼叫圖和資料流，判斷哪些檔案**語意上**受影響。
+
+**業界做法**：
+- PR-level change impact analysis 結合 MSR（Mining Software Repositories）+ call graph
+- 計算每個 PR 的 risk score（引用數 × 變更頻率 × 模組重要性）
+- Field tracking diagrams 追蹤資料元素如何在程式間傳播
+
+**與 Nova 的關聯**：
+- Nova 的 impact-analyzer.js 用 grep（純文字搜尋），精確但有大量誤報（640 個結果太多）
+- Call graph 分析需要 AST parser — 對 JS 可用 Babel 或 TypeScript compiler API
+- **成本太高**：Nova 的 rules/skills 是 Markdown 和 JS 混合，AST 只能處理 JS 部分
+
+**整合評估**：💡 低優先
+- 目前 grep-based 足夠（Main Agent 看報告後人工判斷哪些要改）
+- R4 階段如果跨領域檔案數量大增，再考慮 call graph
+
+#### 3. Codemod / Moderne — 編譯器感知的批量修改
+
+**核心概念**：
+- **Codemod**：用「code graph」（比 AST 更高層的語意圖）描述程式碼結構，agent 在 graph 上操作
+- **Moderne**：跨多 repo 的大規模 framework migration，用確定性自動化 + agent 輔助
+
+**關鍵模式**：
+- 先建 graph → 在 graph 上定義 transform → 批量 apply → 驗證
+- 比逐檔 find-replace 更安全（理解語法結構，不會改到字串裡的同名文字）
+
+**與 Nova 的關聯**：
+- Nova 的場景五目前是「grep 找到 → 人工決定 → 逐檔改」
+- Codemod 的「graph → transform → apply」模式可以簡化為：
+  1. impact-analyzer 找到候選檔案（已有）
+  2. 對每個候選用 LLM 判斷「這個引用需要改嗎」
+  3. 需要改的用 LLM 生成具體修改
+  4. 批量 apply + 跑測試驗證
+
+**整合評估**：✅ 高價值（但是 R4 級別工作量）
+- 步驟 2-3 需要 LLM（本地或 Claude API），不適合在品質強化 loop 中做
+- 適合作為 R4 的 impact-analyzer v2
+
+#### 4. 設定漂移的預防 vs 偵測
+
+**業界共識**：
+- **偵測型**（event-driven）：變更發生後掃描影響 — Nova 目前的做法
+- **預防型**（constraint-based）：變更前驗證是否違反約束 — 更好但更難
+- **版本化一切**：prompts、rules、configs 都有版本號，漂移 = 版本不一致
+
+**與 Nova 的關聯**：
+- Nova 的 rules/ 沒有版本號 — 改了一條 rule，其他引用它的地方不知道
+- 簡單的預防措施：在 rules/ 加 `version` frontmatter，引用方寫 `rule@v2`，版本不一致時 maintainer 警告
+- 這比 grep 搜尋更精確（只追蹤有版本標記的引用，而非所有文字匹配）
+
+**整合評估**：⚠️ 中等價值
+- 版本化 rules 是好方向但改動量大（所有 rules + 所有引用都要改）
+- 目前 rules 數量少（14 個），手動管理可行
+- R4 規模擴大後值得考慮
+
+### 可行動項目
+
+| 優先序 | 項目 | 影響範圍 | 預估工作量 |
+|:------:|------|---------|:---------:|
+| 1 | Post-update 驗證 — 更新後 re-scan 確認一致性 | impact-analyzer.js | ~20 行 |
+| 2 | LLM 輔助判斷 — 候選檔案中哪些真的需要改 | impact-analyzer.js | R4 |
+| 3 | Rule 版本化 — frontmatter version + 引用追蹤 | rules/*.md | R4 |
+| 4 | Code graph 分析（JS AST） | 新模組 | R4 |
+
+### 參考來源
+
+- [RIVA: LLM Agents for Configuration Drift Detection](https://arxiv.org/abs/2603.02345)
+- [Change Impact Analysis via Call Graphs (Springer)](https://link.springer.com/article/10.1007/s10664-024-10600-2)
+- [Change Impact Analysis (Wikipedia)](https://en.wikipedia.org/wiki/Change_impact_analysis)
+- [Codemod Platform](https://codemod.com/)
+- [Moderne: Agent Tools for Code Migration](https://www.moderne.ai)
+- [Zencoder: Repo Grokking for Multi-file Refactoring](https://zencoder.ai/blog/code-refactoring-tools)
+- [Augment Code: AI for Large Codebases](https://www.augmentcode.com/tools/ai-coding-assistants-for-large-codebases-a-complete-guide)
