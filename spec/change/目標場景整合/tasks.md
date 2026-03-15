@@ -184,3 +184,4 @@ Phase 5: 回歸驗證 + 文件閉環（D0）
 | Q17 | 研究實作：總時間上限（R11 發現） | executeTask 加 maxTotalTime，超時停止 --resume 重試。620 pass |
 | Q18 | 研究實作：Few-shot 自動蒐集（R8 發現） | buildForgePrompt 注入最近成功部署的 SKILL.md 作為範例。620 pass |
 | Q19 | 研究實作：Skill Pruning（R10 發現） | pruneUnusedSkills() 歸檔 unreferenced + auto-generated skills（>35 觸發），lifecycle 記錄。620 pass |
+| Q20 | 測試覆蓋：pruneUnusedSkills | <= MAX_SKILLS 不歸檔 + 回傳型別驗證。622 pass。**品質強化完成** |

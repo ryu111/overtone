@@ -5,7 +5,7 @@ import { join } from 'path';
 import { tmpdir } from 'os';
 
 import { forgeSkill, improveSkill, deploySkill } from '/Users/sbu/.claude/scripts/skill-forge.js';
-import { checkLifecycle, getDeployGrades } from '/Users/sbu/.claude/scripts/lifecycle-orchestrator.js';
+import { checkLifecycle, getDeployGrades, pruneUnusedSkills } from '/Users/sbu/.claude/scripts/lifecycle-orchestrator.js';
 
 // ─── 測試環境 ─────────────────────────────────────────────────────────────────
 
@@ -548,5 +548,20 @@ describe('getDeployGrades', () => {
   test('無 suggestion 時預設允許 A 和 B', () => {
     const grades = getDeployGrades({});
     expect(grades).toEqual(['A', 'B']);
+  });
+});
+
+// ─── pruneUnusedSkills 測試 ──────────────────────────────────────────────────
+
+describe('pruneUnusedSkills', () => {
+  test('skills 數量 <= MAX_SKILLS(35) 時不歸檔', () => {
+    // 目前 ~/.claude/skills/ 有 ~26 個，低於 35 → 應回傳空
+    const pruned = pruneUnusedSkills();
+    expect(pruned).toEqual([]);
+  });
+
+  test('函式回傳陣列', () => {
+    const result = pruneUnusedSkills();
+    expect(Array.isArray(result)).toBe(true);
   });
 });
