@@ -411,3 +411,101 @@ Change impact analysis、configuration drift detection、multi-file codemod、ru
 - [Moderne: Agent Tools for Code Migration](https://www.moderne.ai)
 - [Zencoder: Repo Grokking for Multi-file Refactoring](https://zencoder.ai/blog/code-refactoring-tools)
 - [Augment Code: AI for Large Codebases](https://www.augmentcode.com/tools/ai-coding-assistants-for-large-codebases-a-complete-guide)
+
+---
+
+## R5 — 場景三：新領域從零到穩定（2026-03-17）
+
+### 搜尋主題
+
+Cross-domain transfer learning、experience replay for agents、skill library evolution、end-to-end domain validation
+
+### 發現摘要
+
+#### 1. AgentRR（Record & Replay）— 2025 論文
+
+**核心概念**：將經典的「錄製-重播」機制引入 AI agent：
+1. **Record**：記錄 agent 與環境互動的 trace（工具呼叫、決策過程）
+2. **Summarize**：將 trace 萃取為結構化「經驗」（workflow + constraints）
+3. **Replay**：後續類似任務中，用這些經驗引導 agent 行為
+
+**與 Nova 的關聯**：
+- Nova 的 Learner 已做第 1 步（`extractSessionBehavior` 記錄 tool sequence）
+- **缺少第 2 步**：trace 只萃取為「pattern 字串」（如 `Read→Grep→Edit`），不包含 workflow 邏輯和 constraints
+- **缺少第 3 步**：經驗不會被注入後續 session 的 prompt（只有 briefing 提到行為，不提供重播指引）
+
+**整合評估**：✅ 高價值
+- 在 `extractSessionBehavior` 中增加 workflow 萃取（哪些工具按什麼順序、成功/失敗路徑）
+- 在 `buildPrompt` 或 `context-injector` 中注入相關經驗作為 few-shot 範例
+- 預估工作量：~80 行（跨 learner.js + context-injector.js）
+
+#### 2. SkillRL — 遞迴 Skill 進化（2026 論文）
+
+**核心概念**：Skill library 作為**動態元件**而非靜態知識庫。每個 validation epoch 後：
+- 分析失敗模式 → 生成新 skill 或修正現有 skill
+- Skill library 和 agent policy **共同進化**
+
+**關鍵機制**：
+- **Experience-based distillation**：將多樣化經驗蒸餾為結構化 skill
+- **Failure-driven evolution**：失敗驅動進化（不只學成功的）
+- **Recursive refinement**：skill 進化是遞迴的（改過的 skill 再用、再評、再改）
+
+**與 Nova 的關聯**：
+- Nova 的 Skill Lifecycle 已有「forge → judge → improve → deploy」，但只在**部署前**改善
+- SkillRL 的理念是**部署後持續改善** — 觀察 skill 在實際使用中的表現，失敗時自動觸發改善
+- 目前 Nova 的 Learner 追蹤行為但不追蹤「哪個 skill 被用了、效果如何」
+
+**整合評估**：⚠️ 中等價值（R4 級別）
+- 需要 skill 使用追蹤（哪個 agent 用了哪個 skill、結果如何）
+- 需要 failure-driven 觸發（skill 被用但任務失敗 → 標記 skill 需改善）
+- 架構上可行但工作量大
+
+#### 3. Experience Inheritance（經驗繼承）
+
+**核心概念**：agent 間的經驗顯式傳遞 — 決策 trace、skill、workflow 產物從一個 agent 傳給另一個。
+
+**效果**：提升 sample efficiency、收斂速度、跨任務表現。
+
+**與 Nova 的關聯**：
+- Nova 的 heartbeat spawn 的 session 之間**沒有經驗傳遞** — 每個 session 從零開始
+- `session-summaries.jsonl` 只是文字摘要，不是結構化的決策 trace
+- **關鍵缺口**：spawn 的 session A 發現了修復模式 X，session B 遇到類似問題時不知道 X 的存在
+
+**整合評估**：✅ 高價值
+- 在 session 結束時萃取結構化經驗（不只摘要），寫入 `experiences.jsonl`
+- buildPrompt 中注入相關經驗（按任務類型匹配）
+- 這正是場景三「經驗遷移」的完整實作
+
+#### 4. Agent Skills 架構趨勢（SoK 2026）
+
+**業界共識**：
+- Skills = 模組化的指令/程式碼/資源包，agent 按需載入
+- 從 Anthropic Claude 2025 年底發起，現已全產業採用
+- 關鍵轉變：從「所有知識都在模型 weights 裡」→「動態能力擴展不需重訓」
+
+**與 Nova 的關聯**：
+- Nova 的 Skill 架構完全符合業界趨勢（SKILL.md + references/）
+- Nova 比業界**更進一步**的是自動 lifecycle（Learner → Forge → Judge → Deploy）
+- 業界缺少但 Nova 有的：品質閘門（Judge B 級門檻）、自動改善迴圈
+
+**整合評估**：💡 確認方向正確，無需行動
+
+### 可行動項目
+
+| 優先序 | 項目 | 影響範圍 | 預估工作量 |
+|:------:|------|---------|:---------:|
+| 1 | 結構化經驗萃取（AgentRR step 2） | learner.js | ~40 行 |
+| 2 | 經驗注入 buildPrompt（AgentRR step 3） | session-spawner.js / context-injector.js | ~30 行 |
+| 3 | Session 間經驗傳遞（experiences.jsonl） | heartbeat.js + context-injector.js | ~50 行 |
+| 4 | Skill 使用追蹤 + failure-driven 進化（SkillRL） | learner.js + lifecycle | R4 |
+
+### 參考來源
+
+- [AgentRR: Record & Replay for LLM Agents](https://arxiv.org/abs/2505.17716)
+- [SkillRL: Evolving Agents via Recursive Skill-Augmented RL](https://arxiv.org/html/2602.08234v1)
+- [SoK: Agentic Skills — Beyond Tool Use](https://arxiv.org/html/2602.20867v1)
+- [Agent Skills: Architecture, Acquisition, Security](https://arxiv.org/html/2602.12430v3)
+- [Experience Inheritance in Multi-Agent Systems](https://www.emergentmind.com/topics/experience-inheritance-across-agents)
+- [NGENT: Next-Gen AI Agents for AGI](https://arxiv.org/html/2504.21433v1)
+- [Cross-Domain Knowledge Transfer in Large Models](https://www.intechopen.com/online-first/1209560)
+- [Contextual Experience Replay for Continual Learning (ICLR 2025)](https://yitaoliu17.com/assets/pdf/ICLR_2025_CER.pdf)
