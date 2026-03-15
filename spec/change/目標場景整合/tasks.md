@@ -1,0 +1,165 @@
+# 目標場景整合 — Loop 追蹤
+
+> 9 個模組已建好，但端到端整合未驗證。此文件追蹤 loop 每次迭代的進度。
+> 棘輪原則：勾選後不可退回。
+
+## 依賴關係
+
+```
+Phase 0: 基礎修正（無依賴，D0）
+Phase 1: 場景五（無依賴，D1）
+Phase 2: 場景一 + 場景二（並行，D2）
+Phase 3: 場景四（依賴場景一，D1）
+Phase 4: 場景三（依賴場景一+二，D2）
+Phase 5: 回歸驗證 + 文件閉環（D0）
+```
+
+---
+
+## Phase 0：基礎修正
+
+> 更新過時資訊，確保追蹤基準正確。
+
+| # | 任務 | 狀態 |
+|---|------|:----:|
+| P0.1 | 更新 `docs/目標場景.md` 的 Roadmap 對照表（R2/R3 已 ✅ 但表格還是 ❌） | ✅ |
+| P0.2 | 確認已達成項目 — 標記「程式碼就緒，待整合驗證」，等整合測試通過再正式勾選 | ✅ |
+
+---
+
+## Phase 1：場景五 — 一句話永久生效
+
+> 最接近完成（40%→100%），快速鎖住第一個場景。
+
+### 缺口分析
+
+| 達成條件 | 狀態 | 缺口 |
+|---------|:----:|------|
+| 使用者回饋直接持久化 | ✅ | — |
+| 影響範圍自動分析 | ❌ | 無 grep-based 影響掃描 |
+| 所有受影響路徑一次更新 | ❌ | 無批量更新機制 |
+| 跨 session/agent 生效 | ⚠️ | rules/ 已生效，但 maintainer prompt 等未自動同步 |
+
+### 任務
+
+| # | 任務 | 檔案 | 狀態 |
+|---|------|------|:----:|
+| P1.1 | 實作 `analyzeImpact(rule)` — grep 所有 `~/.claude/` 和 `~/projects/overtone/` 找受影響檔案 | `~/.claude/scripts/impact-analyzer.js` | ✅ |
+| P1.2 | 實作 `formatReport()` — 結構化影響報告（按類型分群） | 同上 | ✅ |
+| P1.3 | Maintainer 簡報整合 — rules/ 有變更時在簡報中提醒跑 impact analysis | `maintainer.js` 修改 | ✅ |
+| P1.4 | 測試 — 16 個測試（extractKeywords + searchImpacts + groupByFile + classifyFile + analyzeImpact + formatReport） | `tests/unit/impact-analyzer.test.js` | ✅ |
+| P1.5 | 端到端驗證 — CLI `analyze "commit message 中文"` 找到 640 個相關檔案，按類型分群 | CLI | ✅ |
+
+**驗收**：模擬使用者說「commit 全部中文」→ analyzeImpact 找到 maintainer.js + commit-規範.md + ... → applyUpdates 全部改好
+
+---
+
+## Phase 2：場景一 + 場景二（並行）
+
+### 場景一：無人值守任務執行
+
+| 達成條件 | 狀態 | 缺口 |
+|---------|:----:|------|
+| 心跳能輪詢 Notion 並 spawn session | ✅ | 程式碼完整，需真實驗證 |
+| 完整 D3 流程無人介入 | ⚠️ | buildPrompt 需強化深度提示 |
+| Maintainer 自動更新 Notion + commit + 簡報 | ⚠️ | heartbeat 完成後缺 maintainer 觸發 |
+| SessionStart 注入簡報 | ✅ | context-injector 已完整 |
+
+| # | 任務 | 檔案 | 狀態 |
+|---|------|------|:----:|
+| P2.1 | 強化 buildPrompt — 加入明確深度提示（任務類型 → 建議 D-level） | `session-spawner.js` | ⬜ |
+| P2.2 | heartbeat executeTask 完成後觸發 maintainer 的 session 摘要生成 | `heartbeat.js` | ⬜ |
+| P2.3 | 整合測試 — mock Notion + mock spawnSession 驗證全鏈 | `tests/unit/scenario-1.test.js` | ⬜ |
+| P2.4 | 真實驗證 — Notion 建任務 → heartbeat poll → spawn → 完成 → 檢查簡報 | 手動 | ⬜ |
+
+### 場景二：能力自動生長
+
+| 達成條件 | 狀態 | 缺口 |
+|---------|:----:|------|
+| Learner 偵測跨 session 重複模式 | ✅ | 已實作 |
+| 信心達標觸發 Lifecycle | ⚠️ | pull 模式（maintainer 定期檢查），非 push |
+| Lifecycle 自動生成 Skill | ✅ | skill-forge 完整 |
+| Judge 品質閘門 + 自動修正 | ✅ | lifecycle-orchestrator 完整 |
+| 達標後自動部署 | ✅ | deploySkill 完整 |
+
+| # | 任務 | 檔案 | 狀態 |
+|---|------|------|:----:|
+| P2.5 | 確認 maintainer Phase 3b checkLifecycle 確實被呼叫（加 log/event） | `maintainer.js` | ⬜ |
+| P2.6 | 播種測試資料 — behaviors.jsonl 注入模擬信心達標的行為 | 測試腳本 | ⬜ |
+| P2.7 | 整合測試 — 信心達標 → forge → judge → deploy 全鏈 | `tests/unit/scenario-2.test.js` | ⬜ |
+| P2.8 | 真實驗證 — 觀察下次 SessionEnd 是否觸發 lifecycle | 手動 | ⬜ |
+
+---
+
+## Phase 3：場景四 — 自我修復
+
+> 依賴場景一（heartbeat 能抓任務 + spawn session）。
+
+| 達成條件 | 狀態 | 缺口 |
+|---------|:----:|------|
+| Maintainer 自動建立 Notion 修復任務 | ❌ | 只能更新，無法 create page |
+| 心跳抓到任務並修復 | ✅ | heartbeat + spawnSession 完整 |
+| 修復後測試通過 + commit | ⚠️ | 依賴 session 內 Main Agent 行為 |
+| Learner 記錄問題模式 | ✅ | 反模式記錄已實作 |
+
+| # | 任務 | 檔案 | 狀態 |
+|---|------|------|:----:|
+| P3.1 | 實作 `createNotionTask(title, description, priority)` | `notion-tasks.js` 新增 | ⬜ |
+| P3.2 | Maintainer Hook Error 診斷 — 錯誤 ≥ N 次時自動建立 Notion 修復任務 | `maintainer.js` 修改 | ⬜ |
+| P3.3 | 測試 — createNotionTask + 自動建立觸發邏輯 | `tests/unit/scenario-4.test.js` | ⬜ |
+| P3.4 | 端到端驗證 — 模擬 hook error 累積 → Notion 出現任務 → heartbeat 抓到 | 手動 | ⬜ |
+
+---
+
+## Phase 4：場景三 — 新領域從零到穩定
+
+> 依賴場景一（heartbeat）+ 場景二（lifecycle）。最複雜的場景。
+
+| 達成條件 | 狀態 | 缺口 |
+|---------|:----:|------|
+| D4 並行 executor 各自建立 Skill | ⚠️ | 架構就位，無協調驗證 |
+| Learner 偵測跨領域相似模式 | ❌ | 無跨領域比對邏輯 |
+| 經驗遷移：舊 Skill 被新領域引用 | ❌ | 無 reference 標記機制 |
+| Acid Test 端到端通過 | ⚠️ | 架構完整，無真實執行 |
+| 從零到穩定 < 7 天 | — | 需真實驗證 |
+
+| # | 任務 | 檔案 | 狀態 |
+|---|------|------|:----:|
+| P4.1 | 實作 `detectCrossDomain(newBehavior, history)` — 工具序列相似度比對（基礎版） | `learner.js` 新增 | ⬜ |
+| P4.2 | 跨領域 reference 標記 — 相似度 > 閾值時在新 Skill 加 `references: [舊Skill]` | `skill-forge.js` 修改 | ⬜ |
+| P4.3 | D4 驗證 — 模擬 planner 產出 4 phase → 並行 executor 各建 1 Skill | `tests/unit/scenario-3.test.js` | ⬜ |
+| P4.4 | Acid Test 真實執行 — `bun acid-test.js --mock` 通過 | 執行 | ⬜ |
+| P4.5 | 端到端驗證 — 跨領域任務觸發經驗遷移 | 手動 | ⬜ |
+
+---
+
+## Phase 5：回歸 + 閉環
+
+| # | 任務 | 狀態 |
+|---|------|:----:|
+| P5.1 | 重新驗證所有已勾選的達成條件（棘輪回歸） | ⬜ |
+| P5.2 | 更新 `docs/目標場景.md` 全部 checklist | ⬜ |
+| P5.3 | 更新 `docs/roadmap.md` 相關狀態 | ⬜ |
+| P5.4 | 更新 `spec/index.md` 章文件索引 | ⬜ |
+| P5.5 | 測試全部通過 `bun test` | ⬜ |
+| P5.6 | Commit + Push 雙 repo | ⬜ |
+
+---
+
+## 進度總覽
+
+| Phase | 場景 | 任務數 | 完成 | 狀態 |
+|:-----:|------|:------:|:----:|:----:|
+| 0 | 基礎修正 | 2 | 2 | ✅ |
+| 1 | 五：一句話 | 5 | 5 | ✅ |
+| 2 | 一+二：無人值守+能力生長 | 8 | 0 | ⬜ |
+| 3 | 四：自我修復 | 4 | 0 | ⬜ |
+| 4 | 三：新領域 | 5 | 0 | ⬜ |
+| 5 | 回歸+閉環 | 6 | 0 | ⬜ |
+| **合計** | | **30** | **0** | |
+
+## Loop 迭代記錄
+
+| 迭代 | 完成任務 | 備註 |
+|:----:|---------|------|
+| 1 | P0.1-P0.2, P1.1-P1.5 | Phase 0+1 完成。impact-analyzer.js 建立，574 tests pass |
