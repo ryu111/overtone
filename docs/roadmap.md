@@ -10,8 +10,8 @@ v0.30+ 採用「單腦 + 深度路由 + 輕量 Worker + 本地模型背景 agent
 五層定義見 `docs/vision.md`。
 
 **現有基礎**：
-- Rules 14 個（全域行為規範）
-- Skills 29 個（知識庫，含 nova-spec、closed-loop、nova-test）
+- Rules 17 個（全域行為規範）
+- Skills 26 個（知識庫，含 nova-spec、closed-loop、nova-test）
 - Agents 3 個（planner/executor/reviewer）
 - Nova Server（hook dispatch + Flow Visualizer + SSE + metrics）
 - Guards（`guards.js` 統一模組）
