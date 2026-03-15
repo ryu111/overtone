@@ -21,7 +21,7 @@
 
 | Layer | 名稱 | 目標 | 狀態 |
 |:-----:|------|------|:----:|
-| 1 | 核心大腦 | 守衛 + 任務引擎 + 學習/評分/收斂/回饋 | 🔴 重建中 |
+| 1 | 核心大腦 | 守衛 + 任務觀測 + 學習/評分/收斂/回饋 + Maintainer Agent | 🟡 1/7 完成 |
 | 2 | 自我進化 | Gap 偵測 + Skill Forge + PM + Orchestrator | 🔴 重建中 |
 | 3 | 感知操控 | OS 腳本 + 心跳引擎 + 佇列系統 | 🔴 重建中 |
 | 4 | 通用代理人 | 動態 MCP 工具 + 跨領域自主運作 | ⬜ 待開始 |
@@ -30,9 +30,9 @@
 ### 現有基礎
 
 - **Rules** 13 個 — 全域行為規範（含 paths 觸發的元件閉環）
-- **Skills** 29 個 — 知識庫（含 nova-spec、closed-loop）
+- **Skills** 29 個 — 知識庫（含 nova-spec、closed-loop、nova-test）
 - **Agents** 3 個 — planner / executor / reviewer
-- **Flow Visualizer** — hooks 事件 → SSE → 即時顯示
+- **Nova Server** — hook dispatch + Flow Visualizer + SSE + metrics 可觀測層
 - **Guards** — `guards.js` 統一模組（Bash 黑名單 + 元件保護）
 
 ## 章文件索引
