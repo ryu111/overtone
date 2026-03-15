@@ -43,7 +43,7 @@
 
 | 領域 | 摘要 | 章文件 | 更新日期 |
 |------|------|--------|---------|
-| 常駐服務 | Nova Server daemon + hook-client 防呆 + 可觀測層 | `docs/常駐服務.md` | 2026-03-15 |
+| 常駐服務 | Nova Server daemon + hook-client 防呆 + 可觀測層 + Hook Error 閉環 | `docs/常駐服務.md` | 2026-03-15 |
 | 架構演進 | Pipeline → 深度路由、Agent 18 → Worker 3 | `docs/架構演進.md` | 2026-03-15 |
 | 製作規範 | 完全閉環 + 自動修復 + 補全能力 | `docs/製作規範.md` | 2026-03-15 |
 

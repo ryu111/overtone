@@ -54,17 +54,19 @@ v0.30+ 採用「單腦 + 深度路由 + 輕量 Worker + 本地模型背景 agent
 ### R1.1 Guards（✅ 已完成）
 
 - `guards.js` 統一模組（Bash 黑名單 + 元件保護）
+- hook-client.js 錯誤追蹤 → `/tmp/hook-errors.jsonl`（結構化記錄）
+- SessionStart context 注入近期 hook errors（AI 可見）
+- Maintainer Step 2e 自動修復（清 lockfile + 檢查 server + 本地模型根因分析）
 - 26 個測試通過
-- hook-client.js fallback 直接引用
 
 ### R1.2 Maintainer（✅ P1-P4 完成）
 
-SessionEnd 背景 agent：數字同步 → 狀態檢查 → metrics 分析 → 文件搬遷 → Notion 雙向同步 → git commit/push。
+SessionEnd 背景 agent：數字同步 → 狀態檢查 → metrics 分析 → Hook Error 自動修復 → 文件搬遷 → Notion 雙向同步 → git commit/push。
 
 | Phase | 內容 | 狀態 |
 |:-----:|------|:----:|
 | P1 | 數字同步（4 維度 regex）+ 本地模型 commit message + git push 雙 repo | ✅ |
-| P2 | 本地模型 roadmap 狀態正確性檢查 + metrics 快照分析 | ✅ |
+| P2 | 本地模型 roadmap 狀態正確性 + metrics 分析 + Hook Error 自動修復 | ✅ |
 | P3 | 本地模型判斷 backlog 完成度 → 搬遷 spec/docs/ + 引用更新 | ✅ |
 | P4 | Notion 雙向推送/拉取 + token fallback（~/.zshrc） | ✅ |
 | P5 | Notion SoT 遷移（反轉：Notion → 生成本地文件） | ⬜ |
