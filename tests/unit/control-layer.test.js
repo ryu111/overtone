@@ -24,48 +24,49 @@ describe('keyboard.js', () => {
 
   describe('pressKey()', () => {
     it('一般字元產生 keystroke 指令', () => {
-      let captured = '';
-      const deps = { execSync: (cmd) => { captured = cmd; return ''; } };
+      let captured = {};
+      const deps = { execSync: (cmd, opts) => { captured = { cmd, input: opts?.input }; return ''; } };
       const result = pressKey('a', [], deps);
       expect(result.ok).toBe(true);
-      expect(captured).toContain('keystroke "a"');
-      expect(captured).toContain('System Events');
+      expect(captured.cmd).toBe('osascript');
+      expect(captured.input).toContain('keystroke "a"');
+      expect(captured.input).toContain('System Events');
     });
 
     it('特殊鍵 return 使用 key code 36', () => {
-      let captured = '';
-      const deps = { execSync: (cmd) => { captured = cmd; return ''; } };
+      let captured = {};
+      const deps = { execSync: (cmd, opts) => { captured = { cmd, input: opts?.input }; return ''; } };
       pressKey('return', [], deps);
-      expect(captured).toContain('key code 36');
+      expect(captured.input).toContain('key code 36');
     });
 
     it('特殊鍵 escape 使用 key code 53', () => {
-      let captured = '';
-      const deps = { execSync: (cmd) => { captured = cmd; return ''; } };
+      let captured = {};
+      const deps = { execSync: (cmd, opts) => { captured = { cmd, input: opts?.input }; return ''; } };
       pressKey('escape', [], deps);
-      expect(captured).toContain('key code 53');
+      expect(captured.input).toContain('key code 53');
     });
 
     it('特殊鍵 tab 使用 key code 48', () => {
-      let captured = '';
-      const deps = { execSync: (cmd) => { captured = cmd; return ''; } };
+      let captured = {};
+      const deps = { execSync: (cmd, opts) => { captured = { cmd, input: opts?.input }; return ''; } };
       pressKey('tab', [], deps);
-      expect(captured).toContain('key code 48');
+      expect(captured.input).toContain('key code 48');
     });
 
     it('modifier 組合：command + shift', () => {
-      let captured = '';
-      const deps = { execSync: (cmd) => { captured = cmd; return ''; } };
+      let captured = {};
+      const deps = { execSync: (cmd, opts) => { captured = { cmd, input: opts?.input }; return ''; } };
       pressKey('a', ['command', 'shift'], deps);
-      expect(captured).toContain('command down');
-      expect(captured).toContain('shift down');
+      expect(captured.input).toContain('command down');
+      expect(captured.input).toContain('shift down');
     });
 
     it('modifier 組合：control + a', () => {
-      let captured = '';
-      const deps = { execSync: (cmd) => { captured = cmd; return ''; } };
+      let captured = {};
+      const deps = { execSync: (cmd, opts) => { captured = { cmd, input: opts?.input }; return ''; } };
       pressKey('a', ['control'], deps);
-      expect(captured).toContain('control down');
+      expect(captured.input).toContain('control down');
     });
 
     it('key 為空字串回傳 INVALID_ARGUMENT', () => {
@@ -90,25 +91,26 @@ describe('keyboard.js', () => {
 
   describe('typeText()', () => {
     it('輸入文字產生 keystroke 指令', () => {
-      let captured = '';
-      const deps = { execSync: (cmd) => { captured = cmd; return ''; } };
+      let captured = {};
+      const deps = { execSync: (cmd, opts) => { captured = { cmd, input: opts?.input }; return ''; } };
       const result = typeText('hello world', deps);
       expect(result.ok).toBe(true);
-      expect(captured).toContain('keystroke "hello world"');
+      expect(captured.cmd).toBe('osascript');
+      expect(captured.input).toContain('keystroke "hello world"');
     });
 
     it('轉義雙引號', () => {
-      let captured = '';
-      const deps = { execSync: (cmd) => { captured = cmd; return ''; } };
+      let captured = {};
+      const deps = { execSync: (cmd, opts) => { captured = { cmd, input: opts?.input }; return ''; } };
       typeText('say "hi"', deps);
-      expect(captured).toContain('\\"hi\\"');
+      expect(captured.input).toContain('\\"hi\\"');
     });
 
     it('轉義反斜線', () => {
-      let captured = '';
-      const deps = { execSync: (cmd) => { captured = cmd; return ''; } };
+      let captured = {};
+      const deps = { execSync: (cmd, opts) => { captured = { cmd, input: opts?.input }; return ''; } };
       typeText('C:\\path', deps);
-      expect(captured).toContain('C:\\\\path');
+      expect(captured.input).toContain('C:\\\\path');
     });
 
     it('空字串回傳 ok:true 不呼叫 execSync', () => {
@@ -432,11 +434,12 @@ describe('applescript.js', () => {
 
   describe('runFile()', () => {
     it('執行檔案指令包含路徑', () => {
-      let captured = '';
-      const deps = { execSync: (cmd) => { captured = cmd; return 'ok'; } };
+      let capturedArgs = [];
+      const deps = { execFileSync: (cmd, args) => { capturedArgs = [cmd, ...args]; return 'ok'; } };
       const result = runFile('/tmp/test.applescript', deps);
       expect(result.ok).toBe(true);
-      expect(captured).toContain('/tmp/test.applescript');
+      expect(capturedArgs[0]).toBe('osascript');
+      expect(capturedArgs[1]).toBe('/tmp/test.applescript');
     });
 
     it('filePath 為空回傳 INVALID_ARGUMENT', () => {
@@ -446,7 +449,7 @@ describe('applescript.js', () => {
     });
 
     it('檔案不存在回傳 FILE_NOT_FOUND', () => {
-      const deps = { execSync: () => { throw new Error('No such file or directory'); } };
+      const deps = { execFileSync: () => { throw new Error('No such file or directory'); } };
       const result = runFile('/nonexistent.applescript', deps);
       expect(result.ok).toBe(false);
       expect(result.error).toBe('FILE_NOT_FOUND');

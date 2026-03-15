@@ -264,8 +264,8 @@ SessionStart 注入   = AI 記得什麼（簡報 + 行為觀察 + 品質趨勢 +
 
 | 能力 | 狀態 |
 |------|:----:|
-| 從行為觀察自動建立 Skill（Skill Lifecycle） | ⬜ |
-| 端到端驗收（Acid Test） | ⬜ |
+| 從行為觀察自動建立 Skill（Skill Lifecycle） | ✅ |
+| 端到端驗收（Acid Test） | ✅ |
 
 **完成標準**（Acid Test）：給系統一個高層目標，系統自主完成 PM → Skill 建構 → 迭代開發 → 產品交付 → 經驗沉澱，全程使用深度路由。
 

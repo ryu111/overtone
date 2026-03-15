@@ -252,12 +252,13 @@ describe('window.js', () => {
 
   describe('focusWindow', () => {
     it('成功聚焦視窗', () => {
-      const commands = [];
-      const deps = { execSync: (cmd) => { commands.push(cmd); return ''; } };
+      let captured = {};
+      const deps = { execSync: (cmd, opts) => { captured = { cmd, input: opts?.input }; return ''; } };
       const result = focusWindow('Finder', deps);
       expect(result.ok).toBe(true);
-      expect(commands[0]).toContain('Finder');
-      expect(commands[0]).toContain('activate');
+      expect(captured.cmd).toBe('osascript');
+      expect(captured.input).toContain('Finder');
+      expect(captured.input).toContain('activate');
     });
 
     it('空 appName 回傳 INVALID_ARGS', () => {
@@ -288,13 +289,14 @@ describe('window.js', () => {
     });
 
     it('指令包含正確座標', () => {
-      const commands = [];
-      const deps = { execSync: (cmd) => { commands.push(cmd); return ''; } };
+      let captured = {};
+      const deps = { execSync: (cmd, opts) => { captured = { cmd, input: opts?.input }; return ''; } };
       resizeWindow('Terminal', 10, 20, 800, 600, deps);
-      expect(commands[0]).toContain('10');
-      expect(commands[0]).toContain('20');
-      expect(commands[0]).toContain('800');
-      expect(commands[0]).toContain('600');
+      expect(captured.cmd).toBe('osascript');
+      expect(captured.input).toContain('10');
+      expect(captured.input).toContain('20');
+      expect(captured.input).toContain('800');
+      expect(captured.input).toContain('600');
     });
 
     it('空 appName 回傳 INVALID_ARGS', () => {
