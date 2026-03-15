@@ -176,3 +176,4 @@ Phase 5: 回歸驗證 + 文件閉環（D0）
 | Q9 | 研究實作：分場景品質閾值（R1 發現） | automation/fix 需 A 級，rule/skill 需 B 級。getDeployGrades() + 5 個測試。617 pass |
 | Q10 | 研究實作：Error clustering + dedup（R2 發現） | 聚類相同根因、24h dedup 防重複建 Notion 任務。617 pass |
 | Q11 | 研究實作：Proof of Work + sessionId（R7 發現） | executeTask 回傳 proofOfWork、parseStreamJson 捕獲 sessionId。修 flaky test（時區漂移）。617 pass |
+| Q12 | 研究實作：結構化 feedback + 方向性梯度（R8 發現） | generateImprovements 改 JSON 格式 + TextGrad 啟發的維度方向指引。617 pass |

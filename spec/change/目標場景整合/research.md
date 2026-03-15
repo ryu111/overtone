@@ -707,3 +707,94 @@ Symphony 規模更大（併發、PostgreSQL、BEAM），但缺乏進化能力。
 - [Claude Code Hooks Guide 2026](https://www.pixelmojo.io/blogs/claude-code-hooks-production-quality-ci-cd-patterns)
 - [Claude Code Best Practices](https://code.claude.com/docs/en/best-practices)
 - [Ruflo: Agent Orchestration for Claude](https://github.com/ruvnet/ruflo)
+
+---
+
+## R8 — 場景二深入：Skill 品質自動改善（2026-03-17）
+
+### 搜尋主題
+
+Prompt automatic optimization、DSPy/TextGrad、Self-Refine iterative refinement、self-critique pattern
+
+### 發現摘要
+
+#### 1. Self-Refine 三步迴圈（NeurIPS 2023，2025 驗證）
+
+**核心概念**：generate → feedback → refine，重複直到滿意。
+
+**效果**：
+- 程式碼生成：CODEX 初始結果提升 13%（absolute）
+- HumanEval：GPT-4 從 80% → 91%（+Reflexion pattern）
+
+**與 Nova 的關聯**：
+- Nova 的 `improveSkill()` 已是 Self-Refine 模式！（forge → judge feedback → improve → re-judge）
+- 但 Nova 的 feedback 品質受限：只用 `generateImprovements()` 生成文字建議，不夠結構化
+- Self-Refine 的最佳實踐：**feedback 應該是具體的、可操作的修改指令**，而非「建議改善可讀性」
+
+**整合評估**：✅ 高價值（改善 feedback 品質）
+- 修改 `generateImprovements` 的 prompt：要求模型回傳 `{line, issue, fix}` 結構化 JSON，而非自由文字
+- 預估 ~15 行 prompt 改動
+
+#### 2. DSPy — 宣告式 Prompt 編程
+
+**核心概念**：不寫 prompt 字串，而是宣告模組（`Signature`），讓框架自動優化 prompt。
+
+**關鍵特性**：
+- **MIPROv2 optimizer**：生成指令 + few-shot 範例，用 Bayesian Optimization 搜尋最佳組合
+- **Compile-time optimization**：部署前自動優化，不是 runtime
+
+**與 Nova 的關聯**：
+- Nova 的 `buildForgePrompt()` 和 `generateImprovements()` prompt 都是手寫字串
+- DSPy 的理念啟發：prompt 應該是**可自動優化的**，不是一次寫死
+- 但 DSPy 需要 Python + 訓練資料集，Nova 是 JS + 本地模型，直接整合成本太高
+
+**整合評估**：💡 理念借鑑，不直接整合
+- 可借鑑「few-shot 範例自動蒐集」：用歷史成功的 forge 結果作為下次 forge 的 few-shot
+- 不需要 DSPy 框架，自己實作 few-shot 蒐集即可
+
+#### 3. TextGrad — 文字梯度優化
+
+**核心概念**：把 LLM 輸出視為「可微分」的，用 LLM 生成的 feedback 作為「梯度」來更新 prompt。
+
+**效果**：2025 年 Nature 論文，驗證了文字梯度在實際任務中的有效性。
+
+**與 Nova 的關聯**：
+- Nova 的 judge → improve 迴圈本質上就是 TextGrad（評分差 → feedback → 修改）
+- 差異：TextGrad 用數學框架系統化，Nova 用簡單的 if-else + LLM 呼叫
+- **可借鑑**：TextGrad 的「梯度方向」概念 = 告訴模型「往哪個方向改」，而不只是「哪裡不好」
+
+**整合評估**：⚠️ 中等價值
+- 在 `generateImprovements` 的 prompt 中加入「方向指引」：不只說「分數低」，還說「需要加強 X 維度，因為 Y 維度已經夠好」
+
+#### 4. Reflection Pattern — 自我審查
+
+**2026 業界共識**：agent 在標記任務完成前，先自我審查一輪。
+
+**與 Nova 的關聯**：
+- Nova 的 Skill Lifecycle 已有 judge → improve 迴圈 ✅
+- **缺少**：forge 生成後的**即時自我檢查**（在送 judge 前先讓模型自己看一遍）
+- Reflection 的效果：加一步自我檢查可以避免明顯錯誤到達 judge，減少 improve 輪數
+
+**整合評估**：⚠️ 中等價值
+- 在 `forgeSkill` 完成後、送 judge 前，加一步 LLM self-review
+- 可能減少 improve 輪數從 3 → 1-2
+
+### 可行動項目
+
+| 優先序 | 項目 | 影響範圍 | 預估工作量 |
+|:------:|------|---------|:---------:|
+| 1 | 結構化 feedback — `generateImprovements` 回傳 `{line, issue, fix}` JSON | judge.js | ~15 行 prompt |
+| 2 | Few-shot 自動蒐集 — 歷史成功 forge 作為下次 few-shot | skill-forge.js | ~30 行 |
+| 3 | 方向性梯度 — feedback 包含「加強哪個維度」指引 | judge.js | ~10 行 prompt |
+| 4 | Forge 後 self-review（Reflection pattern） | lifecycle-orchestrator.js | ~20 行 |
+
+### 參考來源
+
+- [Self-Refine: Iterative Refinement with Self-Feedback (NeurIPS)](https://openreview.net/pdf?id=S37hOerQLB)
+- [DSPy: Programming—not Prompting—LMs](https://github.com/stanfordnlp/dspy)
+- [TextGrad: Automatic Differentiation via Text (Nature 2025)](https://medium.com/aiguys/textgrad-controlling-llm-behavior-via-text-2a82e2073d10)
+- [metaTextGrad: Optimizing Language Model Optimizers](https://arxiv.org/html/2505.18524)
+- [DSPy MIPROv2 Optimizer](https://dspy.ai/learn/optimization/optimizers/)
+- [Reflection Pattern Guide](https://fast.io/resources/reflection-pattern-self-correcting-agents/)
+- [Self-Refine Tutorial (LearnPrompting)](https://learnprompting.org/docs/advanced/self_criticism/self_refine)
+- [Meta-Prompting Protocol](https://arxiv.org/html/2512.15053)
