@@ -5,7 +5,8 @@ import { join } from 'path';
 import { tmpdir } from 'os';
 
 import { forgeSkill, improveSkill, deploySkill } from '/Users/sbu/.claude/scripts/skill-forge.js';
-import { checkLifecycle, getDeployGrades, pruneUnusedSkills } from '/Users/sbu/.claude/scripts/lifecycle-orchestrator.js';
+import { checkLifecycle, getDeployGrades } from '/Users/sbu/.claude/scripts/lifecycle-orchestrator.js';
+import { pruneUnusedSkills } from '/Users/sbu/.claude/scripts/skill-janitor.js';
 
 // ─── 測試環境 ─────────────────────────────────────────────────────────────────
 
