@@ -11,7 +11,7 @@ v0.30+ 採用「單腦 + 深度路由 + 輕量 Worker」模式（見 `docs/spec/
 **現有基礎**（不動的部分）：
 - Rules 14 個（全域行為規範，完整）
 - Skills 29 個（知識庫，含 nova-spec、closed-loop、nova-test）
-- Agents 0 個（planner/executor/reviewer，已適配新架構）
+- Agents 3 個（planner/executor/reviewer，已適配新架構）
 - Nova Server（hook dispatch + Flow Visualizer + SSE + metrics 可觀測層）
 - Guards — guards.js 統一模組（Bash 黑名單 + 元件保護）
 
