@@ -165,4 +165,5 @@ Phase 5: 回歸驗證 + 文件閉環（D0）
 | 1 | P0.1-P0.2, P1.1-P1.5 | Phase 0+1 完成。impact-analyzer.js 建立，574 tests pass |
 | 2 | P2.1-P2.7, P3.1-P3.3, P4.1-P4.4 | Phase 2-4 核心程式碼完成。598 tests pass |
 | 3 | P2.4, P2.8, P3.4, P4.5, P5.6 | 4 個手動驗證改自動化測試 + commit 閉環。30/30 完成 |
-| Q1 | 測試覆蓋：generateSuggestions | learner.js 加 _deps DI，補 6 個測試（rule/automation/fix/未達標/已有/空）。609 pass |
+| Q1 | 測試覆蓋：generateSuggestions | learner.js 加 _deps DI，補 6 個測試。609 pass |
+| Q2 | 測試覆蓋：saveScore | judge.js 加 fileOverride 參數，補 3 個測試（寫入/追加/自動建目錄）。612 pass。維度 1 清零 |

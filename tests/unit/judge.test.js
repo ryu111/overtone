@@ -11,6 +11,7 @@ import {
   shouldRun,
   getTrend,
   readScores,
+  saveScore,
 } from '/Users/sbu/.claude/scripts/judge.js';
 
 // ─── 測試輔助 ────────────────────────────────────────────────────────────────
@@ -419,5 +420,42 @@ describe('自我分離機制', () => {
     expect(result.exitCode).toBe(0);
     // 自我分離後立即退出，應在 3 秒內完成
     expect(elapsed).toBeLessThan(3000);
+  });
+});
+
+// ─── saveScore 測試 ──────────────────────────────────────────────────────────
+
+describe('saveScore', () => {
+  test('寫入 JSONL 並可被 readScores 讀回', () => {
+    const file = join(TMP_DIR, 'save-test-scores.jsonl');
+    const entry = { date: '2026-03-17', path: 'test/file.js', total: 85, grade: 'B' };
+
+    saveScore(entry, file);
+
+    const scores = readScores(file);
+    expect(scores).toHaveLength(1);
+    expect(scores[0].total).toBe(85);
+    expect(scores[0].grade).toBe('B');
+  });
+
+  test('多次寫入追加而非覆蓋', () => {
+    const file = join(TMP_DIR, 'save-append-scores.jsonl');
+
+    saveScore({ date: '2026-03-17', path: 'a.js', total: 90, grade: 'A' }, file);
+    saveScore({ date: '2026-03-17', path: 'b.js', total: 60, grade: 'D' }, file);
+
+    const scores = readScores(file);
+    expect(scores).toHaveLength(2);
+    expect(scores[0].path).toBe('a.js');
+    expect(scores[1].path).toBe('b.js');
+  });
+
+  test('目錄不存在時自動建立', () => {
+    const file = join(TMP_DIR, 'nested', 'deep', 'scores.jsonl');
+    saveScore({ date: '2026-03-17', path: 'x.js', total: 70 }, file);
+
+    const scores = readScores(file);
+    expect(scores).toHaveLength(1);
+    expect(scores[0].path).toBe('x.js');
   });
 });
