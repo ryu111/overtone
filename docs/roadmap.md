@@ -164,11 +164,11 @@ v0.30+ 採用「單腦 + 深度路由 + 輕量 Worker」模式（見 `docs/spec/
 ### R1 完成標準
 
 > Main Agent 完成一次 D2 任務後：
-> 1. metrics 記錄了任務深度和完成狀態
-> 2. flow events 被回饋迴路消費
-> 3. instinct 記錄了本次觀察
-> 4. 下次 session 的 context 包含上次學習結果
-> 5. maintainer agent 自動整理文件 + 同步 Notion + commit/push
+> 1. Maintainer 自動校正文件數字 + commit/push（R1.2 P1）
+> 2. Maintainer 檢查內容正確性 + 分析任務表現（R1.2 P2）
+> 3. instinct 記錄了本次觀察（R1.3）
+> 4. flow events 被回饋迴路消費，下次 session context 包含學習結果（R1.6）
+> 5. Notion 雙向同步（R1.2 P4）
 
 ---
 
