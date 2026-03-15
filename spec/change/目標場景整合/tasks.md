@@ -169,3 +169,4 @@ Phase 5: 回歸驗證 + 文件閉環（D0）
 | Q2 | 測試覆蓋：saveScore | judge.js 加 fileOverride 參數，補 3 個測試（寫入/追加/自動建目錄）。612 pass。維度 1 清零 |
 | Q3 | 安全：screenshot.js shell injection | execSync 字串拼接 → execFileSync 陣列參數。filePath 不再經過 shell 解析。612 pass |
 | Q4 | 效能：event-writer.js 無限增長 | nova-flow-events.jsonl 加定期截斷（每 1000 次寫入截斷到 500 行）。612 pass |
+| Q5 | 程式碼品質：biome --write 6 檔 | regex escape、optional chain、let→const、formatting。612 pass |

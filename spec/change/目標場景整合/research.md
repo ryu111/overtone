@@ -200,3 +200,112 @@ Self-healing software systems、autonomous bug repair agents、observability-dri
 - [Lumigo Copilot AI: Automate RCA and Remediation](https://lumigo.io/blog/lumigo-copilot-ai-launches-to-automate-root-cause-analysis-and-remediation/)
 - [Mezmo AI SRE for Root Cause Analysis](https://www.mezmo.com/blog/launching-an-agentic-sre-for-root-cause-analysis)
 - [ScienceLogic Automated Root Cause Analysis](https://sciencelogic.com/articles/automated-root-cause-analysis)
+
+---
+
+## R3 — 場景一：無人值守任務執行（2026-03-17）
+
+### 搜尋主題
+
+Autonomous agent daemon patterns、claude -p headless mode、Notion webhooks vs polling、task queue orchestration
+
+### 發現摘要
+
+#### 1. Mission Control — 開源 Claude Code 任務管理
+
+**核心概念**：背景 daemon 自動 poll tasks.json → spawn `claude -p` session → 併發控制 → 即時 dashboard。
+
+**與 Nova 高度相似的架構**：
+- Daemon polling loop（≈ Nova heartbeat.js）
+- Task 狀態管理（pending → running → done）（≈ Nova Notion 待做→進行中→已完成）
+- `claude -p` spawn with timeout（≈ Nova session-spawner.js）
+- 併發限制（Nova 目前無此機制）
+
+**Nova 缺少但 Mission Control 有的**：
+1. **Session Resilience** — timeout 或 max turns 後自動 re-spawn 延續 session，進度保留在 subtasks 中
+2. **Cost Tracking** — 每個 session 的 token 用量（input/output/cache read/cache creation）
+3. **併發控制** — 限制同時跑的 agent 數量，防止機器過載
+4. **Dashboard** — 即時監控所有 agent 狀態
+
+**整合評估**：✅ 高價值（3 個可行動項目）
+- Session Resilience 最重要 — heartbeat spawn 的 session timeout 後目前直接標失敗，應改為 re-spawn 延續
+- Cost Tracking 可從 `claude -p --output-format stream-json` 的 token 資訊提取
+- 併發控制簡單但必要 — 防止 heartbeat 同時 spawn 多個 session
+
+#### 2. Notion Webhooks（2025 新功能）
+
+**核心概念**：Notion 現在原生支援 Webhooks — database 變更時主動推送 HTTP POST，不需要 polling。
+
+**對 Nova 的影響**：
+- Nova heartbeat.js 目前用 **60 秒 polling**（每分鐘 query Notion API）
+- Webhook 可以改為 **事件驅動** — 有新任務時 Notion 主動通知 nova-server
+- 延遲從 0-60 秒降到 < 1 秒
+
+**架構變更**：
+```
+目前：heartbeat.js（每 60s poll） → Notion API → 有任務 → spawn
+Webhook：Notion → POST /webhook → nova-server → spawn
+```
+
+**整合評估**：⚠️ 中等價值
+- 需要 nova-server 加 `/webhook` endpoint
+- 需要 Notion 設定 webhook URL（需公網可達，或用 ngrok/cloudflare tunnel）
+- Polling 對目前使用場景已足夠（60s 延遲可接受）
+- **建議**：保留 polling 作為 fallback，webhook 作為可選加速
+
+#### 3. Agent Task Queue（Block 公司）
+
+**核心概念**：本地任務佇列，防止多個 agent 同時執行昂貴操作。
+
+**機制**：
+- 集中式鎖 — 同一時間只有一個 agent 可以執行
+- 排隊等待 — 後來的任務自動排隊
+- 防止 thrashing — 多 agent 並行時 CPU/memory 不會爆
+
+**與 Nova 的關聯**：
+- Nova 的 heartbeat + maintainer + learner + judge 理論上可能同時執行
+- 目前用 lockfile 防重複啟動，但沒有**排隊**機制
+- 如果未來加入多任務並行（heartbeat 同時處理 2+ 任務），需要 task queue
+
+**整合評估**：💡 低優先
+- 目前 heartbeat 是單任務序列執行，不需要 queue
+- R4 跨領域多任務時再考慮
+
+#### 4. Claude Code Headless Mode 最佳實踐（2025-2026）
+
+**業界統計**：60%+ 企業團隊用 headless mode 做至少一個 CI/CD 工作流。
+
+**最佳搭配**：
+- `--allowedTools` — 預先允許特定工具，避免權限提示阻塞
+- `--output-format stream-json` — 結構化輸出，包含 token 用量和結果
+- hooks — 在 session 中注入行為規則
+
+**與 Nova 的關聯**：
+- Nova 的 `spawnSession` 已用 `stream-json` ✅
+- **缺少** `--allowedTools` — heartbeat spawn 的 session 沒有預先放行工具，可能被權限提示卡住
+- **缺少** `--dangerously-skip-permissions` 的替代方案 — 需要精細的 allowedTools 清單
+
+**整合評估**：✅ 高價值
+- 在 spawnSession 加 `--allowedTools` 參數（Read, Edit, Write, Bash, Glob, Grep）— 約 5 行改動
+- 避免無人值守 session 被權限提示卡住
+
+### 可行動項目
+
+| 優先序 | 項目 | 影響範圍 | 預估工作量 |
+|:------:|------|---------|:---------:|
+| 1 | spawnSession 加 --allowedTools（防止權限卡住） | session-spawner.js | ~5 行 |
+| 2 | Session Resilience — timeout 後 re-spawn 延續 | heartbeat.js | ~40 行 |
+| 3 | Cost Tracking — 從 stream-json 提取 token 用量 | heartbeat.js | ~20 行 |
+| 4 | 併發控制 — 限制同時 spawn 的 session 數量 | heartbeat.js | ~15 行 |
+| 5 | Notion Webhook endpoint（可選加速） | server.js | ~30 行 |
+
+### 參考來源
+
+- [Mission Control (MeisnerDan)](https://github.com/MeisnerDan/mission-control)
+- [Mission Control HN Discussion](https://news.ycombinator.com/item?id=47165602)
+- [Swarm: Claude Code Dashboard](https://github.com/bschleifer/swarm)
+- [Agent Task Queue (Block)](https://github.com/block/agent-task-queue)
+- [Claude Code Headless Mode Docs](https://code.claude.com/docs/en/headless)
+- [Notion Webhooks API](https://developers.notion.com/reference/webhooks)
+- [Notion Webhooks Guide (2025)](https://softwareengineeringstandard.com/2025/08/31/notion-webhooks/)
+- [Notion API Version 2025-09-03](https://developers.notion.com/docs/upgrade-guide-2025-09-03)
