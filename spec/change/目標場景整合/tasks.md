@@ -183,3 +183,4 @@ Phase 5: 回歸驗證 + 文件閉環（D0）
 | Q16 | 研究實作：輕量趨勢分析（R9 發現） | 7 天 hook error 日計數 + 線性斜率，趨勢上升時簡報預警。620 pass |
 | Q17 | 研究實作：總時間上限（R11 發現） | executeTask 加 maxTotalTime，超時停止 --resume 重試。620 pass |
 | Q18 | 研究實作：Few-shot 自動蒐集（R8 發現） | buildForgePrompt 注入最近成功部署的 SKILL.md 作為範例。620 pass |
+| Q19 | 研究實作：Skill Pruning（R10 發現） | pruneUnusedSkills() 歸檔 unreferenced + auto-generated skills（>35 觸發），lifecycle 記錄。620 pass |
