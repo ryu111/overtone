@@ -196,11 +196,11 @@ version: "1.0"
 	});
 });
 
-// ─── 場景四：自我修復（前置驗證）───────────────────────────────────────────────
+// ─── 場景四：自我修復 ─────────────────────────────────────────────────────────
 
-import { parsePage } from "/Users/sbu/.claude/scripts/notion-tasks.js";
+import { parsePage, createTask } from "/Users/sbu/.claude/scripts/notion-tasks.js";
 
-describe("場景四前置：Notion 任務結構", () => {
+describe("場景四：自我修復", () => {
 	test("parsePage 提取必要欄位", () => {
 		const page = {
 			id: "abc-123",
@@ -216,6 +216,135 @@ describe("場景四前置：Notion 任務結構", () => {
 		expect(parsed.status).toBe("待做");
 		expect(parsed.priority).toBe("P1");
 		expect(parsed.type).toBe("bug");
+	});
+
+	test("createTask 建立正確的 Notion page 結構", async () => {
+		let capturedBody = null;
+
+		const result = await createTask(
+			"修復 hook timeout",
+			{ priority: "P1", type: "bug", description: "hook 超時 47 次" },
+			{
+				notionFetch: async (path, method, body) => {
+					capturedBody = body;
+					return { id: "new-page-123" };
+				},
+				getConfig: () => ({ database_id: "test-db-id" }),
+			},
+		);
+
+		expect(result.id).toBe("new-page-123");
+		expect(result.name).toBe("修復 hook timeout");
+
+		// 驗證 Notion API 請求結構
+		expect(capturedBody.parent.database_id).toBe("test-db-id");
+		expect(capturedBody.properties.Name.title[0].text.content).toBe("修復 hook timeout");
+		expect(capturedBody.properties.Status.select.name).toBe("待做");
+		expect(capturedBody.properties.Priority.select.name).toBe("P1");
+		expect(capturedBody.properties.Type.select.name).toBe("bug");
+		expect(capturedBody.children).toHaveLength(1);
+		expect(capturedBody.children[0].paragraph.rich_text[0].text.content).toContain("hook 超時 47 次");
+	});
+
+	test("createTask 無 description 時不加 children", async () => {
+		let capturedBody = null;
+
+		await createTask("簡單任務", {}, {
+			notionFetch: async (path, method, body) => {
+				capturedBody = body;
+				return { id: "page-456" };
+			},
+			getConfig: () => ({ database_id: "db-123" }),
+		});
+
+		expect(capturedBody.children).toEqual([]);
+	});
+});
+
+// ─── 場景三：新領域從零到穩定 ─────────────────────────────────────────────────
+
+import { detectCrossDomain } from "/Users/sbu/.claude/scripts/learner.js";
+
+describe("場景三：跨領域經驗遷移", () => {
+	test("相似工具序列被偵測到", () => {
+		const newBehavior = {
+			id: "youtube-reply",
+			pattern: "Read→Grep→Write→Bash",
+			polarity: 1,
+		};
+		const history = [
+			{
+				id: "trade-alert",
+				pattern: "Read→Grep→Write→Bash",
+				polarity: 1,
+				occurrences: [1, 2, 3],
+			},
+		];
+
+		// 完全相同 pattern 應該被跳過
+		const matches = detectCrossDomain(newBehavior, history);
+		expect(matches).toHaveLength(0);
+	});
+
+	test("部分重疊的工具序列被偵測（Jaccard + 序列）", () => {
+		const newBehavior = {
+			id: "youtube-analytics",
+			pattern: "Read→Grep→Edit→Bash→Read",
+			polarity: 1,
+		};
+		const history = [
+			{
+				id: "trade-monitor",
+				pattern: "Read→Grep→Edit→Write",
+				polarity: 1,
+				occurrences: [1, 2],
+			},
+			{
+				id: "unrelated-task",
+				pattern: "Agent→Agent→Agent",
+				polarity: 1,
+				occurrences: [5],
+			},
+		];
+
+		const matches = detectCrossDomain(newBehavior, history, 0.5);
+		expect(matches.length).toBeGreaterThanOrEqual(1);
+		expect(matches[0].id).toBe("trade-monitor");
+		expect(matches[0].similarity).toBeGreaterThan(0.5);
+	});
+
+	test("反模式不被比對", () => {
+		const newBehavior = {
+			id: "new-pattern",
+			pattern: "Read→Write",
+			polarity: 1,
+		};
+		const history = [
+			{
+				id: "anti-error",
+				pattern: "Read→Write",
+				polarity: -1,
+				occurrences: [1],
+			},
+		];
+
+		const matches = detectCrossDomain(newBehavior, history);
+		expect(matches).toHaveLength(0);
+	});
+
+	test("空歷史回傳空", () => {
+		expect(detectCrossDomain({ pattern: "A→B" }, [])).toEqual([]);
+		expect(detectCrossDomain({ pattern: "A→B" }, null)).toEqual([]);
+	});
+
+	test("閾值過濾", () => {
+		const newBehavior = { id: "x", pattern: "A→B→C", polarity: 1 };
+		const history = [
+			{ id: "y", pattern: "A→D→E", polarity: 1, occurrences: [1] },
+		];
+		// 低相似度不應匹配（只有 A 重疊）
+		const matches = detectCrossDomain(newBehavior, history, 0.8);
+		expect(matches).toHaveLength(0);
 	});
 });
 
