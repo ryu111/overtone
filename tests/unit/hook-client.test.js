@@ -177,6 +177,33 @@ describe('matcher 預設值（修改 1 驗證）', () => {
   });
 });
 
+describe('autoStart polling 改善', () => {
+  test('hook-client.js 不含 Bun.sleep(800)', async () => {
+    const { readFileSync } = await import('fs');
+    const src = readFileSync(join(CLAUDE_DIR, 'hooks/hook-client.js'), 'utf-8');
+    expect(src).not.toContain('Bun.sleep(800)');
+  });
+
+  test('hook-client.js 包含 pollHealth 函式', async () => {
+    const { readFileSync } = await import('fs');
+    const src = readFileSync(join(CLAUDE_DIR, 'hooks/hook-client.js'), 'utf-8');
+    expect(src).toContain('async function pollHealth(');
+  });
+
+  test('pollHealth 內有 maxRetries 和 intervalMs 參數', async () => {
+    const { readFileSync } = await import('fs');
+    const src = readFileSync(join(CLAUDE_DIR, 'hooks/hook-client.js'), 'utf-8');
+    expect(src).toContain('maxRetries');
+    expect(src).toContain('intervalMs');
+  });
+
+  test('autoStart 中 lockfile 等待也使用 pollHealth（非固定 sleep）', async () => {
+    const { readFileSync } = await import('fs');
+    const src = readFileSync(join(CLAUDE_DIR, 'hooks/hook-client.js'), 'utf-8');
+    expect(src).not.toContain('Bun.sleep(1000)');
+  });
+});
+
 describe('觀測型事件 error log 抑制', () => {
   test('有 fallback 的事件（PreToolUse:Bash）應記錄 error', () => {
     const needsFallback = hasFallback('PreToolUse', 'Bash');

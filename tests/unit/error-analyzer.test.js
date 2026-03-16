@@ -77,6 +77,105 @@ describe('clusterErrors', () => {
   });
 });
 
+// ─── isSelfHealingError 測試 ─────────────────────────────────────────────────
+
+describe('isSelfHealingError', () => {
+  let isSelfHealingError;
+
+  test('載入 isSelfHealingError', async () => {
+    const mod = await import('/Users/sbu/.claude/scripts/error-analyzer.js');
+    isSelfHealingError = mod.isSelfHealingError;
+    expect(typeof isSelfHealingError).toBe('function');
+  });
+
+  test('PreToolUse:Bash:all-failed → true（有 fallback）', async () => {
+    const mod = await import('/Users/sbu/.claude/scripts/error-analyzer.js');
+    expect(mod.isSelfHealingError('PreToolUse:Bash:all-failed')).toBe(true);
+  });
+
+  test('PreToolUse:Write:all-failed → true（有 fallback）', async () => {
+    const mod = await import('/Users/sbu/.claude/scripts/error-analyzer.js');
+    expect(mod.isSelfHealingError('PreToolUse:Write:all-failed')).toBe(true);
+  });
+
+  test('PreToolUse:Edit:all-failed → true（有 fallback）', async () => {
+    const mod = await import('/Users/sbu/.claude/scripts/error-analyzer.js');
+    expect(mod.isSelfHealingError('PreToolUse:Edit:all-failed')).toBe(true);
+  });
+
+  test('PostToolUse:observer:all-failed → false（觀測型，無 fallback）', async () => {
+    const mod = await import('/Users/sbu/.claude/scripts/error-analyzer.js');
+    expect(mod.isSelfHealingError('PostToolUse:observer:all-failed')).toBe(false);
+  });
+
+  test('PreToolUse:Bash:stdin → false（phase 不是 all-failed）', async () => {
+    const mod = await import('/Users/sbu/.claude/scripts/error-analyzer.js');
+    expect(mod.isSelfHealingError('PreToolUse:Bash:stdin')).toBe(false);
+  });
+
+  test('SessionStart:unknown → false（無 fallback）', async () => {
+    const mod = await import('/Users/sbu/.claude/scripts/error-analyzer.js');
+    expect(mod.isSelfHealingError('SessionStart:unknown')).toBe(false);
+  });
+});
+
+// ─── createRepairTaskIfNeeded 自癒過濾測試 ──────────────────────────────────
+
+describe('createRepairTaskIfNeeded 自癒過濾', () => {
+  test('全為自癒型錯誤 → 不建任務', async () => {
+    const createdTasks = [];
+    try { unlinkSync('/tmp/hook-error-tasks-created.json'); } catch {}
+
+    const errors = [
+      { event: 'PreToolUse:Bash', phase: 'all-failed', error: 'Unable to connect' },
+      { event: 'PreToolUse:Bash', phase: 'all-failed', error: 'Unable to connect' },
+      { event: 'PreToolUse:Bash', phase: 'all-failed', error: 'Unable to connect' },
+      { event: 'PreToolUse:Bash', phase: 'all-failed', error: 'Unable to connect' },
+      { event: 'PreToolUse:Bash', phase: 'all-failed', error: 'Unable to connect' },
+    ];
+
+    await createRepairTaskIfNeeded(errors, {
+      createTask: async (title) => createdTasks.push(title),
+      log: () => {},
+      existsSync,
+      readFileSync,
+      writeFileSync,
+    });
+
+    expect(createdTasks.length).toBe(0);
+    try { unlinkSync('/tmp/hook-error-tasks-created.json'); } catch {}
+  });
+
+  test('自癒 + 非自癒混合 → 只對非自癒建任務', async () => {
+    const createdTasks = [];
+    try { unlinkSync('/tmp/hook-error-tasks-created.json'); } catch {}
+
+    const errors = [
+      { event: 'PreToolUse:Bash', phase: 'all-failed', error: 'Unable to connect' },
+      { event: 'PreToolUse:Bash', phase: 'all-failed', error: 'Unable to connect' },
+      { event: 'PreToolUse:Bash', phase: 'all-failed', error: 'Unable to connect' },
+      { event: 'SessionStart', phase: 'unknown', error: 'init failed' },
+      { event: 'SessionStart', phase: 'unknown', error: 'init failed' },
+      { event: 'SessionStart', phase: 'unknown', error: 'init failed' },
+      { event: 'SessionStart', phase: 'unknown', error: 'init failed' },
+      { event: 'SessionStart', phase: 'unknown', error: 'init failed' },
+    ];
+
+    await createRepairTaskIfNeeded(errors, {
+      createTask: async (title) => createdTasks.push(title),
+      log: () => {},
+      existsSync,
+      readFileSync,
+      writeFileSync,
+    });
+
+    expect(createdTasks.length).toBe(1);
+    expect(createdTasks[0]).toContain('SessionStart');
+    expect(createdTasks[0]).not.toContain('PreToolUse:Bash');
+    try { unlinkSync('/tmp/hook-error-tasks-created.json'); } catch {}
+  });
+});
+
 // ─── createRepairTaskIfNeeded 測試 ───────────────────────────────────────────
 
 describe('createRepairTaskIfNeeded', () => {
@@ -164,7 +263,7 @@ describe('createRepairTaskIfNeeded', () => {
 
     // 應該跳過（24h 內已建過）
     expect(createdTasks.length).toBe(0);
-    expect(logs.some((l) => l.includes('已在 24h 內建過'))).toBe(true);
+    expect(logs.some((l) => l.includes('個已建過'))).toBe(true);
 
     // 清理
     try { unlinkSync(dedupFile); } catch {}
