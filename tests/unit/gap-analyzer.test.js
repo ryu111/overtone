@@ -56,7 +56,7 @@ describe('GAP_MAP 完整性', () => {
   });
 
   it('每個 GAP_MAP entry 都有必要欄位', () => {
-    for (const [type, mapping] of Object.entries(GAP_MAP)) {
+    for (const [, mapping] of Object.entries(GAP_MAP)) {
       expect(typeof mapping.category).toBe('string');
       expect(typeof mapping.repairHint).toBe('string');
       expect(typeof mapping.impactFactor).toBe('number');
