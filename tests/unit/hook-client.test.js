@@ -370,15 +370,16 @@ describe('error log 只在恢復鏈全失敗時記錄（all-failed 語意）', (
   });
 
   test('hook-client.js 中不含 phase:"dispatch" 或 phase:"retry" 的 logError 呼叫', async () => {
-    // 靜態驗證：確保生產碼只有 "all-failed" 和 "stdin" 兩種 phase
+    // 靜態驗證：確保生產碼只有 "fallback-failed" 和 "stdin" 兩種 phase
+    // 新邏輯：fallback-first 架構，phase 從 "all-failed" 改為 "fallback-failed"
     const { readFileSync } = await import('fs');
     const src = readFileSync(join(CLAUDE_DIR, 'hooks/hook-client.js'), 'utf-8');
     const logErrorCalls = [...src.matchAll(/logError\([^)]+,\s*"([^"]+)"\)/g)];
     const phases = logErrorCalls.map(m => m[1]);
     expect(phases).not.toContain('dispatch');
     expect(phases).not.toContain('retry');
-    expect(phases).not.toContain('fallback');
-    expect(phases).toContain('all-failed');
+    expect(phases).not.toContain('all-failed');
+    expect(phases).toContain('fallback-failed');
     expect(phases).toContain('stdin');
   });
 });
