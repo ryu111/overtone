@@ -461,6 +461,250 @@ describe('OVERTONE_SPAWNED 遞迴防護（整合）', () => {
   });
 });
 
+// ─── maxTotalTime 超時 break 驗證 ───────────────────────────────────────────
+
+describe('executeTask maxTotalTime 超時立即停止', () => {
+  let tmpDir;
+
+  beforeEach(() => { tmpDir = makeTmpDir(); });
+  afterEach(() => { rmSync(tmpDir, { recursive: true, force: true }); });
+
+  test('maxTotalTime 超過 → 不再 retry，立即 failed', async () => {
+    const stateFile = join(tmpDir, 'state.json');
+    writeState({ running: true, activeTask: { id: 't1', name: 'task' }, paused: false, consecutiveFailures: 0 }, stateFile);
+
+    let attempts = 0;
+    const deps = {
+      spawnSession: () => {
+        attempts++;
+        // 每次都回傳失敗 session（exit code 1）
+        return {
+          ok: true, child: {},
+          outcome: Promise.resolve({ exitCode: 1, stdout: JSON.stringify({ type: 'error', error: 'timeout' }), duration: 500 }),
+        };
+      },
+      completeTask: async () => {},
+    };
+
+    const result = await executeTask(
+      { id: 't1', name: '逾時任務', priority: 'P0' },
+      { _stateFile: stateFile, maxRetries: 5, maxTotalTime: 0 },  // maxTotalTime=0 → 立即超時
+      deps,
+    );
+
+    expect(result.status).toBe('failed');
+    expect(result.error).toContain('maxTotalTime exceeded');
+    // 應在第一次 attempt 就停止，不繼續 retry
+    expect(attempts).toBe(1);
+  });
+
+  test('maxTotalTime 未超過 → 正常 retry', async () => {
+    const stateFile = join(tmpDir, 'state.json');
+    writeState({ running: true, activeTask: { id: 't1', name: 'task' }, paused: false, consecutiveFailures: 0 }, stateFile);
+
+    let attempts = 0;
+    const deps = {
+      spawnSession: () => {
+        attempts++;
+        if (attempts === 2) {
+          // 第二次成功
+          return {
+            ok: true, child: {},
+            outcome: Promise.resolve({ exitCode: 0, stdout: JSON.stringify({ type: 'result', result: 'ok', session_id: 'sess-1' }), duration: 100 }),
+          };
+        }
+        return {
+          ok: true, child: {},
+          outcome: Promise.resolve({ exitCode: 1, stdout: JSON.stringify({ type: 'error', error: 'temp fail', session_id: 'sess-1' }), duration: 100 }),
+        };
+      },
+      completeTask: async () => {},
+    };
+
+    const result = await executeTask(
+      { id: 't1', name: '重試任務', priority: 'P0' },
+      { _stateFile: stateFile, maxRetries: 3, maxTotalTime: 60000 },
+      deps,
+    );
+
+    expect(result.status).toBe('success');
+    expect(attempts).toBe(2);
+  });
+});
+
+// ─── auto-unpause 冷卻恢復驗證 ──────────────────────────────────────────────
+
+describe('auto-unpause 冷卻恢復', () => {
+  let tmpDir;
+
+  beforeEach(() => { tmpDir = makeTmpDir(); });
+  afterEach(() => { rmSync(tmpDir, { recursive: true, force: true }); });
+
+  test('paused + pausedAt 過冷卻期 → 自動恢復，繼續 poll', async () => {
+    const stateFile = join(tmpDir, 'state.json');
+    // pausedAt 設為 10 秒前
+    const tenSecsAgo = new Date(Date.now() - 10000).toISOString();
+    writeState({
+      running: true, paused: true, consecutiveFailures: 3,
+      pausedAt: tenSecsAgo, activeTask: null,
+    }, stateFile);
+
+    const deps = {
+      listTasks: async () => [],
+      claimTask: async () => {},
+      completeTask: async () => {},
+    };
+
+    // pauseCooldownMs=5000（5 秒），已過 10 秒 → 應 unpause
+    const result = await poll({ _stateFile: stateFile, pauseCooldownMs: 5000 }, deps);
+    expect(result.action).toBe('idle'); // 不是 paused，而是 idle（因為無任務）
+
+    const state = readState(stateFile);
+    expect(state.paused).toBe(false);
+    expect(state.consecutiveFailures).toBe(0);
+  });
+
+  test('paused + pausedAt 未過冷卻期 → 仍然 paused', async () => {
+    const stateFile = join(tmpDir, 'state.json');
+    // pausedAt 設為 1 秒前
+    const oneSecAgo = new Date(Date.now() - 1000).toISOString();
+    writeState({
+      running: true, paused: true, consecutiveFailures: 3,
+      pausedAt: oneSecAgo, activeTask: null,
+    }, stateFile);
+
+    const deps = {
+      listTasks: async () => [],
+      claimTask: async () => {},
+      completeTask: async () => {},
+    };
+
+    // pauseCooldownMs=60000（60 秒），只過 1 秒 → 仍 paused
+    const result = await poll({ _stateFile: stateFile, pauseCooldownMs: 60000 }, deps);
+    expect(result.action).toBe('paused');
+  });
+
+  test('paused 但無 pausedAt（舊格式相容）→ 仍然 paused', async () => {
+    const stateFile = join(tmpDir, 'state.json');
+    writeState({
+      running: true, paused: true, consecutiveFailures: 3,
+      activeTask: null,
+    }, stateFile);
+
+    const deps = {
+      listTasks: async () => [],
+      claimTask: async () => {},
+      completeTask: async () => {},
+    };
+
+    const result = await poll({ _stateFile: stateFile, pauseCooldownMs: 0 }, deps);
+    expect(result.action).toBe('paused');
+  });
+
+  test('listTasks 失敗致 pause 時記錄 pausedAt', async () => {
+    const stateFile = join(tmpDir, 'state.json');
+    writeState({ running: true, paused: false, consecutiveFailures: 2, activeTask: null }, stateFile);
+
+    const deps = {
+      listTasks: async () => { throw new Error('Notion down'); },
+      claimTask: async () => {},
+      completeTask: async () => {},
+    };
+
+    await poll({ _stateFile: stateFile, maxConsecutiveFailures: 3 }, deps);
+    const state = readState(stateFile);
+    expect(state.paused).toBe(true);
+    expect(state.pausedAt).toBeTruthy();
+    // pausedAt 應是近幾秒內的時間戳
+    const ts = new Date(state.pausedAt).getTime();
+    expect(Date.now() - ts).toBeLessThan(5000);
+  });
+});
+
+// ─── stale activeTask 清理驗證 ──────────────────────────────────────────────
+
+describe('stale activeTask 清理', () => {
+  let tmpDir;
+
+  beforeEach(() => { tmpDir = makeTmpDir(); });
+  afterEach(() => { rmSync(tmpDir, { recursive: true, force: true }); });
+
+  test('超齡 activeTask → 自動清除 + resetTask', async () => {
+    const stateFile = join(tmpDir, 'state.json');
+    // claimedAt 設為 2 小時前
+    const twoHoursAgo = new Date(Date.now() - 7200000).toISOString();
+    writeState({
+      running: true, paused: false, consecutiveFailures: 0,
+      activeTask: { id: 'stale-1', name: '殘留任務', claimedAt: twoHoursAgo },
+    }, stateFile);
+
+    let resetCalled = null;
+    const deps = {
+      listTasks: async () => [],
+      claimTask: async () => {},
+      completeTask: async () => {},
+      resetTask: async (id, msg) => { resetCalled = { id, msg }; },
+    };
+
+    // staleTaskTimeout=3600000（1 小時），已過 2 小時 → 應清除
+    const result = await poll({ _stateFile: stateFile, staleTaskTimeout: 3600000 }, deps);
+    expect(result.action).toBe('idle');
+
+    const state = readState(stateFile);
+    expect(state.activeTask).toBeNull();
+    expect(resetCalled).not.toBeNull();
+    expect(resetCalled.id).toBe('stale-1');
+  });
+
+  test('未超齡 activeTask → 不清除', async () => {
+    const stateFile = join(tmpDir, 'state.json');
+    // claimedAt 設為 5 分鐘前
+    const fiveMinAgo = new Date(Date.now() - 300000).toISOString();
+    writeState({
+      running: true, paused: false, consecutiveFailures: 0,
+      activeTask: { id: 'active-1', name: '進行中任務', claimedAt: fiveMinAgo },
+    }, stateFile);
+
+    let resetCalled = false;
+    const deps = {
+      listTasks: async () => [],
+      claimTask: async () => {},
+      completeTask: async () => {},
+      resetTask: async () => { resetCalled = true; },
+    };
+
+    // staleTaskTimeout=3600000（1 小時），才過 5 分鐘 → 不清除
+    await poll({ _stateFile: stateFile, staleTaskTimeout: 3600000 }, deps);
+
+    const state = readState(stateFile);
+    expect(state.activeTask).not.toBeNull();
+    expect(resetCalled).toBe(false);
+  });
+
+  test('stale resetTask 失敗不崩潰，仍清除 activeTask', async () => {
+    const stateFile = join(tmpDir, 'state.json');
+    const longAgo = new Date(Date.now() - 7200000).toISOString();
+    writeState({
+      running: true, paused: false, consecutiveFailures: 0,
+      activeTask: { id: 'stale-2', name: '殘留任務2', claimedAt: longAgo },
+    }, stateFile);
+
+    const deps = {
+      listTasks: async () => [],
+      claimTask: async () => {},
+      completeTask: async () => {},
+      resetTask: async () => { throw new Error('Notion API error'); },
+    };
+
+    // 即使 resetTask 失敗，也要清除 local state
+    const result = await poll({ _stateFile: stateFile, staleTaskTimeout: 3600000 }, deps);
+    expect(result.action).toBe('idle');
+
+    const state = readState(stateFile);
+    expect(state.activeTask).toBeNull();
+  });
+});
+
 // ─── 空 catch 修復驗證 ────────────────────────────────────────────────────────
 
 describe('空 catch 修復驗證', () => {
