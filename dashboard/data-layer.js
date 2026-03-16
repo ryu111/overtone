@@ -56,8 +56,8 @@ function onDataUpdate(fn) {
   DATA._listeners.push(fn);
 }
 
-// 30 秒自動刷新
-setInterval(loadAllData, 30000);
+// 15 秒自動刷新
+setInterval(loadAllData, 15000);
 
 // ── 共用工具函式 ──
 

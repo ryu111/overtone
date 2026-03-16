@@ -174,12 +174,12 @@ if (currentIdx >= 0 && current) {
       .loop-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px; }
       .loop-card { background: rgba(124,58,237,0.06); border: 1px solid rgba(124,58,237,0.15); border-radius: 10px; padding: 12px; text-align: center; }
       .loop-card .lc-label { font-size: 11px; color: var(--muted, #6b7280); margin-bottom: 4px; }
-      .loop-card .lc-value { font-size: 24px; font-weight: 700; }
+      .loop-card .lc-value { font-size: 24px; font-weight: 700; transition: color 0.3s; }
       .loop-card .lc-sub { font-size: 10px; color: var(--muted, #6b7280); margin-top: 2px; }
       .loop-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
       .loop-steps { display: flex; flex-direction: column; gap: 6px; }
       .loop-step-item { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 8px; font-size: 12px; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.05); transition: all 0.3s; }
-      .loop-step-item.step-active { border-color: #7c3aed; background: rgba(124,58,237,0.12); }
+      .loop-step-item.step-active { border-color: #7c3aed; background: rgba(124,58,237,0.12); box-shadow: 0 0 8px rgba(124,58,237,0.2); }
       .loop-step-item .step-icon { font-size: 16px; width: 24px; text-align: center; }
       .loop-notion-list { font-size: 12px; }
       .loop-task { padding: 6px 10px; margin-bottom: 4px; border-radius: 6px; background: rgba(0,0,0,0.2); border-left: 3px solid #fbbf24; }
@@ -329,6 +329,6 @@ if (currentIdx >= 0 && current) {
   }
 
   fetchLoop();
-  setInterval(fetchLoop, 5000);
+  setInterval(fetchLoop, 3000);
   setInterval(tickLoop, 1000);
 })();
