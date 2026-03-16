@@ -19,13 +19,10 @@ describe('judge hook scoring', () => {
     expect(score).toBe(50);
   });
 
-  test('metrics.js（utility 模組）確定性分 = 50', () => {
+  test('metrics.js（utility 模組）確定性分 = 40', () => {
     const score = scoreDeterministic(join(modulesDir, 'metrics.js'), 'hook');
-    // export(10) + factory function(10) + try 不需要但有 error handling...
-    // 實際：export function createMetrics → export(10) + createXxx factory(10)
-    // 無 try-catch(0) + 行數 10-300(10) + 無 console.log(10) = 40
-    // 除非 metrics.js 有 try block...
-    expect(score).toBeGreaterThanOrEqual(40);
+    // export(10) + createMetrics factory(10) + 無 try-catch(0) + 行數 10-300(10) + 無 console.log(10) = 40
+    expect(score).toBe(40);
   });
 
   test('flow-observer.js 有 on handler 得分', () => {
