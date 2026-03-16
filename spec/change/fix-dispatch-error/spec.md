@@ -1,101 +1,134 @@
-# 修復 hook error: PreToolUse:Bash:dispatch
+# 修復 dispatch fallback 順序（fast-fallback-first）
 
 ## 動機（Why）
 
-- **問題**：nova-server 週期性 crash 導致 hook dispatch 失敗，每小時約 3 次，今日累計 36 次。crash 根因是 `SELF_DRIVE_PROMPT` 使用 JS template literal，其中的 Markdown 反引號若未正確 escape 即造成語法錯誤
-- **目標**：消除 template literal 脆弱性、加強 server 恢復能力、降低錯誤噪音
-- **不做的代價**：error-analyzer 持續建立 P1 Notion 任務、heartbeat 不斷嘗試修復、觀測型事件（PostToolUse, SubagentStop）在 crash 期間丟失
+- **問題**：hook-client.js dispatch 失敗時，有本地 fallback 的事件（PreToolUse:Bash/Write/Edit）仍先等 autoStart 恢復 server（6+ 秒），再 retry dispatch，最後才 fallback。8 次 PreToolUse:Bash dispatch fail（2 天內），最大 burst 27 次連續失敗（3/16 14:15 server 宕機）。
+- **目標**：有 fallback 的事件 dispatch 失敗後立即 fallback（<15ms），背景觸發 autoStart；無 fallback 的觀測型事件 dispatch 失敗後直接退出，背景觸發 autoStart。
+- **不做的代價**：每次 server 宕機，guard 類 hook 延遲 6+ 秒才生效，期間 Claude Code 工具執行被阻塞。
 
 ## 範圍
 
 ### In-scope
 
-- 將 `SELF_DRIVE_PROMPT` 從 template literal 搬至外部 Markdown 檔案
-- `pollHealth` 等待時間從 1 秒增至 2-3 秒（指數退避）
-- server.js 加 `uncaughtException` / `unhandledRejection` handler
-- error-analyzer.js 對 `dispatch` phase 錯誤標記為自癒型
+- hook-client.js 錯誤恢復路徑重排：有 fallback → 先 fallback 再背景 autoStart
+- hook-client.js autoStart 加入 debugLog（每個步驟記錄）
+- nova-server.log 使用 append 模式保留歷史
 
 ### Out-of-scope
 
-- 重構 server.js 整體架構
-- 修改 heartbeat loop 邏輯
-- 修改 hook-client.js 的 fallback 機制（已正常運作）
+- 不改 server.js 架構
+- 不改 guards.js fallback 函式本身
+- 不改 FALLBACK_MODULES 對應表
+- 不追查 server 宕機根因（本次只優化恢復路徑）
 
 ## 使用者故事
 
-身為 nova 系統的 Main Agent，我希望 hook dispatch 不因 server crash 而間歇性失敗，以便觀測型事件不丟失、error 噪音不觸發假 P1 任務。
+身為 nova 系統的 hook-client，我希望 dispatch 失敗時優先用本地 fallback 回應（<15ms），以便 guard 保護不因 server 宕機而延遲 6+ 秒。
 
 ## 行為規格
 
 ### 正常路徑
 
-1. server.js 啟動時 `readFileSync('~/.claude/data/self-drive-prompt.md')` 讀取 prompt → 存入變數
-2. heartbeat self-drive 使用讀取的 prompt，不再有 template literal escape 風險
-3. hook-client dispatch 失敗 → autoStart → pollHealth 等待 2-3 秒 → retry 成功
+1. tryDispatch() 成功 → output(result) → 結束（不變）
 
-### 錯誤路徑
+### 錯誤路徑：有 fallback 的事件（PreToolUse:Bash/Write/Edit）
 
-| 錯誤情境 | 預期行為 |
-|---------|---------|
-| self-drive-prompt.md 不存在 | server.js 啟動不失敗，self-drive 功能跳過（log 警告） |
-| server 遇到未捕捉 exception | 記錄錯誤到 /tmp/nova-server.log，不 crash |
-| server 遇到 unhandledRejection | 記錄錯誤到 /tmp/nova-server.log，不 crash |
-| pollHealth 3 秒內 server 仍未就緒 | 走 fallback（現有行為不變） |
+1. tryDispatch() 失敗
+2. 立即呼叫 tryFallback() → output 本地 guard 結果（<15ms）
+3. 背景觸發 autoStart()（不 await，不阻塞）
+4. 結束
+
+### 錯誤路徑：無 fallback 的觀測型事件（PostToolUse/SubagentStop 等）
+
+1. tryDispatch() 失敗
+2. 背景觸發 autoStart()（不 await，不阻塞）
+3. 直接退出（觀測型事件丟失可接受，server 恢復後自動補上）
 
 ### 邊界條件
 
-- self-drive-prompt.md 檔案為空 → self-drive session 收到空 prompt，5 分鐘 timeout 後結束
-- 多個 uncaughtException 連續觸發 → 每次都記錄，不累積 crash
+- tryFallback 本身也失敗 → logError 記錄 + 背景 autoStart → 退出（不阻塞工具）
+- autoStart 背景執行時 process.exit → autoStart 被中斷（可接受，下次 hook 觸發時再嘗試）
 
 ## 資料模型
 
-### 新增檔案
+### 輸入
 
-| 欄位 | 說明 |
-|------|------|
-| `~/.claude/data/self-drive-prompt.md` | 純 Markdown 文字，self-drive session 的 prompt 內容 |
+N/A（不新增資料結構）
 
-### 修改檔案
+### 輸出
 
-| 檔案 | 變更 |
-|------|------|
-| `~/.claude/hooks/server.js` | 刪除 `SELF_DRIVE_PROMPT` 常數，改用 `readFileSync` 讀外部檔 + 加 process error handler |
-| `~/.claude/hooks/hook-client.js` | `pollHealth` 改用指數退避，總等待時間增至 ~3 秒 |
-| `~/.claude/scripts/error-analyzer.js` | `isSelfHealingError` 擴大涵蓋 `dispatch` phase |
+N/A（不新增資料結構）
+
+### 儲存
+
+- `/tmp/hook-client-debug.log`：autoStart debugLog 訊息新增（現有格式不變）
+- `/tmp/nova-server.log`：改為 append 模式保留歷史 crash log
 
 ## 介面契約
 
-無新增 API。現有 `/dispatch`、`/health` 介面不變。
+### hook-client.js 錯誤恢復（虛擬碼）
+
+```javascript
+// 改前：dispatch fail → await autoStart(6s) → retry → fallback
+// 改後：dispatch fail → fallback(15ms) → 背景 autoStart
+
+try {
+  output(await tryDispatch());
+} catch (e1) {
+  const needsFallback = hasFallback(eventType, matcher);
+  if (needsFallback) {
+    await tryFallback(eventType, matcher, input);
+  }
+  // 背景啟動 server（不阻塞）
+  autoStart().catch(err => debugLog(`[autoStart] background fail: ${err.message}`));
+}
+```
+
+### autoStart debugLog 新增
+
+```
+[autoStart] start health-check
+[autoStart] health-check: nova-server alive / port-occupied / no-response
+[autoStart] lockfile: exists(stale) / exists(valid) / absent
+[autoStart] spawn: pid={N}
+[autoStart] pollHealth: attempt {i} delay={N}ms result={ok|fail}
+[autoStart] complete: {success|fail} ({N}ms)
+```
 
 ## 非功能需求
 
 | 維度 | 要求 |
 |------|------|
-| 效能 | pollHealth 總等待從 1 秒 → 3.1 秒（可接受，僅 server 重啟時觸發） |
-| 安全 | process error handler 不隱藏錯誤，只防 crash |
-| 相容性 | N/A（nova 不做向後相容） |
+| 效能 | 有 fallback 的事件恢復時間：6000ms+ → <15ms |
+| 效能 | hook-client 總執行時間 budget：<50ms（含 fallback 路徑） |
+| 安全 | fallback 語意一致：dispatch 成功用 server 結果，失敗用本地 evaluateBash/evaluateEdit |
+| 可觀測性 | autoStart 每步都有 debugLog，crash 分析不再盲區 |
 
 ## 依賴
 
 | 方向 | 模組 | 說明 |
 |------|------|------|
-| 上游 | `~/.claude/data/self-drive-prompt.md` | server.js 啟動時讀取 |
-| 下游 | heartbeat loop | 使用讀取的 prompt 內容 |
-| 下游 | error-analyzer.js | maintainer.js Phase 3c 呼叫 |
+| 修改 | `~/.claude/hooks/hook-client.js` | 主要修改目標 |
+| 上游 | `~/.claude/hooks/modules/guards.js` | fallback 函式來源（不修改） |
+| 下游 | `/tmp/hook-client-debug.log` | debugLog 輸出 |
+| 下游 | `/tmp/nova-server.log` | autoStart spawn 日誌 |
 
 ## 驗收標準
 
-- [ ] `SELF_DRIVE_PROMPT` template literal 從 server.js 移除，改讀外部檔案
-- [ ] server.js 有 `uncaughtException` 和 `unhandledRejection` handler
-- [ ] `pollHealth` 總等待時間 >= 3 秒
-- [ ] `isSelfHealingError('PreToolUse:Bash:dispatch')` 回傳 `true`
+- [ ] dispatch 失敗 + 有 fallback → 先呼叫 tryFallback，不先 await autoStart
+- [ ] dispatch 失敗 + 無 fallback → 不呼叫 tryFallback，背景 autoStart
+- [ ] autoStart 在錯誤恢復路徑中不被 await（背景執行）
+- [ ] autoStart 函式內每個分支有 debugLog
+- [ ] nova-server.log 使用 append 模式（openSync flag 為 'a'）
+- [ ] tryFallback 失敗時記錄 logError
 - [ ] `bun test` 全部通過
-- [ ] self-drive-prompt.md 不存在時 server 仍能正常啟動
+- [ ] 現有 fallback 語意不變（block/allow 結果一致）
 
 ## 風險
 
 | 風險 | 機率 | 影響 | 緩解策略 |
 |------|:----:|:----:|---------|
-| readFileSync 路徑錯誤導致 server 啟動失敗 | 低 | 高 | try-catch 包裹，失敗時 prompt = 空字串 + log 警告 |
-| process error handler 吞掉致命錯誤 | 低 | 中 | handler 只記錄不吞（console.error），真正的語法錯誤仍在啟動時 crash |
-| pollHealth 等太久影響首次 hook 延遲 | 低 | 低 | 僅 server 未啟動時觸發，一般 session 已在跑 |
+| autoStart 背景執行時 process.exit 中斷 spawn | 中 | 低 | 可接受：下次 hook 觸發時 autoStart 再執行 |
+| tryFallback 的 import() 阻塞超過 15ms budget | 低 | 低 | guards.js 已被 Bun import cache，首次 import ~5ms，後續 <1ms |
+| 失去 retry 機會（server 瞬斷但快速恢復的場景） | 低 | 低 | 瞬斷場景極少（2 天數據中 0 次瞬斷成功 retry）；背景 autoStart 確保下次 dispatch 成功 |
+| 背景 autoStart 的 catch 吞掉重要錯誤 | 低 | 低 | debugLog 記錄所有 autoStart 步驟，不會完全靜默 |

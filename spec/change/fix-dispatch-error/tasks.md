@@ -1,90 +1,166 @@
-# 修復 hook error: PreToolUse:Bash:dispatch — 任務拆分
+# 修復 dispatch fallback 順序 -- 任務清單
 
-## Phase 1：根因修復 + 防護（parallel）
+## 子任務依賴分析
 
-4 個子任務操作不同檔案，無依賴，全部並行。
+```
+Phase 1（串行）: Task 1 — hook-client.js 修改（同一檔案 3 處變更）
+Phase 2（串行）: Task 2 — 測試驗證（依賴 Phase 1）
+```
 
-### T1: 建立 self-drive-prompt.md
-- **執行者**：executor
-- **檔案**：`~/.claude/data/self-drive-prompt.md`（新增）
-- **內容**：從 server.js L53-78 提取 SELF_DRIVE_PROMPT 內容，去除所有 `\`` escape，保持純 Markdown
-- **驗收**：檔案存在且內容與原 prompt 語意一致（反引號為原生 Markdown，非 escaped JS）
+---
 
-### T2: server.js 改讀外部檔案 + process error handler
-- **執行者**：executor
-- **檔案**：`~/.claude/hooks/server.js`（修改）
-- **步驟**：
-  1. 刪除 L53-78 的 `const SELF_DRIVE_PROMPT = \`...\``
-  2. 替換為 try-catch 的 `readFileSync`：
-     ```js
-     let SELF_DRIVE_PROMPT = '';
+## Phase 1：hook-client.js 修改（串行）
+
+### Task 1：重排錯誤恢復路徑 + autoStart debugLog
+
+**執行者**：executor（sonnet）
+**檔案**：`~/.claude/hooks/hook-client.js`
+
+#### 步驟
+
+1. **重寫 L170-203 的錯誤恢復路徑**，從：
+
+   ```javascript
+   // 現在：dispatch fail → await autoStart(6s) → retry → fallback
+   try {
+     output(await tryDispatch());
+   } catch (e1) {
+     const needsFallback = hasFallback(eventType, matcher);
      try {
-       SELF_DRIVE_PROMPT = readFileSync(join(CLAUDE_DIR, 'data/self-drive-prompt.md'), 'utf-8');
+       await autoStart();
+       if (needsFallback) {
+         try { output(await tryDispatch()); }
+         catch (e2) { if (!await tryFallback(...)) logError(...); }
+       }
+     } catch (autoStartErr) {
+       if (needsFallback && !await tryFallback(...)) logError(...);
+     }
+   }
+   ```
+
+   改為：
+
+   ```javascript
+   // 改後：dispatch fail → fallback(15ms) → 背景 autoStart
+   try {
+     const result = await tryDispatch();
+     const t2 = performance.now();
+     debugLog(`[${eventType}:${matcher}] ok stdin=${...}ms dispatch=${...}ms ...`);
+     output(result);
+   } catch (e1) {
+     const needsFallback = hasFallback(eventType, matcher);
+     debugLog(`[${eventType}:${matcher}] dispatch fail ...`);
+
+     // 有 fallback → 立即本地處理
+     if (needsFallback) {
+       const fell = await tryFallback(eventType, matcher, input);
+       if (!fell) {
+         logError(`${eventType}:${matcher}`, e1, "fallback-failed");
+       }
+       debugLog(`[${eventType}:${matcher}] fallback ${fell ? 'ok' : 'fail'} (${...}ms)`);
+     }
+
+     // 背景恢復 server（不阻塞當前 hook）
+     autoStart().catch(err =>
+       debugLog(`[${eventType}:${matcher}] background autoStart fail: ${err.message}`)
+     );
+   }
+   ```
+
+2. **autoStart 函式內加 debugLog**，在每個分支加記錄：
+
+   - health check 開始/結果（alive / port-occupied / no-response）
+   - lockfile 狀態（stale / valid / absent）
+   - spawn 開始 + PID
+   - pollHealth 每次嘗試結果
+   - 完成耗時
+
+   具體修改：
+   ```javascript
+   async function autoStart() {
+     const t = performance.now();
+     debugLog('[autoStart] start');
+
+     // health check
+     try {
+       debugLog('[autoStart] health-check...');
+       const h = await fetch('http://127.0.0.1:3457/health', { signal: AbortSignal.timeout(1000) });
+       if (h.ok) {
+         const body = await h.json();
+         if (body.status === 'ok' && body.title === 'nova-server') {
+           debugLog(`[autoStart] nova-server alive (${(performance.now()-t).toFixed(0)}ms)`);
+           return;
+         }
+       }
+       debugLog(`[autoStart] port occupied by non-nova-server (${(performance.now()-t).toFixed(0)}ms)`);
+       return;
      } catch (e) {
-       console.error('[server] self-drive-prompt.md 讀取失敗:', e.message);
+       debugLog(`[autoStart] no response: ${e.message}`);
      }
-     ```
-  3. 在檔案末尾（export 之前）加 process error handler：
-     ```js
-     process.on('uncaughtException', (err) => {
-       console.error('[server] uncaughtException:', err.message, err.stack);
-     });
-     process.on('unhandledRejection', (reason) => {
-       console.error('[server] unhandledRejection:', reason);
-     });
-     ```
-- **驗收**：server.js 不含 template literal prompt；readFileSync 有 try-catch；process handler 已加
 
-### T3: hook-client.js pollHealth 指數退避
-- **執行者**：executor
-- **檔案**：`~/.claude/hooks/hook-client.js`（修改）
-- **步驟**：
-  1. `pollHealth` 改為指數退避：
-     ```js
-     async function pollHealth({ maxRetries = 4, baseMs = 200 } = {}) {
-       for (let i = 0; i < maxRetries; i++) {
-         const delay = baseMs * Math.pow(2, i); // 200, 400, 800, 1600
-         await Bun.sleep(delay);
-         try {
-           const h = await fetch('http://127.0.0.1:3457/health', { signal: AbortSignal.timeout(1000) });
-           if (h.ok) {
-             const body = await h.json();
-             if (body.status === 'ok' && body.title === 'nova-server') return true;
-           }
-         } catch {}
+     // lockfile
+     if (existsSync(LOCK_FILE)) {
+       if (isLockfileStale()) {
+         debugLog('[autoStart] stale lockfile, removing');
+         try { unlinkSync(LOCK_FILE); } catch {}
+       } else {
+         debugLog('[autoStart] valid lockfile, polling...');
+         await pollHealth();
+         debugLog(`[autoStart] poll done (${(performance.now()-t).toFixed(0)}ms)`);
+         return;
        }
-       return false;
+     } else {
+       debugLog('[autoStart] no lockfile');
      }
-     ```
-- **驗收**：pollHealth 總等待 >= 3 秒（200+400+800+1600 = 3000ms）
 
-### T4: error-analyzer.js 擴充自癒判定
-- **執行者**：executor
-- **檔案**：`~/.claude/scripts/error-analyzer.js`（修改）
-- **步驟**：
-  1. `isSelfHealingError` 擴充判定邏輯，`dispatch` phase 且事件有 fallback → 自癒：
-     ```js
-     export function isSelfHealingError(clusterKey) {
-       const parts = clusterKey.split(":");
-       const phase = parts[parts.length - 1];
-       const eventKey = parts.slice(0, -1).join(":");
-       // all-failed 和 dispatch phase 都視為自癒（前提：該事件有 fallback）
-       if (phase === "all-failed" || phase === "dispatch") {
-         return FALLBACK_EVENTS.has(eventKey);
-       }
-       return false;
+     // spawn
+     try {
+       writeFileSync(LOCK_FILE, String(process.pid));
+       const logFd = openSync('/tmp/nova-server.log', 'a');
+       const proc = Bun.spawn([join(CLAUDE_DIR, 'bin/nova-server'), join(CLAUDE_DIR, 'hooks/server.js')], {
+         stdio: ['ignore', logFd, logFd],
+         detached: true,
+       });
+       proc.unref();
+       debugLog(`[autoStart] spawned pid=${proc.pid}`);
+       const healthy = await pollHealth({ maxRetries: 5, baseMs: 200 });
+       debugLog(`[autoStart] ${healthy ? 'ready' : 'timeout'} (${(performance.now()-t).toFixed(0)}ms)`);
+     } finally {
+       try { unlinkSync(LOCK_FILE); } catch {}
      }
-     ```
-- **驗收**：
-  - `isSelfHealingError('PreToolUse:Bash:all-failed')` === true（原有行為不變）
-  - `isSelfHealingError('PreToolUse:Bash:dispatch')` === true（新增）
-  - `isSelfHealingError('SessionStart:dispatch')` === false（無 fallback 不標自癒）
+   }
+   ```
 
-## Phase 2：測試驗收（sequential，依賴 Phase 1）
+3. **確認 nova-server.log 為 append 模式**：現有 `openSync('/tmp/nova-server.log', 'a')` 已是 append，無需修改。
 
-### T5: 執行測試
-- **執行者**：executor
-- **步驟**：
-  1. `bun test` 全部通過
-  2. 確認 error-analyzer 測試覆蓋新行為
-- **驗收**：0 fail
+#### 驗收
+
+- [ ] 錯誤恢復路徑中 `autoStart()` 不被 `await`（以 `.catch()` 背景執行）
+- [ ] 有 fallback 事件的恢復路徑先呼叫 `tryFallback`，再背景 autoStart
+- [ ] 無 fallback 事件只做背景 autoStart
+- [ ] autoStart 內每個分支有 debugLog
+- [ ] `.catch()` 捕捉背景 autoStart 的所有錯誤（Pre-mortem #1 防護）
+
+---
+
+## Phase 2：測試驗證（依賴 Phase 1）
+
+### Task 2：靜態驗證 + bun test
+
+**執行者**：executor（sonnet）
+**檔案**：`~/projects/overtone/tests/unit/hook-client.test.js`
+
+#### 步驟
+
+1. 新增 `describe('dispatch fallback 順序')` 測試群組：
+   - 靜態驗證：錯誤恢復路徑中 `autoStart()` 後接 `.catch(`（背景執行模式）
+   - 靜態驗證：`tryFallback` 出現在 `autoStart` 之前（有 fallback 時先 fallback）
+   - 靜態驗證：autoStart 函式內含至少 5 處 `debugLog`
+
+2. 確認現有測試不受影響：`bun test` exit code 0
+
+#### 驗收
+
+- [ ] 新增測試全部通過
+- [ ] 現有測試不受影響
+- [ ] `bun test` exit code 0

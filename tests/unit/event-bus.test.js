@@ -128,7 +128,7 @@ describe('destroyModule', () => {
       subscribe: ['hb:tick'],
       init: async (ctx) => { ctx.timer('hb:tick', 20); },
       handler: async () => {},
-      destroy: async () => { destroyCalled.push(true); },
+      destroy: async (ctx) => { ctx.clearTimer('hb:tick'); destroyCalled.push(true); },
     };
 
     await bus.registerModule(mod);
