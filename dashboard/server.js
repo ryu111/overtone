@@ -161,6 +161,28 @@ async function handleApi(path, req) {
       return j({ triggered: true });
     }
 
+    // LLM 健康狀態
+    if (path === "/api/llm") {
+      try {
+        const r = await fetch("http://localhost:8000/v1/models", { signal: AbortSignal.timeout(3000) });
+        if (!r.ok) return j({ status: "offline" });
+        const data = await r.json();
+        const model = data.data?.[0];
+        return j({ status: "online", model: model?.id || "unknown", created: model?.created });
+      } catch { return j({ status: "offline" }); }
+    }
+
+    // Session 日誌（會議記錄用）
+    if (path === "/api/session-log") {
+      const eventsFile = "/tmp/nova-flow-events.jsonl";
+      const events = readJsonl(eventsFile);
+      // 取最近 session 的事件
+      if (events.length === 0) return j([]);
+      const maxSid = Math.max(...events.map(e => e.sid || 0));
+      const sessionEvents = events.filter(e => e.sid === maxSid);
+      return j(sessionEvents);
+    }
+
     return j({ error: "Not Found" }, 404);
   } catch (e) { return err(e); }
 }

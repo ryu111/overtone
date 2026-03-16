@@ -453,6 +453,7 @@
     <button class="tab" data-tab="tab-datatable">📋 資料表</button>
     <button class="tab" data-tab="tab-monitor">📡 監控</button>
     <button class="tab" data-tab="tab-control">🎛 控制中心</button>
+    <button class="tab" data-tab="tab-notes">📝 會議記錄</button>
   </div>
 
   <!-- Tab 1: 儀表板 -->
@@ -613,9 +614,19 @@
       </div>
     </div>
   </div>
+
+  <!-- Tab 5: 會議記錄 -->
+  <div class="tab-content" id="tab-notes">
+    <div class="glass-panel">
+      <div id="meeting-notes" style="white-space: pre-wrap; line-height: 1.8; font-size: 13px; max-width: 760px; margin: 0 auto;"></div>
+    </div>
+  </div>
 </div>
 
+<script src="/data-layer.js"></script>
 <script>
+// data-layer.js 提供：fetchApi、postApi、loadAllData、onDataUpdate、gradeColor、formatUptime、relativeTime
+
 // ── 粒子生成 ──
 (function generateParticles() {
   const container = document.getElementById('particlesContainer');
@@ -640,16 +651,6 @@
     container.appendChild(p);
   }
 })();
-
-// ── 共用 fetch ──
-async function fetchApi(ep) {
-  try {
-    const r = await fetch(`/api/${ep}`, { signal: AbortSignal.timeout(5000) });
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    const ct = r.headers.get('content-type') || '';
-    return ct.includes('json') ? await r.json() : await r.text();
-  } catch (e) { console.error(`API ${ep}:`, e.message); return null; }
-}
 
 // ── Tab 系統 ──
 function initTabs(storageKey) {
@@ -676,11 +677,7 @@ function showToast(msg) {
   setTimeout(() => t.classList.remove('show'), 3200);
 }
 
-// ── Grade helpers ──
-function gradeColor(g) {
-  const m = { A:'#10b981', B:'#3b82f6', C:'#f59e0b', D:'#f97316', F:'#ef4444' };
-  return m[g] || '#94a3b8';
-}
+// ── Grade helpers（gradeColor 由 data-layer.js 提供）──
 function gradeBg(g) {
   const m = { A:'rgba(16,185,129,0.15)', B:'rgba(59,130,246,0.15)', C:'rgba(245,158,11,0.15)', D:'rgba(249,115,22,0.15)', F:'rgba(239,68,68,0.15)' };
   return m[g] || 'rgba(148,163,184,0.15)';
@@ -714,40 +711,22 @@ function animateCount(el, target, suffix) {
   requestAnimationFrame(update);
 }
 
-// ── 全域資料 ──
-let DATA = {};
+// ── 全域資料（指向 data-layer.js 的 DATA 物件）──
+// DATA 由 data-layer.js 定義並管理
 
-// ── 載入全部 API ──
-async function loadAll() {
-  const [health, components, scores, errors, scripts, git, sessions, behaviors, locks, improvements, scenarios, daemons] =
-    await Promise.all([
-      fetchApi('health'),
-      fetchApi('components'),
-      fetchApi('scores'),
-      fetchApi('errors'),
-      fetchApi('scripts'),
-      fetchApi('git'),
-      fetchApi('sessions'),
-      fetchApi('behaviors'),
-      fetchApi('locks'),
-      fetchApi('improvements'),
-      fetchApi('scenarios'),
-      fetchApi('daemons'),
-    ]);
-
-  DATA = { health, components, scores, errors, scripts, git, sessions, behaviors, locks, improvements, scenarios, daemons };
-
-  renderTab1();
-  renderTab2();
-  renderTab3();
-  renderTab4();
-
+function render(data) {
+  renderTab1(data);
+  renderTab2(data);
+  renderTab3(data);
+  renderTab4(data);
+  renderTab5(data);
   document.getElementById('lastUpdated').textContent = '更新於 ' + new Date().toLocaleTimeString('zh-TW');
 }
 
 // ══ Tab 1 (儀表板) ══
-function renderTab1() {
-  const { health, components, scores, errors } = DATA;
+function renderTab1(data) {
+  data = data || DATA;
+  const { health, components, scores, errors } = data;
 
   // KPI 1: 健康
   const isOk = health && (health.status === 'ok' || health.overall === 'ok');
@@ -812,7 +791,7 @@ function renderTab1() {
   }
 
   // Script TOP 5
-  const scriptData = DATA.scripts;
+  const scriptData = data.scripts;
   if (scriptData && Array.isArray(scriptData)) {
     const sorted = [...scriptData].sort((a,b)=>(b.lines||0)-(a.lines||0)).slice(0,5);
     const maxLines = Math.max(...sorted.map(s=>s.lines||0), 1);
@@ -837,7 +816,7 @@ function renderTab1() {
   }
 
   // Sessions
-  const sessionArr = Array.isArray(DATA.sessions) ? DATA.sessions : (DATA.sessions?.sessions || []);
+  const sessionArr = Array.isArray(data.sessions) ? data.sessions : (data.sessions?.sessions || []);
   if (sessionArr.length > 0) {
     document.getElementById('recentSessions').innerHTML = sessionArr.slice(0,3).map(s => `
       <div class="session-card">
@@ -851,8 +830,9 @@ function renderTab1() {
 }
 
 // ══ Tab 2 (資料表) ══
-function renderTab2() {
-  const { scores, improvements } = DATA;
+function renderTab2(data) {
+  data = data || DATA;
+  const { scores, improvements } = data;
 
   if (scores && Array.isArray(scores) && scores.length > 0) {
     const sorted = [...scores].sort((a,b)=>(b.total||0)-(a.total||0));
@@ -888,8 +868,9 @@ function renderTab2() {
 }
 
 // ══ Tab 3 (監控) ══
-function renderTab3() {
-  const { errors, git, sessions } = DATA;
+function renderTab3(data) {
+  data = data || DATA;
+  const { errors, git, sessions } = data;
   const errArr = Array.isArray(errors) ? errors : (errors?.errors || []);
   const errCount = errArr.length;
 
@@ -972,22 +953,40 @@ function renderTab3() {
 }
 
 // ══ Tab 4 (控制中心) ══
-function renderTab4() {
-  const { health, daemons, locks, components, behaviors } = DATA;
+function renderTab4(data) {
+  data = data || DATA;
+  const { health, daemons, locks, components, behaviors } = data;
 
   // 服務狀態
-  const services = [
-    { name: 'Nova Server', key: 'server' },
-    { name: 'Local LLM', key: 'llm' },
-    { name: 'Maintainer', key: 'maintainer' },
-    { name: 'Judge', key: 'judge' },
-    { name: 'Learner', key: 'learner' },
-  ];
   const daemonArr = Array.isArray(daemons) ? daemons : (daemons?.daemons || []);
   const daemonMap = {};
   daemonArr.forEach(d => { if (d.name) daemonMap[d.name.toLowerCase()] = d; });
 
+  // LLM 從 data.llm 讀取
+  const llmData = data.llm;
+  const llmOnline = llmData?.status === 'online';
+  const llmModel = llmData?.model || '';
+
+  const services = [
+    { name: 'Nova Server', key: 'server' },
+    { name: 'Local LLM', key: 'llm', isLlm: true },
+    { name: 'Maintainer', key: 'maintainer' },
+    { name: 'Judge', key: 'judge' },
+    { name: 'Learner', key: 'learner' },
+  ];
+
   document.getElementById('serviceStatus').innerHTML = services.map(svc => {
+    if (svc.isLlm) {
+      const dotClass = llmOnline ? 'dot-ok' : 'dot-err';
+      const metaText = llmOnline ? `在線${llmModel ? ' · ' + llmModel : ''}` : '離線';
+      return `
+        <div class="service-row">
+          <div class="service-dot ${dotClass}"></div>
+          <div class="service-name">${svc.name}</div>
+          <div class="service-meta">${metaText}</div>
+        </div>
+      `;
+    }
     const d = daemonMap[svc.key] || (health && health[svc.key]);
     const isRunning = d?.running || d?.status === 'ok' || d?.alive;
     const dotClass = isRunning ? 'dot-ok' : 'dot-off';
@@ -1100,19 +1099,36 @@ function toggleComp(header) {
   chev.classList.toggle('open');
 }
 
-// ── Lock 清除 ──
-async function postApi(ep) {
-  try {
-    const r = await fetch(`/api/${ep}`, { method: 'POST', signal: AbortSignal.timeout(5000) });
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    return await r.json();
-  } catch (e) { console.error(`POST ${ep}:`, e.message); return null; }
+// ══ Tab 5 渲染（會議記錄）══
+function renderTab5(data) {
+  data = data || DATA;
+  const notesEl = document.getElementById('meeting-notes');
+  if (notesEl) {
+    const md = generateMeetingNotes(data);
+    notesEl.innerHTML = renderMarkdown(md);
+  }
 }
 
+// ── 簡易 Markdown 渲染器 ──
+function renderMarkdown(md) {
+  return md
+    .replace(/^# (.+)$/gm, '<h2 style="color:var(--accent,#c4b5fd);margin:16px 0 8px;">$1</h2>')
+    .replace(/^## (.+)$/gm, '<h3 style="color:var(--text,#f0e6ff);margin:14px 0 6px;font-size:15px;">$1</h3>')
+    .replace(/^### (.+)$/gm, '<h4 style="color:var(--muted,#9ca3af);margin:10px 0 4px;font-size:13px;">$1</h4>')
+    .replace(/^> (.+)$/gm, '<div style="color:#6b7280;font-style:italic;border-left:3px solid #2d2d44;padding-left:12px;margin:8px 0;">$1</div>')
+    .replace(/^- (.+)$/gm, '<div style="padding-left:16px;margin:2px 0;">• $1</div>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/`([^`]+)`/g, '<code style="background:rgba(196,181,253,0.15);padding:1px 4px;border-radius:3px;font-size:12px;">$1</code>')
+    .replace(/^---$/gm, '<hr style="border:none;border-top:1px solid #2d2d44;margin:16px 0;">')
+    .replace(/\n\n/g, '<br><br>')
+    .replace(/\n/g, '<br>');
+}
+
+// ── Lock 清除與操作 ──
 async function clearLock() {
   const r = await postApi('actions/clear-locks');
   showToast(r ? `已清除 ${(r.cleared||[]).length} 個 Lock ✅` : '清除失敗');
-  loadAll();
+  loadAllData().then(render);
 }
 
 async function doAction(type) {
@@ -1123,13 +1139,13 @@ async function doAction(type) {
   showToast(r ? `${labels[type]} 完成 ✅` : `${labels[type]} 失敗`);
 }
 
-// ── 30 秒自動刷新 ──
-setInterval(() => {
-  if (document.querySelector('.tab.active')) loadAll();
-}, 30000);
-
-// ── 初始化 ──
-loadAll();
+// ── 初始化（data-layer.js 已有 30 秒自動刷新）──
+onDataUpdate(render);
+async function init() {
+  const data = await loadAllData();
+  render(data);
+}
+init();
 </script>
 <script src="/nav-bar.js"></script>
 </body>

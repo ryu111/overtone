@@ -336,6 +336,7 @@
     <button class="tab" data-tab="quality">品質</button>
     <button class="tab" data-tab="monitor">監控</button>
     <button class="tab" data-tab="system">系統</button>
+    <button class="tab" data-tab="tab-notes">會議記錄</button>
   </div>
 
   <!-- Tab 1: 總覽 -->
@@ -446,6 +447,13 @@
         <button class="action-btn" onclick="doAction('trigger-maintainer')">⚡ 觸發 Maintainer</button>
         <button class="action-btn" onclick="location.reload()">↺ 刷新頁面</button>
       </div>
+    </div>
+  </div>
+
+  <!-- Tab 5: 會議記錄 -->
+  <div id="tab-notes" class="tab-content">
+    <div class="panel">
+      <div id="meeting-notes" style="white-space: pre-wrap; line-height: 1.8; font-size: 13px; max-width: 760px; margin: 0 auto;"></div>
     </div>
   </div>
 </div><!-- /app -->
@@ -573,22 +581,10 @@ function initTabs(key) {
 initTabs('g3-tab');
 </script>
 
-<!-- Shared fetch -->
-<script>
-async function fetchApi(ep) {
-  try {
-    const r = await fetch(`/api/${ep}`, { signal: AbortSignal.timeout(5000) });
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    const ct = r.headers.get('content-type') || '';
-    return ct.includes('json') ? await r.json() : await r.text();
-  } catch (e) { console.error(`API ${ep}:`, e.message); return null; }
-}
-</script>
+<script src="/data-layer.js"></script>
 
 <!-- Data & render -->
 <script>
-let _data = {};
-
 // ---- Helpers ----
 function gradeFrom(score) {
   if (score >= 90) return 'A';
@@ -596,9 +592,6 @@ function gradeFrom(score) {
   if (score >= 70) return 'C';
   if (score >= 60) return 'D';
   return 'F';
-}
-function gradeColor(g) {
-  return { A:'#34d399', B:'#60a5fa', C:'#fbbf24', D:'#fb923c', F:'#f87171' }[g] || '#6b7280';
 }
 function scoreBarColor(s) {
   if (s >= 90) return '#34d399';
@@ -637,14 +630,18 @@ function makeRing(pct, color, size = 100) {
 
 // ---- Render Functions ----
 
-function renderRings(scores, errors, components) {
+function renderRings(data) {
   const grid = document.getElementById('rings-grid');
   if (!grid) return;
 
-  const avgScore = scores && scores.length
+  const scores = data.scores || [];
+  const errors = data.errors || [];
+  const components = data.components;
+
+  const avgScore = scores.length
     ? (scores.reduce((s, x) => s + (x.total || x.score || 0), 0) / scores.length)
     : 0;
-  const errCount = errors ? errors.length : 0;
+  const errCount = errors.length;
   const health = Math.max(0, Math.min(100, Math.round(avgScore * 0.7 + (100 - Math.min(errCount * 10, 100)) * 0.3)));
   const quality = Math.round(avgScore);
   const stability = Math.max(0, 100 - errCount * 8);
@@ -678,9 +675,10 @@ function renderRings(scores, errors, components) {
   });
 }
 
-function renderDistChart(scores) {
+function renderDistChart(data) {
   const el = document.getElementById('dist-chart');
   if (!el) return;
+  const scores = data.scores;
   if (!scores || !scores.length) { el.innerHTML = '<div class="empty-state">資料不可用</div>'; return; }
 
   const counts = { A:0, B:0, C:0, D:0, F:0 };
@@ -704,9 +702,10 @@ function renderDistChart(scores) {
   }).join('');
 }
 
-function renderScriptTop5(scripts) {
+function renderScriptTop5(data) {
   const el = document.getElementById('script-top5');
   if (!el) return;
+  const scripts = data.scripts;
   if (!scripts || !scripts.length) { el.innerHTML = '<div class="empty-state">資料不可用</div>'; return; }
   const top5 = [...scripts].sort((a,b) => b.lines - a.lines).slice(0, 5);
   const max = top5[0]?.lines || 1;
@@ -722,9 +721,10 @@ function renderScriptTop5(scripts) {
   `).join('');
 }
 
-function renderRecentSessions(sessions) {
+function renderRecentSessions(data) {
   const el = document.getElementById('recent-sessions');
   if (!el) return;
+  const sessions = data.sessions;
   if (!sessions || !sessions.length) { el.innerHTML = '<div class="empty-state">資料不可用</div>'; return; }
   const recent = [...sessions].slice(-3).reverse();
   el.innerHTML = recent.map(s => `
@@ -738,9 +738,10 @@ function renderRecentSessions(sessions) {
   `).join('');
 }
 
-function renderFullScoreTable(scores) {
+function renderFullScoreTable(data) {
   const tbody = document.getElementById('score-tbody');
   if (!tbody) return;
+  const scores = data.scores;
   if (!scores || !scores.length) { tbody.innerHTML = '<tr><td colspan="4" class="empty-state">資料不可用</td></tr>'; return; }
   const sorted = [...scores].sort((a,b) => (b.total||b.score||0) - (a.total||a.score||0));
   const maxScore = sorted[0] ? (sorted[0].total || sorted[0].score || 100) : 100;
@@ -763,9 +764,10 @@ function renderFullScoreTable(scores) {
   }).join('');
 }
 
-function renderImprovements(improvements) {
+function renderImprovements(data) {
   const el = document.getElementById('improvements-list');
   if (!el) return;
+  const improvements = data.improvements;
   if (!improvements || !improvements.length) { el.innerHTML = '<div class="empty-state">資料不可用</div>'; return; }
   el.innerHTML = improvements.slice(-8).reverse().map(im => `
     <div class="improve-item">
@@ -775,9 +777,10 @@ function renderImprovements(improvements) {
   `).join('');
 }
 
-function renderErrorClusters(errors) {
+function renderErrorClusters(data) {
   const el = document.getElementById('error-clusters');
   if (!el) return;
+  const errors = data.errors;
   if (!errors || !errors.length) { el.innerHTML = '<div class="empty-state" style="font-size:12px;color:#34d399">無錯誤記錄</div>'; return; }
   const clusters = {};
   errors.forEach(e => {
@@ -794,9 +797,10 @@ function renderErrorClusters(errors) {
   `).join('');
 }
 
-function renderSparkline(errors) {
+function renderSparkline(data) {
   const el = document.getElementById('sparkline');
   if (!el) return;
+  const errors = data.errors;
   // Build 7-day counts
   const dayCounts = new Array(7).fill(0);
   const now = Date.now();
@@ -815,11 +819,11 @@ function renderSparkline(errors) {
   }).join('');
 }
 
-function renderGitActivity(git) {
+function renderGitActivity(data) {
   ['nova', 'overtone'].forEach(repo => {
     const el = document.getElementById(`git-${repo}`);
     if (!el) return;
-    const commits = git?.[repo] || [];
+    const commits = data.git?.[repo] || [];
     if (!commits.length) { el.innerHTML = '<div class="empty-state" style="font-size:11px">無資料</div>'; return; }
     el.innerHTML = commits.slice(0, 5).map(c => `
       <div class="commit-item">
@@ -830,9 +834,10 @@ function renderGitActivity(git) {
   });
 }
 
-function renderSessionList(sessions) {
+function renderSessionList(data) {
   const el = document.getElementById('session-list');
   if (!el) return;
+  const sessions = data.sessions;
   if (!sessions || !sessions.length) { el.innerHTML = '<div class="empty-state">資料不可用</div>'; return; }
   el.innerHTML = [...sessions].slice(-6).reverse().map(s => `
     <div class="session-card" style="margin-bottom:8px">
@@ -845,13 +850,15 @@ function renderSessionList(sessions) {
   `).join('');
 }
 
-function renderServiceStatus(health) {
+function renderServiceStatus(data) {
   const el = document.getElementById('service-status');
   if (!el) return;
+  const health = data.health;
   const ok = health && health.status === 'ok';
+  const llmOk = data.llm?.status === 'online';
   const services = [
     { name: 'Nova Server', status: ok ? 'online' : 'offline' },
-    { name: 'LLM (port 8000)', status: 'checking' },
+    { name: `LLM${llmOk ? ' · ' + (data.llm?.model || '') : ''}`, status: llmOk ? 'online' : 'offline' },
     { name: 'Maintainer', status: 'auto' },
     { name: 'Judge', status: 'auto' },
     { name: 'Hook Client', status: ok ? 'active' : 'fallback' },
@@ -868,9 +875,10 @@ function renderServiceStatus(health) {
   }).join('');
 }
 
-function renderLocks(locks) {
+function renderLocks(data) {
   const el = document.getElementById('lock-status');
   if (!el) return;
+  const locks = data.locks;
   if (!locks) { el.innerHTML = '<div class="empty-state" style="font-size:12px">資料不可用</div>'; return; }
   el.innerHTML = locks.map(l => {
     const name = l.path.split('/').pop();
@@ -883,9 +891,10 @@ function renderLocks(locks) {
   }).join('');
 }
 
-function renderBehaviors(behaviors) {
+function renderBehaviors(data) {
   const el = document.getElementById('behavior-list');
   if (!el) return;
+  const behaviors = data.behaviors;
   if (!behaviors || !behaviors.length) { el.innerHTML = '<div class="empty-state" style="font-size:12px">資料不可用</div>'; return; }
   el.innerHTML = behaviors.slice(-8).map(b => `
     <div class="confidence-wrap">
@@ -898,14 +907,22 @@ function renderBehaviors(behaviors) {
   `).join('');
 }
 
-// ---- Actions ----
-async function postApi(ep) {
-  try {
-    const r = await fetch(`/api/${ep}`, { method: 'POST', signal: AbortSignal.timeout(5000) });
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    return await r.json();
-  } catch (e) { console.error(`POST ${ep}:`, e.message); return null; }
+// ---- Markdown renderer ----
+function renderMarkdown(md) {
+  return md
+    .replace(/^# (.+)$/gm, '<h2 style="color:var(--accent,#7c3aed);margin:16px 0 8px;">$1</h2>')
+    .replace(/^## (.+)$/gm, '<h3 style="color:var(--text,#e0def4);margin:14px 0 6px;font-size:15px;">$1</h3>')
+    .replace(/^### (.+)$/gm, '<h4 style="color:var(--muted,#9ca3af);margin:10px 0 4px;font-size:13px;">$1</h4>')
+    .replace(/^> (.+)$/gm, '<div style="color:#6b7280;font-style:italic;border-left:3px solid #2d2d44;padding-left:12px;margin:8px 0;">$1</div>')
+    .replace(/^- (.+)$/gm, '<div style="padding-left:16px;margin:2px 0;">• $1</div>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/`([^`]+)`/g, '<code style="background:rgba(124,58,237,0.15);padding:1px 4px;border-radius:3px;font-size:12px;">$1</code>')
+    .replace(/^---$/gm, '<hr style="border:none;border-top:1px solid #2d2d44;margin:16px 0;">')
+    .replace(/\n\n/g, '<br><br>')
+    .replace(/\n/g, '<br>');
 }
+
+// ---- Actions ----
 async function clearLocks() {
   const r = await postApi('actions/clear-locks');
   if (r) showToast(`已清除 ${(r.cleared||[]).length} 個 Lock ✅`);
@@ -929,49 +946,41 @@ function showToast(msg) {
   setTimeout(() => t.remove(), 3000);
 }
 
-// ---- Main load ----
-async function loadAll() {
-  const [scores, errors, sessions, improvements, scripts, git, health, locks, behaviors, components, daemons, scenarios] = await Promise.all([
-    fetchApi('scores'),
-    fetchApi('errors'),
-    fetchApi('sessions'),
-    fetchApi('improvements'),
-    fetchApi('scripts'),
-    fetchApi('git'),
-    fetchApi('health'),
-    fetchApi('locks'),
-    fetchApi('behaviors'),
-    fetchApi('components'),
-    fetchApi('daemons'),
-    fetchApi('scenarios'),
-  ]);
-
-  _data = { scores, errors, sessions, improvements, scripts, git, health, locks, behaviors, components, daemons, scenarios };
-
+// ---- Render all ----
+function render(data) {
   // Tab 1
-  renderRings(scores, errors, components);
-  renderDistChart(scores);
-  renderScriptTop5(scripts);
-  renderRecentSessions(sessions);
+  renderRings(data);
+  renderDistChart(data);
+  renderScriptTop5(data);
+  renderRecentSessions(data);
 
   // Tab 2
-  renderFullScoreTable(scores);
-  renderImprovements(improvements);
+  renderFullScoreTable(data);
+  renderImprovements(data);
 
   // Tab 3
-  renderErrorClusters(errors);
-  renderSparkline(errors);
-  renderGitActivity(git);
-  renderSessionList(sessions);
+  renderErrorClusters(data);
+  renderSparkline(data);
+  renderGitActivity(data);
+  renderSessionList(data);
 
   // Tab 4
-  renderServiceStatus(health);
-  renderLocks(locks);
-  renderBehaviors(behaviors);
+  renderServiceStatus(data);
+  renderLocks(data);
+  renderBehaviors(data);
+
+  // Tab 5
+  const notesEl = document.getElementById('meeting-notes');
+  if (notesEl) notesEl.innerHTML = renderMarkdown(generateMeetingNotes(data));
 }
 
-loadAll();
-setInterval(loadAll, 30000);
+// ---- Init ----
+async function init() {
+  const data = await loadAllData();
+  render(data);
+}
+onDataUpdate(render);
+init();
 </script>
 
 <script src="/nav-bar.js"></script>

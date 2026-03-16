@@ -454,6 +454,7 @@
     <button class="tab" data-tab="analysis">深度分析</button>
     <button class="tab" data-tab="log">活動日誌</button>
     <button class="tab" data-tab="control">控制中心</button>
+    <button class="tab" data-tab="tab-notes">會議記錄</button>
   </div>
 
   <!-- Tab 1: 全景 -->
@@ -623,6 +624,13 @@
       </div>
     </div>
   </div>
+
+  <!-- Tab 5: 會議記錄 -->
+  <div id="tab-notes" class="tab-content">
+    <div class="panel">
+      <div id="meeting-notes" style="white-space: pre-wrap; line-height: 1.8; font-size: 13px; max-width: 760px; margin: 0 auto;"></div>
+    </div>
+  </div>
 </div>
 
 <!-- Micro particles -->
@@ -687,28 +695,13 @@ function initTabs(key) {
 initTabs('g5-tab');
 </script>
 
-<!-- Fetch -->
-<script>
-async function fetchApi(ep) {
-  try {
-    const r = await fetch(`/api/${ep}`, { signal: AbortSignal.timeout(5000) });
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    const ct = r.headers.get('content-type') || '';
-    return ct.includes('json') ? await r.json() : await r.text();
-  } catch (e) { console.error(`API ${ep}:`, e.message); return null; }
-}
-</script>
+<script src="/data-layer.js"></script>
 
 <!-- Data & Render -->
 <script>
-let _scores = null;
-
 function gradeFrom(s) {
   if (s >= 90) return 'A'; if (s >= 80) return 'B';
   if (s >= 70) return 'C'; if (s >= 60) return 'D'; return 'F';
-}
-function gradeColor(g) {
-  return { A:'#34d399', B:'#60a5fa', C:'#fbbf24', D:'#fb923c', F:'#f87171' }[g] || '#6b7280';
 }
 function scoreBarColor(s) {
   if (s >= 90) return '#34d399'; if (s >= 70) return '#60a5fa';
@@ -726,7 +719,12 @@ function animateCount(el, target) {
 }
 
 // ---- Tab 1 ----
-function renderHero(scores, errors, components, health) {
+function renderHero(data) {
+  const scores = data.scores;
+  const errors = data.errors;
+  const components = data.components;
+  const health = data.health;
+
   // Gauge
   const avg = scores && scores.length
     ? scores.reduce((s, x) => s + (x.total||x.score||0), 0) / scores.length : 0;
@@ -756,19 +754,20 @@ function renderHero(scores, errors, components, health) {
 
   // Status strip
   const ok = health && health.status === 'ok';
+  const llmOk = data.llm?.status === 'online';
   const ss = document.getElementById('hero-status');
   if (ss) {
-    const lockStrip = document.getElementById('lock-strip');
     ss.innerHTML = `
       <div class="status-pill-sm"><div class="pill-dot ${ok ? 'dot-green' : 'dot-red'}"></div>Server ${ok ? 'Online' : 'Offline'}</div>
-      <div class="status-pill-sm"><div class="pill-dot dot-yellow"></div>LLM</div>
+      <div class="status-pill-sm"><div class="pill-dot ${llmOk ? 'dot-green' : 'dot-red'}"></div>LLM ${llmOk ? (data.llm?.model || 'Online') : '離線'}</div>
     `;
   }
 }
 
-function renderHeroDist(scores) {
+function renderHeroDist(data) {
   const el = document.getElementById('hero-dist');
   if (!el) return;
+  const scores = data.scores;
   if (!scores || !scores.length) { el.innerHTML = '<div class="empty-state">資料不可用</div>'; return; }
   const counts = { A:0, B:0, C:0, D:0, F:0 };
   scores.forEach(s => counts[gradeFrom(s.total||s.score||0)]++);
@@ -784,9 +783,10 @@ function renderHeroDist(scores) {
   }).join('');
 }
 
-function renderHeroScripts(scripts) {
+function renderHeroScripts(data) {
   const el = document.getElementById('hero-scripts');
   if (!el) return;
+  const scripts = data.scripts;
   if (!scripts || !scripts.length) { el.innerHTML = '<div class="empty-state">資料不可用</div>'; return; }
   const top5 = [...scripts].sort((a,b)=>b.lines-a.lines).slice(0,5);
   const max = top5[0]?.lines || 1;
@@ -800,9 +800,10 @@ function renderHeroScripts(scripts) {
   `).join('');
 }
 
-function renderHeroSessions(sessions) {
+function renderHeroSessions(data) {
   const el = document.getElementById('hero-sessions');
   if (!el) return;
+  const sessions = data.sessions;
   if (!sessions || !sessions.length) { el.innerHTML = '<div class="empty-state">資料不可用</div>'; return; }
   el.innerHTML = [...sessions].slice(-3).reverse().map(s => `
     <div class="session-card">
@@ -847,9 +848,10 @@ function initGradeFilter(scores) {
   }));
 }
 
-function renderAnalysisErrors(errors) {
+function renderAnalysisErrors(data) {
   const el = document.getElementById('analysis-errors');
   if (!el) return;
+  const errors = data.errors;
   if (!errors || !errors.length) { el.innerHTML = '<div class="empty-state" style="color:#34d399">無錯誤記錄</div>'; return; }
   const clusters = {};
   errors.forEach(e => { const k = (e.error||e.message||'?').slice(0,38); clusters[k]=(clusters[k]||0)+1; });
@@ -858,18 +860,20 @@ function renderAnalysisErrors(errors) {
   `).join('');
 }
 
-function renderAnalysisImprovements(improvements) {
+function renderAnalysisImprovements(data) {
   const el = document.getElementById('analysis-improvements');
   if (!el) return;
+  const improvements = data.improvements;
   if (!improvements || !improvements.length) { el.innerHTML = '<div class="empty-state">資料不可用</div>'; return; }
   el.innerHTML = improvements.slice(-5).reverse().map(im => `
     <div class="improve-item">${im.suggestion||im.content||im.text||''}</div>
   `).join('');
 }
 
-function renderAnalysisBehaviors(behaviors) {
+function renderAnalysisBehaviors(data) {
   const el = document.getElementById('analysis-behaviors');
   if (!el) return;
+  const behaviors = data.behaviors;
   if (!behaviors || !behaviors.length) { el.innerHTML = '<div class="empty-state">資料不可用</div>'; return; }
   el.innerHTML = behaviors.slice(-6).map(b => `
     <div class="behavior-item">
@@ -881,9 +885,11 @@ function renderAnalysisBehaviors(behaviors) {
 }
 
 // ---- Tab 3 ----
-function renderUnifiedLog(git, sessions) {
+function renderUnifiedLog(data) {
   const el = document.getElementById('unified-log');
   if (!el) return;
+  const git = data.git;
+  const sessions = data.sessions;
   const events = [];
   if (git?.nova) git.nova.forEach(c => events.push({ time: c.date, badge: 'nova', content: c.subject||'' }));
   if (git?.overtone) git.overtone.forEach(c => events.push({ time: c.date, badge: 'overtone', content: c.subject||'' }));
@@ -899,9 +905,10 @@ function renderUnifiedLog(git, sessions) {
   `).join('');
 }
 
-function renderLogScenes(scenarios) {
+function renderLogScenes(data) {
   const el = document.getElementById('log-scenes');
   if (!el) return;
+  const scenarios = data.scenarios;
   if (!scenarios || !scenarios.length) { el.innerHTML = '<div class="empty-state">資料不可用</div>'; return; }
   el.innerHTML = scenarios.slice(0,5).map(s => {
     const total = s.conditions?.length || 0;
@@ -916,13 +923,15 @@ function renderLogScenes(scenarios) {
 }
 
 // ---- Tab 4 ----
-function renderCtrlServices(health) {
+function renderCtrlServices(data) {
   const el = document.getElementById('ctrl-services');
   if (!el) return;
+  const health = data.health;
   const ok = health && health.status === 'ok';
+  const llmOk = data.llm?.status === 'online';
   const services = [
     { name: 'Nova Server (port 3457)', status: ok ? 'online' : 'offline' },
-    { name: 'LLM (vllm-mlx port 8000)', status: 'unknown' },
+    { name: `LLM${llmOk ? ' · ' + (data.llm?.model || '') : ' (port 8000)'}`, status: llmOk ? 'online' : 'offline' },
     { name: 'Maintainer', status: 'daemon' },
     { name: 'Judge', status: 'daemon' },
     { name: 'Hook Client', status: ok ? 'active' : 'fallback' },
@@ -937,9 +946,10 @@ function renderCtrlServices(health) {
   `).join('');
 }
 
-function renderCtrlLocks(locks) {
+function renderCtrlLocks(data) {
   const el = document.getElementById('ctrl-locks');
   if (!el) return;
+  const locks = data.locks;
   if (!locks) { el.innerHTML = '<div class="empty-state">資料不可用</div>'; return; }
   el.innerHTML = locks.map(l => {
     const name = l.path.split('/').pop();
@@ -950,8 +960,9 @@ function renderCtrlLocks(locks) {
   }).join('');
 }
 
-function renderCtrlComponents(components) {
+function renderCtrlComponents(data) {
   const el = document.getElementById('ctrl-components');
+  const components = data.components;
   if (!el || !components) return;
   const items = [
     { key: 'rules', name: 'Rules', color: '#38bdf8' },
@@ -973,14 +984,22 @@ function renderCtrlComponents(components) {
   });
 }
 
-// ---- Actions ----
-async function postApi(ep) {
-  try {
-    const r = await fetch(`/api/${ep}`, { method: 'POST', signal: AbortSignal.timeout(5000) });
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    return await r.json();
-  } catch (e) { console.error(`POST ${ep}:`, e.message); return null; }
+// ---- Markdown renderer ----
+function renderMarkdown(md) {
+  return md
+    .replace(/^# (.+)$/gm, '<h2 style="color:var(--accent-light,#a78bfa);margin:16px 0 8px;">$1</h2>')
+    .replace(/^## (.+)$/gm, '<h3 style="color:var(--text,#f0e6ff);margin:14px 0 6px;font-size:15px;">$1</h3>')
+    .replace(/^### (.+)$/gm, '<h4 style="color:var(--text-dim);margin:10px 0 4px;font-size:13px;">$1</h4>')
+    .replace(/^> (.+)$/gm, '<div style="color:#6b7280;font-style:italic;border-left:3px solid #2d2d44;padding-left:12px;margin:8px 0;">$1</div>')
+    .replace(/^- (.+)$/gm, '<div style="padding-left:16px;margin:2px 0;">• $1</div>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/`([^`]+)`/g, '<code style="background:rgba(124,58,237,0.15);padding:1px 4px;border-radius:3px;font-size:12px;">$1</code>')
+    .replace(/^---$/gm, '<hr style="border:none;border-top:1px solid #2d2d44;margin:16px 0;">')
+    .replace(/\n\n/g, '<br><br>')
+    .replace(/\n/g, '<br>');
 }
+
+// ---- Actions ----
 async function clearLocks() {
   const r = await postApi('actions/clear-locks');
   if (r) showToast(`已清除 ${(r.cleared||[]).length} 個 Lock ✅`);
@@ -997,42 +1016,42 @@ function showToast(msg) {
   setTimeout(() => t.remove(), 3000);
 }
 
-// ---- Main ----
-async function loadAll() {
-  const [scores, errors, sessions, improvements, scripts, git, health, locks, behaviors, components, scenarios, daemons] = await Promise.all([
-    fetchApi('scores'), fetchApi('errors'), fetchApi('sessions'),
-    fetchApi('improvements'), fetchApi('scripts'), fetchApi('git'),
-    fetchApi('health'), fetchApi('locks'), fetchApi('behaviors'),
-    fetchApi('components'), fetchApi('scenarios'), fetchApi('daemons'),
-  ]);
-
-  _scores = scores;
-
+// ---- Render all ----
+function render(data) {
   // Tab 1
-  renderHero(scores, errors, components, health);
-  renderHeroDist(scores);
-  renderHeroScripts(scripts);
-  renderHeroSessions(sessions);
+  renderHero(data);
+  renderHeroDist(data);
+  renderHeroScripts(data);
+  renderHeroSessions(data);
 
   // Tab 2
-  renderAnalysisTable(scores, '全部');
-  initGradeFilter(scores);
-  renderAnalysisErrors(errors);
-  renderAnalysisImprovements(improvements);
-  renderAnalysisBehaviors(behaviors);
+  renderAnalysisTable(data.scores, '全部');
+  initGradeFilter(data.scores);
+  renderAnalysisErrors(data);
+  renderAnalysisImprovements(data);
+  renderAnalysisBehaviors(data);
 
   // Tab 3
-  renderUnifiedLog(git, sessions);
-  renderLogScenes(scenarios);
+  renderUnifiedLog(data);
+  renderLogScenes(data);
 
   // Tab 4
-  renderCtrlServices(health);
-  renderCtrlLocks(locks);
-  renderCtrlComponents(components);
+  renderCtrlServices(data);
+  renderCtrlLocks(data);
+  renderCtrlComponents(data);
+
+  // Tab 5
+  const notesEl = document.getElementById('meeting-notes');
+  if (notesEl) notesEl.innerHTML = renderMarkdown(generateMeetingNotes(data));
 }
 
-loadAll();
-setInterval(loadAll, 30000);
+// ---- Init ----
+async function init() {
+  const data = await loadAllData();
+  render(data);
+}
+onDataUpdate(render);
+init();
 </script>
 
 <script src="/nav-bar.js"></script>
