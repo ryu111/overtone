@@ -229,7 +229,8 @@
     text-align: left; padding: 8px 12px;
     font-size: 11px; font-weight: 600; letter-spacing: 0.08em;
     text-transform: uppercase; color: var(--muted);
-    border-bottom: 1px solid var(--border); background: rgba(255,255,255,0.02);
+    border-bottom: 1px solid var(--border); background: var(--bg, #0d0d1a);
+    position: sticky; top: 0; z-index: 1;
   }
   .quality-table td { padding: 9px 12px; border-bottom: 1px solid rgba(255,255,255,0.04); }
   .quality-table tbody tr:hover { background: rgba(255,255,255,0.03); }
@@ -479,7 +480,7 @@
   <div class="tab-content" id="tab-quality">
     <div class="panel" style="margin-bottom:16px">
       <div class="panel-title">完整品質列表</div>
-      <div style="overflow-x:auto">
+      <div style="overflow-x:auto;max-height:400px;overflow-y:auto">
         <table class="quality-table">
           <thead>
             <tr>
@@ -611,6 +612,48 @@ function initTabs(storageKey) {
 }
 initTabs('g1-tab');
 
+// ── 共用元件 ──
+
+/** 過濾 heartbeat 子 session，回傳使用者 session */
+function filterUserSessions(sessions, limit = 5) {
+  const arr = Array.isArray(sessions) ? sessions : [];
+  const user = arr.filter(s => s.source !== 'heartbeat');
+  return (user.length > 0 ? user : arr).slice(-limit).reverse();
+}
+
+/** 心跳摘要（一行） */
+function heartbeatSummaryHtml(sessions) {
+  const arr = Array.isArray(sessions) ? sessions : [];
+  const hb = arr.filter(s => s.source === 'heartbeat');
+  if (!hb.length) return '';
+  const ok = hb.filter(s => s.status === 'success').length;
+  return `<div style="font-size:11px;color:var(--text-dim);margin-bottom:6px">🔄 心跳任務 ${ok}/${hb.length} 成功</div>`;
+}
+
+/** 渲染 session 卡片列表到指定容器 */
+function renderSessionCards(containerId, sessions, { limit = 5, showHeartbeat = false, emptyText = '無 session 記錄' } = {}) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  const display = filterUserSessions(sessions, limit);
+  if (display.length > 0) {
+    el.innerHTML =
+      (showHeartbeat ? heartbeatSummaryHtml(sessions) : '') +
+      display.map(s => `
+      <div class="session-card">
+        <div class="session-ts">${relTime(s.date || s.ts || s.timestamp)}</div>
+        <div class="session-summary">${s.summary || s.description || '無摘要'}</div>
+      </div>`).join('');
+  } else {
+    el.innerHTML = `<div class="empty-state"><div class="empty-icon">🕐</div>${emptyText}</div>`;
+  }
+}
+
+/** 合併雙 repo git commits 並按日期排序 */
+function mergeGitCommits(git, limit = 8) {
+  const arr = Array.isArray(git) ? git : [...(git?.nova || []), ...(git?.overtone || [])];
+  return arr.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0)).slice(0, limit);
+}
+
 // ── Toast ──
 function showToast(msg) {
   const t = document.getElementById('toast');
@@ -642,11 +685,15 @@ function relTime(ts) {
 // DATA 由 data-layer.js 定義並管理
 
 function render(data) {
-  renderTab1(data);
-  renderTab2(data);
-  renderTab3(data);
-  renderTab4(data);
-  renderTab5(data);
+  try {
+    renderTab1(data);
+    renderTab2(data);
+    renderTab3(data);
+    renderTab4(data);
+    renderTab5(data);
+  } catch (e) {
+    console.error('[render]', e);
+  }
   document.getElementById('lastUpdated').textContent = '更新於 ' + new Date().toLocaleTimeString('zh-TW');
 }
 
@@ -743,25 +790,8 @@ function renderTab1(data) {
     document.getElementById('scriptTop5').innerHTML = '<div class="empty-state">無資料</div>';
   }
 
-  // 最近 Sessions（過濾掉 heartbeat 子 session，只顯示使用者 session）
-  const sessionData = data.sessions;
-  if (sessionData && Array.isArray(sessionData) && sessionData.length > 0) {
-    const userSessions = sessionData.filter(s => s.source !== 'heartbeat');
-    const hbSessions = sessionData.filter(s => s.source === 'heartbeat');
-    const recent = (userSessions.length > 0 ? userSessions : sessionData).slice(-3).reverse();
-    const hbCount = hbSessions.length;
-    const hbSuccess = hbSessions.filter(s => s.status === 'success').length;
-    document.getElementById('recentSessions').innerHTML =
-      (hbCount > 0 ? `<div style="font-size:11px;color:var(--text-dim);margin-bottom:6px">🔄 心跳任務 ${hbSuccess}/${hbCount} 成功</div>` : '') +
-      recent.map(s => `
-      <div class="session-card">
-        <div class="session-ts">${relTime(s.date || s.ts || s.timestamp)}</div>
-        <div class="session-summary">${s.summary || s.description || '無摘要'}</div>
-      </div>
-    `).join('');
-  } else {
-    document.getElementById('recentSessions').innerHTML = '<div class="empty-state"><div class="empty-icon">🕐</div>無 session 記錄</div>';
-  }
+  // 最近 Sessions（共用元件）
+  renderSessionCards('recentSessions', data.sessions, { limit: 3, showHeartbeat: true });
 }
 
 // ══ Tab 2 渲染 ══
@@ -793,13 +823,19 @@ function renderTab2(data) {
 
   // 改善建議
   if (improvements && Array.isArray(improvements) && improvements.length > 0) {
-    const recent = improvements.slice(0,5);
-    document.getElementById('improvementsList').innerHTML = recent.map(imp => `
+    const recent = improvements.slice(-5).reverse();
+    document.getElementById('improvementsList').innerHTML = recent.map(imp => {
+      const path = (imp.path || imp.target || '—').replace(/^\/Users\/[^/]+\//, '~/');
+      const weak = imp.weakDimension || '';
+      const score = imp.score != null ? `${imp.score}分` : '';
+      const label = [score, weak].filter(Boolean).join(' · ');
+      const tips = Array.isArray(imp.suggestions) ? imp.suggestions.join('<br>') : (imp.suggestion || imp.text || imp.content || '—');
+      return `
       <div class="improve-item">
-        <div class="improve-path">${imp.path || imp.target || '—'}</div>
-        <div class="improve-text">${imp.suggestion || imp.text || imp.content || '—'}</div>
-      </div>
-    `).join('');
+        <div class="improve-path">${path}${label ? ` <span style="color:var(--muted);font-size:11px">(${label})</span>` : ''}</div>
+        <div class="improve-text">${tips}</div>
+      </div>`;
+    }).join('');
   } else {
     document.getElementById('improvementsList').innerHTML = '<div class="empty-state"><div class="empty-icon">💡</div>暫無改善建議</div>';
   }
@@ -862,34 +898,22 @@ function renderTab3(data) {
     document.getElementById('errorClusters').innerHTML = '<div class="empty-state">無錯誤記錄</div>';
   }
 
-  // Git commits
-  const gitArr = Array.isArray(git) ? git : (git?.commits || []);
-  if (gitArr.length > 0) {
-    const recent = gitArr.slice(0,8);
-    document.getElementById('recentCommits').innerHTML = recent.map(c => `
+  // Git commits（共用元件）
+  const gitSorted = mergeGitCommits(git, 8);
+  if (gitSorted.length > 0) {
+    document.getElementById('recentCommits').innerHTML = gitSorted.map(c => `
       <div class="commit-row">
         <div class="commit-hash">${(c.hash||c.sha||'').slice(0,7)}</div>
-        <div class="commit-msg">${c.message || c.msg || '—'}</div>
-        <div class="commit-time">${relTime(c.ts||c.date||c.timestamp)}</div>
+        <div class="commit-msg">${c.subject || c.message || c.msg || '—'}</div>
+        <div class="commit-time">${relTime(c.date||c.ts||c.timestamp)}</div>
       </div>
     `).join('');
   } else {
     document.getElementById('recentCommits').innerHTML = '<div class="empty-state">無 commit 記錄</div>';
   }
 
-  // Activity sessions
-  const sessionArr = Array.isArray(sessions) ? sessions : (sessions?.sessions || []);
-  if (sessionArr.length > 0) {
-    const recent = sessionArr.slice(0,5);
-    document.getElementById('activitySessions').innerHTML = recent.map(s => `
-      <div class="session-card">
-        <div class="session-ts">${relTime(s.ts||s.timestamp)} · ${s.id||''}</div>
-        <div class="session-summary">${s.summary||s.description||'無摘要'}</div>
-      </div>
-    `).join('');
-  } else {
-    document.getElementById('activitySessions').innerHTML = '<div class="empty-state">無 session</div>';
-  }
+  // Activity sessions（共用元件）
+  renderSessionCards('activitySessions', sessions, { limit: 5 });
 }
 
 // ══ Tab 4 渲染 ══
