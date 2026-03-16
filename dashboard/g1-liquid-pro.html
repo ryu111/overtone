@@ -612,23 +612,7 @@ function initTabs(storageKey) {
 }
 initTabs('g1-tab');
 
-// ── 共用元件 ──
-
-/** 過濾 heartbeat 子 session，回傳使用者 session */
-function filterUserSessions(sessions, limit = 5) {
-  const arr = Array.isArray(sessions) ? sessions : [];
-  const user = arr.filter(s => s.source !== 'heartbeat');
-  return (user.length > 0 ? user : arr).slice(-limit).reverse();
-}
-
-/** 心跳摘要（一行） */
-function heartbeatSummaryHtml(sessions) {
-  const arr = Array.isArray(sessions) ? sessions : [];
-  const hb = arr.filter(s => s.source === 'heartbeat');
-  if (!hb.length) return '';
-  const ok = hb.filter(s => s.status === 'success').length;
-  return `<div style="font-size:11px;color:var(--text-dim);margin-bottom:6px">🔄 心跳任務 ${ok}/${hb.length} 成功</div>`;
-}
+// ── 共用元件（filterUserSessions, heartbeatSummaryHtml, mergeGitCommits 來自 data-layer.js）──
 
 /** 渲染 session 卡片列表到指定容器 */
 function renderSessionCards(containerId, sessions, { limit = 5, showHeartbeat = false, emptyText = '無 session 記錄' } = {}) {
@@ -646,12 +630,6 @@ function renderSessionCards(containerId, sessions, { limit = 5, showHeartbeat = 
   } else {
     el.innerHTML = `<div class="empty-state"><div class="empty-icon">🕐</div>${emptyText}</div>`;
   }
-}
-
-/** 合併雙 repo git commits 並按日期排序 */
-function mergeGitCommits(git, limit = 8) {
-  const arr = Array.isArray(git) ? git : [...(git?.nova || []), ...(git?.overtone || [])];
-  return arr.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0)).slice(0, limit);
 }
 
 // ── Toast ──

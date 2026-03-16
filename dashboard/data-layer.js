@@ -59,7 +59,45 @@ function onDataUpdate(fn) {
 // 15 秒自動刷新
 setInterval(loadAllData, 15000);
 
-// ── 共用工具函式 ──
+// ── 共用工具函式（所有 g-panel 可用）──
+
+/** 過濾 heartbeat 子 session，回傳使用者 session */
+function filterUserSessions(sessions, limit = 5) {
+  const arr = Array.isArray(sessions) ? sessions : [];
+  const user = arr.filter(s => s.source !== 'heartbeat');
+  return (user.length > 0 ? user : arr).slice(-limit).reverse();
+}
+
+/** 心跳摘要 HTML（一行） */
+function heartbeatSummaryHtml(sessions) {
+  const arr = Array.isArray(sessions) ? sessions : [];
+  const hb = arr.filter(s => s.source === 'heartbeat');
+  if (!hb.length) return '';
+  const ok = hb.filter(s => s.status === 'success').length;
+  return `<div style="font-size:11px;color:var(--text-dim,#6b7280);margin-bottom:6px">🔄 心跳任務 ${ok}/${hb.length} 成功</div>`;
+}
+
+/** 合併雙 repo git commits 並按日期排序 */
+function mergeGitCommits(git, limit = 8) {
+  const arr = Array.isArray(git) ? git : [...(git?.nova || []), ...(git?.overtone || [])];
+  return arr.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0)).slice(0, limit);
+}
+
+/** Daemon 狀態（從 log 時間戳判斷） */
+function parseDaemonStatus(daemons, key) {
+  const logs = (daemons && !Array.isArray(daemons)) ? daemons[key] : null;
+  if (!Array.isArray(logs) || !logs.length) return { running: false, last: null };
+  const lastLog = logs[logs.length - 1] || '';
+  const tsMatch = lastLog.match(/^(\d{4}-\d{2}-\d{2}T[\d:.]+Z)/);
+  const lastTs = tsMatch ? tsMatch[1] : null;
+  const recentMs = lastTs ? Date.now() - new Date(lastTs).getTime() : Infinity;
+  return { running: recentMs < 3600000, last: lastTs };
+}
+
+/** 只回傳存在的 lockfiles */
+function filterActiveLocks(locks) {
+  return (Array.isArray(locks) ? locks : (locks?.locks || [])).filter(lk => lk.exists);
+}
 
 function gradeColor(grade) {
   return { A: '#10b981', B: '#3b82f6', C: '#f59e0b', D: '#f97316', F: '#ef4444' }[grade] || '#6b7280';

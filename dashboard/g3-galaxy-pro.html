@@ -726,14 +726,14 @@ function renderRecentSessions(data) {
   if (!el) return;
   const sessions = data.sessions;
   if (!sessions || !sessions.length) { el.innerHTML = '<div class="empty-state">資料不可用</div>'; return; }
-  const recent = [...sessions].slice(-3).reverse();
-  el.innerHTML = recent.map(s => `
+  const recent = filterUserSessions(sessions, 3);
+  el.innerHTML = heartbeatSummaryHtml(sessions) + recent.map(s => `
     <div class="session-card">
       <div class="session-meta">
-        <span class="session-id">${(s.session_id || s.id || 'unknown').slice(0,8)}...</span>
-        <span class="session-time">${s.timestamp ? new Date(s.timestamp).toLocaleString('zh-TW') : ''}</span>
+        <span class="session-id">${relativeTime(s.date || s.ts)}</span>
+        <span class="session-time">${s.date ? new Date(s.date).toLocaleString('zh-TW') : ''}</span>
       </div>
-      <div class="session-summary">${s.summary || s.content || '無摘要'}</div>
+      <div class="session-summary">${s.summary || s.description || '無摘要'}</div>
     </div>
   `).join('');
 }

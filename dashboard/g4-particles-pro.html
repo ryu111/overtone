@@ -723,11 +723,13 @@ function renderDetailImprovements(data) {
   if (!el) return;
   const improvements = data.improvements;
   if (!improvements || !improvements.length) { el.innerHTML = '<div class="empty-state">資料不可用</div>'; return; }
-  el.innerHTML = improvements.slice(-10).reverse().map(im => `
-    <div class="improve-item">
-      ${im.suggestion || im.content || im.text || ''}
-    </div>
-  `).join('');
+  el.innerHTML = improvements.slice(-10).reverse().map(im => {
+    // 資料格式：{ suggestions: ["...","..."], weakDimension: "...", score: 30 }
+    const lines = Array.isArray(im.suggestions) ? im.suggestions : (im.suggestion || im.content || im.text) ? [im.suggestion || im.content || im.text] : [];
+    if (!lines.length) return '';
+    return `<div class="improve-item">${lines.join('<br>')}</div>`;
+  }).filter(Boolean).join('');
+  if (!el.innerHTML) el.innerHTML = '<div class="empty-state">資料不可用</div>';
 }
 
 function renderUnifiedTimeline(data) {

@@ -715,11 +715,8 @@ function animateCount(el, target, suffix) {
 // DATA 由 data-layer.js 定義並管理
 
 function render(data) {
-  renderTab1(data);
-  renderTab2(data);
-  renderTab3(data);
-  renderTab4(data);
-  renderTab5(data);
+  try { renderTab1(data); renderTab2(data); renderTab3(data); renderTab4(data); renderTab5(data); }
+  catch (e) { console.error('[render]', e); }
   document.getElementById('lastUpdated').textContent = '更新於 ' + new Date().toLocaleTimeString('zh-TW');
 }
 
