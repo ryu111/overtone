@@ -190,11 +190,12 @@ describe('autoStart polling 改善', () => {
     expect(src).toContain('async function pollHealth(');
   });
 
-  test('pollHealth 內有 maxRetries 和 intervalMs 參數', async () => {
+  test('pollHealth 使用指數退避（baseMs + Math.pow）', async () => {
     const { readFileSync } = await import('fs');
     const src = readFileSync(join(CLAUDE_DIR, 'hooks/hook-client.js'), 'utf-8');
     expect(src).toContain('maxRetries');
-    expect(src).toContain('intervalMs');
+    expect(src).toContain('baseMs');
+    expect(src).toContain('Math.pow(2, i)');
   });
 
   test('autoStart 中 lockfile 等待也使用 pollHealth（非固定 sleep）', async () => {
