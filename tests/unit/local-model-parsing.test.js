@@ -84,6 +84,31 @@ No JSON produced.`;
     const result = stripThinking(input);
     expect(result).toContain('"issue"');
   });
+
+  test('未閉合 <think>（max_tokens 截斷）→ 全部移除', () => {
+    const input = '<think>很長的思考...\n分析中...\n還在想...';
+    const result = stripThinking(input);
+    expect(result).toBe("");
+  });
+
+  test('未閉合 <think> + 前方有正常文字 → 保留前方、移除 <think> 後', () => {
+    const input = '{"total": 42}\n<think>開始思考但被截斷...';
+    const result = stripThinking(input);
+    expect(result).toBe('{"total": 42}');
+  });
+
+  test('思考文字 + JSON 不在獨立行（同行）→ fallback 提取', () => {
+    const input = `Thinking Process:
+分析結果 {"stability":8,"security":12,"performance":10,"maintainability":8,"total":38}`;
+    const result = stripThinking(input);
+    expect(result).toContain('"total":38');
+  });
+
+  test('<think> 已閉合 + 未閉合 <think> 混合 → 正確處理', () => {
+    const input = '<think>第一段思考</think>\n{"result": "ok"}\n<think>第二段未閉合...';
+    const result = stripThinking(input);
+    expect(result).toBe('{"result": "ok"}');
+  });
 });
 
 // ─── 2. extractJSON ───────────────────────────────────────────────────────────
