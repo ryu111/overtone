@@ -133,6 +133,34 @@ describe("lifecycle 模組介面", () => {
   });
 });
 
+// ── Judge 資料管線檔名一致性 ──
+describe("Judge 資料管線檔名一致性", () => {
+  const SCORES_FILENAME = "scores.jsonl";
+  // 所有讀取 judge 評分的消費者，必須引用正確檔名
+  const consumers = [
+    { name: "context-injector.js", path: join(MODULES_DIR, "context-injector.js") },
+    { name: "heartbeat.js", path: join(MODULES_DIR, "heartbeat.js") },
+    { name: "briefing-builder.js", path: join(homedir(), ".claude/scripts/briefing-builder.js") },
+  ];
+
+  for (const { name, path } of consumers) {
+    it(`${name} 引用 ${SCORES_FILENAME}（非 judge-scores.jsonl）`, () => {
+      const code = readFile(path);
+      if (code.includes("scores.jsonl")) {
+        expect(code).toContain(SCORES_FILENAME);
+        expect(code).not.toContain("judge-scores.jsonl");
+      }
+    });
+  }
+
+  it("judge.js 定義的 SCORES_FILE 使用正確檔名", () => {
+    const code = readFile(join(homedir(), ".claude/scripts/judge.js"));
+    // SCORES_FILE = join(homedir(), ".claude/data/scores.jsonl")
+    expect(code).toContain(SCORES_FILENAME);
+    expect(code).not.toContain("judge-scores.jsonl");
+  });
+});
+
 // ── 依賴方向 ──
 describe("依賴方向", () => {
   it("scripts/heartbeat.js 不 import hooks/", () => {

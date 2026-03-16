@@ -13,6 +13,7 @@ import {
   readScores,
   saveScore,
   resolveSemanticScore,
+  deduplicateImprovements,
 } from '/Users/sbu/.claude/scripts/judge.js';
 
 // ─── 測試輔助 ────────────────────────────────────────────────────────────────
@@ -526,5 +527,45 @@ describe('saveScore', () => {
     const scores = readScores(file);
     expect(scores).toHaveLength(1);
     expect(scores[0].path).toBe('x.js');
+  });
+});
+
+// ─── 8. deduplicateImprovements ─────────────────────────────────────────────
+
+describe('deduplicateImprovements', () => {
+  test('同 path 只保留最新一筆', () => {
+    const entries = [
+      { path: 'a.js', score: 30, suggestions: ['old'] },
+      { path: 'b.js', score: 40, suggestions: ['b1'] },
+      { path: 'a.js', score: 50, suggestions: ['new'] },
+    ];
+    const result = deduplicateImprovements(entries);
+    expect(result).toHaveLength(2);
+    expect(result.find(e => e.path === 'a.js').score).toBe(50);
+    expect(result.find(e => e.path === 'b.js').score).toBe(40);
+  });
+
+  test('保留順序（較早出現的 path 排前面）', () => {
+    const entries = [
+      { path: 'a.js', score: 10 },
+      { path: 'b.js', score: 20 },
+      { path: 'c.js', score: 30 },
+      { path: 'a.js', score: 40 },
+    ];
+    const result = deduplicateImprovements(entries);
+    expect(result.map(e => e.path)).toEqual(['b.js', 'c.js', 'a.js']);
+  });
+
+  test('超過 maxKeep 時截斷', () => {
+    const entries = Array.from({ length: 50 }, (_, i) => ({
+      path: `file-${i}.js`, score: i,
+    }));
+    const result = deduplicateImprovements(entries, 10);
+    expect(result).toHaveLength(10);
+    expect(result[0].path).toBe('file-40.js');
+  });
+
+  test('空陣列回傳空陣列', () => {
+    expect(deduplicateImprovements([])).toEqual([]);
   });
 });
