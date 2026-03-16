@@ -201,3 +201,64 @@ Thinking Process:
     expect(parsed.total).toBe(38);
   });
 });
+
+// ─── 3. 端到端管線測試（stripThinking → extractJSON）─────────────────────────
+
+describe('端到端管線：stripThinking → extractJSON', () => {
+  test('純 Thinking Process 文字（無 JSON）→ null（根因場景）', () => {
+    // 這是 Judge 47 次失敗的實際模式：模型用完 token 在思考上，沒產出 JSON
+    const rawModelOutput = `Thinking Process:
+
+1.  **Analyze the Request:**
+    *   Role: Nova System AI Assistant.
+    *   Task: Evaluate quality of this hook module.
+
+2.  **Score each dimension:**
+    *   stability: 8/10
+    *   security: 12/15
+    *   performance: 10/15
+    *   maintainability: 8/10
+
+3.  **Calculate Total:**
+    *   Total = 8 + 12 + 10 + 8 = 38/50`;
+    const stripped = stripThinking(rawModelOutput);
+    const parsed = extractJSON(stripped);
+    // 無 JSON 產出 → 正確回傳 null（caller 走 fallback）
+    expect(parsed).toBeNull();
+  });
+
+  test('/no_think 殘留在輸出中不影響 JSON 解析', () => {
+    // 若 chat template 未完全剝離 /no_think，確認不影響解析
+    const rawModelOutput = '/no_think\n{"stability":8,"security":12,"performance":10,"maintainability":8,"total":38}';
+    const stripped = stripThinking(rawModelOutput);
+    const parsed = extractJSON(stripped);
+    expect(parsed).not.toBeNull();
+    expect(parsed.total).toBe(38);
+  });
+
+  test('思考文字含 curly braces（Markdown 格式）→ 提取正確 JSON', () => {
+    const rawModelOutput = `Thinking Process:
+The function uses \`try { ... } catch (e) { ... }\` pattern.
+Error handling score: {good}.
+
+{"stability":9,"security":11,"performance":13,"maintainability":7,"total":40}`;
+    const stripped = stripThinking(rawModelOutput);
+    const parsed = extractJSON(stripped);
+    expect(parsed).not.toBeNull();
+    expect(parsed.total).toBe(40);
+  });
+
+  test('<think> + Thinking Process: 雙重包裝 + JSON → 正確提取', () => {
+    const rawModelOutput = `<think>
+內部思考...
+</think>
+Thinking Process:
+外部分析...
+
+{"knowledge":14,"clarity":12,"utility":9,"maintainability":8,"total":43}`;
+    const stripped = stripThinking(rawModelOutput);
+    const parsed = extractJSON(stripped);
+    expect(parsed).not.toBeNull();
+    expect(parsed.total).toBe(43);
+  });
+});
