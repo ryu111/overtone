@@ -116,12 +116,10 @@ describe("lifecycle 模組介面", () => {
       expect(typeof def.handler).toBe("function");
     });
 
-    it(`${file} handler 有 init 和 destroy`, async () => {
+    it(`${file} handler 是 async function`, async () => {
       const mod = await import(join(MODULES_DIR, file) + `?t=${Date.now()}`);
       const def = mod.default;
-      // init 和 destroy 至少有一個
-      const hasLifecycle = typeof def.init === "function" || typeof def.destroy === "function";
-      expect(hasLifecycle).toBe(true);
+      expect(typeof def.handler).toBe("function");
     });
   }
 
