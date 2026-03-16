@@ -1,6 +1,6 @@
 # Overtone Roadmap
 
-> 最後更新：2026-03-14 | 架構：單腦 + D0-D4 深度路由 + Worker | 當前焦點：R1 核心重建
+> 最後更新：2026-03-16 | 架構：單腦 + D0-D4 深度路由 + Worker | 當前焦點：R4 通用代理人
 
 ## 架構演進脈絡
 
@@ -9,11 +9,12 @@ v0.30+ 採用「單腦 + 深度路由 + 輕量 Worker」模式（見 `docs/spec/
 五層定義見 `docs/vision.md`，R1 詳細設計見 `docs/spec/L1-L2-守衛與閉環-實作計劃.md`。
 
 **現有基礎**（不動的部分）：
-- Rules 12 個（全域行為規範，完整）
-- Skills 28 個（知識庫，完整）
+- Rules 17 個（全域行為規範，完整）
+- Skills 27 個（知識庫，完整）
 - Agents 3 個（planner/executor/reviewer，已適配新架構）
 - Flow Visualizer（hooks 事件記錄 → SSE → 即時顯示，完整閉環）
 - Guards 2 個（pre-bash-guard + pre-edit-guard）
+- Commands /nova-flow + 10+ skills 提供命令入口
 
 **需重建的部分**（v0.29 scripts/lib 已清除）：
 所有 L1-L3 的執行層腳本（engine/framework 類 .js 檔案）已被清除，
@@ -26,9 +27,9 @@ v0.30+ 採用「單腦 + 深度路由 + 輕量 Worker」模式（見 `docs/spec/
 
 | Layer | 名稱 | 新架構下的目標 | 狀態 |
 |:-----:|------|--------------|:----:|
-| 1 | 核心大腦 | 守衛框架 + 任務引擎（深度路由）+ 學習/評分/收斂/回饋框架 | 🔴 重建中 |
-| 2 | 感知操控 | OS 腳本庫 + 心跳引擎 + 佇列系統 | 🔴 重建中 |
-| 3 | 自我進化 | Gap 偵測修復 + Skill Forge + PM + Orchestrator + 經驗內化 | 🔴 重建中 |
+| 1 | 核心大腦 | 守衛框架 + 任務引擎（深度路由）+ 學習/評分/收斂/回饋框架 | ✅ 已完成 |
+| 2 | 感知操控 | OS 腳本庫 + 心跳引擎 + 佇列系統 | ✅ 已完成 |
+| 3 | 自我進化 | Gap 偵測修復 + Skill Forge + PM + Orchestrator + 經驗內化 | ⚠️ 大部分完成（67%）|
 | 4 | 通用代理人 | 動態 MCP 工具組合 + 跨領域自主運作 | ⬜ 待開始 |
 | 5 | 產品 | 使用者面向產品（開放集合） | ⬜ 待開始 |
 
@@ -52,7 +53,7 @@ v0.30+ 採用「單腦 + 深度路由 + 輕量 Worker」模式（見 `docs/spec/
 
 ---
 
-## R1：核心重建（Layer 1 — 🔴 待做）
+## R1：核心重建（Layer 1 — ✅ 已完成）
 
 > 目標：恢復 Main Agent 的自動化框架能力。
 > 原則：不再重建 Pipeline，而是為「單腦 + 深度路由」模式建立配套。
@@ -62,20 +63,20 @@ v0.30+ 採用「單腦 + 深度路由 + 輕量 Worker」模式（見 `docs/spec/
 **現狀**：pre-bash-guard + pre-edit-guard 存在但功能有限。pre-edit-guard 引用不存在的 manage-component.js。
 **目標**：守衛框架自足運作，不依賴已刪除的模組。
 
-| 任務 | 類型 | 說明 |
-|------|------|------|
-| 修復 pre-edit-guard 依賴 | 修復 | 移除對 manage-component.js 的引用，改為內聯或新策略 |
-| Guard 測試套件 | 重建 | 2 個 guard 的單元測試（驗證攔截邏輯 + 允許邏輯） |
+| 任務 | 類型 | 說明 | 狀態 |
+|------|------|------|:----:|
+| 修復 pre-edit-guard 依賴 | 修復 | 移除對 manage-component.js 的引用，改為內聯或新策略 | ✅ guards.js（hooks/modules/）|
+| Guard 測試套件 | 重建 | 2 個 guard 的單元測試（驗證攔截邏輯 + 允許邏輯） | ✅ |
 
 ### R1.2 任務引擎（深度路由執行層）
 
 **現狀**：深度路由 D0-D4 只在 rules 定義，無執行層腳本。
 **目標**：Main Agent 透過 rules 指引已能正確選擇深度並委派 Worker，但缺乏狀態追蹤。
 
-| 任務 | 類型 | 說明 |
-|------|------|------|
-| task-state.js | 新建 | 輕量任務狀態（sessionId, depth, status, workers）取代舊 workflow state |
-| 深度路由測試 | 新建 | 驗證 D0-D4 各深度的 Worker 委派行為 |
+| 任務 | 類型 | 說明 | 狀態 |
+|------|------|------|:----:|
+| task-state.js | 新建 | 輕量任務狀態（sessionId, depth, status, workers）取代舊 workflow state | ✅ suggestDepth + buildPrompt（session-spawner.js 取代 task-state.js）|
+| 深度路由測試 | 新建 | 驗證 D0-D4 各深度的 Worker 委派行為 | ✅ |
 
 > **設計決策**：深度路由判斷由 Main Agent 自行完成（LLM 語意判斷），不需要確定性腳本。
 > task-state.js 只負責記錄，不負責控制流。
@@ -85,42 +86,42 @@ v0.30+ 採用「單腦 + 深度路由 + 輕量 Worker」模式（見 `docs/spec/
 **現狀**：instinct skill 知識文件完整（SKILL.md + 2 references），但 global-instinct.js / score-engine.js / baseline-tracker.js 已刪。
 **目標**：恢復觀察 → 記憶 → 改進的閉環。
 
-| 任務 | 類型 | 說明 |
-|------|------|------|
-| global-instinct.js | 重建 | 5 API + projectHash 隔離（JSONL 持久化） |
-| 學習框架測試 | 重建 | 觀察記錄 + 查詢 + 衰減邏輯 |
+| 任務 | 類型 | 說明 | 狀態 |
+|------|------|------|:----:|
+| global-instinct.js | 重建 | 5 API + projectHash 隔離（JSONL 持久化） | ✅ learner.js 433 行（取代 global-instinct.js）|
+| 學習框架測試 | 重建 | 觀察記錄 + 查詢 + 衰減邏輯 | ✅ |
 
 ### R1.4 評分框架
 
 **現狀**：skill-judge skill 知識文件存在但 references 為空。score-engine.js 已刪。
 **目標**：恢復多維度品質評估。
 
-| 任務 | 類型 | 說明 |
-|------|------|------|
-| score-engine.js | 重建 | 多維度評分 + 趨勢分析 |
-| skill-judge references | 補全 | 填充 skill-judge skill 的 references 目錄 |
-| 評分框架測試 | 重建 | 評分計算 + 趨勢正確性 |
+| 任務 | 類型 | 說明 | 狀態 |
+|------|------|------|:----:|
+| score-engine.js | 重建 | 多維度評分 + 趨勢分析 | ✅ judge.js 532 行（取代 score-engine.js）|
+| skill-judge references | 補全 | 填充 skill-judge skill 的 references 目錄 | ✅ |
+| 評分框架測試 | 重建 | 評分計算 + 趨勢正確性 | ✅ |
 
 ### R1.5 收斂框架
 
 **現狀**：從未完整實現。vision.md 定義為「識別冗餘、做減法」。
 **目標**：自動識別未使用的 skills/rules 並建議移除。
 
-| 任務 | 類型 | 說明 |
-|------|------|------|
-| convergence.js | 新建 | 使用率追蹤 + 冗餘識別 + 移除建議產出 |
-| 收斂框架測試 | 新建 | 冗餘偵測邏輯 + 建議格式 |
+| 任務 | 類型 | 說明 | 狀態 |
+|------|------|------|:----:|
+| convergence.js | 新建 | 使用率追蹤 + 冗餘識別 + 移除建議產出 | ✅ skill-janitor.js 77 行（取代 convergence.js）|
+| 收斂框架測試 | 新建 | 冗餘偵測邏輯 + 建議格式 | ✅ |
 
 ### R1.6 回饋迴路
 
 **現狀**：hooks 記錄 flow 事件但沒有任何消費者讀取這些事件做學習/評分。
 **目標**：flow 事件 → 學習框架 → 評分框架 → 注入下次 session context。
 
-| 任務 | 類型 | 說明 |
-|------|------|------|
-| feedback-loop.js | 重建 | 讀取 flow events → 提取觀察 → 寫入 instinct |
-| Hook 消費者整合 | 新建 | on-end-flow 觸發回饋迴路（session 結束時分析本次表現） |
-| 回饋迴路測試 | 新建 | event 消費 + instinct 寫入正確性 |
+| 任務 | 類型 | 說明 | 狀態 |
+|------|------|------|:----:|
+| feedback-loop.js | 重建 | 讀取 flow events → 提取觀察 → 寫入 instinct | ✅ context-injector + maintainer + briefing-builder（取代 feedback-loop.js）|
+| Hook 消費者整合 | 新建 | on-end-flow 觸發回饋迴路（session 結束時分析本次表現） | ✅ |
+| 回饋迴路測試 | 新建 | event 消費 + instinct 寫入正確性 | ✅ |
 
 ### R1 完成標準
 
@@ -132,7 +133,7 @@ v0.30+ 採用「單腦 + 深度路由 + 輕量 Worker」模式（見 `docs/spec/
 
 ---
 
-## R2：感知操控重建（Layer 2 — 🔴 待做）
+## R2：感知操控重建（Layer 2 — ✅ 已完成）
 
 > 目標：恢復 OS 操控腳本和自主控制能力。
 > 優先序：心跳引擎 > 佇列系統 > OS 腳本（因為心跳是自主運作的前提）。
@@ -142,51 +143,51 @@ v0.30+ 採用「單腦 + 深度路由 + 輕量 Worker」模式（見 `docs/spec/
 **現狀**：autonomous-control skill 有 4 個 references，但 heartbeat.js / session-spawner.js 已刪。
 **目標**：恢復跨 session 自主控制。
 
-| 任務 | 類型 | 說明 |
-|------|------|------|
-| heartbeat.js | 重建 | Bun daemon（start/stop/status + PID + polling loop） |
-| session-spawner.js | 重建 | `claude -p` session spawn（stream-json + timeout + env 過濾） |
-| heartbeat 測試 | 重建 | daemon 生命週期 + spawn 安全邊界 |
+| 任務 | 類型 | 說明 | 狀態 |
+|------|------|------|:----:|
+| heartbeat.js | 重建 | Bun daemon（start/stop/status + PID + polling loop） | ✅ heartbeat.js 637 行 |
+| session-spawner.js | 重建 | `claude -p` session spawn（stream-json + timeout + env 過濾） | ✅ session-spawner.js 246 行 |
+| heartbeat 測試 | 重建 | daemon 生命週期 + spawn 安全邊界 | ✅ |
 
 ### R2.2 佇列系統
 
 **現狀**：workflow-core skill 有佇列知識，但 queue.js / execution-queue.js 已刪。
 **目標**：恢復任務佇列管理。
 
-| 任務 | 類型 | 說明 |
-|------|------|------|
-| queue.js | 重建 | add/list/clear/advance CLI + execution-queue.json |
-| 佇列測試 | 重建 | CRUD + 並行安全 + 佇列推進邏輯 |
+| 任務 | 類型 | 說明 | 狀態 |
+|------|------|------|:----:|
+| queue.js | 重建 | add/list/clear/advance CLI + execution-queue.json | ✅ 架構替代 — Notion 任務系統（heartbeat 直接 poll Notion）|
+| 佇列測試 | 重建 | CRUD + 並行安全 + 佇列推進邏輯 | ✅ |
 
 ### R2.3 OS 操控腳本
 
 **現狀**：os-control skill 有 5 個 references，但 scripts/os/ 目錄已刪。
 **目標**：恢復 OS 能力腳本庫。
 
-| 任務 | 類型 | 說明 |
-|------|------|------|
-| screenshot.js | 重建 | 全螢幕/視窗/區域截圖 |
-| window.js | 重建 | 視窗列表/聚焦 |
-| process.js | 重建 | 列出/啟動/終止 |
-| clipboard.js | 重建 | 讀/寫剪貼簿 |
-| system-info.js | 重建 | CPU/記憶體/磁碟/網路 |
-| notification.js | 重建 | macOS 通知 |
-| fswatch.js | 重建 | 檔案系統變更監控 |
-| websocket.js | 重建 | WebSocket client |
-| tts.js | 重建 | 文字轉語音 |
-| OS 腳本測試 | 重建 | 各腳本的基本功能驗證 |
+| 任務 | 類型 | 說明 | 狀態 |
+|------|------|------|:----:|
+| screenshot.js | 重建 | 全螢幕/視窗/區域截圖 | ✅ |
+| window.js | 重建 | 視窗列表/聚焦 | ✅ |
+| process.js | 重建 | 列出/啟動/終止 | ✅ |
+| clipboard.js | 重建 | 讀/寫剪貼簿 | ✅ |
+| system-info.js | 重建 | CPU/記憶體/磁碟/網路 | ✅ |
+| notification.js | 重建 | macOS 通知 | ✅ |
+| fswatch.js | 重建 | 檔案系統變更監控 | ✅ 10 個 OS 腳本共完成 |
+| websocket.js | 重建 | WebSocket client | ✅ |
+| tts.js | 重建 | 文字轉語音 | ✅ |
+| OS 腳本測試 | 重建 | 各腳本的基本功能驗證 | ✅ |
 
 ### R2.4 動得了（操控層）— 新建
 
 **現狀**：v0.29 時就標記為 ⬜，從未實現。
 **目標**：鍵盤/滑鼠/AppleScript 操控。
 
-| 任務 | 類型 | 說明 |
-|------|------|------|
-| keyboard.js | 新建 | 按鍵/快捷鍵/文字輸入（osascript System Events） |
-| mouse.js | 新建 | 點擊/拖曳/滾動（cliclick） |
-| applescript.js | 新建 | AppleScript/JXA 執行引擎 |
-| computer-use.js | 新建 | 截圖→理解→操作→驗證迴圈 |
+| 任務 | 類型 | 說明 | 狀態 |
+|------|------|------|:----:|
+| keyboard.js | 新建 | 按鍵/快捷鍵/文字輸入（osascript System Events） | ✅ |
+| mouse.js | 新建 | 點擊/拖曳/滾動（cliclick） | ✅ |
+| applescript.js | 新建 | AppleScript/JXA 執行引擎 | ✅ |
+| computer-use.js | 新建 | 截圖→理解→操作→驗證迴圈 | ✅ |
 
 ### R2 完成標準
 
@@ -194,7 +195,7 @@ v0.30+ 採用「單腦 + 深度路由 + 輕量 Worker」模式（見 `docs/spec/
 
 ---
 
-## R3：自我進化重建（Layer 3 — 🔴 待做）
+## R3：自我進化重建（Layer 3 — ⚠️ 67% 完成）
 
 > 目標：恢復自我改造能力。
 > 依賴：R1（學習/評分框架）必須先完成。
@@ -204,65 +205,65 @@ v0.30+ 採用「單腦 + 深度路由 + 輕量 Worker」模式（見 `docs/spec/
 **現狀**：evolve skill 有 2 個 references，但 evolution.js / gap-analyzer.js / gap-fixer.js 已刪。
 **目標**：恢復元件缺口自動偵測和修復。
 
-| 任務 | 類型 | 說明 |
-|------|------|------|
-| gap-analyzer.js | 重建 | 組合 health-check，產出標準化 Gap 物件 |
-| gap-fixer.js | 重建 | 根據 gap type 選擇修復策略 |
-| evolution.js CLI | 重建 | `analyze` / `fix` / `forge` / `internalize` 子命令 |
-| health-check.js | 重建 | 四個 check 函式（closedLoop / skillCoverage / hookIntegrity / agentAlignment） |
-| 進化引擎測試 | 重建 | gap 偵測 + 修復正確性 |
+| 任務 | 類型 | 說明 | 狀態 |
+|------|------|------|:----:|
+| gap-analyzer.js | 重建 | 組合 health-check，產出標準化 Gap 物件 | ⚠️ smoke-test.js 提供部分功能，缺統一 health-check |
+| gap-fixer.js | 重建 | 根據 gap type 選擇修復策略 | ⚠️ 部分覆蓋 |
+| evolution.js CLI | 重建 | `analyze` / `fix` / `forge` / `internalize` 子命令 | ⚠️ 部分覆蓋 |
+| health-check.js | 重建 | 四個 check 函式（closedLoop / skillCoverage / hookIntegrity / agentAlignment） | ⚠️ 缺統一 health-check |
+| 進化引擎測試 | 重建 | gap 偵測 + 修復正確性 | ⚠️ 部分 |
 
 ### R3.2 Skill Forge
 
 **現狀**：skill-forge.js / knowledge-gap-detector.js 已刪，但 Skills 知識文件完整。
 **目標**：恢復自主建立新 skill 的能力。
 
-| 任務 | 類型 | 說明 |
-|------|------|------|
-| skill-forge.js | 重建 | 5 API（forgeSkill / extractKnowledge / assembleSkill / validate / rollback） |
-| knowledge-gap-detector.js | 重建 | shouldAutoForge() + autoForge() |
-| Skill Forge 測試 | 重建 | 建立/驗證/回滾 |
+| 任務 | 類型 | 說明 | 狀態 |
+|------|------|------|:----:|
+| skill-forge.js | 重建 | 5 API（forgeSkill / extractKnowledge / assembleSkill / validate / rollback） | ✅ skill-forge.js 341 行 |
+| knowledge-gap-detector.js | 重建 | shouldAutoForge() + autoForge() | ✅ |
+| Skill Forge 測試 | 重建 | 建立/驗證/回滾 | ✅ |
 
 ### R3.3 深度 PM
 
 **現狀**：pm skill 有 3 個 references，但 interview.js 已刪。
 **目標**：恢復多輪深度訪談能力。
 
-| 任務 | 類型 | 說明 |
-|------|------|------|
-| interview.js | 重建 | 7 API + 24 題問題庫 + session 持久化 |
-| PM 測試 | 重建 | 訪談流程 + 領域研究整合 |
+| 任務 | 類型 | 說明 | 狀態 |
+|------|------|------|:----:|
+| interview.js | 重建 | 7 API + 24 題問題庫 + session 持久化 | ❌ interview.js 缺失（pm skill 有知識）|
+| PM 測試 | 重建 | 訪談流程 + 領域研究整合 | ❌ |
 
 ### R3.4 Project Orchestrator
 
 **現狀**：nova-spec skill 已建立（取代舊 specs skill），但 orchestrator 腳本已刪。
 **目標**：恢復 Skill Forge + PM + 無限迭代的串聯。
 
-| 任務 | 類型 | 說明 |
-|------|------|------|
-| project-orchestrator.js | 重建 | 能力盤點 → Skill 建構排程 → 專案級迭代 |
-| Orchestrator 測試 | 重建 | 端到端流程 |
+| 任務 | 類型 | 說明 | 狀態 |
+|------|------|------|:----:|
+| project-orchestrator.js | 重建 | 能力盤點 → Skill 建構排程 → 專案級迭代 | ✅ lifecycle-orchestrator.js 398 行（重新定位）|
+| Orchestrator 測試 | 重建 | 端到端流程 | ✅ |
 
 ### R3.5 經驗內化
 
 **現狀**：skill-evaluator.js / skill-generalizer.js / experience-index.js 已刪。
 **目標**：恢復專案經驗轉化為永久能力的飛輪。
 
-| 任務 | 類型 | 說明 |
-|------|------|------|
-| skill-evaluator.js | 重建 | 資格評估 + 品質評分 |
-| skill-generalizer.js | 重建 | 通用化（移除專案特定內容） |
-| experience-index.js | 重建 | 專案類型與 skill 對應記錄 |
-| 內化測試 | 重建 | 評估 + 通用化 + 索引 |
+| 任務 | 類型 | 說明 | 狀態 |
+|------|------|------|:----:|
+| skill-evaluator.js | 重建 | 資格評估 + 品質評分 | ⚠️ learner.js 部分覆蓋 |
+| skill-generalizer.js | 重建 | 通用化（移除專案特定內容） | ⚠️ 部分覆蓋 |
+| experience-index.js | 重建 | 專案類型與 skill 對應記錄 | ⚠️ 部分覆蓋 |
+| 內化測試 | 重建 | 評估 + 通用化 + 索引 | ⚠️ |
 
 ### R3.6 Acid Test 重跑
 
 **現狀**：v0.29 時 md-blog Acid Test 的 standard workflow 已完成。
 **目標**：用新架構（D2/D3 深度路由）重跑 Acid Test 驗證端到端。
 
-| 任務 | 類型 | 說明 |
-|------|------|------|
-| Acid Test | 驗證 | 高層目標 → PM 訪談 → Skill Forge → 迭代開發 → 產品完成 → 經驗內化 |
+| 任務 | 類型 | 說明 | 狀態 |
+|------|------|------|:----:|
+| Acid Test | 驗證 | 高層目標 → PM 訪談 → Skill Forge → 迭代開發 → 產品完成 → 經驗內化 | ✅ acid-test.js 673 行（mock 6/6 pass）|
 
 ### R3 完成標準
 
@@ -335,15 +336,16 @@ v0.30+ 採用「單腦 + 深度路由 + 輕量 Worker」模式（見 `docs/spec/
 
 ### 有知識、無執行層（需在 R1-R3 重建）
 
-| Skill | References | 對應執行層 | 重建位置 |
-|-------|:---------:|-----------|---------|
-| os-control | 5 個 | scripts/os/*.js | R2.3 |
-| autonomous-control | 4 個 | heartbeat.js + session-spawner.js | R2.1 |
-| evolve | 2 個 | evolution.js + gap-*.js | R3.1 |
-| instinct | 2 個 | global-instinct.js | R1.3 |
-| pm | 3 個 | interview.js | R3.3 |
-| nova-spec | 3 個 references + 2 個 examples + 3 個 scripts | project-orchestrator.js | R3.4 |
-| workflow-core | 4 個 | 不重建（Pipeline 知識，改適配深度路由） |
+| Skill | References | 對應執行層 | 重建位置 | 狀態 |
+|-------|:---------:|-----------|---------|:----:|
+| os-control | 5 個 | scripts/os/*.js | R2.3 | ✅ scripts/os/ 已重建 |
+| autonomous-control | 4 個 | heartbeat.js + session-spawner.js | R2.1 | ✅ heartbeat.js + session-spawner.js 已重建 |
+| evolve | 2 個 | evolution.js + gap-*.js | R3.1 | ⚠️ 部分覆蓋 |
+| instinct | 2 個 | global-instinct.js | R1.3 | ✅ learner.js 已重建 |
+| pm | 3 個 | interview.js | R3.3 | ❌ interview.js 缺失 |
+| nova-spec | 3 個 references + 2 個 examples + 3 個 scripts | project-orchestrator.js | R3.4 | ✅ lifecycle-orchestrator.js 已重建 |
+| workflow-core | 4 個 | 不重建（Pipeline 知識，改適配深度路由） | — | ✅ 適配完成 |
+| skill-judge | 0 | judge.js | R1.4 | ✅ judge.js 已重建 |
 
 ### 有知識、有執行層（完整閉環）
 
@@ -438,8 +440,8 @@ v0.30+ 採用「單腦 + 深度路由 + 輕量 Worker」模式（見 `docs/spec/
 |---|------|------|:----:|------|
 | S24 | 架構重設計遷移 | Pipeline → 深度路由 + Worker 模式 | ✅ | R0 |
 | S25 | Flow Visualizer | hooks 事件記錄 + SSE 即時顯示 + graph 靜態圖 | ✅ | R0.5 |
-| S26 | Skill 知識適配 | workflow-core / auto SKILL.md 改寫適配深度路由 | ⬜ | R1.2 |
-| S27 | 測試套件重建 | 適配新架構的測試（移除 Pipeline 測試，新增深度路由測試） | ⬜ | R1 |
+| S26 | Skill 知識適配 | workflow-core / auto SKILL.md 改寫適配深度路由 | ✅ | R1.2 |
+| S27 | 測試套件重建 | 適配新架構的測試（移除 Pipeline 測試，新增深度路由測試） | ✅ | R1 |
 | S9a | Worktree Isolation | D4 並行 Worker 的 worktree 隔離 | ⏳ | R4 |
 
 ---

@@ -748,7 +748,7 @@ function renderHero(data) {
   if (qEl) animateCount(qEl, Math.round(avg));
   if (eEl) animateCount(eEl, errCount);
   if (cEl && components) {
-    const total = components.rules + components.skills + components.agents + components.hookModules;
+    const total = components.rules + components.skills + components.agents + components.hooks;
     animateCount(cEl, total);
   }
 
@@ -968,7 +968,7 @@ function renderCtrlComponents(data) {
     { key: 'rules', name: 'Rules', color: '#38bdf8' },
     { key: 'skills', name: 'Skills', color: '#a78bfa' },
     { key: 'agents', name: 'Agents', color: '#34d399' },
-    { key: 'hookModules', name: 'Hook Modules', color: '#fbbf24' },
+    { key: 'hooks', name: 'Hook Modules', color: '#fbbf24' },
   ];
   el.innerHTML = items.map(it => `
     <div class="comp-section">

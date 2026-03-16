@@ -645,7 +645,7 @@ function renderRings(data) {
   const health = Math.max(0, Math.min(100, Math.round(avgScore * 0.7 + (100 - Math.min(errCount * 10, 100)) * 0.3)));
   const quality = Math.round(avgScore);
   const stability = Math.max(0, 100 - errCount * 8);
-  const compTotal = components ? (components.rules + components.skills + components.agents + components.hookModules) : 0;
+  const compTotal = components ? (components.rules + components.skills + components.agents + components.hooks) : 0;
   const compPct = Math.min(100, Math.round(compTotal / 50 * 100));
 
   const items = [

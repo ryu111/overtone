@@ -5,6 +5,7 @@ const DATA = {
   health: null, llm: null, components: null, scores: null, errors: null,
   scripts: null, git: null, sessions: null, behaviors: null, locks: null,
   improvements: null, scenarios: null, daemons: null, sessionLog: null,
+  system: null,
   _ts: 0, _loading: false, _listeners: [],
 };
 
@@ -35,14 +36,14 @@ async function loadAllData() {
   if (DATA._loading) return DATA;
   DATA._loading = true;
   try {
-    const [health, llm, components, scores, errors, scripts, git, sessions, behaviors, locks, improvements, scenarios, daemons, sessionLog] = await Promise.all([
+    const [health, llm, components, scores, errors, scripts, git, sessions, behaviors, locks, improvements, scenarios, daemons, sessionLog, system] = await Promise.all([
       fetchApi('health'), fetchApi('llm'), fetchApi('components'),
       fetchApi('scores'), fetchApi('errors'), fetchApi('scripts'),
       fetchApi('git'), fetchApi('sessions'), fetchApi('behaviors'),
       fetchApi('locks'), fetchApi('improvements'), fetchApi('scenarios'),
-      fetchApi('daemons'), fetchApi('session-log'),
+      fetchApi('daemons'), fetchApi('session-log'), fetchApi('system'),
     ]);
-    Object.assign(DATA, { health, llm, components, scores, errors, scripts, git, sessions, behaviors, locks, improvements, scenarios, daemons, sessionLog, _ts: Date.now() });
+    Object.assign(DATA, { health, llm, components, scores, errors, scripts, git, sessions, behaviors, locks, improvements, scenarios, daemons, sessionLog, system, _ts: Date.now() });
     DATA._listeners.forEach(fn => { try { fn(DATA); } catch (e) { console.error('listener error:', e); } });
   } finally {
     DATA._loading = false;
@@ -180,6 +181,23 @@ function generateMeetingNotes(data) {
   // 場景狀態
   if (data.scenarios?.length) {
     parts.push(`## 場景達成\n${data.scenarios.map(s => `- ${s.name}：${s.done || 0}✅ ${s.partial || 0}🔄 / ${s.total || 0} 項`).join('\n')}`);
+  }
+
+  // 系統資源
+  if (data.system) {
+    parts.push(`## 系統資源\n`);
+    parts.push(`- 記憶體：RSS ${data.system.memory.rss}MB / Heap ${data.system.memory.heap}MB`);
+    if (data.system.orphanBunProcesses?.length > 0) {
+      parts.push(`- ⚠️ 孤兒 Bun 進程：${data.system.orphanBunProcesses.length} 個`);
+      data.system.orphanBunProcesses.forEach(p => parts.push(`  - PID ${p.pid}: ${p.cmd}`));
+    } else {
+      parts.push(`- 孤兒進程：0（正常）`);
+    }
+    if (data.system.novaProcesses?.length > 0) {
+      parts.push(`- Nova 進程：${data.system.novaProcesses.length} 個`);
+      data.system.novaProcesses.forEach(p => parts.push(`  - PID ${p.pid}: ${p.cmd} (CPU ${p.cpu}%)`));
+    }
+    parts.push('');
   }
 
   // Daemon 日誌摘要

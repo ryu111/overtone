@@ -58,7 +58,7 @@ async function handleApi(path, req) {
         rules: cnt(join(CLAUDE_DIR, "rules"), ".md"),
         skills: cnt(join(CLAUDE_DIR, "skills"), (f) => f === "SKILL.md"),
         agents: cnt(join(CLAUDE_DIR, "agents"), ".md"),
-        hookModules: cnt(join(CLAUDE_DIR, "hooks/modules"), ".js"),
+        hooks: cnt(join(CLAUDE_DIR, "hooks/modules"), ".js"),
       });
     }
 
@@ -174,13 +174,41 @@ async function handleApi(path, req) {
 
     // Session 日誌（會議記錄用）
     if (path === "/api/session-log") {
-      const eventsFile = "/tmp/nova-flow-events.jsonl";
-      const events = readJsonl(eventsFile);
-      // 取最近 session 的事件
-      if (events.length === 0) return j([]);
-      const maxSid = Math.max(...events.map(e => e.sid || 0));
-      const sessionEvents = events.filter(e => e.sid === maxSid);
-      return j(sessionEvents);
+      const fp = join(CLAUDE_DIR, "data/session-summaries.jsonl");
+      if (!existsSync(fp)) return j([]);
+      try {
+        const lines = readFileSync(fp, "utf-8").trim().split("\n").filter(Boolean);
+        const entries = lines.slice(-20).map(l => { try { return JSON.parse(l); } catch { return null; } }).filter(Boolean);
+        return j(entries);
+      } catch { return j([]); }
+    }
+
+    if (path === "/api/system") {
+      const mem = process.memoryUsage();
+
+      let orphans = [];
+      try {
+        const ps = execSync('ps aux | grep "[b]un" | grep -v "nova-"', { encoding: 'utf-8', timeout: 3000 });
+        orphans = ps.trim().split('\n').filter(Boolean).map(line => {
+          const parts = line.trim().split(/\s+/);
+          return { pid: parts[1], cpu: parts[2], mem: parts[3], cmd: parts.slice(10).join(' ').slice(0, 80) };
+        });
+      } catch { /* no orphans */ }
+
+      let novaProcesses = [];
+      try {
+        const ps = execSync('ps aux | grep "nova-"', { encoding: 'utf-8', timeout: 3000 });
+        novaProcesses = ps.trim().split('\n').filter(l => !l.includes('grep')).map(line => {
+          const parts = line.trim().split(/\s+/);
+          return { pid: parts[1], cpu: parts[2], mem: parts[3], cmd: parts.slice(10).join(' ').slice(0, 80) };
+        });
+      } catch { /* empty */ }
+
+      return j({
+        memory: { rss: Math.round(mem.rss / 1024 / 1024), heap: Math.round(mem.heapUsed / 1024 / 1024), heapTotal: Math.round(mem.heapTotal / 1024 / 1024) },
+        orphanBunProcesses: orphans,
+        novaProcesses: novaProcesses,
+      });
     }
 
     return j({ error: "Not Found" }, 404);

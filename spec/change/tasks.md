@@ -20,10 +20,10 @@ Phase 3（串行）: R2.6 Acid Test（依賴 R2.2 Skill Lifecycle 完成）
 
 | # | 任務 | 檔案 | 行數 | 依賴 | 狀態 |
 |---|------|------|:----:|------|:----:|
-| T1.1 | Skill Forge 引擎 | `~/.claude/scripts/skill-forge.js` | ~200 | 無 | ⬜ |
-| T1.2 | Lifecycle Orchestrator | `~/.claude/scripts/lifecycle-orchestrator.js` | ~120 | T1.1 | ⬜ |
-| T1.3 | Maintainer 整合 | `~/.claude/scripts/maintainer.js`（修改） | +10 | T1.2 | ⬜ |
-| T1.4 | 單元測試 | `~/projects/overtone/tests/unit/skill-lifecycle.test.js` | ~200 | T1.2 | ⬜ |
+| T1.1 | Skill Forge 引擎 | `~/.claude/scripts/skill-forge.js` | ~200 | 無 | ✅ |
+| T1.2 | Lifecycle Orchestrator | `~/.claude/scripts/lifecycle-orchestrator.js` | ~120 | T1.1 | ✅ |
+| T1.3 | Maintainer 整合 | `~/.claude/scripts/maintainer.js`（修改） | +10 | T1.2 | ✅ |
+| T1.4 | 單元測試 | `~/projects/overtone/tests/unit/skill-lifecycle.test.js` | ~200 | T1.2 | ✅ |
 
 **執行方式**：T1.1 → T1.2 → T1.3 + T1.4（並行）
 **深度**：D3（planner → executor → reviewer）
@@ -40,9 +40,9 @@ Phase 3（串行）: R2.6 Acid Test（依賴 R2.2 Skill Lifecycle 完成）
 
 | # | 任務 | 檔案 | 行數 | 依賴 | 狀態 |
 |---|------|------|:----:|------|:----:|
-| T2.1 | Session Spawner | `~/.claude/scripts/session-spawner.js` | ~120 | 無 | ⬜ |
-| T2.2 | Heartbeat Daemon | `~/.claude/scripts/heartbeat.js` | ~280 | T2.1 | ⬜ |
-| T2.3 | 單元測試 | `~/projects/overtone/tests/unit/heartbeat.test.js` + `session-spawner.test.js` | ~300 | T2.2 | ⬜ |
+| T2.1 | Session Spawner | `~/.claude/scripts/session-spawner.js` | ~120 | 無 | ✅ |
+| T2.2 | Heartbeat Daemon | `~/.claude/scripts/heartbeat.js` | ~280 | T2.1 | ✅ |
+| T2.3 | 單元測試 | `~/projects/overtone/tests/unit/heartbeat.test.js` + `session-spawner.test.js` | ~300 | T2.2 | ✅ |
 
 **執行方式**：T2.1 → T2.2 → T2.3
 **深度**：D3（planner → executor → reviewer）
@@ -66,13 +66,13 @@ Phase 3（串行）: R2.6 Acid Test（依賴 R2.2 Skill Lifecycle 完成）
 
 | # | 任務 | 檔案 | 行數 | 依賴 | 狀態 |
 |---|------|------|:----:|------|:----:|
-| T3.1 | screenshot.js | `~/.claude/scripts/os/screenshot.js` | ~100 | 無 | ⬜ |
-| T3.2 | window.js | `~/.claude/scripts/os/window.js` | ~120 | 無 | ⬜ |
-| T3.3 | process.js | `~/.claude/scripts/os/process.js` | ~90 | 無 | ⬜ |
-| T3.4 | clipboard.js | `~/.claude/scripts/os/clipboard.js` | ~40 | 無 | ⬜ |
-| T3.5 | system-info.js | `~/.claude/scripts/os/system-info.js` | ~130 | 無 | ⬜ |
-| T3.6 | tts.js | `~/.claude/scripts/os/tts.js` | ~60 | 無 | ⬜ |
-| T3.7 | 測試（6 個） | `~/projects/overtone/tests/unit/os-*.test.js` | ~400 | T3.1-T3.6 | ⬜ |
+| T3.1 | screenshot.js | `~/.claude/scripts/os/screenshot.js` | ~100 | 無 | ✅ |
+| T3.2 | window.js | `~/.claude/scripts/os/window.js` | ~120 | 無 | ✅ |
+| T3.3 | process.js | `~/.claude/scripts/os/process.js` | ~90 | 無 | ✅ |
+| T3.4 | clipboard.js | `~/.claude/scripts/os/clipboard.js` | ~40 | 無 | ✅ |
+| T3.5 | system-info.js | `~/.claude/scripts/os/system-info.js` | ~130 | 無 | ✅ |
+| T3.6 | tts.js | `~/.claude/scripts/os/tts.js` | ~60 | 無 | ✅ |
+| T3.7 | 測試（6 個） | `~/projects/overtone/tests/unit/os-*.test.js` | ~400 | T3.1-T3.6 | ✅ |
 
 **執行方式**：T3.1-T3.6 全部並行 → T3.7（6 個測試也並行）
 **深度**：D4（planner → 多 executor 並行 → reviewer）
@@ -89,11 +89,11 @@ Phase 3（串行）: R2.6 Acid Test（依賴 R2.2 Skill Lifecycle 完成）
 
 | # | 任務 | 檔案 | 行數 | 依賴 | 狀態 |
 |---|------|------|:----:|------|:----:|
-| T4.1 | keyboard.js | `~/.claude/scripts/os/keyboard.js` | ~80 | 無 | ⬜ |
-| T4.2 | mouse.js | `~/.claude/scripts/os/mouse.js` | ~100 | 無 | ⬜ |
-| T4.3 | applescript.js | `~/.claude/scripts/os/applescript.js` | ~70 | 無 | ⬜ |
-| T4.4 | computer-use.js | `~/.claude/scripts/os/computer-use.js` | ~150 | T3.1 (screenshot) | ⬜ |
-| T4.5 | 測試（4 個） | `~/projects/overtone/tests/unit/control-*.test.js` | ~300 | T4.1-T4.4 | ⬜ |
+| T4.1 | keyboard.js | `~/.claude/scripts/os/keyboard.js` | ~80 | 無 | ✅ |
+| T4.2 | mouse.js | `~/.claude/scripts/os/mouse.js` | ~100 | 無 | ✅ |
+| T4.3 | applescript.js | `~/.claude/scripts/os/applescript.js` | ~70 | 無 | ✅ |
+| T4.4 | computer-use.js | `~/.claude/scripts/os/computer-use.js` | ~150 | T3.1 (screenshot) | ✅ |
+| T4.5 | 測試（4 個） | `~/projects/overtone/tests/unit/control-*.test.js` | ~300 | T4.1-T4.4 | ✅ |
 
 **執行方式**：T4.1-T4.3 並行 → T4.4 → T4.5（4 個測試並行）
 **深度**：D4（planner → 多 executor 並行 → reviewer）
@@ -113,8 +113,8 @@ Phase 3（串行）: R2.6 Acid Test（依賴 R2.2 Skill Lifecycle 完成）
 
 | # | 任務 | 檔案 | 行數 | 依賴 | 狀態 |
 |---|------|------|:----:|------|:----:|
-| T5.1 | Acid Test 腳本 | `~/.claude/scripts/acid-test.js` | ~180 | T1（Skill Lifecycle） | ⬜ |
-| T5.2 | 單元測試 | `~/projects/overtone/tests/unit/acid-test.test.js` | ~100 | T5.1 | ⬜ |
+| T5.1 | Acid Test 腳本 | `~/.claude/scripts/acid-test.js` | ~180 | T1（Skill Lifecycle） | ✅ |
+| T5.2 | 單元測試 | `~/projects/overtone/tests/unit/acid-test.test.js` | ~100 | T5.1 | ✅ |
 
 **執行方式**：T5.1 → T5.2
 **深度**：D2（planner → executor）
