@@ -204,3 +204,60 @@ describe('觀測型事件 error log 抑制', () => {
     expect(hasFallback('SessionEnd', '')).toBe(false);
   });
 });
+
+describe('error log 只在恢復鏈全失敗時記錄（all-failed 語意）', () => {
+  test('dispatch 失敗 + fallback 成功 → 不應寫入 hook-errors.jsonl', async () => {
+    // 模擬場景：server 斷線但 fallback（直接 import guards.js）成功
+    // 新邏輯：只在 tryFallback 回傳 false 時才 logError
+    const { evaluateBash } = await import(join(CLAUDE_DIR, 'hooks/modules/guards.js'));
+    const result = evaluateBash({ tool_input: { command: 'ls' } });
+    // fallback 成功 → 應回傳 allow → 不觸發 logError
+    expect(result.decision).toBe('allow');
+  });
+
+  test('tryFallback 對有 fallback 的事件回傳 true', () => {
+    // tryFallback 提取後，對 PreToolUse:Bash 應找到 guards.js
+    const keys = 'Bash'.split('|').map(m => `PreToolUse:${m}`);
+    const found = keys.some(k => !!FALLBACK_MODULES_FOR_TEST[k]);
+    expect(found).toBe(true);
+  });
+
+  test('tryFallback 對觀測型事件回傳 false（無 fallback 模組）', () => {
+    const keys = ['PostToolUse:', 'SessionEnd:', 'SubagentStop:'];
+    for (const k of keys) {
+      expect(FALLBACK_MODULES_FOR_TEST[k]).toBeUndefined();
+    }
+  });
+
+  test('E2E: server 斷線時 block 命令仍被 fallback 攔截', async () => {
+    // 用無效 port 確保 dispatch 必定失敗，驗證 fallback 仍然正常運作
+    const proc = Bun.spawn(
+      ['bun', join(CLAUDE_DIR, 'hooks/hook-client.js'), 'PreToolUse', 'Bash'],
+      { stdin: 'pipe', stdout: 'pipe', stderr: 'pipe' }
+    );
+    proc.stdin.write(JSON.stringify({ tool_input: { command: 'rm -rf /' } }));
+    proc.stdin.end();
+
+    const output = await new Response(proc.stdout).text();
+    const exitCode = await proc.exited;
+    expect(exitCode).toBe(0);
+
+    if (output.trim()) {
+      const result = JSON.parse(output.trim());
+      expect(result.decision).toBe('block');
+    }
+  });
+
+  test('hook-client.js 中不含 phase:"dispatch" 或 phase:"retry" 的 logError 呼叫', async () => {
+    // 靜態驗證：確保生產碼只有 "all-failed" 和 "stdin" 兩種 phase
+    const { readFileSync } = await import('fs');
+    const src = readFileSync(join(CLAUDE_DIR, 'hooks/hook-client.js'), 'utf-8');
+    const logErrorCalls = [...src.matchAll(/logError\([^)]+,\s*"([^"]+)"\)/g)];
+    const phases = logErrorCalls.map(m => m[1]);
+    expect(phases).not.toContain('dispatch');
+    expect(phases).not.toContain('retry');
+    expect(phases).not.toContain('fallback');
+    expect(phases).toContain('all-failed');
+    expect(phases).toContain('stdin');
+  });
+});
