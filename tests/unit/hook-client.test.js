@@ -383,3 +383,37 @@ describe('error log 只在恢復鏈全失敗時記錄（all-failed 語意）', (
     expect(phases).toContain('stdin');
   });
 });
+
+// ─── dispatch fallback 順序鎖定（架構測試） ────────────────────────────────────
+
+describe('dispatch fallback 順序（fallback-first 架構鎖定）', () => {
+  const { readFileSync } = require('fs');
+  const src = readFileSync(join(CLAUDE_DIR, 'hooks/hook-client.js'), 'utf-8');
+
+  test('autoStart() 以背景模式執行（.catch 捕捉，不被 await）', () => {
+    // 確認 autoStart().catch(...) 模式存在（非 await autoStart()）
+    expect(src).toMatch(/autoStart\(\)\.catch\(/);
+    // 確認錯誤恢復路徑中沒有 await autoStart()
+    const catchBlock = src.match(/\} catch \(e1\) \{[\s\S]*?(?=\n\})/);
+    expect(catchBlock).not.toBeNull();
+    expect(catchBlock[0]).not.toMatch(/await\s+autoStart\(\)/);
+  });
+
+  test('tryFallback 出現在 autoStart 之前（有 fallback 時先 fallback）', () => {
+    const catchBlock = src.match(/\} catch \(e1\) \{[\s\S]*?(?=\n\})/);
+    expect(catchBlock).not.toBeNull();
+    const block = catchBlock[0];
+    const fallbackPos = block.indexOf('tryFallback');
+    const autoStartPos = block.indexOf('autoStart');
+    expect(fallbackPos).toBeGreaterThan(-1);
+    expect(autoStartPos).toBeGreaterThan(-1);
+    expect(fallbackPos).toBeLessThan(autoStartPos);
+  });
+
+  test('autoStart 函式內含至少 5 處 debugLog', () => {
+    const autoStartFn = src.match(/async function autoStart\(\)[\s\S]*?^}/m);
+    expect(autoStartFn).not.toBeNull();
+    const debugLogCount = (autoStartFn[0].match(/debugLog\(/g) || []).length;
+    expect(debugLogCount).toBeGreaterThanOrEqual(5);
+  });
+});
