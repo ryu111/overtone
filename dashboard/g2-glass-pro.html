@@ -812,12 +812,15 @@ function renderTab1(data) {
     document.getElementById('scriptTop5').innerHTML = '<div class="empty-state">無資料</div>';
   }
 
-  // Sessions
-  const sessionArr = Array.isArray(data.sessions) ? data.sessions : (data.sessions?.sessions || []);
-  if (sessionArr.length > 0) {
-    document.getElementById('recentSessions').innerHTML = sessionArr.slice(0,3).map(s => `
+  // Sessions（過濾 heartbeat 子 session，用 date||ts||timestamp）
+  const rawSessions = data.sessions;
+  const display3 = filterUserSessions(rawSessions, 3);
+  if (display3.length > 0) {
+    document.getElementById('recentSessions').innerHTML =
+      heartbeatSummaryHtml(rawSessions) +
+      display3.map(s => `
       <div class="session-card">
-        <div class="session-ts">${relTime(s.ts||s.timestamp)} · ${s.id||''}</div>
+        <div class="session-ts">${relTime(s.date||s.ts||s.timestamp)}</div>
         <div class="session-summary">${s.summary||s.description||'無摘要'}</div>
       </div>
     `).join('');
@@ -853,12 +856,19 @@ function renderTab2(data) {
   }
 
   if (improvements && Array.isArray(improvements) && improvements.length > 0) {
-    document.getElementById('improvementsList').innerHTML = improvements.slice(0,5).map(imp => `
+    const recent = improvements.slice(-5).reverse();
+    document.getElementById('improvementsList').innerHTML = recent.map(imp => {
+      const path = (imp.path || imp.target || '—').replace(/^\/Users\/[^/]+\//, '~/');
+      const weak = imp.weakDimension || '';
+      const score = imp.score != null ? `${imp.score}分` : '';
+      const label = [score, weak].filter(Boolean).join(' · ');
+      const tips = Array.isArray(imp.suggestions) ? imp.suggestions.join('<br>') : (imp.suggestion || imp.text || imp.content || '—');
+      return `
       <div class="improve-item">
-        <div class="improve-path">${imp.path || imp.target || '—'}</div>
-        <div class="improve-text">${imp.suggestion || imp.text || imp.content || '—'}</div>
-      </div>
-    `).join('');
+        <div class="improve-path">${path}${label ? ` <span style="color:var(--muted);font-size:11px">(${label})</span>` : ''}</div>
+        <div class="improve-text">${tips}</div>
+      </div>`;
+    }).join('');
   } else {
     document.getElementById('improvementsList').innerHTML = '<div class="empty-state"><div class="empty-icon">💡</div>暫無改善建議</div>';
   }
@@ -919,28 +929,28 @@ function renderTab3(data) {
     document.getElementById('errorClusters').innerHTML = '<div class="empty-state">無錯誤記錄</div>';
   }
 
-  // Git commits（卡片式）
-  const gitArr = Array.isArray(git) ? git : (git?.commits || []);
-  if (gitArr.length > 0) {
-    document.getElementById('recentCommits').innerHTML = gitArr.slice(0,6).map(c => `
+  // Git commits（卡片式）— git API 回 {nova:[...], overtone:[...]} 需用 mergeGitCommits
+  const gitSorted = mergeGitCommits(git, 6);
+  if (gitSorted.length > 0) {
+    document.getElementById('recentCommits').innerHTML = gitSorted.map(c => `
       <div class="commit-card">
         <div class="commit-card-top">
           <span class="commit-hash">${(c.hash||c.sha||'').slice(0,7)}</span>
-          <span class="commit-time">${relTime(c.ts||c.date||c.timestamp)}</span>
+          <span class="commit-time">${relTime(c.date||c.ts||c.timestamp)}</span>
         </div>
-        <div class="commit-msg">${c.message||c.msg||'—'}</div>
+        <div class="commit-msg">${c.subject||c.message||c.msg||'—'}</div>
       </div>
     `).join('');
   } else {
     document.getElementById('recentCommits').innerHTML = '<div class="empty-state">無 commit</div>';
   }
 
-  // Sessions
-  const sessionArr = Array.isArray(sessions) ? sessions : (sessions?.sessions || []);
-  if (sessionArr.length > 0) {
-    document.getElementById('activitySessions').innerHTML = sessionArr.slice(0,5).map(s => `
+  // Sessions（過濾 heartbeat 子 session，用 date||ts||timestamp）
+  const displaySessions = filterUserSessions(sessions, 5);
+  if (displaySessions.length > 0) {
+    document.getElementById('activitySessions').innerHTML = displaySessions.map(s => `
       <div class="session-card">
-        <div class="session-ts">${relTime(s.ts||s.timestamp)} · ${s.id||''}</div>
+        <div class="session-ts">${relTime(s.date||s.ts||s.timestamp)}</div>
         <div class="session-summary">${s.summary||s.description||'無摘要'}</div>
       </div>
     `).join('');
@@ -954,11 +964,7 @@ function renderTab4(data) {
   data = data || DATA;
   const { health, daemons, locks, components, behaviors } = data;
 
-  // 服務狀態
-  const daemonArr = Array.isArray(daemons) ? daemons : (daemons?.daemons || []);
-  const daemonMap = {};
-  daemonArr.forEach(d => { if (d.name) daemonMap[d.name.toLowerCase()] = d; });
-
+  // 服務狀態（daemons API 回 {maintainer:[logs], judge:[logs], learner:[logs]}，不是 [{name,running}]）
   // LLM 從 data.llm 讀取
   const llmData = data.llm;
   const llmOnline = llmData?.status === 'online';
@@ -972,95 +978,117 @@ function renderTab4(data) {
     { name: 'Learner', key: 'learner' },
   ];
 
-  document.getElementById('serviceStatus').innerHTML = services.map(svc => {
-    if (svc.isLlm) {
-      const dotClass = llmOnline ? 'dot-ok' : 'dot-err';
-      const metaText = llmOnline ? `在線${llmModel ? ' · ' + llmModel : ''}` : '離線';
+  try {
+    document.getElementById('serviceStatus').innerHTML = services.map(svc => {
+      if (svc.isLlm) {
+        const dotClass = llmOnline ? 'dot-ok' : 'dot-err';
+        const metaText = llmOnline ? `在線${llmModel ? ' · ' + llmModel : ''}` : '離線';
+        return `
+          <div class="service-row">
+            <div class="service-dot ${dotClass}"></div>
+            <div class="service-name">${svc.name}</div>
+            <div class="service-meta">${metaText}</div>
+          </div>
+        `;
+      }
+      if (svc.key === 'server') {
+        const isUp = health?.status === 'ok';
+        const uptime = health?.uptime ? `${Math.round(health.uptime / 60)}m` : '';
+        return `
+          <div class="service-row">
+            <div class="service-dot ${isUp ? 'dot-ok' : 'dot-off'}"></div>
+            <div class="service-name">${svc.name}</div>
+            <div class="service-meta">${isUp ? `運行中${uptime ? ' · ' + uptime : ''}` : '未啟動'}</div>
+          </div>
+        `;
+      }
+      // Daemon：用 parseDaemonStatus(daemons, key) 判斷
+      const ds = parseDaemonStatus(daemons, svc.key);
       return `
         <div class="service-row">
-          <div class="service-dot ${dotClass}"></div>
+          <div class="service-dot ${ds.running ? 'dot-ok' : 'dot-off'}"></div>
           <div class="service-name">${svc.name}</div>
-          <div class="service-meta">${metaText}</div>
+          <div class="service-meta">${ds.running ? '運行中' : '閒置'}${ds.last ? ' · ' + relTime(ds.last) : ''}</div>
         </div>
       `;
+    }).join('');
+  } catch (e) { console.error('[renderTab4/serviceStatus]', e); }
+
+  // Lockfiles（只顯示 exists:true 的）
+  try {
+    const activeLocks = filterActiveLocks(locks);
+    if (activeLocks.length > 0) {
+      document.getElementById('lockfiles').innerHTML = activeLocks.map(lk => {
+        const name = (lk.name || lk.path || '').split('/').pop() || (lk.name||lk.path||String(lk));
+        const age = lk.age ? `${Math.round(lk.age / 60)}m` : '';
+        return `
+        <div class="lock-item">
+          <div class="lock-name">${name}${age ? ` <span style="color:var(--muted);font-size:11px">(${age})</span>` : ''}</div>
+          <button class="lock-clear" onclick="clearLock('${lk.name||lk.path||lk}')">清除</button>
+        </div>`;
+      }).join('');
+    } else {
+      document.getElementById('lockfiles').innerHTML = '<div class="empty-state" style="padding:16px"><div class="empty-icon">🔓</div>無殘留 lock</div>';
     }
-    const d = daemonMap[svc.key] || (health && health[svc.key]);
-    const isRunning = d?.running || d?.status === 'ok' || d?.alive;
-    const dotClass = isRunning ? 'dot-ok' : 'dot-off';
-    const lastAct = d?.lastActivity || d?.last || d?.ts;
-    return `
-      <div class="service-row">
-        <div class="service-dot ${dotClass}"></div>
-        <div class="service-name">${svc.name}</div>
-        <div class="service-meta">${isRunning ? '運行中' : '未啟動'}${lastAct ? ' · ' + relTime(lastAct) : ''}</div>
-      </div>
-    `;
-  }).join('');
+  } catch (e) { console.error('[renderTab4/lockfiles]', e); document.getElementById('lockfiles').innerHTML = '<div class="empty-state">Lock 資料載入失敗</div>'; }
 
-  // Lockfiles
-  const lockArr = Array.isArray(locks) ? locks : (locks?.locks || []);
-  if (lockArr.length > 0) {
-    document.getElementById('lockfiles').innerHTML = lockArr.map(lk => `
-      <div class="lock-item">
-        <div class="lock-name">${lk.name||lk.path||lk}</div>
-        <button class="lock-clear" onclick="clearLock('${lk.name||lk.path||lk}')">清除</button>
-      </div>
-    `).join('');
-  } else {
-    document.getElementById('lockfiles').innerHTML = '<div class="empty-state" style="padding:16px"><div class="empty-icon">🔓</div>無殘留 lock</div>';
-  }
-
-  // 元件
-  if (components) {
-    const types = [
-      { key:'rules', label:'Rules', tag:'tag-r' },
-      { key:'skills', label:'Skills', tag:'tag-s' },
-      { key:'agents', label:'Agents', tag:'tag-a' },
-      { key:'hooks', label:'Hooks', tag:'tag-h' },
-    ];
-    document.getElementById('componentDetail').innerHTML = types.map(t => {
-      const items = components[t.key] || [];
-      return `
-        <div class="comp-section">
-          <div class="comp-header" onclick="toggleComp(this)">
-            <div class="comp-header-left">
-              <span class="tag ${t.tag}">${t.label}</span>
-              <span class="comp-count">${items.length}</span>
+  // 元件詳細（API 可能回 {rules: 16, skills: 27} 數字或陣列，需兩者都處理）
+  try {
+    if (components && typeof components === 'object') {
+      const types = [
+        { key:'rules', label:'Rules', tag:'tag-r' },
+        { key:'skills', label:'Skills', tag:'tag-s' },
+        { key:'agents', label:'Agents', tag:'tag-a' },
+        { key:'hooks', label:'Hooks', tag:'tag-h' },
+      ];
+      document.getElementById('componentDetail').innerHTML = types.map(t => {
+        const val = components[t.key];
+        const count = typeof val === 'number' ? val : (Array.isArray(val) ? val.length : 0);
+        const items = Array.isArray(val) ? val : [];
+        return `
+          <div class="comp-section">
+            <div class="comp-header"${items.length ? ' onclick="toggleComp(this)"' : ''}>
+              <div class="comp-header-left">
+                <span class="tag ${t.tag}">${t.label}</span>
+                <span class="comp-count">${count}</span>
+              </div>
+              ${items.length ? '<span class="comp-chevron">▶</span>' : ''}
             </div>
-            <span class="comp-chevron">▶</span>
+            ${items.length ? `<div class="comp-list">
+              ${items.map(i=>`<div class="comp-list-item">${(i.name||i.path||String(i)).split('/').pop()}</div>`).join('')}
+            </div>` : ''}
           </div>
-          <div class="comp-list">
-            ${items.map(i=>`<div class="comp-list-item">${(i.name||i.path||i).split('/').pop()}</div>`).join('')}
-          </div>
-        </div>
-      `;
-    }).join('');
-  } else {
-    document.getElementById('componentDetail').innerHTML = '<div class="empty-state">無元件資料</div>';
-  }
+        `;
+      }).join('');
+    } else {
+      document.getElementById('componentDetail').innerHTML = '<div class="empty-state">無元件資料</div>';
+    }
+  } catch (e) { console.error('[renderTab4/componentDetail]', e); document.getElementById('componentDetail').innerHTML = '<div class="empty-state">元件資料載入失敗</div>'; }
 
-  // 行為
-  const behaviorArr = Array.isArray(behaviors) ? behaviors : (behaviors?.behaviors || []);
-  if (behaviorArr.length > 0) {
-    document.getElementById('behaviorList').innerHTML = behaviorArr.slice(0,8).map(b => {
-      const conf = b.confidence ?? b.score ?? 0;
-      const pct = Math.min(100, Math.round(conf * 100));
-      const name = b.pattern || b.name || b.key || '—';
-      return `
-        <div class="confidence-bar">
-          <div class="conf-header">
-            <span class="conf-label">${name}</span>
-            <span class="conf-pct">${pct}%</span>
+  // 行為模式（獨立 try-catch，確保前段 error 不影響此處）
+  try {
+    const behaviorArr = Array.isArray(behaviors) ? behaviors : (behaviors?.behaviors || []);
+    if (behaviorArr.length > 0) {
+      document.getElementById('behaviorList').innerHTML = behaviorArr.slice(0,8).map(b => {
+        const conf = b.confidence ?? b.score ?? 0;
+        const pct = Math.min(100, Math.round(conf * 100));
+        const name = b.pattern || b.name || b.key || '—';
+        return `
+          <div class="confidence-bar">
+            <div class="conf-header">
+              <span class="conf-label">${name}</span>
+              <span class="conf-pct">${pct}%</span>
+            </div>
+            <div class="conf-track">
+              <div class="conf-fill" style="width:${pct}%"></div>
+            </div>
           </div>
-          <div class="conf-track">
-            <div class="conf-fill" style="width:${pct}%"></div>
-          </div>
-        </div>
-      `;
-    }).join('');
-  } else {
-    document.getElementById('behaviorList').innerHTML = '<div class="empty-state"><div class="empty-icon">🧠</div>尚無行為資料</div>';
-  }
+        `;
+      }).join('');
+    } else {
+      document.getElementById('behaviorList').innerHTML = '<div class="empty-state"><div class="empty-icon">🧠</div>尚無行為資料</div>';
+    }
+  } catch (e) { console.error('[renderTab4/behaviorList]', e); document.getElementById('behaviorList').innerHTML = '<div class="empty-state">行為資料載入失敗</div>'; }
 }
 
 // ── Sparkline SVG (漸層填充) ──

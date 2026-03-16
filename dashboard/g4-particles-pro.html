@@ -738,10 +738,12 @@ function renderUnifiedTimeline(data) {
   const git = data.git;
   const sessions = data.sessions;
   const events = [];
+  // git API 回 {nova: [...], overtone: [...]}, commit message 欄位為 subject
   if (git?.nova) git.nova.forEach(c => events.push({ time: c.date, badge: 'nova', content: c.subject || '' }));
   if (git?.overtone) git.overtone.forEach(c => events.push({ time: c.date, badge: 'overtone', content: c.subject || '' }));
-  if (sessions) sessions.slice(-5).forEach(s => events.push({
-    time: s.timestamp || '', badge: 'session', content: s.summary || s.content || ''
+  // 用 filterUserSessions 過濾 heartbeat，欄位用 s.date || s.ts
+  filterUserSessions(sessions, 5).forEach(s => events.push({
+    time: s.date || s.ts || '', badge: 'session', content: s.summary || s.content || ''
   }));
   events.sort((a, b) => new Date(b.time) - new Date(a.time));
   if (!events.length) { el.innerHTML = '<div class="empty-state">資料不可用</div>'; return; }
@@ -775,11 +777,17 @@ function renderConsoleLocks(data) {
   if (!el) return;
   const locks = data.locks;
   if (!locks) { el.innerHTML = '<div class="empty-state">資料不可用</div>'; return; }
-  el.innerHTML = locks.map(l => {
-    const name = l.path.split('/').pop();
+  // 只顯示存在的 lock
+  const activeLocks = filterActiveLocks(locks);
+  if (!activeLocks.length) {
+    el.innerHTML = '<div style="font-size:12px;color:#34d399;padding:8px 0">無活躍 Lock</div>';
+    return;
+  }
+  el.innerHTML = activeLocks.map(l => {
+    const name = (l.path || '').split('/').pop();
     return `<div class="lock-row">
       <div class="lock-name">${name}</div>
-      <span class="lock-badge ${l.exists ? 'lock-on' : 'lock-off'}">${l.exists ? `活躍 ${l.age||0}s` : '清除'}</span>
+      <span class="lock-badge lock-on">活躍 ${l.age||0}s</span>
     </div>`;
   }).join('');
 }
@@ -857,32 +865,35 @@ function showToast(msg) {
 
 // ---- Render all ----
 function render(data) {
-  // Tab 1
-  renderStatusBar(data);
-  renderDashDist(data);
-  renderDashErrors(data);
-  renderScriptHealth(data);
-  renderComponents(data);
-
-  // Tab 2
-  renderScoreSections(data);
-  renderDetailImprovements(data);
-
-  // Tab 3
-  renderUnifiedTimeline(data);
-
-  // Tab 4
-  renderDaemonLogs(data);
-  renderConsoleLocks(data);
-  renderConsoleBehaviors(data);
-  renderSceneProgress(data);
-
-  // Tab 5
-  const notesEl = document.getElementById('meeting-notes');
-  if (notesEl) {
-    const notes = generateMeetingNotes(data);
-    const decisions = generateDecisionSummary(data);
-    notesEl.innerHTML = renderMarkdown(notes + '\n\n' + decisions);
+  const fns = [
+    // Tab 1
+    () => renderStatusBar(data),
+    () => renderDashDist(data),
+    () => renderDashErrors(data),
+    () => renderScriptHealth(data),
+    () => renderComponents(data),
+    // Tab 2
+    () => renderScoreSections(data),
+    () => renderDetailImprovements(data),
+    // Tab 3
+    () => renderUnifiedTimeline(data),
+    // Tab 4
+    () => renderDaemonLogs(data),
+    () => renderConsoleLocks(data),
+    () => renderConsoleBehaviors(data),
+    () => renderSceneProgress(data),
+    // Tab 5
+    () => {
+      const notesEl = document.getElementById('meeting-notes');
+      if (notesEl) {
+        const notes = generateMeetingNotes(data);
+        const decisions = generateDecisionSummary(data);
+        notesEl.innerHTML = renderMarkdown(notes + '\n\n' + decisions);
+      }
+    },
+  ];
+  for (const fn of fns) {
+    try { fn(); } catch (e) { console.error('render error:', e); }
   }
 }
 

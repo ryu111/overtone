@@ -158,10 +158,13 @@ if (currentIdx >= 0 && current) {
   btn.textContent = '🔄 自主循環';
   tabBar.appendChild(btn);
 
-  // 綁定 click（因為 initTabs 已經跑完，手動綁）
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === 'tab-loop'));
-    document.querySelectorAll('.tab-content').forEach(c => c.classList.toggle('active', c.id === 'tab-loop'));
+  // 用 delegation 統一管理所有 tab（含動態注入的），覆蓋 initTabs 的不完整切換
+  tabBar.addEventListener('click', (e) => {
+    const tab = e.target.closest('.tab');
+    if (!tab) return;
+    const id = tab.dataset.tab;
+    document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === id));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.toggle('active', c.id === id));
   });
 
   // 注入 tab 內容

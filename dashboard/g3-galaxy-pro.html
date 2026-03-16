@@ -156,6 +156,7 @@
     text-align: left; padding: 8px 10px; font-size: 10px;
     text-transform: uppercase; letter-spacing: 1px; color: var(--text-dim);
     border-bottom: 1px solid rgba(100,140,255,0.1);
+    position: sticky; top: 0; background: rgba(10,10,30,0.95); z-index: 1;
   }
   .score-table td { padding: 8px 10px; border-bottom: 1px solid rgba(100,140,255,0.06); }
   .score-table tr:hover td { background: rgba(100,140,255,0.04); }
@@ -369,7 +370,7 @@
   <div id="quality" class="tab-content">
     <div class="panel" style="margin-bottom:16px">
       <div class="panel-title">完整評分排行（依 Total 排序）</div>
-      <div style="overflow-x:auto">
+      <div style="overflow-x:auto;max-height:400px;overflow-y:auto">
         <table class="score-table" id="full-score-table">
           <thead>
             <tr>
@@ -769,12 +770,16 @@ function renderImprovements(data) {
   if (!el) return;
   const improvements = data.improvements;
   if (!improvements || !improvements.length) { el.innerHTML = '<div class="empty-state">資料不可用</div>'; return; }
-  el.innerHTML = improvements.slice(-8).reverse().map(im => `
-    <div class="improve-item">
-      <div class="improve-meta">${im.timestamp ? new Date(im.timestamp).toLocaleString('zh-TW') : ''} · ${im.component || im.path || ''}</div>
-      ${im.suggestion || im.content || im.text || ''}
-    </div>
-  `).join('');
+  el.innerHTML = improvements.slice(-8).reverse().map(im => {
+    const suggestions = Array.isArray(im.suggestions) ? im.suggestions : [];
+    const text = suggestions.length ? suggestions.join('；') : (im.content || im.text || '');
+    const weakDim = im.weakDimension ? `<span style="color:var(--accent3);font-size:10px"> · 弱項：${im.weakDimension}</span>` : '';
+    const score = im.score != null ? `<span style="color:var(--text-dim);font-size:10px"> · 分數：${im.score}</span>` : '';
+    return `<div class="improve-item">
+      <div class="improve-meta">${im.timestamp ? new Date(im.timestamp).toLocaleString('zh-TW') : ''} · ${im.component || im.path || ''}${weakDim}${score}</div>
+      ${text}
+    </div>`;
+  }).join('');
 }
 
 function renderErrorClusters(data) {
@@ -839,15 +844,17 @@ function renderSessionList(data) {
   if (!el) return;
   const sessions = data.sessions;
   if (!sessions || !sessions.length) { el.innerHTML = '<div class="empty-state">資料不可用</div>'; return; }
-  el.innerHTML = [...sessions].slice(-6).reverse().map(s => `
-    <div class="session-card" style="margin-bottom:8px">
+  const recent = filterUserSessions(sessions, 6);
+  el.innerHTML = heartbeatSummaryHtml(sessions) + recent.map(s => {
+    const text = s.summary || s.description || '';
+    return `<div class="session-card" style="margin-bottom:8px">
       <div class="session-meta">
-        <span class="session-id">${(s.session_id||s.id||'').slice(0,12)}...</span>
-        <span class="session-time">${s.timestamp ? new Date(s.timestamp).toLocaleDateString('zh-TW') : ''}</span>
+        <span class="session-id">${relativeTime(s.date || s.ts)}</span>
+        <span class="session-time">${s.date ? new Date(s.date).toLocaleDateString('zh-TW') : ''}</span>
       </div>
-      <div class="session-summary">${(s.summary||s.content||'').slice(0,100)}${(s.summary||s.content||'').length>100?'...':''}</div>
-    </div>
-  `).join('');
+      <div class="session-summary">${text.slice(0,100)}${text.length>100?'...':''}</div>
+    </div>`;
+  }).join('');
 }
 
 function renderServiceStatus(data) {
@@ -856,11 +863,13 @@ function renderServiceStatus(data) {
   const health = data.health;
   const ok = health && health.status === 'ok';
   const llmOk = data.llm?.status === 'online';
+  const maintainer = parseDaemonStatus(data.daemons, 'maintainer');
+  const judge = parseDaemonStatus(data.daemons, 'judge');
   const services = [
     { name: 'Nova Server', status: ok ? 'online' : 'offline' },
     { name: `LLM${llmOk ? ' · ' + (data.llm?.model || '') : ''}`, status: llmOk ? 'online' : 'offline' },
-    { name: 'Maintainer', status: 'auto' },
-    { name: 'Judge', status: 'auto' },
+    { name: 'Maintainer', status: maintainer.running ? 'active' : 'idle', detail: maintainer.last ? relativeTime(maintainer.last) : '無記錄' },
+    { name: 'Judge', status: judge.running ? 'active' : 'idle', detail: judge.last ? relativeTime(judge.last) : '無記錄' },
     { name: 'Hook Client', status: ok ? 'active' : 'fallback' },
   ];
   el.innerHTML = services.map(s => {
@@ -870,7 +879,7 @@ function renderServiceStatus(data) {
     return `<div class="status-row">
       <div class="status-dot ${cls}"></div>
       <div class="status-name">${s.name}</div>
-      <div class="status-detail">${s.status}</div>
+      <div class="status-detail">${s.detail || s.status}</div>
     </div>`;
   }).join('');
 }
@@ -878,15 +887,18 @@ function renderServiceStatus(data) {
 function renderLocks(data) {
   const el = document.getElementById('lock-status');
   if (!el) return;
-  const locks = data.locks;
-  if (!locks) { el.innerHTML = '<div class="empty-state" style="font-size:12px">資料不可用</div>'; return; }
-  el.innerHTML = locks.map(l => {
-    const name = l.path.split('/').pop();
-    const cls = l.exists ? 'lock-active' : 'lock-clear';
-    const label = l.exists ? `活躍 (${l.age || 0}s)` : '清除';
+  const allLocks = Array.isArray(data.locks) ? data.locks : (data.locks?.locks || []);
+  if (!allLocks.length) { el.innerHTML = '<div class="empty-state" style="font-size:12px;color:#34d399">無 Lock</div>'; return; }
+  const activeLocks = filterActiveLocks(data.locks);
+  if (!activeLocks.length) {
+    el.innerHTML = '<div class="empty-state" style="font-size:12px;color:#34d399">無活躍 Lock</div>';
+    return;
+  }
+  el.innerHTML = activeLocks.map(l => {
+    const name = (l.path || '').split('/').pop();
     return `<div class="lock-item">
       <div class="lock-name">${name}</div>
-      <span class="lock-badge ${cls}">${label}</span>
+      <span class="lock-badge lock-active">活躍 (${l.age || 0}s)</span>
     </div>`;
   }).join('');
 }
@@ -948,34 +960,42 @@ function showToast(msg) {
 
 // ---- Render all ----
 function render(data) {
-  // Tab 1
-  renderRings(data);
-  renderDistChart(data);
-  renderScriptTop5(data);
-  renderRecentSessions(data);
+  const sections = [
+    // Tab 1
+    () => renderRings(data),
+    () => renderDistChart(data),
+    () => renderScriptTop5(data),
+    () => renderRecentSessions(data),
+    // Tab 2
+    () => renderFullScoreTable(data),
+    () => renderImprovements(data),
+    // Tab 3
+    () => renderErrorClusters(data),
+    () => renderSparkline(data),
+    () => renderGitActivity(data),
+    () => renderSessionList(data),
+    // Tab 4
+    () => renderServiceStatus(data),
+    () => renderLocks(data),
+    () => renderBehaviors(data),
+    // Tab 5
+    () => {
+      const notesEl = document.getElementById('meeting-notes');
+      if (notesEl) {
+        const notes = generateMeetingNotes(data);
+        const decisions = generateDecisionSummary(data);
+        notesEl.innerHTML = renderMarkdown(notes + '\n\n' + decisions);
+      }
+    },
+  ];
 
-  // Tab 2
-  renderFullScoreTable(data);
-  renderImprovements(data);
-
-  // Tab 3
-  renderErrorClusters(data);
-  renderSparkline(data);
-  renderGitActivity(data);
-  renderSessionList(data);
-
-  // Tab 4
-  renderServiceStatus(data);
-  renderLocks(data);
-  renderBehaviors(data);
-
-  // Tab 5
-  const notesEl = document.getElementById('meeting-notes');
-  if (notesEl) {
-    const notes = generateMeetingNotes(data);
-    const decisions = generateDecisionSummary(data);
-    notesEl.innerHTML = renderMarkdown(notes + '\n\n' + decisions);
+  for (const fn of sections) {
+    try { fn(); } catch (e) { console.error('render section error:', e); }
   }
+
+  // lastUpdated 一定更新
+  const lastUpdatedEl = document.getElementById('last-updated');
+  if (lastUpdatedEl) lastUpdatedEl.textContent = new Date().toLocaleTimeString('zh-TW', { hour12: false });
 }
 
 // ---- Init ----

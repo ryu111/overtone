@@ -748,18 +748,23 @@ function renderHero(data) {
   if (qEl) animateCount(qEl, Math.round(avg));
   if (eEl) animateCount(eEl, errCount);
   if (cEl && components) {
-    const total = components.rules + components.skills + components.agents + components.hooks;
+    const total = (components.rules||0) + (components.skills||0) + (components.agents||0) + (components.hooks||0);
     animateCount(cEl, total);
   }
 
   // Status strip
   const ok = health && health.status === 'ok';
   const llmOk = data.llm?.status === 'online';
+  const activeLocks = filterActiveLocks(data.locks);
   const ss = document.getElementById('hero-status');
   if (ss) {
+    const lockHtml = activeLocks.length
+      ? `<div class="status-pill-sm"><div class="pill-dot dot-yellow"></div>Lock: ${activeLocks.length} 活躍</div>`
+      : `<div class="status-pill-sm"><div class="pill-dot dot-green"></div>Lock: 無</div>`;
     ss.innerHTML = `
       <div class="status-pill-sm"><div class="pill-dot ${ok ? 'dot-green' : 'dot-red'}"></div>Server ${ok ? 'Online' : 'Offline'}</div>
       <div class="status-pill-sm"><div class="pill-dot ${llmOk ? 'dot-green' : 'dot-red'}"></div>LLM ${llmOk ? (data.llm?.model || 'Online') : '離線'}</div>
+      ${lockHtml}
     `;
   }
 }
@@ -803,17 +808,18 @@ function renderHeroScripts(data) {
 function renderHeroSessions(data) {
   const el = document.getElementById('hero-sessions');
   if (!el) return;
-  const sessions = data.sessions;
-  if (!sessions || !sessions.length) { el.innerHTML = '<div class="empty-state">資料不可用</div>'; return; }
-  el.innerHTML = [...sessions].slice(-3).reverse().map(s => `
-    <div class="session-card">
+  const sessions = filterUserSessions(data.sessions, 3);
+  if (!sessions.length) { el.innerHTML = '<div class="empty-state">資料不可用</div>'; return; }
+  el.innerHTML = heartbeatSummaryHtml(data.sessions) + sessions.map(s => {
+    const dt = s.date || s.ts;
+    const summary = s.summary || s.description || '無摘要';
+    return `<div class="session-card">
       <div class="session-meta">
-        <span class="session-id">${(s.session_id||s.id||'').slice(0,8)}...</span>
-        <span class="session-time">${s.timestamp ? new Date(s.timestamp).toLocaleDateString('zh-TW') : ''}</span>
+        <span class="session-time">${dt ? new Date(dt).toLocaleDateString('zh-TW') : ''}</span>
       </div>
-      <div class="session-summary">${(s.summary||s.content||'').slice(0,80)}...</div>
-    </div>
-  `).join('');
+      <div class="session-summary">${summary.slice(0,80)}</div>
+    </div>`;
+  }).join('');
 }
 
 // ---- Tab 2 ----
@@ -865,9 +871,11 @@ function renderAnalysisImprovements(data) {
   if (!el) return;
   const improvements = data.improvements;
   if (!improvements || !improvements.length) { el.innerHTML = '<div class="empty-state">資料不可用</div>'; return; }
-  el.innerHTML = improvements.slice(-5).reverse().map(im => `
-    <div class="improve-item">${im.suggestion||im.content||im.text||''}</div>
-  `).join('');
+  const html = improvements.slice(-5).reverse().flatMap(im => {
+    const suggestions = Array.isArray(im.suggestions) ? im.suggestions : (im.suggestion ? [im.suggestion] : [im.content || im.text || '']);
+    return suggestions.map(s => `<div class="improve-item">${s}</div>`);
+  }).join('');
+  el.innerHTML = html || '<div class="empty-state">資料不可用</div>';
 }
 
 function renderAnalysisBehaviors(data) {
@@ -893,7 +901,7 @@ function renderUnifiedLog(data) {
   const events = [];
   if (git?.nova) git.nova.forEach(c => events.push({ time: c.date, badge: 'nova', content: c.subject||'' }));
   if (git?.overtone) git.overtone.forEach(c => events.push({ time: c.date, badge: 'overtone', content: c.subject||'' }));
-  if (sessions) sessions.slice(-5).forEach(s => events.push({ time: s.timestamp||'', badge: 'session', content: s.summary||s.content||'' }));
+  if (sessions) filterUserSessions(sessions, 5).forEach(s => events.push({ time: s.date||s.ts||'', badge: 'session', content: s.summary||s.description||s.content||'' }));
   events.sort((a,b) => new Date(b.time) - new Date(a.time));
   if (!events.length) { el.innerHTML = '<div class="empty-state">資料不可用</div>'; return; }
   el.innerHTML = events.slice(0,20).map(e => `
@@ -927,21 +935,23 @@ function renderCtrlServices(data) {
   const el = document.getElementById('ctrl-services');
   if (!el) return;
   const health = data.health;
-  const ok = health && health.status === 'ok';
+  const ok = health?.status === 'ok';
   const llmOk = data.llm?.status === 'online';
+  const maintainer = parseDaemonStatus(data.daemons, 'maintainer');
+  const judge = parseDaemonStatus(data.daemons, 'judge');
   const services = [
     { name: 'Nova Server (port 3457)', status: ok ? 'online' : 'offline' },
     { name: `LLM${llmOk ? ' · ' + (data.llm?.model || '') : ' (port 8000)'}`, status: llmOk ? 'online' : 'offline' },
-    { name: 'Maintainer', status: 'daemon' },
-    { name: 'Judge', status: 'daemon' },
+    { name: 'Maintainer', status: maintainer.running ? 'active' : (maintainer.last ? 'idle' : 'unknown'), detail: maintainer.last ? relativeTime(maintainer.last) : '無記錄' },
+    { name: 'Judge', status: judge.running ? 'active' : (judge.last ? 'idle' : 'unknown'), detail: judge.last ? relativeTime(judge.last) : '無記錄' },
     { name: 'Hook Client', status: ok ? 'active' : 'fallback' },
   ];
-  const dotCls = { online:'dot-green', offline:'dot-red', active:'dot-green', fallback:'dot-red', daemon:'dot-yellow', unknown:'dot-gray' };
+  const dotCls = { online:'dot-green', offline:'dot-red', active:'dot-green', fallback:'dot-red', idle:'dot-yellow', unknown:'dot-gray' };
   el.innerHTML = services.map(s => `
     <div class="service-row">
       <div class="srv-dot ${dotCls[s.status]||'dot-gray'}"></div>
       <div class="srv-name">${s.name}</div>
-      <div class="srv-detail">${s.status}</div>
+      <div class="srv-detail">${s.detail || s.status}</div>
     </div>
   `).join('');
 }
@@ -949,13 +959,14 @@ function renderCtrlServices(data) {
 function renderCtrlLocks(data) {
   const el = document.getElementById('ctrl-locks');
   if (!el) return;
-  const locks = data.locks;
-  if (!locks) { el.innerHTML = '<div class="empty-state">資料不可用</div>'; return; }
-  el.innerHTML = locks.map(l => {
-    const name = l.path.split('/').pop();
+  const activeLocks = filterActiveLocks(data.locks);
+  if (!data.locks) { el.innerHTML = '<div class="empty-state">資料不可用</div>'; return; }
+  if (!activeLocks.length) { el.innerHTML = '<div class="empty-state" style="color:#34d399">無活躍 Lock</div>'; return; }
+  el.innerHTML = activeLocks.map(l => {
+    const name = (l.path || '').split('/').pop();
     return `<div class="lock-item">
       <div class="lock-name">${name}</div>
-      <span class="lock-badge ${l.exists ? 'lock-on' : 'lock-off'}">${l.exists ? `活躍 ${l.age||0}s` : '清除'}</span>
+      <span class="lock-badge lock-on">活躍 ${l.age||0}s</span>
     </div>`;
   }).join('');
 }
@@ -1018,34 +1029,32 @@ function showToast(msg) {
 
 // ---- Render all ----
 function render(data) {
-  // Tab 1
-  renderHero(data);
-  renderHeroDist(data);
-  renderHeroScripts(data);
-  renderHeroSessions(data);
-
-  // Tab 2
-  renderAnalysisTable(data.scores, '全部');
-  initGradeFilter(data.scores);
-  renderAnalysisErrors(data);
-  renderAnalysisImprovements(data);
-  renderAnalysisBehaviors(data);
-
-  // Tab 3
-  renderUnifiedLog(data);
-  renderLogScenes(data);
-
-  // Tab 4
-  renderCtrlServices(data);
-  renderCtrlLocks(data);
-  renderCtrlComponents(data);
-
-  // Tab 5
-  const notesEl = document.getElementById('meeting-notes');
-  if (notesEl) {
-    const notes = generateMeetingNotes(data);
-    const decisions = generateDecisionSummary(data);
-    notesEl.innerHTML = renderMarkdown(notes + '\n\n' + decisions);
+  const sections = [
+    () => renderHero(data),
+    () => renderHeroDist(data),
+    () => renderHeroScripts(data),
+    () => renderHeroSessions(data),
+    () => renderAnalysisTable(data.scores, '全部'),
+    () => initGradeFilter(data.scores),
+    () => renderAnalysisErrors(data),
+    () => renderAnalysisImprovements(data),
+    () => renderAnalysisBehaviors(data),
+    () => renderUnifiedLog(data),
+    () => renderLogScenes(data),
+    () => renderCtrlServices(data),
+    () => renderCtrlLocks(data),
+    () => renderCtrlComponents(data),
+    () => {
+      const notesEl = document.getElementById('meeting-notes');
+      if (notesEl) {
+        const notes = generateMeetingNotes(data);
+        const decisions = generateDecisionSummary(data);
+        notesEl.innerHTML = renderMarkdown(notes + '\n\n' + decisions);
+      }
+    },
+  ];
+  for (const fn of sections) {
+    try { fn(); } catch (e) { console.error('render error:', fn.toString().slice(0, 60), e); }
   }
 }
 
