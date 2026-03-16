@@ -743,13 +743,19 @@ function renderTab1(data) {
     document.getElementById('scriptTop5').innerHTML = '<div class="empty-state">無資料</div>';
   }
 
-  // 最近 Sessions
+  // 最近 Sessions（過濾掉 heartbeat 子 session，只顯示使用者 session）
   const sessionData = data.sessions;
   if (sessionData && Array.isArray(sessionData) && sessionData.length > 0) {
-    const recent = sessionData.slice(0,3);
-    document.getElementById('recentSessions').innerHTML = recent.map(s => `
+    const userSessions = sessionData.filter(s => s.source !== 'heartbeat');
+    const hbSessions = sessionData.filter(s => s.source === 'heartbeat');
+    const recent = (userSessions.length > 0 ? userSessions : sessionData).slice(-3).reverse();
+    const hbCount = hbSessions.length;
+    const hbSuccess = hbSessions.filter(s => s.status === 'success').length;
+    document.getElementById('recentSessions').innerHTML =
+      (hbCount > 0 ? `<div style="font-size:11px;color:var(--text-dim);margin-bottom:6px">🔄 心跳任務 ${hbSuccess}/${hbCount} 成功</div>` : '') +
+      recent.map(s => `
       <div class="session-card">
-        <div class="session-ts">${relTime(s.ts || s.timestamp)} · ${s.id || ''}</div>
+        <div class="session-ts">${relTime(s.date || s.ts || s.timestamp)}</div>
         <div class="session-summary">${s.summary || s.description || '無摘要'}</div>
       </div>
     `).join('');

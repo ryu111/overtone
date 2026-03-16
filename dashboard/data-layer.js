@@ -189,9 +189,16 @@ function generateMeetingNotes(data) {
 
   // 最近活動
   const recentGit = [...(data.git?.nova || []), ...(data.git?.overtone || [])].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 5);
-  const recentSessions = (data.sessions || []).slice(-3).reverse();
-  if (recentGit.length || recentSessions.length) {
+  const allSessions = data.sessions || [];
+  const userSessions = allSessions.filter(s => s.source !== 'heartbeat');
+  const recentSessions = (userSessions.length > 0 ? userSessions : allSessions).slice(-3).reverse();
+  const hbStats = allSessions.filter(s => s.source === 'heartbeat');
+  if (recentGit.length || recentSessions.length || hbStats.length) {
     parts.push(`## 最近活動`);
+    if (hbStats.length) {
+      const ok = hbStats.filter(s => s.status === 'success').length;
+      parts.push(`🔄 心跳任務 ${ok}/${hbStats.length} 成功`);
+    }
     if (recentSessions.length) {
       parts.push(`### Sessions\n${recentSessions.map(s => `- ${relativeTime(s.date)}：${s.summary || '（無摘要）'}`).join('\n')}`);
     }
