@@ -103,7 +103,7 @@ describe("模組獨立性", () => {
 
 // ── Lifecycle 模組介面 ──
 describe("lifecycle 模組介面", () => {
-  const lifecycleModules = ["heartbeat.js", "self-drive.js"];
+  const lifecycleModules = ["heartbeat.js"];
 
   for (const file of lifecycleModules) {
     it(`${file} export default 含 name + subscribe + handler`, async () => {

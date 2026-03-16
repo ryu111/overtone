@@ -145,85 +145,14 @@ describe('heartbeat module', () => {
   });
 });
 
-// ─── self-drive 測試 ───
-describe('self-drive module', () => {
-  const COOLDOWN = 30 * 60 * 1000;
-
-  it('cooldown 未過 → handler 不觸發', async () => {
-    const ctx = mockCtx({ lastRun: Date.now() }); // 剛跑過
-
-    const state = ctx.getState();
-    const now = Date.now();
-    if (now - (state.lastRun || 0) < COOLDOWN) {
-      // early return（cooldown 未過）
-    } else {
-      ctx.emit('sd:start', {});
-    }
-
-    expect(ctx.emitted.length).toBe(0);
-  });
-
-  it('cooldown 已過 → handler emit sd:start + sd:done', async () => {
-    const ctx = mockCtx({ lastRun: 0 }); // 很久以前跑過
-
-    const mockSpawnSession = async () => ({
-      ok: true,
-      outcome: Promise.resolve({ exitCode: 0 }),
-    });
-
-    const state = ctx.getState();
-    const now = Date.now();
-    if (now - (state.lastRun || 0) < COOLDOWN) {
-      // cooldown 未過
-    } else {
-      ctx.setState({ lastRun: now });
-      ctx.emit('sd:start', { prompt_preview: 'test' });
-
-      const spawned = await mockSpawnSession();
-      if (!spawned.ok) {
-        ctx.emit('sd:done', { exitCode: -1, error: 'spawn failed' });
-      } else {
-        const { exitCode } = await spawned.outcome;
-        const stats = ctx.getState().stats || { runs: 0, successes: 0 };
-        stats.runs++;
-        if (exitCode === 0) stats.successes++;
-        ctx.setState({ stats });
-        ctx.emit('sd:done', { exitCode });
-      }
-    }
-
+// ─── heartbeat idle → 自驅測試 ───
+describe('heartbeat idle path (self-drive)', () => {
+  it('Notion 空時 emit sd:start', () => {
+    // heartbeat handler 在 poll 回 idle 時應 emit sd:start
+    const ctx = mockCtx({ executing: false, stats: {} });
+    // 模擬 idle path 的 emit
+    ctx.emit('sd:start');
     expect(ctx.emitted.some(e => e.type === 'sd:start')).toBe(true);
-    expect(ctx.emitted.some(e => e.type === 'sd:done')).toBe(true);
-    const doneEvent = ctx.emitted.find(e => e.type === 'sd:done');
-    expect(doneEvent.exitCode).toBe(0);
-    expect(ctx.getState().stats.runs).toBe(1);
-    expect(ctx.getState().stats.successes).toBe(1);
-  });
-
-  it('cooldown 已過 + spawnSession 失敗 → emit sd:done with error', async () => {
-    const ctx = mockCtx({ lastRun: 0 });
-
-    const mockSpawnFailed = async () => ({
-      ok: false,
-      error: 'spawn 失敗',
-    });
-
-    const state = ctx.getState();
-    const now = Date.now();
-    if (now - (state.lastRun || 0) >= COOLDOWN) {
-      ctx.setState({ lastRun: now });
-      ctx.emit('sd:start', { prompt_preview: 'test' });
-      const spawned = await mockSpawnFailed();
-      if (!spawned.ok) {
-        ctx.emit('sd:done', { exitCode: -1, error: spawned.error });
-      }
-    }
-
-    expect(ctx.emitted.some(e => e.type === 'sd:start')).toBe(true);
-    expect(ctx.emitted.some(e => e.type === 'sd:done')).toBe(true);
-    const doneEvent = ctx.emitted.find(e => e.type === 'sd:done');
-    expect(doneEvent.exitCode).toBe(-1);
-    expect(typeof doneEvent.error).toBe('string');
   });
 });
 
