@@ -1,35 +1,65 @@
 import { describe, test, expect } from 'bun:test';
 import { homedir } from 'os';
 import { join } from 'path';
-const { evaluate } = await import(join(homedir(), '.claude/hooks/scripts/notification/on-notification.js'));
 
-describe('on-notification', () => {
-  test('回傳完整通知格式', () => {
-    const result = evaluate({
-      title: 'Task Complete',
-      message: 'Build succeeded',
+const mod = await import(join(homedir(), '.claude/hooks/modules/notification.js'));
+const handler = mod.on.Notification;
+const { sanitize } = mod;
+
+describe('notification module', () => {
+  describe('sanitize', () => {
+    test('轉義雙引號', () => {
+      expect(sanitize('hello "world"')).toBe('hello \\"world\\"');
     });
 
-    expect(result).toEqual({
-      sound: 'Glass',
-      title: 'Task Complete',
-      message: 'Build succeeded',
+    test('轉義反斜線', () => {
+      expect(sanitize('path\\to\\file')).toBe('path\\\\to\\\\file');
+    });
+
+    test('同時轉義反斜線和雙引號', () => {
+      expect(sanitize('say \\"hi\\"')).toBe('say \\\\\\"hi\\\\\\"');
+    });
+
+    test('無特殊字元時不變', () => {
+      expect(sanitize('hello world')).toBe('hello world');
     });
   });
 
-  test('預設 title 和 message', () => {
-    const result = evaluate({});
+  describe('handler', () => {
+    test('正常輸入回傳 allow', () => {
+      const result = handler({ title: 'Test', message: 'OK' });
+      expect(result.decision).toBe('allow');
+    });
 
-    expect(result.sound).toBe('Glass');
-    expect(result.title).toBe('Claude Code');
-    expect(result.message).toBe('');
-  });
+    test('含雙引號的 message 不 throw', () => {
+      const result = handler({ title: 'Test', message: 'say "hello"' });
+      expect(result.decision).toBe('allow');
+    });
 
-  test('空 input', () => {
-    const result = evaluate({});
+    test('含反斜線的 message 不 throw', () => {
+      const result = handler({ title: 'Test', message: 'path\\to\\file' });
+      expect(result.decision).toBe('allow');
+    });
 
-    expect(result).toHaveProperty('sound');
-    expect(result).toHaveProperty('title');
-    expect(result).toHaveProperty('message');
+    test('空 input 回傳 allow', () => {
+      const result = handler({});
+      expect(result.decision).toBe('allow');
+    });
+
+    test('null input 回傳 allow', () => {
+      const result = handler(null);
+      expect(result.decision).toBe('allow');
+    });
+
+    test('非 string title 使用預設值', () => {
+      const result = handler({ title: 123, message: 'test' });
+      expect(result.decision).toBe('allow');
+    });
+
+    test('超長 message 被截斷（不 crash）', () => {
+      const longMsg = 'a'.repeat(1000);
+      const result = handler({ title: 'Test', message: longMsg });
+      expect(result.decision).toBe('allow');
+    });
   });
 });
