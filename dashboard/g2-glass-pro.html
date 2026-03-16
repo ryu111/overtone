@@ -1,0 +1,1136 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nova — 毛玻璃旗艦版</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --text: #f0e6ff;
+    --muted: rgba(240,230,255,0.45);
+    --border: rgba(255,255,255,0.1);
+    --accent: #c4b5fd;
+    --accent2: #67e8f9;
+    --green: #4ade80;
+    --red: #f87171;
+    --yellow: #fbbf24;
+    --cyan: #67e8f9;
+    --pink: #f9a8d4;
+    --emerald: #34d399;
+    --amber: #fbbf24;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #0a0816;
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  /* 5 個漂浮色塊 */
+  .bg-blobs { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+  .bg-blob {
+    position: absolute; border-radius: 50%;
+    will-change: transform; animation: floatBlob linear infinite alternate;
+  }
+  .bg-blob-1 {
+    width: 550px; height: 550px; filter: blur(90px); opacity: 0.32;
+    background: radial-gradient(circle, #7c3aed, #5b21b6);
+    top: -180px; left: -120px; animation-duration: 22s; animation-delay: 0s;
+  }
+  .bg-blob-2 {
+    width: 450px; height: 450px; filter: blur(80px); opacity: 0.28;
+    background: radial-gradient(circle, #06b6d4, #0e7490);
+    bottom: -160px; right: -120px; animation-duration: 19s; animation-delay: -6s;
+  }
+  .bg-blob-3 {
+    width: 400px; height: 400px; filter: blur(75px); opacity: 0.25;
+    background: radial-gradient(circle, #ec4899, #be185d);
+    top: 35%; left: 45%; animation-duration: 25s; animation-delay: -12s;
+  }
+  .bg-blob-4 {
+    width: 350px; height: 350px; filter: blur(70px); opacity: 0.22;
+    background: radial-gradient(circle, #10b981, #065f46);
+    top: 15%; right: 8%; animation-duration: 21s; animation-delay: -4s;
+  }
+  .bg-blob-5 {
+    width: 300px; height: 300px; filter: blur(65px); opacity: 0.2;
+    background: radial-gradient(circle, #f59e0b, #b45309);
+    bottom: 20%; left: 20%; animation-duration: 17s; animation-delay: -9s;
+  }
+
+  @keyframes floatBlob {
+    0%   { transform: translate(0, 0) scale(1); }
+    25%  { transform: translate(80px, -70px) scale(1.08); }
+    50%  { transform: translate(-50px, 90px) scale(0.92); }
+    75%  { transform: translate(70px, 50px) scale(1.05); }
+    100% { transform: translate(-30px, -40px) scale(1.02); }
+  }
+
+  /* 20 個微粒子 */
+  .particles { position: fixed; inset: 0; pointer-events: none; z-index: 1; overflow: hidden; }
+  .particle {
+    position: absolute; border-radius: 50%; background: rgba(255,255,255,0.6);
+    animation: riseParticle linear infinite;
+    will-change: transform, opacity;
+  }
+
+  @keyframes riseParticle {
+    0%   { transform: translate(0, 0); opacity: 0; }
+    10%  { opacity: var(--max-opacity); }
+    90%  { opacity: var(--max-opacity); }
+    100% { transform: translate(var(--drift), -100vh); opacity: 0; }
+  }
+
+  /* 頁面 */
+  .page {
+    position: relative; z-index: 10;
+    max-width: 1400px; margin: 0 auto;
+    padding: 28px 24px 80px;
+  }
+
+  /* Header */
+  .header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 28px;
+  }
+  .back-link {
+    color: var(--muted); text-decoration: none; font-size: 13px; transition: color 0.2s;
+  }
+  .back-link:hover { color: var(--text); }
+  .header-center { text-align: center; }
+  .header-title {
+    font-size: clamp(18px,2.5vw,26px); font-weight: 700; letter-spacing: 0.05em;
+    background: linear-gradient(135deg, #c4b5fd, #67e8f9, #f9a8d4, #34d399);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .header-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .last-updated { font-size: 12px; color: var(--muted); text-align: right; }
+
+  /* 毛玻璃面板 */
+  .glass-panel {
+    background: rgba(255,255,255,0.05);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.12);
+    padding: 22px;
+    transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+    animation: slideUp 0.5s ease-out backwards;
+  }
+  .glass-panel:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 16px 48px rgba(0,0,0,0.5), 0 0 0 1px rgba(196,181,253,0.2);
+    border-color: rgba(196,181,253,0.2);
+  }
+
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .glass-panel:nth-child(1) { animation-delay: 0.04s; }
+  .glass-panel:nth-child(2) { animation-delay: 0.08s; }
+  .glass-panel:nth-child(3) { animation-delay: 0.12s; }
+  .glass-panel:nth-child(4) { animation-delay: 0.16s; }
+  .glass-panel:nth-child(5) { animation-delay: 0.20s; }
+  .glass-panel:nth-child(6) { animation-delay: 0.24s; }
+
+  .panel-title {
+    font-size: 12px; font-weight: 600; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--muted);
+    margin-bottom: 16px; display: flex; align-items: center; gap: 8px;
+  }
+  .panel-title::before {
+    content: ''; display: block; width: 3px; height: 14px;
+    background: linear-gradient(180deg, var(--accent), var(--accent2));
+    border-radius: 2px;
+  }
+
+  /* Tabs */
+  .tabs {
+    display: flex; gap: 0; border-bottom: 1px solid var(--border); margin-bottom: 20px;
+  }
+  .tab {
+    padding: 10px 20px; cursor: pointer; font-size: 13px; font-weight: 500;
+    color: var(--muted); border-bottom: 2px solid transparent;
+    transition: all 0.2s; background: none;
+    border-top: none; border-left: none; border-right: none;
+    white-space: nowrap;
+  }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* KPI 卡片 - 圓角 24px */
+  .kpi-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;
+    margin-bottom: 24px;
+  }
+  @media (max-width: 900px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
+
+  .kpi-card {
+    background: rgba(255,255,255,0.04);
+    backdrop-filter: blur(20px) saturate(160%);
+    border: 1px solid rgba(255,255,255,0.09);
+    border-radius: 24px;
+    padding: 22px;
+    display: flex; flex-direction: column; gap: 8px;
+    transition: transform 0.25s, box-shadow 0.25s, border-color 0.25s;
+    animation: slideUp 0.5s ease-out backwards;
+  }
+  .kpi-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 36px rgba(0,0,0,0.4);
+    border-color: rgba(196,181,253,0.2);
+  }
+  .kpi-card:nth-child(1) { animation-delay: 0.04s; }
+  .kpi-card:nth-child(2) { animation-delay: 0.08s; }
+  .kpi-card:nth-child(3) { animation-delay: 0.12s; }
+  .kpi-card:nth-child(4) { animation-delay: 0.16s; }
+
+  .kpi-icon { font-size: 24px; }
+  .kpi-value {
+    font-size: 36px; font-weight: 700; line-height: 1;
+    /* 計數動畫用 CSS transition 配合 JS */
+    transition: color 0.4s;
+  }
+  .kpi-label { font-size: 12px; color: var(--muted); letter-spacing: 0.05em; }
+  .kpi-sub { font-size: 11px; color: var(--muted); }
+  .kpi-trend { font-size: 12px; }
+  .kpi-trend.up { color: var(--green); }
+  .kpi-trend.down { color: var(--red); }
+  .kpi-trend.neutral { color: var(--muted); }
+
+  /* 佈局格線 */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  @media (max-width: 900px) { .two-col { grid-template-columns: 1fr; } }
+  .section-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  @media (max-width: 900px) { .section-grid { grid-template-columns: 1fr; } }
+
+  /* 水平 bar */
+  .bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .bar-label { font-size: 12px; color: var(--muted); width: 100px; flex-shrink: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bar-track { flex: 1; height: 7px; background: rgba(255,255,255,0.06); border-radius: 4px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 4px; transition: width 0.7s cubic-bezier(.25,.8,.25,1); }
+  .bar-num { font-size: 12px; color: var(--text); width: 36px; text-align: right; flex-shrink: 0; }
+
+  /* 品質表格（sticky header + 毛玻璃） */
+  .quality-table-wrap { overflow-x: auto; max-height: 440px; overflow-y: auto; }
+  .quality-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .quality-table thead tr {
+    position: sticky; top: 0; z-index: 5;
+    background: rgba(10,8,22,0.8);
+    backdrop-filter: blur(16px);
+  }
+  .quality-table th {
+    text-align: left; padding: 10px 12px;
+    font-size: 11px; font-weight: 600; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--muted);
+    border-bottom: 1px solid var(--border);
+  }
+  .quality-table td { padding: 9px 12px; border-bottom: 1px solid rgba(255,255,255,0.04); transition: background 0.15s; }
+  .quality-table tbody tr:hover td { background: rgba(196,181,253,0.06); }
+  .grade-badge {
+    display: inline-block; padding: 2px 8px; border-radius: 6px;
+    font-size: 11px; font-weight: 700; letter-spacing: 0.05em;
+  }
+
+  /* 改善建議 */
+  .improve-item {
+    background: rgba(255,255,255,0.03);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 10px 10px 0;
+    padding: 12px 14px; margin-bottom: 10px;
+    transition: background 0.2s;
+  }
+  .improve-item:hover { background: rgba(255,255,255,0.05); }
+  .improve-path { font-size: 11px; color: var(--cyan); font-family: monospace; }
+  .improve-text { font-size: 13px; color: var(--text); margin-top: 4px; line-height: 1.5; }
+
+  /* 錯誤 */
+  .error-stat { text-align: center; padding: 12px; }
+  .error-stat .big-num { font-size: 52px; font-weight: 700; color: var(--red); line-height: 1; }
+  .error-stat .big-num.zero { color: var(--green); }
+  .error-stat .label { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .error-cluster { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .error-cluster-label { font-size: 11px; color: var(--muted); width: 140px; flex-shrink: 0; font-family: monospace; }
+  .error-cluster-bar { flex: 1; height: 6px; background: rgba(248,113,113,0.12); border-radius: 3px; overflow: hidden; }
+  .error-cluster-fill { height: 100%; background: linear-gradient(90deg, #f87171, #fca5a5); border-radius: 3px; }
+  .error-cluster-num { font-size: 12px; color: var(--red); width: 24px; text-align: right; }
+
+  /* Sparkline */
+  .sparkline-wrap { margin-top: 14px; }
+  .sparkline-label { font-size: 11px; color: var(--muted); margin-bottom: 6px; }
+
+  /* Git commit 卡片式 */
+  .commit-card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 10px; padding: 11px 14px; margin-bottom: 8px;
+    transition: background 0.2s, border-color 0.2s;
+  }
+  .commit-card:hover { background: rgba(255,255,255,0.06); border-color: rgba(196,181,253,0.15); }
+  .commit-card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+  .commit-hash { font-family: monospace; font-size: 11px; color: var(--cyan); }
+  .commit-time { font-size: 11px; color: var(--muted); }
+  .commit-msg { font-size: 13px; color: var(--text); line-height: 1.4; }
+
+  /* Session 卡片 */
+  .session-card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 12px; padding: 14px 16px; margin-bottom: 10px;
+    transition: background 0.2s;
+  }
+  .session-card:hover { background: rgba(255,255,255,0.055); }
+  .session-ts { font-size: 11px; color: var(--muted); }
+  .session-summary { font-size: 13px; color: var(--text); margin-top: 4px; line-height: 1.5; }
+
+  /* 服務狀態 */
+  .service-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+  .service-dot {
+    width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0;
+    box-shadow: 0 0 8px currentColor;
+  }
+  .dot-ok { background: var(--green); color: var(--green); }
+  .dot-warn { background: var(--yellow); color: var(--yellow); }
+  .dot-err { background: var(--red); color: var(--red); }
+  .dot-off { background: rgba(255,255,255,0.18); color: transparent; box-shadow: none; }
+  .service-name { font-size: 13px; font-weight: 500; flex: 1; }
+  .service-meta { font-size: 11px; color: var(--muted); }
+
+  /* Lockfile */
+  .lock-item {
+    display: flex; align-items: center; gap: 10px;
+    background: rgba(251,191,36,0.08); border: 1px solid rgba(251,191,36,0.18);
+    border-radius: 8px; padding: 8px 12px; margin-bottom: 8px;
+  }
+  .lock-name { font-size: 12px; font-family: monospace; color: var(--yellow); flex: 1; }
+  .lock-clear {
+    font-size: 11px; color: var(--yellow); background: rgba(251,191,36,0.12);
+    border: 1px solid rgba(251,191,36,0.28); border-radius: 4px;
+    padding: 2px 8px; cursor: pointer; transition: background 0.2s;
+  }
+  .lock-clear:hover { background: rgba(251,191,36,0.24); }
+
+  /* 進度條 */
+  .confidence-bar { margin-bottom: 10px; }
+  .conf-header { display: flex; justify-content: space-between; margin-bottom: 4px; }
+  .conf-label { font-size: 12px; color: var(--text); }
+  .conf-pct { font-size: 12px; color: var(--accent); }
+  .conf-track { height: 6px; background: rgba(255,255,255,0.06); border-radius: 3px; overflow: hidden; }
+  .conf-fill {
+    height: 100%; border-radius: 3px;
+    background: linear-gradient(90deg, var(--accent), var(--cyan));
+    transition: width 0.7s cubic-bezier(.25,.8,.25,1);
+  }
+
+  /* 毛玻璃操作按鈕 */
+  .action-btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 10px 18px; border-radius: 12px; font-size: 13px; font-weight: 500;
+    cursor: pointer; transition: all 0.2s;
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(196,181,253,0.28);
+    background: rgba(196,181,253,0.08); color: var(--accent);
+  }
+  .action-btn:hover {
+    background: rgba(196,181,253,0.18);
+    border-color: rgba(196,181,253,0.45);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(196,181,253,0.15);
+  }
+  .action-btn:active { transform: translateY(0); }
+  .action-btn.danger {
+    border-color: rgba(248,113,113,0.28); background: rgba(248,113,113,0.08); color: var(--red);
+  }
+  .action-btn.danger:hover {
+    background: rgba(248,113,113,0.18); border-color: rgba(248,113,113,0.45);
+    box-shadow: 0 6px 20px rgba(248,113,113,0.15);
+  }
+  .btn-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+
+  /* Toast 從右上角滑入 */
+  #toast {
+    position: fixed; top: 20px; right: 20px; z-index: 9999;
+    padding: 12px 20px; border-radius: 12px;
+    background: rgba(20,16,36,0.92);
+    backdrop-filter: blur(24px) saturate(180%);
+    border: 1px solid rgba(196,181,253,0.3);
+    color: var(--text); font-size: 13px;
+    transform: translateX(calc(100% + 24px)); opacity: 0;
+    transition: all 0.35s cubic-bezier(.34,1.56,.64,1);
+    pointer-events: none;
+  }
+  #toast.show { transform: translateX(0); opacity: 1; }
+
+  /* 元件展開 */
+  .comp-section { margin-bottom: 10px; }
+  .comp-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 0; cursor: pointer;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    user-select: none; transition: color 0.2s;
+  }
+  .comp-header:hover { color: var(--accent); }
+  .comp-header-left { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; }
+  .comp-count {
+    display: inline-block; padding: 1px 8px; border-radius: 10px;
+    background: rgba(196,181,253,0.14); color: var(--accent);
+    font-size: 11px; font-weight: 600;
+  }
+  .comp-chevron { font-size: 11px; color: var(--muted); transition: transform 0.2s; }
+  .comp-chevron.open { transform: rotate(90deg); }
+  .comp-list {
+    display: none; padding: 8px 0 4px 16px;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 4px;
+  }
+  .comp-list.open { display: grid; }
+  .comp-list-item { font-size: 11px; color: var(--muted); font-family: monospace; padding: 2px 0; }
+
+  /* 空狀態 */
+  .empty-state {
+    text-align: center; padding: 32px; color: var(--muted); font-size: 13px;
+  }
+  .empty-icon { font-size: 32px; margin-bottom: 8px; }
+
+  hr.dim { border: none; border-top: 1px solid rgba(255,255,255,0.05); margin: 14px 0; }
+
+  .status-ok { color: var(--green); }
+  .status-err { color: var(--red); }
+  .status-warn { color: var(--yellow); }
+
+  .tag {
+    display: inline-block; padding: 2px 7px; border-radius: 5px; font-size: 10px;
+    font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase;
+  }
+  .tag-r { background: rgba(196,181,253,0.15); color: var(--accent); }
+  .tag-s { background: rgba(52,211,153,0.15); color: var(--emerald); }
+  .tag-a { background: rgba(103,232,249,0.15); color: var(--cyan); }
+  .tag-h { background: rgba(249,168,212,0.15); color: var(--pink); }
+</style>
+</head>
+<body>
+
+<!-- 5 個漂浮色塊背景 -->
+<div class="bg-blobs">
+  <div class="bg-blob bg-blob-1"></div>
+  <div class="bg-blob bg-blob-2"></div>
+  <div class="bg-blob bg-blob-3"></div>
+  <div class="bg-blob bg-blob-4"></div>
+  <div class="bg-blob bg-blob-5"></div>
+</div>
+
+<!-- 20 個粒子（JS 生成） -->
+<div class="particles" id="particlesContainer"></div>
+
+<div id="toast"></div>
+
+<div class="page">
+  <!-- Header -->
+  <div class="header">
+    <a href="/gallery.html" class="back-link">← Gallery</a>
+    <div class="header-center">
+      <div class="header-title">Nova — 毛玻璃旗艦版</div>
+      <div class="header-sub">Glass Pro · 4 Tab 終極版</div>
+    </div>
+    <div class="last-updated" id="lastUpdated">載入中...</div>
+  </div>
+
+  <!-- Tab 列 -->
+  <div class="tabs">
+    <button class="tab" data-tab="tab-dashboard">🔮 儀表板</button>
+    <button class="tab" data-tab="tab-datatable">📋 資料表</button>
+    <button class="tab" data-tab="tab-monitor">📡 監控</button>
+    <button class="tab" data-tab="tab-control">🎛 控制中心</button>
+  </div>
+
+  <!-- Tab 1: 儀表板 -->
+  <div class="tab-content" id="tab-dashboard">
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-icon">🟢</div>
+        <div class="kpi-value" id="kpiHealth">—</div>
+        <div class="kpi-label">系統健康</div>
+        <div class="kpi-sub" id="kpiUptime"></div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon">📊</div>
+        <div class="kpi-value" id="kpiScore">—</div>
+        <div class="kpi-label">品質平均</div>
+        <div class="kpi-trend neutral" id="kpiScoreTrend">—</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon">⚡</div>
+        <div class="kpi-value" id="kpiErrors">—</div>
+        <div class="kpi-label">錯誤數</div>
+        <div class="kpi-sub">過去 1 小時</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon">📦</div>
+        <div class="kpi-value" id="kpiComponents">—</div>
+        <div class="kpi-label">元件總數</div>
+        <div class="kpi-sub" id="kpiCompBreak">—</div>
+      </div>
+    </div>
+
+    <div class="two-col">
+      <div class="glass-panel">
+        <div class="panel-title">品質等級分布</div>
+        <div id="gradeDistBar">
+          <div class="empty-state"><div class="empty-icon">📈</div>載入中...</div>
+        </div>
+      </div>
+      <div class="glass-panel">
+        <div class="panel-title">Script 行數 TOP 5</div>
+        <div id="scriptTop5">
+          <div class="empty-state"><div class="empty-icon">📝</div>載入中...</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="glass-panel">
+      <div class="panel-title">最近 Session</div>
+      <div id="recentSessions">
+        <div class="empty-state"><div class="empty-icon">🕐</div>載入中...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tab 2: 資料表 -->
+  <div class="tab-content" id="tab-datatable">
+    <div class="glass-panel" style="margin-bottom:16px">
+      <div class="panel-title">完整品質列表</div>
+      <div class="quality-table-wrap">
+        <table class="quality-table">
+          <thead>
+            <tr>
+              <th>路徑</th>
+              <th>類型</th>
+              <th>確定性</th>
+              <th>語意</th>
+              <th>總分</th>
+              <th>等級</th>
+            </tr>
+          </thead>
+          <tbody id="qualityTableBody">
+            <tr><td colspan="6" class="empty-state">載入中...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="glass-panel">
+      <div class="panel-title">改善建議（最近 5 個）</div>
+      <div id="improvementsList">
+        <div class="empty-state"><div class="empty-icon">💡</div>載入中...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tab 3: 監控 -->
+  <div class="tab-content" id="tab-monitor">
+    <div class="section-grid">
+      <div class="glass-panel">
+        <div class="panel-title">Hook 錯誤統計</div>
+        <div id="errorStats">
+          <div class="empty-state"><div class="empty-icon">⚡</div>載入中...</div>
+        </div>
+        <div class="sparkline-wrap" id="errorSparklineWrap" style="display:none">
+          <div class="sparkline-label">7 天趨勢</div>
+          <svg id="errorSparkline" width="100%" height="44" viewBox="0 0 240 44" preserveAspectRatio="none"></svg>
+        </div>
+      </div>
+      <div class="glass-panel">
+        <div class="panel-title">錯誤分類</div>
+        <div id="errorClusters">
+          <div class="empty-state"><div class="empty-icon">🔍</div>載入中...</div>
+        </div>
+      </div>
+    </div>
+    <div class="two-col" style="margin-top:16px">
+      <div class="glass-panel">
+        <div class="panel-title">最近 Git Commits</div>
+        <div id="recentCommits">
+          <div class="empty-state"><div class="empty-icon">📝</div>載入中...</div>
+        </div>
+      </div>
+      <div class="glass-panel">
+        <div class="panel-title">最近 Session 摘要</div>
+        <div id="activitySessions">
+          <div class="empty-state"><div class="empty-icon">🕐</div>載入中...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tab 4: 控制中心 -->
+  <div class="tab-content" id="tab-control">
+    <div class="section-grid">
+      <div class="glass-panel">
+        <div class="panel-title">服務狀態</div>
+        <div id="serviceStatus">
+          <div class="empty-state"><div class="empty-icon">🖥</div>載入中...</div>
+        </div>
+      </div>
+      <div class="glass-panel">
+        <div class="panel-title">Lockfile 狀態</div>
+        <div id="lockfiles">
+          <div class="empty-state"><div class="empty-icon">🔒</div>載入中...</div>
+        </div>
+      </div>
+    </div>
+    <div class="section-grid" style="margin-top:16px">
+      <div class="glass-panel">
+        <div class="panel-title">元件詳細</div>
+        <div id="componentDetail">
+          <div class="empty-state"><div class="empty-icon">📦</div>載入中...</div>
+        </div>
+      </div>
+      <div class="glass-panel">
+        <div class="panel-title">行為模式</div>
+        <div id="behaviorList">
+          <div class="empty-state"><div class="empty-icon">🧠</div>載入中...</div>
+        </div>
+      </div>
+    </div>
+    <div class="glass-panel" style="margin-top:16px">
+      <div class="panel-title">操作面板</div>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:4px">對 Nova 系統執行快速操作</p>
+      <div class="btn-row">
+        <button class="action-btn" onclick="doAction('reload')">🔄 重載模組</button>
+        <button class="action-btn danger" onclick="doAction('clearlock')">🔓 清除 Lock</button>
+        <button class="action-btn" onclick="doAction('maintainer')">⚙️ 觸發 Maintainer</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── 粒子生成 ──
+(function generateParticles() {
+  const container = document.getElementById('particlesContainer');
+  for (let i = 0; i < 20; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    const size = 3 + Math.random() * 3;
+    const left = Math.random() * 100;
+    const duration = 18 + Math.random() * 22;
+    const delay = Math.random() * -30;
+    const drift = (Math.random() - 0.5) * 80;
+    const maxOpacity = 0.1 + Math.random() * 0.2;
+    p.style.cssText = `
+      width:${size}px; height:${size}px;
+      left:${left}%;
+      bottom: -${size}px;
+      animation-duration:${duration}s;
+      animation-delay:${delay}s;
+      --max-opacity:${maxOpacity};
+      --drift:${drift}px;
+    `;
+    container.appendChild(p);
+  }
+})();
+
+// ── 共用 fetch ──
+async function fetchApi(ep) {
+  try {
+    const r = await fetch(`/api/${ep}`, { signal: AbortSignal.timeout(5000) });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const ct = r.headers.get('content-type') || '';
+    return ct.includes('json') ? await r.json() : await r.text();
+  } catch (e) { console.error(`API ${ep}:`, e.message); return null; }
+}
+
+// ── Tab 系統 ──
+function initTabs(storageKey) {
+  const tabs = document.querySelectorAll('.tab');
+  const contents = document.querySelectorAll('.tab-content');
+  const saved = localStorage.getItem(storageKey);
+
+  function activate(id) {
+    tabs.forEach(t => t.classList.toggle('active', t.dataset.tab === id));
+    contents.forEach(c => c.classList.toggle('active', c.id === id));
+    localStorage.setItem(storageKey, id);
+  }
+
+  tabs.forEach(t => t.addEventListener('click', () => activate(t.dataset.tab)));
+  activate(saved || tabs[0]?.dataset.tab || 'tab-dashboard');
+}
+initTabs('g2-tab');
+
+// ── Toast ──
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3200);
+}
+
+// ── Grade helpers ──
+function gradeColor(g) {
+  const m = { A:'#10b981', B:'#3b82f6', C:'#f59e0b', D:'#f97316', F:'#ef4444' };
+  return m[g] || '#94a3b8';
+}
+function gradeBg(g) {
+  const m = { A:'rgba(16,185,129,0.15)', B:'rgba(59,130,246,0.15)', C:'rgba(245,158,11,0.15)', D:'rgba(249,115,22,0.15)', F:'rgba(239,68,68,0.15)' };
+  return m[g] || 'rgba(148,163,184,0.15)';
+}
+function scoreToGrade(s) {
+  if (s >= 90) return 'A'; if (s >= 75) return 'B'; if (s >= 60) return 'C'; if (s >= 40) return 'D'; return 'F';
+}
+
+// ── 相對時間 ──
+function relTime(ts) {
+  if (!ts) return '—';
+  const d = new Date(ts), now = new Date(), diff = (now - d) / 1000;
+  if (diff < 60) return `${Math.floor(diff)}s 前`;
+  if (diff < 3600) return `${Math.floor(diff/60)}m 前`;
+  if (diff < 86400) return `${Math.floor(diff/3600)}h 前`;
+  return `${Math.floor(diff/86400)}d 前`;
+}
+
+// ── 計數動畫 ──
+function animateCount(el, target, suffix) {
+  const duration = 600;
+  const start = performance.now();
+  const startVal = 0;
+  function update(now) {
+    const pct = Math.min((now - start) / duration, 1);
+    const eased = 1 - Math.pow(1 - pct, 3);
+    const val = Math.round(startVal + (target - startVal) * eased);
+    el.textContent = val + (suffix || '');
+    if (pct < 1) requestAnimationFrame(update);
+  }
+  requestAnimationFrame(update);
+}
+
+// ── 全域資料 ──
+let DATA = {};
+
+// ── 載入全部 API ──
+async function loadAll() {
+  const [health, components, scores, errors, scripts, git, sessions, behaviors, locks, improvements, scenarios, daemons] =
+    await Promise.all([
+      fetchApi('health'),
+      fetchApi('components'),
+      fetchApi('scores'),
+      fetchApi('errors'),
+      fetchApi('scripts'),
+      fetchApi('git'),
+      fetchApi('sessions'),
+      fetchApi('behaviors'),
+      fetchApi('locks'),
+      fetchApi('improvements'),
+      fetchApi('scenarios'),
+      fetchApi('daemons'),
+    ]);
+
+  DATA = { health, components, scores, errors, scripts, git, sessions, behaviors, locks, improvements, scenarios, daemons };
+
+  renderTab1();
+  renderTab2();
+  renderTab3();
+  renderTab4();
+
+  document.getElementById('lastUpdated').textContent = '更新於 ' + new Date().toLocaleTimeString('zh-TW');
+}
+
+// ══ Tab 1 (儀表板) ══
+function renderTab1() {
+  const { health, components, scores, errors } = DATA;
+
+  // KPI 1: 健康
+  const isOk = health && (health.status === 'ok' || health.overall === 'ok');
+  const healthEl = document.getElementById('kpiHealth');
+  healthEl.textContent = health ? (isOk ? '正常' : '異常') : '無法連線';
+  healthEl.className = 'kpi-value ' + (isOk ? 'status-ok' : 'status-err');
+  document.getElementById('kpiUptime').textContent = health?.uptime ? `uptime ${health.uptime}` : '';
+
+  // KPI 2: 品質（計數動畫）
+  if (scores && Array.isArray(scores)) {
+    const totals = scores.filter(s => typeof s.total === 'number').map(s => s.total);
+    const avg = totals.length ? Math.round(totals.reduce((a,b)=>a+b,0)/totals.length) : null;
+    const scoreEl = document.getElementById('kpiScore');
+    if (avg !== null) {
+      animateCount(scoreEl, avg, '');
+    } else {
+      scoreEl.textContent = '—';
+    }
+    const g = avg !== null ? scoreToGrade(avg) : null;
+    const trendEl = document.getElementById('kpiScoreTrend');
+    trendEl.textContent = g ? `等級 ${g}` : '—';
+    trendEl.className = 'kpi-trend ' + (avg >= 75 ? 'up' : avg >= 50 ? 'neutral' : 'down');
+  } else {
+    document.getElementById('kpiScore').textContent = '—';
+  }
+
+  // KPI 3: 錯誤（計數動畫）
+  const errArr = Array.isArray(errors) ? errors : (errors?.errors || []);
+  const errCount = errArr.length;
+  const errEl = document.getElementById('kpiErrors');
+  animateCount(errEl, errCount, '');
+  errEl.className = 'kpi-value ' + (errCount > 0 ? 'status-err' : 'status-ok');
+
+  // KPI 4: 元件（計數動畫）
+  if (components) {
+    const r = components.rules?.length || 0;
+    const s = components.skills?.length || 0;
+    const a = components.agents?.length || 0;
+    const hk = components.hooks?.length || 0;
+    const total = r + s + a + hk;
+    animateCount(document.getElementById('kpiComponents'), total, '');
+    document.getElementById('kpiCompBreak').textContent = `R${r} S${s} A${a} H${hk}`;
+  }
+
+  // 品質等級分布
+  if (scores && Array.isArray(scores)) {
+    const dist = { A:0, B:0, C:0, D:0, F:0 };
+    scores.forEach(s => { const g = scoreToGrade(s.total||0); dist[g]++; });
+    const max = Math.max(...Object.values(dist), 1);
+    const cols = { A:'#10b981', B:'#3b82f6', C:'#f59e0b', D:'#f97316', F:'#ef4444' };
+    document.getElementById('gradeDistBar').innerHTML = Object.entries(dist).map(([g,n]) => `
+      <div class="bar-row">
+        <div class="bar-label" style="font-weight:600;color:${cols[g]}">${g}</div>
+        <div class="bar-track">
+          <div class="bar-fill" style="width:${(n/max*100).toFixed(1)}%;background:${cols[g]}"></div>
+        </div>
+        <div class="bar-num">${n}</div>
+      </div>
+    `).join('');
+  } else {
+    document.getElementById('gradeDistBar').innerHTML = '<div class="empty-state">無資料</div>';
+  }
+
+  // Script TOP 5
+  const scriptData = DATA.scripts;
+  if (scriptData && Array.isArray(scriptData)) {
+    const sorted = [...scriptData].sort((a,b)=>(b.lines||0)-(a.lines||0)).slice(0,5);
+    const maxLines = Math.max(...sorted.map(s=>s.lines||0), 1);
+    document.getElementById('scriptTop5').innerHTML = sorted.map(s => {
+      const pct = ((s.lines||0)/maxLines*100).toFixed(1);
+      const warn800 = s.lines > 800;
+      const warn600 = s.lines > 600;
+      const color = warn800 ? '#f87171' : warn600 ? '#fbbf24' : '#c4b5fd';
+      const name = (s.path||s.name||'').split('/').pop();
+      return `
+        <div class="bar-row">
+          <div class="bar-label" title="${s.path||''}">${name}</div>
+          <div class="bar-track">
+            <div class="bar-fill" style="width:${pct}%;background:${color}"></div>
+          </div>
+          <div class="bar-num" style="color:${color}">${s.lines||0}</div>
+        </div>
+      `;
+    }).join('');
+  } else {
+    document.getElementById('scriptTop5').innerHTML = '<div class="empty-state">無資料</div>';
+  }
+
+  // Sessions
+  const sessionArr = Array.isArray(DATA.sessions) ? DATA.sessions : (DATA.sessions?.sessions || []);
+  if (sessionArr.length > 0) {
+    document.getElementById('recentSessions').innerHTML = sessionArr.slice(0,3).map(s => `
+      <div class="session-card">
+        <div class="session-ts">${relTime(s.ts||s.timestamp)} · ${s.id||''}</div>
+        <div class="session-summary">${s.summary||s.description||'無摘要'}</div>
+      </div>
+    `).join('');
+  } else {
+    document.getElementById('recentSessions').innerHTML = '<div class="empty-state"><div class="empty-icon">🕐</div>無 session 記錄</div>';
+  }
+}
+
+// ══ Tab 2 (資料表) ══
+function renderTab2() {
+  const { scores, improvements } = DATA;
+
+  if (scores && Array.isArray(scores) && scores.length > 0) {
+    const sorted = [...scores].sort((a,b)=>(b.total||0)-(a.total||0));
+    document.getElementById('qualityTableBody').innerHTML = sorted.map(s => {
+      const g = scoreToGrade(s.total||0);
+      const name = (s.path||s.name||'—').replace(/^\/Users\/[^/]+\//, '~/');
+      const typeLabel = s.type || '—';
+      return `
+        <tr>
+          <td style="font-family:monospace;font-size:11px;color:var(--cyan)" title="${s.path||''}">${name}</td>
+          <td><span class="tag tag-${typeLabel.toLowerCase().charAt(0)}">${typeLabel}</span></td>
+          <td>${s.deterministic ?? s.det ?? '—'}</td>
+          <td>${s.semantic ?? s.sem ?? '—'}</td>
+          <td style="font-weight:600">${s.total ?? '—'}</td>
+          <td><span class="grade-badge" style="background:${gradeBg(g)};color:${gradeColor(g)}">${g}</span></td>
+        </tr>
+      `;
+    }).join('');
+  } else {
+    document.getElementById('qualityTableBody').innerHTML = '<tr><td colspan="6" class="empty-state">無品質資料</td></tr>';
+  }
+
+  if (improvements && Array.isArray(improvements) && improvements.length > 0) {
+    document.getElementById('improvementsList').innerHTML = improvements.slice(0,5).map(imp => `
+      <div class="improve-item">
+        <div class="improve-path">${imp.path || imp.target || '—'}</div>
+        <div class="improve-text">${imp.suggestion || imp.text || imp.content || '—'}</div>
+      </div>
+    `).join('');
+  } else {
+    document.getElementById('improvementsList').innerHTML = '<div class="empty-state"><div class="empty-icon">💡</div>暫無改善建議</div>';
+  }
+}
+
+// ══ Tab 3 (監控) ══
+function renderTab3() {
+  const { errors, git, sessions } = DATA;
+  const errArr = Array.isArray(errors) ? errors : (errors?.errors || []);
+  const errCount = errArr.length;
+
+  // 錯誤
+  if (errCount === 0) {
+    document.getElementById('errorStats').innerHTML = `
+      <div class="error-stat">
+        <div class="big-num zero">0</div>
+        <div class="label">系統穩定，過去 1 小時無 hook error ✅</div>
+      </div>`;
+    document.getElementById('errorSparklineWrap').style.display = 'none';
+  } else {
+    document.getElementById('errorStats').innerHTML = `
+      <div class="error-stat">
+        <div class="big-num">${errCount}</div>
+        <div class="label">Hook 錯誤總計</div>
+      </div>`;
+    document.getElementById('errorSparklineWrap').style.display = 'block';
+    const buckets = Array(7).fill(0);
+    errArr.forEach(e => {
+      const ts = e.ts || e.timestamp;
+      if (ts) {
+        const daysAgo = Math.floor((Date.now() - new Date(ts)) / 86400000);
+        if (daysAgo < 7) buckets[6-daysAgo]++;
+      }
+    });
+    renderSparkline('errorSparkline', buckets, '#7c3aed', '#c4b5fd');
+  }
+
+  // 錯誤分類
+  if (errArr.length > 0) {
+    const clusters = {};
+    errArr.forEach(e => {
+      const key = `${e.event||'?'}:${e.phase||'?'}`;
+      clusters[key] = (clusters[key]||0) + 1;
+    });
+    const sorted = Object.entries(clusters).sort((a,b)=>b[1]-a[1]);
+    const max = Math.max(...sorted.map(([,n])=>n), 1);
+    document.getElementById('errorClusters').innerHTML = sorted.map(([k,n]) => `
+      <div class="error-cluster">
+        <div class="error-cluster-label">${k}</div>
+        <div class="error-cluster-bar">
+          <div class="error-cluster-fill" style="width:${(n/max*100).toFixed(1)}%"></div>
+        </div>
+        <div class="error-cluster-num">${n}</div>
+      </div>
+    `).join('');
+  } else {
+    document.getElementById('errorClusters').innerHTML = '<div class="empty-state">無錯誤記錄</div>';
+  }
+
+  // Git commits（卡片式）
+  const gitArr = Array.isArray(git) ? git : (git?.commits || []);
+  if (gitArr.length > 0) {
+    document.getElementById('recentCommits').innerHTML = gitArr.slice(0,6).map(c => `
+      <div class="commit-card">
+        <div class="commit-card-top">
+          <span class="commit-hash">${(c.hash||c.sha||'').slice(0,7)}</span>
+          <span class="commit-time">${relTime(c.ts||c.date||c.timestamp)}</span>
+        </div>
+        <div class="commit-msg">${c.message||c.msg||'—'}</div>
+      </div>
+    `).join('');
+  } else {
+    document.getElementById('recentCommits').innerHTML = '<div class="empty-state">無 commit</div>';
+  }
+
+  // Sessions
+  const sessionArr = Array.isArray(sessions) ? sessions : (sessions?.sessions || []);
+  if (sessionArr.length > 0) {
+    document.getElementById('activitySessions').innerHTML = sessionArr.slice(0,5).map(s => `
+      <div class="session-card">
+        <div class="session-ts">${relTime(s.ts||s.timestamp)} · ${s.id||''}</div>
+        <div class="session-summary">${s.summary||s.description||'無摘要'}</div>
+      </div>
+    `).join('');
+  } else {
+    document.getElementById('activitySessions').innerHTML = '<div class="empty-state">無 session</div>';
+  }
+}
+
+// ══ Tab 4 (控制中心) ══
+function renderTab4() {
+  const { health, daemons, locks, components, behaviors } = DATA;
+
+  // 服務狀態
+  const services = [
+    { name: 'Nova Server', key: 'server' },
+    { name: 'Local LLM', key: 'llm' },
+    { name: 'Maintainer', key: 'maintainer' },
+    { name: 'Judge', key: 'judge' },
+    { name: 'Learner', key: 'learner' },
+  ];
+  const daemonArr = Array.isArray(daemons) ? daemons : (daemons?.daemons || []);
+  const daemonMap = {};
+  daemonArr.forEach(d => { if (d.name) daemonMap[d.name.toLowerCase()] = d; });
+
+  document.getElementById('serviceStatus').innerHTML = services.map(svc => {
+    const d = daemonMap[svc.key] || (health && health[svc.key]);
+    const isRunning = d?.running || d?.status === 'ok' || d?.alive;
+    const dotClass = isRunning ? 'dot-ok' : 'dot-off';
+    const lastAct = d?.lastActivity || d?.last || d?.ts;
+    return `
+      <div class="service-row">
+        <div class="service-dot ${dotClass}"></div>
+        <div class="service-name">${svc.name}</div>
+        <div class="service-meta">${isRunning ? '運行中' : '未啟動'}${lastAct ? ' · ' + relTime(lastAct) : ''}</div>
+      </div>
+    `;
+  }).join('');
+
+  // Lockfiles
+  const lockArr = Array.isArray(locks) ? locks : (locks?.locks || []);
+  if (lockArr.length > 0) {
+    document.getElementById('lockfiles').innerHTML = lockArr.map(lk => `
+      <div class="lock-item">
+        <div class="lock-name">${lk.name||lk.path||lk}</div>
+        <button class="lock-clear" onclick="clearLock('${lk.name||lk.path||lk}')">清除</button>
+      </div>
+    `).join('');
+  } else {
+    document.getElementById('lockfiles').innerHTML = '<div class="empty-state" style="padding:16px"><div class="empty-icon">🔓</div>無殘留 lock</div>';
+  }
+
+  // 元件
+  if (components) {
+    const types = [
+      { key:'rules', label:'Rules', tag:'tag-r' },
+      { key:'skills', label:'Skills', tag:'tag-s' },
+      { key:'agents', label:'Agents', tag:'tag-a' },
+      { key:'hooks', label:'Hooks', tag:'tag-h' },
+    ];
+    document.getElementById('componentDetail').innerHTML = types.map(t => {
+      const items = components[t.key] || [];
+      return `
+        <div class="comp-section">
+          <div class="comp-header" onclick="toggleComp(this)">
+            <div class="comp-header-left">
+              <span class="tag ${t.tag}">${t.label}</span>
+              <span class="comp-count">${items.length}</span>
+            </div>
+            <span class="comp-chevron">▶</span>
+          </div>
+          <div class="comp-list">
+            ${items.map(i=>`<div class="comp-list-item">${(i.name||i.path||i).split('/').pop()}</div>`).join('')}
+          </div>
+        </div>
+      `;
+    }).join('');
+  } else {
+    document.getElementById('componentDetail').innerHTML = '<div class="empty-state">無元件資料</div>';
+  }
+
+  // 行為
+  const behaviorArr = Array.isArray(behaviors) ? behaviors : (behaviors?.behaviors || []);
+  if (behaviorArr.length > 0) {
+    document.getElementById('behaviorList').innerHTML = behaviorArr.slice(0,8).map(b => {
+      const conf = b.confidence ?? b.score ?? 0;
+      const pct = Math.min(100, Math.round(conf * 100));
+      const name = b.pattern || b.name || b.key || '—';
+      return `
+        <div class="confidence-bar">
+          <div class="conf-header">
+            <span class="conf-label">${name}</span>
+            <span class="conf-pct">${pct}%</span>
+          </div>
+          <div class="conf-track">
+            <div class="conf-fill" style="width:${pct}%"></div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  } else {
+    document.getElementById('behaviorList').innerHTML = '<div class="empty-state"><div class="empty-icon">🧠</div>尚無行為資料</div>';
+  }
+}
+
+// ── Sparkline SVG (漸層填充) ──
+function renderSparkline(id, data, colorFrom, colorTo) {
+  const svg = document.getElementById(id);
+  if (!svg || !data.length) return;
+  const w = 240, h = 44;
+  const max = Math.max(...data, 1);
+  const pts = data.map((v,i) => {
+    const x = i / (data.length-1) * w;
+    const y = h - 4 - (v/max * (h-8));
+    return [x, y];
+  });
+  const ptsStr = pts.map(p=>p.join(',')).join(' ');
+  const areaPath = `M${pts[0][0]},${h} ` + pts.map(p=>`L${p[0]},${p[1]}`).join(' ') + ` L${pts[pts.length-1][0]},${h} Z`;
+  svg.innerHTML = `
+    <defs>
+      <linearGradient id="spkGrad${id}" x1="0" x2="0" y1="0" y2="1">
+        <stop offset="0%" stop-color="${colorFrom||'#7c3aed'}" stop-opacity="0.5"/>
+        <stop offset="100%" stop-color="${colorFrom||'#7c3aed'}" stop-opacity="0.03"/>
+      </linearGradient>
+    </defs>
+    <path d="${areaPath}" fill="url(#spkGrad${id})"/>
+    <polyline points="${ptsStr}" fill="none" stroke="${colorTo||'#c4b5fd'}" stroke-width="1.5" stroke-linejoin="round"/>
+  `;
+}
+
+// ── 元件展開 ──
+function toggleComp(header) {
+  const list = header.nextElementSibling;
+  const chev = header.querySelector('.comp-chevron');
+  list.classList.toggle('open');
+  chev.classList.toggle('open');
+}
+
+// ── Lock 清除 ──
+async function postApi(ep) {
+  try {
+    const r = await fetch(`/api/${ep}`, { method: 'POST', signal: AbortSignal.timeout(5000) });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    return await r.json();
+  } catch (e) { console.error(`POST ${ep}:`, e.message); return null; }
+}
+
+async function clearLock() {
+  const r = await postApi('actions/clear-locks');
+  showToast(r ? `已清除 ${(r.cleared||[]).length} 個 Lock ✅` : '清除失敗');
+  loadAll();
+}
+
+async function doAction(type) {
+  const actions = { reload:'actions/reload-modules', clearlock:'actions/clear-locks', maintainer:'actions/trigger-maintainer' };
+  const labels = { reload:'模組重載', clearlock:'Lock 清除', maintainer:'Maintainer 觸發' };
+  showToast(`${labels[type]} 執行中...`);
+  const r = await postApi(actions[type]);
+  showToast(r ? `${labels[type]} 完成 ✅` : `${labels[type]} 失敗`);
+}
+
+// ── 30 秒自動刷新 ──
+setInterval(() => {
+  if (document.querySelector('.tab.active')) loadAll();
+}, 30000);
+
+// ── 初始化 ──
+loadAll();
+</script>
+<script src="/nav-bar.js"></script>
+</body>
+</html>

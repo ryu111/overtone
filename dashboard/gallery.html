@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<title>Nova Dashboard</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #0f0e17; color: #e0def4; font-family: -apple-system, system-ui, sans-serif; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px; }
+h1 { font-size: 24px; color: #7c3aed; margin-bottom: 8px; }
+p { color: #6b7280; font-size: 13px; margin-bottom: 32px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; width: 100%; max-width: 1300px; }
+.card {
+  background: #1a1a2e; border: 1px solid #2d2d44; border-radius: 14px;
+  padding: 24px; text-decoration: none; color: #e0def4;
+  transition: all 0.3s; position: relative; overflow: hidden;
+}
+.card:hover { border-color: #7c3aed; transform: translateY(-6px); box-shadow: 0 16px 48px rgba(124,58,237,0.25); }
+.card-num { position: absolute; top: 14px; right: 18px; font-size: 36px; font-weight: 900; color: rgba(124,58,237,0.12); }
+.card h3 { font-size: 17px; margin-bottom: 8px; color: #fff; }
+.card p { color: #9ca3af; font-size: 12px; line-height: 1.6; margin-bottom: 10px; }
+.tags { display: flex; gap: 5px; flex-wrap: wrap; }
+.tag { font-size: 10px; padding: 2px 7px; border-radius: 8px; background: rgba(124,58,237,0.12); color: #a78bfa; }
+.tag.fx { background: rgba(236,72,153,0.12); color: #f472b6; }
+.hint { color: #4b5563; font-size: 11px; margin-top: 24px; }
+</style>
+</head>
+<body>
+<h1>Nova Dashboard</h1>
+<p>5 個旗艦面板 — 點擊進入，← → 切換，每個有 4 Tab 內容</p>
+<div class="grid">
+  <a class="card" href="/g1-liquid-pro.html">
+    <span class="card-num">G1</span>
+    <h3>流體旗艦</h3>
+    <p>你的最高分風格。4 個形變 blob + 漸層流動背景 + 毛玻璃卡片。</p>
+    <div class="tags"><span class="tag fx">4 Blob</span><span class="tag fx">漸層流動</span><span class="tag">4 Tab</span><span class="tag">KPI</span></div>
+  </a>
+  <a class="card" href="/g2-glass-pro.html">
+    <span class="card-num">G2</span>
+    <h3>毛玻璃旗艦</h3>
+    <p>5 個漂浮色塊 + 20 微粒子 + 最深層的 blur 效果。</p>
+    <div class="tags"><span class="tag fx">5 色塊</span><span class="tag fx">微粒子</span><span class="tag fx">Blur 20px</span><span class="tag">4 Tab</span></div>
+  </a>
+  <a class="card" href="/g3-galaxy-pro.html">
+    <span class="card-num">G3</span>
+    <h3>星空旗艦</h3>
+    <p>300 顆星 3 層視差 + 流星 + SVG Activity Ring 圓環 KPI。</p>
+    <div class="tags"><span class="tag fx">星空 300</span><span class="tag fx">流星</span><span class="tag fx">SVG Ring</span><span class="tag">4 Tab</span></div>
+  </a>
+  <a class="card" href="/g4-particles-pro.html">
+    <span class="card-num">G4</span>
+    <h3>粒子旗艦</h3>
+    <p>120 粒子連線 + 滑鼠吸引排斥 + 場景進度條。</p>
+    <div class="tags"><span class="tag fx">120 粒子</span><span class="tag fx">滑鼠互動</span><span class="tag">場景進度</span><span class="tag">4 Tab</span></div>
+  </a>
+  <a class="card" href="/g5-hybrid-pro.html">
+    <span class="card-num">G5</span>
+    <h3>流體×毛玻璃</h3>
+    <p>兩大最高分風格合體。半圓儀表 + Grade 篩選 + Toast 通知。</p>
+    <div class="tags"><span class="tag fx">Blob+粒子</span><span class="tag fx">漸層</span><span class="tag">Grade 篩選</span><span class="tag">Toast</span></div>
+  </a>
+</div>
+<p class="hint">← → 鍵翻頁 · 底部 ★ 評分 · `bun dashboard/server.js` 啟動</p>
+</body>
+</html>

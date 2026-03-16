@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nova — Particles Pro</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --accent: #7c3aed;
+    --accent-light: #a78bfa;
+    --accent-bright: #c4b5fd;
+    --text: #e2d9f3;
+    --text-dim: rgba(226,217,243,0.45);
+    --panel-bg: rgba(15,14,23,0.88);
+    --panel-border: rgba(124,58,237,0.25);
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #0a0812;
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  #particles-canvas {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    z-index: 0;
+  }
+
+  .app {
+    position: relative; z-index: 1;
+    padding: 24px 28px 80px;
+    max-width: 1500px; margin: 0 auto;
+  }
+
+  .back-link {
+    display: inline-flex; align-items: center; gap: 6px;
+    color: rgba(167,139,250,0.65); text-decoration: none; font-size: 13px;
+    margin-bottom: 20px; letter-spacing: 0.5px; transition: color 0.3s;
+  }
+  .back-link:hover { color: var(--accent-bright); }
+
+  .page-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 28px;
+  }
+  .title-wrap { display: flex; align-items: center; gap: 14px; }
+  .title-icon {
+    width: 46px; height: 46px;
+    background: radial-gradient(circle, rgba(124,58,237,0.5), rgba(124,58,237,0.1));
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center; font-size: 22px;
+    box-shadow: 0 0 24px rgba(124,58,237,0.5);
+    animation: pulseIcon 3s ease-in-out infinite;
+  }
+  @keyframes pulseIcon {
+    0%,100% { box-shadow: 0 0 24px rgba(124,58,237,0.5); }
+    50% { box-shadow: 0 0 45px rgba(124,58,237,0.8), 0 0 70px rgba(124,58,237,0.25); }
+  }
+  .page-title h1 {
+    font-size: clamp(18px, 2.2vw, 26px); font-weight: 700;
+    background: linear-gradient(135deg, #a78bfa, #e879f9, #c4b5fd);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .page-subtitle { font-size: 11px; color: var(--text-dim); margin-top: 2px; letter-spacing: 1px; text-transform: uppercase; }
+  .header-right { text-align: right; }
+  .header-right .label { font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
+  #clock { font-size: 20px; font-weight: 300; color: rgba(226,217,243,0.75); font-variant-numeric: tabular-nums; }
+
+  /* Panel */
+  .panel {
+    background: var(--panel-bg);
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    border: 1px solid var(--panel-border);
+    border-radius: 14px;
+    box-shadow: 0 0 30px rgba(124,58,237,0.08);
+    padding: 20px 24px;
+    transition: all 0.3s;
+    animation: fadeSlideIn 0.5s ease-out backwards;
+  }
+  .panel:hover {
+    border-color: rgba(124,58,237,0.45);
+    box-shadow: 0 0 50px rgba(124,58,237,0.18);
+  }
+  @keyframes fadeSlideIn {
+    from { opacity: 0; transform: translateY(14px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Tabs */
+  .tabs { display: flex; gap: 0; margin-bottom: 20px; border-bottom: 1px solid rgba(124,58,237,0.15); }
+  .tab {
+    padding: 10px 20px; cursor: pointer; font-size: 13px; font-weight: 500;
+    color: #6b7280; border-bottom: 2px solid transparent;
+    transition: all 0.2s; background: none; border-top: none; border-left: none; border-right: none;
+    letter-spacing: 0.3px;
+  }
+  .tab:hover { color: #e0def4; }
+  .tab.active { color: var(--accent-light); border-bottom-color: var(--accent-light); }
+  .tab-content { display: none; animation: fadeIn 0.3s; }
+  .tab-content.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  /* Panel title */
+  .panel-title {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 1.2px;
+    color: var(--text-dim); margin-bottom: 14px; display: flex; align-items: center; gap: 8px;
+  }
+  .panel-title::after {
+    content: ''; flex: 1; height: 1px;
+    background: linear-gradient(90deg, rgba(124,58,237,0.25), transparent);
+  }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 16px; }
+  .grid-4-equal { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 14px; }
+
+  /* Status pills */
+  .status-bar {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    padding: 12px 16px; border-radius: 10px;
+    background: rgba(124,58,237,0.07); border: 1px solid rgba(124,58,237,0.15);
+    margin-bottom: 16px;
+  }
+  .status-pill {
+    display: flex; align-items: center; gap: 6px;
+    padding: 5px 12px; border-radius: 20px;
+    background: rgba(15,14,23,0.9); border: 1px solid rgba(124,58,237,0.2);
+    font-size: 12px; font-weight: 500;
+  }
+  .pill-dot { width: 7px; height: 7px; border-radius: 50%; }
+  .dot-green { background: #34d399; box-shadow: 0 0 6px rgba(52,211,153,0.6); }
+  .dot-red { background: #f87171; box-shadow: 0 0 6px rgba(248,113,113,0.6); }
+  .dot-yellow { background: #fbbf24; box-shadow: 0 0 6px rgba(251,191,36,0.6); }
+  .dot-gray { background: #6b7280; }
+  .pill-uptime { margin-left: auto; font-size: 11px; color: var(--text-dim); }
+
+  /* KPI box */
+  .kpi-box {
+    padding: 18px 16px; border-radius: 12px;
+    background: rgba(15,14,23,0.7); border: 1px solid rgba(124,58,237,0.15);
+  }
+  .kpi-label { font-size: 11px; color: var(--text-dim); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.8px; }
+  .kpi-val { font-size: 32px; font-weight: 700; line-height: 1; }
+  .kpi-sub { font-size: 11px; color: var(--text-dim); margin-top: 4px; }
+
+  /* Grade badge */
+  .grade {
+    display: inline-block; padding: 2px 8px; border-radius: 4px;
+    font-size: 10px; font-weight: 700; letter-spacing: 0.5px;
+  }
+  .grade-A { background: rgba(52,211,153,0.15); color: #34d399; border: 1px solid rgba(52,211,153,0.2); }
+  .grade-B { background: rgba(59,130,246,0.15); color: #60a5fa; border: 1px solid rgba(59,130,246,0.2); }
+  .grade-C { background: rgba(251,191,36,0.15); color: #fbbf24; border: 1px solid rgba(251,191,36,0.2); }
+  .grade-D { background: rgba(249,115,22,0.15); color: #fb923c; border: 1px solid rgba(249,115,22,0.2); }
+  .grade-F { background: rgba(239,68,68,0.15); color: #f87171; border: 1px solid rgba(239,68,68,0.2); }
+
+  /* Dist bar */
+  .dist-bar-wrap { margin-bottom: 10px; }
+  .dist-label { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-dim); margin-bottom: 4px; }
+  .dist-bar { height: 7px; border-radius: 4px; background: rgba(124,58,237,0.12); overflow: hidden; }
+  .dist-fill { height: 100%; border-radius: 4px; transition: width 1s ease; }
+
+  /* Error cluster */
+  .error-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 10px; border-radius: 8px;
+    background: rgba(239,68,68,0.06); border: 1px solid rgba(239,68,68,0.1);
+    margin-bottom: 6px; font-size: 12px;
+  }
+  .e-dot { width: 7px; height: 7px; border-radius: 50%; background: #f87171; flex-shrink: 0; }
+  .e-msg { flex: 1; color: rgba(226,217,243,0.7); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .e-cnt { font-weight: 600; color: #f87171; font-size: 10px; }
+
+  /* Script health bar */
+  .sh-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .sh-name { font-size: 11px; color: var(--text-dim); width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sh-bar-wrap { flex: 1; height: 16px; background: rgba(124,58,237,0.1); border-radius: 4px; position: relative; overflow: hidden; }
+  .sh-bar-fill { height: 100%; border-radius: 4px; transition: width 0.8s; }
+  .sh-threshold { position: absolute; top: 0; height: 100%; width: 1px; background: rgba(251,191,36,0.5); }
+  .sh-val { font-size: 11px; color: var(--text-dim); min-width: 36px; text-align: right; }
+
+  /* Component count */
+  .comp-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 12px; }
+  .comp-box {
+    padding: 12px 14px; border-radius: 10px;
+    background: rgba(124,58,237,0.07); border: 1px solid rgba(124,58,237,0.15);
+    text-align: center;
+  }
+  .comp-num { font-size: 28px; font-weight: 700; color: var(--accent-bright); }
+  .comp-name { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+
+  /* Score table */
+  .score-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .score-table th {
+    text-align: left; padding: 8px 10px; font-size: 10px;
+    text-transform: uppercase; letter-spacing: 1px; color: var(--text-dim);
+    border-bottom: 1px solid rgba(124,58,237,0.12);
+  }
+  .score-table td { padding: 8px 10px; border-bottom: 1px solid rgba(124,58,237,0.06); }
+  .score-table tr:hover td { background: rgba(124,58,237,0.05); }
+  .score-table td:first-child { color: rgba(226,217,243,0.7); font-size: 11px; }
+
+  /* Score section */
+  .score-section { margin-bottom: 20px; }
+  .score-section-title {
+    font-size: 12px; font-weight: 600; color: var(--accent-light);
+    margin-bottom: 8px; padding: 6px 10px; border-radius: 6px;
+    background: rgba(124,58,237,0.1); border-left: 3px solid var(--accent);
+  }
+
+  /* Timeline */
+  .timeline-item {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 8px 12px; border-radius: 8px;
+    background: rgba(15,14,23,0.6); border: 1px solid rgba(124,58,237,0.1);
+    margin-bottom: 8px; font-size: 12px;
+  }
+  .tl-time { color: var(--text-dim); font-size: 10px; white-space: nowrap; padding-top: 1px; min-width: 90px; }
+  .tl-badge {
+    padding: 2px 7px; border-radius: 10px; font-size: 10px; font-weight: 600;
+    white-space: nowrap; flex-shrink: 0;
+  }
+  .badge-nova { background: rgba(99,102,241,0.2); color: #818cf8; }
+  .badge-overtone { background: rgba(56,189,248,0.2); color: #38bdf8; }
+  .badge-session { background: rgba(167,139,250,0.2); color: #a78bfa; }
+  .tl-content { flex: 1; color: rgba(226,217,243,0.75); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* Scene progress */
+  .scene-item { margin-bottom: 10px; }
+  .scene-header { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 5px; }
+  .scene-name { color: var(--text); }
+  .scene-pct { color: var(--text-dim); }
+  .scene-bar { height: 6px; border-radius: 3px; background: rgba(124,58,237,0.12); overflow: hidden; }
+  .scene-fill { height: 100%; border-radius: 3px; background: var(--accent-light); transition: width 0.8s; }
+
+  /* Daemon log */
+  .daemon-section { margin-bottom: 14px; }
+  .daemon-title { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 6px; }
+  .daemon-log {
+    background: rgba(0,0,0,0.4); border-radius: 8px;
+    padding: 10px 12px; font-family: 'Courier New', monospace; font-size: 10px;
+    color: rgba(226,217,243,0.55); max-height: 80px; overflow-y: auto;
+    border: 1px solid rgba(124,58,237,0.1); line-height: 1.6;
+  }
+
+  /* Behavior */
+  .behavior-item {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 8px;
+  }
+  .beh-label { font-size: 12px; color: rgba(226,217,243,0.7); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .beh-bar-bg { width: 80px; height: 4px; background: rgba(124,58,237,0.12); border-radius: 2px; overflow: hidden; }
+  .beh-bar-fill { height: 100%; border-radius: 2px; background: var(--accent-light); transition: width 0.8s; }
+  .beh-pct { font-size: 10px; color: var(--text-dim); min-width: 30px; text-align: right; }
+
+  /* Lock */
+  .lock-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 10px; border-radius: 6px;
+    background: rgba(15,14,23,0.6); border: 1px solid rgba(124,58,237,0.1);
+    margin-bottom: 6px; font-size: 11px;
+  }
+  .lock-name { flex: 1; font-family: monospace; font-size: 10px; color: var(--text-dim); }
+  .lock-badge { padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 600; }
+  .lock-on { background: rgba(251,191,36,0.15); color: #fbbf24; }
+  .lock-off { background: rgba(52,211,153,0.12); color: #34d399; }
+
+  /* Action btn */
+  .action-btn {
+    width: 100%; padding: 10px 16px; border-radius: 8px; cursor: pointer;
+    font-size: 13px; font-weight: 500; transition: all 0.2s;
+    border: 1px solid rgba(124,58,237,0.25);
+    background: rgba(124,58,237,0.08);
+    color: var(--accent-light); margin-bottom: 8px; text-align: left;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .action-btn:hover {
+    background: rgba(124,58,237,0.18);
+    border-color: rgba(124,58,237,0.5);
+    transform: translateX(2px);
+  }
+
+  /* Improvement */
+  .improve-item {
+    padding: 10px 12px; border-radius: 8px;
+    background: rgba(124,58,237,0.06); border: 1px solid rgba(124,58,237,0.12);
+    margin-bottom: 8px; font-size: 12px; color: rgba(226,217,243,0.75); line-height: 1.5;
+  }
+
+  .empty-state { text-align: center; padding: 20px; color: var(--text-dim); font-size: 12px; }
+  .col-title { font-size: 11px; color: var(--text-dim); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.8px; }
+
+  @media (max-width: 900px) {
+    .grid-2, .grid-3 { grid-template-columns: 1fr; }
+    .grid-4-equal { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+
+<canvas id="particles-canvas"></canvas>
+
+<div class="app">
+  <a href="/gallery.html" class="back-link">← Gallery</a>
+
+  <div class="page-header">
+    <div class="title-wrap">
+      <div class="title-icon">◈</div>
+      <div class="page-title">
+        <h1>Nova Intelligence</h1>
+        <div class="page-subtitle">Particles Pro · Quantum Field</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="label">系統時間</div>
+      <div id="clock">--:--:--</div>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab" data-tab="dashboard">儀表板</button>
+    <button class="tab" data-tab="detail">品質明細</button>
+    <button class="tab" data-tab="activity">活動紀錄</button>
+    <button class="tab" data-tab="console">控制台</button>
+  </div>
+
+  <!-- Tab 1: 儀表板 -->
+  <div id="dashboard" class="tab-content">
+    <!-- Status bar -->
+    <div class="status-bar" id="status-bar">
+      <div class="status-pill"><div class="pill-dot dot-gray"></div>Server</div>
+      <div class="status-pill"><div class="pill-dot dot-gray"></div>LLM</div>
+      <div class="status-pill"><div class="pill-dot dot-gray"></div>Maintainer</div>
+      <div class="status-pill"><div class="pill-dot dot-gray"></div>Judge</div>
+      <span class="pill-uptime">載入中...</span>
+    </div>
+
+    <div class="grid-2" style="margin-bottom:16px">
+      <!-- Quality overview -->
+      <div class="panel">
+        <div class="panel-title">品質概覽</div>
+        <div class="kpi-val" id="avg-score" style="color:#a78bfa;margin-bottom:10px">--</div>
+        <div class="kpi-sub" style="margin-bottom:12px">平均評分</div>
+        <div id="dash-dist"></div>
+      </div>
+      <!-- Error dashboard -->
+      <div class="panel">
+        <div class="panel-title">錯誤儀表板</div>
+        <div class="kpi-val" id="error-count" style="color:#f87171;margin-bottom:10px">--</div>
+        <div class="kpi-sub" style="margin-bottom:12px">Hook 錯誤</div>
+        <div id="dash-errors"></div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <!-- Script health -->
+      <div class="panel">
+        <div class="panel-title">Script 健康</div>
+        <div id="script-health"></div>
+      </div>
+      <!-- Component inventory -->
+      <div class="panel">
+        <div class="panel-title">元件庫存</div>
+        <div class="comp-grid" id="comp-grid"></div>
+        <div id="comp-names" style="font-size:11px;color:var(--text-dim)"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tab 2: 品質明細 -->
+  <div id="detail" class="tab-content">
+    <div class="panel" style="margin-bottom:16px">
+      <div id="score-sections"></div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">改善建議</div>
+      <div id="detail-improvements"></div>
+    </div>
+  </div>
+
+  <!-- Tab 3: 活動紀錄 -->
+  <div id="activity" class="tab-content">
+    <div class="panel">
+      <div class="panel-title">統一時間軸（最新優先）</div>
+      <div id="unified-timeline"></div>
+    </div>
+  </div>
+
+  <!-- Tab 4: 控制台 -->
+  <div id="console" class="tab-content">
+    <div class="grid-2" style="margin-bottom:16px">
+      <div class="panel">
+        <div class="panel-title">Daemon 日誌</div>
+        <div id="daemon-logs"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-title">Lock 狀態</div>
+        <div id="console-locks"></div>
+        <button class="action-btn" style="margin-top:10px" onclick="clearLocks()">🔓 清除過期 Lock</button>
+      </div>
+    </div>
+
+    <div class="grid-2" style="margin-bottom:16px">
+      <div class="panel">
+        <div class="panel-title">行為模式</div>
+        <div id="console-behaviors"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-title">場景達成</div>
+        <div id="scene-progress"></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-title">操作</div>
+      <div class="grid-3">
+        <button class="action-btn" onclick="doAction('reload-modules')">⟳ 重載 Hook 模組</button>
+        <button class="action-btn" onclick="doAction('trigger-maintainer')">⚡ 觸發 Maintainer</button>
+        <button class="action-btn" onclick="location.reload()">↺ 刷新頁面</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Particles Canvas -->
+<script>
+(function() {
+  const canvas = document.getElementById('particles-canvas');
+  const ctx = canvas.getContext('2d');
+  let W, H;
+  let mouse = { x: -999, y: -999 };
+  let particles = [];
+
+  function resize() {
+    W = canvas.width = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+  }
+  window.addEventListener('resize', resize);
+  window.addEventListener('mousemove', e => { mouse.x = e.clientX; mouse.y = e.clientY; });
+  resize();
+
+  function initParticles() {
+    particles = [];
+    for (let i = 0; i < 120; i++) {
+      particles.push({
+        x: Math.random() * W, y: Math.random() * H,
+        vx: (Math.random() - 0.5) * 0.5, vy: (Math.random() - 0.5) * 0.5,
+        size: Math.random() * 1.5 + 0.8,
+        baseSize: Math.random() * 1.5 + 0.8,
+        phase: Math.random() * Math.PI * 2,
+        color: `hsl(${260 + Math.random() * 60}, 80%, ${60 + Math.random() * 20}%)`,
+      });
+    }
+  }
+  initParticles();
+
+  function draw() {
+    requestAnimationFrame(draw);
+    ctx.fillStyle = 'rgba(10,8,18,0.12)';
+    ctx.fillRect(0, 0, W, H);
+
+    for (const p of particles) {
+      // Mouse interaction
+      const dx = mouse.x - p.x;
+      const dy = mouse.y - p.y;
+      const dist = Math.sqrt(dx*dx + dy*dy);
+
+      if (dist < 150 && dist > 50) {
+        // Attract
+        p.vx += dx / dist * 0.015;
+        p.vy += dy / dist * 0.015;
+      } else if (dist <= 50 && dist > 0) {
+        // Repel
+        p.vx -= dx / dist * 0.04;
+        p.vy -= dy / dist * 0.04;
+      }
+
+      // Damping
+      p.vx *= 0.98;
+      p.vy *= 0.98;
+      p.x += p.vx;
+      p.y += p.vy;
+
+      // Pulse size
+      p.phase += 0.015;
+      p.size = p.baseSize + Math.sin(p.phase) * 0.6;
+
+      // Wrap
+      if (p.x < 0) p.x = W; if (p.x > W) p.x = 0;
+      if (p.y < 0) p.y = H; if (p.y > H) p.y = 0;
+
+      // Draw particle
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+      ctx.fillStyle = p.color;
+      ctx.globalAlpha = 0.7;
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+
+    // Draw connections
+    for (let i = 0; i < particles.length; i++) {
+      for (let j = i + 1; j < particles.length; j++) {
+        const dx = particles[i].x - particles[j].x;
+        const dy = particles[i].y - particles[j].y;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        if (dist < 120) {
+          const alpha = (1 - dist / 120) * 0.35;
+          ctx.beginPath();
+          ctx.moveTo(particles[i].x, particles[i].y);
+          ctx.lineTo(particles[j].x, particles[j].y);
+          const grad = ctx.createLinearGradient(particles[i].x, particles[i].y, particles[j].x, particles[j].y);
+          grad.addColorStop(0, `rgba(167,139,250,${alpha})`);
+          grad.addColorStop(1, `rgba(124,58,237,${alpha * 0.5})`);
+          ctx.strokeStyle = grad;
+          ctx.lineWidth = 0.6;
+          ctx.stroke();
+        }
+      }
+    }
+  }
+  draw();
+})();
+</script>
+
+<!-- Clock -->
+<script>
+function updateClock() {
+  document.getElementById('clock').textContent =
+    new Date().toLocaleTimeString('zh-TW', { hour12: false });
+}
+setInterval(updateClock, 1000);
+updateClock();
+</script>
+
+<!-- Tabs -->
+<script>
+function initTabs(key) {
+  const tabs = document.querySelectorAll('.tab');
+  const panels = document.querySelectorAll('.tab-content');
+  const saved = localStorage.getItem(key);
+  function activate(id) {
+    tabs.forEach(t => t.classList.toggle('active', t.dataset.tab === id));
+    panels.forEach(p => p.classList.toggle('active', p.id === id));
+    localStorage.setItem(key, id);
+  }
+  tabs.forEach(t => t.addEventListener('click', () => activate(t.dataset.tab)));
+  activate(saved || tabs[0]?.dataset.tab);
+}
+initTabs('g4-tab');
+</script>
+
+<!-- Fetch -->
+<script>
+async function fetchApi(ep) {
+  try {
+    const r = await fetch(`/api/${ep}`, { signal: AbortSignal.timeout(5000) });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const ct = r.headers.get('content-type') || '';
+    return ct.includes('json') ? await r.json() : await r.text();
+  } catch (e) { console.error(`API ${ep}:`, e.message); return null; }
+}
+</script>
+
+<!-- Data & Render -->
+<script>
+function gradeFrom(s) {
+  if (s >= 90) return 'A'; if (s >= 80) return 'B';
+  if (s >= 70) return 'C'; if (s >= 60) return 'D'; return 'F';
+}
+function gradeColor(g) {
+  return { A:'#34d399', B:'#60a5fa', C:'#fbbf24', D:'#fb923c', F:'#f87171' }[g] || '#6b7280';
+}
+
+function animateCount(el, target) {
+  const start = performance.now();
+  const update = (now) => {
+    const p = Math.min((now - start) / 900, 1);
+    const eased = 1 - Math.pow(1 - p, 3);
+    el.textContent = Math.round(eased * target);
+    if (p < 1) requestAnimationFrame(update);
+  };
+  requestAnimationFrame(update);
+}
+
+function renderStatusBar(health) {
+  const el = document.getElementById('status-bar');
+  if (!el) return;
+  const ok = health && health.status === 'ok';
+  const pills = [
+    { name: 'Server', cls: ok ? 'dot-green' : 'dot-red' },
+    { name: 'LLM', cls: 'dot-yellow' },
+    { name: 'Maintainer', cls: 'dot-yellow' },
+    { name: 'Judge', cls: 'dot-yellow' },
+  ];
+  const uptime = ok && health.uptime ? `運行 ${Math.floor(health.uptime / 60)}m` : '';
+  el.innerHTML = pills.map(p => `
+    <div class="status-pill"><div class="pill-dot ${p.cls}"></div>${p.name}</div>
+  `).join('') + `<span class="pill-uptime">${uptime || (ok ? '正常' : '離線')}</span>`;
+}
+
+function renderDashDist(scores) {
+  const el = document.getElementById('dash-dist');
+  const avgEl = document.getElementById('avg-score');
+  if (!el) return;
+  if (!scores || !scores.length) { el.innerHTML = '<div class="empty-state">資料不可用</div>'; return; }
+  const avg = scores.reduce((s, x) => s + (x.total||x.score||0), 0) / scores.length;
+  if (avgEl) animateCount(avgEl, Math.round(avg));
+  const counts = { A:0, B:0, C:0, D:0, F:0 };
+  scores.forEach(s => counts[gradeFrom(s.total||s.score||0)]++);
+  const total = scores.length;
+  const colors = { A:'#34d399', B:'#60a5fa', C:'#fbbf24', D:'#fb923c', F:'#f87171' };
+  el.innerHTML = Object.entries(counts).map(([g, cnt]) => {
+    const pct = total ? (cnt/total*100).toFixed(1) : 0;
+    return `<div class="dist-bar-wrap">
+      <div class="dist-label"><span style="color:${colors[g]};font-weight:600">Grade ${g}</span><span>${cnt}</span></div>
+      <div class="dist-bar"><div class="dist-fill" style="width:${pct}%;background:${colors[g]}"></div></div>
+    </div>`;
+  }).join('');
+}
+
+function renderDashErrors(errors) {
+  const el = document.getElementById('dash-errors');
+  const cntEl = document.getElementById('error-count');
+  if (!el) return;
+  if (cntEl && errors) animateCount(cntEl, errors.length);
+  if (!errors || !errors.length) { el.innerHTML = '<div style="font-size:12px;color:#34d399;padding:8px 0">無錯誤記錄</div>'; return; }
+  const clusters = {};
+  errors.forEach(e => { const k = (e.error||e.message||'?').slice(0,35); clusters[k]=(clusters[k]||0)+1; });
+  el.innerHTML = Object.entries(clusters).sort((a,b)=>b[1]-a[1]).slice(0,4).map(([m,c]) => `
+    <div class="error-item">
+      <div class="e-dot"></div>
+      <div class="e-msg">${m}</div>
+      <div class="e-cnt">×${c}</div>
+    </div>
+  `).join('');
+}
+
+function renderScriptHealth(scripts) {
+  const el = document.getElementById('script-health');
+  if (!el) return;
+  if (!scripts || !scripts.length) { el.innerHTML = '<div class="empty-state">資料不可用</div>'; return; }
+  const sorted = [...scripts].sort((a,b) => b.lines - a.lines).slice(0, 6);
+  const max = sorted[0]?.lines || 1;
+  const thresh600 = 600; const thresh800 = 800;
+  el.innerHTML = sorted.map(s => {
+    const pct = (s.lines / max * 100).toFixed(1);
+    const t600pct = Math.min(100, thresh600 / max * 100);
+    const color = s.lines > thresh800 ? '#f87171' : s.lines > thresh600 ? '#fbbf24' : '#a78bfa';
+    return `<div class="sh-row">
+      <div class="sh-name" title="${s.name}">${s.name.replace('.js','')}</div>
+      <div class="sh-bar-wrap">
+        <div class="sh-bar-fill" style="width:${pct}%;background:${color}"></div>
+        <div class="sh-threshold" style="left:${t600pct}%"></div>
+      </div>
+      <div class="sh-val">${s.lines}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderComponents(components) {
+  const el = document.getElementById('comp-grid');
+  if (!el || !components) return;
+  const items = [
+    { name: 'Rules', val: components.rules, color: '#38bdf8' },
+    { name: 'Skills', val: components.skills, color: '#a78bfa' },
+    { name: 'Agents', val: components.agents, color: '#34d399' },
+    { name: 'Hooks', val: components.hookModules, color: '#fbbf24' },
+  ];
+  el.innerHTML = items.map(it => `
+    <div class="comp-box">
+      <div class="comp-num" style="color:${it.color}" id="cn-${it.name}">0</div>
+      <div class="comp-name">${it.name}</div>
+    </div>
+  `).join('');
+  items.forEach(it => {
+    const e = document.getElementById(`cn-${it.name}`);
+    if (e) animateCount(e, it.val);
+  });
+}
+
+function renderScoreSections(scores) {
+  const el = document.getElementById('score-sections');
+  if (!el) return;
+  if (!scores || !scores.length) { el.innerHTML = '<div class="empty-state">資料不可用</div>'; return; }
+  const groups = { Skills:[], Rules:[], Agents:[], Hooks:[], Other:[] };
+  scores.forEach(s => {
+    const t = s.type || s.category || '';
+    const key = t.toLowerCase().includes('skill') ? 'Skills'
+              : t.toLowerCase().includes('rule') ? 'Rules'
+              : t.toLowerCase().includes('agent') ? 'Agents'
+              : t.toLowerCase().includes('hook') ? 'Hooks'
+              : 'Other';
+    groups[key].push(s);
+  });
+  el.innerHTML = Object.entries(groups).filter(([,v])=>v.length).map(([group, items]) => {
+    const sorted = items.sort((a,b)=>(b.total||b.score||0)-(a.total||a.score||0));
+    return `<div class="score-section">
+      <div class="score-section-title">${group} (${items.length})</div>
+      <table class="score-table">
+        <thead><tr><th>路徑</th><th>分數</th><th>Grade</th></tr></thead>
+        <tbody>${sorted.map(s => {
+          const sc = s.total||s.score||0; const g = gradeFrom(sc);
+          const name = (s.path||s.name||'').split('/').pop().replace('.md','').replace('.js','');
+          return `<tr>
+            <td title="${s.path||s.name}">${name}</td>
+            <td style="font-weight:600;color:${gradeColor(g)}">${sc}</td>
+            <td><span class="grade grade-${g}">${g}</span></td>
+          </tr>`;
+        }).join('')}</tbody>
+      </table>
+    </div>`;
+  }).join('');
+}
+
+function renderDetailImprovements(improvements) {
+  const el = document.getElementById('detail-improvements');
+  if (!el) return;
+  if (!improvements || !improvements.length) { el.innerHTML = '<div class="empty-state">資料不可用</div>'; return; }
+  el.innerHTML = improvements.slice(-10).reverse().map(im => `
+    <div class="improve-item">
+      ${im.suggestion || im.content || im.text || ''}
+    </div>
+  `).join('');
+}
+
+function renderUnifiedTimeline(git, sessions) {
+  const el = document.getElementById('unified-timeline');
+  if (!el) return;
+  const events = [];
+  if (git?.nova) git.nova.forEach(c => events.push({ time: c.date, badge: 'nova', content: c.subject || '' }));
+  if (git?.overtone) git.overtone.forEach(c => events.push({ time: c.date, badge: 'overtone', content: c.subject || '' }));
+  if (sessions) sessions.slice(-5).forEach(s => events.push({
+    time: s.timestamp || '', badge: 'session', content: s.summary || s.content || ''
+  }));
+  events.sort((a, b) => new Date(b.time) - new Date(a.time));
+  if (!events.length) { el.innerHTML = '<div class="empty-state">資料不可用</div>'; return; }
+  el.innerHTML = events.slice(0, 20).map(e => {
+    const timeStr = e.time ? new Date(e.time).toLocaleString('zh-TW') : '';
+    return `<div class="timeline-item">
+      <div class="tl-time">${timeStr}</div>
+      <span class="tl-badge badge-${e.badge}">${e.badge}</span>
+      <div class="tl-content">${e.content}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderDaemonLogs(daemons) {
+  const el = document.getElementById('daemon-logs');
+  if (!el) return;
+  if (!daemons) { el.innerHTML = '<div class="empty-state">資料不可用</div>'; return; }
+  ['maintainer','judge','learner'].forEach(d => {
+    const lines = (daemons[d] || []).slice(-5);
+    el.innerHTML += `<div class="daemon-section">
+      <div class="daemon-title">${d}</div>
+      <div class="daemon-log">${lines.length ? lines.join('\n') : '無記錄'}</div>
+    </div>`;
+  });
+}
+
+function renderConsoleLocks(locks) {
+  const el = document.getElementById('console-locks');
+  if (!el) return;
+  if (!locks) { el.innerHTML = '<div class="empty-state">資料不可用</div>'; return; }
+  el.innerHTML = locks.map(l => {
+    const name = l.path.split('/').pop();
+    return `<div class="lock-row">
+      <div class="lock-name">${name}</div>
+      <span class="lock-badge ${l.exists ? 'lock-on' : 'lock-off'}">${l.exists ? `活躍 ${l.age||0}s` : '清除'}</span>
+    </div>`;
+  }).join('');
+}
+
+function renderConsoleBehaviors(behaviors) {
+  const el = document.getElementById('console-behaviors');
+  if (!el) return;
+  if (!behaviors || !behaviors.length) { el.innerHTML = '<div class="empty-state">資料不可用</div>'; return; }
+  el.innerHTML = behaviors.slice(-8).map(b => `
+    <div class="behavior-item">
+      <div class="beh-label" title="${b.pattern||b.behavior||''}">${b.pattern||b.behavior||''}</div>
+      <div class="beh-bar-bg"><div class="beh-bar-fill" style="width:${Math.round((b.confidence||0)*100)}%"></div></div>
+      <div class="beh-pct">${Math.round((b.confidence||0)*100)}%</div>
+    </div>
+  `).join('');
+}
+
+function renderSceneProgress(scenarios) {
+  const el = document.getElementById('scene-progress');
+  if (!el) return;
+  if (!scenarios || !scenarios.length) { el.innerHTML = '<div class="empty-state">資料不可用</div>'; return; }
+  el.innerHTML = scenarios.slice(0, 5).map(s => {
+    const total = s.conditions?.length || 0;
+    const done = s.conditions?.filter(c => c.status === 'done').length || 0;
+    const partial = s.conditions?.filter(c => c.status === 'partial').length || 0;
+    const pct = total ? Math.round((done + partial * 0.5) / total * 100) : 0;
+    return `<div class="scene-item">
+      <div class="scene-header">
+        <div class="scene-name">${s.name}</div>
+        <div class="scene-pct">${pct}%</div>
+      </div>
+      <div class="scene-bar"><div class="scene-fill" style="width:${pct}%"></div></div>
+    </div>`;
+  }).join('');
+}
+
+async function postApi(ep) {
+  try {
+    const r = await fetch(`/api/${ep}`, { method: 'POST', signal: AbortSignal.timeout(5000) });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    return await r.json();
+  } catch (e) { console.error(`POST ${ep}:`, e.message); return null; }
+}
+async function clearLocks() {
+  const r = await postApi('actions/clear-locks');
+  if (r) showToast(`已清除 ${(r.cleared||[]).length} 個 Lock ✅`);
+}
+async function doAction(act) {
+  const r = await postApi(`actions/${act}`);
+  if (r) showToast(r.triggered ? '已觸發 ✅' : r.reloaded ? '已重載 ✅' : JSON.stringify(r));
+}
+function showToast(msg) {
+  const t = document.createElement('div');
+  t.textContent = msg;
+  Object.assign(t.style, {
+    position:'fixed', top:'20px', right:'20px', zIndex:'9999',
+    background:'rgba(124,58,237,0.9)', color:'white', padding:'10px 18px',
+    borderRadius:'8px', fontSize:'13px', boxShadow:'0 4px 20px rgba(0,0,0,0.4)',
+    animation:'fadeIn 0.3s'
+  });
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
+
+async function loadAll() {
+  const [scores, errors, sessions, improvements, scripts, git, health, locks, behaviors, components, daemons, scenarios] = await Promise.all([
+    fetchApi('scores'), fetchApi('errors'), fetchApi('sessions'),
+    fetchApi('improvements'), fetchApi('scripts'), fetchApi('git'),
+    fetchApi('health'), fetchApi('locks'), fetchApi('behaviors'),
+    fetchApi('components'), fetchApi('daemons'), fetchApi('scenarios'),
+  ]);
+
+  // Tab 1
+  renderStatusBar(health);
+  renderDashDist(scores);
+  renderDashErrors(errors);
+  renderScriptHealth(scripts);
+  renderComponents(components);
+
+  // Tab 2
+  renderScoreSections(scores);
+  renderDetailImprovements(improvements);
+
+  // Tab 3
+  renderUnifiedTimeline(git, sessions);
+
+  // Tab 4
+  renderDaemonLogs(daemons);
+  renderConsoleLocks(locks);
+  renderConsoleBehaviors(behaviors);
+  renderSceneProgress(scenarios);
+}
+
+loadAll();
+setInterval(loadAll, 30000);
+</script>
+
+<script src="/nav-bar.js"></script>
+</body>
+</html>

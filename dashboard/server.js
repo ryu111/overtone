@@ -170,7 +170,7 @@ Bun.serve({
   async fetch(req) {
     const path = new URL(req.url).pathname;
     if (path.startsWith("/api/")) return handleApi(path, req);
-    const fp = path === "/" ? join(DASHBOARD_DIR, "index.html") : join(DASHBOARD_DIR, path);
+    const fp = path === "/" ? join(DASHBOARD_DIR, "gallery.html") : join(DASHBOARD_DIR, path);
     try {
       const file = Bun.file(fp);
       if (!(await file.exists())) return new Response("Not Found", { status: 404 });

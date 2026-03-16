@@ -1,0 +1,1040 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nova — Hybrid Pro</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --accent: #7c3aed;
+    --accent-light: #a78bfa;
+    --accent-bright: #c4b5fd;
+    --accent2: #06b6d4;
+    --accent3: #ec4899;
+    --text: #f0e6ff;
+    --text-dim: rgba(240,230,255,0.45);
+    --panel-bg: rgba(255,255,255,0.04);
+    --panel-border: rgba(255,255,255,0.1);
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #0d0618;
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Gradient background */
+  .bg-gradient {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    z-index: 0; pointer-events: none;
+    background: linear-gradient(-45deg, #0d0618, #130a2a, #0a1628, #14062e, #0d1a2e);
+    background-size: 400% 400%;
+    animation: gradientFlow 20s ease infinite;
+  }
+  @keyframes gradientFlow {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
+  /* Blobs */
+  .blob {
+    position: fixed; border-radius: 50%; pointer-events: none; z-index: 0;
+    animation: blobFloat linear infinite;
+  }
+  .blob-1 {
+    width: 600px; height: 600px;
+    background: radial-gradient(circle, rgba(124,58,237,0.12), transparent 70%);
+    filter: blur(80px);
+    top: -100px; left: -200px;
+    animation-duration: 25s;
+  }
+  .blob-2 {
+    width: 500px; height: 500px;
+    background: radial-gradient(circle, rgba(6,182,212,0.1), transparent 70%);
+    filter: blur(80px);
+    bottom: -100px; right: -100px;
+    animation-duration: 30s;
+    animation-delay: -10s;
+  }
+  .blob-3 {
+    width: 400px; height: 400px;
+    background: radial-gradient(circle, rgba(236,72,153,0.08), transparent 70%);
+    filter: blur(80px);
+    top: 40%; left: 40%;
+    animation-duration: 35s;
+    animation-delay: -20s;
+  }
+  @keyframes blobFloat {
+    0%,100% { transform: translate(0,0) scale(1); }
+    25% { transform: translate(30px,-40px) scale(1.05); }
+    50% { transform: translate(-20px,20px) scale(0.95); }
+    75% { transform: translate(40px,10px) scale(1.02); }
+  }
+
+  /* Micro particles */
+  .micro-particles { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+
+  .app {
+    position: relative; z-index: 1;
+    padding: 24px 28px 80px;
+    max-width: 1500px; margin: 0 auto;
+  }
+
+  .back-link {
+    display: inline-flex; align-items: center; gap: 6px;
+    color: rgba(167,139,250,0.65); text-decoration: none; font-size: 13px;
+    margin-bottom: 20px; letter-spacing: 0.5px; transition: color 0.3s;
+  }
+  .back-link:hover { color: var(--accent-bright); }
+
+  /* Panel */
+  .panel {
+    backdrop-filter: blur(24px) saturate(200%);
+    -webkit-backdrop-filter: blur(24px) saturate(200%);
+    background: var(--panel-bg);
+    border: 1px solid var(--panel-border);
+    border-radius: 20px;
+    box-shadow: 0 16px 48px rgba(0,0,0,0.35);
+    padding: 20px 24px;
+    transition: all 0.3s;
+  }
+  .panel:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 24px 64px rgba(0,0,0,0.4);
+    border-color: rgba(124,58,237,0.2);
+  }
+
+  /* Stagger animations */
+  .panel:nth-child(1) { animation: staggerIn 0.5s ease-out 0.05s backwards; }
+  .panel:nth-child(2) { animation: staggerIn 0.5s ease-out 0.1s backwards; }
+  .panel:nth-child(3) { animation: staggerIn 0.5s ease-out 0.15s backwards; }
+  .panel:nth-child(4) { animation: staggerIn 0.5s ease-out 0.2s backwards; }
+  .panel:nth-child(5) { animation: staggerIn 0.5s ease-out 0.25s backwards; }
+  @keyframes staggerIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Header */
+  .page-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 28px;
+  }
+  .title-wrap { display: flex; align-items: center; gap: 14px; }
+  .title-icon {
+    width: 48px; height: 48px;
+    background: rgba(124,58,237,0.2); border: 1px solid rgba(124,58,237,0.4);
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center; font-size: 22px;
+    box-shadow: 0 0 24px rgba(124,58,237,0.3);
+    backdrop-filter: blur(10px);
+    animation: iconFloat 4s ease-in-out infinite;
+  }
+  @keyframes iconFloat {
+    0%,100% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-4px) rotate(2deg); }
+  }
+  .page-title h1 {
+    font-size: clamp(18px, 2.2vw, 28px); font-weight: 700;
+    background: linear-gradient(135deg, #c4b5fd, #e879f9, #67e8f9, #a78bfa);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    background-size: 200%;
+    animation: shimmer 5s ease infinite;
+  }
+  @keyframes shimmer {
+    0%,100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+  }
+  .page-subtitle { font-size: 11px; color: var(--text-dim); margin-top: 2px; letter-spacing: 1px; text-transform: uppercase; }
+  .header-right { text-align: right; }
+  .header-right .label { font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
+  #clock { font-size: 20px; font-weight: 300; color: rgba(240,230,255,0.75); font-variant-numeric: tabular-nums; }
+
+  /* Tabs */
+  .tabs {
+    display: flex; gap: 0; margin-bottom: 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+  .tab {
+    padding: 10px 20px; cursor: pointer; font-size: 13px; font-weight: 500;
+    color: #6b7280; border-bottom: 2px solid transparent;
+    transition: all 0.2s; background: none; border-top: none; border-left: none; border-right: none;
+    letter-spacing: 0.3px;
+  }
+  .tab:hover { color: #e0def4; }
+  .tab.active { color: var(--accent-light); border-bottom-color: var(--accent-light); }
+  .tab-content { display: none; animation: fadeIn 0.3s; }
+  .tab-content.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  /* Panel title */
+  .panel-title {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 1.2px;
+    color: var(--text-dim); margin-bottom: 14px; display: flex; align-items: center; gap: 8px;
+  }
+  .panel-title::after {
+    content: ''; flex: 1; height: 1px;
+    background: linear-gradient(90deg, rgba(167,139,250,0.2), transparent);
+  }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 16px; }
+  .grid-3-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  .grid-col-2-1 { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-bottom: 16px; }
+  .grid-col-1-2 { display: grid; grid-template-columns: 1fr 2fr; gap: 16px; margin-bottom: 16px; }
+
+  /* Hero section */
+  .hero-section {
+    display: grid; grid-template-columns: 1fr 2fr; gap: 24px; margin-bottom: 16px;
+    align-items: center;
+  }
+  .hero-left { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  .hero-score {
+    font-size: 72px; font-weight: 800; line-height: 1;
+    background: linear-gradient(135deg, #a78bfa, #e879f9);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .hero-label { font-size: 13px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
+
+  /* SVG gauge */
+  .gauge-svg { overflow: visible; }
+
+  /* KPI mini */
+  .mini-kpis { display: flex; flex-direction: column; gap: 10px; }
+  .mini-kpi {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 14px; border-radius: 12px;
+    background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+  }
+  .mini-kpi-label { font-size: 12px; color: var(--text-dim); }
+  .mini-kpi-val { font-size: 20px; font-weight: 700; }
+
+  /* Bottom status bar */
+  .status-strip {
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    padding: 10px 16px; border-radius: 12px;
+    background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.06);
+    margin-top: 12px;
+  }
+  .status-pill-sm {
+    display: flex; align-items: center; gap: 5px;
+    font-size: 11px; color: var(--text-dim);
+  }
+  .pill-dot { width: 7px; height: 7px; border-radius: 50%; }
+  .dot-green { background: #34d399; box-shadow: 0 0 5px rgba(52,211,153,0.6); }
+  .dot-red { background: #f87171; box-shadow: 0 0 5px rgba(248,113,113,0.6); }
+  .dot-yellow { background: #fbbf24; }
+  .dot-gray { background: #6b7280; }
+
+  /* Middle 3-col */
+  .mid-panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .mid-panel-title { font-size: 13px; font-weight: 600; color: var(--text); }
+
+  /* Dist bar */
+  .dist-wrap { margin-bottom: 8px; }
+  .dist-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .dist-g { font-size: 11px; font-weight: 700; min-width: 16px; }
+  .dist-bar { flex: 1; height: 6px; border-radius: 3px; background: rgba(255,255,255,0.06); overflow: hidden; }
+  .dist-fill { height: 100%; border-radius: 3px; transition: width 1s ease; }
+  .dist-cnt { font-size: 10px; color: var(--text-dim); min-width: 20px; text-align: right; }
+
+  /* Bar chart */
+  .bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .bar-name { font-size: 11px; color: var(--text-dim); width: 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex-shrink: 0; }
+  .bar-bg { flex: 1; height: 16px; background: rgba(255,255,255,0.05); border-radius: 4px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 4px; transition: width 0.8s; }
+  .bar-val { font-size: 11px; color: var(--text-dim); min-width: 36px; text-align: right; flex-shrink: 0; }
+
+  /* Session card */
+  .session-card {
+    padding: 10px 14px; border-radius: 12px;
+    background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
+    margin-bottom: 8px;
+  }
+  .session-meta { display: flex; justify-content: space-between; margin-bottom: 5px; }
+  .session-id { font-size: 11px; color: var(--accent-light); font-family: monospace; }
+  .session-time { font-size: 10px; color: var(--text-dim); }
+  .session-summary { font-size: 12px; color: rgba(240,230,255,0.65); line-height: 1.5; }
+
+  /* Grade badge */
+  .grade {
+    display: inline-block; padding: 2px 8px; border-radius: 4px;
+    font-size: 10px; font-weight: 700; letter-spacing: 0.5px;
+  }
+  .grade-A { background: rgba(52,211,153,0.15); color: #34d399; border: 1px solid rgba(52,211,153,0.2); }
+  .grade-B { background: rgba(59,130,246,0.15); color: #60a5fa; border: 1px solid rgba(59,130,246,0.2); }
+  .grade-C { background: rgba(251,191,36,0.15); color: #fbbf24; border: 1px solid rgba(251,191,36,0.2); }
+  .grade-D { background: rgba(249,115,22,0.15); color: #fb923c; border: 1px solid rgba(249,115,22,0.2); }
+  .grade-F { background: rgba(239,68,68,0.15); color: #f87171; border: 1px solid rgba(239,68,68,0.2); }
+
+  /* Score table */
+  .score-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .score-table th {
+    text-align: left; padding: 8px 10px; font-size: 10px;
+    text-transform: uppercase; letter-spacing: 1px; color: var(--text-dim);
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+  }
+  .score-table td { padding: 8px 10px; border-bottom: 1px solid rgba(255,255,255,0.04); }
+  .score-table tr:hover td { background: rgba(255,255,255,0.03); }
+  .score-table td:first-child { color: rgba(240,230,255,0.7); font-size: 11px; }
+
+  /* Grade filter */
+  .grade-filter { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
+  .grade-btn {
+    padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 600;
+    cursor: pointer; transition: all 0.2s;
+    background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+    color: var(--text-dim);
+  }
+  .grade-btn.active { background: rgba(167,139,250,0.2); border-color: rgba(167,139,250,0.4); color: var(--accent-light); }
+  .grade-btn:hover { border-color: rgba(167,139,250,0.3); color: var(--text); }
+
+  /* Score bar */
+  .score-bar-wrap { display: flex; align-items: center; gap: 8px; }
+  .score-bar-bg { flex: 1; height: 4px; background: rgba(255,255,255,0.06); border-radius: 2px; overflow: hidden; }
+  .score-bar-fill { height: 100%; border-radius: 2px; transition: width 0.8s; }
+  .score-num { font-size: 13px; font-weight: 600; min-width: 28px; text-align: right; }
+
+  /* Error cluster */
+  .error-item {
+    display: flex; align-items: center; gap: 8px; padding: 8px 10px;
+    border-radius: 8px; background: rgba(239,68,68,0.06); border: 1px solid rgba(239,68,68,0.1);
+    margin-bottom: 7px; font-size: 12px;
+  }
+  .e-dot { width: 7px; height: 7px; border-radius: 50%; background: #f87171; flex-shrink: 0; }
+  .e-msg { flex: 1; color: rgba(240,230,255,0.7); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .e-cnt { font-weight: 600; color: #f87171; font-size: 10px; }
+
+  /* Improvement */
+  .improve-item {
+    padding: 10px 12px; border-radius: 10px;
+    background: rgba(167,139,250,0.06); border: 1px solid rgba(167,139,250,0.12);
+    margin-bottom: 8px; font-size: 12px; color: rgba(240,230,255,0.75); line-height: 1.5;
+  }
+
+  /* Timeline */
+  .tl-item {
+    display: flex; align-items: flex-start; gap: 10px; padding: 8px 12px;
+    border-radius: 10px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07);
+    margin-bottom: 8px; font-size: 12px;
+  }
+  .tl-time { font-size: 10px; color: var(--text-dim); white-space: nowrap; padding-top: 1px; min-width: 90px; }
+  .tl-badge { padding: 2px 7px; border-radius: 10px; font-size: 10px; font-weight: 600; white-space: nowrap; flex-shrink: 0; }
+  .badge-nova { background: rgba(99,102,241,0.2); color: #818cf8; }
+  .badge-overtone { background: rgba(56,189,248,0.2); color: #38bdf8; }
+  .badge-session { background: rgba(167,139,250,0.2); color: #a78bfa; }
+  .tl-content { flex: 1; color: rgba(240,230,255,0.75); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* Scene mini */
+  .scene-mini { margin-bottom: 10px; }
+  .scene-header { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px; }
+  .scene-name { color: var(--text); }
+  .scene-pct { color: var(--text-dim); }
+  .scene-bar { height: 5px; border-radius: 3px; background: rgba(255,255,255,0.06); overflow: hidden; }
+  .scene-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--accent-light), var(--accent2)); transition: width 0.8s; }
+
+  /* Service status */
+  .service-row {
+    display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+    border-radius: 10px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07);
+    margin-bottom: 7px; font-size: 12px;
+  }
+  .srv-name { flex: 1; color: var(--text); }
+  .srv-detail { font-size: 10px; color: var(--text-dim); }
+  .srv-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+  /* Lock */
+  .lock-item {
+    display: flex; align-items: center; gap: 8px; padding: 8px 10px;
+    border-radius: 8px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07);
+    margin-bottom: 6px; font-size: 11px;
+  }
+  .lock-name { flex: 1; font-family: monospace; font-size: 10px; color: var(--text-dim); }
+  .lock-badge { padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 600; }
+  .lock-on { background: rgba(251,191,36,0.15); color: #fbbf24; }
+  .lock-off { background: rgba(52,211,153,0.12); color: #34d399; }
+
+  /* Component detail */
+  .comp-section { margin-bottom: 14px; }
+  .comp-section-title {
+    font-size: 11px; font-weight: 600; color: var(--accent-light);
+    margin-bottom: 8px; display: flex; align-items: center; gap: 6px;
+    text-transform: uppercase; letter-spacing: 0.8px;
+  }
+  .comp-count-big { font-size: 24px; font-weight: 700; }
+  .comp-name-list { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+  .comp-tag {
+    padding: 2px 8px; border-radius: 10px; font-size: 10px;
+    background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+    color: var(--text-dim);
+  }
+
+  /* Action btn big */
+  .big-action-btn {
+    width: 100%; padding: 14px 18px; border-radius: 12px; cursor: pointer;
+    transition: all 0.2s; border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.04);
+    color: var(--text); margin-bottom: 10px; text-align: left;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .big-action-btn:hover {
+    background: rgba(167,139,250,0.12);
+    border-color: rgba(167,139,250,0.3);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(124,58,237,0.2);
+  }
+  .btn-icon { font-size: 20px; }
+  .btn-info { flex: 1; }
+  .btn-name { font-size: 13px; font-weight: 600; }
+  .btn-desc { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+
+  /* Toast */
+  .toast {
+    position: fixed; top: 20px; right: 20px; z-index: 9999;
+    background: rgba(167,139,250,0.9); color: #1a0040;
+    padding: 12px 20px; border-radius: 12px; font-size: 13px; font-weight: 600;
+    box-shadow: 0 8px 32px rgba(124,58,237,0.4);
+    animation: toastIn 0.3s ease-out;
+  }
+  @keyframes toastIn {
+    from { opacity: 0; transform: translateX(40px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  .behavior-item { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .beh-label { font-size: 12px; color: rgba(240,230,255,0.7); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .beh-bar-bg { width: 80px; height: 4px; background: rgba(255,255,255,0.07); border-radius: 2px; overflow: hidden; }
+  .beh-bar-fill { height: 100%; border-radius: 2px; background: var(--accent-light); transition: width 0.8s; }
+  .beh-pct { font-size: 10px; color: var(--text-dim); min-width: 30px; text-align: right; }
+
+  .empty-state { text-align: center; padding: 20px; color: var(--text-dim); font-size: 12px; }
+  .col-title { font-size: 11px; color: var(--text-dim); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.8px; }
+
+  @media (max-width: 1100px) {
+    .hero-section { grid-template-columns: 1fr; }
+    .grid-3-col, .grid-col-2-1, .grid-col-1-2 { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 768px) {
+    .grid-2, .grid-3 { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="bg-gradient"></div>
+<div class="blob blob-1"></div>
+<div class="blob blob-2"></div>
+<div class="blob blob-3"></div>
+<canvas class="micro-particles" id="micro-canvas"></canvas>
+
+<div class="app">
+  <a href="/gallery.html" class="back-link">← Gallery</a>
+
+  <div class="page-header">
+    <div class="title-wrap">
+      <div class="title-icon">⬡</div>
+      <div class="page-title">
+        <h1>Nova Intelligence</h1>
+        <div class="page-subtitle">Hybrid Pro · Liquid Glass Fusion</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="label">系統時間</div>
+      <div id="clock">--:--:--</div>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab" data-tab="panorama">全景</button>
+    <button class="tab" data-tab="analysis">深度分析</button>
+    <button class="tab" data-tab="log">活動日誌</button>
+    <button class="tab" data-tab="control">控制中心</button>
+  </div>
+
+  <!-- Tab 1: 全景 -->
+  <div id="panorama" class="tab-content">
+    <!-- Hero -->
+    <div class="panel" style="margin-bottom:16px">
+      <div class="hero-section">
+        <div class="hero-left">
+          <svg class="gauge-svg" width="160" height="100" viewBox="0 0 160 100">
+            <path d="M 20 80 A 60 60 0 0 1 140 80" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="12" stroke-linecap="round"/>
+            <path id="gauge-arc" d="M 20 80 A 60 60 0 0 1 140 80" fill="none" stroke="url(#gaugeGrad)" stroke-width="12" stroke-linecap="round"
+              stroke-dasharray="0 188"/>
+            <defs>
+              <linearGradient id="gaugeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#7c3aed"/>
+                <stop offset="50%" stop-color="#e879f9"/>
+                <stop offset="100%" stop-color="#06b6d4"/>
+              </linearGradient>
+            </defs>
+          </svg>
+          <div class="hero-score" id="hero-score">--</div>
+          <div class="hero-label">系統健康分</div>
+        </div>
+        <div class="mini-kpis">
+          <div class="mini-kpi">
+            <div class="mini-kpi-label">品質平均分</div>
+            <div class="mini-kpi-val" id="kpi-quality" style="color:#a78bfa">--</div>
+          </div>
+          <div class="mini-kpi">
+            <div class="mini-kpi-label">Hook 錯誤數</div>
+            <div class="mini-kpi-val" id="kpi-errors" style="color:#f87171">--</div>
+          </div>
+          <div class="mini-kpi">
+            <div class="mini-kpi-label">元件總數</div>
+            <div class="mini-kpi-val" id="kpi-comps" style="color:#34d399">--</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mid 3-col -->
+    <div class="grid-3-col">
+      <div class="panel">
+        <div class="mid-panel-title" style="margin-bottom:12px">品質分布</div>
+        <div id="hero-dist"></div>
+      </div>
+      <div class="panel">
+        <div class="mid-panel-title" style="margin-bottom:12px">Script TOP 5</div>
+        <div id="hero-scripts"></div>
+      </div>
+      <div class="panel">
+        <div class="mid-panel-title" style="margin-bottom:12px">最近 Session</div>
+        <div id="hero-sessions"></div>
+      </div>
+    </div>
+
+    <!-- Bottom status -->
+    <div class="status-strip" id="hero-status">
+      <div class="status-pill-sm"><div class="pill-dot dot-gray"></div>Server</div>
+      <div class="status-pill-sm"><div class="pill-dot dot-gray"></div>LLM</div>
+      <div class="status-pill-sm" id="lock-strip">Lock: 載入中...</div>
+    </div>
+  </div>
+
+  <!-- Tab 2: 深度分析 -->
+  <div id="analysis" class="tab-content">
+    <div class="panel" style="margin-bottom:16px">
+      <div class="panel-title">品質評分</div>
+      <div class="grade-filter" id="grade-filter">
+        <button class="grade-btn active" data-grade="全部">全部</button>
+        <button class="grade-btn" data-grade="A">A</button>
+        <button class="grade-btn" data-grade="B">B</button>
+        <button class="grade-btn" data-grade="C">C</button>
+        <button class="grade-btn" data-grade="D">D</button>
+        <button class="grade-btn" data-grade="F">F</button>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="score-table" id="analysis-table">
+          <thead>
+            <tr>
+              <th>元件</th><th>分數</th><th>Grade</th><th>類型</th>
+            </tr>
+          </thead>
+          <tbody id="analysis-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="panel">
+        <div class="panel-title">錯誤聚類</div>
+        <div id="analysis-errors"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-title">改善建議 + 行為模式</div>
+        <div style="margin-bottom:14px" id="analysis-improvements"></div>
+        <div class="panel-title">行為模式</div>
+        <div id="analysis-behaviors"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tab 3: 活動日誌 -->
+  <div id="log" class="tab-content">
+    <div class="panel" style="margin-bottom:16px">
+      <div class="panel-title">統一時間軸</div>
+      <div id="unified-log"></div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">場景達成</div>
+      <div id="log-scenes"></div>
+    </div>
+  </div>
+
+  <!-- Tab 4: 控制中心 -->
+  <div id="control" class="tab-content">
+    <div class="grid-2" style="margin-bottom:16px">
+      <!-- Left: service + lock -->
+      <div>
+        <div class="panel" style="margin-bottom:16px">
+          <div class="panel-title">服務狀態</div>
+          <div id="ctrl-services"></div>
+        </div>
+        <div class="panel">
+          <div class="panel-title">Lock 管理</div>
+          <div id="ctrl-locks"></div>
+          <button class="big-action-btn" style="margin-top:10px" onclick="clearLocks()">
+            <div class="btn-icon">🔓</div>
+            <div class="btn-info">
+              <div class="btn-name">清除過期 Lock</div>
+              <div class="btn-desc">清除超過 5 分鐘的 lock 檔案</div>
+            </div>
+          </button>
+        </div>
+      </div>
+      <!-- Right: components -->
+      <div class="panel">
+        <div class="panel-title">元件清單</div>
+        <div id="ctrl-components"></div>
+      </div>
+    </div>
+    <!-- Actions -->
+    <div class="panel">
+      <div class="panel-title">操作控制</div>
+      <div class="grid-3">
+        <button class="big-action-btn" onclick="doAction('reload-modules')">
+          <div class="btn-icon">⟳</div>
+          <div class="btn-info">
+            <div class="btn-name">重載模組</div>
+            <div class="btn-desc">熱重載 Hook 模組（零停機）</div>
+          </div>
+        </button>
+        <button class="big-action-btn" onclick="doAction('trigger-maintainer')">
+          <div class="btn-icon">⚡</div>
+          <div class="btn-info">
+            <div class="btn-name">觸發 Maintainer</div>
+            <div class="btn-desc">立即執行維護任務</div>
+          </div>
+        </button>
+        <button class="big-action-btn" onclick="location.reload()">
+          <div class="btn-icon">↺</div>
+          <div class="btn-info">
+            <div class="btn-name">刷新頁面</div>
+            <div class="btn-desc">重新載入所有資料</div>
+          </div>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Micro particles -->
+<script>
+(function() {
+  const canvas = document.getElementById('micro-canvas');
+  const ctx = canvas.getContext('2d');
+  let W, H, ps = [];
+  function resize() { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; }
+  window.addEventListener('resize', resize);
+  resize();
+
+  for (let i = 0; i < 15; i++) {
+    ps.push({
+      x: Math.random() * W, y: Math.random() * H + H,
+      r: Math.random() * 2 + 2,
+      speed: Math.random() * 0.4 + 0.15,
+      opacity: Math.random() * 0.1 + 0.05,
+    });
+  }
+
+  function draw() {
+    requestAnimationFrame(draw);
+    ctx.clearRect(0, 0, W, H);
+    for (const p of ps) {
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(167,139,250,${p.opacity})`;
+      ctx.fill();
+      p.y -= p.speed;
+      if (p.y < -10) { p.y = H + 10; p.x = Math.random() * W; }
+    }
+  }
+  draw();
+})();
+</script>
+
+<!-- Clock -->
+<script>
+function updateClock() {
+  document.getElementById('clock').textContent =
+    new Date().toLocaleTimeString('zh-TW', { hour12: false });
+}
+setInterval(updateClock, 1000);
+updateClock();
+</script>
+
+<!-- Tabs -->
+<script>
+function initTabs(key) {
+  const tabs = document.querySelectorAll('.tab');
+  const panels = document.querySelectorAll('.tab-content');
+  const saved = localStorage.getItem(key);
+  function activate(id) {
+    tabs.forEach(t => t.classList.toggle('active', t.dataset.tab === id));
+    panels.forEach(p => p.classList.toggle('active', p.id === id));
+    localStorage.setItem(key, id);
+  }
+  tabs.forEach(t => t.addEventListener('click', () => activate(t.dataset.tab)));
+  activate(saved || tabs[0]?.dataset.tab);
+}
+initTabs('g5-tab');
+</script>
+
+<!-- Fetch -->
+<script>
+async function fetchApi(ep) {
+  try {
+    const r = await fetch(`/api/${ep}`, { signal: AbortSignal.timeout(5000) });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const ct = r.headers.get('content-type') || '';
+    return ct.includes('json') ? await r.json() : await r.text();
+  } catch (e) { console.error(`API ${ep}:`, e.message); return null; }
+}
+</script>
+
+<!-- Data & Render -->
+<script>
+let _scores = null;
+
+function gradeFrom(s) {
+  if (s >= 90) return 'A'; if (s >= 80) return 'B';
+  if (s >= 70) return 'C'; if (s >= 60) return 'D'; return 'F';
+}
+function gradeColor(g) {
+  return { A:'#34d399', B:'#60a5fa', C:'#fbbf24', D:'#fb923c', F:'#f87171' }[g] || '#6b7280';
+}
+function scoreBarColor(s) {
+  if (s >= 90) return '#34d399'; if (s >= 70) return '#60a5fa';
+  if (s >= 50) return '#fbbf24'; return '#f87171';
+}
+
+function animateCount(el, target) {
+  const start = performance.now();
+  (function update(now) {
+    const p = Math.min((now - start) / 1000, 1);
+    const e = 1 - Math.pow(1 - p, 3);
+    el.textContent = Math.round(e * target);
+    if (p < 1) requestAnimationFrame(update);
+  })(performance.now());
+}
+
+// ---- Tab 1 ----
+function renderHero(scores, errors, components, health) {
+  // Gauge
+  const avg = scores && scores.length
+    ? scores.reduce((s, x) => s + (x.total||x.score||0), 0) / scores.length : 0;
+  const errCount = errors ? errors.length : 0;
+  const healthScore = Math.round(avg * 0.7 + Math.max(0, 100 - errCount * 8) * 0.3);
+
+  const heroEl = document.getElementById('hero-score');
+  if (heroEl) animateCount(heroEl, healthScore);
+
+  // Animate gauge arc
+  const arc = document.getElementById('gauge-arc');
+  if (arc) {
+    const total = 188;
+    const dash = (healthScore / 100 * total).toFixed(1);
+    setTimeout(() => { arc.style.transition = 'stroke-dasharray 1.2s ease'; arc.setAttribute('stroke-dasharray', `${dash} ${total}`); }, 100);
+  }
+
+  const qEl = document.getElementById('kpi-quality');
+  const eEl = document.getElementById('kpi-errors');
+  const cEl = document.getElementById('kpi-comps');
+  if (qEl) animateCount(qEl, Math.round(avg));
+  if (eEl) animateCount(eEl, errCount);
+  if (cEl && components) {
+    const total = components.rules + components.skills + components.agents + components.hookModules;
+    animateCount(cEl, total);
+  }
+
+  // Status strip
+  const ok = health && health.status === 'ok';
+  const ss = document.getElementById('hero-status');
+  if (ss) {
+    const lockStrip = document.getElementById('lock-strip');
+    ss.innerHTML = `
+      <div class="status-pill-sm"><div class="pill-dot ${ok ? 'dot-green' : 'dot-red'}"></div>Server ${ok ? 'Online' : 'Offline'}</div>
+      <div class="status-pill-sm"><div class="pill-dot dot-yellow"></div>LLM</div>
+    `;
+  }
+}
+
+function renderHeroDist(scores) {
+  const el = document.getElementById('hero-dist');
+  if (!el) return;
+  if (!scores || !scores.length) { el.innerHTML = '<div class="empty-state">資料不可用</div>'; return; }
+  const counts = { A:0, B:0, C:0, D:0, F:0 };
+  scores.forEach(s => counts[gradeFrom(s.total||s.score||0)]++);
+  const total = scores.length;
+  const colors = { A:'#34d399', B:'#60a5fa', C:'#fbbf24', D:'#fb923c', F:'#f87171' };
+  el.innerHTML = Object.entries(counts).map(([g, cnt]) => {
+    const pct = total ? (cnt/total*100).toFixed(1) : 0;
+    return `<div class="dist-row">
+      <div class="dist-g" style="color:${colors[g]}">${g}</div>
+      <div class="dist-bar"><div class="dist-fill" style="width:${pct}%;background:${colors[g]}"></div></div>
+      <div class="dist-cnt">${cnt}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderHeroScripts(scripts) {
+  const el = document.getElementById('hero-scripts');
+  if (!el) return;
+  if (!scripts || !scripts.length) { el.innerHTML = '<div class="empty-state">資料不可用</div>'; return; }
+  const top5 = [...scripts].sort((a,b)=>b.lines-a.lines).slice(0,5);
+  const max = top5[0]?.lines || 1;
+  const colors = ['#a78bfa','#c4b5fd','#38bdf8','#34d399','#fbbf24'];
+  el.innerHTML = top5.map((s,i) => `
+    <div class="bar-row">
+      <div class="bar-name" title="${s.name}">${s.name.replace('.js','')}</div>
+      <div class="bar-bg"><div class="bar-fill" style="width:${(s.lines/max*100).toFixed(1)}%;background:${colors[i]};opacity:0.85"></div></div>
+      <div class="bar-val">${s.lines}</div>
+    </div>
+  `).join('');
+}
+
+function renderHeroSessions(sessions) {
+  const el = document.getElementById('hero-sessions');
+  if (!el) return;
+  if (!sessions || !sessions.length) { el.innerHTML = '<div class="empty-state">資料不可用</div>'; return; }
+  el.innerHTML = [...sessions].slice(-3).reverse().map(s => `
+    <div class="session-card">
+      <div class="session-meta">
+        <span class="session-id">${(s.session_id||s.id||'').slice(0,8)}...</span>
+        <span class="session-time">${s.timestamp ? new Date(s.timestamp).toLocaleDateString('zh-TW') : ''}</span>
+      </div>
+      <div class="session-summary">${(s.summary||s.content||'').slice(0,80)}...</div>
+    </div>
+  `).join('');
+}
+
+// ---- Tab 2 ----
+function renderAnalysisTable(scores, filterGrade) {
+  const tbody = document.getElementById('analysis-tbody');
+  if (!tbody || !scores) { if (tbody) tbody.innerHTML = '<tr><td colspan="4" class="empty-state">資料不可用</td></tr>'; return; }
+  let filtered = scores;
+  if (filterGrade && filterGrade !== '全部') filtered = scores.filter(s => gradeFrom(s.total||s.score||0) === filterGrade);
+  filtered = [...filtered].sort((a,b)=>(b.total||b.score||0)-(a.total||a.score||0));
+  const maxScore = filtered[0] ? (filtered[0].total||filtered[0].score||100) : 100;
+  tbody.innerHTML = filtered.map(s => {
+    const sc = s.total||s.score||0; const g = gradeFrom(sc); const color = scoreBarColor(sc);
+    const name = (s.path||s.name||'').split('/').pop().replace('.md','').replace('.js','');
+    return `<tr>
+      <td title="${s.path||s.name}">${name}</td>
+      <td><div class="score-bar-wrap">
+        <div class="score-bar-bg"><div class="score-bar-fill" style="width:${(sc/maxScore*100).toFixed(1)}%;background:${color}"></div></div>
+        <span class="score-num" style="color:${color}">${sc}</span>
+      </div></td>
+      <td><span class="grade grade-${g}">${g}</span></td>
+      <td style="font-size:11px;color:var(--text-dim)">${s.type||s.category||'-'}</td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="4" class="empty-state">無符合資料</td></tr>';
+}
+
+function initGradeFilter(scores) {
+  const btns = document.querySelectorAll('.grade-btn');
+  btns.forEach(b => b.addEventListener('click', () => {
+    btns.forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    renderAnalysisTable(scores, b.dataset.grade);
+  }));
+}
+
+function renderAnalysisErrors(errors) {
+  const el = document.getElementById('analysis-errors');
+  if (!el) return;
+  if (!errors || !errors.length) { el.innerHTML = '<div class="empty-state" style="color:#34d399">無錯誤記錄</div>'; return; }
+  const clusters = {};
+  errors.forEach(e => { const k = (e.error||e.message||'?').slice(0,38); clusters[k]=(clusters[k]||0)+1; });
+  el.innerHTML = Object.entries(clusters).sort((a,b)=>b[1]-a[1]).slice(0,6).map(([m,c]) => `
+    <div class="error-item"><div class="e-dot"></div><div class="e-msg">${m}</div><div class="e-cnt">×${c}</div></div>
+  `).join('');
+}
+
+function renderAnalysisImprovements(improvements) {
+  const el = document.getElementById('analysis-improvements');
+  if (!el) return;
+  if (!improvements || !improvements.length) { el.innerHTML = '<div class="empty-state">資料不可用</div>'; return; }
+  el.innerHTML = improvements.slice(-5).reverse().map(im => `
+    <div class="improve-item">${im.suggestion||im.content||im.text||''}</div>
+  `).join('');
+}
+
+function renderAnalysisBehaviors(behaviors) {
+  const el = document.getElementById('analysis-behaviors');
+  if (!el) return;
+  if (!behaviors || !behaviors.length) { el.innerHTML = '<div class="empty-state">資料不可用</div>'; return; }
+  el.innerHTML = behaviors.slice(-6).map(b => `
+    <div class="behavior-item">
+      <div class="beh-label" title="${b.pattern||b.behavior||''}">${b.pattern||b.behavior||''}</div>
+      <div class="beh-bar-bg"><div class="beh-bar-fill" style="width:${Math.round((b.confidence||0)*100)}%"></div></div>
+      <div class="beh-pct">${Math.round((b.confidence||0)*100)}%</div>
+    </div>
+  `).join('');
+}
+
+// ---- Tab 3 ----
+function renderUnifiedLog(git, sessions) {
+  const el = document.getElementById('unified-log');
+  if (!el) return;
+  const events = [];
+  if (git?.nova) git.nova.forEach(c => events.push({ time: c.date, badge: 'nova', content: c.subject||'' }));
+  if (git?.overtone) git.overtone.forEach(c => events.push({ time: c.date, badge: 'overtone', content: c.subject||'' }));
+  if (sessions) sessions.slice(-5).forEach(s => events.push({ time: s.timestamp||'', badge: 'session', content: s.summary||s.content||'' }));
+  events.sort((a,b) => new Date(b.time) - new Date(a.time));
+  if (!events.length) { el.innerHTML = '<div class="empty-state">資料不可用</div>'; return; }
+  el.innerHTML = events.slice(0,20).map(e => `
+    <div class="tl-item">
+      <div class="tl-time">${e.time ? new Date(e.time).toLocaleString('zh-TW') : ''}</div>
+      <span class="tl-badge badge-${e.badge}">${e.badge}</span>
+      <div class="tl-content">${e.content}</div>
+    </div>
+  `).join('');
+}
+
+function renderLogScenes(scenarios) {
+  const el = document.getElementById('log-scenes');
+  if (!el) return;
+  if (!scenarios || !scenarios.length) { el.innerHTML = '<div class="empty-state">資料不可用</div>'; return; }
+  el.innerHTML = scenarios.slice(0,5).map(s => {
+    const total = s.conditions?.length || 0;
+    const done = s.conditions?.filter(c=>c.status==='done').length || 0;
+    const partial = s.conditions?.filter(c=>c.status==='partial').length || 0;
+    const pct = total ? Math.round((done + partial*0.5) / total * 100) : 0;
+    return `<div class="scene-mini">
+      <div class="scene-header"><div class="scene-name">${s.name}</div><div class="scene-pct">${pct}%</div></div>
+      <div class="scene-bar"><div class="scene-fill" style="width:${pct}%"></div></div>
+    </div>`;
+  }).join('');
+}
+
+// ---- Tab 4 ----
+function renderCtrlServices(health) {
+  const el = document.getElementById('ctrl-services');
+  if (!el) return;
+  const ok = health && health.status === 'ok';
+  const services = [
+    { name: 'Nova Server (port 3457)', status: ok ? 'online' : 'offline' },
+    { name: 'LLM (vllm-mlx port 8000)', status: 'unknown' },
+    { name: 'Maintainer', status: 'daemon' },
+    { name: 'Judge', status: 'daemon' },
+    { name: 'Hook Client', status: ok ? 'active' : 'fallback' },
+  ];
+  const dotCls = { online:'dot-green', offline:'dot-red', active:'dot-green', fallback:'dot-red', daemon:'dot-yellow', unknown:'dot-gray' };
+  el.innerHTML = services.map(s => `
+    <div class="service-row">
+      <div class="srv-dot ${dotCls[s.status]||'dot-gray'}"></div>
+      <div class="srv-name">${s.name}</div>
+      <div class="srv-detail">${s.status}</div>
+    </div>
+  `).join('');
+}
+
+function renderCtrlLocks(locks) {
+  const el = document.getElementById('ctrl-locks');
+  if (!el) return;
+  if (!locks) { el.innerHTML = '<div class="empty-state">資料不可用</div>'; return; }
+  el.innerHTML = locks.map(l => {
+    const name = l.path.split('/').pop();
+    return `<div class="lock-item">
+      <div class="lock-name">${name}</div>
+      <span class="lock-badge ${l.exists ? 'lock-on' : 'lock-off'}">${l.exists ? `活躍 ${l.age||0}s` : '清除'}</span>
+    </div>`;
+  }).join('');
+}
+
+function renderCtrlComponents(components) {
+  const el = document.getElementById('ctrl-components');
+  if (!el || !components) return;
+  const items = [
+    { key: 'rules', name: 'Rules', color: '#38bdf8' },
+    { key: 'skills', name: 'Skills', color: '#a78bfa' },
+    { key: 'agents', name: 'Agents', color: '#34d399' },
+    { key: 'hookModules', name: 'Hook Modules', color: '#fbbf24' },
+  ];
+  el.innerHTML = items.map(it => `
+    <div class="comp-section">
+      <div class="comp-section-title" style="color:${it.color}">
+        <span class="comp-count-big" style="color:${it.color}" id="cc-${it.key}">0</span>
+        ${it.name}
+      </div>
+    </div>
+  `).join('');
+  items.forEach(it => {
+    const e = document.getElementById(`cc-${it.key}`);
+    if (e) animateCount(e, components[it.key] || 0);
+  });
+}
+
+// ---- Actions ----
+async function postApi(ep) {
+  try {
+    const r = await fetch(`/api/${ep}`, { method: 'POST', signal: AbortSignal.timeout(5000) });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    return await r.json();
+  } catch (e) { console.error(`POST ${ep}:`, e.message); return null; }
+}
+async function clearLocks() {
+  const r = await postApi('actions/clear-locks');
+  if (r) showToast(`已清除 ${(r.cleared||[]).length} 個 Lock ✅`);
+}
+async function doAction(act) {
+  const r = await postApi(`actions/${act}`);
+  if (r) showToast(r.triggered ? '已觸發 ✅' : r.reloaded ? '已重載 ✅' : JSON.stringify(r));
+}
+function showToast(msg) {
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
+
+// ---- Main ----
+async function loadAll() {
+  const [scores, errors, sessions, improvements, scripts, git, health, locks, behaviors, components, scenarios, daemons] = await Promise.all([
+    fetchApi('scores'), fetchApi('errors'), fetchApi('sessions'),
+    fetchApi('improvements'), fetchApi('scripts'), fetchApi('git'),
+    fetchApi('health'), fetchApi('locks'), fetchApi('behaviors'),
+    fetchApi('components'), fetchApi('scenarios'), fetchApi('daemons'),
+  ]);
+
+  _scores = scores;
+
+  // Tab 1
+  renderHero(scores, errors, components, health);
+  renderHeroDist(scores);
+  renderHeroScripts(scripts);
+  renderHeroSessions(sessions);
+
+  // Tab 2
+  renderAnalysisTable(scores, '全部');
+  initGradeFilter(scores);
+  renderAnalysisErrors(errors);
+  renderAnalysisImprovements(improvements);
+  renderAnalysisBehaviors(behaviors);
+
+  // Tab 3
+  renderUnifiedLog(git, sessions);
+  renderLogScenes(scenarios);
+
+  // Tab 4
+  renderCtrlServices(health);
+  renderCtrlLocks(locks);
+  renderCtrlComponents(components);
+}
+
+loadAll();
+setInterval(loadAll, 30000);
+</script>
+
+<script src="/nav-bar.js"></script>
+</body>
+</html>
