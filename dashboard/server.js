@@ -233,6 +233,21 @@ async function handleApi(path, req) {
       });
     }
 
+    if (path === "/api/notion-todo") {
+      try {
+        const p = Bun.spawn(["bun", join(CLAUDE_DIR, "scripts/notion-tasks.js"), "list", "待做"], { stdout: "pipe", stderr: "pipe" });
+        const code = await p.exited;
+        const out = await new Response(p.stdout).text();
+        if (out.includes("無「") || !out.trim()) return j({ count: 0, top: "" });
+        const m = out.match(/（(\d+) 個）/);
+        const count = m ? parseInt(m[1], 10) : 0;
+        const lines = out.split("\n");
+        const first = lines.find(l => l.includes("│"));
+        const top = first ? first.replace(/^.*│\s*/, "").trim() : "";
+        return j({ count, top });
+      } catch { return j({ count: 0, top: "" }); }
+    }
+
     return j({ error: "Not Found" }, 404);
   } catch (e) { return err(e); }
 }

@@ -150,11 +150,14 @@ if (currentIdx >= 0 && current) {
   const w = document.createElement('div');
   w.id = 'hb-widget';
   w.style.cssText = 'position:fixed;top:12px;right:12px;background:rgba(0,0,0,0.75);backdrop-filter:blur(8px);color:#eee;padding:8px 14px;border-radius:10px;font:12px/1.6 monospace;z-index:9999;min-width:160px;';
-  w.innerHTML = '<div id="hb-text">心跳 載入中...</div>';
+  w.innerHTML = '<div id="hb-text">心跳 載入中...</div><div id="hb-tasks" style="color:#aaa;margin-top:2px"></div>';
   document.body.appendChild(w);
 
   let lastPollTs = 0;
   let lastSdTs = 0;
+  let hbExecuting = false;
+  let todoCount = 0;
+  let todoName = '';
 
   function fmt(sec) {
     if (sec <= 0) return '0s';
@@ -172,23 +175,42 @@ if (currentIdx >= 0 && current) {
 
       if (hb.lastPoll) lastPollTs = new Date(hb.lastPoll).getTime();
       if (hb.lastSelfDrive) lastSdTs = new Date(hb.lastSelfDrive).getTime();
+      hbExecuting = !!hb.executing;
     } catch {
       el('hb-text').innerHTML = '<span style="color:#f66">心跳 離線</span>';
+      return;
     }
+    // Notion 待做
+    try {
+      const r2 = await fetch('/api/notion-todo', { signal: AbortSignal.timeout(5000) });
+      const d2 = await r2.json();
+      todoCount = d2.count ?? 0;
+      todoName = d2.top ?? '';
+    } catch { /* keep previous */ }
   }
 
   function tick() {
-    const el = document.getElementById('hb-text');
-    if (!el || !lastPollTs) return;
+    const t = document.getElementById('hb-text');
+    const t2 = document.getElementById('hb-tasks');
+    if (!t) return;
 
-    const now = Date.now();
-    const nextPoll = Math.max(0, Math.floor((lastPollTs + 60000 - now) / 1000));
-    const sdCooldown = lastSdTs ? Math.max(0, Math.floor((lastSdTs + 1800000 - now) / 1000)) : 0;
+    if (hbExecuting) {
+      t.innerHTML = `<span style="color:#ff6">心跳 執行中</span>`;
+    } else if (lastPollTs) {
+      const now = Date.now();
+      const nextPoll = Math.max(0, Math.floor((lastPollTs + 60000 - now) / 1000));
+      const sdCooldown = lastSdTs ? Math.max(0, Math.floor((lastSdTs + 1800000 - now) / 1000)) : 0;
+      t.innerHTML =
+        `<span style="color:#6f6">心跳</span> ` +
+        `poll <b>${fmt(nextPoll)}</b> │ ` +
+        `自驅 <b>${sdCooldown > 0 ? fmt(sdCooldown) : '就緒'}</b>`;
+    }
 
-    el.innerHTML =
-      `<span style="color:#6f6">心跳</span> ` +
-      `poll <b>${fmt(nextPoll)}</b> │ ` +
-      `自驅 <b>${sdCooldown > 0 ? fmt(sdCooldown) : '就緒'}</b>`;
+    if (t2) {
+      t2.innerHTML = todoCount > 0
+        ? `待做 <b>${todoCount}</b> │ ${todoName.slice(0, 30)}${todoName.length > 30 ? '…' : ''}`
+        : '<span style="color:#666">待做 0</span>';
+    }
   }
 
   function el(id) { return document.getElementById(id); }
