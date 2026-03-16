@@ -144,3 +144,56 @@ if (currentIdx >= 0 && current) {
   window.setRating = setRating;
   updateUI();
 }
+
+// ─── 心跳即時面板（全頁面共用）───
+(function initHeartbeatWidget() {
+  const w = document.createElement('div');
+  w.id = 'hb-widget';
+  w.style.cssText = 'position:fixed;top:12px;right:12px;background:rgba(0,0,0,0.75);backdrop-filter:blur(8px);color:#eee;padding:8px 14px;border-radius:10px;font:12px/1.6 monospace;z-index:9999;min-width:160px;';
+  w.innerHTML = '<div id="hb-text">心跳 載入中...</div>';
+  document.body.appendChild(w);
+
+  let lastPollTs = 0;
+  let lastSdTs = 0;
+
+  function fmt(sec) {
+    if (sec <= 0) return '0s';
+    if (sec >= 60) return Math.floor(sec / 60) + 'm' + (sec % 60 ? (sec % 60) + 's' : '');
+    return sec + 's';
+  }
+
+  async function poll() {
+    try {
+      const r = await fetch('/api/processes', { signal: AbortSignal.timeout(3000) });
+      const d = await r.json();
+      const hb = d.heartbeat;
+      if (!hb) { el('hb-text').textContent = '心跳 無資料'; return; }
+      if (!hb.running) { el('hb-text').innerHTML = '<span style="color:#f66">心跳 停止</span>'; return; }
+
+      if (hb.lastPoll) lastPollTs = new Date(hb.lastPoll).getTime();
+      if (hb.lastSelfDrive) lastSdTs = new Date(hb.lastSelfDrive).getTime();
+    } catch {
+      el('hb-text').innerHTML = '<span style="color:#f66">心跳 離線</span>';
+    }
+  }
+
+  function tick() {
+    const el = document.getElementById('hb-text');
+    if (!el || !lastPollTs) return;
+
+    const now = Date.now();
+    const nextPoll = Math.max(0, Math.floor((lastPollTs + 60000 - now) / 1000));
+    const sdCooldown = lastSdTs ? Math.max(0, Math.floor((lastSdTs + 1800000 - now) / 1000)) : 0;
+
+    el.innerHTML =
+      `<span style="color:#6f6">心跳</span> ` +
+      `poll <b>${fmt(nextPoll)}</b> │ ` +
+      `自驅 <b>${sdCooldown > 0 ? fmt(sdCooldown) : '就緒'}</b>`;
+  }
+
+  function el(id) { return document.getElementById(id); }
+
+  poll();
+  setInterval(poll, 5000);   // 每 5 秒拉新資料
+  setInterval(tick, 1000);   // 每 1 秒更新倒數
+})();
