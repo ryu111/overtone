@@ -177,6 +177,99 @@ describe('matcher 預設值（修改 1 驗證）', () => {
   });
 });
 
+describe('isLockfileStale 邏輯', () => {
+  test('hook-client.js 含 isLockfileStale 函式', async () => {
+    const { readFileSync } = await import('fs');
+    const src = readFileSync(join(CLAUDE_DIR, 'hooks/hook-client.js'), 'utf-8');
+    expect(src).toContain('function isLockfileStale()');
+  });
+
+  test('autoStart 中含 isLockfileStale() 呼叫', async () => {
+    const { readFileSync } = await import('fs');
+    const src = readFileSync(join(CLAUDE_DIR, 'hooks/hook-client.js'), 'utf-8');
+    expect(src).toContain('isLockfileStale()');
+  });
+
+  test('isLockfileStale 含 process.kill(pid, 0) 存活檢查', async () => {
+    const { readFileSync } = await import('fs');
+    const src = readFileSync(join(CLAUDE_DIR, 'hooks/hook-client.js'), 'utf-8');
+    expect(src).toContain('process.kill(pid, 0)');
+  });
+
+  test('isLockfileStale 含 ESRCH 處理（進程不存在）', async () => {
+    const { readFileSync } = await import('fs');
+    const src = readFileSync(join(CLAUDE_DIR, 'hooks/hook-client.js'), 'utf-8');
+    expect(src).toContain('ESRCH');
+  });
+
+  test('isLockfileStale 含 EPERM 處理（保守不清除）', async () => {
+    const { readFileSync } = await import('fs');
+    const src = readFileSync(join(CLAUDE_DIR, 'hooks/hook-client.js'), 'utf-8');
+    expect(src).toContain('EPERM');
+  });
+
+  test('isLockfileStale 含 isNaN 處理（損壞 lockfile）', async () => {
+    const { readFileSync } = await import('fs');
+    const src = readFileSync(join(CLAUDE_DIR, 'hooks/hook-client.js'), 'utf-8');
+    expect(src).toContain('isNaN(pid)');
+  });
+
+  test('陳舊 lockfile 被清除後繼續 spawn（不 return）', async () => {
+    const { readFileSync } = await import('fs');
+    const src = readFileSync(join(CLAUDE_DIR, 'hooks/hook-client.js'), 'utf-8');
+    // 確認 stale 分支有 unlinkSync 且沒有 return
+    const staleBlock = src.match(/if \(isLockfileStale\(\)\) \{[\s\S]*?\}/);
+    expect(staleBlock).not.toBeNull();
+    expect(staleBlock[0]).toContain('unlinkSync');
+    expect(staleBlock[0]).not.toContain('return');
+  });
+});
+
+describe('pollHealth spawn 後等待時間', () => {
+  test('spawn 後 pollHealth 含 maxRetries: 5（總等待 6200ms）', async () => {
+    const { readFileSync } = await import('fs');
+    const src = readFileSync(join(CLAUDE_DIR, 'hooks/hook-client.js'), 'utf-8');
+    // 找到 spawn 後的 pollHealth 呼叫
+    expect(src).toMatch(/await pollHealth\(\{\s*maxRetries:\s*5/);
+  });
+});
+
+describe('server.js SIGTERM handler', () => {
+  test('server.js 含 SIGTERM handler', async () => {
+    const { readFileSync } = await import('fs');
+    const src = readFileSync(join(CLAUDE_DIR, 'hooks/server.js'), 'utf-8');
+    expect(src).toContain("process.on('SIGTERM'");
+  });
+
+  test('server.js 含 SIGINT handler', async () => {
+    const { readFileSync } = await import('fs');
+    const src = readFileSync(join(CLAUDE_DIR, 'hooks/server.js'), 'utf-8');
+    expect(src).toContain("process.on('SIGINT'");
+  });
+
+  test('server.js 含 gracefulShutdown 函式', async () => {
+    const { readFileSync } = await import('fs');
+    const src = readFileSync(join(CLAUDE_DIR, 'hooks/server.js'), 'utf-8');
+    expect(src).toContain('function gracefulShutdown(');
+  });
+
+  test('gracefulShutdown 呼叫 bus.destroy()', async () => {
+    const { readFileSync } = await import('fs');
+    const src = readFileSync(join(CLAUDE_DIR, 'hooks/server.js'), 'utf-8');
+    expect(src).toContain('bus.destroy()');
+  });
+
+  test('bus.destroy 有 try-catch 包裹', async () => {
+    const { readFileSync } = await import('fs');
+    const src = readFileSync(join(CLAUDE_DIR, 'hooks/server.js'), 'utf-8');
+    // 確認 bus.destroy 在 try 區塊中
+    const shutdownFn = src.match(/function gracefulShutdown[\s\S]*?^}/m);
+    expect(shutdownFn).not.toBeNull();
+    expect(shutdownFn[0]).toContain('try');
+    expect(shutdownFn[0]).toContain('catch');
+  });
+});
+
 describe('autoStart polling 改善', () => {
   test('hook-client.js 不含 Bun.sleep(800)', async () => {
     const { readFileSync } = await import('fs');
