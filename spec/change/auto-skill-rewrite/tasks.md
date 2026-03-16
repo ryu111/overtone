@@ -1,7 +1,7 @@
 ---
 feature: auto-skill-rewrite
 depth: D2
-status: in-progress
+status: done
 created: 2026-03-17
 ---
 
