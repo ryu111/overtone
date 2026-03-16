@@ -52,6 +52,34 @@ describe('pre-bash-guard', () => {
     }
   });
 
+  describe('旗標分離繞過防護', () => {
+    const bypassCases = [
+      ['rm -f -r /tmp', '旗標分離 -f -r'],
+      ['rm -r -f /tmp', '旗標反序 -r -f'],
+      ['rm  -rf /tmp', '多空格'],
+      ['rm --recursive --force /tmp', '長旗標'],
+      ['rm --force --recursive /tmp', '長旗標反序'],
+      ['rm -r -f -v /tmp', '混合旗標 -r -f -v'],
+    ];
+
+    for (const [command, label] of bypassCases) {
+      test(`阻擋 ${label}: ${command}`, () => {
+        const result = evaluate({ tool_input: { command } });
+        expect(result.decision).toBe('block');
+      });
+    }
+
+    test('放行 rm -r（無 -f）', () => {
+      const result = evaluate({ tool_input: { command: 'rm -r /tmp/test' } });
+      expect(result.decision).toBe('allow');
+    });
+
+    test('放行 rm -f file.txt（無 -r）', () => {
+      const result = evaluate({ tool_input: { command: 'rm -f file.txt' } });
+      expect(result.decision).toBe('allow');
+    });
+  });
+
   describe('邊界情況', () => {
     test('空 input', () => {
       expect(evaluate({}).decision).toBe('allow');
