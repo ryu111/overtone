@@ -207,7 +207,7 @@ v0.30+ 採用「單腦 + 深度路由 + 輕量 Worker」模式（見 `docs/spec/
 
 | 任務 | 類型 | 說明 | 狀態 |
 |------|------|------|:----:|
-| gap-analyzer.js | 重建 | 組合 health-check，產出標準化 Gap 物件 | ⚠️ health-check ✅ 已就緒，待建 gap-analyzer 消費 |
+| gap-analyzer.js | 重建 | 組合 health-check，產出標準化 Gap 物件 | ✅ 264 行 / 39 tests / 確定性映射 16 type |
 | gap-fixer.js | 重建 | 根據 gap type 選擇修復策略 | ⚠️ 部分覆蓋 |
 | evolution.js CLI | 重建 | `analyze` / `fix` / `forge` / `internalize` 子命令 | ⚠️ 部分覆蓋 |
 | health-check.js | 重建 | 四個 check 函式（closedLoop / skillCoverage / hookIntegrity / agentAlignment） | ✅ 680 行 / 35 tests / 0 critical |
