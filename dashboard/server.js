@@ -37,6 +37,7 @@ async function handleApi(path, req) {
     if (path === "/api/sessions") return j(readJsonl(join(CLAUDE_DIR, "data/session-summaries.jsonl")));
     if (path === "/api/improvements") return j(readJsonl(join(CLAUDE_DIR, "data/improvements.jsonl")));
     if (path === "/api/lifecycle") return j(readJsonl(join(CLAUDE_DIR, "data/lifecycle.jsonl")));
+    if (path === "/api/decisions") return j(readJsonl(join(CLAUDE_DIR, "data/decision-log.jsonl")).slice(-100));
 
     if (path === "/api/scripts") {
       const dir = join(CLAUDE_DIR, "scripts");
