@@ -162,6 +162,27 @@ async function handleApi(path, req) {
       return j({ triggered: true });
     }
 
+    if (path === "/api/processes") {
+      try {
+        const r = await fetch("http://127.0.0.1:3457/processes", { signal: AbortSignal.timeout(3000) });
+        return new Response(await r.text(), { headers: h });
+      } catch { return j({}); }
+    }
+
+    if (path === "/api/actions/heartbeat-start" && req.method === "POST") {
+      try {
+        const r = await fetch("http://127.0.0.1:3457/processes/heartbeat/start", { method: "POST", signal: AbortSignal.timeout(5000) });
+        return new Response(await r.text(), { headers: h });
+      } catch { return j({ ok: false, error: "nova-server unreachable" }); }
+    }
+
+    if (path === "/api/actions/heartbeat-stop" && req.method === "POST") {
+      try {
+        const r = await fetch("http://127.0.0.1:3457/processes/heartbeat/stop", { method: "POST", signal: AbortSignal.timeout(3000) });
+        return new Response(await r.text(), { headers: h });
+      } catch { return j({ ok: false, error: "nova-server unreachable" }); }
+    }
+
     // LLM 健康狀態
     if (path === "/api/llm") {
       try {
