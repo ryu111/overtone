@@ -9,7 +9,6 @@ import {
   poll,
   executeTask,
   STATE_FILE,
-  PID_FILE,
 } from '../../../../.claude/scripts/heartbeat.js';
 
 // ─── 測試工具 ──────────────────────────────────────────────────────────────────
