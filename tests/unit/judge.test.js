@@ -12,6 +12,7 @@ import {
   getTrend,
   readScores,
   saveScore,
+  resolveSemanticScore,
 } from '/Users/sbu/.claude/scripts/judge.js';
 
 // ─── 測試輔助 ────────────────────────────────────────────────────────────────
@@ -407,7 +408,75 @@ describe('saveScore / readScores', () => {
   });
 });
 
-// ─── 9. 自我分離測試 ─────────────────────────────────────────────────────────
+// ─── 9. resolveSemanticScore ──────────────────────────────────────────────────
+
+describe('resolveSemanticScore', () => {
+  const noopLog = () => {};
+  const logMessages = [];
+  const captureLog = (msg) => logMessages.push(msg);
+
+  beforeEach(() => { logMessages.length = 0; });
+
+  test('模型成功（sem.total > 0）→ 直接使用新分數', () => {
+    const sem = { knowledge: 10, clarity: 15, total: 40 };
+    const result = resolveSemanticScore(sem, 'skills/test', [], noopLog);
+    expect(result).toBe(40);
+  });
+
+  test('模型失敗（sem === null）+ 有歷史分數 → 使用歷史分數', () => {
+    const existingScores = [
+      { path: 'skills/test', semantic: 35, total: 75 },
+      { path: 'skills/other', semantic: 40, total: 80 },
+    ];
+    const result = resolveSemanticScore(null, 'skills/test', existingScores, captureLog);
+    expect(result).toBe(35);
+    expect(logMessages[0]).toContain('歷史語意分數 35');
+  });
+
+  test('模型失敗（sem === null）+ 無歷史分數 → 回傳 null', () => {
+    const result = resolveSemanticScore(null, 'skills/new', [], noopLog);
+    expect(result).toBeNull();
+  });
+
+  test('模型回傳 total=0（視為失敗）+ 有歷史 → 使用歷史', () => {
+    const sem = { total: 0 };
+    const existingScores = [
+      { path: 'rules/test.md', semantic: 40, total: 75 },
+    ];
+    const result = resolveSemanticScore(sem, 'rules/test.md', existingScores, captureLog);
+    expect(result).toBe(40);
+  });
+
+  test('多筆歷史 → 使用最新的有效分數', () => {
+    const existingScores = [
+      { path: 'hooks/modules/guard.js', semantic: 20, total: 60 },
+      { path: 'hooks/modules/guard.js', semantic: 0, total: 40 },
+      { path: 'hooks/modules/guard.js', semantic: 35, total: 75 },
+    ];
+    const result = resolveSemanticScore(null, 'hooks/modules/guard.js', existingScores, captureLog);
+    // 從最新往回找，第一個 semantic > 0 是 35
+    expect(result).toBe(35);
+  });
+
+  test('歷史分數全為 0 → 回傳 null', () => {
+    const existingScores = [
+      { path: 'skills/bad', semantic: 0, total: 30 },
+      { path: 'skills/bad', semantic: 0, total: 25 },
+    ];
+    const result = resolveSemanticScore(null, 'skills/bad', existingScores, noopLog);
+    expect(result).toBeNull();
+  });
+
+  test('其他元件的歷史分數不會被使用', () => {
+    const existingScores = [
+      { path: 'skills/other', semantic: 45, total: 90 },
+    ];
+    const result = resolveSemanticScore(null, 'skills/target', existingScores, noopLog);
+    expect(result).toBeNull();
+  });
+});
+
+// ─── 10. 自我分離測試 ────────────────────────────────────────────────────────
 
 describe('自我分離機制', () => {
   test('直接執行 judge.js（無 JUDGE_BG）→ 立即返回 exit 0', async () => {
