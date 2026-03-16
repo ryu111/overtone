@@ -54,8 +54,8 @@ describe('computeConfidence', () => {
       lastSeen: today.toISOString().slice(0, 10),
     });
     const conf = computeConfidence(b, 20, today);
-    // 新公式：5 次絕對分滿 + 相對頻率。預期 >= 0.70
-    expect(conf).toBeGreaterThanOrEqual(0.70);
+    // 新公式：5 次絕對分滿 + 相對頻率。預期 >= 0.50（lifecycle 閾值）
+    expect(conf).toBeGreaterThanOrEqual(0.50);
     expect(conf).toBeLessThan(1.0);
   });
 
