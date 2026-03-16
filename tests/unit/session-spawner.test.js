@@ -226,3 +226,97 @@ describe('parseStreamJson', () => {
     expect(typeof r.success).toBe('boolean');
   });
 });
+
+// ─── spawnSession — 可靠性強化 ─────────────────────────────────────────────────
+
+describe('spawnSession 可靠性', () => {
+  test('stdin.write 失敗 → { ok: false } 並終止 child', () => {
+    const mockChild = {
+      pid: 99999,
+      stdin: {
+        write: () => { throw new Error('EPIPE'); },
+        end: () => {},
+      },
+      stdout: (async function* () { yield Buffer.from(''); })(),
+      exited: Promise.resolve(0),
+    };
+    const deps = {
+      env: { PATH: '/usr/bin' },
+      spawn: () => mockChild,
+      which: () => '/usr/local/bin/claude',
+    };
+    const result = spawnSession('test prompt', {}, deps);
+    expect(result.ok).toBe(false);
+    expect(result.error).toContain('stdin write failed');
+    expect(result.error).toContain('EPIPE');
+  });
+
+  test('stdin.end 失敗也回傳 { ok: false }', () => {
+    const mockChild = {
+      pid: 99999,
+      stdin: {
+        write: () => {},
+        end: () => { throw new Error('stream destroyed'); },
+      },
+      stdout: (async function* () { yield Buffer.from(''); })(),
+      exited: Promise.resolve(0),
+    };
+    const deps = {
+      env: { PATH: '/usr/bin' },
+      spawn: () => mockChild,
+      which: () => '/usr/local/bin/claude',
+    };
+    const result = spawnSession('test prompt', {}, deps);
+    expect(result.ok).toBe(false);
+    expect(result.error).toContain('stdin write failed');
+  });
+
+  test('stdout 讀取超時有安全保護（不會永遠阻塞）', async () => {
+    // Mock child whose stdout never closes（模擬 pipe 不關閉）
+    const neverEndingStdout = {
+      [Symbol.asyncIterator]() {
+        return { next: () => new Promise(() => {}) };
+      },
+    };
+    const mockChild = {
+      pid: 99999,
+      stdin: { write: () => {}, end: () => {} },
+      stdout: neverEndingStdout,
+      exited: Promise.resolve(1),
+    };
+    const deps = {
+      env: { PATH: '/usr/bin' },
+      spawn: () => mockChild,
+      which: () => '/usr/local/bin/claude',
+    };
+    // timeout=50ms + safetyMargin=100ms = 150ms 內 resolve
+    const result = spawnSession('test prompt', { timeout: 50, _safetyMargin: 100 }, deps);
+    expect(result.ok).toBe(true);
+
+    const outcome = await result.outcome;
+    expect(outcome.stdout).toBe('');
+    expect(outcome.exitCode).toBeDefined();
+  }, 5000);
+
+  test('正常 stdout 讀取不受安全超時影響', async () => {
+    const mockChild = {
+      pid: 12345,
+      stdin: { write: () => {}, end: () => {} },
+      stdout: (async function* () {
+        yield Buffer.from('{"type":"result","result":"done"}');
+      })(),
+      exited: Promise.resolve(0),
+    };
+    const deps = {
+      env: { PATH: '/usr/bin' },
+      spawn: () => mockChild,
+      which: () => '/usr/local/bin/claude',
+    };
+    const result = spawnSession('test prompt', {}, deps);
+    expect(result.ok).toBe(true);
+
+    const outcome = await result.outcome;
+    expect(outcome.exitCode).toBe(0);
+    expect(outcome.stdout).toContain('result');
+  });
+});
