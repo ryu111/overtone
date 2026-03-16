@@ -13,11 +13,11 @@ function readJsonl(fp) {
   try {
     const raw = readFileSync(fp, "utf-8").trim();
     if (!raw) return [];
-    return raw.split("\n").map((l) => { try { return JSON.parse(l); } catch { return null; } }).filter(Boolean);
+    return raw.split("\n").map((l) => { try { const o = JSON.parse(l); return (o && typeof o === "object" && !Array.isArray(o)) ? o : null; } catch { return null; } }).filter(Boolean);
   } catch { return []; }
 }
 
-const h = { "Access-Control-Allow-Origin": "*", "Content-Type": "application/json" };
+const h = { "Access-Control-Allow-Origin": "*", "Content-Type": "application/json", "Cache-Control": "no-cache" };
 const mdH = { "Access-Control-Allow-Origin": "*", "Content-Type": "text/markdown" };
 const j = (d, s = 200) => new Response(JSON.stringify(d), { status: s, headers: h });
 const err = (e) => j({ error: String(e?.message ?? e) }, 500);
@@ -56,7 +56,7 @@ async function handleApi(path, req) {
       };
       return j({
         rules: cnt(join(CLAUDE_DIR, "rules"), ".md"),
-        skills: cnt(join(CLAUDE_DIR, "skills"), (f) => f === "SKILL.md"),
+        skills: cnt(join(CLAUDE_DIR, "skills"), (f) => f.endsWith("SKILL.md")),
         agents: cnt(join(CLAUDE_DIR, "agents"), ".md"),
         hooks: cnt(join(CLAUDE_DIR, "hooks/modules"), ".js"),
       });
