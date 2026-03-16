@@ -87,6 +87,42 @@ describe('computeConfidence', () => {
     expect(conf).toBeLessThanOrEqual(1.0);
   });
 
+  test('同日多 session（4 次）→ 信心可達反模式閾值 0.4+', () => {
+    // 根因修復驗證：同日 firstSeen === lastSeen 時，spanScore 用次數密度替代
+    const today = new Date('2026-03-16T12:00:00Z');
+    const b = makeBehavior({
+      occurrences: [30, 37, 95, 96],
+      firstSeen: '2026-03-16',
+      lastSeen: '2026-03-16',
+    });
+    const conf = computeConfidence(b, 96, today);
+    expect(conf).toBeGreaterThanOrEqual(0.40);
+  });
+
+  test('同日單次出現 → 信心低（防誤判）', () => {
+    const today = new Date('2026-03-16T12:00:00Z');
+    const b = makeBehavior({
+      occurrences: [50],
+      firstSeen: '2026-03-16',
+      lastSeen: '2026-03-16',
+    });
+    const conf = computeConfidence(b, 50, today);
+    // 單次同日：spanScore = 0.5, absoluteScore = 0.33 → 低信心
+    expect(conf).toBeLessThan(0.30);
+  });
+
+  test('同日 2 次 → 信心中等（達反模式閾值但未達習慣閾值）', () => {
+    const today = new Date('2026-03-16T12:00:00Z');
+    const b = makeBehavior({
+      occurrences: [10, 20],
+      firstSeen: '2026-03-16',
+      lastSeen: '2026-03-16',
+    });
+    const conf = computeConfidence(b, 20, today);
+    expect(conf).toBeGreaterThanOrEqual(0.30);
+    expect(conf).toBeLessThan(0.60);
+  });
+
   test('信心值介於 0 ~ 1 之間', () => {
     const today = new Date();
     const b = makeBehavior({
