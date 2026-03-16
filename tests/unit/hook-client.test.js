@@ -390,24 +390,28 @@ describe('dispatch fallback 順序（fallback-first 架構鎖定）', () => {
   const { readFileSync } = require('fs');
   const src = readFileSync(join(CLAUDE_DIR, 'hooks/hook-client.js'), 'utf-8');
 
-  test('autoStart() 以背景模式執行（.catch 捕捉，不被 await）', () => {
-    // 確認 autoStart().catch(...) 模式存在（非 await autoStart()）
-    expect(src).toMatch(/autoStart\(\)\.catch\(/);
-    // 確認錯誤恢復路徑中沒有 await autoStart()
+  test('autoStart 以 detached spawn 背景執行（不被 process exit 截斷）', () => {
+    // 實作使用 detached spawn 而非 in-process .catch()，因 Bun process 可能在 output 後立即退出
     const catchBlock = src.match(/\} catch \(e1\) \{[\s\S]*?(?=\n\})/);
     expect(catchBlock).not.toBeNull();
+    // 確認 catch block 中有 detached spawn 呼叫 __autostart
+    expect(catchBlock[0]).toContain("'__autostart'");
+    expect(catchBlock[0]).toContain('Bun.spawn');
+    // 確認 __autostart mode 在頂層存在（接收 detached spawn）
+    expect(src).toContain("if (eventType === '__autostart')");
+    // 確認錯誤恢復路徑中沒有 await autoStart()（不阻塞）
     expect(catchBlock[0]).not.toMatch(/await\s+autoStart\(\)/);
   });
 
-  test('tryFallback 出現在 autoStart 之前（有 fallback 時先 fallback）', () => {
+  test('tryFallback 出現在 detached autostart spawn 之前（有 fallback 時先 fallback）', () => {
     const catchBlock = src.match(/\} catch \(e1\) \{[\s\S]*?(?=\n\})/);
     expect(catchBlock).not.toBeNull();
     const block = catchBlock[0];
     const fallbackPos = block.indexOf('tryFallback');
-    const autoStartPos = block.indexOf('autoStart');
+    const autoStartSpawnPos = block.indexOf("'__autostart'");
     expect(fallbackPos).toBeGreaterThan(-1);
-    expect(autoStartPos).toBeGreaterThan(-1);
-    expect(fallbackPos).toBeLessThan(autoStartPos);
+    expect(autoStartSpawnPos).toBeGreaterThan(-1);
+    expect(fallbackPos).toBeLessThan(autoStartSpawnPos);
   });
 
   test('autoStart 函式內含至少 5 處 debugLog', () => {
