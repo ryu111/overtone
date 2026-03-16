@@ -300,7 +300,7 @@ v0.30+ 採用「單腦 + 深度路由 + 輕量 Worker」模式（見 `docs/spec/
 | 任務 | 類型 | 說明 | 狀態 |
 |------|------|------|:----:|
 | 跨領域經驗遷移 | 已有 | detectCrossDomain + forgeSkill 跨領域參考 | ✅ |
-| 新任務快速適應 | 新建 | 遇到未知任務 → tool-matcher 選工具 → 嘗試 → 學習 | ⬜ |
+| 新任務快速適應 | 新建 | 遇到未知任務 → tool-matcher 選工具 → 嘗試 → 學習 | ✅ task-adapter.js 292 行 |
 | 能力邊界感知 | 新建 | 知道自己「不會什麼」→ 主動建 Skill 補缺 | ✅ capability-probe.js 371 行 |
 
 ### R4 完成標準
