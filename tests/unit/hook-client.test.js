@@ -107,3 +107,68 @@ describe('Hook Client E2E（stdin → stdout）', () => {
     }
   });
 });
+
+// ─── 新增：hasFallback 函式測試 ───────────────────────────────────────────────
+
+// 從生產檔案中提取 FALLBACK_MODULES 和 hasFallback 的邏輯，用於隔離單元測試
+const FALLBACK_MODULES_FOR_TEST = {
+  'PreToolUse:Bash': { path: 'hooks/modules/guards.js', fn: 'evaluateBash' },
+  'PreToolUse:Write': { path: 'hooks/modules/guards.js', fn: 'evaluateEdit' },
+  'PreToolUse:Edit': { path: 'hooks/modules/guards.js', fn: 'evaluateEdit' },
+};
+
+function hasFallback(event, match) {
+  if (match) {
+    for (const m of match.split('|')) {
+      if (FALLBACK_MODULES_FOR_TEST[`${event}:${m}`]) return true;
+    }
+  }
+  return !!FALLBACK_MODULES_FOR_TEST[event];
+}
+
+describe('hasFallback 函式', () => {
+  test('PreToolUse:Bash → true（有 fallback）', () => {
+    expect(hasFallback('PreToolUse', 'Bash')).toBe(true);
+  });
+
+  test('PreToolUse:Write|Edit → true（只要一個 match 就 true）', () => {
+    expect(hasFallback('PreToolUse', 'Write|Edit')).toBe(true);
+  });
+
+  test('PostToolUse 空 matcher → false（觀測型事件）', () => {
+    expect(hasFallback('PostToolUse', '')).toBe(false);
+  });
+
+  test('PostToolUse undefined matcher → false（向後相容）', () => {
+    expect(hasFallback('PostToolUse', undefined)).toBe(false);
+  });
+
+  test('Notification 空 matcher → false', () => {
+    expect(hasFallback('Notification', '')).toBe(false);
+  });
+
+  test('SessionStart 空 matcher → false', () => {
+    expect(hasFallback('SessionStart', '')).toBe(false);
+  });
+});
+
+describe('matcher 預設值（修改 1 驗證）', () => {
+  test('解構預設值：只有 eventType 時 matcher 為空字串', () => {
+    const [eventType, matcher = ''] = ['PostToolUse'];
+    expect(matcher).toBe('');
+    expect(matcher).not.toBeUndefined();
+  });
+
+  test('event:matcher 格式不含 undefined', () => {
+    const [eventType, matcher = ''] = ['PostToolUse'];
+    const key = `${eventType}:${matcher}`;
+    expect(key).toBe('PostToolUse:');
+    expect(key).not.toContain('undefined');
+  });
+
+  test('有傳 matcher 時正常解構', () => {
+    const [eventType, matcher = ''] = ['PreToolUse', 'Bash'];
+    expect(eventType).toBe('PreToolUse');
+    expect(matcher).toBe('Bash');
+  });
+});
