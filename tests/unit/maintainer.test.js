@@ -483,3 +483,113 @@ describe('commitAndPush 流程', () => {
     expect(result.reason).toBe('no-staged');
   });
 });
+
+// ─── 9. hook-errors 截斷邏輯 ──────────────────────────────────────────────────
+
+function readJsonl(filePath) {
+  if (!existsSync(filePath)) return [];
+  try {
+    const raw = readFileSync(filePath, 'utf-8').trim();
+    if (!raw) return [];
+    return raw.split('\n').map((l) => { try { return JSON.parse(l); } catch { return null; } }).filter(Boolean);
+  } catch { return []; }
+}
+
+describe('hook-errors 截斷邏輯（移除已處理條目）', () => {
+  let errorFile;
+
+  beforeEach(() => {
+    errorFile = join(tmpdir(), `hook-errors-test-${randomUUID()}.jsonl`);
+  });
+
+  afterEach(() => {
+    try { unlinkSync(errorFile); } catch {}
+  });
+
+  // 複製 maintainer.js 的新截斷邏輯
+  function truncateProcessed(allEntries, processedEntries) {
+    const processedTs = new Set(processedEntries.map((e) => e.ts));
+    return allEntries.filter((e) => !processedTs.has(e.ts));
+  }
+
+  test('已處理的條目被移除', () => {
+    const all = [
+      { ts: '2026-03-16T14:16:02Z', event: 'PreToolUse:Bash', phase: 'dispatch' },
+      { ts: '2026-03-16T14:16:03Z', event: 'PreToolUse:Bash', phase: 'retry' },
+      { ts: '2026-03-16T14:24:52Z', event: 'PreToolUse:Bash', phase: 'dispatch' },
+    ];
+    const processed = all; // 全部已處理
+
+    const remaining = truncateProcessed(all, processed);
+    expect(remaining).toHaveLength(0);
+  });
+
+  test('執行期間新增的條目被保留', () => {
+    const processed = [
+      { ts: '2026-03-16T14:16:02Z', event: 'A', phase: 'x' },
+    ];
+    const all = [
+      { ts: '2026-03-16T14:16:02Z', event: 'A', phase: 'x' }, // 已處理
+      { ts: '2026-03-16T15:00:00Z', event: 'B', phase: 'y' }, // 新增
+    ];
+
+    const remaining = truncateProcessed(all, processed);
+    expect(remaining).toHaveLength(1);
+    expect(remaining[0].event).toBe('B');
+  });
+
+  test('空 processed 時全部保留', () => {
+    const all = [
+      { ts: '2026-03-16T14:16:02Z', event: 'A', phase: 'x' },
+      { ts: '2026-03-16T14:16:03Z', event: 'B', phase: 'y' },
+    ];
+
+    const remaining = truncateProcessed(all, []);
+    expect(remaining).toHaveLength(2);
+  });
+
+  test('E2E: 寫入 → 讀取 → 截斷 → 驗證檔案內容', () => {
+    const entries = [
+      { ts: '2026-03-16T14:16:02Z', event: 'PreToolUse:Bash', phase: 'dispatch' },
+      { ts: '2026-03-16T14:16:03Z', event: 'PreToolUse:Bash', phase: 'retry' },
+      { ts: '2026-03-16T15:00:00Z', event: 'PostToolUse', phase: 'all-failed' },
+    ];
+    writeFileSync(errorFile, entries.map((e) => JSON.stringify(e)).join('\n') + '\n');
+
+    const all = readJsonl(errorFile);
+    expect(all).toHaveLength(3);
+
+    // 模擬 Phase 1 讀取時只取前 2 條（最近 1 小時篩選）
+    const processed = all.slice(0, 2);
+    const remaining = truncateProcessed(all, processed);
+
+    // 寫回
+    writeFileSync(
+      errorFile,
+      remaining.length > 0
+        ? remaining.map((e) => JSON.stringify(e)).join('\n') + '\n'
+        : '',
+    );
+
+    const after = readJsonl(errorFile);
+    expect(after).toHaveLength(1);
+    expect(after[0].ts).toBe('2026-03-16T15:00:00Z');
+  });
+
+  test('全部已處理時檔案變空', () => {
+    const entries = [
+      { ts: '2026-03-16T14:16:02Z', event: 'A', phase: 'x' },
+    ];
+    writeFileSync(errorFile, entries.map((e) => JSON.stringify(e)).join('\n') + '\n');
+
+    const all = readJsonl(errorFile);
+    const remaining = truncateProcessed(all, all);
+
+    writeFileSync(errorFile, remaining.length > 0
+      ? remaining.map((e) => JSON.stringify(e)).join('\n') + '\n'
+      : '');
+
+    const after = readJsonl(errorFile);
+    expect(after).toHaveLength(0);
+  });
+});
