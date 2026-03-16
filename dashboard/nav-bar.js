@@ -156,6 +156,7 @@ if (currentIdx >= 0 && current) {
   let lastPollTs = 0;
   let lastSdTs = 0;
   let hbExecuting = false;
+  let hbStats = null;
   let todoCount = 0;
   let todoName = '';
 
@@ -176,6 +177,7 @@ if (currentIdx >= 0 && current) {
       if (hb.lastPoll) lastPollTs = new Date(hb.lastPoll).getTime();
       if (hb.lastSelfDrive) lastSdTs = new Date(hb.lastSelfDrive).getTime();
       hbExecuting = !!hb.executing;
+      hbStats = hb.stats || null;
     } catch {
       el('hb-text').innerHTML = '<span style="color:#f66">心跳 離線</span>';
       return;
@@ -207,9 +209,13 @@ if (currentIdx >= 0 && current) {
     }
 
     if (t2) {
-      t2.innerHTML = todoCount > 0
-        ? `待做 <b>${todoCount}</b> │ ${todoName.slice(0, 30)}${todoName.length > 30 ? '…' : ''}`
+      let line2 = todoCount > 0
+        ? `待做 <b>${todoCount}</b> │ ${todoName.slice(0, 25)}${todoName.length > 25 ? '…' : ''}`
         : '<span style="color:#666">待做 0</span>';
+      if (hbStats) {
+        line2 += ` │ <span style="color:#6f6">${hbStats.tasksSucceeded}</span>/<span style="color:#f66">${hbStats.tasksFailed}</span> 自驅${hbStats.selfDrives}`;
+      }
+      t2.innerHTML = line2;
     }
   }
 
