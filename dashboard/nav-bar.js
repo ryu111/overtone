@@ -145,83 +145,200 @@ if (currentIdx >= 0 && current) {
   updateUI();
 }
 
-// ─── 心跳即時面板（全頁面共用）───
-(function initHeartbeatWidget() {
-  const w = document.createElement('div');
-  w.id = 'hb-widget';
-  w.style.cssText = 'position:fixed;top:12px;right:12px;background:rgba(0,0,0,0.75);backdrop-filter:blur(8px);color:#eee;padding:8px 14px;border-radius:10px;font:12px/1.6 monospace;z-index:9999;min-width:160px;';
-  w.innerHTML = '<div id="hb-text">心跳 載入中...</div><div id="hb-tasks" style="color:#aaa;margin-top:2px"></div>';
-  document.body.appendChild(w);
+// ─── 自主循環 Tab（注入到所有 Dashboard 頁面）───
+(function initLoopTab() {
+  // 只在 Dashboard 頁面注入（有 .tabs 容器）
+  const tabBar = document.querySelector('.tabs');
+  if (!tabBar) return;
 
-  let lastPollTs = 0;
-  let lastSdTs = 0;
-  let hbExecuting = false;
-  let hbStats = null;
-  let todoCount = 0;
-  let todoName = '';
+  // 注入 tab 按鈕
+  const btn = document.createElement('button');
+  btn.className = 'tab';
+  btn.dataset.tab = 'tab-loop';
+  btn.textContent = '🔄 自主循環';
+  tabBar.appendChild(btn);
 
-  function fmt(sec) {
-    if (sec <= 0) return '0s';
-    if (sec >= 60) return Math.floor(sec / 60) + 'm' + (sec % 60 ? (sec % 60) + 's' : '');
-    return sec + 's';
+  // 綁定 click（因為 initTabs 已經跑完，手動綁）
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === 'tab-loop'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.toggle('active', c.id === 'tab-loop'));
+  });
+
+  // 注入 tab 內容
+  const container = tabBar.parentElement;
+  const content = document.createElement('div');
+  content.className = 'tab-content';
+  content.id = 'tab-loop';
+  content.innerHTML = `
+    <style>
+      .loop-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px; }
+      .loop-card { background: rgba(124,58,237,0.06); border: 1px solid rgba(124,58,237,0.15); border-radius: 10px; padding: 12px; text-align: center; }
+      .loop-card .lc-label { font-size: 11px; color: var(--muted, #6b7280); margin-bottom: 4px; }
+      .loop-card .lc-value { font-size: 24px; font-weight: 700; }
+      .loop-card .lc-sub { font-size: 10px; color: var(--muted, #6b7280); margin-top: 2px; }
+      .loop-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+      .loop-steps { display: flex; flex-direction: column; gap: 6px; }
+      .loop-step-item { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 8px; font-size: 12px; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.05); transition: all 0.3s; }
+      .loop-step-item.step-active { border-color: #7c3aed; background: rgba(124,58,237,0.12); }
+      .loop-step-item .step-icon { font-size: 16px; width: 24px; text-align: center; }
+      .loop-notion-list { font-size: 12px; }
+      .loop-task { padding: 6px 10px; margin-bottom: 4px; border-radius: 6px; background: rgba(0,0,0,0.2); border-left: 3px solid #fbbf24; }
+      .loop-bottom { display: grid; grid-template-columns: 2fr 1fr; gap: 12px; }
+      .loop-log { max-height: 200px; overflow-y: auto; font-size: 11px; }
+      .loop-log-entry { padding: 3px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
+      .loop-log-ts { color: var(--muted, #6b7280); }
+      .loop-stat-row { display: flex; justify-content: space-between; padding: 5px 0; font-size: 12px; border-bottom: 1px solid rgba(255,255,255,0.04); }
+      .loop-stat-k { color: var(--muted, #9ca3af); }
+      .loop-stat-v { font-weight: 600; }
+      .lc-green { color: #34d399; }
+      .lc-yellow { color: #fbbf24; }
+      .lc-red { color: #f87171; }
+    </style>
+
+    <div class="loop-cards">
+      <div class="loop-card"><div class="lc-label">心跳狀態</div><div class="lc-value" id="lp-status">--</div><div class="lc-sub" id="lp-status-sub"></div></div>
+      <div class="loop-card"><div class="lc-label">下次 Poll</div><div class="lc-value" id="lp-poll">--</div><div class="lc-sub">每 60 秒</div></div>
+      <div class="loop-card"><div class="lc-label">自驅冷卻</div><div class="lc-value" id="lp-sd">--</div><div class="lc-sub">cooldown 30m</div></div>
+      <div class="loop-card"><div class="lc-label">Notion 待做</div><div class="lc-value" id="lp-todo">--</div><div class="lc-sub" id="lp-todo-name"></div></div>
+    </div>
+
+    <div class="loop-grid">
+      <div class="panel">
+        <div class="panel-title">循環狀態</div>
+        <div class="loop-steps">
+          <div class="loop-step-item" id="ls-poll"><span class="step-icon">🔍</span> Poll Notion 待做</div>
+          <div class="loop-step-item" id="ls-exec"><span class="step-icon">⚡</span> Claude 執行任務</div>
+          <div class="loop-step-item" id="ls-done"><span class="step-icon">✅</span> 完成 → Notion 已完成</div>
+          <div class="loop-step-item" id="ls-idle"><span class="step-icon">💤</span> Notion 空 → 等待冷卻</div>
+          <div class="loop-step-item" id="ls-drive"><span class="step-icon">🧠</span> Claude 自驅分析缺口</div>
+          <div class="loop-step-item" id="ls-create"><span class="step-icon">📝</span> 建立 Notion 任務 → 回到 Poll</div>
+        </div>
+        <div style="margin-top:8px;font-size:11px;color:var(--muted,#6b7280)" id="lp-note"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-title">Notion 任務</div>
+        <div class="loop-notion-list" id="lp-tasks">載入中...</div>
+      </div>
+    </div>
+
+    <div class="loop-bottom">
+      <div class="panel">
+        <div class="panel-title">活動日誌</div>
+        <div class="loop-log" id="lp-log">載入中...</div>
+      </div>
+      <div class="panel">
+        <div class="panel-title">統計</div>
+        <div id="lp-stats">載入中...</div>
+      </div>
+    </div>
+  `;
+  container.appendChild(content);
+
+  // ── 資料與倒數 ──
+  let pollTs = 0, sdTs = 0, executing = false, running = false, stats = null, todo = 0, todoTop = '';
+
+  function fmt(s) {
+    if (s <= 0) return '0s';
+    const m = Math.floor(s / 60), r = s % 60;
+    return m > 0 ? m + 'm' + (r ? r + 's' : '') : s + 's';
   }
+  function $(id) { return document.getElementById(id); }
 
-  async function poll() {
+  async function fetchLoop() {
     try {
-      const r = await fetch('/api/processes', { signal: AbortSignal.timeout(3000) });
-      const d = await r.json();
-      const hb = d.heartbeat;
-      if (!hb) { el('hb-text').textContent = '心跳 無資料'; return; }
-      if (!hb.running) { el('hb-text').innerHTML = '<span style="color:#f66">心跳 停止</span>'; return; }
+      const [hRes, tRes, sRes] = await Promise.all([
+        fetch('/api/processes', { signal: AbortSignal.timeout(3000) }),
+        fetch('/api/notion-todo', { signal: AbortSignal.timeout(5000) }),
+        fetch('/api/session-log', { signal: AbortSignal.timeout(3000) }),
+      ]);
+      const hb = (await hRes.json()).heartbeat || {};
+      const td = await tRes.json();
+      const sessions = await sRes.json();
 
-      if (hb.lastPoll) lastPollTs = new Date(hb.lastPoll).getTime();
-      if (hb.lastSelfDrive) lastSdTs = new Date(hb.lastSelfDrive).getTime();
-      hbExecuting = !!hb.executing;
-      hbStats = hb.stats || null;
-    } catch {
-      el('hb-text').innerHTML = '<span style="color:#f66">心跳 離線</span>';
-      return;
-    }
-    // Notion 待做
-    try {
-      const r2 = await fetch('/api/notion-todo', { signal: AbortSignal.timeout(5000) });
-      const d2 = await r2.json();
-      todoCount = d2.count ?? 0;
-      todoName = d2.top ?? '';
-    } catch { /* keep previous */ }
-  }
+      running = !!hb.running;
+      executing = !!hb.executing;
+      stats = hb.stats || null;
+      if (hb.lastPoll) pollTs = new Date(hb.lastPoll).getTime();
+      if (hb.lastSelfDrive) sdTs = new Date(hb.lastSelfDrive).getTime();
+      todo = td.count ?? 0;
+      todoTop = td.top ?? '';
 
-  function tick() {
-    const t = document.getElementById('hb-text');
-    const t2 = document.getElementById('hb-tasks');
-    if (!t) return;
+      // 狀態卡片
+      if (!running) { $('lp-status').innerHTML = '<span class="lc-red">停止</span>'; $('lp-status-sub').textContent = ''; }
+      else if (executing) { $('lp-status').innerHTML = '<span class="lc-yellow">執行中</span>'; $('lp-status-sub').textContent = 'Claude session'; }
+      else { $('lp-status').innerHTML = '<span class="lc-green">運行中</span>'; $('lp-status-sub').textContent = ''; }
 
-    if (hbExecuting) {
-      t.innerHTML = `<span style="color:#ff6">心跳 執行中</span>`;
-    } else if (lastPollTs) {
-      const now = Date.now();
-      const nextPoll = Math.max(0, Math.floor((lastPollTs + 60000 - now) / 1000));
-      const sdCooldown = lastSdTs ? Math.max(0, Math.floor((lastSdTs + 1800000 - now) / 1000)) : 0;
-      t.innerHTML =
-        `<span style="color:#6f6">心跳</span> ` +
-        `poll <b>${fmt(nextPoll)}</b> │ ` +
-        `自驅 <b>${sdCooldown > 0 ? fmt(sdCooldown) : '就緒'}</b>`;
-    }
+      $('lp-todo').textContent = todo;
+      $('lp-todo-name').textContent = todoTop ? todoTop.slice(0, 18) + (todoTop.length > 18 ? '…' : '') : '佇列空';
 
-    if (t2) {
-      let line2 = todoCount > 0
-        ? `待做 <b>${todoCount}</b> │ ${todoName.slice(0, 25)}${todoName.length > 25 ? '…' : ''}`
-        : '<span style="color:#666">待做 0</span>';
-      if (hbStats) {
-        line2 += ` │ <span style="color:#6f6">${hbStats.tasksSucceeded}</span>/<span style="color:#f66">${hbStats.tasksFailed}</span> 自驅${hbStats.selfDrives}`;
+      // 循環高亮
+      document.querySelectorAll('.loop-step-item').forEach(el => el.classList.remove('step-active'));
+      if (executing) $('ls-exec')?.classList.add('step-active');
+      else if (todo > 0) $('ls-poll')?.classList.add('step-active');
+      else if (!sdTs || Date.now() - sdTs > 1800000) $('ls-drive')?.classList.add('step-active');
+      else $('ls-idle')?.classList.add('step-active');
+
+      // 說明
+      const note = $('lp-note');
+      if (executing) note.textContent = '🔥 Claude session 正在自主執行...';
+      else if (todo > 0) note.textContent = '📋 下次 poll 將認領並執行待做任務';
+      else if (!sdTs || Date.now() - sdTs > 1800000) note.textContent = '🧠 下次 poll 將觸發自驅分析';
+      else note.textContent = '💤 等待自驅冷卻';
+
+      // Notion 任務
+      $('lp-tasks').innerHTML = todo > 0
+        ? `<div class="loop-task">${todoTop || '（載入中）'}</div>`
+        : '<div style="color:var(--muted,#6b7280)">佇列空 — 等待自驅建立任務</div>';
+
+      // 活動日誌
+      const hbSessions = (Array.isArray(sessions) ? sessions : []).filter(s => s.source === 'heartbeat').slice(-8).reverse();
+      $('lp-log').innerHTML = hbSessions.length > 0
+        ? hbSessions.map(s => {
+            const ts = s.date ? new Date(s.date).toLocaleTimeString('zh-TW') : '??';
+            const c = s.status === 'success' ? 'lc-green' : 'lc-red';
+            return `<div class="loop-log-entry"><span class="loop-log-ts">${ts}</span> <span class="${c}">${s.status}</span> ${(s.task || '').slice(0, 40)}</div>`;
+          }).join('')
+        : '<div style="color:var(--muted,#6b7280)">尚無活動記錄</div>';
+
+      // 統計
+      if (stats) {
+        const sr = stats.tasksExecuted > 0 ? Math.round(stats.tasksSucceeded / stats.tasksExecuted * 100) : 0;
+        const dr = stats.selfDrives > 0 ? Math.round(stats.selfDriveSuccess / stats.selfDrives * 100) : 0;
+        $('lp-stats').innerHTML = [
+          ['任務執行', stats.tasksExecuted],
+          ['成功', `<span class="lc-green">${stats.tasksSucceeded}</span>`],
+          ['失敗', stats.tasksFailed > 0 ? `<span class="lc-red">${stats.tasksFailed}</span>` : '0'],
+          ['成功率', sr + '%'],
+          ['自驅次數', stats.selfDrives],
+          ['自驅成功', `<span class="lc-green">${stats.selfDriveSuccess}</span>`],
+          ['自驅成功率', dr + '%'],
+        ].map(([k, v]) => `<div class="loop-stat-row"><span class="loop-stat-k">${k}</span><span class="loop-stat-v">${v}</span></div>`).join('');
       }
-      t2.innerHTML = line2;
+    } catch {
+      $('lp-status').innerHTML = '<span class="lc-red">離線</span>';
     }
   }
 
-  function el(id) { return document.getElementById(id); }
+  function tickLoop() {
+    const now = Date.now();
+    const pe = $('lp-poll');
+    if (pe && pollTs) {
+      const s = Math.max(0, Math.floor((pollTs + 60000 - now) / 1000));
+      pe.textContent = fmt(s);
+      pe.className = 'lc-value' + (s <= 5 ? ' lc-yellow' : '');
+    }
+    const se = $('lp-sd');
+    if (se) {
+      if (!sdTs) { se.textContent = '就緒'; se.className = 'lc-value lc-green'; }
+      else {
+        const s = Math.max(0, Math.floor((sdTs + 1800000 - now) / 1000));
+        se.textContent = s > 0 ? fmt(s) : '就緒';
+        se.className = 'lc-value' + (s === 0 ? ' lc-green' : '');
+      }
+    }
+  }
 
-  poll();
-  setInterval(poll, 5000);   // 每 5 秒拉新資料
-  setInterval(tick, 1000);   // 每 1 秒更新倒數
+  fetchLoop();
+  setInterval(fetchLoop, 5000);
+  setInterval(tickLoop, 1000);
 })();

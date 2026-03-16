@@ -154,7 +154,7 @@ describe('hasFallback 函式', () => {
 
 describe('matcher 預設值（修改 1 驗證）', () => {
   test('解構預設值：只有 eventType 時 matcher 為空字串', () => {
-    const [eventType, matcher = ''] = ['PostToolUse'];
+    const [, matcher = ''] = ['PostToolUse'];
     expect(matcher).toBe('');
     expect(matcher).not.toBeUndefined();
   });
