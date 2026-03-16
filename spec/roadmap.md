@@ -497,7 +497,7 @@ R4（依賴 R1-R3 重建完成）───────────────�
 |------|------|
 | Agent 數量 | 3（planner/executor/reviewer） |
 | Workflow 模板 | 0（深度路由取代） |
-| Rules | 15 個（避免膨脹） |
+| Rules | 17 個（避免膨脹） |
 | scripts/lib 模組 | 按需重建（每個須指出消費者） |
 
 ---
