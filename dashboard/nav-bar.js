@@ -171,7 +171,7 @@ if (currentIdx >= 0 && current) {
   content.id = 'tab-loop';
   content.innerHTML = `
     <style>
-      .loop-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 16px; }
+      .loop-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px; }
       .loop-card { background: rgba(124,58,237,0.06); border: 1px solid rgba(124,58,237,0.15); border-radius: 10px; padding: 12px; text-align: center; }
       .loop-card .lc-label { font-size: 11px; color: var(--muted, #6b7280); margin-bottom: 4px; }
       .loop-card .lc-value { font-size: 24px; font-weight: 700; }
@@ -197,21 +197,18 @@ if (currentIdx >= 0 && current) {
 
     <div class="loop-cards">
       <div class="loop-card"><div class="lc-label">心跳狀態</div><div class="lc-value" id="lp-status">--</div><div class="lc-sub" id="lp-status-sub"></div></div>
-      <div class="loop-card"><div class="lc-label">下次 Poll</div><div class="lc-value" id="lp-poll">--</div><div class="lc-sub">每 60 秒</div></div>
-      <div class="loop-card"><div class="lc-label">自驅冷卻</div><div class="lc-value" id="lp-sd">--</div><div class="lc-sub">cooldown 30m</div></div>
+      <div class="loop-card"><div class="lc-label">下次 Tick</div><div class="lc-value" id="lp-poll">--</div><div class="lc-sub" id="lp-interval-sub"></div></div>
       <div class="loop-card"><div class="lc-label">Notion 待做</div><div class="lc-value" id="lp-todo">--</div><div class="lc-sub" id="lp-todo-name"></div></div>
     </div>
 
     <div class="loop-grid">
       <div class="panel">
-        <div class="panel-title">循環狀態</div>
+        <div class="panel-title">循環流程</div>
         <div class="loop-steps">
-          <div class="loop-step-item" id="ls-poll"><span class="step-icon">🔍</span> Poll Notion 待做</div>
-          <div class="loop-step-item" id="ls-exec"><span class="step-icon">⚡</span> Claude 執行任務</div>
-          <div class="loop-step-item" id="ls-done"><span class="step-icon">✅</span> 完成 → Notion 已完成</div>
-          <div class="loop-step-item" id="ls-idle"><span class="step-icon">💤</span> Notion 空 → 等待冷卻</div>
-          <div class="loop-step-item" id="ls-drive"><span class="step-icon">🧠</span> Claude 自驅分析缺口</div>
-          <div class="loop-step-item" id="ls-create"><span class="step-icon">📝</span> 建立 Notion 任務 → 回到 Poll</div>
+          <div class="loop-step-item" id="ls-poll"><span class="step-icon">🔍</span> Poll Notion 待做佇列</div>
+          <div class="loop-step-item" id="ls-exec"><span class="step-icon">⚡</span> Claude session 執行任務</div>
+          <div class="loop-step-item" id="ls-done"><span class="step-icon">✅</span> 完成 → 標記 Notion 已完成</div>
+          <div class="loop-step-item" id="ls-analyze"><span class="step-icon">🧠</span> 佇列空 → Claude 分析缺口並實作</div>
         </div>
         <div style="margin-top:8px;font-size:11px;color:var(--muted,#6b7280)" id="lp-note"></div>
       </div>
@@ -235,7 +232,7 @@ if (currentIdx >= 0 && current) {
   container.appendChild(content);
 
   // ── 資料與倒數 ──
-  let pollTs = 0, sdTs = 0, executing = false, running = false, stats = null, todo = 0, todoTop = '';
+  let pollTs = 0, interval = 1800000, executing = false, running = false, mode = '', stats = null, todo = 0, todoTop = '';
 
   function fmt(s) {
     if (s <= 0) return '0s';
@@ -257,38 +254,40 @@ if (currentIdx >= 0 && current) {
 
       running = !!hb.running;
       executing = !!hb.executing;
+      mode = hb.mode || 'production';
+      interval = hb.interval || 1800000;
       stats = hb.stats || null;
       if (hb.lastPoll) pollTs = new Date(hb.lastPoll).getTime();
-      if (hb.lastSelfDrive) sdTs = new Date(hb.lastSelfDrive).getTime();
       todo = td.count ?? 0;
       todoTop = td.top ?? '';
 
       // 狀態卡片
+      const modeTag = mode === 'test' ? ' (test)' : '';
       if (!running) { $('lp-status').innerHTML = '<span class="lc-red">停止</span>'; $('lp-status-sub').textContent = ''; }
-      else if (executing) { $('lp-status').innerHTML = '<span class="lc-yellow">執行中</span>'; $('lp-status-sub').textContent = 'Claude session'; }
-      else { $('lp-status').innerHTML = '<span class="lc-green">運行中</span>'; $('lp-status-sub').textContent = ''; }
+      else if (executing) { $('lp-status').innerHTML = '<span class="lc-yellow">執行中</span>'; $('lp-status-sub').textContent = 'Claude session' + modeTag; }
+      else { $('lp-status').innerHTML = '<span class="lc-green">運行中</span>'; $('lp-status-sub').textContent = mode + modeTag; }
+
+      $('lp-interval-sub').textContent = `每 ${Math.round(interval / 60000)} 分鐘`;
 
       $('lp-todo').textContent = todo;
-      $('lp-todo-name').textContent = todoTop ? todoTop.slice(0, 18) + (todoTop.length > 18 ? '…' : '') : '佇列空';
+      $('lp-todo-name').textContent = todoTop ? todoTop.slice(0, 20) + (todoTop.length > 20 ? '…' : '') : '佇列空';
 
       // 循環高亮
       document.querySelectorAll('.loop-step-item').forEach(el => el.classList.remove('step-active'));
       if (executing) $('ls-exec')?.classList.add('step-active');
       else if (todo > 0) $('ls-poll')?.classList.add('step-active');
-      else if (!sdTs || Date.now() - sdTs > 1800000) $('ls-drive')?.classList.add('step-active');
-      else $('ls-idle')?.classList.add('step-active');
+      else $('ls-analyze')?.classList.add('step-active');
 
       // 說明
       const note = $('lp-note');
       if (executing) note.textContent = '🔥 Claude session 正在自主執行...';
-      else if (todo > 0) note.textContent = '📋 下次 poll 將認領並執行待做任務';
-      else if (!sdTs || Date.now() - sdTs > 1800000) note.textContent = '🧠 下次 poll 將觸發自驅分析';
-      else note.textContent = '💤 等待自驅冷卻';
+      else if (todo > 0) note.textContent = '📋 下次 tick 將認領並執行待做任務';
+      else note.textContent = '🧠 下次 tick 佇列空將觸發 Claude 分析缺口';
 
       // Notion 任務
       $('lp-tasks').innerHTML = todo > 0
         ? `<div class="loop-task">${todoTop || '（載入中）'}</div>`
-        : '<div style="color:var(--muted,#6b7280)">佇列空 — 等待自驅建立任務</div>';
+        : '<div style="color:var(--muted,#6b7280)">佇列空 — 下次 tick 將觸發分析</div>';
 
       // 活動日誌
       const hbSessions = (Array.isArray(sessions) ? sessions : []).filter(s => s.source === 'heartbeat').slice(-8).reverse();
@@ -296,22 +295,19 @@ if (currentIdx >= 0 && current) {
         ? hbSessions.map(s => {
             const ts = s.date ? new Date(s.date).toLocaleTimeString('zh-TW') : '??';
             const c = s.status === 'success' ? 'lc-green' : 'lc-red';
-            return `<div class="loop-log-entry"><span class="loop-log-ts">${ts}</span> <span class="${c}">${s.status}</span> ${(s.task || '').slice(0, 40)}</div>`;
+            return `<div class="loop-log-entry"><span class="loop-log-ts">${ts}</span> <span class="${c}">${s.status || '—'}</span> ${(s.task || s.summary || '').slice(0, 40)}</div>`;
           }).join('')
         : '<div style="color:var(--muted,#6b7280)">尚無活動記錄</div>';
 
-      // 統計
+      // 統計（對齊 API 實際欄位）
       if (stats) {
         const sr = stats.tasksExecuted > 0 ? Math.round(stats.tasksSucceeded / stats.tasksExecuted * 100) : 0;
-        const dr = stats.selfDrives > 0 ? Math.round(stats.selfDriveSuccess / stats.selfDrives * 100) : 0;
         $('lp-stats').innerHTML = [
-          ['任務執行', stats.tasksExecuted],
-          ['成功', `<span class="lc-green">${stats.tasksSucceeded}</span>`],
-          ['失敗', stats.tasksFailed > 0 ? `<span class="lc-red">${stats.tasksFailed}</span>` : '0'],
+          ['任務執行', stats.tasksExecuted || 0],
+          ['成功', `<span class="lc-green">${stats.tasksSucceeded || 0}</span>`],
+          ['失敗', (stats.tasksFailed || 0) > 0 ? `<span class="lc-red">${stats.tasksFailed}</span>` : '0'],
           ['成功率', sr + '%'],
-          ['自驅次數', stats.selfDrives],
-          ['自驅成功', `<span class="lc-green">${stats.selfDriveSuccess}</span>`],
-          ['自驅成功率', dr + '%'],
+          ['分析次數', stats.analyzes || 0],
         ].map(([k, v]) => `<div class="loop-stat-row"><span class="loop-stat-k">${k}</span><span class="loop-stat-v">${v}</span></div>`).join('');
       }
     } catch {
@@ -322,19 +318,13 @@ if (currentIdx >= 0 && current) {
   function tickLoop() {
     const now = Date.now();
     const pe = $('lp-poll');
-    if (pe && pollTs) {
-      const s = Math.max(0, Math.floor((pollTs + 60000 - now) / 1000));
+    if (pe && pollTs && interval) {
+      const s = Math.max(0, Math.floor((pollTs + interval - now) / 1000));
       pe.textContent = fmt(s);
-      pe.className = 'lc-value' + (s <= 5 ? ' lc-yellow' : '');
-    }
-    const se = $('lp-sd');
-    if (se) {
-      if (!sdTs) { se.textContent = '就緒'; se.className = 'lc-value lc-green'; }
-      else {
-        const s = Math.max(0, Math.floor((sdTs + 1800000 - now) / 1000));
-        se.textContent = s > 0 ? fmt(s) : '就緒';
-        se.className = 'lc-value' + (s === 0 ? ' lc-green' : '');
-      }
+      pe.className = 'lc-value' + (s <= 10 ? ' lc-yellow' : '');
+    } else if (pe && !pollTs) {
+      pe.textContent = '等待首次';
+      pe.className = 'lc-value';
     }
   }
 

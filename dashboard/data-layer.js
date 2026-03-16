@@ -158,7 +158,7 @@ function generateMeetingNotes(data) {
   // 系統狀態摘要
   const serverOk = data.health?.status === 'ok';
   const llmOk = data.llm?.status === 'online';
-  parts.push(`## 系統狀態\n- Server：${serverOk ? '✅ 在線' : '❌ 離線'}${serverOk ? `（uptime ${formatUptime(data.health?.uptime)}）` : ''}\n- LLM：${llmOk ? `✅ ${data.llm?.model}` : '❌ 離線'}\n- 元件：Rules ${data.components?.rules || 0} / Skills ${data.components?.skills || 0} / Agents ${data.components?.agents || 0} / Hooks ${data.components?.hookModules || 0}`);
+  parts.push(`## 系統狀態\n- Server：${serverOk ? '✅ 在線' : '❌ 離線'}${serverOk ? `（uptime ${formatUptime(data.health?.uptime)}）` : ''}\n- LLM：${llmOk ? `✅ ${data.llm?.model}` : '❌ 離線'}\n- 元件：Rules ${data.components?.rules || 0} / Skills ${data.components?.skills || 0} / Agents ${data.components?.agents || 0} / Hooks ${data.components?.hooks || 0}`);
 
   // 品質報告
   const latest = getLatestScores(data.scores);
@@ -203,7 +203,7 @@ function generateMeetingNotes(data) {
       parts.push(`### Sessions\n${recentSessions.map(s => `- ${relativeTime(s.date)}：${s.summary || '（無摘要）'}`).join('\n')}`);
     }
     if (recentGit.length) {
-      parts.push(`### Git Commits\n${recentGit.map(c => `- \`${c.hash?.slice(0, 7)}\` ${c.message}`).join('\n')}`);
+      parts.push(`### Git Commits\n${recentGit.map(c => `- \`${c.hash?.slice(0, 7)}\` ${c.subject || c.message || '—'}`).join('\n')}`);
     }
   }
 
