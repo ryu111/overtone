@@ -5,7 +5,7 @@ const DATA = {
   health: null, llm: null, components: null, scores: null, errors: null,
   scripts: null, git: null, sessions: null, behaviors: null, locks: null,
   improvements: null, scenarios: null, daemons: null, sessionLog: null,
-  system: null,
+  system: null, decisions: null,
   _ts: 0, _loading: false, _listeners: [],
 };
 
@@ -36,14 +36,15 @@ async function loadAllData() {
   if (DATA._loading) return DATA;
   DATA._loading = true;
   try {
-    const [health, llm, components, scores, errors, scripts, git, sessions, behaviors, locks, improvements, scenarios, daemons, sessionLog, system] = await Promise.all([
+    const [health, llm, components, scores, errors, scripts, git, sessions, behaviors, locks, improvements, scenarios, daemons, sessionLog, system, decisions] = await Promise.all([
       fetchApi('health'), fetchApi('llm'), fetchApi('components'),
       fetchApi('scores'), fetchApi('errors'), fetchApi('scripts'),
       fetchApi('git'), fetchApi('sessions'), fetchApi('behaviors'),
       fetchApi('locks'), fetchApi('improvements'), fetchApi('scenarios'),
       fetchApi('daemons'), fetchApi('session-log'), fetchApi('system'),
+      fetchApi('decisions'),
     ]);
-    Object.assign(DATA, { health, llm, components, scores, errors, scripts, git, sessions, behaviors, locks, improvements, scenarios, daemons, sessionLog, system, _ts: Date.now() });
+    Object.assign(DATA, { health, llm, components, scores, errors, scripts, git, sessions, behaviors, locks, improvements, scenarios, daemons, sessionLog, system, decisions, _ts: Date.now() });
     DATA._listeners.forEach(fn => { try { fn(DATA); } catch (e) { console.error('listener error:', e); } });
   } finally {
     DATA._loading = false;
@@ -111,6 +112,39 @@ function calcHealthScore(data) {
   const errPenalty = Math.min((data.errors?.length || 0) * 5, 30);
   const lockPenalty = (data.locks?.filter(l => l.exists)?.length || 0) * 10;
   return Math.max(0, Math.min(100, Math.round(avg - errPenalty - lockPenalty)));
+}
+
+// ── 決策統計 ──
+
+function generateDecisionSummary(data) {
+  if (!data.decisions?.length) return '尚無決策記錄';
+  const parts = [];
+
+  // 按 action 分組統計
+  const byAction = {};
+  for (const d of data.decisions) {
+    const key = d.action || 'unknown';
+    if (!byAction[key]) byAction[key] = { count: 0, totalReward: 0 };
+    byAction[key].count++;
+    byAction[key].totalReward += (d.reward || 0);
+  }
+
+  parts.push('## 決策統計\n');
+  parts.push('| 動作 | 次數 | 平均 Reward |');
+  parts.push('|------|:----:|:-----------:|');
+  for (const [action, stats] of Object.entries(byAction)) {
+    const avg = (stats.totalReward / stats.count).toFixed(2);
+    parts.push(`| ${action} | ${stats.count} | ${avg} |`);
+  }
+
+  // 最近 5 筆
+  parts.push('\n## 最近決策\n');
+  for (const d of data.decisions.slice(-5)) {
+    const reward = d.reward >= 0.8 ? '✅' : d.reward >= 0.5 ? '⚠️' : '❌';
+    parts.push(`- ${reward} **${d.action}** (reward=${d.reward}) — ${d.context || ''}`);
+  }
+
+  return parts.join('\n');
 }
 
 // ── 會議記錄（第 5 Tab）生成 ──

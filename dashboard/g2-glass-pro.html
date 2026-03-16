@@ -1104,8 +1104,9 @@ function renderTab5(data) {
   data = data || DATA;
   const notesEl = document.getElementById('meeting-notes');
   if (notesEl) {
-    const md = generateMeetingNotes(data);
-    notesEl.innerHTML = renderMarkdown(md);
+    const notes = generateMeetingNotes(data);
+    const decisions = generateDecisionSummary(data);
+    notesEl.innerHTML = renderMarkdown(notes + '\n\n' + decisions);
   }
 }
 

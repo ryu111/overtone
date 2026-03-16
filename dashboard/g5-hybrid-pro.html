@@ -1042,7 +1042,11 @@ function render(data) {
 
   // Tab 5
   const notesEl = document.getElementById('meeting-notes');
-  if (notesEl) notesEl.innerHTML = renderMarkdown(generateMeetingNotes(data));
+  if (notesEl) {
+    const notes = generateMeetingNotes(data);
+    const decisions = generateDecisionSummary(data);
+    notesEl.innerHTML = renderMarkdown(notes + '\n\n' + decisions);
+  }
 }
 
 // ---- Init ----
