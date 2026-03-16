@@ -291,6 +291,9 @@ v0.30+ 採用「單腦 + 深度路由 + 輕量 Worker」模式（見 `docs/spec/
 | 缺口自動發現 | 新建 | 待做清空 → 分析 L1-L4 缺口 → 生成建議 | 🔄 實作中 |
 | 建議評估 + Notion 同步 | 新建 | 高信心→待做、中信心→backlog、低→捨棄 | 🔄 實作中 |
 | MDP 決策記錄 | 新建 | (S,A,R) 三元組累積決策數據 | ✅ logDecision + /api/decisions |
+| event-bus 架構 | 重構 | server.js 507→248 行，reactive xstream event bus，3 種模組類型 | ✅ event-bus.js |
+| heartbeat lifecycle 模組 | 重構 | heartbeat 從 server 內嵌獨立為 Daemon lifecycle 模組 | ✅ |
+| self-drive lifecycle 模組 | 重構 | self-drive 從臨時 spawn 改為 Daemon lifecycle 模組 | ✅ |
 
 ### R4.3 自主適應
 

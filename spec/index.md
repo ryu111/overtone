@@ -32,7 +32,7 @@
 - **Rules** 14 個 — 全域行為規範（含 paths 觸發的元件閉環）
 - **Skills** 29 個 — 知識庫（含 nova-spec、closed-loop、nova-test）
 - **Agents** 3 個 — planner / executor / reviewer
-- **Nova Server** — hook dispatch + Flow Visualizer + SSE + metrics
+- **Nova Server** — hook dispatch + Flow Visualizer + SSE + metrics（server.js 248 行 + event-bus.js，3 種模組類型：Handler/Daemon/Reactor）
 - **Guards** — `guards.js` 統一模組（Bash 黑名單 + 元件保護）
 - **Context Injector** — SessionStart 上下文聚合（簡報 + 行為 + 品質 + 錯誤 + 建議）
 - **背景 Agent** — maintainer.js + learner.js（SessionEnd 本地模型，零 API token）
@@ -44,8 +44,8 @@
 
 | 領域 | 摘要 | 章文件 | 更新日期 |
 |------|------|--------|---------|
-| 常駐服務 | Nova Server daemon + hook-client 防呆 + 可觀測層 + Hook Error 閉環 | `docs/常駐服務.md` | 2026-03-15 |
-| 架構演進 | Pipeline → 深度路由、Agent 18 → Worker 3 | `docs/架構演進.md` | 2026-03-15 |
+| 常駐服務 | Nova Server daemon + hook-client 防呆 + 可觀測層 + Hook Error 閉環 + Event-Bus 重構 | `docs/常駐服務.md` | 2026-03-17 |
+| 架構演進 | Pipeline → 深度路由、Agent 18 → Worker 3、Event-Bus 重構 | `docs/架構演進.md` | 2026-03-17 |
 | 製作規範 | 完全閉環 + 自動修復 + 補全能力 | `docs/製作規範.md` | 2026-03-15 |
 
 ## 相關文件
