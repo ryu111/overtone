@@ -108,7 +108,22 @@ describe('isSelfHealingError', () => {
     expect(mod.isSelfHealingError('PostToolUse:observer:all-failed')).toBe(false);
   });
 
-  test('PreToolUse:Bash:stdin → false（phase 不是 all-failed）', async () => {
+  test('PreToolUse:Bash:dispatch → true（dispatch phase + 有 fallback）', async () => {
+    const mod = await import('/Users/sbu/.claude/scripts/error-analyzer.js');
+    expect(mod.isSelfHealingError('PreToolUse:Bash:dispatch')).toBe(true);
+  });
+
+  test('PreToolUse:Bash:retry → true（retry phase + 有 fallback）', async () => {
+    const mod = await import('/Users/sbu/.claude/scripts/error-analyzer.js');
+    expect(mod.isSelfHealingError('PreToolUse:Bash:retry')).toBe(true);
+  });
+
+  test('SessionStart:dispatch → false（dispatch phase 但無 fallback）', async () => {
+    const mod = await import('/Users/sbu/.claude/scripts/error-analyzer.js');
+    expect(mod.isSelfHealingError('SessionStart:dispatch')).toBe(false);
+  });
+
+  test('PreToolUse:Bash:stdin → false（phase 不是 all-failed/dispatch/retry）', async () => {
     const mod = await import('/Users/sbu/.claude/scripts/error-analyzer.js');
     expect(mod.isSelfHealingError('PreToolUse:Bash:stdin')).toBe(false);
   });
