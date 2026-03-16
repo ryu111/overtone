@@ -931,6 +931,20 @@ function renderTab4(data) {
   const llmOnline = llmData?.status === 'online';
   const llmModel = llmData?.model || '';
 
+  // daemons API: { maintainer: [logs], judge: [logs], learner: [logs] }
+  const daemonLogs = (daemons && !Array.isArray(daemons)) ? daemons : {};
+
+  function daemonStatus(key) {
+    const logs = daemonLogs[key];
+    if (!Array.isArray(logs) || !logs.length) return { running: false, last: null };
+    // 從最新 log 提取時間戳
+    const lastLog = logs[logs.length - 1] || '';
+    const tsMatch = lastLog.match(/^(\d{4}-\d{2}-\d{2}T[\d:.]+Z)/);
+    const lastTs = tsMatch ? tsMatch[1] : null;
+    const recentMs = lastTs ? Date.now() - new Date(lastTs).getTime() : Infinity;
+    return { running: recentMs < 3600000, last: lastTs }; // 1 小時內有 log = 運行中
+  }
+
   const services = [
     { name: 'Nova Server', key: 'server' },
     { name: 'Local LLM', key: 'llm', isLlm: true },
@@ -951,34 +965,47 @@ function renderTab4(data) {
         </div>
       `;
     }
-    const d = daemonMap[svc.key] || (health && health[svc.key]);
-    const isRunning = d?.running || d?.status === 'ok' || d?.alive;
-    const dotClass = isRunning ? 'dot-ok' : 'dot-off';
-    const lastAct = d?.lastActivity || d?.last || d?.ts;
+    // Nova Server: 直接查 health API
+    if (svc.key === 'server') {
+      const isUp = health?.status === 'ok';
+      const uptime = health?.uptime ? `${Math.round(health.uptime / 60)}m` : '';
+      return `
+        <div class="service-row">
+          <div class="service-dot ${isUp ? 'dot-ok' : 'dot-off'}"></div>
+          <div class="service-name">${svc.name}</div>
+          <div class="service-meta">${isUp ? `運行中 · ${uptime}` : '未啟動'}</div>
+        </div>
+      `;
+    }
+    // Daemon: 從 log 時間戳判斷
+    const ds = daemonStatus(svc.key);
     return `
       <div class="service-row">
-        <div class="service-dot ${dotClass}"></div>
+        <div class="service-dot ${ds.running ? 'dot-ok' : 'dot-off'}"></div>
         <div class="service-name">${svc.name}</div>
-        <div class="service-meta">${isRunning ? '運行中' : '未啟動'}${lastAct ? ' · ' + relTime(lastAct) : ''}</div>
+        <div class="service-meta">${ds.running ? '運行中' : '閒置'}${ds.last ? ' · ' + relTime(ds.last) : ''}</div>
       </div>
     `;
   }).join('');
 
-  // Lockfiles
-  const lockArr = Array.isArray(locks) ? locks : (locks?.locks || []);
+  // Lockfiles（只顯示存在的）
+  const lockArr = (Array.isArray(locks) ? locks : (locks?.locks || [])).filter(lk => lk.exists);
   if (lockArr.length > 0) {
-    document.getElementById('lockfiles').innerHTML = lockArr.map(lk => `
+    document.getElementById('lockfiles').innerHTML = lockArr.map(lk => {
+      const name = (lk.name || lk.path || '').split('/').pop();
+      const age = lk.age ? `${Math.round(lk.age / 60)}m` : '';
+      return `
       <div class="lock-item">
-        <div class="lock-name">${lk.name || lk.path || lk}</div>
+        <div class="lock-name">${name}${age ? ` <span style="color:var(--muted);font-size:11px">(${age})</span>` : ''}</div>
         <button class="lock-clear" onclick="clearLock('${lk.name||lk.path||lk}')">清除</button>
-      </div>
-    `).join('');
+      </div>`;
+    }).join('');
   } else {
     document.getElementById('lockfiles').innerHTML = '<div class="empty-state" style="padding:16px"><div class="empty-icon">🔓</div>無殘留 lock</div>';
   }
 
-  // 元件詳細
-  if (components) {
+  // 元件詳細（API 回 {rules: 16, skills: 27, ...} 數字或陣列）
+  if (components && typeof components === 'object') {
     const types = [
       { key:'rules', label:'Rules', tag:'tag-r' },
       { key:'skills', label:'Skills', tag:'tag-s' },
@@ -986,19 +1013,21 @@ function renderTab4(data) {
       { key:'hooks', label:'Hooks', tag:'tag-h' },
     ];
     document.getElementById('componentDetail').innerHTML = types.map(t => {
-      const items = components[t.key] || [];
+      const val = components[t.key];
+      const count = typeof val === 'number' ? val : (Array.isArray(val) ? val.length : 0);
+      const items = Array.isArray(val) ? val : [];
       return `
         <div class="comp-section">
-          <div class="comp-header" onclick="toggleComp(this)">
+          <div class="comp-header"${items.length ? ' onclick="toggleComp(this)"' : ''}>
             <div class="comp-header-left">
               <span class="tag ${t.tag}">${t.label}</span>
-              <span class="comp-count">${items.length}</span>
+              <span class="comp-count">${count}</span>
             </div>
-            <span class="comp-chevron">▶</span>
+            ${items.length ? '<span class="comp-chevron">▶</span>' : ''}
           </div>
-          <div class="comp-list">
-            ${items.map(i=>`<div class="comp-list-item">${(i.name||i.path||i).split('/').pop()}</div>`).join('')}
-          </div>
+          ${items.length ? `<div class="comp-list">
+            ${items.map(i=>`<div class="comp-list-item">${(i.name||i.path||String(i)).split('/').pop()}</div>`).join('')}
+          </div>` : ''}
         </div>
       `;
     }).join('');
