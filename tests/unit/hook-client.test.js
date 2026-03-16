@@ -172,3 +172,31 @@ describe('matcher 預設值（修改 1 驗證）', () => {
     expect(matcher).toBe('Bash');
   });
 });
+
+describe('觀測型事件 error log 抑制', () => {
+  test('有 fallback 的事件（PreToolUse:Bash）應記錄 error', () => {
+    const needsFallback = hasFallback('PreToolUse', 'Bash');
+    expect(needsFallback).toBe(true);
+  });
+
+  test('觀測型事件（PostToolUse 空 matcher）不應記錄 error', () => {
+    const needsFallback = hasFallback('PostToolUse', '');
+    expect(needsFallback).toBe(false);
+  });
+
+  test('觀測型事件（SessionStart）不應記錄 error', () => {
+    expect(hasFallback('SessionStart', '')).toBe(false);
+  });
+
+  test('觀測型事件（Notification）不應記錄 error', () => {
+    expect(hasFallback('Notification', '')).toBe(false);
+  });
+
+  test('觀測型事件（SubagentStop）不應記錄 error', () => {
+    expect(hasFallback('SubagentStop', '')).toBe(false);
+  });
+
+  test('觀測型事件（SessionEnd）不應記錄 error', () => {
+    expect(hasFallback('SessionEnd', '')).toBe(false);
+  });
+});
