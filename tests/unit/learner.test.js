@@ -45,7 +45,7 @@ describe('computeConfidence', () => {
     expect(conf).toBeLessThan(0.70);
   });
 
-  test('5 次 / 20 session / 跨 5 天 / 今天 → ~0.59', () => {
+  test('5 次 / 20 session / 跨 5 天 / 今天 → 高信心（新公式：絕對+相對混合）', () => {
     const today = new Date();
     const fiveDaysAgo = new Date(today.getTime() - 5 * 24 * 60 * 60 * 1000);
     const b = makeBehavior({
@@ -54,22 +54,24 @@ describe('computeConfidence', () => {
       lastSeen: today.toISOString().slice(0, 10),
     });
     const conf = computeConfidence(b, 20, today);
-    expect(conf).toBeGreaterThan(0.40);
-    expect(conf).toBeLessThan(0.70);
+    // 新公式：5 次絕對分滿 + 相對頻率。預期 > 0.70
+    expect(conf).toBeGreaterThan(0.70);
+    expect(conf).toBeLessThan(1.0);
   });
 
-  test('密集 2 天後消失 3 天 → < 0.30', () => {
+  test('密集 2 天後消失 3 天 → 中低信心（recency 衰減）', () => {
     const today = new Date();
     const twoDaysAgo = new Date(today.getTime() - 2 * 24 * 60 * 60 * 1000);
     const threeDaysAgo = new Date(today.getTime() - 3 * 24 * 60 * 60 * 1000);
-    // lastSeen 在 3 天前（距今 3 天）
+    // lastSeen 在 2 天前（距今 2 天），recency 衰減
     const b = makeBehavior({
       occurrences: [1, 2],
       firstSeen: threeDaysAgo.toISOString().slice(0, 10),
       lastSeen: twoDaysAgo.toISOString().slice(0, 10),
     });
     const conf = computeConfidence(b, 10, today);
-    expect(conf).toBeLessThan(0.30);
+    // 新公式：2 次絕對分 0.667 + 相對頻率。recency = 1/(1+0.67) ≈ 0.6
+    expect(conf).toBeLessThan(0.50);
   });
 
   test('穩定 20 次 / 30 session / 跨 60 天 / 1 天前 → >= 0.50', () => {

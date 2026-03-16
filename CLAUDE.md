@@ -32,7 +32,7 @@ bun test                         # 單進程測試（~20ms）
 ## 開發規範
 
 - **文件位置**：設計文件寫在 `docs/`，⚠️ 不要寫在 `~/.claude/` 下
-- **元件閉環**：見 `~/.claude/rules/元件閉環.md` → `~/.claude/skills/closed-loop/`
+- **元件閉環**：見 `~/.claude/rules/閉環規範.md` → `~/.claude/skills/closed-loop/`
 
 ## Hook 改動驗收
 
