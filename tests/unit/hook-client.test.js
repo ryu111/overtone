@@ -171,6 +171,10 @@ describe('matcher 預設值（修改 1 驗證）', () => {
     expect(eventType).toBe('PreToolUse');
     expect(matcher).toBe('Bash');
   });
+
+  test('字串 "undefined" 作為 matcher 時 hasFallback 仍為 false（防呆）', () => {
+    expect(hasFallback('PostToolUse', 'undefined')).toBe(false);
+  });
 });
 
 describe('觀測型事件 error log 抑制', () => {
