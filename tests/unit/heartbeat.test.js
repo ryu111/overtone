@@ -460,3 +460,77 @@ describe('OVERTONE_SPAWNED 遞迴防護（整合）', () => {
     rmSync(tmpDir, { recursive: true, force: true });
   });
 });
+
+// ─── 空 catch 修復驗證 ────────────────────────────────────────────────────────
+
+describe('空 catch 修復驗證', () => {
+  test('executeTask 中 resetTask 失敗有 console.error 輸出', async () => {
+    const tmpDir = makeTmpDir();
+    const stateFile = join(tmpDir, 'state.json');
+    writeState({ running: true, activeTask: null, paused: false, consecutiveFailures: 0 }, stateFile);
+
+    const mockOutcome = Promise.resolve({ exitCode: 0, stdout: JSON.stringify({ type: 'result', result: 'done' }), duration: 500 });
+    let completeError = false;
+    const deps = {
+      spawnSession: () => ({ ok: true, child: {}, outcome: mockOutcome }),
+      completeTask: async () => { completeError = true; throw new Error('complete failed'); },
+      resetTask: async () => { throw new Error('reset also failed'); },
+    };
+
+    const spy = [];
+    const origError = console.error;
+    console.error = (...args) => spy.push(args.join(' '));
+    try {
+      const task = { id: 't1', name: '任務', priority: 'P0' };
+      await executeTask(task, { _stateFile: stateFile }, deps);
+      // resetTask 失敗應有 console.error 輸出
+      expect(spy.some(m => m.includes('resetTask'))).toBe(true);
+    } finally {
+      console.error = origError;
+      rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+});
+
+// ─── 穩定性防護驗證 ───────────────────────────────────────────────────────────
+
+describe('穩定性防護驗證', () => {
+  test('spawnSession — claude CLI 不在 PATH 時回傳 ok: false', async () => {
+    const { spawnSession: realSpawnSession } = await import('../../../../.claude/scripts/session-spawner.js');
+    const result = realSpawnSession('test', {}, { which: () => null, env: {} });
+    expect(result.ok).toBe(false);
+    expect(result.error).toContain('not found');
+  });
+
+  test('spawnSession — OVERTONE_SPAWNED=1 時仍優先觸發遞迴防護', async () => {
+    const { spawnSession: realSpawnSession } = await import('../../../../.claude/scripts/session-spawner.js');
+    const result = realSpawnSession('test', {}, { env: { OVERTONE_SPAWNED: '1' } });
+    expect(result.ok).toBe(false);
+    expect(result.error).toBe('recursive spawn blocked');
+  });
+});
+
+// ─── Spawn 穩定性驗證 ─────────────────────────────────────────────────────────
+
+describe('spawn 穩定性驗證', () => {
+  test('spawn 失敗寫入 hook-errors.jsonl', async () => {
+    // 清除 hook-errors.jsonl 舊內容，方便驗證
+    const hookErrorsPath = '/tmp/hook-errors.jsonl';
+    try { writeFileSync(hookErrorsPath, '', 'utf-8'); } catch (_) { /* 忽略 */ }
+
+    const { spawnSession: realSpawnSession } = await import('../../../../.claude/scripts/session-spawner.js');
+    const result = realSpawnSession('test prompt', {}, {
+      spawn: () => { throw new Error('spawn test error'); },
+      env: {},
+      which: () => '/usr/local/bin/claude',
+    });
+    expect(result.ok).toBe(false);
+
+    // 驗證 hook-errors.jsonl 有寫入
+    const errors = readFileSync(hookErrorsPath, 'utf-8');
+    const lines = errors.trim().split('\n').filter(l => l.trim());
+    const last = JSON.parse(lines[lines.length - 1]);
+    expect(last.event).toBe('heartbeat-spawn');
+    expect(last.error).toContain('spawn test error');
+  });
+});
