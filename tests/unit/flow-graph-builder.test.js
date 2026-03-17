@@ -76,14 +76,9 @@ describe('flow-graph-builder', () => {
     }
   });
 
-  test('breaks 中有 orphan_skill 類型', () => {
+  test('orphan_skill 偵測已移除（Nova skills 透過多管道消費，agent frontmatter 掃描會 100% 誤判）', () => {
     const orphans = graph.breaks.filter(b => b.type === 'orphan_skill');
-    // 真實環境中應有未被 agent 引用的 skill
-    expect(orphans.length).toBeGreaterThan(0);
-    for (const b of orphans) {
-      expect(typeof b.skill).toBe('string');
-      expect(typeof b.message).toBe('string');
-    }
+    expect(orphans.length).toBe(0);
   });
 
   test('breaks 中 missing_hook_script 項目格式正確', () => {
