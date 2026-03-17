@@ -187,9 +187,15 @@ if (currentIdx >= 0 && current) {
       .loop-notion-list { font-size: 12px; }
       .loop-task { padding: 6px 10px; margin-bottom: 4px; border-radius: 6px; background: rgba(0,0,0,0.2); border-left: 3px solid #fbbf24; }
       .loop-bottom { display: grid; grid-template-columns: 2fr 1fr; gap: 12px; }
-      .loop-log { max-height: 200px; overflow-y: auto; font-size: 11px; }
-      .loop-log-entry { padding: 3px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
-      .loop-log-ts { color: var(--muted, #6b7280); }
+      .loop-achievements { max-height: 220px; overflow-y: auto; display: flex; flex-direction: column; gap: 5px; }
+      .loop-ach-card { display: flex; align-items: flex-start; gap: 8px; padding: 7px 10px; border-radius: 7px; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.05); }
+      .loop-ach-card.ach-success { border-left: 3px solid #34d399; }
+      .loop-ach-card.ach-failed { border-left: 3px solid #f87171; }
+      .loop-ach-icon { font-size: 14px; flex-shrink: 0; line-height: 1.4; }
+      .loop-ach-body { flex: 1; min-width: 0; }
+      .loop-ach-task { font-size: 12px; color: #e0def4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .loop-ach-meta { font-size: 10px; color: var(--muted, #6b7280); margin-top: 2px; display: flex; gap: 6px; }
+      .loop-trend { font-size: 14px; letter-spacing: 2px; }
       .loop-stat-row { display: flex; justify-content: space-between; padding: 5px 0; font-size: 12px; border-bottom: 1px solid rgba(255,255,255,0.04); }
       .loop-stat-k { color: var(--muted, #9ca3af); }
       .loop-stat-v { font-weight: 600; }
@@ -223,8 +229,8 @@ if (currentIdx >= 0 && current) {
 
     <div class="loop-bottom">
       <div class="panel">
-        <div class="panel-title">活動日誌</div>
-        <div class="loop-log" id="lp-log">載入中...</div>
+        <div class="panel-title">最近自驅成果</div>
+        <div class="loop-achievements" id="lp-log">載入中...</div>
       </div>
       <div class="panel">
         <div class="panel-title">統計</div>
@@ -292,27 +298,38 @@ if (currentIdx >= 0 && current) {
         ? `<div class="loop-task">${todoTop || '（載入中）'}</div>`
         : '<div style="color:var(--muted,#6b7280)">佇列空 — 下次 tick 將觸發分析</div>';
 
-      // 活動日誌
-      const hbSessions = (Array.isArray(sessions) ? sessions : []).filter(s => s.source === 'heartbeat').slice(-8).reverse();
+      // 最近自驅成果
+      const hbSessions = (Array.isArray(sessions) ? sessions : []).filter(s => s.source === 'heartbeat').slice(-10).reverse();
       $('lp-log').innerHTML = hbSessions.length > 0
         ? hbSessions.map(s => {
-            const ts = s.date ? new Date(s.date).toLocaleTimeString('zh-TW') : '??';
-            const c = s.status === 'success' ? 'lc-green' : 'lc-red';
-            return `<div class="loop-log-entry"><span class="loop-log-ts">${ts}</span> <span class="${c}">${s.status || '—'}</span> ${(s.task || s.summary || '').slice(0, 40)}</div>`;
+            const isOk = s.status === 'success';
+            const icon = isOk ? '✅' : '❌';
+            const cardClass = isOk ? 'ach-success' : 'ach-failed';
+            const task = (s.task || s.summary || '（無任務名）').slice(0, 50);
+            const ts = s.date ? new Date(s.date).toLocaleString('zh-TW', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }) : '';
+            const exitCode = s.proofOfWork?.exitCode != null ? `exit ${s.proofOfWork.exitCode}` : '';
+            const attempt = s.proofOfWork?.attempt != null ? `attempt ${s.proofOfWork.attempt}` : '';
+            const meta = [ts, exitCode, attempt].filter(Boolean).join(' · ');
+            return `<div class="loop-ach-card ${cardClass}"><span class="loop-ach-icon">${icon}</span><div class="loop-ach-body"><div class="loop-ach-task">${task}</div>${meta ? `<div class="loop-ach-meta">${meta}</div>` : ''}</div></div>`;
           }).join('')
-        : '<div style="color:var(--muted,#6b7280)">尚無活動記錄</div>';
+        : '<div style="color:var(--muted,#6b7280)">尚無自驅記錄</div>';
 
-      // 統計（對齊 API 實際欄位）
+      // 統計（對齊 API 實際欄位）+ 成功率趨勢
       if (stats) {
         const total = stats.sessions || stats.tasksExecuted || 0;
         const ok = stats.succeeded || stats.tasksSucceeded || 0;
         const fail = stats.failed || stats.tasksFailed || 0;
         const sr = total > 0 ? Math.round(ok / total * 100) : 0;
+        const recent5 = (Array.isArray(sessions) ? sessions : []).filter(s => s.source === 'heartbeat').slice(-5);
+        const trendHtml = recent5.length > 0
+          ? `<span class="loop-trend">${recent5.map(s => s.status === 'success' ? '✅' : '❌').join('')}</span>`
+          : '<span style="color:var(--muted,#6b7280)">—</span>';
         $('lp-stats').innerHTML = [
           ['自驅 Session', total],
           ['成功', `<span class="lc-green">${ok}</span>`],
           ['失敗', fail > 0 ? `<span class="lc-red">${fail}</span>` : '0'],
           ['成功率', sr + '%'],
+          ['近 5 次趨勢', trendHtml],
         ].map(([k, v]) => `<div class="loop-stat-row"><span class="loop-stat-k">${k}</span><span class="loop-stat-v">${v}</span></div>`).join('');
       }
     } catch {
