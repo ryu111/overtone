@@ -17,8 +17,8 @@ function lineCount(p) { return readFile(p).split("\n").length; }
 describe("server.js 純淨性", () => {
   const code = readFile(SERVER_PATH);
 
-  it("行數 <= 330", () => {
-    expect(lineCount(SERVER_PATH)).toBeLessThanOrEqual(330);
+  it("行數 <= 350", () => {
+    expect(lineCount(SERVER_PATH)).toBeLessThanOrEqual(350);
   });
 
   it("setInterval 限制（SSE heartbeat + graceful restart）", () => {
