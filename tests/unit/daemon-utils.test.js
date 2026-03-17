@@ -80,6 +80,60 @@ describe('setupLock', () => {
     expect(existsSync(lockFile)).toBe(true);
     removeLock();
   });
+
+  test('dead PID lock → 自動移除並建立新 lock', () => {
+    // 寫入一個不存在的 PID
+    writeFileSync(lockFile, '999999999');
+    const logs = [];
+    const removeLock = setupLock(lockFile, (msg) => logs.push(msg));
+    // 應該移除 stale lock 並建立新的（當前 PID）
+    expect(existsSync(lockFile)).toBe(true);
+    expect(readFileSync(lockFile, 'utf-8').trim()).toBe(String(process.pid));
+    expect(logs.some(m => m.includes('Stale lock removed') && m.includes('dead'))).toBe(true);
+    removeLock();
+  });
+
+  test('超齡 lock（PID 存活但 age > maxAge）→ 自動移除', () => {
+    // 父進程一定活著
+    writeFileSync(lockFile, String(process.ppid));
+    const logs = [];
+    // maxAge=0 → 任何 lock 都算過期
+    const removeLock = setupLock(lockFile, (msg) => logs.push(msg), { maxAge: 0 });
+    expect(existsSync(lockFile)).toBe(true);
+    expect(readFileSync(lockFile, 'utf-8').trim()).toBe(String(process.pid));
+    expect(logs.some(m => m.includes('Stale lock removed'))).toBe(true);
+    removeLock();
+  });
+
+  test('有效 lock（PID 存活 + 未過期）→ 應該阻擋（呼叫 process.exit）', () => {
+    // 用父進程 PID 建立 lock，不設 maxAge 限制
+    writeFileSync(lockFile, String(process.ppid));
+    const logs = [];
+    const originalExit = process.exit;
+    let exitCalled = false;
+    let exitCode;
+    process.exit = (code) => { exitCalled = true; exitCode = code; };
+    try {
+      setupLock(lockFile, (msg) => logs.push(msg));
+      expect(exitCalled).toBe(true);
+      expect(exitCode).toBe(0);
+      expect(logs.some(m => m.includes('Lock exists, skipping'))).toBe(true);
+    } finally {
+      process.exit = originalExit;
+      unlinkSync(lockFile);
+    }
+  });
+
+  test('lock 內容非數字 → 視為 stale 並移除', () => {
+    writeFileSync(lockFile, 'corrupted');
+    const logs = [];
+    const removeLock = setupLock(lockFile, (msg) => logs.push(msg));
+    expect(existsSync(lockFile)).toBe(true);
+    expect(readFileSync(lockFile, 'utf-8').trim()).toBe(String(process.pid));
+    // NaN PID → !pid → stale
+    expect(logs.some(m => m.includes('Stale lock removed'))).toBe(true);
+    removeLock();
+  });
 });
 
 // ─── reportStatus 測試 ───────────────────────────────────────────────────────
