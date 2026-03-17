@@ -3,7 +3,6 @@ import { describe, test, expect, beforeEach, afterEach } from "bun:test";
 import { mkdirSync, writeFileSync, rmSync } from "fs";
 import { join } from "path";
 import { tmpdir, homedir } from "os";
-import { execSync, spawnSync } from "node:child_process";
 
 const {
   matchTools,
@@ -258,59 +257,4 @@ describe("matchTools fallback 模式（無 LLM）", () => {
   });
 });
 
-// ─── CLI 整合測試 ─────────────────────────────────────────────────────────────
-
-describe("CLI 整合", () => {
-  test("無參數時顯示用法說明並以非零退出", () => {
-    let threw = false;
-    try {
-      execSync(`bun ${join(homedir(), ".claude/scripts/tool-matcher.js")}`, { stdio: "pipe" });
-    } catch (err) {
-      threw = true;
-      // 確認輸出含用法說明
-      const output = (err.stdout || "").toString() + (err.stderr || "").toString();
-      expect(output).toContain("用法");
-    }
-    expect(threw).toBe(true);
-  });
-
-  test("match 命令但無 intent 時顯示用法並以非零退出", () => {
-    let threw = false;
-    try {
-      execSync(`bun ${join(homedir(), ".claude/scripts/tool-matcher.js")} match`, { stdio: "pipe" });
-    } catch (err) {
-      threw = true;
-      const output = (err.stdout || "").toString() + (err.stderr || "").toString();
-      expect(output).toContain("用法");
-    }
-    expect(threw).toBe(true);
-  });
-
-  test("match 命令正常執行並輸出結果（使用實際索引）", () => {
-    // 先執行 scan 確保索引存在
-    spawnSync("bun", [join(homedir(), ".claude/scripts/tool-registry.js"), "scan"], {
-      stdio: "pipe", timeout: 10000,
-    });
-
-    // 執行 match，設定 10 秒 process timeout
-    // spawnSync 強制 kill 超時的 child process，不受 AbortSignal 影響
-    const proc = spawnSync(
-      "bun",
-      [join(homedir(), ".claude/scripts/tool-matcher.js"), "match", "GitHub PR review"],
-      { stdio: "pipe", timeout: 10000 }
-    );
-
-    // Bun 並行測試時 spawnSync 可能靜默失敗（pid=undefined），跳過斷言
-    // API 功能已由其他 19 個測試覆蓋，此測試僅驗證 CLI 入口
-    if (proc.pid === undefined) return;
-
-    // timeout（signal=SIGTERM）或正常退出都算通過——只要能啟動 CLI 就行
-    const output = (proc.stdout || "").toString() + (proc.stderr || "").toString();
-    // 若 timeout，process 被 kill，output 可能為空；若正常完成應含結果文字
-    const timedOut = proc.signal === "SIGTERM" || proc.status === null;
-    const hasResult = output.includes("推薦工具") || output.includes("未找到匹配工具")
-      || output.includes("用法") || output.includes("匹配失敗")
-      || output.includes("[tool-matcher]");
-    expect(timedOut || hasResult).toBe(true);
-  }, 15000);
-});
+// CLI 整合測試已移至 tests/integration/tool-matcher-cli.test.js

@@ -1,23 +1,22 @@
 import { describe, test, expect, beforeEach } from 'bun:test';
-import { homedir } from 'os';
+import { homedir, tmpdir } from 'os';
 import { join } from 'path';
-import { writeFileSync, existsSync } from 'fs';
+import { writeFileSync, mkdirSync } from 'fs';
+import { randomUUID } from 'crypto';
 
-const { writeFlowEvent, readRecentEvents, getEventsFilePath } = await import(
+const { writeFlowEvent, readRecentEvents, getEventsFilePath, setEventsFilePath, clearEventsFile } = await import(
   join(homedir(), '.claude/scripts/flow/event-writer.js')
 );
 
-const EVENTS_FILE = getEventsFilePath();
-
-function clearEventsFile() {
-  if (existsSync(EVENTS_FILE)) {
-    writeFileSync(EVENTS_FILE, '');
-  }
-}
+// 每個測試使用獨立的 tmp 路徑，不操作真實事件檔案
+const TEST_EVENTS_DIR = join(tmpdir(), `flow-event-writer-test-${Date.now()}`);
+mkdirSync(TEST_EVENTS_DIR, { recursive: true });
+const TEST_EVENTS_FILE = join(TEST_EVENTS_DIR, 'test-events.jsonl');
+setEventsFilePath(TEST_EVENTS_FILE);
 
 describe('flow-event-writer', () => {
   beforeEach(() => {
-    clearEventsFile();
+    writeFileSync(TEST_EVENTS_FILE, '');
   });
 
   test('writeFlowEvent 寫入後 readRecentEvents 能讀回', () => {

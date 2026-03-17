@@ -1,10 +1,15 @@
 import { describe, test, expect, beforeEach } from 'bun:test';
-import { homedir } from 'os';
+import { homedir, tmpdir } from 'os';
 import { join } from 'path';
-import { writeFileSync } from 'fs';
+import { writeFileSync, mkdirSync } from 'fs';
 
-const { getEventsFilePath } = await import(join(homedir(), '.claude/scripts/flow/event-writer.js'));
-const EVENTS_FILE = getEventsFilePath();
+const { getEventsFilePath, setEventsFilePath } = await import(join(homedir(), '.claude/scripts/flow/event-writer.js'));
+
+// 每個測試使用獨立的 tmp 路徑，不操作真實事件檔案
+const TEST_EVENTS_DIR = join(tmpdir(), `flow-hooks-test-${Date.now()}`);
+mkdirSync(TEST_EVENTS_DIR, { recursive: true });
+const EVENTS_FILE = join(TEST_EVENTS_DIR, 'test-events.jsonl');
+setEventsFilePath(EVENTS_FILE);
 
 const { evaluate: evaluateStart } = await import(
   join(homedir(), '.claude/hooks/scripts/session/on-start-flow.js')

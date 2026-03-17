@@ -3,7 +3,6 @@ import { describe, test, expect, beforeEach, afterEach } from "bun:test";
 import { mkdirSync, writeFileSync, rmSync, existsSync } from "fs";
 import { join } from "path";
 import { tmpdir, homedir } from "os";
-import { execSync } from "node:child_process";
 
 const {
   scanTools,
