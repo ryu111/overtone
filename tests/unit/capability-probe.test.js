@@ -11,6 +11,7 @@ import {
   saveBoundary,
   getWeakCapabilities,
   probeSession,
+  isValidCapabilityName,
 } from "/Users/sbu/.claude/scripts/capability-probe.js";
 
 // ─── 測試輔助 ────────────────────────────────────────────────────────────────
@@ -101,6 +102,44 @@ describe("decayCount", () => {
 
   test("count 為 0 → 永遠回傳 0", () => {
     expect(decayCount(0, 30)).toBe(0);
+  });
+});
+
+// ─── isValidCapabilityName 測試 ──────────────────────────────────────────────
+
+describe("isValidCapabilityName", () => {
+  test("有效英文 slug → true", () => {
+    expect(isValidCapabilityName("pdf-parser")).toBe(true);
+    expect(isValidCapabilityName("task_description")).toBe(true);
+    expect(isValidCapabilityName("hook-error-recovery-framework")).toBe(true);
+  });
+
+  test("短中文能力名 ≤4 字 → true", () => {
+    expect(isValidCapabilityName("截圖")).toBe(true);
+    expect(isValidCapabilityName("通知")).toBe(true);
+    expect(isValidCapabilityName("評分維度")).toBe(true);
+  });
+
+  test("含空白的描述性文字 → false（prompt 片段）", () => {
+    expect(isValidCapabilityName("task description")).toBe(false);
+    expect(isValidCapabilityName("具體 rule 內容")).toBe(false);
+  });
+
+  test("含中文標點 → false（prompt 片段）", () => {
+    expect(isValidCapabilityName("具體 hook 代碼（需提供以執行審查）")).toBe(false);
+    expect(isValidCapabilityName("穩定性基準（SLA 需求）")).toBe(false);
+  });
+
+  test("純中文超過 4 字 → false（描述性文字）", () => {
+    expect(isValidCapabilityName("具體任務描述")).toBe(false);
+    expect(isValidCapabilityName("評分維度詳細定義")).toBe(false);
+  });
+
+  test("空值或過短過長 → false", () => {
+    expect(isValidCapabilityName("")).toBe(false);
+    expect(isValidCapabilityName("a")).toBe(false);
+    expect(isValidCapabilityName(null)).toBe(false);
+    expect(isValidCapabilityName("x".repeat(51))).toBe(false);
   });
 });
 
