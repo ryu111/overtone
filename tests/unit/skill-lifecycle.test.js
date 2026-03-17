@@ -2,11 +2,11 @@
 import { describe, test, expect, beforeEach, afterEach } from 'bun:test';
 import { writeFileSync, readFileSync, mkdirSync, rmSync, existsSync, appendFileSync } from 'fs';
 import { join } from 'path';
-import { tmpdir } from 'os';
+import { tmpdir, homedir } from 'os';
 
-import { forgeSkill, improveSkill, deploySkill } from '/Users/sbu/.claude/scripts/skill-forge.js';
-import { checkLifecycle, getDeployGrades } from '/Users/sbu/.claude/scripts/lifecycle-orchestrator.js';
-import { pruneUnusedSkills } from '/Users/sbu/.claude/scripts/skill-janitor.js';
+const { forgeSkill, improveSkill, deploySkill } = await import(join(homedir(), '.claude/scripts/skill-forge.js'));
+const { checkLifecycle, getDeployGrades } = await import(join(homedir(), '.claude/scripts/lifecycle-orchestrator.js'));
+const { pruneUnusedSkills } = await import(join(homedir(), '.claude/scripts/skill-janitor.js'));
 
 // ─── 測試環境 ─────────────────────────────────────────────────────────────────
 
@@ -20,7 +20,7 @@ function setup() {
 }
 
 function teardown() {
-  try { rmSync(TMP_DIR, { recursive: true }); } catch {}
+  try { rmSync(TMP_DIR, { recursive: true }); } catch (e) { /* cleanup */ }
 }
 
 // 標準 skill 內容（有 frontmatter + NEVER + 50 行）

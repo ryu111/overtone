@@ -1,5 +1,8 @@
 import { describe, it, expect, mock } from 'bun:test';
-import { createEventBus } from '/Users/sbu/.claude/hooks/event-bus.js';
+import { join } from 'path';
+import { homedir } from 'os';
+
+const { createEventBus } = await import(join(homedir(), '.claude/hooks/event-bus.js'));
 
 function makeBus(overrides = {}) {
   return createEventBus({

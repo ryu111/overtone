@@ -9,8 +9,10 @@
  */
 
 import { describe, it, expect } from 'bun:test';
+import { join } from 'path';
+import { homedir } from 'os';
 
-const EVO_PATH = '/Users/sbu/.claude/scripts/evolution.js';
+const EVO_PATH = join(homedir(), '.claude/scripts/evolution.js');
 const { COMMANDS, cmdStatus, cmdInternalize } = await import(EVO_PATH);
 
 // ─── 1. COMMANDS 路由完整性 ──────────────────────────────────────────────────

@@ -1,12 +1,14 @@
 import { describe, expect, test } from "bun:test";
+import { homedir } from "os";
+import { join } from "path";
 
 // ─── 場景一：無人值守任務執行 ─────────────────────────────────────────────────
 
-import {
+const {
 	buildPrompt,
 	parseStreamJson,
 	suggestDepth,
-} from "/Users/sbu/.claude/scripts/session-spawner.js";
+} = await import(join(homedir(), ".claude/scripts/session-spawner.js"));
 
 describe("場景一：無人值守", () => {
 	describe("suggestDepth — 深度推薦", () => {
@@ -85,9 +87,7 @@ describe("場景一：無人值守", () => {
 
 	describe("heartbeat → session 完整鏈", () => {
 		test("mock 全鏈：poll → claim → spawn → complete → summary", async () => {
-			const { executeTask } = await import(
-				"/Users/sbu/.claude/scripts/heartbeat.js"
-			);
+			const { executeTask } = await import(join(homedir(), ".claude/scripts/heartbeat.js"));
 
 			const calls = [];
 			const tmpSummary = "/tmp/test-scenario1-summaries.jsonl";
@@ -96,7 +96,7 @@ describe("場景一：無人值守", () => {
 			try {
 				const { unlinkSync } = await import("node:fs");
 				unlinkSync(tmpSummary);
-			} catch {}
+			} catch (e) { /* cleanup */ }
 
 			const result = await executeTask(
 				{ id: "test-123", name: "測試任務" },
@@ -135,8 +135,8 @@ describe("場景一：無人值守", () => {
 
 // ─── 場景二：能力自動生長 ─────────────────────────────────────────────────────
 
-import { forgeSkill } from "/Users/sbu/.claude/scripts/skill-forge.js";
-import { checkLifecycle } from "/Users/sbu/.claude/scripts/lifecycle-orchestrator.js";
+const { forgeSkill } = await import(join(homedir(), ".claude/scripts/skill-forge.js"));
+const { checkLifecycle } = await import(join(homedir(), ".claude/scripts/lifecycle-orchestrator.js"));
 
 describe("場景二：能力自動生長", () => {
 	describe("forge → judge → deploy 鏈", () => {
@@ -188,9 +188,7 @@ version: "1.0"
 	describe("maintainer 觸發 lifecycle 驗證", () => {
 		test("Phase 3b checkLifecycle 路徑存在", async () => {
 			// 驗證 lifecycle-orchestrator.js 可以被 import
-			const mod = await import(
-				"/Users/sbu/.claude/scripts/lifecycle-orchestrator.js"
-			);
+			const mod = await import(join(homedir(), ".claude/scripts/lifecycle-orchestrator.js"));
 			expect(typeof mod.checkLifecycle).toBe("function");
 		});
 	});
@@ -198,7 +196,7 @@ version: "1.0"
 
 // ─── 場景四：自我修復 ─────────────────────────────────────────────────────────
 
-import { parsePage, createTask } from "/Users/sbu/.claude/scripts/notion-tasks.js";
+const { parsePage, createTask } = await import(join(homedir(), ".claude/scripts/notion-tasks.js"));
 
 describe("場景四：自我修復", () => {
 	test("parsePage 提取必要欄位", () => {
@@ -277,7 +275,7 @@ describe("場景四：自我修復", () => {
 
 // ─── 場景三：新領域從零到穩定 ─────────────────────────────────────────────────
 
-import { detectCrossDomain } from "/Users/sbu/.claude/scripts/learner.js";
+const { detectCrossDomain } = await import(join(homedir(), ".claude/scripts/learner.js"));
 
 describe("場景三：跨領域經驗遷移", () => {
 	test("相似工具序列被偵測到", () => {
@@ -364,10 +362,10 @@ describe("場景三：跨領域經驗遷移", () => {
 
 // ─── 場景五：一句話永久生效 ─────────────────────────────────────────────────────
 
-import {
+const {
 	analyzeImpact,
 	classifyFile,
-} from "/Users/sbu/.claude/scripts/impact-analyzer.js";
+} = await import(join(homedir(), ".claude/scripts/impact-analyzer.js"));
 
 describe("場景五：影響分析端到端", () => {
 	test("分析 commit 規則變更，找到 rule + script", () => {
@@ -402,14 +400,14 @@ describe("場景五：影響分析端到端", () => {
 
 // ─── 端到端自動化驗證（替代手動驗證）─────────────────────────────────────────
 
-import { poll, executeTask as hbExecuteTask } from "/Users/sbu/.claude/scripts/heartbeat.js";
+const { poll, executeTask: hbExecuteTask } = await import(join(homedir(), ".claude/scripts/heartbeat.js"));
 
 describe("P2.4 場景一端到端：heartbeat poll → execute → summary", () => {
 	test("poll 偵測到待做任務 → claim → 回傳 execute action", async () => {
 		const calls = [];
 		const tmpState = "/tmp/test-p24-state.json";
 
-		try { (await import("node:fs")).unlinkSync(tmpState); } catch {}
+		try { (await import("node:fs")).unlinkSync(tmpState); } catch (e) { /* cleanup */ }
 
 		const pollResult = await poll(
 			{ _stateFile: tmpState },
@@ -429,7 +427,7 @@ describe("P2.4 場景一端到端：heartbeat poll → execute → summary", () 
 	test("execute → complete → summary 全鏈", async () => {
 		const calls = [];
 		const tmpSummary = "/tmp/test-p24-summaries.jsonl";
-		try { (await import("node:fs")).unlinkSync(tmpSummary); } catch {}
+		try { (await import("node:fs")).unlinkSync(tmpSummary); } catch (e) { /* cleanup */ }
 
 		const execResult = await hbExecuteTask(
 			{ id: "notion-001", name: "修復 API timeout" },
@@ -490,7 +488,7 @@ describe("P2.8 場景二端到端：信心達標 → lifecycle 觸發", () => {
 		expect(typeof result.processed).toBe("number");
 		expect(typeof result.deployed).toBe("number");
 
-		try { unlinkSync(tmpBehaviors); } catch {}
+		try { unlinkSync(tmpBehaviors); } catch (e) { /* cleanup */ }
 	});
 });
 

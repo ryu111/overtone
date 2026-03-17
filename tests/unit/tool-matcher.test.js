@@ -2,13 +2,13 @@
 import { describe, test, expect, beforeEach, afterEach } from "bun:test";
 import { mkdirSync, writeFileSync, rmSync } from "fs";
 import { join } from "path";
-import { tmpdir } from "os";
+import { tmpdir, homedir } from "os";
 import { execSync, spawnSync } from "node:child_process";
 
-import {
+const {
   matchTools,
   matchToolsByKeyword,
-} from "/Users/sbu/.claude/scripts/tool-matcher.js";
+} = await import(join(homedir(), ".claude/scripts/tool-matcher.js"));
 
 // ─── 測試環境建立 ──────────────────────────────────────────────────────────────
 

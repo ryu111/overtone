@@ -1,6 +1,9 @@
 // notion-tasks.test.js — Notion 任務佇列純函式測試
 import { describe, test, expect } from 'bun:test';
-import { parsePage, priorityOrder, buildRoadmapUpdates, applyRoadmapUpdates, buildToDoBlocks, createTask, listTasks, normalizeTaskName, isDuplicateTask, readSessionSummaries } from '/Users/sbu/.claude/scripts/notion-tasks.js';
+import { homedir } from 'os';
+import { join } from 'path';
+
+const { parsePage, priorityOrder, buildRoadmapUpdates, applyRoadmapUpdates, buildToDoBlocks, createTask, listTasks, normalizeTaskName, isDuplicateTask, readSessionSummaries } = await import(join(homedir(), '.claude/scripts/notion-tasks.js'));
 
 // ─── 1. parsePage ────────────────────────────────────────────────────────────
 

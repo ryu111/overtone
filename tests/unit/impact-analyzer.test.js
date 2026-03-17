@@ -1,5 +1,8 @@
 import { describe, expect, test } from "bun:test";
-import {
+import { homedir } from 'os';
+import { join } from 'path';
+
+const {
 	analyzeImpact,
 	classifyFile,
 	extractKeywords,
@@ -7,7 +10,7 @@ import {
 	groupByFile,
 	searchImpacts,
 	verifyConsistency,
-} from "/Users/sbu/.claude/scripts/impact-analyzer.js";
+} = await import(join(homedir(), '.claude/scripts/impact-analyzer.js'));
 
 describe("extractKeywords", () => {
 	test("提取中英文關鍵詞", () => {

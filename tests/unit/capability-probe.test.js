@@ -2,9 +2,9 @@
 import { describe, test, expect, beforeEach, afterEach } from "bun:test";
 import { writeFileSync, mkdirSync, rmSync, existsSync, readFileSync } from "fs";
 import { join } from "path";
-import { tmpdir } from "os";
+import { homedir, tmpdir } from "os";
 
-import {
+const {
   classifyStrength,
   decayCount,
   getBoundary,
@@ -12,7 +12,7 @@ import {
   getWeakCapabilities,
   probeSession,
   isValidCapabilityName,
-} from "/Users/sbu/.claude/scripts/capability-probe.js";
+} = await import(join(homedir(), ".claude/scripts/capability-probe.js"));
 
 // ─── 測試輔助 ────────────────────────────────────────────────────────────────
 
@@ -53,7 +53,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  try { rmSync(TMP_DIR, { recursive: true }); } catch {}
+  try { rmSync(TMP_DIR, { recursive: true }); } catch (e) { /* cleanup */ }
 });
 
 // ─── classifyStrength 測試 ──────────────────────────────────────────────────

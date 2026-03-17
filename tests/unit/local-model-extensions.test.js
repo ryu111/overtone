@@ -5,7 +5,7 @@ import { join } from 'path';
 import { tmpdir, homedir } from 'os';
 
 // Import judge.js 的可測試函式
-import { generateImprovements, grade } from '/Users/sbu/.claude/scripts/judge.js';
+const { generateImprovements, grade } = await import(join(homedir(), '.claude/scripts/judge.js'));
 
 // ─── 測試輔助 ────────────────────────────────────────────────────────────────
 
@@ -16,7 +16,7 @@ function setup() {
 }
 
 function teardown() {
-  try { rmSync(TMP_DIR, { recursive: true }); } catch {}
+  try { rmSync(TMP_DIR, { recursive: true }); } catch (e) { /* cleanup */ }
 }
 
 // ─── 1. Session 摘要 JSONL 格式 ─────────────────────────────────────────────

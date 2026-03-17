@@ -2,12 +2,12 @@
 import { describe, test, expect, beforeEach, afterEach } from 'bun:test';
 import { writeFileSync, readFileSync, mkdirSync, rmSync, existsSync, appendFileSync } from 'fs';
 import { join } from 'path';
-import { tmpdir } from 'os';
+import { homedir, tmpdir } from 'os';
 
-import {
+const {
   generateSessionSummary,
   generateBriefing,
-} from '/Users/sbu/.claude/scripts/briefing-builder.js';
+} = await import(join(homedir(), '.claude/scripts/briefing-builder.js'));
 
 // ─── 測試輔助 ────────────────────────────────────────────────────────────────
 
@@ -34,7 +34,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  try { rmSync(TMP_DIR, { recursive: true }); } catch {}
+  try { rmSync(TMP_DIR, { recursive: true }); } catch (e) { /* cleanup */ }
 });
 
 // ─── generateSessionSummary 測試 ─────────────────────────────────────────────

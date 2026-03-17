@@ -3,13 +3,13 @@
 import { describe, test, expect, afterEach } from 'bun:test';
 import { writeFileSync, mkdirSync, rmSync, existsSync, readFileSync, appendFileSync } from 'fs';
 import { join } from 'path';
-import { tmpdir } from 'os';
+import { tmpdir, homedir } from 'os';
 
-import { discoverGaps, syncToNotion } from '/Users/sbu/.claude/scripts/gap-discovery.js';
-import { probeSession } from '/Users/sbu/.claude/scripts/capability-probe.js';
-import { planForTask, recordOutcome, lookupPattern } from '/Users/sbu/.claude/scripts/task-adapter.js';
-import { poll, executeTask, readState, writeState } from '/Users/sbu/.claude/scripts/heartbeat.js';
-import { buildPrompt } from '/Users/sbu/.claude/scripts/session-spawner.js';
+const { discoverGaps, syncToNotion } = await import(join(homedir(), '.claude/scripts/gap-discovery.js'));
+const { probeSession } = await import(join(homedir(), '.claude/scripts/capability-probe.js'));
+const { planForTask, recordOutcome, lookupPattern } = await import(join(homedir(), '.claude/scripts/task-adapter.js'));
+const { poll, executeTask, readState, writeState } = await import(join(homedir(), '.claude/scripts/heartbeat.js'));
+const { buildPrompt } = await import(join(homedir(), '.claude/scripts/session-spawner.js'));
 
 // ─── 共用 Mock 資料（沿用 r4-self-drive-loop.test.js 常數） ───────────────────
 

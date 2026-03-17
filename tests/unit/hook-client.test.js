@@ -66,7 +66,7 @@ describe('Hook Client HTTP dispatch', () => {
         signal: AbortSignal.timeout(500),
       });
       if (res.ok) connected = true;
-    } catch {}
+    } catch (e) { /* cleanup */ }
     expect(typeof connected).toBe('boolean');
   });
 });

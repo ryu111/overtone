@@ -94,7 +94,7 @@ function writeModule(claudeDir, moduleName, exportedFns = []) {
 
 // ─── 直接 import 被測模組（使用真實路徑） ────────────────────────────────────
 
-const HC_PATH = '/Users/sbu/.claude/scripts/health-check.js';
+const HC_PATH = join(homedir(), '.claude/scripts/health-check.js');
 
 const {
   checkClosedLoop,

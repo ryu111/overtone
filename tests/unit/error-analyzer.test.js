@@ -2,12 +2,14 @@
 import { describe, test, expect, beforeEach, afterEach } from 'bun:test';
 import { writeFileSync, readFileSync, existsSync, unlinkSync, mkdirSync } from 'fs';
 import { join } from 'path';
-import { tmpdir } from 'os';
+import { homedir, tmpdir } from 'os';
 
-import {
+const ERROR_ANALYZER_PATH = join(homedir(), '.claude/scripts/error-analyzer.js');
+
+const {
   clusterErrors,
   createRepairTaskIfNeeded,
-} from '/Users/sbu/.claude/scripts/error-analyzer.js';
+} = await import(ERROR_ANALYZER_PATH);
 
 // ─── 測試輔助 ────────────────────────────────────────────────────────────────
 
@@ -83,53 +85,53 @@ describe('isSelfHealingError', () => {
   let isSelfHealingError;
 
   test('載入 isSelfHealingError', async () => {
-    const mod = await import('/Users/sbu/.claude/scripts/error-analyzer.js');
+    const mod = await import(ERROR_ANALYZER_PATH);
     isSelfHealingError = mod.isSelfHealingError;
     expect(typeof isSelfHealingError).toBe('function');
   });
 
   test('PreToolUse:Bash:all-failed → true（有 fallback）', async () => {
-    const mod = await import('/Users/sbu/.claude/scripts/error-analyzer.js');
+    const mod = await import(ERROR_ANALYZER_PATH);
     expect(mod.isSelfHealingError('PreToolUse:Bash:all-failed')).toBe(true);
   });
 
   test('PreToolUse:Write:all-failed → true（有 fallback）', async () => {
-    const mod = await import('/Users/sbu/.claude/scripts/error-analyzer.js');
+    const mod = await import(ERROR_ANALYZER_PATH);
     expect(mod.isSelfHealingError('PreToolUse:Write:all-failed')).toBe(true);
   });
 
   test('PreToolUse:Edit:all-failed → true（有 fallback）', async () => {
-    const mod = await import('/Users/sbu/.claude/scripts/error-analyzer.js');
+    const mod = await import(ERROR_ANALYZER_PATH);
     expect(mod.isSelfHealingError('PreToolUse:Edit:all-failed')).toBe(true);
   });
 
   test('PostToolUse:observer:all-failed → false（觀測型，無 fallback）', async () => {
-    const mod = await import('/Users/sbu/.claude/scripts/error-analyzer.js');
+    const mod = await import(ERROR_ANALYZER_PATH);
     expect(mod.isSelfHealingError('PostToolUse:observer:all-failed')).toBe(false);
   });
 
   test('PreToolUse:Bash:dispatch → true（dispatch phase + 有 fallback）', async () => {
-    const mod = await import('/Users/sbu/.claude/scripts/error-analyzer.js');
+    const mod = await import(ERROR_ANALYZER_PATH);
     expect(mod.isSelfHealingError('PreToolUse:Bash:dispatch')).toBe(true);
   });
 
   test('PreToolUse:Bash:retry → true（retry phase + 有 fallback）', async () => {
-    const mod = await import('/Users/sbu/.claude/scripts/error-analyzer.js');
+    const mod = await import(ERROR_ANALYZER_PATH);
     expect(mod.isSelfHealingError('PreToolUse:Bash:retry')).toBe(true);
   });
 
   test('SessionStart:dispatch → false（dispatch phase 但無 fallback）', async () => {
-    const mod = await import('/Users/sbu/.claude/scripts/error-analyzer.js');
+    const mod = await import(ERROR_ANALYZER_PATH);
     expect(mod.isSelfHealingError('SessionStart:dispatch')).toBe(false);
   });
 
   test('PreToolUse:Bash:stdin → false（phase 不是 all-failed/dispatch/retry）', async () => {
-    const mod = await import('/Users/sbu/.claude/scripts/error-analyzer.js');
+    const mod = await import(ERROR_ANALYZER_PATH);
     expect(mod.isSelfHealingError('PreToolUse:Bash:stdin')).toBe(false);
   });
 
   test('SessionStart:unknown → false（無 fallback）', async () => {
-    const mod = await import('/Users/sbu/.claude/scripts/error-analyzer.js');
+    const mod = await import(ERROR_ANALYZER_PATH);
     expect(mod.isSelfHealingError('SessionStart:unknown')).toBe(false);
   });
 });

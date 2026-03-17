@@ -5,7 +5,7 @@ import { join } from 'path';
 import { tmpdir, homedir } from 'os';
 
 // 直接 import 純函式（import.meta.main 機制讓 spawn 只在直接執行時觸發）
-import {
+const {
   scoreDeterministic,
   grade,
   shouldRun,
@@ -15,7 +15,7 @@ import {
   resolveSemanticScore,
   deduplicateImprovements,
   deduplicateScores,
-} from '/Users/sbu/.claude/scripts/judge.js';
+} = await import(join(homedir(), '.claude/scripts/judge.js'));
 
 // ─── 測試輔助 ────────────────────────────────────────────────────────────────
 
@@ -26,7 +26,7 @@ function setup() {
 }
 
 function teardown() {
-  try { rmSync(TMP_DIR, { recursive: true }); } catch {}
+  try { rmSync(TMP_DIR, { recursive: true }); } catch (e) { /* cleanup */ }
 }
 
 // ─── 1. scoreDeterministic — Skill ──────────────────────────────────────────
@@ -512,7 +512,7 @@ describe('自我分離機制', () => {
   test('直接執行 judge.js（無 JUDGE_BG）→ 立即返回 exit 0', async () => {
     const start = Date.now();
     const result = Bun.spawnSync(
-      ['bun', '/Users/sbu/.claude/scripts/judge.js'],
+      ['bun', join(homedir(), '.claude/scripts/judge.js')],
       { env: { ...process.env, JUDGE_BG: undefined } }
     );
     const elapsed = Date.now() - start;

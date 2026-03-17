@@ -2,12 +2,12 @@
 import { describe, test, expect, beforeEach, afterEach, mock } from 'bun:test';
 import { writeFileSync, existsSync, readFileSync, unlinkSync, mkdirSync } from 'fs';
 import { join } from 'path';
-import { tmpdir } from 'os';
+import { homedir, tmpdir } from 'os';
 
-import {
+const {
   setupLock,
   reportStatus,
-} from '/Users/sbu/.claude/scripts/daemon-utils.js';
+} = await import(join(homedir(), '.claude/scripts/daemon-utils.js'));
 
 // ─── 測試輔助 ────────────────────────────────────────────────────────────────
 
@@ -40,7 +40,7 @@ describe('setupLock', () => {
     process.on = originalOn;
     // 清理可能殘留的 lockfile
     if (existsSync(lockFile)) {
-      try { unlinkSync(lockFile); } catch {}
+      try { unlinkSync(lockFile); } catch (e) { /* cleanup */ }
     }
   });
 

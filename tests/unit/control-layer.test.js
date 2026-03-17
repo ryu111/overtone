@@ -1,14 +1,16 @@
 import { describe, it, expect, mock, beforeEach } from 'bun:test';
+import { join } from 'path';
+import { homedir } from 'os';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // keyboard.js
 // ─────────────────────────────────────────────────────────────────────────────
-import {
+const {
   pressKey,
   typeText,
   pressKeyCode,
   checkAccessibility,
-} from '/Users/sbu/.claude/scripts/os/keyboard.js';
+} = await import(join(homedir(), '.claude/scripts/os/keyboard.js'));
 
 describe('keyboard.js', () => {
   describe('平台守衛', () => {
@@ -184,7 +186,7 @@ describe('keyboard.js', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 // mouse.js
 // ─────────────────────────────────────────────────────────────────────────────
-import {
+const {
   click,
   doubleClick,
   rightClick,
@@ -193,7 +195,7 @@ import {
   scroll,
   getPosition,
   checkCliclick,
-} from '/Users/sbu/.claude/scripts/os/mouse.js';
+} = await import(join(homedir(), '.claude/scripts/os/mouse.js'));
 
 describe('mouse.js', () => {
   describe('平台守衛', () => {
@@ -372,12 +374,12 @@ describe('mouse.js', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 // applescript.js
 // ─────────────────────────────────────────────────────────────────────────────
-import {
+const {
   run,
   runFile,
   runJXA,
   runWithTimeout,
-} from '/Users/sbu/.claude/scripts/os/applescript.js';
+} = await import(join(homedir(), '.claude/scripts/os/applescript.js'));
 
 describe('applescript.js', () => {
   describe('平台守衛', () => {
@@ -535,10 +537,10 @@ describe('applescript.js', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 // computer-use.js
 // ─────────────────────────────────────────────────────────────────────────────
-import {
+const {
   parseAction,
   executeAction,
-} from '/Users/sbu/.claude/scripts/os/computer-use.js';
+} = await import(join(homedir(), '.claude/scripts/os/computer-use.js'));
 
 describe('computer-use.js', () => {
   describe('平台守衛', () => {

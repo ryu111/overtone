@@ -13,10 +13,12 @@
 
 import { describe, it, expect } from 'bun:test';
 import { execSync } from 'child_process';
+import { join } from 'path';
+import { homedir } from 'os';
 
 // ─── 直接 import 被測模組 ─────────────────────────────────────────────────────
 
-const GA_PATH = '/Users/sbu/.claude/scripts/gap-analyzer.js';
+const GA_PATH = join(homedir(), '.claude/scripts/gap-analyzer.js');
 
 const { analyzeGaps, findingToGap, calculatePriority, GAP_MAP } = await import(GA_PATH);
 

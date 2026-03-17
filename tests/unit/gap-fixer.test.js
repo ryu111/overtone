@@ -10,8 +10,10 @@
  */
 
 import { describe, it, expect } from 'bun:test';
+import { homedir } from 'os';
+import { join } from 'path';
 
-const GF_PATH = '/Users/sbu/.claude/scripts/gap-fixer.js';
+const GF_PATH = join(homedir(), '.claude/scripts/gap-fixer.js');
 const { fixGaps, REPAIR_STRATEGIES, resolveSkillDir, resolveAgentPath } = await import(GF_PATH);
 
 // ─── 測試用 mock deps ────────────────────────────────────────────────────────

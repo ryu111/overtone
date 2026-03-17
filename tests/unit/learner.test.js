@@ -2,11 +2,11 @@
 import { describe, test, expect } from 'bun:test';
 import { writeFileSync, mkdirSync, rmSync, existsSync } from 'fs';
 import { join } from 'path';
-import { tmpdir } from 'os';
+import { tmpdir, homedir } from 'os';
 
 // 直接 import 純函式（不觸發自我分離，因為 LEARNER_BG 不設定時 import 路徑下不執行 spawn）
 // 需要透過 export 取得：computeConfidence、analyzeAndUpdate、readBehaviors、writeBehaviors、extractSessionBehavior
-import {
+const {
   computeConfidence,
   analyzeAndUpdate,
   readBehaviors,
@@ -15,7 +15,7 @@ import {
   generateSuggestions,
   semanticId,
   stripThinking,
-} from '/Users/sbu/.claude/scripts/learner.js';
+} = await import(join(homedir(), '.claude/scripts/learner.js'));
 
 // ─── 1. 信心公式測試 ───────────────────────────────────────────────────────────
 
@@ -221,7 +221,7 @@ describe('extractSessionBehavior', () => {
   }
 
   function cleanup() {
-    try { rmSync(tmpFile); } catch {}
+    try { rmSync(tmpFile); } catch (e) { /* cleanup */ }
   }
 
   test('給定 events JSONL → 正確提取 toolSequence', () => {

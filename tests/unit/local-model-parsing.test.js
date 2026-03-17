@@ -2,7 +2,10 @@
 // 根因：Qwen3.5 有時輸出 "Thinking Process:" 純文字而非 <think> 標籤，
 // 導致 Judge 語意評分失敗（7 個 F 級元件）。
 import { describe, test, expect } from 'bun:test';
-import { stripThinking, extractJSON } from '/Users/sbu/.claude/scripts/local-model.js';
+import { homedir } from 'os';
+import { join } from 'path';
+
+const { stripThinking, extractJSON } = await import(join(homedir(), '.claude/scripts/local-model.js'));
 
 // ─── 1. stripThinking ─────────────────────────────────────────────────────────
 

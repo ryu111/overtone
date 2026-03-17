@@ -3,12 +3,12 @@
 import { describe, test, expect, beforeEach, afterEach } from 'bun:test';
 import { writeFileSync, mkdirSync, rmSync, existsSync, readFileSync, appendFileSync } from 'fs';
 import { join } from 'path';
-import { tmpdir } from 'os';
+import { tmpdir, homedir } from 'os';
 
-import { discoverGaps, syncToNotion } from '/Users/sbu/.claude/scripts/gap-discovery.js';
-import { probeSession } from '/Users/sbu/.claude/scripts/capability-probe.js';
-import { planForTask, recordOutcome, lookupPattern } from '/Users/sbu/.claude/scripts/task-adapter.js';
-import { poll, executeTask, readState, writeState, isImprovementTask, computeDelta, snapshotBoundary, updateImprovementRecord } from '/Users/sbu/.claude/scripts/heartbeat.js';
+const { discoverGaps, syncToNotion } = await import(join(homedir(), '.claude/scripts/gap-discovery.js'));
+const { probeSession } = await import(join(homedir(), '.claude/scripts/capability-probe.js'));
+const { planForTask, recordOutcome, lookupPattern } = await import(join(homedir(), '.claude/scripts/task-adapter.js'));
+const { poll, executeTask, readState, writeState, isImprovementTask, computeDelta, snapshotBoundary, updateImprovementRecord } = await import(join(homedir(), '.claude/scripts/heartbeat.js'));
 
 // ─── 共用 Mock 資料 ───────────────────────────────────────────────────────────
 

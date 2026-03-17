@@ -2,9 +2,9 @@
 import { describe, test, expect, beforeEach, afterEach } from 'bun:test';
 import { writeFileSync, readFileSync, mkdirSync, rmSync, existsSync, appendFileSync } from 'fs';
 import { join } from 'path';
-import { tmpdir } from 'os';
+import { homedir, tmpdir } from 'os';
 
-import {
+const {
   phase1_seed,
   phase2_forge,
   phase3_judge,
@@ -12,7 +12,7 @@ import {
   phase5_verify,
   phase6_cleanup,
   runAcidTest,
-} from '/Users/sbu/.claude/scripts/acid-test.js';
+} = await import(join(homedir(), '.claude/scripts/acid-test.js'));
 
 // ─── 測試環境 ─────────────────────────────────────────────────────────────────
 
@@ -60,7 +60,7 @@ function setup() {
 }
 
 function teardown() {
-  try { rmSync(TMP_DIR, { recursive: true }); } catch {}
+  try { rmSync(TMP_DIR, { recursive: true }); } catch (e) { /* cleanup */ }
 }
 
 // 標準 agent 內容

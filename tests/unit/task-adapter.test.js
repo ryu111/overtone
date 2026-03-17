@@ -1,9 +1,9 @@
 // task-adapter.test.js — R4.3 任務快速適應機制單元測試
 import { describe, it, expect, beforeEach } from "bun:test";
 import { join } from "path";
-import { tmpdir } from "os";
+import { tmpdir, homedir } from "os";
 
-import {
+const {
   classifyTask,
   keywordOverlap,
   decayConfidence,
@@ -15,7 +15,7 @@ import {
   recordOutcome,
   listPatterns,
   prunePatterns,
-} from "/Users/sbu/.claude/scripts/task-adapter.js";
+} = await import(join(homedir(), ".claude/scripts/task-adapter.js"));
 
 // ─── 測試輔助 ────────────────────────────────────────────────────────────────
 

@@ -1,13 +1,15 @@
 import { describe, it, expect, beforeEach } from 'bun:test';
+import { homedir } from 'os';
+import { join } from 'path';
 
 // 動態 import 以便測試 platform guard（透過 mock）
 // 直接 import — 我們透過 _deps 注入來模擬行為
-import { captureScreen, captureWindow, captureRegion, checkPermission } from '/Users/sbu/.claude/scripts/os/screenshot.js';
-import { listWindows, focusWindow, resizeWindow, checkAccessibility } from '/Users/sbu/.claude/scripts/os/window.js';
-import { listProcesses, startProcess, killProcess } from '/Users/sbu/.claude/scripts/os/process.js';
-import { readClipboard, writeClipboard } from '/Users/sbu/.claude/scripts/os/clipboard.js';
-import { getCpuInfo, getMemoryInfo, getDiskInfo, getNetworkInfo, getSystemSummary } from '/Users/sbu/.claude/scripts/os/system-info.js';
-import { speak, listVoices } from '/Users/sbu/.claude/scripts/os/tts.js';
+const { captureScreen, captureWindow, captureRegion, checkPermission } = await import(join(homedir(), '.claude/scripts/os/screenshot.js'));
+const { listWindows, focusWindow, resizeWindow, checkAccessibility } = await import(join(homedir(), '.claude/scripts/os/window.js'));
+const { listProcesses, startProcess, killProcess } = await import(join(homedir(), '.claude/scripts/os/process.js'));
+const { readClipboard, writeClipboard } = await import(join(homedir(), '.claude/scripts/os/clipboard.js'));
+const { getCpuInfo, getMemoryInfo, getDiskInfo, getNetworkInfo, getSystemSummary } = await import(join(homedir(), '.claude/scripts/os/system-info.js'));
+const { speak, listVoices } = await import(join(homedir(), '.claude/scripts/os/tts.js'));
 
 // ---------------------------------------------------------------------------
 // 工具函式：建立 mock _deps
