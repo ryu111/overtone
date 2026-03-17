@@ -78,9 +78,9 @@ describe('metrics — 計數正確性', () => {
 describe('metrics — 滑動窗口淘汰', () => {
   test('超過 60 秒的 dispatch timestamp 在 snapshot 時被淘汰（dispatchRate 降為 0）', () => {
     const m = createMetrics();
-    // 直接注入 62 秒前的 timestamp
+    // 注入 62 秒前的 timestamp
     const oldTs = Date.now() - 62_000;
-    m._dispatchTimestamps.push(oldTs);
+    m._injectTimestamp('dispatch', oldTs);
 
     const { metrics } = m.snapshot();
     expect(metrics.dispatchRate).toBe(0);
@@ -97,7 +97,7 @@ describe('metrics — 滑動窗口淘汰', () => {
   test('超過 60 秒的 error timestamp 在 snapshot 時被淘汰（errorRate 降為 0）', () => {
     const m = createMetrics();
     const oldTs = Date.now() - 62_000;
-    m._errorTimestamps.push(oldTs);
+    m._injectTimestamp('error', oldTs);
     const { metrics } = m.snapshot();
     expect(metrics.errorRate).toBe(0);
   });
@@ -106,7 +106,7 @@ describe('metrics — 滑動窗口淘汰', () => {
     const m = createMetrics();
     // 插入 1001 筆
     for (let i = 0; i < 1001; i++) {
-      m._dispatchTimestamps.push(Date.now());
+      m._injectTimestamp('dispatch', Date.now());
     }
     // 再觸發一次會 push+shift
     m.onEvent(makeDispatch('allow'));
@@ -118,9 +118,9 @@ describe('metrics — 滑動窗口淘汰', () => {
 describe('metrics — 異常觸發', () => {
   test('60 秒內 > 200 次 dispatch → high_dispatch_rate warning', () => {
     const m = createMetrics();
-    // 直接注入 201 筆近期 timestamp
+    // 注入 201 筆近期 timestamp
     const ts = Date.now();
-    for (let i = 0; i < 201; i++) m._dispatchTimestamps.push(ts);
+    for (let i = 0; i < 201; i++) m._injectTimestamp('dispatch', ts);
     // 再觸發一次讓 detectAnomalies 執行
     m.onEvent(makeDispatch('allow'));
 
@@ -135,7 +135,7 @@ describe('metrics — 異常觸發', () => {
     const m = createMetrics();
     const ts = Date.now();
     // 注入 199 筆，onEvent 再加 1 筆，合計 200（不超過 200）
-    for (let i = 0; i < 199; i++) m._dispatchTimestamps.push(ts);
+    for (let i = 0; i < 199; i++) m._injectTimestamp('dispatch', ts);
     m.onEvent(makeDispatch('allow'));
 
     const { anomalies } = m.snapshot();
@@ -181,7 +181,7 @@ describe('metrics — 異常觸發', () => {
   test('60 秒內 > 5 次 error → handler_error_spike error', () => {
     const m = createMetrics();
     const ts = Date.now();
-    for (let i = 0; i < 6; i++) m._errorTimestamps.push(ts);
+    for (let i = 0; i < 6; i++) m._injectTimestamp('error', ts);
     // 觸發 detectAnomalies
     m.onEvent(makeError('handler_error'));
 
@@ -195,7 +195,7 @@ describe('metrics — 異常觸發', () => {
     const m = createMetrics();
     const ts = Date.now();
     // 注入 4 筆，onEvent 再加 1 筆，合計 5（不超過 5）
-    for (let i = 0; i < 4; i++) m._errorTimestamps.push(ts);
+    for (let i = 0; i < 4; i++) m._injectTimestamp('error', ts);
     m.onEvent(makeError('handler_error'));
 
     const { anomalies } = m.snapshot();
@@ -207,13 +207,13 @@ describe('metrics — 異常觸發', () => {
 describe('metrics — anomalies 環形 buffer', () => {
   test('最多保留 10 筆，超過時淘汰最舊', () => {
     const m = createMetrics();
-    // 直接注入 10 筆
+    // 注入 10 筆
     for (let i = 0; i < 10; i++) {
-      m._anomalies.push({ type: `old_${i}`, ts: 0, detail: '', severity: 'warning' });
+      m._injectAnomaly({ type: `old_${i}`, ts: 0, detail: '', severity: 'warning' });
     }
     // 注入第 11 筆（透過觸發）
     const ts = Date.now();
-    for (let i = 0; i < 201; i++) m._dispatchTimestamps.push(ts);
+    for (let i = 0; i < 201; i++) m._injectTimestamp('dispatch', ts);
     m.onEvent(makeDispatch('allow'));
 
     const { anomalies } = m.snapshot();

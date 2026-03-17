@@ -34,7 +34,10 @@ describe('heartbeat module', () => {
       stats: { tasksExecuted: 0, tasksSucceeded: 0, tasksFailed: 0 },
     });
 
-    // 手動執行 heartbeat handler 邏輯（內聯測試避免 import 問題）
+    // TODO(tech-debt): 下方邏輯是 heartbeat handler 的內聯複製，與實作細節耦合。
+    // 根因：heartbeat.js 在 ~/.claude/ 目錄下，handler 混合 deps 注入導致 import 困難。
+    // 理想做法：抽出純邏輯函式（processHeartbeat），讓測試直接呼叫，不需內聯。
+    // 改動規模 > 50 行（需重構 heartbeat.js 介面），標記為已知技術債暫緩。
     const state = ctx.getState();
     if (state.executing) return;
 
