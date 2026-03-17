@@ -2,7 +2,9 @@
   "name": "overtone-docs",
   "private": true,
   "scripts": {
-    "test": "bun test",
+    "test": "bun test --concurrent --max-concurrency=12",
+    "test:seq": "bun test",
+    "test:random": "bun test --randomize",
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs",
     "docs:preview": "vitepress preview docs"

@@ -25,7 +25,9 @@
 ## 常用指令
 
 ```bash
-bun test                         # 單進程測試（~20ms）
+bun test                         # 並行全量（預設，~1.7s）
+bun test:seq                     # 單執行緒（出問題時縮小範圍）
+bun test:random                  # 洗牌順序（確認無隱藏依賴）
 ```
 
 ## 開發規範
