@@ -1,6 +1,6 @@
 // notion-tasks.test.js — Notion 任務佇列純函式測試
 import { describe, test, expect } from 'bun:test';
-import { parsePage, priorityOrder, buildRoadmapUpdates, applyRoadmapUpdates } from '/Users/sbu/.claude/scripts/notion-tasks.js';
+import { parsePage, priorityOrder, buildRoadmapUpdates, applyRoadmapUpdates, buildToDoBlocks, createTask } from '/Users/sbu/.claude/scripts/notion-tasks.js';
 
 // ─── 1. parsePage ────────────────────────────────────────────────────────────
 
@@ -103,6 +103,128 @@ describe('buildRoadmapUpdates', () => {
     const tasks = [{ scope: 'R2.2', status: '進行中' }];
     const updates = buildRoadmapUpdates(tasks);
     expect(updates[0].emoji).toBe('🔄');
+  });
+});
+
+// ─── 3b. buildToDoBlocks ─────────────────────────────────────────────────────
+
+describe('buildToDoBlocks', () => {
+  test('空陣列回傳空陣列', () => {
+    expect(buildToDoBlocks([])).toEqual([]);
+  });
+
+  test('單一子任務產生正確 to_do block', () => {
+    const blocks = buildToDoBlocks(['完成 A 功能']);
+    expect(blocks).toHaveLength(1);
+    expect(blocks[0].type).toBe('to_do');
+    expect(blocks[0].to_do.checked).toBe(false);
+    expect(blocks[0].to_do.rich_text[0].text.content).toBe('完成 A 功能');
+  });
+
+  test('多個子任務各產生一個 block', () => {
+    const blocks = buildToDoBlocks(['任務一', '任務二', '任務三']);
+    expect(blocks).toHaveLength(3);
+    expect(blocks[0].to_do.rich_text[0].text.content).toBe('任務一');
+    expect(blocks[2].to_do.rich_text[0].text.content).toBe('任務三');
+  });
+
+  test('每個 block 都有 object: "block"', () => {
+    const blocks = buildToDoBlocks(['A', 'B']);
+    for (const b of blocks) {
+      expect(b.object).toBe('block');
+    }
+  });
+
+  test('checked 預設為 false', () => {
+    const blocks = buildToDoBlocks(['X']);
+    expect(blocks[0].to_do.checked).toBe(false);
+  });
+
+  test('rich_text 結構符合 Notion API 格式', () => {
+    const blocks = buildToDoBlocks(['測試內容']);
+    const rt = blocks[0].to_do.rich_text[0];
+    expect(rt.type).toBe('text');
+    expect(rt.text.content).toBe('測試內容');
+  });
+});
+
+// ─── 3c. createTask 含 subtasks ──────────────────────────────────────────────
+
+describe('createTask with subtasks', () => {
+  function makeMockFetch(calls) {
+    return async (path, method, body) => {
+      calls.push({ path, method, body });
+      // dedup 查詢回傳空結果
+      if (path.includes('/query')) return { results: [] };
+      // page 建立回傳假 page
+      return { id: 'page-abc-123' };
+    };
+  }
+
+  test('無 subtasks 時 children 只含 paragraph', async () => {
+    const calls = [];
+    await createTask('測試任務', { description: '描述文字' }, {
+      notionFetch: makeMockFetch(calls),
+      getConfig: () => ({ database_id: 'db-001' }),
+    });
+    const createCall = calls.find(c => c.method === 'POST' && c.path === '/pages');
+    expect(createCall.body.children).toHaveLength(1);
+    expect(createCall.body.children[0].type).toBe('paragraph');
+  });
+
+  test('有 subtasks 時 children = paragraph + to_do blocks', async () => {
+    const calls = [];
+    await createTask('任務含子任務', {
+      description: '整體描述',
+      subtasks: ['子任務一', '子任務二'],
+    }, {
+      notionFetch: makeMockFetch(calls),
+      getConfig: () => ({ database_id: 'db-001' }),
+    });
+    const createCall = calls.find(c => c.method === 'POST' && c.path === '/pages');
+    expect(createCall.body.children).toHaveLength(3);
+    expect(createCall.body.children[0].type).toBe('paragraph');
+    expect(createCall.body.children[1].type).toBe('to_do');
+    expect(createCall.body.children[2].type).toBe('to_do');
+  });
+
+  test('無 description 但有 subtasks 時 children 只含 to_do blocks', async () => {
+    const calls = [];
+    await createTask('純 checkbox 任務', {
+      subtasks: ['checkbox A', 'checkbox B'],
+    }, {
+      notionFetch: makeMockFetch(calls),
+      getConfig: () => ({ database_id: 'db-001' }),
+    });
+    const createCall = calls.find(c => c.method === 'POST' && c.path === '/pages');
+    expect(createCall.body.children).toHaveLength(2);
+    expect(createCall.body.children[0].type).toBe('to_do');
+    expect(createCall.body.children[0].to_do.rich_text[0].text.content).toBe('checkbox A');
+  });
+
+  test('subtasks to_do blocks 的 checked 都為 false', async () => {
+    const calls = [];
+    await createTask('任務', {
+      subtasks: ['A', 'B', 'C'],
+    }, {
+      notionFetch: makeMockFetch(calls),
+      getConfig: () => ({ database_id: 'db-001' }),
+    });
+    const createCall = calls.find(c => c.method === 'POST' && c.path === '/pages');
+    const todoCalls = createCall.body.children.filter(b => b.type === 'to_do');
+    for (const b of todoCalls) {
+      expect(b.to_do.checked).toBe(false);
+    }
+  });
+
+  test('無 description 無 subtasks 時 children 為空', async () => {
+    const calls = [];
+    await createTask('最小任務', {}, {
+      notionFetch: makeMockFetch(calls),
+      getConfig: () => ({ database_id: 'db-001' }),
+    });
+    const createCall = calls.find(c => c.method === 'POST' && c.path === '/pages');
+    expect(createCall.body.children).toHaveLength(0);
   });
 });
 
