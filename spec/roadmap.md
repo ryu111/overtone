@@ -195,7 +195,7 @@ v0.30+ 採用「單腦 + 深度路由 + 輕量 Worker」模式（見 `docs/spec/
 
 ---
 
-## R3：自我進化重建（Layer 3 — ⚠️ 67% 完成）
+## R3：自我進化重建（Layer 3 — ⚠️ 80% 完成）
 
 > 目標：恢復自我改造能力。
 > 依賴：R1（學習/評分框架）必須先完成。
@@ -208,10 +208,10 @@ v0.30+ 採用「單腦 + 深度路由 + 輕量 Worker」模式（見 `docs/spec/
 | 任務 | 類型 | 說明 | 狀態 |
 |------|------|------|:----:|
 | gap-analyzer.js | 重建 | 組合 health-check，產出標準化 Gap 物件 | ✅ 264 行 / 39 tests / 確定性映射 16 type |
-| gap-fixer.js | 重建 | 根據 gap type 選擇修復策略 | ⚠️ 部分覆蓋 |
-| evolution.js CLI | 重建 | `analyze` / `fix` / `forge` / `internalize` 子命令 | ⚠️ 部分覆蓋 |
+| gap-fixer.js | 重建 | 根據 gap type 選擇修復策略 | ✅ 360 行 / 14 auto + 8 guided 策略 |
+| evolution.js CLI | 重建 | `analyze` / `fix` / `forge` / `internalize` 子命令 | ✅ 208 行 / 5 子命令全部實現 |
 | health-check.js | 重建 | 四個 check 函式（closedLoop / skillCoverage / hookIntegrity / agentAlignment） | ✅ 680 行 / 35 tests / 0 critical |
-| 進化引擎測試 | 重建 | gap 偵測 + 修復正確性 | ⚠️ 部分 |
+| 進化引擎測試 | 重建 | gap 偵測 + 修復正確性 | ✅ |
 
 ### R3.2 Skill Forge
 

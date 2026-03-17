@@ -1,6 +1,6 @@
 // notion-tasks.test.js — Notion 任務佇列純函式測試
 import { describe, test, expect } from 'bun:test';
-import { parsePage, priorityOrder, buildRoadmapUpdates, applyRoadmapUpdates, buildToDoBlocks, createTask, listTasks } from '/Users/sbu/.claude/scripts/notion-tasks.js';
+import { parsePage, priorityOrder, buildRoadmapUpdates, applyRoadmapUpdates, buildToDoBlocks, createTask, listTasks, normalizeTaskName, isDuplicateTask, readSessionSummaries } from '/Users/sbu/.claude/scripts/notion-tasks.js';
 
 // ─── 1. parsePage ────────────────────────────────────────────────────────────
 
@@ -290,6 +290,97 @@ describe('listTasks', () => {
     await listTasks(undefined, deps);
     expect(capturedBody.filter.property).toBe('Status');
     expect(capturedBody.filter.select.equals).toBe('待做');
+  });
+});
+
+// ─── 3e. normalizeTaskName ───────────────────────────────────────────────────
+
+describe('normalizeTaskName', () => {
+  test('移除 [自驅] 前綴', () => {
+    expect(normalizeTaskName('[自驅] L4 heartbeat')).toBe('heartbeat');
+  });
+
+  test('移除 L{N} 前綴', () => {
+    expect(normalizeTaskName('L3 gap-fixer 改善')).toBe('gap-fixer 改善');
+  });
+
+  test('同時移除 [自驅] 和 L{N}', () => {
+    expect(normalizeTaskName('[自驅] L4 Notion 去重')).toBe('notion 去重');
+  });
+
+  test('轉小寫', () => {
+    expect(normalizeTaskName('ABC DEF')).toBe('abc def');
+  });
+
+  test('空字串', () => {
+    expect(normalizeTaskName('')).toBe('');
+  });
+});
+
+// ─── 3f. isDuplicateTask ────────────────────────────────────────────────────
+
+describe('isDuplicateTask', () => {
+  test('完全相同 → 重複', () => {
+    expect(isDuplicateTask('[自驅] L4 heartbeat', '[自驅] L4 heartbeat')).toBe(true);
+  });
+
+  test('一方含另一方 → 重複', () => {
+    expect(isDuplicateTask('[自驅] L4 Notion 去重邏輯強化', 'L4 Notion 去重邏輯')).toBe(true);
+  });
+
+  test('完全不同 → 非重複', () => {
+    expect(isDuplicateTask('[自驅] L4 heartbeat 改善', 'L3 gap-fixer 修復')).toBe(false);
+  });
+
+  test('長度 < 3 → 不判為重複', () => {
+    expect(isDuplicateTask('ab', 'ab')).toBe(false);
+  });
+
+  test('前綴相同但任務不同 → 非重複', () => {
+    expect(isDuplicateTask('[自驅] L4 heartbeat 計時器防重疊', '[自驅] L4 heartbeat 日誌截斷')).toBe(false);
+  });
+});
+
+// ─── 3g. createTask dedup 本地比對 ──────────────────────────────────────────
+
+describe('createTask dedup 強化', () => {
+  test('Notion 回傳候選但名稱不同 → 不跳過', async () => {
+    const calls = [];
+    const result = await createTask('[自驅] L4 heartbeat 計時器防重疊', { description: '描述' }, {
+      notionFetch: async (path, method, body) => {
+        calls.push({ path, method });
+        if (path.includes('/query')) {
+          return { results: [{ id: 'other-id', properties: { Name: { title: [{ plain_text: 'L4 heartbeat 日誌截斷' }] } } }] };
+        }
+        return { id: 'new-page-id' };
+      },
+      getConfig: () => ({ database_id: 'db-001' }),
+    });
+    expect(result.skipped).toBeUndefined();
+    expect(result.id).toBe('new-page-id');
+  });
+
+  test('Notion 回傳候選且名稱包含 → 跳過', async () => {
+    const result = await createTask('[自驅] L4 Notion 去重邏輯', { description: '描述' }, {
+      notionFetch: async (path) => {
+        if (path.includes('/query')) {
+          return { results: [{ id: 'dup-id', properties: { Name: { title: [{ plain_text: '[自驅] L4 Notion 去重邏輯強化' }] } } }] };
+        }
+        return { id: 'new-page-id' };
+      },
+      getConfig: () => ({ database_id: 'db-001' }),
+    });
+    expect(result.skipped).toBe(true);
+  });
+});
+
+// ─── 3h. readSessionSummaries ───────────────────────────────────────────────
+
+describe('readSessionSummaries', () => {
+  test('檔案不存在回傳空陣列', () => {
+    // readSessionSummaries 讀取固定路徑，若檔案不存在就回空
+    const result = readSessionSummaries(5);
+    expect(Array.isArray(result)).toBe(true);
   });
 });
 

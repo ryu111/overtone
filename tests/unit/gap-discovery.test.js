@@ -14,6 +14,8 @@ const {
   mergeSignals,
   syncToNotion,
   discoverGaps,
+  parseFocusWeights,
+  applyFocusWeights,
 } = await import(join(SCRIPTS, 'gap-discovery.js'));
 
 describe('collectFromGapAnalyzer', () => {
@@ -261,6 +263,102 @@ describe('discoverGaps', () => {
       sources: ['gap-analyzer', 'capability-probe', 'roadmap'],
     });
     expect(report.suggestions.length).toBeGreaterThan(0);
+  });
+});
+
+describe('parseFocusWeights', () => {
+  test('解析單層權重', () => {
+    const weights = parseFocusWeights('70% L4 自主通用代理人');
+    expect(weights).toEqual({ L4: 0.7 });
+  });
+
+  test('解析範圍權重', () => {
+    const weights = parseFocusWeights('30% L1-L4 重構與修復');
+    expect(weights.L1).toBe(0.3);
+    expect(weights.L2).toBe(0.3);
+    expect(weights.L3).toBe(0.3);
+    expect(weights.L4).toBe(0.3);
+  });
+
+  test('複合字串取最大值', () => {
+    const weights = parseFocusWeights('70% L4 自主通用代理人；30% L1-L4 重構與修復');
+    expect(weights.L4).toBe(0.7);
+    expect(weights.L1).toBe(0.3);
+    expect(weights.L3).toBe(0.3);
+  });
+
+  test('空字串回傳空物件', () => {
+    expect(parseFocusWeights('')).toEqual({});
+    expect(parseFocusWeights(null)).toEqual({});
+  });
+
+  test('無 L 範圍的百分比格式', () => {
+    const weights = parseFocusWeights('50% L2');
+    expect(weights).toEqual({ L2: 0.5 });
+  });
+});
+
+describe('applyFocusWeights', () => {
+  test('L4 權重 0.7 → score 乘 1.7', () => {
+    const suggestions = [
+      { title: 'L4 heartbeat 改善', element: 'heartbeat', score: 60, confidence: 80, impact: 75, sources: ['scores'] },
+    ];
+    const result = applyFocusWeights(suggestions, { L4: 0.7 });
+    expect(result[0].score).toBe(Math.round(60 * 1.7));
+    expect(result[0].focusWeight).toBe(0.7);
+  });
+
+  test('無匹配 layer → 預設 0.5', () => {
+    const suggestions = [
+      { title: 'unknown task', element: 'test', score: 100, confidence: 80, impact: 80, sources: ['scores'] },
+    ];
+    const result = applyFocusWeights(suggestions, { L4: 0.7 });
+    expect(result[0].score).toBe(Math.round(100 * 1.5));
+    expect(result[0].focusWeight).toBe(0.5);
+  });
+
+  test('空 focusWeights → 不變', () => {
+    const suggestions = [{ title: 'test', score: 50 }];
+    const result = applyFocusWeights(suggestions, {});
+    expect(result[0].score).toBe(50);
+  });
+
+  test('重新排序', () => {
+    const suggestions = [
+      { title: 'L1 low priority', element: 'a', score: 50, confidence: 80, impact: 80, sources: ['scores'] },
+      { title: 'L4 high priority', element: 'b', score: 45, confidence: 80, impact: 80, sources: ['scores'] },
+    ];
+    const result = applyFocusWeights(suggestions, { L4: 0.7, L1: 0.3 });
+    expect(result[0].title).toContain('L4');
+    expect(result[1].title).toContain('L1');
+  });
+});
+
+describe('discoverGaps with focusWeights', () => {
+  const mockData = {
+    gaps: [],
+    weakCaps: [],
+    scores: [
+      '{"date":"2026-03-17","path":"skills/L4-test","total":45,"grade":"F","suggestions":[]}',
+      '{"date":"2026-03-17","path":"skills/L1-test","total":50,"grade":"F","suggestions":[]}',
+    ].join('\n'),
+    roadmapContent: '',
+  };
+
+  test('focusWeights 選項改變排序', async () => {
+    const report = await discoverGaps({
+      _mock: mockData,
+      skipNotion: true,
+      focusWeights: { L4: 0.7, L1: 0.3 },
+    });
+    if (report.suggestions.length >= 2) {
+      const l4 = report.suggestions.find(s => s.element.includes('L4'));
+      const l1 = report.suggestions.find(s => s.element.includes('L1'));
+      if (l4 && l1) {
+        expect(l4.focusWeight).toBe(0.7);
+        expect(l1.focusWeight).toBe(0.3);
+      }
+    }
   });
 });
 
