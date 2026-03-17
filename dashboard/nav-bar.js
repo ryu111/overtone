@@ -304,13 +304,15 @@ if (currentIdx >= 0 && current) {
 
       // 統計（對齊 API 實際欄位）
       if (stats) {
-        const sr = stats.tasksExecuted > 0 ? Math.round(stats.tasksSucceeded / stats.tasksExecuted * 100) : 0;
+        const total = stats.sessions || stats.tasksExecuted || 0;
+        const ok = stats.succeeded || stats.tasksSucceeded || 0;
+        const fail = stats.failed || stats.tasksFailed || 0;
+        const sr = total > 0 ? Math.round(ok / total * 100) : 0;
         $('lp-stats').innerHTML = [
-          ['任務執行', stats.tasksExecuted || 0],
-          ['成功', `<span class="lc-green">${stats.tasksSucceeded || 0}</span>`],
-          ['失敗', (stats.tasksFailed || 0) > 0 ? `<span class="lc-red">${stats.tasksFailed}</span>` : '0'],
+          ['自驅 Session', total],
+          ['成功', `<span class="lc-green">${ok}</span>`],
+          ['失敗', fail > 0 ? `<span class="lc-red">${fail}</span>` : '0'],
           ['成功率', sr + '%'],
-          ['分析次數', stats.analyzes || 0],
         ].map(([k, v]) => `<div class="loop-stat-row"><span class="loop-stat-k">${k}</span><span class="loop-stat-v">${v}</span></div>`).join('');
       }
     } catch {
