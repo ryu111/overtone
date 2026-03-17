@@ -20,8 +20,7 @@
 ## 文件生命週期
 
 - `spec/`：產品規格（主文件 index.md + roadmap + change/ 進行中 + archive/ 歸檔）
-- `docs/spec/`：設計規格（架構文件）
-- `docs/archive/`：歷史參考
+- `docs/archive/`：歷史參考（已完成的設計規格）
 
 ## 常用指令
 
@@ -42,7 +41,7 @@ Hook 腳本修改和 settings.json 設定變更皆在同一 session 即時生效
 - **Hook stdout 驗收**：pipe stdin 到 hook 腳本，檢查 JSON 有 `hookSpecificOutput.additionalContext`
 
 ```bash
-echo '{"prompt":"test","cwd":"'$PWD'"}' | bun ~/.claude/hooks/scripts/prompt/on-submit.js
+echo '{"prompt":"test","cwd":"'$PWD'"}' | bun ~/.claude/hooks/scripts/prompt/on-submit-flow.js
 ```
 
 ## 關鍵文件
@@ -52,5 +51,4 @@ echo '{"prompt":"test","cwd":"'$PWD'"}' | bun ~/.claude/hooks/scripts/prompt/on-
 | `spec/index.md`                              | 產品規格主文件（架構地圖）  |
 | `spec/roadmap.md`                            | 重建路線圖（R0-R5）        |
 | `docs/vision.md`                             | 五層願景定義               |
-| `docs/spec/架構重設計.md`                     | Pipeline → 深度路由分析     |
-| `docs/spec/L1-L2-守衛與閉環-實作計劃.md`      | R1 詳細實作設計             |
+| `docs/archive/L1-L2-守衛與閉環-實作計劃.md`   | R1 詳細實作設計（已歸檔）    |
