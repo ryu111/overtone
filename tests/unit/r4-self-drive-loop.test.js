@@ -8,7 +8,7 @@ import { tmpdir } from 'os';
 import { discoverGaps, syncToNotion } from '/Users/sbu/.claude/scripts/gap-discovery.js';
 import { probeSession } from '/Users/sbu/.claude/scripts/capability-probe.js';
 import { planForTask, recordOutcome, lookupPattern } from '/Users/sbu/.claude/scripts/task-adapter.js';
-import { poll, executeTask, readState, writeState } from '/Users/sbu/.claude/scripts/heartbeat.js';
+import { poll, executeTask, readState, writeState, isImprovementTask, computeDelta, snapshotBoundary, updateImprovementRecord } from '/Users/sbu/.claude/scripts/heartbeat.js';
 
 // ─── 共用 Mock 資料 ───────────────────────────────────────────────────────────
 
@@ -386,6 +386,201 @@ describe('R4 E2E: 能力 4 — 驗證改善效果', () => {
     expect(result.updatedBoundary.capabilities.git.strength).toBe('strong');
     // 沒有 improvements 觸發
     expect(result.triggeredImprovements).toEqual([]);
+  });
+
+  describe('改善效果驗證純函式', () => {
+    test('isImprovementTask 識別 [自驅] 前綴', () => {
+      expect(isImprovementTask('[自驅] 建立 docker Skill')).toBe(true);
+      expect(isImprovementTask('修復 bug')).toBe(false);
+      expect(isImprovementTask('')).toBe(false);
+      expect(isImprovementTask(null)).toBe(false);
+      expect(isImprovementTask(undefined)).toBe(false);
+    });
+
+    test('computeDelta 正確計算 strengthUpgrades', () => {
+      const before = { capabilities: { docker: { strength: 'missing', coverageHits: 0, missingHits: 5 } } };
+      const after = { capabilities: { docker: { strength: 'weak', coverageHits: 1, missingHits: 5 } } };
+      const delta = computeDelta(before, after);
+      expect(delta.strengthUpgrades).toBe(1);
+      expect(delta.capabilitiesChanged).toBe(1);
+      expect(delta.totalCoverageGain).toBe(1);
+      expect(delta.totalMissingReduction).toBe(0);
+    });
+
+    test('computeDelta 正確處理新增能力', () => {
+      const before = { capabilities: {} };
+      const after = { capabilities: { newCap: { strength: 'weak', coverageHits: 2, missingHits: 1 } } };
+      const delta = computeDelta(before, after);
+      expect(delta.capabilitiesChanged).toBe(1);
+      expect(delta.strengthUpgrades).toBe(1); // missing(0) → weak(1)
+      expect(delta.totalCoverageGain).toBe(2);
+    });
+
+    test('computeDelta before/after 相同 → delta 全為 0', () => {
+      const snapshot = { capabilities: { git: { strength: 'strong', coverageHits: 5, missingHits: 0 } } };
+      const delta = computeDelta(snapshot, snapshot);
+      expect(delta.capabilitiesChanged).toBe(0);
+      expect(delta.strengthUpgrades).toBe(0);
+      expect(delta.totalCoverageGain).toBe(0);
+      expect(delta.totalMissingReduction).toBe(0);
+    });
+  });
+
+  test('改善任務完整閉環：before/after snapshot + delta + improvements 回寫', async () => {
+    // 1. 寫入 initial boundary（docker: missing）
+    const initialBoundary = {
+      version: 1,
+      capabilities: {
+        docker: { coverageHits: 0, missingHits: 5, strength: 'missing', lastSeen: '2026-03-16' },
+      },
+      sessions: { total: 5, withGaps: 3, lastAnalyzed: null },
+    };
+    writeFileSync(BOUNDARY_FILE, JSON.stringify(initialBoundary));
+
+    // 2. 寫入 improvements.jsonl（docker 建議）
+    const improvementEntry = {
+      date: '2026-03-16',
+      source: 'capability-probe',
+      type: 'capability-gap',
+      capability: 'docker',
+      missingHits: 5,
+      strength: 'missing',
+      suggestion: '建立 docker 相關 Skill 或工具',
+    };
+    writeFileSync(IMPROVEMENTS_FILE, JSON.stringify(improvementEntry) + '\n');
+
+    // 3. 準備 "改善後" 的 boundary（模擬 session 結束後 capability-probe 更新了 boundary）
+    const improvedBoundary = {
+      version: 1,
+      capabilities: {
+        docker: { coverageHits: 1, missingHits: 5, strength: 'weak', lastSeen: '2026-03-17' },
+      },
+      sessions: { total: 6, withGaps: 3, lastAnalyzed: new Date().toISOString() },
+    };
+
+    let spawnCallCount = 0;
+    const SUMMARY_FILE = join(TMP_DIR, 'session-summaries.jsonl');
+
+    const execDeps = {
+      spawnSession: (_prompt, _opts) => {
+        spawnCallCount++;
+        // 模擬 session 完成後 boundary 被 capability-probe 更新
+        writeFileSync(BOUNDARY_FILE, JSON.stringify(improvedBoundary));
+        return {
+          ok: true,
+          outcome: Promise.resolve({
+            exitCode: 0,
+            stdout: JSON.stringify({ success: true, result: 'docker skill created', sessionId: 'test-improve-1' }),
+            duration: 300,
+          }),
+        };
+      },
+      completeTask: async () => {},
+      summaryFile: SUMMARY_FILE,
+      boundaryFile: BOUNDARY_FILE,
+      improvementsFile: IMPROVEMENTS_FILE,
+      existsSync,
+      readFileSync,
+      writeFileSync,
+    };
+
+    const task = { id: 'notion-improve-1', name: '[自驅] 建立 docker 相關 Skill 或工具', priority: 'P1' };
+    const execResult = await executeTask(task, { _stateFile: join(TMP_DIR, 'hb-state.json'), maxRetries: 0 }, execDeps);
+
+    // 驗證成功
+    expect(execResult.status).toBe('success');
+
+    // 驗證 session-summaries 含 improvement 欄位
+    const summaryRaw = readFileSync(SUMMARY_FILE, 'utf-8').trim();
+    const summary = JSON.parse(summaryRaw);
+    expect(summary.improvement).not.toBeNull();
+    expect(summary.improvement.target).toBe('建立 docker 相關 Skill 或工具');
+    expect(summary.improvement.delta.strengthUpgrades).toBe(1);
+    expect(summary.improvement.delta.totalCoverageGain).toBe(1);
+
+    // 驗證 improvements.jsonl 被回寫
+    const impRaw = readFileSync(IMPROVEMENTS_FILE, 'utf-8').trim();
+    const impEntry = JSON.parse(impRaw);
+    expect(impEntry.executionResult).toBe('success');
+    expect(impEntry.executedAt).toBeDefined();
+    expect(impEntry.delta.strengthUpgrades).toBe(1);
+  });
+
+  test('非改善任務 → improvement 為 null', async () => {
+    const SUMMARY_FILE = join(TMP_DIR, 'session-summaries-normal.jsonl');
+
+    const execDeps = {
+      spawnSession: () => ({
+        ok: true,
+        outcome: Promise.resolve({
+          exitCode: 0,
+          stdout: JSON.stringify({ success: true, result: 'done', sessionId: 'test-normal-1' }),
+          duration: 100,
+        }),
+      }),
+      completeTask: async () => {},
+      summaryFile: SUMMARY_FILE,
+    };
+
+    const task = { id: 'notion-normal-1', name: '修復 bug', priority: 'P2' };
+    const execResult = await executeTask(task, { _stateFile: join(TMP_DIR, 'hb-state-normal.json'), maxRetries: 0 }, execDeps);
+
+    expect(execResult.status).toBe('success');
+
+    const summaryRaw = readFileSync(SUMMARY_FILE, 'utf-8').trim();
+    const summary = JSON.parse(summaryRaw);
+    // 非改善任務不應有 improvement，或為 null
+    expect(summary.improvement || null).toBeNull();
+  });
+
+  test('改善任務失敗 → improvements 標記 failed', async () => {
+    // 寫入 boundary
+    const boundary = {
+      version: 1,
+      capabilities: { k8s: { coverageHits: 0, missingHits: 4, strength: 'missing', lastSeen: '2026-03-16' } },
+      sessions: { total: 3, withGaps: 2, lastAnalyzed: null },
+    };
+    writeFileSync(BOUNDARY_FILE, JSON.stringify(boundary));
+
+    // 寫入 improvements
+    const impEntry = {
+      date: '2026-03-16', source: 'capability-probe', type: 'capability-gap',
+      capability: 'k8s', missingHits: 4, strength: 'missing',
+      suggestion: '建立 k8s 相關 Skill 或工具',
+    };
+    writeFileSync(IMPROVEMENTS_FILE, JSON.stringify(impEntry) + '\n');
+
+    const SUMMARY_FILE = join(TMP_DIR, 'session-summaries-fail.jsonl');
+
+    const execDeps = {
+      spawnSession: () => ({
+        ok: true,
+        outcome: Promise.resolve({
+          exitCode: 1,
+          stdout: JSON.stringify({ success: false, error: 'session failed' }),
+          duration: 50,
+        }),
+      }),
+      completeTask: async () => { throw new Error('不應呼叫'); },
+      resetTask: async () => {},
+      summaryFile: SUMMARY_FILE,
+      boundaryFile: BOUNDARY_FILE,
+      improvementsFile: IMPROVEMENTS_FILE,
+      existsSync,
+      readFileSync,
+      writeFileSync,
+    };
+
+    const task = { id: 'notion-fail-1', name: '[自驅] 建立 k8s 相關 Skill 或工具', priority: 'P1' };
+    const execResult = await executeTask(task, { _stateFile: join(TMP_DIR, 'hb-state-fail.json'), maxRetries: 0 }, execDeps);
+
+    expect(execResult.status).toBe('failed');
+
+    // improvements 被標記 failed
+    const impRaw = readFileSync(IMPROVEMENTS_FILE, 'utf-8').trim();
+    const imp = JSON.parse(impRaw);
+    expect(imp.executionResult).toBe('failed');
+    expect(imp.executedAt).toBeDefined();
   });
 });
 
