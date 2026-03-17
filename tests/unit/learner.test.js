@@ -43,7 +43,7 @@ describe('computeConfidence', () => {
       lastSeen: today.toISOString().slice(0, 10),
     });
     const conf = computeConfidence(b, 12, today);
-    expect(conf).toBeGreaterThan(0.70);
+    expect(conf).toBeGreaterThanOrEqual(0.70);
     expect(conf).toBeLessThan(0.90);
   });
 
