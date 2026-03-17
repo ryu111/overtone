@@ -11,11 +11,9 @@ describe('parsePage', () => {
       properties: {
         Name: { title: [{ plain_text: 'R2.2 Skill Forge' }] },
         Status: { select: { name: '待做' } },
-        Priority: { select: { name: 'P1 重要' } },
-        Type: { select: { name: '新建' } },
-        Layer: { select: { name: 'L2 自我進化' } },
-        Scope: { rich_text: [{ plain_text: 'R2.2' }] },
-        Phase: { rich_text: [{ plain_text: 'Phase 1' }] },
+        Type: { select: { name: '功能' } },
+        Created: { date: { start: '2026-03-17' } },
+        Completed: { date: { start: '2026-03-18' } },
       },
     };
 
@@ -23,9 +21,9 @@ describe('parsePage', () => {
     expect(result.id).toBe('abc-123');
     expect(result.name).toBe('R2.2 Skill Forge');
     expect(result.status).toBe('待做');
-    expect(result.priority).toBe('P1 重要');
-    expect(result.scope).toBe('R2.2');
-    expect(result.phase).toBe('Phase 1');
+    expect(result.type).toBe('功能');
+    expect(result.created).toBe('2026-03-17');
+    expect(result.completed).toBe('2026-03-18');
   });
 
   test('空 properties 不 crash', () => {
@@ -42,18 +40,18 @@ describe('parsePage', () => {
       properties: {
         Name: { title: [] },
         Status: { select: null },
-        Priority: { select: null },
         Type: { select: null },
-        Layer: { select: null },
-        Scope: { rich_text: [] },
-        Phase: { rich_text: [] },
+        Created: { date: null },
+        Completed: { date: null },
       },
     };
 
     const result = parsePage(page);
     expect(result.name).toBe('');
     expect(result.status).toBe('');
-    expect(result.priority).toBe('');
+    expect(result.type).toBe('');
+    expect(result.created).toBeNull();
+    expect(result.completed).toBeNull();
   });
 });
 

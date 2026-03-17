@@ -207,25 +207,34 @@ describe("場景四：自我修復", () => {
 			properties: {
 				Name: { title: [{ plain_text: "修復 timeout 問題" }] },
 				Status: { select: { name: "待做" } },
-				Priority: { select: { name: "P1" } },
-				Type: { select: { name: "bug" } },
+				Type: { select: { name: "修復" } },
+				Created: { date: { start: "2026-03-17" } },
+				Completed: { date: null },
 			},
 		};
 		const parsed = parsePage(page);
 		expect(parsed.name).toBe("修復 timeout 問題");
 		expect(parsed.status).toBe("待做");
-		expect(parsed.priority).toBe("P1");
-		expect(parsed.type).toBe("bug");
+		expect(parsed.type).toBe("修復");
+		expect(parsed.created).toBe("2026-03-17");
+		expect(parsed.completed).toBeNull();
 	});
 
 	test("createTask 建立正確的 Notion page 結構", async () => {
 		let capturedBody = null;
+		let callCount = 0;
 
 		const result = await createTask(
 			"修復 hook timeout",
-			{ priority: "P1", type: "bug", description: "hook 超時 47 次" },
+			{ type: "修復", description: "hook 超時 47 次" },
 			{
 				notionFetch: async (path, method, body) => {
+					callCount++;
+					if (callCount === 1) {
+						// 第一次：dedup 查詢，回傳空結果
+						return { results: [] };
+					}
+					// 第二次：建立頁面
 					capturedBody = body;
 					return { id: "new-page-123" };
 				},
@@ -240,17 +249,22 @@ describe("場景四：自我修復", () => {
 		expect(capturedBody.parent.database_id).toBe("test-db-id");
 		expect(capturedBody.properties.Name.title[0].text.content).toBe("修復 hook timeout");
 		expect(capturedBody.properties.Status.select.name).toBe("待做");
-		expect(capturedBody.properties.Priority.select.name).toBe("P1");
-		expect(capturedBody.properties.Type.select.name).toBe("bug");
+		expect(capturedBody.properties.Type.select.name).toBe("修復");
+		expect(capturedBody.properties.Created.date.start).toBeTruthy();
 		expect(capturedBody.children).toHaveLength(1);
 		expect(capturedBody.children[0].paragraph.rich_text[0].text.content).toContain("hook 超時 47 次");
 	});
 
 	test("createTask 無 description 時不加 children", async () => {
 		let capturedBody = null;
+		let noDescCallCount = 0;
 
 		await createTask("簡單任務", {}, {
 			notionFetch: async (path, method, body) => {
+				noDescCallCount++;
+				if (noDescCallCount === 1) {
+					return { results: [] };
+				}
 				capturedBody = body;
 				return { id: "page-456" };
 			},
@@ -501,8 +515,14 @@ describe("P3.4 場景四端到端：hook error 累積 → 自動建立 Notion �
 
 		// 驗證 createTask 被正確呼叫
 		let createdTask = null;
-		await createTask(title, { priority: "P1", type: "bug", description: "自動偵測" }, {
+		let p34CallCount = 0;
+		await createTask(title, { type: "修復", description: "自動偵測" }, {
 			notionFetch: async (_path, _method, body) => {
+				p34CallCount++;
+				if (p34CallCount === 1) {
+					// dedup 查詢回傳空結果
+					return { results: [] };
+				}
 				createdTask = body;
 				return { id: "auto-created-123" };
 			},
@@ -511,8 +531,8 @@ describe("P3.4 場景四端到端：hook error 累積 → 自動建立 Notion �
 
 		expect(createdTask).not.toBeNull();
 		expect(createdTask.properties.Name.title[0].text.content).toContain("hook error");
-		expect(createdTask.properties.Priority.select.name).toBe("P1");
 		expect(createdTask.properties.Status.select.name).toBe("待做");
+		expect(createdTask.properties.Created.date.start).toBeTruthy();
 	});
 });
 
