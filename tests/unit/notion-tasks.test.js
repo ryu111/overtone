@@ -1,6 +1,6 @@
 // notion-tasks.test.js — Notion 任務佇列純函式測試
 import { describe, test, expect } from 'bun:test';
-import { parsePage, priorityOrder, buildRoadmapUpdates, applyRoadmapUpdates, buildToDoBlocks, createTask } from '/Users/sbu/.claude/scripts/notion-tasks.js';
+import { parsePage, priorityOrder, buildRoadmapUpdates, applyRoadmapUpdates, buildToDoBlocks, createTask, listTasks } from '/Users/sbu/.claude/scripts/notion-tasks.js';
 
 // ─── 1. parsePage ────────────────────────────────────────────────────────────
 
@@ -225,6 +225,71 @@ describe('createTask with subtasks', () => {
     });
     const createCall = calls.find(c => c.method === 'POST' && c.path === '/pages');
     expect(createCall.body.children).toHaveLength(0);
+  });
+});
+
+// ─── 3d. listTasks ──────────────────────────────────────────────────────────
+
+describe('listTasks', () => {
+  function makePage(id, name, status) {
+    return {
+      id,
+      properties: {
+        Name: { title: [{ plain_text: name }] },
+        Status: { select: { name: status } },
+        Type: { select: { name: '功能' } },
+        Created: { date: { start: '2026-03-17' } },
+        Completed: { date: null },
+      },
+    };
+  }
+
+  const mockDeps = (pages) => ({
+    getConfig: () => ({ database_id: 'db-test' }),
+    notionFetch: async (_path, _method, body) => ({ results: pages }),
+  });
+
+  test('單一狀態字串回傳 parsePage 結果', async () => {
+    const pages = [makePage('id-1', '任務A', '待做')];
+    const tasks = await listTasks('待做', mockDeps(pages));
+    expect(tasks).toHaveLength(1);
+    expect(tasks[0].id).toBe('id-1');
+    expect(tasks[0].name).toBe('任務A');
+    expect(tasks[0].status).toBe('待做');
+  });
+
+  test('狀態陣列建構 or filter', async () => {
+    let capturedBody;
+    const deps = {
+      getConfig: () => ({ database_id: 'db-test' }),
+      notionFetch: async (_path, _method, body) => {
+        capturedBody = body;
+        return { results: [] };
+      },
+    };
+    await listTasks(['待做', '進行中'], deps);
+    expect(capturedBody.filter.or).toHaveLength(2);
+    expect(capturedBody.filter.or[0].property).toBe('Status');
+    expect(capturedBody.filter.or[1].property).toBe('Status');
+  });
+
+  test('空結果回傳空陣列', async () => {
+    const tasks = await listTasks('待做', mockDeps([]));
+    expect(tasks).toEqual([]);
+  });
+
+  test('預設狀態為「待做」', async () => {
+    let capturedBody;
+    const deps = {
+      getConfig: () => ({ database_id: 'db-test' }),
+      notionFetch: async (_path, _method, body) => {
+        capturedBody = body;
+        return { results: [] };
+      },
+    };
+    await listTasks(undefined, deps);
+    expect(capturedBody.filter.property).toBe('Status');
+    expect(capturedBody.filter.select.equals).toBe('待做');
   });
 });
 
