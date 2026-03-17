@@ -25,8 +25,9 @@
 ## 常用指令
 
 ```bash
-bun test                         # 並行全量（預設，~1.7s）
-bun test:seq                     # 單執行緒（出問題時縮小範圍）
+bun test                         # 多核並行 unit（預設，~1s）
+bun test:all                     # 多核 unit + integration（CI 用，~11s）
+bun test:seq                     # 單執行緒 unit（出問題時縮小範圍）
 bun test:random                  # 洗牌順序（確認無隱藏依賴）
 ```
 
