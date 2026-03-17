@@ -165,25 +165,63 @@ describe('checkClosedLoop', () => {
     expect(f.element).toContain('orphan-dir');
   });
 
-  it('偵測 orphan-skill（未被任何 agent 引用）', async () => {
+  it('user-invocable skill 未被 agent 引用時不報 orphan', async () => {
     const cache = {
       skills: [{
-        name: 'unused-skill',
-        dir: '/tmp/unused-skill',
-        skillMdPath: '/tmp/unused-skill/SKILL.md',
+        name: 'invocable-skill',
+        dir: '/tmp/invocable-skill',
+        skillMdPath: '/tmp/invocable-skill/SKILL.md',
         hasSkillMd: true,
-        frontmatter: { name: 'unused-skill' },
-        content: '# unused-skill\n',
+        frontmatter: { name: 'invocable-skill' },
+        content: '# invocable-skill\n',
         refFiles: [],
         exampleFiles: [],
       }],
-      agents: [],  // 沒有 agent 引用
+      agents: [],
+    };
+    const findings = await checkClosedLoop(cache);
+    const orphans = findings.filter(f => f.type === 'orphan-skill');
+    expect(orphans.length).toBe(0);
+  });
+
+  it('domain-knowledge skill (user-invocable: false) 不報 orphan', async () => {
+    const cache = {
+      skills: [{
+        name: 'domain-skill',
+        dir: '/tmp/domain-skill',
+        skillMdPath: '/tmp/domain-skill/SKILL.md',
+        hasSkillMd: true,
+        frontmatter: { name: 'domain-skill', 'user-invocable': 'false' },
+        content: '# domain-skill\n',
+        refFiles: [],
+        exampleFiles: [],
+      }],
+      agents: [],
+    };
+    const findings = await checkClosedLoop(cache);
+    const orphans = findings.filter(f => f.type === 'orphan-skill');
+    expect(orphans.length).toBe(0);
+  });
+
+  it('frontmatter 解析失敗且未被引用時報 orphan-skill', async () => {
+    const cache = {
+      skills: [{
+        name: 'broken-skill',
+        dir: '/tmp/broken-skill',
+        skillMdPath: '/tmp/broken-skill/SKILL.md',
+        hasSkillMd: true,
+        frontmatter: { _parseError: true },
+        content: '# broken\n',
+        refFiles: [],
+        exampleFiles: [],
+      }],
+      agents: [],
     };
     const findings = await checkClosedLoop(cache);
     const f = findings.find(f => f.type === 'orphan-skill');
     expect(f).toBeDefined();
     expect(f.severity).toBe('warning');
-    expect(f.element).toContain('unused-skill');
+    expect(f.element).toContain('broken-skill');
   });
 
   it('偵測 name-mismatch（目錄名與 frontmatter name 不符）', async () => {
@@ -306,6 +344,45 @@ describe('checkSkillCoverage', () => {
     const findings = await checkSkillCoverage(cache);
     const orphans = findings.filter(f => f.type === 'orphan-script');
     expect(orphans.length).toBe(0);
+  });
+
+  it('hook command 引用腳本時不產生 orphan-script', async () => {
+    const cache = {
+      skills: [{ name: 's', hasSkillMd: true, content: '#', refFiles: [], exampleFiles: [] }],
+      scripts: [{ name: 'hook-tool.js', path: '/tmp/hook-tool.js' }],
+      hooks: [{ eventType: 'SessionEnd', matcher: '', command: 'bun ~/.claude/scripts/hook-tool.js' }],
+    };
+    const findings = await checkSkillCoverage(cache);
+    const orphans = findings.filter(f => f.type === 'orphan-script');
+    expect(orphans.length).toBe(0);
+  });
+
+  it('script 互相 import 時不產生 orphan-script', async () => {
+    const cache = {
+      skills: [{ name: 's', hasSkillMd: true, content: '#', refFiles: [], exampleFiles: [] }],
+      scripts: [{ name: 'helper.js', path: '/tmp/helper.js' }],
+      scriptContents: [{ name: 'main.js', path: '/tmp/main.js', content: 'import { foo } from "./helper.js"' }],
+    };
+    const findings = await checkSkillCoverage(cache);
+    const orphans = findings.filter(f => f.type === 'orphan-script');
+    expect(orphans.length).toBe(0);
+  });
+
+  it('陰性：7 管道都找不到引用時報 orphan-script', async () => {
+    const cache = {
+      skills: [{ name: 's', hasSkillMd: true, content: '# no ref', refFiles: [], exampleFiles: [] }],
+      scripts: [{ name: 'truly-orphan.js', path: '/tmp/truly-orphan.js' }],
+      hooks: [],
+      modules: [],
+      scriptContents: [],
+      agents: [],
+      commands: [],
+      rules: [],
+    };
+    const findings = await checkSkillCoverage(cache);
+    const f = findings.find(f => f.type === 'orphan-script');
+    expect(f).toBeDefined();
+    expect(f.element).toContain('truly-orphan.js');
   });
 });
 
@@ -609,6 +686,18 @@ describe('真實 ~/.claude/ 整合', () => {
       }
     }
     expect(criticals.length).toBe(0);
+  });
+
+  it('全量檢查：0 個 warning finding', async () => {
+    const report = await runAll();
+    const warnings = report.findings.filter(f => f.severity === 'warning');
+    if (warnings.length > 0) {
+      console.error('Warning findings 詳情:');
+      for (const f of warnings) {
+        console.error(`  [${f.check}] ${f.element}: ${f.description}`);
+      }
+    }
+    expect(warnings.length).toBe(0);
   });
 
   it('runAll 執行時間 <2000ms', async () => {
