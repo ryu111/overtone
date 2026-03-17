@@ -2,18 +2,20 @@
 # test-parallel.sh — 真多核並行測試
 # 每組獨立 bun 進程 + 獨立 log，避免 xargs stdout 丟失
 
-TEST_DIR="$(cd "$(dirname "$0")/../tests/unit" && pwd)"
+SCRIPT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+TEST_DIR="$SCRIPT_ROOT/tests/unit"
+INTEGRATION_DIR="$SCRIPT_ROOT/tests/integration"
 CORES=$(sysctl -n hw.ncpu)
 WORKERS=$((CORES * 3 / 4))
 [ $WORKERS -lt 2 ] && WORKERS=2
 
-# 收集所有測試檔案，按大小排序（大檔優先，避免尾端等待）
-ALL_FILES=($(ls -S "$TEST_DIR"/*.test.js))
+# 收集所有測試檔案（unit + integration），按大小排序
+ALL_FILES=($(ls -S "$TEST_DIR"/*.test.js "$INTEGRATION_DIR"/*.test.js 2>/dev/null))
 TOTAL_FILES=${#ALL_FILES[@]}
 
 echo "╔══ 真多核並行測試 ══╗"
 echo "║ CPU: ${CORES} 核 / Workers: ${WORKERS}"
-echo "║ 檔案: ${TOTAL_FILES}"
+echo "║ 檔案: ${TOTAL_FILES}（unit + integration）"
 echo "╚═══════════════════╝"
 
 LOGDIR=$(mktemp -d)

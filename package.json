@@ -2,7 +2,7 @@
   "name": "overtone-docs",
   "private": true,
   "scripts": {
-    "test": "bun test --concurrent --max-concurrency=12",
+    "test": "bash scripts/test-parallel.sh",
     "test:seq": "bun test",
     "test:random": "bun test --randomize",
     "docs:dev": "vitepress dev docs",
