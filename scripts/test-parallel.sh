@@ -6,6 +6,8 @@
 SCRIPT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 UNIT_DIR="$SCRIPT_ROOT/tests/unit"
 INTEG_DIR="$SCRIPT_ROOT/tests/integration"
+UNIT_ONLY=false
+[ "$1" = "--unit" ] && UNIT_ONLY=true
 CORES=$(sysctl -n hw.ncpu 2>/dev/null || nproc 2>/dev/null || echo 4)
 WORKERS=$((CORES * 3 / 4))
 [ $WORKERS -lt 2 ] && WORKERS=2
@@ -49,8 +51,8 @@ for logfile in "$LOGDIR"/u*.log; do
 done
 echo "  ${TOTAL_TESTS} tests / ${TOTAL_PASS} pass / ${TOTAL_FAIL} fail（${UNIT_MS}ms）"
 
-# ── Phase 2: Integration 獨立跑 ──
-if [ $INTEG_COUNT -gt 0 ]; then
+# ── Phase 2: Integration 獨立跑（--unit 時跳過）──
+if [ $INTEG_COUNT -gt 0 ] && [ "$UNIT_ONLY" = "false" ]; then
   echo ""
   echo "▸ Phase 2: Integration（${INTEG_COUNT} 檔）"
   bun test "${INTEG_FILES[@]}" > "$LOGDIR/integ.log" 2>&1
