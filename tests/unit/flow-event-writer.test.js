@@ -2,9 +2,8 @@ import { describe, test, expect, beforeEach } from 'bun:test';
 import { homedir, tmpdir } from 'os';
 import { join } from 'path';
 import { writeFileSync, mkdirSync } from 'fs';
-import { randomUUID } from 'crypto';
 
-const { writeFlowEvent, readRecentEvents, getEventsFilePath, setEventsFilePath, clearEventsFile } = await import(
+const { writeFlowEvent, readRecentEvents, setEventsFilePath } = await import(
   join(homedir(), '.claude/scripts/flow/event-writer.js')
 );
 

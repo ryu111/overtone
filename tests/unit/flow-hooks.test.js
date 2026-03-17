@@ -3,7 +3,7 @@ import { homedir, tmpdir } from 'os';
 import { join } from 'path';
 import { writeFileSync, mkdirSync } from 'fs';
 
-const { getEventsFilePath, setEventsFilePath } = await import(join(homedir(), '.claude/scripts/flow/event-writer.js'));
+const { setEventsFilePath } = await import(join(homedir(), '.claude/scripts/flow/event-writer.js'));
 
 // 每個測試使用獨立的 tmp 路徑，不操作真實事件檔案
 const TEST_EVENTS_DIR = join(tmpdir(), `flow-hooks-test-${Date.now()}`);

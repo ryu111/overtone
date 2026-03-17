@@ -1,6 +1,6 @@
 // error-analyzer.test.js — error-analyzer.js 單元測試
-import { describe, test, expect, beforeEach, afterEach } from 'bun:test';
-import { writeFileSync, readFileSync, existsSync, unlinkSync, mkdirSync } from 'fs';
+import { describe, test, expect, afterEach } from 'bun:test';
+import { writeFileSync, readFileSync, existsSync, mkdirSync } from 'fs';
 import { join } from 'path';
 import { homedir, tmpdir } from 'os';
 
