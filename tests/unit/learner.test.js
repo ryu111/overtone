@@ -32,7 +32,7 @@ describe('computeConfidence', () => {
     };
   }
 
-  test('3 次 / 12 session / 跨 3 天 / 今天 → ~0.54', () => {
+  test('3 次 / 12 session / 跨 3 天 / 今天 → ~0.77（absoluteScore 滿分 + relativeScore ~0.54）', () => {
     const today = new Date();
     const threeDaysAgo = new Date(today.getTime() - 3 * 24 * 60 * 60 * 1000);
     const b = makeBehavior({
@@ -41,8 +41,8 @@ describe('computeConfidence', () => {
       lastSeen: today.toISOString().slice(0, 10),
     });
     const conf = computeConfidence(b, 12, today);
-    expect(conf).toBeGreaterThan(0.40);
-    expect(conf).toBeLessThan(0.70);
+    expect(conf).toBeGreaterThan(0.70);
+    expect(conf).toBeLessThan(0.90);
   });
 
   test('5 次 / 20 session / 跨 5 天 / 今天 → 高信心（新公式：絕對+相對混合）', () => {

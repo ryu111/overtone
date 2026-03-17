@@ -9,7 +9,7 @@ import { discoverGaps, syncToNotion } from '/Users/sbu/.claude/scripts/gap-disco
 import { probeSession } from '/Users/sbu/.claude/scripts/capability-probe.js';
 import { planForTask, recordOutcome, lookupPattern } from '/Users/sbu/.claude/scripts/task-adapter.js';
 import { poll, executeTask, readState, writeState } from '/Users/sbu/.claude/scripts/heartbeat.js';
-import { suggestDepth, buildPrompt } from '/Users/sbu/.claude/scripts/session-spawner.js';
+import { buildPrompt } from '/Users/sbu/.claude/scripts/session-spawner.js';
 
 // ─── 共用 Mock 資料（沿用 r4-self-drive-loop.test.js 常數） ───────────────────
 
