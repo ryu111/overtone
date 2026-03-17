@@ -1,82 +1,74 @@
 #!/bin/bash
 # test-parallel.sh — 真多核並行測試
-# 策略：快的檔案分組並行 + 慢的（tool-matcher）同時跑
+# 每組獨立 bun 進程 + 獨立 log，避免 xargs stdout 丟失
 
-set -e
-
+TEST_DIR="$(cd "$(dirname "$0")/../tests/unit" && pwd)"
 CORES=$(sysctl -n hw.ncpu)
 WORKERS=$((CORES * 3 / 4))
 [ $WORKERS -lt 2 ] && WORKERS=2
 
-TEST_DIR="$(cd "$(dirname "$0")/../tests/unit" && pwd)"
-SLOW="tool-matcher.test.js"
-
-# 分離快/慢測試
-FAST_FILES=()
-SLOW_FILES=()
-for f in "$TEST_DIR"/*.test.js; do
-  name=$(basename "$f")
-  if [ "$name" = "$SLOW" ]; then
-    SLOW_FILES+=("$f")
-  else
-    FAST_FILES+=("$f")
-  fi
-done
-
-FAST_COUNT=${#FAST_FILES[@]}
-GROUP_SIZE=$(( (FAST_COUNT + WORKERS - 1) / WORKERS ))
+# 收集所有測試檔案，按大小排序（大檔優先，避免尾端等待）
+ALL_FILES=($(ls -S "$TEST_DIR"/*.test.js))
+TOTAL_FILES=${#ALL_FILES[@]}
 
 echo "╔══ 真多核並行測試 ══╗"
 echo "║ CPU: ${CORES} 核 / Workers: ${WORKERS}"
-echo "║ 快速: ${FAST_COUNT} 檔 / 慢速: ${#SLOW_FILES[@]} 檔"
+echo "║ 檔案: ${TOTAL_FILES}"
 echo "╚═══════════════════╝"
 
-TMPDIR_BASE=$(mktemp -d)
-FAIL=0
+LOGDIR=$(mktemp -d)
 START=$(python3 -c 'import time; print(int(time.time()*1000))')
 
-# Phase 1: 快速測試分組並行
-printf '%s\n' "${FAST_FILES[@]}" | xargs -n"$GROUP_SIZE" -P"$WORKERS" bun test > "$TMPDIR_BASE/fast.log" 2>&1 &
-FAST_PID=$!
+# 分成 WORKERS 組（round-robin 分配，平衡負載）
+for ((i=0; i<WORKERS; i++)); do
+  GROUP_FILES=()
+  for ((j=i; j<TOTAL_FILES; j+=WORKERS)); do
+    GROUP_FILES+=("${ALL_FILES[$j]}")
+  done
+  if [ ${#GROUP_FILES[@]} -gt 0 ]; then
+    bun test "${GROUP_FILES[@]}" > "$LOGDIR/w${i}.log" 2>&1 &
+  fi
+done
 
-# Phase 2: 慢速測試同時跑
-if [ ${#SLOW_FILES[@]} -gt 0 ]; then
-  bun test "${SLOW_FILES[@]}" > "$TMPDIR_BASE/slow.log" 2>&1 &
-  SLOW_PID=$!
-fi
-
-# 等待
-wait $FAST_PID || FAIL=1
-[ -n "$SLOW_PID" ] && { wait $SLOW_PID || FAIL=1; }
+# 等待所有 worker
+wait
 
 END=$(python3 -c 'import time; print(int(time.time()*1000))')
 ELAPSED=$((END - START))
 
-# 彙總結果
-FAST_PASS=$(grep -o '[0-9]* pass' "$TMPDIR_BASE/fast.log" | awk '{s+=$1}END{print s+0}')
-FAST_FAIL=$(grep -o '[0-9]* fail' "$TMPDIR_BASE/fast.log" | awk '{s+=$1}END{print s+0}')
-SLOW_PASS=0; SLOW_FAIL=0
-if [ -f "$TMPDIR_BASE/slow.log" ]; then
-  SLOW_PASS=$(grep -o '[0-9]* pass' "$TMPDIR_BASE/slow.log" | awk '{s+=$1}END{print s+0}')
-  SLOW_FAIL=$(grep -o '[0-9]* fail' "$TMPDIR_BASE/slow.log" | awk '{s+=$1}END{print s+0}')
-fi
+# 彙總
+TOTAL_PASS=0
+TOTAL_FAIL=0
+TOTAL_TESTS=0
 
-TOTAL_PASS=$((FAST_PASS + SLOW_PASS))
-TOTAL_FAIL=$((FAST_FAIL + SLOW_FAIL))
+for logfile in "$LOGDIR"/w*.log; do
+  [ -f "$logfile" ] || continue
+  P=$(grep -o '[0-9]* pass' "$logfile" | awk '{s+=$1}END{print s+0}')
+  F=$(grep -o '[0-9]* fail' "$logfile" | tail -1 | awk '{print $1+0}')
+  T=$(grep -o 'Ran [0-9]* tests' "$logfile" | awk '{s+=$2}END{print s+0}')
+  TOTAL_PASS=$((TOTAL_PASS + P))
+  TOTAL_FAIL=$((TOTAL_FAIL + F))
+  TOTAL_TESTS=$((TOTAL_TESTS + T))
+done
 
 echo ""
 echo "════════════════════"
-echo "  $TOTAL_PASS pass / $TOTAL_FAIL fail"
-echo "  耗時: ${ELAPSED}ms"
+echo "  ${TOTAL_TESTS} tests / ${TOTAL_PASS} pass / ${TOTAL_FAIL} fail"
+echo "  耗時: ${ELAPSED}ms (${WORKERS} workers)"
 
-if [ $TOTAL_FAIL -eq 0 ] && [ $FAIL -eq 0 ]; then
+if [ $TOTAL_FAIL -eq 0 ]; then
   echo "  ✅ ALL PASS"
 else
   echo "  ❌ HAS FAILURES"
   echo ""
   echo "── 失敗詳情 ──"
-  grep -E 'fail\)' "$TMPDIR_BASE/fast.log" "$TMPDIR_BASE/slow.log" 2>/dev/null
+  for logfile in "$LOGDIR"/w*.log; do
+    grep -E '\(fail\)' "$logfile" 2>/dev/null
+  done
 fi
 
-rm -rf "$TMPDIR_BASE"
+# 清理
+find "$LOGDIR" -name 'w*.log' -delete 2>/dev/null
+rmdir "$LOGDIR" 2>/dev/null
+
 exit $TOTAL_FAIL
