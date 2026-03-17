@@ -13,6 +13,8 @@ import {
   writeBehaviors,
   extractSessionBehavior,
   generateSuggestions,
+  semanticId,
+  stripThinking,
 } from '/Users/sbu/.claude/scripts/learner.js';
 
 // ─── 1. 信心公式測試 ───────────────────────────────────────────────────────────
@@ -643,5 +645,129 @@ describe('generateSuggestions', () => {
   test('空行為列表不崩潰', async () => {
     await generateSuggestions([]);
     // 無 error = 通過
+  });
+});
+
+// ─── 7. semanticId 語意化 ID 生成測試 ────────────────────────────────────────
+
+describe('semanticId', () => {
+  test('Read→Edit → read-then-edit', () => {
+    expect(semanticId('Read→Edit')).toBe('read-then-edit');
+  });
+
+  test('Grep→Read→Edit → search-modify', () => {
+    expect(semanticId('Grep→Read→Edit')).toBe('search-modify');
+  });
+
+  test('Glob→Edit → search-modify', () => {
+    expect(semanticId('Glob→Edit')).toBe('search-modify');
+  });
+
+  test('Agent→Agent → parallel-delegate', () => {
+    expect(semanticId('Agent→Agent')).toBe('parallel-delegate');
+  });
+
+  test('Agent→Bash→Agent → parallel-delegate', () => {
+    expect(semanticId('Agent→Bash→Agent')).toBe('parallel-delegate');
+  });
+
+  test('Bash→Bash→Bash → repeated-bash', () => {
+    expect(semanticId('Bash→Bash→Bash')).toBe('repeated-bash');
+  });
+
+  test('Write→Write → 去重後 edit（相鄰去重）', () => {
+    // Write 正規化為 edit，兩個相同相鄰去重後只剩 edit
+    expect(semanticId('Write→Write')).toBe('edit');
+  });
+
+  test('Bash→Edit → 通用串接', () => {
+    expect(semanticId('Bash→Edit')).toBe('bash-edit');
+  });
+
+  test('Read→Bash → read + bash，無 edit → 通用串接', () => {
+    expect(semanticId('Read→Bash')).toBe('read-bash');
+  });
+
+  test('空字串 → unknown', () => {
+    expect(semanticId('')).toBe('unknown');
+  });
+
+  test('null / undefined → unknown', () => {
+    expect(semanticId(null)).toBe('unknown');
+    expect(semanticId(undefined)).toBe('unknown');
+  });
+
+  test('analyzeAndUpdate 建立新行為時 id 使用語意名稱', () => {
+    const session = {
+      sid: 20,
+      date: '2026-03-17',
+      toolSequence: ['Read', 'Edit', 'Read', 'Edit'],
+      toolCounts: { Read: 2, Edit: 2 },
+      prompts: [],
+      blocks: 0,
+      errors: 0,
+      fixKeywords: 0,
+      repeatedSubseqs: [{ seq: 'Read→Edit', count: 2 }],
+    };
+    const result = analyzeAndUpdate(session, []);
+    const behavior = result.find(b => b.pattern === 'Read→Edit');
+    expect(behavior).toBeDefined();
+    expect(behavior.id).toBe('read-then-edit');
+    // id 不再是工具序列直接串接
+    expect(behavior.id).not.toBe('read-edit');
+  });
+});
+
+// ─── 8. stripThinking 前綴清除測試 ───────────────────────────────────────────
+
+describe('stripThinking', () => {
+  test('無 thinking 前綴 → 原文不變', () => {
+    expect(stripThinking('1. 建議固化為 Rule')).toBe('1. 建議固化為 Rule');
+  });
+
+  test('null / undefined → 原值返回', () => {
+    expect(stripThinking(null)).toBeNull();
+    expect(stripThinking(undefined)).toBeUndefined();
+  });
+
+  test('空字串 → 空字串', () => {
+    expect(stripThinking('')).toBe('');
+  });
+
+  test('包含 Thinking Process: 前綴 → 取最後有效行', () => {
+    const input = 'Thinking Process:\n1. **Analyze** the pattern\n2. Consider options\n1. 建議固化為 Rule';
+    const result = stripThinking(input);
+    expect(result).toBe('1. 建議固化為 Rule');
+  });
+
+  test('thinking 前綴大小寫不敏感', () => {
+    const input = 'THINKING PROCESS: some long analysis\n最終答案：guard 規則衝突';
+    const result = stripThinking(input);
+    expect(result).toBe('最終答案：guard 規則衝突');
+  });
+
+  test('generateSuggestions 對含 thinking 前綴的 LLM 輸出做清洗', async () => {
+    const behaviors = [
+      {
+        id: 'read-then-edit',
+        polarity: 1,
+        pattern: 'Read→Edit',
+        firstSeen: '2026-03-10',
+        lastSeen: '2026-03-17',
+        occurrences: [1, 2, 3, 4, 5],
+        confidence: 0.65,
+        suggestion: null,
+        description: '',
+      },
+    ];
+
+    const mockAsk = async () =>
+      'Thinking Process:\n1. **Analyze the pattern**\n2. Consider rule vs automation\n1. 建議固化為 Rule，此為格式規範';
+
+    await generateSuggestions(behaviors, { askLocalModel: mockAsk });
+
+    // suggestion content 不應包含 "Thinking Process:"
+    expect(behaviors[0].suggestion.content).not.toMatch(/Thinking Process/i);
+    expect(behaviors[0].suggestion.content).toBe('1. 建議固化為 Rule，此為格式規範');
   });
 });
