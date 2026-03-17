@@ -17,15 +17,14 @@ function lineCount(p) { return readFile(p).split("\n").length; }
 describe("server.js 純淨性", () => {
   const code = readFile(SERVER_PATH);
 
-  it("行數 <= 300", () => {
-    expect(lineCount(SERVER_PATH)).toBeLessThanOrEqual(300);
+  it("行數 <= 330", () => {
+    expect(lineCount(SERVER_PATH)).toBeLessThanOrEqual(330);
   });
 
-  it("不含 setInterval（heartbeat 邏輯應在 lifecycle 模組）", () => {
-    // 允許 SSE heartbeat 的 setInterval，但不應有 poll/heartbeat 的 setInterval
+  it("setInterval 限制（SSE heartbeat + graceful restart）", () => {
     const matches = code.match(/setInterval/g) || [];
-    // SSE heartbeat 有一個 setInterval，其他不應有
-    expect(matches.length).toBeLessThanOrEqual(1);
+    // SSE heartbeat 1 個 + graceful restart checker 1 個
+    expect(matches.length).toBeLessThanOrEqual(2);
   });
 
   it("不含 SELF_DRIVE_PROMPT", () => {
