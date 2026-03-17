@@ -354,4 +354,59 @@ describe("probeSession", () => {
     expect(result.updatedBoundary.version).toBe(1);
     expect(result.updatedBoundary.capabilities.git.coverageHits).toBe(1);
   });
+
+  test("無效能力名稱（prompt 片段）被過濾 → 不寫入 boundary", async () => {
+    writeEvents([
+      { sid: 1, type: "prompt_submit", prompt_preview: "評估 hook 品質" },
+      { sid: 1, type: "tool_use", tool_name: "grep" },
+    ]);
+
+    const deps = makeDeps({
+      matchTools: async () => ({
+        recommended: [{ id: "grep", name: "grep" }],
+        missing: [
+          "具體 hook 代碼（需提供以執行審查）",
+          "具體任務描述",
+          "task description",
+          "hook-quality-checker",
+        ],
+      }),
+    });
+
+    const result = await probeSession(EVENTS_FILE, deps);
+    // 只有 "hook-quality-checker" 通過驗證
+    expect(result.missing).toContain("hook-quality-checker");
+    expect(result.missing).not.toContain("具體 hook 代碼（需提供以執行審查）");
+    expect(result.missing).not.toContain("具體任務描述");
+    expect(result.missing).not.toContain("task description");
+    expect(result.updatedBoundary.capabilities["hook-quality-checker"]).toBeDefined();
+    expect(result.updatedBoundary.capabilities["具體任務描述"]).toBeUndefined();
+  });
+
+  test("歷史無效 boundary 條目在 probe 時被清理", async () => {
+    writeBoundary({
+      version: 1,
+      capabilities: {
+        "valid-tool": { coverageHits: 3, missingHits: 0, lastSeen: "2026-03-17", strength: "strong" },
+        "具體 hook 代碼（需提供以執行審查）": { coverageHits: 0, missingHits: 5, lastSeen: "2026-03-16", strength: "missing" },
+        "評分維度詳細定義": { coverageHits: 0, missingHits: 4, lastSeen: "2026-03-16", strength: "missing" },
+      },
+      sessions: { total: 10, withGaps: 3, lastAnalyzed: null },
+    });
+
+    writeEvents([
+      { sid: 1, type: "prompt_submit", prompt_preview: "test" },
+      { sid: 1, type: "tool_use", tool_name: "git" },
+    ]);
+
+    const deps = makeDeps({
+      matchTools: async () => ({ recommended: [{ id: "git", name: "git" }], missing: [] }),
+    });
+
+    const result = await probeSession(EVENTS_FILE, deps);
+    // valid-tool 保留，無效條目被清理
+    expect(result.updatedBoundary.capabilities["valid-tool"]).toBeDefined();
+    expect(result.updatedBoundary.capabilities["具體 hook 代碼（需提供以執行審查）"]).toBeUndefined();
+    expect(result.updatedBoundary.capabilities["評分維度詳細定義"]).toBeUndefined();
+  });
 });
