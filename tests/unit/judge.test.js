@@ -178,6 +178,34 @@ describe('scoreDeterministic — agent', () => {
     // 無 frontmatter(0) + 無 model(0) + 無 skills(0) + 無 description(0) = 0
     expect(score).toBe(0);
   });
+
+  test('disallowedTools 不應被當作 skills 檢查（bug fix 防護）', () => {
+    const agentPath = join(TMP_DIR, 'agent-with-disallowed.md');
+    // 使用一個確定存在的 skill（architecture）
+    const realSkillExists = existsSync(join(homedir(), '.claude/skills/architecture/SKILL.md'));
+    if (!realSkillExists) return; // 若不存在則跳過
+
+    const content = [
+      '---',
+      'name: test-planner',
+      'description: 測試 planner agent',
+      'model: opus',
+      'disallowedTools:',
+      '  - Task',
+      '  - NotebookEdit',
+      'skills:',
+      '  - architecture',
+      '---',
+      '',
+      '# Planner',
+    ].join('\n');
+    writeFileSync(agentPath, content);
+
+    const score = scoreDeterministic(agentPath, 'agent');
+    // frontmatter(10) + model(10) + skills(10) + description(10) + skills 存在(10) = 50
+    // 修復前：disallowedTools 的 Task/NotebookEdit 被誤認為 skill → allExist=false → 只得 40
+    expect(score).toBe(50);
+  });
 });
 
 // ─── 4. scoreDeterministic — Hook ──────────────────────────────────────────
