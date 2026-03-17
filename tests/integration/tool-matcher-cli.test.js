@@ -2,35 +2,11 @@
 import { describe, test, expect } from "bun:test";
 import { join } from "path";
 import { homedir } from "os";
-import { execSync, spawnSync } from "node:child_process";
+import { spawnSync } from "node:child_process";
 
 // ─── CLI 整合測試 ─────────────────────────────────────────────────────────────
 
 describe("CLI 整合", () => {
-  test("無參數時顯示用法說明並以非零退出", () => {
-    let threw = false;
-    try {
-      execSync(`bun ${join(homedir(), ".claude/scripts/tool-matcher.js")}`, { stdio: "pipe" });
-    } catch (err) {
-      threw = true;
-      const output = (err.stdout || "").toString() + (err.stderr || "").toString();
-      expect(output).toContain("用法");
-    }
-    expect(threw).toBe(true);
-  });
-
-  test("match 命令但無 intent 時顯示用法並以非零退出", () => {
-    let threw = false;
-    try {
-      execSync(`bun ${join(homedir(), ".claude/scripts/tool-matcher.js")} match`, { stdio: "pipe" });
-    } catch (err) {
-      threw = true;
-      const output = (err.stdout || "").toString() + (err.stderr || "").toString();
-      expect(output).toContain("用法");
-    }
-    expect(threw).toBe(true);
-  });
-
   test("match 命令正常執行並輸出結果（使用實際索引）", () => {
     // 先執行 scan 確保索引存在
     spawnSync("bun", [join(homedir(), ".claude/scripts/tool-registry.js"), "scan"], {

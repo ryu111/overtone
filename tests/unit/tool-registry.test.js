@@ -10,6 +10,7 @@ const {
   getTool,
   getCapabilitySummary,
   checkRegistryAge,
+  parseCLI,
 } = await import(join(homedir(), ".claude/scripts/tool-registry.js"));
 
 // ─── 測試環境建立 ──────────────────────────────────────────────────────────────
@@ -52,6 +53,52 @@ beforeEach(() => {
 
 afterEach(() => {
   try { rmSync(TMP_DIR, { recursive: true }); } catch (e) { /* cleanup */ }
+});
+
+// ─── parseCLI 測試 ────────────────────────────────────────────────────────────
+
+describe("parseCLI", () => {
+  test("無參數時返回 error 含用法說明", () => {
+    const result = parseCLI([]);
+    expect(result).toHaveProperty("error");
+    expect(result.error).toContain("用法");
+  });
+
+  test("未知命令時返回 error", () => {
+    const result = parseCLI(["unknown"]);
+    expect(result).toHaveProperty("error");
+    expect(result.error).toContain("用法");
+  });
+
+  test('parseCLI(["scan"]) 返回 command=scan', () => {
+    const result = parseCLI(["scan"]);
+    expect(result.command).toBe("scan");
+    expect(result).not.toHaveProperty("error");
+  });
+
+  test('parseCLI(["list", "--type=skill"]) 正確解析 flags', () => {
+    const result = parseCLI(["list", "--type=skill"]);
+    expect(result.command).toBe("list");
+    expect(result.flags.type).toBe("skill");
+  });
+
+  test('parseCLI(["get"]) 無 id 時返回 error', () => {
+    const result = parseCLI(["get"]);
+    expect(result).toHaveProperty("error");
+    expect(result.error).toContain("用法");
+  });
+
+  test('parseCLI(["get", "cli:git"]) 返回 id', () => {
+    const result = parseCLI(["get", "cli:git"]);
+    expect(result.command).toBe("get");
+    expect(result.id).toBe("cli:git");
+  });
+
+  test('parseCLI(["summary"]) 返回 command=summary', () => {
+    const result = parseCLI(["summary"]);
+    expect(result.command).toBe("summary");
+    expect(result).not.toHaveProperty("error");
+  });
 });
 
 // ─── scanTools 測試 ──────────────────────────────────────────────────────────

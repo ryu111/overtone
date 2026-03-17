@@ -7,6 +7,7 @@ import { tmpdir, homedir } from "os";
 const {
   matchTools,
   matchToolsByKeyword,
+  parseCLI,
 } = await import(join(homedir(), ".claude/scripts/tool-matcher.js"));
 
 // ─── 測試環境建立 ──────────────────────────────────────────────────────────────
@@ -88,6 +89,45 @@ beforeEach(() => {
 
 afterEach(() => {
   try { rmSync(TMP_DIR, { recursive: true }); } catch (e) { /* cleanup */ }
+});
+
+// ─── parseCLI 測試 ────────────────────────────────────────────────────────────
+
+describe("parseCLI", () => {
+  test("無參數時返回 error 含用法說明", () => {
+    const result = parseCLI([]);
+    expect(result).toHaveProperty("error");
+    expect(result.error).toContain("用法");
+  });
+
+  test("match 命令但無 intent 時返回 error 含用法說明", () => {
+    const result = parseCLI(["match"]);
+    expect(result).toHaveProperty("error");
+    expect(result.error).toContain("用法");
+  });
+
+  test("match 命令但 intent 為空白時返回 error", () => {
+    const result = parseCLI(["match", "   "]);
+    expect(result).toHaveProperty("error");
+    expect(result.error).toContain("用法");
+  });
+
+  test('parseCLI(["match", "GitHub PR"]) 返回 command 和 intent', () => {
+    const result = parseCLI(["match", "GitHub PR"]);
+    expect(result.command).toBe("match");
+    expect(result.intent).toBe("GitHub PR");
+  });
+
+  test("多個 args 組合為 intent 字串", () => {
+    const result = parseCLI(["match", "管理", "GitHub", "PR", "自動", "review"]);
+    expect(result.command).toBe("match");
+    expect(result.intent).toBe("管理 GitHub PR 自動 review");
+  });
+
+  test("非 match 命令時返回 error", () => {
+    const result = parseCLI(["scan", "something"]);
+    expect(result).toHaveProperty("error");
+  });
 });
 
 // ─── matchToolsByKeyword 測試 ─────────────────────────────────────────────────
