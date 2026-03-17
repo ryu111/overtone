@@ -141,7 +141,7 @@ describe('isSelfHealingError', () => {
 describe('createRepairTaskIfNeeded 自癒過濾', () => {
   test('全為自癒型錯誤 → 不建任務', async () => {
     const createdTasks = [];
-    try { unlinkSync('/tmp/hook-error-tasks-created.json'); } catch {}
+    try { unlinkSync('/tmp/hook-error-tasks-created.json'); } catch (e) { /* cleanup */ }
 
     const errors = [
       { event: 'PreToolUse:Bash', phase: 'all-failed', error: 'Unable to connect' },
@@ -160,12 +160,12 @@ describe('createRepairTaskIfNeeded 自癒過濾', () => {
     });
 
     expect(createdTasks.length).toBe(0);
-    try { unlinkSync('/tmp/hook-error-tasks-created.json'); } catch {}
+    try { unlinkSync('/tmp/hook-error-tasks-created.json'); } catch (e) { /* cleanup */ }
   });
 
   test('自癒 + 非自癒混合 → 只對非自癒建任務', async () => {
     const createdTasks = [];
-    try { unlinkSync('/tmp/hook-error-tasks-created.json'); } catch {}
+    try { unlinkSync('/tmp/hook-error-tasks-created.json'); } catch (e) { /* cleanup */ }
 
     const errors = [
       { event: 'PreToolUse:Bash', phase: 'all-failed', error: 'Unable to connect' },
@@ -189,7 +189,7 @@ describe('createRepairTaskIfNeeded 自癒過濾', () => {
     expect(createdTasks.length).toBe(1);
     expect(createdTasks[0]).toContain('SessionStart');
     expect(createdTasks[0]).not.toContain('PreToolUse:Bash');
-    try { unlinkSync('/tmp/hook-error-tasks-created.json'); } catch {}
+    try { unlinkSync('/tmp/hook-error-tasks-created.json'); } catch (e) { /* cleanup */ }
   });
 });
 
@@ -226,7 +226,7 @@ describe('createRepairTaskIfNeeded', () => {
     const logs = [];
 
     // 確保測試前清除舊的 dedup 檔
-    try { unlinkSync('/tmp/hook-error-tasks-created.json'); } catch {}
+    try { unlinkSync('/tmp/hook-error-tasks-created.json'); } catch (e) { /* cleanup */ }
 
     const deps = {
       createTask: async (title) => createdTasks.push(title),
@@ -251,7 +251,7 @@ describe('createRepairTaskIfNeeded', () => {
     expect(createdTasks.length).toBe(1); // 沒有新增
 
     // 清理
-    try { unlinkSync('/tmp/hook-error-tasks-created.json'); } catch {}
+    try { unlinkSync('/tmp/hook-error-tasks-created.json'); } catch (e) { /* cleanup */ }
   });
 
   test('24h 內不重複建立相同根因任務', async () => {
@@ -283,7 +283,7 @@ describe('createRepairTaskIfNeeded', () => {
     expect(logs.some((l) => l.includes('個已建過'))).toBe(true);
 
     // 清理
-    try { unlinkSync(dedupFile); } catch {}
+    try { unlinkSync(dedupFile); } catch (e) { /* cleanup */ }
   });
 
   test('24h 外的記錄應該重新建立任務', async () => {
@@ -312,7 +312,7 @@ describe('createRepairTaskIfNeeded', () => {
     expect(createdTasks[0]).toContain('PreToolUse:guard');
 
     // 清理
-    try { unlinkSync(dedupFile); } catch {}
+    try { unlinkSync(dedupFile); } catch (e) { /* cleanup */ }
   });
 
   test('選擇最頻繁的根因建立任務', async () => {
@@ -326,7 +326,7 @@ describe('createRepairTaskIfNeeded', () => {
     ];
 
     // 清除可能存在的舊 dedup 檔
-    try { unlinkSync('/tmp/hook-error-tasks-created.json'); } catch {}
+    try { unlinkSync('/tmp/hook-error-tasks-created.json'); } catch (e) { /* cleanup */ }
 
     await createRepairTaskIfNeeded(errors, {
       createTask: async (title) => createdTasks.push(title),
@@ -342,6 +342,6 @@ describe('createRepairTaskIfNeeded', () => {
     expect(createdTasks[0]).toContain('3 次');
 
     // 清理
-    try { unlinkSync('/tmp/hook-error-tasks-created.json'); } catch {}
+    try { unlinkSync('/tmp/hook-error-tasks-created.json'); } catch (e) { /* cleanup */ }
   });
 });

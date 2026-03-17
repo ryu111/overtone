@@ -552,7 +552,7 @@ describe('runAcidTest', () => {
           ? readFileSync(behaviorsFile, 'utf-8').trim()
           : '';
         const behaviors = content
-          ? content.split('\n').map(l => { try { return JSON.parse(l); } catch { return null; } }).filter(Boolean)
+          ? content.split('\n').map(l => { try { return JSON.parse(l); } catch (_) { return null; } }).filter(Boolean)
           : [];
         const updated = behaviors.map(b => b.id === 'acid-test-pattern' ? { ...b, deployed: true } : b);
         writeFileSync(behaviorsFile, updated.map(b => JSON.stringify(b)).join('\n') + '\n');

@@ -114,7 +114,7 @@ async function commitAndPushLocal(repoDir, _repoName, mockCommitMsg) {
   writeFileSync(tmpMsgFile, commitMsg);
 
   const commitResult = git(`commit -F ${tmpMsgFile}`, repoDir);
-  try { unlinkSync(tmpMsgFile); } catch {}
+  try { unlinkSync(tmpMsgFile); } catch (e) { /* cleanup */ }
 
   if (commitResult === null) return { skipped: true, reason: 'commit-failed' };
   return { skipped: false, commitMsg };
@@ -148,7 +148,7 @@ describe('自我分離機制', () => {
         timeout: 5000,
         env: { ...process.env, MAINTAINER_BG: '' },
       });
-    } catch {}
+    } catch (e) { /* cleanup */ }
     const elapsed = Date.now() - start;
     // 自我分離後父進程應在 3 秒內結束（spawn 子進程後立即 exit）
     expect(elapsed).toBeLessThan(3000);
@@ -161,7 +161,7 @@ describe('lockfile 防重複', () => {
   const LOCK = `/tmp/maintainer-test-lock-${randomUUID()}.lock`;
 
   afterEach(() => {
-    try { unlinkSync(LOCK); } catch {}
+    try { unlinkSync(LOCK); } catch (e) { /* cleanup */ }
   });
 
   test('lock 不存在時，可正常寫入 PID', () => {
@@ -491,8 +491,8 @@ function readJsonl(filePath) {
   try {
     const raw = readFileSync(filePath, 'utf-8').trim();
     if (!raw) return [];
-    return raw.split('\n').map((l) => { try { return JSON.parse(l); } catch { return null; } }).filter(Boolean);
-  } catch { return []; }
+    return raw.split('\n').map((l) => { try { return JSON.parse(l); } catch (_) { return null; } }).filter(Boolean);
+  } catch (_) { return []; }
 }
 
 describe('hook-errors 截斷邏輯（移除已處理條目）', () => {
@@ -503,7 +503,7 @@ describe('hook-errors 截斷邏輯（移除已處理條目）', () => {
   });
 
   afterEach(() => {
-    try { unlinkSync(errorFile); } catch {}
+    try { unlinkSync(errorFile); } catch (e) { /* cleanup */ }
   });
 
   // 複製 maintainer.js 的新截斷邏輯

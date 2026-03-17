@@ -37,7 +37,7 @@ function testDispatch(handlerMap, eventType, matcher, input) {
         reason = result.reason;
       }
       if (result?.events) allEvents.push(...result.events);
-    } catch {}
+    } catch (e) { /* cleanup */ }
   }
 
   return { decision, reason, events: allEvents, handlers: unique.length };
@@ -59,7 +59,7 @@ function testLoadModules(dir) {
         if (!map.has(key)) map.set(key, []);
         map.get(key).push({ fn, module: file });
       }
-    } catch {}
+    } catch (e) { /* cleanup */ }
   }
   return map;
 }

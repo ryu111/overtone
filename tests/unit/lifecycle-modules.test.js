@@ -173,7 +173,7 @@ describe('notification lifecycle module', () => {
       const t = sanitize(typeof title === 'string' ? title.slice(0, 100) : '');
       const m = sanitize(typeof message === 'string' ? message.slice(0, 500) : '');
       spawnFn('osascript', ['-e', `display notification "${m}" with title "${t}" sound name "Glass"`]);
-    } catch { /* 通知失敗不阻塞 */ }
+    } catch (e) { /* 通知失敗不阻塞 */ }
   }
 
   const EVENT_MESSAGES = {
@@ -203,7 +203,7 @@ describe('notification lifecycle module', () => {
           const [title, message] = fn(event);
           notify(title, message, mockSpawnSync);
         }
-      } catch {
+      } catch (e) {
         threw = true;
       }
       expect(threw).toBe(false);

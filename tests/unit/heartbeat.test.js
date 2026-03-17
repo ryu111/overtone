@@ -400,7 +400,7 @@ describe('CLI start — stale PID 清理', () => {
 
     // PID 99999 應該不存在（除非真的有程序用這個 PID）
     let pidExists = true;
-    try { process.kill(loaded.pid, 0); } catch { pidExists = false; }
+    try { process.kill(loaded.pid, 0); } catch (_) { pidExists = false; }
 
     // 若 PID 不存在，這就是 stale 情況
     expect(typeof pidExists).toBe('boolean');
