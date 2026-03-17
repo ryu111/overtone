@@ -271,7 +271,7 @@ v0.30+ 採用「單腦 + 深度路由 + 輕量 Worker」模式（見 `docs/spec/
 
 ---
 
-## R4：自主通用代理人（Layer 4 — 🔄 進行中）
+## R4：自主通用代理人（Layer 4 — ✅ 已完成）
 
 > 目標：AI 成為自主通用代理人 — 能自我驅動、發現缺口、改善能力、適應新任務。
 > 核心：不是「做特定領域」，而是「具備做任何事的自主能力」。
@@ -294,6 +294,7 @@ v0.30+ 採用「單腦 + 深度路由 + 輕量 Worker」模式（見 `docs/spec/
 | event-bus 架構 | 重構 | server.js 507→248 行，reactive xstream event bus，3 種模組類型 | ✅ event-bus.js |
 | heartbeat lifecycle 模組 | 重構 | heartbeat 從 server 內嵌獨立為 Daemon lifecycle 模組 | ✅ |
 | self-drive lifecycle 模組 | 重構 | self-drive 從臨時 spawn 改為 Daemon lifecycle 模組 | ✅ |
+| 改善效果驗證閉環 | 新建 | before/after snapshot + delta 計算 + improvements 回寫 | ✅ heartbeat.js 4 純函式 + executeTask 整合 |
 
 ### R4.3 自主適應
 
