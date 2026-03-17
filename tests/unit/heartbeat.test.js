@@ -19,6 +19,11 @@ function makeTmpDir() {
   return dir;
 }
 
+/** 防止測試寫到 production session-summaries.jsonl */
+function tmpSummaryFile(dir) {
+  return join(dir, 'session-summaries.jsonl');
+}
+
 // ─── readState / writeState ───────────────────────────────────────────────────
 
 describe('readState / writeState', () => {
@@ -86,6 +91,7 @@ describe('poll idle（無任務）', () => {
       listTasks: async () => [],
       claimTask: async () => {},
       completeTask: async () => {},
+      summaryFile: tmpSummaryFile(tmpDir),
     };
 
     const result = await poll({ _stateFile: stateFile }, deps);
@@ -130,6 +136,7 @@ describe('poll execute（有任務 → claim）', () => {
       listTasks: async () => [task],
       claimTask: async () => {},
       completeTask: async () => {},
+      summaryFile: tmpSummaryFile(tmpDir),
     };
 
     const result = await poll({ _stateFile: stateFile }, deps);
@@ -152,6 +159,7 @@ describe('poll execute（有任務 → claim）', () => {
       listTasks: async () => tasks,
       claimTask: async (id) => { claimedId = id; },
       completeTask: async () => {},
+      summaryFile: tmpSummaryFile(tmpDir),
     };
 
     const result = await poll({ _stateFile: stateFile }, deps);
@@ -169,6 +177,7 @@ describe('poll execute（有任務 → claim）', () => {
       listTasks: async () => [task],
       claimTask: async () => {},
       completeTask: async () => {},
+      summaryFile: tmpSummaryFile(tmpDir),
     };
 
     await poll({ _stateFile: stateFile }, deps);
@@ -195,6 +204,7 @@ describe('poll paused（連續失敗 3 次）', () => {
       listTasks: async () => { listCalled = true; return []; },
       claimTask: async () => {},
       completeTask: async () => {},
+      summaryFile: tmpSummaryFile(tmpDir),
     };
 
     const result = await poll({ _stateFile: stateFile }, deps);
@@ -210,6 +220,7 @@ describe('poll paused（連續失敗 3 次）', () => {
       listTasks: async () => { throw new Error('Notion API error'); },
       claimTask: async () => {},
       completeTask: async () => {},
+      summaryFile: tmpSummaryFile(tmpDir),
     };
 
     const result = await poll({ _stateFile: stateFile, maxConsecutiveFailures: 3 }, deps);
@@ -228,6 +239,7 @@ describe('poll paused（連續失敗 3 次）', () => {
       listTasks: async () => { throw new Error('Notion API error'); },
       claimTask: async () => {},
       completeTask: async () => {},
+      summaryFile: tmpSummaryFile(tmpDir),
     };
 
     const result = await poll({ _stateFile: stateFile, maxConsecutiveFailures: 3 }, deps);
@@ -246,6 +258,7 @@ describe('poll paused（連續失敗 3 次）', () => {
       listTasks: async () => [{ id: 't1', name: 'task', priority: 'P1' }],
       claimTask: async () => { throw new Error('claim failed'); },
       completeTask: async () => {},
+      summaryFile: tmpSummaryFile(tmpDir),
     };
 
     const result = await poll({ _stateFile: stateFile, maxConsecutiveFailures: 3 }, deps);
@@ -275,6 +288,7 @@ describe('executeTask success 路徑', () => {
     const deps = {
       spawnSession: () => ({ ok: true, child: {}, outcome: mockOutcome }),
       completeTask: async (id) => { completedId = id; },
+      summaryFile: tmpSummaryFile(tmpDir),
     };
 
     const task = { id: 't1', name: '測試任務', priority: 'P0' };
@@ -297,6 +311,7 @@ describe('executeTask success 路徑', () => {
     const deps = {
       spawnSession: () => ({ ok: true, child: {}, outcome: mockOutcome }),
       completeTask: async () => {},
+      summaryFile: tmpSummaryFile(tmpDir),
     };
 
     const task = { id: 't1', name: '任務', priority: 'P0' };
@@ -320,6 +335,7 @@ describe('executeTask failed 路徑', () => {
     const deps = {
       spawnSession: () => ({ ok: false, error: 'recursive spawn blocked' }),
       completeTask: async () => {},
+      summaryFile: tmpSummaryFile(tmpDir),
     };
 
     const task = { id: 't1', name: '任務', priority: 'P0' };
@@ -644,6 +660,7 @@ describe('stale activeTask 清理', () => {
       claimTask: async () => {},
       completeTask: async () => {},
       resetTask: async (id, msg) => { resetCalled = { id, msg }; },
+      summaryFile: tmpSummaryFile(tmpDir),
     };
 
     // staleTaskTimeout=3600000（1 小時），已過 2 小時 → 應清除
