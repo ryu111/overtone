@@ -14,6 +14,7 @@ import {
   saveScore,
   resolveSemanticScore,
   deduplicateImprovements,
+  deduplicateScores,
 } from '/Users/sbu/.claude/scripts/judge.js';
 
 // ─── 測試輔助 ────────────────────────────────────────────────────────────────
@@ -531,6 +532,77 @@ describe('saveScore', () => {
 });
 
 // ─── 8. deduplicateImprovements ─────────────────────────────────────────────
+
+// ─── 11. deduplicateScores ──────────────────────────────────────────────────
+
+describe('deduplicateScores', () => {
+  test('同 path+date 只保留最新一筆', () => {
+    const entries = [
+      { date: '2026-03-16', path: 'skills/a', total: 70 },
+      { date: '2026-03-16', path: 'skills/a', total: 85 },
+      { date: '2026-03-16', path: 'skills/b', total: 60 },
+    ];
+    const result = deduplicateScores(entries);
+    expect(result).toHaveLength(2);
+    expect(result.find(e => e.path === 'skills/a').total).toBe(85);
+    expect(result.find(e => e.path === 'skills/b').total).toBe(60);
+  });
+
+  test('不同日期的同 path 各自保留', () => {
+    const entries = [
+      { date: '2026-03-15', path: 'skills/a', total: 70 },
+      { date: '2026-03-16', path: 'skills/a', total: 85 },
+    ];
+    const result = deduplicateScores(entries);
+    expect(result).toHaveLength(2);
+    expect(result[0].total).toBe(70);
+    expect(result[1].total).toBe(85);
+  });
+
+  test('結果按日期排序', () => {
+    const entries = [
+      { date: '2026-03-16', path: 'rules/b.md', total: 90 },
+      { date: '2026-03-15', path: 'rules/a.md', total: 60 },
+      { date: '2026-03-15', path: 'rules/b.md', total: 70 },
+    ];
+    const result = deduplicateScores(entries);
+    expect(result).toHaveLength(3);
+    expect(result[0].date).toBe('2026-03-15');
+    expect(result[1].date).toBe('2026-03-15');
+    expect(result[2].date).toBe('2026-03-16');
+  });
+
+  test('10 倍重複 → 去重後只剩 1 筆（模擬實際 bug）', () => {
+    const entries = Array.from({ length: 10 }, (_, i) => ({
+      date: '2026-03-16',
+      path: 'skills/skill-judge',
+      total: 80 + i,
+    }));
+    const result = deduplicateScores(entries);
+    expect(result).toHaveLength(1);
+    // 保留最後一筆（total=89）
+    expect(result[0].total).toBe(89);
+  });
+
+  test('空陣列回傳空陣列', () => {
+    expect(deduplicateScores([])).toEqual([]);
+  });
+
+  test('大量去重後 getTrend 恢復正確趨勢偵測', () => {
+    // 模擬：2026-03-15 有 1 筆，2026-03-16 有 10 筆重複
+    const entries = [
+      { date: '2026-03-15', path: 'skills/a', total: 60, semantic: 30 },
+      ...Array.from({ length: 10 }, () => ({
+        date: '2026-03-16', path: 'skills/a', total: 85, semantic: 40,
+      })),
+    ];
+    // 去重前：getTrend 看到 last 5 都是 2026-03-16，first=last=85 → stable（錯誤）
+    expect(getTrend('skills/a', entries)).toBe('stable');
+    // 去重後：只剩 2 筆，60→85 → improving（正確）
+    const deduped = deduplicateScores(entries);
+    expect(getTrend('skills/a', deduped)).toBe('improving');
+  });
+});
 
 describe('deduplicateImprovements', () => {
   test('同 path 只保留最新一筆', () => {
