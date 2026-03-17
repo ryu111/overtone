@@ -285,25 +285,4 @@ describe("checkRegistryAge", () => {
   });
 });
 
-// ─── CLI 整合測試 ─────────────────────────────────────────────────────────────
-
-describe("CLI 整合", () => {
-  test("scan 命令執行並輸出結果", () => {
-    makeSkill("debugging", "除錯方法論");
-    const output = execSync(
-      `CLAUDE_DIR_OVERRIDE="${TMP_DIR}" bun ${join(homedir(), ".claude/scripts/tool-registry.js")} scan`,
-      { env: { ...process.env, HOME: process.env.HOME } }
-    ).toString();
-    // 驗證 scan 完成輸出或工具計數
-    expect(typeof output).toBe("string");
-  });
-
-  test("list 命令在索引存在時正常輸出", async () => {
-    makeSkill("debugging", "除錯方法論");
-    await scanTools(makeDeps());
-
-    // 直接用模組 API 驗證（CLI 使用實際 CLAUDE_DIR，此處用 API 層測試）
-    const tools = queryTools({}, makeDeps());
-    expect(tools.length).toBeGreaterThan(0);
-  });
-});
+// CLI 整合測試已移至 tests/integration/tool-registry-cli.test.js
