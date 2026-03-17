@@ -185,7 +185,7 @@ describe('R4 E2E: 能力 3 — 自主執行改善', () => {
   });
 
   afterEach(() => {
-    try { rmSync(TMP_DIR, { recursive: true }); } catch {}
+    try { rmSync(TMP_DIR, { recursive: true }); } catch (e) { /* cleanup */ }
   });
 
   test('heartbeat poll → claim → executeTask → complete 完整生命週期', async () => {
@@ -305,7 +305,7 @@ describe('R4 E2E: 能力 4 — 驗證改善效果', () => {
   });
 
   afterEach(() => {
-    try { rmSync(TMP_DIR, { recursive: true }); } catch {}
+    try { rmSync(TMP_DIR, { recursive: true }); } catch (e) { /* cleanup */ }
   });
 
   test('capability-probe 多 session 累積 → 門檻觸發 improvements', async () => {

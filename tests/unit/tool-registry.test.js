@@ -2,16 +2,16 @@
 import { describe, test, expect, beforeEach, afterEach } from "bun:test";
 import { mkdirSync, writeFileSync, rmSync, existsSync } from "fs";
 import { join } from "path";
-import { tmpdir } from "os";
+import { tmpdir, homedir } from "os";
 import { execSync } from "node:child_process";
 
-import {
+const {
   scanTools,
   queryTools,
   getTool,
   getCapabilitySummary,
   checkRegistryAge,
-} from "/Users/sbu/.claude/scripts/tool-registry.js";
+} = await import(join(homedir(), ".claude/scripts/tool-registry.js"));
 
 // ─── 測試環境建立 ──────────────────────────────────────────────────────────────
 
@@ -52,7 +52,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  try { rmSync(TMP_DIR, { recursive: true }); } catch {}
+  try { rmSync(TMP_DIR, { recursive: true }); } catch (e) { /* cleanup */ }
 });
 
 // ─── scanTools 測試 ──────────────────────────────────────────────────────────
@@ -292,7 +292,7 @@ describe("CLI 整合", () => {
   test("scan 命令執行並輸出結果", () => {
     makeSkill("debugging", "除錯方法論");
     const output = execSync(
-      `CLAUDE_DIR_OVERRIDE="${TMP_DIR}" bun /Users/sbu/.claude/scripts/tool-registry.js scan`,
+      `CLAUDE_DIR_OVERRIDE="${TMP_DIR}" bun ${join(homedir(), ".claude/scripts/tool-registry.js")} scan`,
       { env: { ...process.env, HOME: process.env.HOME } }
     ).toString();
     // 驗證 scan 完成輸出或工具計數

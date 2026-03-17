@@ -88,7 +88,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  try { rmSync(TMP_DIR, { recursive: true }); } catch {}
+  try { rmSync(TMP_DIR, { recursive: true }); } catch (e) { /* cleanup */ }
 });
 
 // ─── matchToolsByKeyword 測試 ─────────────────────────────────────────────────
@@ -264,7 +264,7 @@ describe("CLI 整合", () => {
   test("無參數時顯示用法說明並以非零退出", () => {
     let threw = false;
     try {
-      execSync("bun /Users/sbu/.claude/scripts/tool-matcher.js", { stdio: "pipe" });
+      execSync(`bun ${join(homedir(), ".claude/scripts/tool-matcher.js")}`, { stdio: "pipe" });
     } catch (err) {
       threw = true;
       // 確認輸出含用法說明
@@ -277,7 +277,7 @@ describe("CLI 整合", () => {
   test("match 命令但無 intent 時顯示用法並以非零退出", () => {
     let threw = false;
     try {
-      execSync("bun /Users/sbu/.claude/scripts/tool-matcher.js match", { stdio: "pipe" });
+      execSync(`bun ${join(homedir(), ".claude/scripts/tool-matcher.js")} match`, { stdio: "pipe" });
     } catch (err) {
       threw = true;
       const output = (err.stdout || "").toString() + (err.stderr || "").toString();
@@ -288,7 +288,7 @@ describe("CLI 整合", () => {
 
   test("match 命令正常執行並輸出結果（使用實際索引）", () => {
     // 先執行 scan 確保索引存在
-    spawnSync("bun", ["/Users/sbu/.claude/scripts/tool-registry.js", "scan"], {
+    spawnSync("bun", [join(homedir(), ".claude/scripts/tool-registry.js"), "scan"], {
       stdio: "pipe", timeout: 10000,
     });
 
@@ -296,7 +296,7 @@ describe("CLI 整合", () => {
     // spawnSync 強制 kill 超時的 child process，不受 AbortSignal 影響
     const proc = spawnSync(
       "bun",
-      ["/Users/sbu/.claude/scripts/tool-matcher.js", "match", "GitHub PR review"],
+      [join(homedir(), ".claude/scripts/tool-matcher.js"), "match", "GitHub PR review"],
       { stdio: "pipe", timeout: 10000 }
     );
 

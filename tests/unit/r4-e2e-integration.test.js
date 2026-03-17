@@ -69,7 +69,7 @@ function makeTmpEnv(prefix = 'r4-e2e') {
     eventsFile: join(dir, 'flow-events.jsonl'),
     boundaryFile: join(dataDir, 'capability-boundary.json'),
     improvementsFile: join(dataDir, 'improvements.jsonl'),
-    cleanup: () => { try { rmSync(dir, { recursive: true, force: true }); } catch {} },
+    cleanup: () => { try { rmSync(dir, { recursive: true, force: true }); } catch (e) { /* cleanup */ } },
   };
 }
 
