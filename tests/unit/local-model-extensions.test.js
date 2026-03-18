@@ -1,6 +1,6 @@
 // local-model-extensions.test.js — Session 摘要 + Session 簡報 + Skill 改善建議
 import { describe, test, expect, beforeEach, afterEach } from 'bun:test';
-import { writeFileSync, readFileSync, mkdirSync, rmSync, existsSync, appendFileSync } from 'fs';
+import { writeFileSync, readFileSync, mkdirSync, rmSync, appendFileSync } from 'fs';
 import { join } from 'path';
 import { tmpdir, homedir } from 'os';
 
