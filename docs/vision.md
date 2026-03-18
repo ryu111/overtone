@@ -39,7 +39,7 @@ Nova 不是一個開發工具，而是 **AI 的作業系統核心**（kernel）�
 | 模組 | 類比 | 職責 | 執行方式 |
 |------|------|------|---------|
 | Guards | 免疫系統 | 阻擋危險操作 | nova-server module（確定性） |
-| Maintainer | 手 | 文件維護 + git + Notion + 元件完整性檢查 | SessionEnd 背景 agent（本地模型） |
+| Maintainer | 手 | 文件維護 + git + 元件完整性檢查 | SessionEnd 背景 agent（本地模型） |
 | Learner | 記憶 + 直覺 | 行為偵測 + 信心追蹤 + 收斂 + 回饋注入 | SessionEnd 背景 agent（本地模型） |
 | Judge | 審美 | 通用品質評估 + 趨勢追蹤 | SessionEnd 背景 agent（本地模型） |
 
