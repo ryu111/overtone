@@ -62,11 +62,11 @@ Nova 不是一個開發工具，而是 **AI 的作業系統核心**（kernel）�
 
 | 模組 | 職責 | 依賴 |
 |------|------|------|
-| 心跳引擎 | 跨 session daemon — 輪詢 Notion → spawn session → 自主執行 | 無 |
+| 心跳引擎 | 跨 session daemon — 輪詢本地任務佇列 → spawn session → 自主執行 | 無 |
 | OS 腳本 | 截圖/視窗/剪貼簿/process/通知/fswatch | 心跳引擎 |
 | 操控層 | 鍵盤/滑鼠/AppleScript/Computer Use | 心跳引擎 |
 
-**吸收的舊概念**：佇列系統 → Notion database（R1.2 P4 已接通）。
+**吸收的舊概念**：佇列系統 → 本地任務佇列（heartbeat 直接 poll spec/待做/）。
 
 **已有的平台能力**（Claude Code 原生，不需重建）：
 
@@ -210,23 +210,22 @@ Agent 越專一 → 任務越簡單 → 可用更小的 model → 成本降低
 | 執行層 | Sonnet | 有明確 spec、步驟清晰 |
 | 維護層 | 本地 Qwen | 背景 agent（Maintainer/Learner/Judge）|
 
-### 7. Notion 作為 PM 層
+### 7. 本地任務管理作為 PM 層
 
 ```
-現在：本地文件 = SoT → 同步到 Notion
-未來：Notion = SoT → 生成本地文件
+現在：本地文件 = SoT（spec/待做/ + spec/進行中/ + spec/完成/）
+未來：任務狀態自動追蹤 → 生成進度報告
 ```
 
-- Notion database 取代本地佇列系統
-- 手機隨時看進度、加任務
-- 心跳引擎輪詢 Notion → 自動 spawn session 執行
+- spec/ 目錄佇列取代外部依賴
+- 心跳引擎輪詢 spec/待做/ → 自動 spawn session 執行
 
 ### 8. 即時可見性
 
 ```
 Statusline          = 基礎設施狀態（nova-server + 本地 LLM，3 秒更新）
 Flow Visualizer     = 系統在做什麼（即時 SSE）
-Notion Dashboard    = 專案進度如何（隨時可查）
+Dashboard           = 系統內部狀態（localhost:3457 隨時可查）
 SessionStart 注入   = AI 記得什麼（簡報 + 行為觀察 + 品質趨勢 + 改善建議）
 ```
 
@@ -238,7 +237,7 @@ SessionStart 注入   = AI 記得什麼（簡報 + 行為觀察 + 品質趨勢 +
 |------|----------------|
 | 20% 惡意 skills → 供應鏈攻擊 | Skill 由核心自己創建，不依賴外部市集 |
 | 「回報成功但實際失敗」 | Judge 品質閘門 + Learner 反模式偵測 |
-| 黑盒問題 | Flow Visualizer + Notion Dashboard + SessionStart 注入 |
+| 黑盒問題 | Flow Visualizer + Dashboard + SessionStart 注入 |
 | 成本失控 | 背景維護零 token（本地模型）+ Claude API 只在互動時消耗 |
 | 430K 行 → 攻擊面大 | 9 模組精簡架構，做減法比做加法更重要 |
 
@@ -268,7 +267,7 @@ SessionStart 注入   = AI 記得什麼（簡報 + 行為觀察 + 品質趨勢 +
 | 行為習慣信心追蹤 | ✅ |
 | 收斂（識別冗餘、建議移除） | ✅ |
 | 回饋注入（SessionStart context） | ✅ |
-| Notion 雙向同步 | ✅ |
+| 任務狀態追蹤 | ✅ |
 
 **完成標準**：系統能展示「元件品質分數趨勢圖」+ 「行為模式信心排行」。
 
