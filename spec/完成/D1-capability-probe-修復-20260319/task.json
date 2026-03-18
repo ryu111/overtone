@@ -1,0 +1,12 @@
+{
+  "name": "capability-probe 修復",
+  "type": "修復",
+  "priority": "P2",
+  "depth": "D1",
+  "description": "Phase 3c 累計 42 次 timeout",
+  "subtasks": [],
+  "created": "2026-03-18T17:01:48.081Z",
+  "claimed": "2026-03-18T17:01:52.258Z",
+  "completed": "2026-03-18T17:01:58.069Z",
+  "result": "修復完成，timeout 從 42 次降到 0 次"
+}
