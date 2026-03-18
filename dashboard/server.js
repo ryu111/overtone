@@ -22,7 +22,6 @@ const mdH = { "Access-Control-Allow-Origin": "*", "Content-Type": "text/markdown
 const j = (d, s = 200) => new Response(JSON.stringify(d), { status: s, headers: h });
 const err = (e) => j({ error: String(e?.message ?? e) }, 500);
 
-let notionTodoCache = { data: { count: 0, top: "" }, ts: 0 };
 
 async function handleApi(path, req) {
   try {
@@ -233,27 +232,6 @@ async function handleApi(path, req) {
         orphanBunProcesses: orphans,
         novaProcesses: novaProcesses,
       });
-    }
-
-    if (path === "/api/notion-todo") {
-      const now = Date.now();
-      if (now - notionTodoCache.ts < 10000) return j(notionTodoCache.data);
-      try {
-        const p = Bun.spawn(["bun", join(CLAUDE_DIR, "scripts/notion-tasks.js"), "list", "待做"], { stdout: "pipe", stderr: "pipe" });
-        const code = await p.exited;
-        const out = await new Response(p.stdout).text();
-        if (out.includes("無「") || !out.trim()) {
-          notionTodoCache = { data: { count: 0, top: "" }, ts: now };
-          return j(notionTodoCache.data);
-        }
-        const m = out.match(/（(\d+) 個）/);
-        const count = m ? parseInt(m[1], 10) : 0;
-        const lines = out.split("\n");
-        const first = lines.find(l => l.includes("│"));
-        const top = first ? first.replace(/^.*│\s*/, "").trim() : "";
-        notionTodoCache = { data: { count, top }, ts: now };
-        return j(notionTodoCache.data);
-      } catch { return j(notionTodoCache.data); }
     }
 
     return j({ error: "Not Found" }, 404);
