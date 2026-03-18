@@ -11,11 +11,17 @@ describe('pre-edit-guard', () => {
     const protectedCases = [
       [`${CLAUDE_DIR}/CLAUDE.md`, 'CLAUDE.md'],
       [`${CLAUDE_DIR}/settings.json`, 'settings.json'],
+      [`${CLAUDE_DIR}/remote.env`, 'remote.env'],
+      [`${CLAUDE_DIR}/biome.json`, 'biome.json'],
+      [`${CLAUDE_DIR}/package.json`, 'package.json'],
       [`${CLAUDE_DIR}/agents/planner.md`, 'agents/'],
       [`${CLAUDE_DIR}/agents/executor.md`, 'agents/'],
       [`${CLAUDE_DIR}/skills/testing/SKILL.md`, 'skills/'],
       [`${CLAUDE_DIR}/hooks/scripts/tool/guard.js`, 'hooks/'],
       [`${CLAUDE_DIR}/commands/auto.md`, 'commands/'],
+      [`${CLAUDE_DIR}/data/behaviors.jsonl`, 'data/'],
+      [`${CLAUDE_DIR}/data/scores.jsonl`, 'data/'],
+      [`${CLAUDE_DIR}/data/decision-log.jsonl`, 'data/'],
     ];
 
     for (const [filePath, label] of protectedCases) {
