@@ -231,8 +231,8 @@ v0.30+ 採用「單腦 + 深度路由 + 輕量 Worker」模式（見 `docs/spec/
 
 | 任務 | 類型 | 說明 | 狀態 |
 |------|------|------|:----:|
-| interview.js | 重建 | 7 API + 24 題問題庫 + session 持久化 | ❌ interview.js 缺失（pm skill 有知識）|
-| PM 測試 | 重建 | 訪談流程 + 領域研究整合 | ❌ |
+| interview.js | 重建 | 7 API + 24 題問題庫 + session 持久化 | ✅ interview.js 已存在（pm skill 有知識）|
+| PM 測試 | 重建 | 訪談流程 + 領域研究整合 | ✅ |
 
 ### R3.4 Project Orchestrator
 
