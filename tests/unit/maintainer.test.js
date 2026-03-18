@@ -107,7 +107,7 @@ async function commitAndPushLocal(repoDir, _repoName, mockCommitMsg) {
 
   // 使用傳入的 commit message（跳過本地模型）
   const today = new Date().toISOString().slice(0, 10);
-  const fallbackMsg = `chore(maintainer): auto-sync ${today}`;
+  const fallbackMsg = `chore(maintainer): 狀態檢查 ${today}`;
   const commitMsg = sanitizeCommitMsg(mockCommitMsg || fallbackMsg, fallbackMsg);
 
   const tmpMsgFile = join(tmpdir(), `maintainer-commit-test-${randomUUID()}.txt`);
@@ -388,7 +388,7 @@ describe('hasRemote()', () => {
 
 describe('commit message 清理', () => {
   const today = new Date().toISOString().slice(0, 10);
-  const fallback = `chore(maintainer): auto-sync ${today}`;
+  const fallback = `chore(maintainer): 狀態檢查 ${today}`;
 
   test('換行字元被替換為空格', () => {
     const msg = sanitizeCommitMsg('feat(scope): 第一行\n第二行', fallback);
@@ -422,7 +422,7 @@ describe('commit message 清理', () => {
   });
 
   test('fallback message 格式正確', () => {
-    expect(fallback).toMatch(/^chore\(maintainer\): auto-sync \d{4}-\d{2}-\d{2}$/);
+    expect(fallback).toMatch(/^chore\(maintainer\): 狀態檢查 \d{4}-\d{2}-\d{2}$/);
   });
 });
 
@@ -469,7 +469,7 @@ describe('commitAndPush 流程', () => {
     writeFileSync(join(tmpDir, 'fallback.md'), '# Fallback\n');
     const result = await commitAndPushLocal(tmpDir, 'test', null);
     expect(result.skipped).toBe(false);
-    expect(result.commitMsg).toMatch(/^chore\(maintainer\): auto-sync \d{4}-\d{2}-\d{2}$/);
+    expect(result.commitMsg).toMatch(/^chore\(maintainer\): 狀態檢查 \d{4}-\d{2}-\d{2}$/);
   });
 
   test('第二次 commit 前無新 staged 變更時跳過', async () => {
