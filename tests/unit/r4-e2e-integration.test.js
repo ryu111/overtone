@@ -5,7 +5,7 @@ import { writeFileSync, mkdirSync, rmSync, existsSync, readFileSync, appendFileS
 import { join } from 'path';
 import { tmpdir, homedir } from 'os';
 
-const { discoverGaps, syncToNotion } = await import(join(homedir(), '.claude/scripts/gap-discovery.js'));
+const { discoverGaps, syncToSpec } = await import(join(homedir(), '.claude/scripts/gap-discovery.js'));
 const { probeSession } = await import(join(homedir(), '.claude/scripts/capability-probe.js'));
 const { planForTask, recordOutcome, lookupPattern } = await import(join(homedir(), '.claude/scripts/task-adapter.js'));
 const { poll, executeTask, readState, writeState } = await import(join(homedir(), '.claude/scripts/heartbeat.js'));
@@ -144,18 +144,18 @@ describe('場景 1：完整自驅迴圈（Happy Path）', () => {
       scores: MOCK_SCORES,
       roadmapContent: MOCK_ROADMAP,
     };
-    const report1 = await discoverGaps({ _mock: mockData1, skipNotion: true });
+    const report1 = await discoverGaps({ _mock: mockData1 });
     expect(report1.suggestions.length).toBeGreaterThan(0);
 
-    // Step 2: syncToNotion — 建立高信心建議
+    // Step 2: syncToSpec — 建立高信心建議
     const createdTitles = [];
     const syncDeps = {
       createTask: async (title) => {
         createdTitles.push(title);
-        return { id: `notion-${Date.now()}` };
+        return { id: `spec-${Date.now()}` };
       },
     };
-    const syncResult = await syncToNotion(report1.suggestions, {}, syncDeps);
+    const syncResult = await syncToSpec(report1.suggestions, syncDeps);
     expect(syncResult.created).toBeGreaterThanOrEqual(1);
     expect(syncResult.failed).toBe(0);
 
@@ -280,8 +280,8 @@ describe('場景 3：跨模組資料格式相容性', () => {
     roadmapContent: MOCK_ROADMAP,
   };
 
-  test('gap-discovery Suggestion → syncToNotion 欄位相容', async () => {
-    const report = await discoverGaps({ _mock: mockData, skipNotion: true });
+  test('gap-discovery Suggestion → syncToSpec 欄位相容', async () => {
+    const report = await discoverGaps({ _mock: mockData });
     const s = report.suggestions[0];
 
     // 必要欄位存在且型別正確
@@ -290,9 +290,9 @@ describe('場景 3：跨模組資料格式相容性', () => {
     expect(typeof s.confidence).toBe('number');
     expect(typeof s.suggestedPriority).toBe('string');
 
-    // 直接傳入 syncToNotion 不 throw
+    // 直接傳入 syncToSpec 不 throw
     const deps = { createTask: async () => ({ id: 'test-id' }) };
-    await expect(syncToNotion(report.suggestions, {}, deps)).resolves.toBeDefined();
+    await expect(syncToSpec(report.suggestions, deps)).resolves.toBeDefined();
   });
 
   test('gap-discovery Suggestion → heartbeat task 欄位相容', async () => {

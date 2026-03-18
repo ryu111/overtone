@@ -5,7 +5,7 @@ import { writeFileSync, mkdirSync, rmSync, existsSync, readFileSync, appendFileS
 import { join } from 'path';
 import { tmpdir, homedir } from 'os';
 
-const { discoverGaps, syncToNotion } = await import(join(homedir(), '.claude/scripts/gap-discovery.js'));
+const { discoverGaps, syncToSpec } = await import(join(homedir(), '.claude/scripts/gap-discovery.js'));
 const { probeSession } = await import(join(homedir(), '.claude/scripts/capability-probe.js'));
 const { planForTask, recordOutcome, lookupPattern } = await import(join(homedir(), '.claude/scripts/task-adapter.js'));
 const { poll, executeTask, readState, writeState, isImprovementTask, computeDelta, snapshotBoundary, updateImprovementRecord } = await import(join(homedir(), '.claude/scripts/heartbeat.js'));
@@ -120,7 +120,7 @@ describe('R4 E2E: 能力 1 — 發現自身能力缺口', () => {
 // ─── 能力 2：生成建議並評估價值 ────────────────────────────────────────────────
 
 describe('R4 E2E: 能力 2 — 生成建議並評估價值', () => {
-  test('discoverGaps → syncToNotion 完整鏈路：建立 + 跳過 + 過濾', async () => {
+  test('discoverGaps → syncToSpec 完整鏈路：建立 + 跳過 + 過濾', async () => {
     const mockData = {
       gaps: MOCK_GAPS,
       weakCaps: MOCK_WEAK_CAPS,
@@ -129,23 +129,23 @@ describe('R4 E2E: 能力 2 — 生成建議並評估價值', () => {
     };
 
     // 先取得 suggestions
-    const report = await discoverGaps({ _mock: mockData, skipNotion: true });
+    const report = await discoverGaps({ _mock: mockData });
     expect(report.suggestions.length).toBeGreaterThan(0);
 
     // 分離高低信心 suggestions
     const highConfidence = report.suggestions.filter((s) => s.confidence >= 40);
     const lowConfidence = report.suggestions.filter((s) => s.confidence < 40);
 
-    // syncToNotion：追蹤建立次數
+    // syncToSpec：追蹤建立次數
     const created = [];
     const _deps = {
       createTask: async (title) => {
         created.push(title);
-        return { id: `notion-${Date.now()}` };
+        return { id: `spec-${Date.now()}` };
       },
     };
 
-    const result = await syncToNotion(report.suggestions, {}, _deps);
+    const result = await syncToSpec(report.suggestions, _deps);
 
     // 高信心應被建立，低信心應被跳過
     expect(result.created).toBe(highConfidence.length);
@@ -165,7 +165,7 @@ describe('R4 E2E: 能力 2 — 生成建議並評估價值', () => {
       createTask: async () => { throw new Error('不應被呼叫'); },
     };
 
-    const result = await syncToNotion(lowConfidenceSuggestions, {}, _deps);
+    const result = await syncToSpec(lowConfidenceSuggestions, _deps);
 
     expect(result.created).toBe(0);
     expect(result.skipped).toBe(2);

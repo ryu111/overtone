@@ -12,7 +12,7 @@ const {
   collectFromScores,
   collectFromRoadmap,
   mergeSignals,
-  syncToNotion,
+  syncToSpec,
   discoverGaps,
   parseFocusWeights,
   applyFocusWeights,
@@ -362,12 +362,12 @@ describe('discoverGaps with focusWeights', () => {
   });
 });
 
-describe('syncToNotion', () => {
+describe('syncToSpec', () => {
   test('confidence >= 70 → 建立任務', async () => {
     const created = [];
     const _deps = { createTask: async (title) => { created.push(title); return { id: 'test-id' }; } };
     const suggestions = [{ title: '高信心任務', description: '描述', confidence: 70, suggestedPriority: 'P1' }];
-    const result = await syncToNotion(suggestions, {}, _deps);
+    const result = await syncToSpec(suggestions, _deps);
     expect(result.created).toBe(1);
     expect(result.skipped).toBe(0);
     expect(created[0]).toContain('高信心任務');
@@ -377,7 +377,7 @@ describe('syncToNotion', () => {
     const created = [];
     const _deps = { createTask: async (title) => { created.push(title); return { id: 'test-id-2' }; } };
     const suggestions = [{ title: '中信心任務', description: '描述', confidence: 50, suggestedPriority: 'P2' }];
-    const result = await syncToNotion(suggestions, {}, _deps);
+    const result = await syncToSpec(suggestions, _deps);
     expect(result.created).toBe(1);
     expect(created[0]).toContain('中信心任務');
   });
@@ -385,7 +385,7 @@ describe('syncToNotion', () => {
   test('confidence < 40 → 跳過', async () => {
     const _deps = { createTask: async () => { throw new Error('不應被呼叫'); } };
     const suggestions = [{ title: '低信心任務', description: '描述', confidence: 30, suggestedPriority: 'P3' }];
-    const result = await syncToNotion(suggestions, {}, _deps);
+    const result = await syncToSpec(suggestions, _deps);
     expect(result.skipped).toBe(1);
     expect(result.created).toBe(0);
   });
