@@ -15,6 +15,7 @@ const {
   resolveSemanticScore,
   deduplicateImprovements,
   deduplicateScores,
+  getChangedElementPaths,
 } = await import(join(homedir(), '.claude/scripts/judge.js'));
 
 // ─── 測試輔助 ────────────────────────────────────────────────────────────────
@@ -629,6 +630,29 @@ describe('deduplicateScores', () => {
     // 去重後：只剩 2 筆，60→85 → improving（正確）
     const deduped = deduplicateScores(entries);
     expect(getTrend('skills/a', deduped)).toBe('improving');
+  });
+});
+
+// ─── 12. getChangedElementPaths ─────────────────────────────────────────────
+
+describe('getChangedElementPaths', () => {
+  test('回傳 Set 或 null', () => {
+    const result = getChangedElementPaths();
+    // 在 git repo 中執行 → 應回傳 Set；git 失敗 → null
+    expect(result === null || result instanceof Set).toBe(true);
+  });
+
+  test('回傳 Set 時，元素為非空字串', () => {
+    const result = getChangedElementPaths();
+    if (result === null) return; // fallback 模式跳過
+    for (const p of result) {
+      expect(typeof p).toBe('string');
+      expect(p.length).toBeGreaterThan(0);
+    }
+  });
+
+  test('不 throw（git 失敗時回傳 null 不拋出）', () => {
+    expect(() => getChangedElementPaths()).not.toThrow();
   });
 });
 
