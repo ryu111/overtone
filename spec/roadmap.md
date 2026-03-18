@@ -9,7 +9,7 @@ v0.30+ 採用「單腦 + 深度路由 + 輕量 Worker」模式（見 `docs/spec/
 五層定義見 `docs/vision.md`，R1 詳細設計見 `docs/spec/L1-L2-守衛與閉環-實作計劃.md`。
 
 **現有基礎**（不動的部分）：
-- Rules 17 個（全域行為規範，完整）
+- Rules 16 個（全域行為規範，完整）
 - Skills 27 個（知識庫，完整）
 - Agents 3 個（planner/executor/reviewer，已適配新架構）
 - Flow Visualizer（hooks 事件記錄 → SSE → 即時顯示，完整閉環）
