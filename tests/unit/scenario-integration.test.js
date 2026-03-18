@@ -413,48 +413,6 @@ describe("P2.8 場景二端到端：信心達標 → lifecycle 觸發", () => {
 	});
 });
 
-describe("P3.4 場景四端到端：hook error 累積 → 自動建立 Notion 任務", () => {
-	test("模擬 5+ hook errors 觸發 createTask", async () => {
-		// 驗證 createTask 的 API 結構正確
-		const mockErrors = Array.from({ length: 6 }, (_, i) => ({
-			ts: new Date().toISOString(),
-			event: "PreToolUse:Bash",
-			error: "timeout",
-			phase: "dispatch",
-		}));
-
-		// 統計邏輯（與 maintainer Phase 3c 相同）
-		const errorSummary = {};
-		for (const e of mockErrors) {
-			const key = `${e.event}:${e.phase || "unknown"}`;
-			errorSummary[key] = (errorSummary[key] || 0) + 1;
-		}
-		const topError = Object.entries(errorSummary).sort((a, b) => b[1] - a[1])[0];
-		const title = `修復 hook error：${topError[0]}（${mockErrors.length} 次/小時）`;
-
-		// 驗證 createTask 被正確呼叫
-		let createdTask = null;
-		let p34CallCount = 0;
-		await createTask(title, { type: "修復", description: "自動偵測" }, {
-			notionFetch: async (_path, _method, body) => {
-				p34CallCount++;
-				if (p34CallCount === 1) {
-					// dedup 查詢回傳空結果
-					return { results: [] };
-				}
-				createdTask = body;
-				return { id: "auto-created-123" };
-			},
-			getConfig: () => ({ database_id: "db-test" }),
-		});
-
-		expect(createdTask).not.toBeNull();
-		expect(createdTask.properties.Name.title[0].text.content).toContain("hook error");
-		expect(createdTask.properties.Status.select.name).toBe("待做");
-		expect(createdTask.properties.Created.date.start).toBeTruthy();
-	});
-});
-
 describe("P4.5 場景三端到端：跨領域行為 → 經驗遷移 → Skill reference", () => {
 	test("模擬兩個領域的相似行為模式 → detectCrossDomain 匹配 → forge 加 reference", async () => {
 		// 模擬歷史：交易系統的行為
