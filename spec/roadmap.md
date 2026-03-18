@@ -156,7 +156,7 @@ v0.30+ 採用「單腦 + 深度路由 + 輕量 Worker」模式（見 `docs/spec/
 
 | 任務 | 類型 | 說明 | 狀態 |
 |------|------|------|:----:|
-| queue.js | 重建 | add/list/clear/advance CLI + execution-queue.json | ✅ 架構替代 — Notion 任務系統（heartbeat 直接 poll Notion）|
+| queue.js | 重建 | add/list/clear/advance CLI + execution-queue.json | ✅ 架構替代 — 本地任務佇列（heartbeat 直接 poll spec/待做/）|
 | 佇列測試 | 重建 | CRUD + 並行安全 + 佇列推進邏輯 | ✅ |
 
 ### R2.3 OS 操控腳本
@@ -289,7 +289,7 @@ v0.30+ 採用「單腦 + 深度路由 + 輕量 Worker」模式（見 `docs/spec/
 | 任務 | 類型 | 說明 | 狀態 |
 |------|------|------|:----:|
 | 缺口自動發現 | 新建 | 4 源聚合 → 去重合併 → 信心排序 → 建議清單 | ✅ gap-discovery.js 579 行 / 28 tests |
-| 建議評估 + Notion 同步 | 新建 | 高信心→待做、中信心→backlog、低→捨棄 | ✅ syncToNotion + filterExistingNotion |
+| 建議評估 + 本地同步 | 新建 | 高信心→待做、中信心→backlog、低→捨棄 | ✅ syncToLocal + filterExisting |
 | MDP 決策記錄 | 新建 | (S,A,R) 三元組累積決策數據 | ✅ logDecision + /api/decisions |
 | event-bus 架構 | 重構 | server.js 507→248 行，reactive xstream event bus，3 種模組類型 | ✅ event-bus.js |
 | heartbeat lifecycle 模組 | 重構 | heartbeat 從 server 內嵌獨立為 Daemon lifecycle 模組 | ✅ |
