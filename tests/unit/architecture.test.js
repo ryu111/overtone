@@ -152,8 +152,8 @@ describe("Judge 資料管線檔名一致性", () => {
     });
   }
 
-  it("judge.js 定義的 SCORES_FILE 使用正確檔名", () => {
-    const code = readFile(join(homedir(), ".claude/scripts/judge.js"));
+  it("judge-scores.js 定義的 SCORES_FILE 使用正確檔名", () => {
+    const code = readFile(join(homedir(), ".claude/scripts/judge-scores.js"));
     // SCORES_FILE = join(homedir(), ".claude/data/scores.jsonl")
     expect(code).toContain(SCORES_FILENAME);
     expect(code).not.toContain("judge-scores.jsonl");
