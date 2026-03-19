@@ -262,10 +262,10 @@ describe('generateIndex', () => {
   test('空目錄產生合法 markdown', () => {
     const indexPath = generateIndex(TEMP_SPEC_DIR);
     const content = readFileSync(indexPath, 'utf-8');
-    expect(content).toContain('# Spec 任務索引');
-    expect(content).toContain('## 進行中');
-    expect(content).toContain('## 待做');
-    expect(content).toContain('## 最近完成');
+    expect(content).toContain('# 專案索引');
+    expect(content).toContain('### 進行中');
+    expect(content).toContain('### 待做');
+    expect(content).toContain('### 最近完成');
   });
 
   test('index.md 包含待做任務', () => {
