@@ -109,6 +109,29 @@
 
 ---
 
+### docs/archive（8）
+
+| 名稱 | 簡述 |
+|------|------|
+| agent-specialization | Agent 專一化量化分析（S19） |
+| claude-code-platform | Claude Code 平台能力完整參考 |
+| data-policy | Overtone 資料保留策略 |
+| design-system | 設計系統：Overtone Dashboard — Glassmorphism 重設計 |
+| flow-visualizer-ui-v3 | Flow Visualizer UI v3 — 改善規格 |
+| L1-L2-守衛與閉環-實作計劃 | L1 + L2 守衛與閉環腳本 -- 實作計劃 |
+| performance-baselines | 效能基線文件（Performance Baselines） |
+| skill-ecosystem-crossref-report | Skill 生態交叉比較報告 |
+
+---
+
+### docs/reference（1）
+
+| 名稱 | 簡述 |
+|------|------|
+| testing-guide | 測試架構指南（Testing Guide） |
+
+---
+
 ## 任務狀態
 
 ### 進行中（0）
