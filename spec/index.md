@@ -13,7 +13,7 @@
 | 事件驅動架構 | 事件驅動架構（第一性原理、統一 Stream 模型、同步例外） |
 | 知識管理 | 知識管理（知識持久化：自動分類、分類決策樹、單一來源原則（DRY）） |
 | 常駐服務 | 常駐服務管理（命名規範、自動啟動、防重複啟動） |
-| 深度路由 | 深度路由（Session 內任務追蹤、Planner 職責、動態 Skill 注入） |
+| 深度路由 | 深度路由（Session 內任務追蹤、Planner 職責、Context Hygiene） |
 | 閉環規範 | 閉環規範（Skill 品質閘門、元件閉環、改名/合併/刪除） |
 | 測試規範 | 測試規範 |
 | 開發流程 | 開發流程（先搜再寫、網搜強化（L1-L4 自我進化）、依賴安全（Slopsquatting 防護）） |
@@ -27,7 +27,7 @@
 
 ---
 
-### Skills（27）
+### Skills（25）
 
 | 名稱 | 簡述 |
 |------|------|
@@ -42,9 +42,7 @@
 | database | "資料庫審查知識：SQL 效能、索引策略、migration 安全。WHEN: 審查 SQL 查詢、設計索引、migration 安全性檢查時使用。NOT: 應 |
 | dead-code | "死碼清理知識：knip/depcheck 工具、手動清理策略、安全刪除。WHEN: 清理未使用程式碼、codebase 瘦身時使用。NOT: 功能開發、重構。 |
 | debugging | "除錯方法論與根因分析框架。WHEN: 遇到 bug 需要根因分析（RCA）、重現問題、診斷並發問題時使用。NOT: 功能開發、架構設計。" |
-| evolve | "Instinct 進化引擎。WHEN: 分析知識積累狀態、決定是否將 Instinct 觀察升級為 Skill 或 Agent 時使用。NOT: 一般 ski |
-| instinct | "跨專案內化知識庫：永久保留的通用知識條目。WHEN: 需要查詢已內化的跨專案經驗（非專案特定）時自動觸發。NOT: 專案特定知識、臨時 session 資料。 |
-| issue | 從 GitHub Issue 啟動 Overtone workflow。讀取 Issue 內容，根據 labels 自動選擇 workflow 類型，建立 fe |
+| evolve | "知識進化引擎（含內化知識庫）。WHEN: 分析知識積累狀態、查詢已內化的跨專案經驗、決定是否升級為 Skill/Agent 時使用。NOT: 專案特定知識、一 |
 | jsonl-truncate-n | "JSONL 日誌截斷策略。WHEN: 處理 Nova 系統 JSONL 檔案的截斷、決定保留數量時使用。NOT: 一般檔案操作、非 JSONL 格式。" |
 | nova-autonomous-control | "自主成長閉環控制。WHEN: 配置 heartbeat 自驅策略、設定 focus 方向、管理本地任務批次執行時使用。NOT: 一般開發工作、手動任務執行。" |
 | nova-pm | 產品探索與需求釐清。引導 Main Agent 以 PM 角色探索需求、定義範圍、比較方案。三種模式：discovery（純探索）、product（PM + s |
