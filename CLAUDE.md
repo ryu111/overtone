@@ -17,18 +17,39 @@
 
 > 定位、架構概要、工作流觸發、常用管理指令詳見全域 `~/.claude/CLAUDE.md`。
 
-## 文件生命週期
+## 技術棧
 
-- `spec/`：產品規格（主文件 index.md + roadmap + change/ 進行中 + archive/ 歸檔）
-- `docs/archive/`：歷史參考（已完成的設計規格）
+| 模組 | 技術 |
+|------|------|
+| Runtime | Bun |
+| 測試 | bun:test（多核並行） |
+| 文件 | VitePress |
+| Lint | Biome |
+
+## 目錄結構
+
+```
+overtone/
+├── tests/          # 單元 + 整合測試（1354 pass）
+├── spec/           # 三狀態任務管理（待做/進行中/完成）
+├── docs/           # 設計文件 + 願景
+├── dashboard/      # Flow Visualizer 前端
+└── scripts/        # 測試輔助腳本
+```
 
 ## 常用指令
 
 ```bash
+# 測試
 bun test                         # 多核並行 unit（預設，~1s）
 bun test:all                     # 多核 unit + integration（CI 用，~11s）
 bun test:seq                     # 單執行緒 unit（出問題時縮小範圍）
 bun test:random                  # 洗牌順序（確認無隱藏依賴）
+
+# 任務管理
+bun ~/.claude/scripts/spec-tasks.js list          # 查看待做任務
+bun ~/.claude/scripts/spec-tasks.js create <名稱> # 建立任務
+bun ~/.claude/scripts/spec-tasks.js index         # 更新 spec/index.md
 ```
 
 ## 開發規範
@@ -51,7 +72,7 @@ echo '{"prompt":"test","cwd":"'$PWD'"}' | bun ~/.claude/hooks/scripts/prompt/on-
 
 | 文件                                         | 用途                       |
 | -------------------------------------------- | -------------------------- |
-| `spec/index.md`                              | 產品規格主文件（架構地圖）  |
-| `spec/roadmap.md`                            | 重建路線圖（R0-R5）        |
+| `spec/index.md`                              | 專案索引（元件目錄 + 任務狀態）|
+| `spec/roadmap.md`                            | 路線圖                     |
 | `docs/vision.md`                             | 五層願景定義               |
-| `docs/archive/L1-L2-守衛與閉環-實作計劃.md`   | R1 詳細實作設計（已歸檔）    |
+| `docs/目標場景.md`                            | 5 個端到端驗收場景          |
