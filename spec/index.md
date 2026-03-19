@@ -45,7 +45,7 @@
 | evolve | "知識進化引擎（含內化知識庫）。WHEN: 分析知識積累狀態、查詢已內化的跨專案經驗、決定是否升級為 Skill/Agent 時使用。NOT: 專案特定知識、一 |
 | jsonl-truncate-n | "JSONL 日誌截斷策略。WHEN: 處理 Nova 系統 JSONL 檔案的截斷、決定保留數量時使用。NOT: 一般檔案操作、非 JSONL 格式。" |
 | nova-autonomous-control | "自主成長閉環控制。WHEN: 配置 heartbeat 自驅策略、設定 focus 方向、管理本地任務批次執行時使用。NOT: 一般開發工作、手動任務執行。" |
-| nova-pm | 產品探索與需求釐清。引導 Main Agent 以 PM 角色探索需求、定義範圍、比較方案。三種模式：discovery（純探索）、product（PM + s |
+| nova-pm | 產品探索與需求釐清。引導 planner agent 以 PM 角色探索需求、定義範圍、比較方案。三種模式：discovery（D1）、product（D2）、 |
 | nova-spec | 產品規格管理。建立、追蹤、歸檔 spec/design 文件。使用者說「寫規格」「提案」「歸檔」或觸發 /spec:propose、/spec:done、/sp |
 | nova-test | 測試策略知識域。什麼該測、什麼不該測、怎麼測、何時跑。基於 Testing Trophy + 風險驅動。撰寫或審查測試時使用。 |
 | onboard | "專案掃描與 CLAUDE.md 骨架生成。WHEN: 初次進入新專案、需要產生或補充 CLAUDE.md 時使用。NOT: 已有完整 CLAUDE.md 的日 |
@@ -59,7 +59,7 @@
 
 ---
 
-### Scripts（43）
+### Scripts（44）
 
 | 名稱 | 簡述 |
 |------|------|
@@ -92,6 +92,7 @@
 | lifecycle-orchestrator | Skill Lifecycle 串聯引擎 |
 | local-model | AI 模型 client（單一來源） |
 | maintainer | 本地模型驅動的維護 agent（v2：模型決策 + 程式碼執行） |
+| manage-component | 元件管理 CLI |
 | memory-reclaim | 記憶體回收 |
 | prepare-lora-data | 從現有資料合成 LoRA 訓練集 |
 | session-recorder | Session 摘要與簡報記錄（Phase 4a + 4b 包裝） |
