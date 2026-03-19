@@ -31,32 +31,32 @@
 
 | 名稱 | 簡述 |
 |------|------|
-| agent-browser | 瀏覽器自動化 CLI 工具 — Vercel Labs 出品，Rust 核心 + Playwright，適合 AI agent 的無狀態瀏覽器操作 |
-| architecture | 系統架構設計、ADR 決策記錄、設計模式選擇、技術 tradeoff 分析框架、並發策略選擇。 |
+| agent-browser | "瀏覽器自動化 CLI 工具 — Vercel Labs 出品，Rust 核心 + Playwright。WHEN: 需要 JS 執行、鍵盤 modifier  |
+| architecture | "系統架構設計知識域。WHEN: 架構決策（ADR）、設計模式選擇、技術 tradeoff 分析、並發策略選擇時使用。NOT: 純程式碼實作、bug 修復、日常 |
 | auto | 深度路由決策。WHAT: 根據設計決策密度選 D0-D4 + 委派策略。WHEN: Main 接到任何任務、或不確定自己做還是委派時。KEYWORDS: 深度、 |
 | claude-dev | Claude Code Plugin 開發知識。hooks、agents、skills、commands 的 API 格式、settings 設定系統與 Ove |
 | closed-loop | 元件閉環檢查。新增/修改/刪除 Skill、Agent、Hook 時確認依賴完整、資訊流通、spec 文件同步。修改元件文件時由 rules/閉環規範.md 觸 |
-| code-review | PR Review 知識域：四維度結構化審查（code quality / security / performance / observability）+ 回 |
-| commit-convention | Conventional commit 知識域：type 分類、atomic commit 原則、拆分標準、message 格式。 |
-| craft | 軟體工藝知識域：Overtone 製作原則、設計品味、競品基準、程式碼層級設計模式。聚焦 Expert 知識（非教科書）。 |
-| database | 資料庫審查知識。SQL 效能、索引策略、migration 安全審查清單。供 database-reviewer agent 消費。 |
-| dead-code | 死碼清理知識。knip/depcheck 工具指南、手動清理策略、安全刪除策略。供 refactor-cleaner agent 消費。 |
-| debugging | 除錯方法論與根因分析框架：RCA 五步法、JS 錯誤模式庫、Bug 重現清單、並發問題診斷指南。 |
-| evolve | 分析 Instinct 觀察記錄，摘要知識積累狀態，建議或執行進化（Instinct → Skill/Agent）。 |
-| instinct | 跨專案內化知識庫：從 session 學習資料評估並永久保留的通用知識條目，由 skill-internalization 飛輪自動維護。 |
+| code-review | "PR Review 知識域：四維度結構化審查 + 回饋分級。WHEN: 審查 PR、code review、撰寫審查回饋時使用。NOT: 撰寫新程式碼、deb |
+| commit-convention | "Conventional commit 知識域。WHEN: 撰寫 commit message、判斷 commit 拆分策略、選擇 type/scope 時使 |
+| craft | "軟體工藝知識域：Overtone 製作原則、設計品味、競品基準、程式碼層級設計模式。WHEN: 設計決策品質判斷、競品對標時使用。NOT: 教科書級基礎知識、 |
+| database | "資料庫審查知識：SQL 效能、索引策略、migration 安全。WHEN: 審查 SQL 查詢、設計索引、migration 安全性檢查時使用。NOT: 應 |
+| dead-code | "死碼清理知識：knip/depcheck 工具、手動清理策略、安全刪除。WHEN: 清理未使用程式碼、codebase 瘦身時使用。NOT: 功能開發、重構。 |
+| debugging | "除錯方法論與根因分析框架。WHEN: 遇到 bug 需要根因分析（RCA）、重現問題、診斷並發問題時使用。NOT: 功能開發、架構設計。" |
+| evolve | "Instinct 進化引擎。WHEN: 分析知識積累狀態、決定是否將 Instinct 觀察升級為 Skill 或 Agent 時使用。NOT: 一般 ski |
+| instinct | "跨專案內化知識庫：永久保留的通用知識條目。WHEN: 需要查詢已內化的跨專案經驗（非專案特定）時自動觸發。NOT: 專案特定知識、臨時 session 資料。 |
 | issue | 從 GitHub Issue 啟動 Overtone workflow。讀取 Issue 內容，根據 labels 自動選擇 workflow 類型，建立 fe |
-| jsonl-truncate-n | JSONL 日誌截斷策略。Nova 系統中 JSONL 檔案的安全截斷、保留策略、實際用法。 |
-| nova-autonomous-control | 自主成長閉環 — heartbeat 批次執行 + Opus 缺口分析 + 本地任務管理 + focus 策略方向 |
+| jsonl-truncate-n | "JSONL 日誌截斷策略。WHEN: 處理 Nova 系統 JSONL 檔案的截斷、決定保留數量時使用。NOT: 一般檔案操作、非 JSONL 格式。" |
+| nova-autonomous-control | "自主成長閉環控制。WHEN: 配置 heartbeat 自驅策略、設定 focus 方向、管理本地任務批次執行時使用。NOT: 一般開發工作、手動任務執行。" |
 | nova-pm | 產品探索與需求釐清。引導 Main Agent 以 PM 角色探索需求、定義範圍、比較方案。三種模式：discovery（純探索）、product（PM + s |
 | nova-spec | 產品規格管理。建立、追蹤、歸檔 spec/design 文件。使用者說「寫規格」「提案」「歸檔」或觸發 /spec:propose、/spec:done、/sp |
 | nova-test | 測試策略知識域。什麼該測、什麼不該測、怎麼測、何時跑。基於 Testing Trophy + 風險驅動。撰寫或審查測試時使用。 |
-| onboard | 掃描專案結構，產生 CLAUDE.md 骨架。偵測技術棧、常用命令、目錄結構，輸出到對話供使用者自行寫入。 |
-| os-control | OS 操控知識域。桌面自動化、系統管理、螢幕截圖、音訊控制、WebSocket 即時通訊等 OS 能力的 reference 索引。供 architect、te |
-| pinchtab | Control a headless or headed Chrome browser via Pinchtab's HTTP API for web auto |
-| pr | 從 Overtone workflow 結果自動建立 GitHub Pull Request。收集 git 變更和 workflow 狀態，組裝結構化 PR d |
-| security-kb | 安全審查知識。OWASP Top 10 檢查清單、JS 安全模式、STRIDE 威脅建模、供應鏈安全、安全報告格式。供 security-reviewer 和  |
+| onboard | "專案掃描與 CLAUDE.md 骨架生成。WHEN: 初次進入新專案、需要產生或補充 CLAUDE.md 時使用。NOT: 已有完整 CLAUDE.md 的日 |
+| os-control | "OS 操控知識域：桌面自動化、系統管理、螢幕截圖、音訊控制、WebSocket 即時通訊。WHEN: 需要作業系統層級操作（非瀏覽器）時使用。NOT: 純程式 |
+| pinchtab | "Chrome 瀏覽器操控 — Pinchtab HTTP API。WHEN: 需要網頁自動化、表單填寫、截圖擷取且 PinchTab 常駐服務（port 98 |
+| pr | "GitHub PR 建立工具。WHEN: 功能完成、需要建立 Pull Request 並組裝結構化描述時使用。NOT: 程式碼開發過程、code revie |
+| security-kb | "安全審查知識：OWASP Top 10、JS 安全模式、STRIDE 威脅建模、供應鏈安全。WHEN: 安全審查、威脅建模、檢查注入風險時使用。NOT: 功能 |
 | skill-judge | Evaluate Agent Skill design quality against official specifications and best pra |
-| thinking | 結構化思維工具：卡關脫困策略、反向驗證法、化繁為簡級聯。用於設計決策僵局、複雜問題拆解、方案驗證。 |
+| thinking | "結構化思維工具：卡關脫困策略、反向驗證法、化繁為簡級聯。WHEN: 設計決策僵局、複雜問題需要拆解、方案需要反向驗證時使用。NOT: 直接可執行的簡單任務。" |
 | wording | 措詞正確性知識域。涵蓋四級指令強度標記（⛔📋💡🔧）、emoji-關鍵詞搭配規則、語氣校準（技術文件/commit/agent prompt/對話）、繁體中 |
 
 ---
