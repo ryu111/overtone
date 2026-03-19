@@ -14,7 +14,7 @@ setEventsFilePath(EVENTS_FILE);
 const { evaluate: evaluateStart } = await import(
   join(homedir(), '.claude/hooks/scripts/session/on-start-flow.js')
 );
-const { evaluate: evaluateAgent, parseAgentFrontmatter, parseExtraSkills } = await import(
+const { evaluate: evaluateAgent, parseAgentFrontmatter } = await import(
   join(homedir(), '.claude/hooks/scripts/tool/pre-agent-flow.js')
 );
 const { evaluate: evaluateStop } = await import(
@@ -94,35 +94,19 @@ describe('pre-agent-flow.js（PreToolUse Agent）', () => {
     expect(result).toBeNull();
   });
 
-  test('parseExtraSkills 解析 [EXTRA_SKILLS: ...] 前綴', () => {
-    expect(parseExtraSkills('[EXTRA_SKILLS: security-kb, database]\n請審查 PR'))
-      .toEqual(['security-kb', 'database']);
-  });
-
-  test('parseExtraSkills 無前綴回傳空陣列', () => {
-    expect(parseExtraSkills('普通 prompt')).toEqual([]);
-  });
-
-  test('parseExtraSkills null/undefined 回傳空陣列', () => {
-    expect(parseExtraSkills(null)).toEqual([]);
-    expect(parseExtraSkills(undefined)).toEqual([]);
-  });
-
-  test('EXTRA_SKILLS 與 frontmatter skills 合併去重', () => {
+  test('agent dispatch 使用 frontmatter skills', () => {
     writeFileSync(EVENTS_FILE, '');
     evaluateAgent({
       tool_input: {
         subagent_type: 'executor',
         description: 'test',
-        prompt: '[EXTRA_SKILLS: security-kb, new-skill]\ndo something',
+        prompt: 'do something',
       },
     });
     const events = readRecentEvents();
     const dispatch = events.find(e => e.type === 'agent_dispatch');
-    // executor 已有 security-kb，合併後不重複
-    expect(dispatch.skills).toContain('security-kb');
-    expect(dispatch.skills).toContain('new-skill');
-    expect(dispatch.skills.filter(s => s === 'security-kb').length).toBe(1);
+    expect(dispatch.skills).toContain('nova-test');
+    expect(dispatch.skills).toContain('commit-convention');
   });
 });
 
