@@ -27,7 +27,7 @@
 
 ---
 
-### Skills（25）
+### Skills（28）
 
 | 名稱 | 簡述 |
 |------|------|
@@ -43,6 +43,7 @@
 | dead-code | "死碼清理知識：knip/depcheck 工具、手動清理策略、安全刪除。WHEN: 清理未使用程式碼、codebase 瘦身時使用。NOT: 功能開發、重構。 |
 | debugging | "除錯方法論與根因分析框架。WHEN: 遇到 bug 需要根因分析（RCA）、重現問題、診斷並發問題時使用。NOT: 功能開發、架構設計。" |
 | evolve | "知識進化引擎（含內化知識庫）。WHEN: 分析知識積累狀態、查詢已內化的跨專案經驗、決定是否升級為 Skill/Agent 時使用。NOT: 專案特定知識、一 |
+| issue-triage | GitHub Issue 自動分類知識域：gh CLI 驅動的 Issue 分析 + 類型/優先序/深度路由判定。WHEN: Issue 自動分類、批量 tri |
 | jsonl-truncate-n | "JSONL 日誌截斷策略。WHEN: 處理 Nova 系統 JSONL 檔案的截斷、決定保留數量時使用。NOT: 一般檔案操作、非 JSONL 格式。" |
 | nova-autonomous-control | "自主成長閉環控制。WHEN: 配置 heartbeat 自驅策略、設定 focus 方向、管理本地任務批次執行時使用。NOT: 一般開發工作、手動任務執行。" |
 | nova-pm | 產品探索與需求釐清。引導 planner agent 以 PM 角色探索需求、定義範圍、比較方案。三種模式：discovery（D1）、product（D2）、 |
@@ -52,6 +53,8 @@
 | os-control | "OS 操控知識域：桌面自動化、系統管理、螢幕截圖、音訊控制、WebSocket 即時通訊。WHEN: 需要作業系統層級操作（非瀏覽器）時使用。NOT: 純程式 |
 | pinchtab | "Chrome 瀏覽器操控 — Pinchtab HTTP API。WHEN: 需要網頁自動化、表單填寫、截圖擷取且 PinchTab 常駐服務（port 98 |
 | pr | "GitHub PR 建立工具。WHEN: 功能完成、需要建立 Pull Request 並組裝結構化描述時使用。NOT: 程式碼開發過程、code revie |
+| pr-auto-review | GitHub PR 自動審查知識域：gh CLI 驅動的 diff 分析 + 結構化 review comment 產出。WHEN: 自動化 PR 審查、批量  |
+| release-notes | Release Notes 自動生成知識域：git log 分析 + Conventional Commit 分類 + 結構化 changelog 產出。WHE |
 | security-kb | "安全審查知識：OWASP Top 10、JS 安全模式、STRIDE 威脅建模、供應鏈安全。WHEN: 安全審查、威脅建模、檢查注入風險時使用。NOT: 功能 |
 | skill-judge | Evaluate Agent Skill design quality against official specifications and best pra |
 | thinking | "結構化思維工具：卡關脫困策略、反向驗證法、化繁為簡級聯。WHEN: 設計決策僵局、複雜問題需要拆解、方案需要反向驗證時使用。NOT: 直接可執行的簡單任務。" |
@@ -139,17 +142,17 @@
 
 ## 任務狀態
 
-### 進行中（0）
+### 進行中（1）
 
-_目前無進行中的任務_
+| 任務 | 類型 | 優先 | 深度 | 認領時間 |
+|------|------|:----:|:----:|---------|
+| undefined | undefined | — | — | 2026-03-20 |
 
 ---
 
-### 待做（1）
+### 待做（0）
 
-| 任務 | 類型 | 優先 | 深度 | 建立時間 |
-|------|------|:----:|:----:|---------|
-| github-automation | — | — | — | — |
+_目前無待做任務_
 
 ---
 
