@@ -59,7 +59,7 @@
 
 ---
 
-### Scripts（46）
+### Scripts（48）
 
 | 名稱 | 簡述 |
 |------|------|
@@ -104,6 +104,8 @@
 | spec-tasks | 本地任務管理模組 |
 | task-adapter | R4.3 新任務快速適應機制 |
 | tg-ask | Telegram inline keyboard 互動詢問 |
+| tg-notify | Telegram 推送通知（純發訊息，不等回應） |
+| tg-patch | 在 Telegram plugin 加入 callback_query handler |
 | tool-matcher | 意圖→工具語意匹配：給定任務描述，從 tool-registry 推薦工具組合 |
 | tool-registry | 工具索引：掃描 5 種工具來源，建立統一查詢索引 |
 | wrapup | session 收尾編排器 |
