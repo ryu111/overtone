@@ -1,5 +1,5 @@
 # 專案索引
-> 自動產生於 2026-03-19
+> 自動產生於 2026-03-20
 
 ## 元件目錄
 
@@ -59,7 +59,7 @@
 
 ---
 
-### Scripts（44）
+### Scripts（45）
 
 | 名稱 | 簡述 |
 |------|------|
@@ -95,6 +95,7 @@
 | manage-component | 元件管理 CLI |
 | memory-reclaim | 記憶體回收 |
 | prepare-lora-data | 從現有資料合成 LoRA 訓練集 |
+| session-cleanup | Session 日誌滾動清理 |
 | session-recorder | Session 摘要與簡報記錄（Phase 4a + 4b 包裝） |
 | session-spawner | claude -p spawn 封裝 |
 | skill-forge | Skill 建立引擎（forgeSkill + improveSkill + deploySkill） |
