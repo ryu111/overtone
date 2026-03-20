@@ -143,11 +143,9 @@
 
 ## 任務狀態
 
-### 進行中（1）
+### 進行中（0）
 
-| 任務 | 類型 | 優先 | 深度 | 認領時間 |
-|------|------|:----:|:----:|---------|
-| undefined | undefined | — | — | 2026-03-20 |
+_目前無進行中的任務_
 
 ---
 
@@ -161,6 +159,7 @@ _目前無待做任務_
 
 | 任務 | 類型 | 完成時間 | 結果 |
 |------|------|---------|------|
+| undefined | undefined | 2026-03-20 | 3 個 GitHub Skill（A 級）+ Acid Test 6/6 + 真 |
 | capability-probe 修復 | 修復 | 2026-03-18 | 修復完成，timeout 從 42 次降到 0 次 |
 | 2026-03-15_nova-server-observability | — | — | — |
 | 2026-03-16_health-check | — | — | — |
@@ -170,4 +169,3 @@ _目前無待做任務_
 | r4-e2e-integration | — | — | — |
 | session-wrapup-refactor | — | — | — |
 | dashboard-g3-unify | — | — | — |
-| 2026-03-16_heartbeat-engine | — | — | — |
