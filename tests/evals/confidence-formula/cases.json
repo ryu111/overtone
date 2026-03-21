@@ -1,0 +1,168 @@
+{
+  "name": "信心公式常數",
+  "description": "驗證 computeConfidence 中的常數是否產生正確的信心分數。variable_file: ~/.claude/scripts/learner-analysis.js",
+  "variable_description": "calculateConfidence 中的常數：絕對次數上限(3)、log2 分母上限(20)、時間衰減係數(3天)、頻率權重比(50:50)",
+  "ground_truth_context": "confidence 值在 now=2026-03-19, totalSessions=1786 時計算",
+  "cases": [
+    {
+      "occurrences_count": 1,
+      "first_seen": "2026-03-18",
+      "last_seen": "2026-03-18",
+      "polarity": -1,
+      "expected_confidence": 0.11,
+      "label": "parallel-delegate (occ=1, span=2026-03-18~2026-03-18)"
+    },
+    {
+      "occurrences_count": 1,
+      "first_seen": "2026-03-18",
+      "last_seen": "2026-03-18",
+      "polarity": 1,
+      "expected_confidence": 0.11,
+      "label": "context-forwarding-efficiency-2026-03-18 (occ=1, span=2026-03-18~2026-03-18)"
+    },
+    {
+      "occurrences_count": 1,
+      "first_seen": "2026-03-18",
+      "last_seen": "2026-03-18",
+      "polarity": -1,
+      "expected_confidence": 0.11,
+      "label": "agent-bash-edit (occ=1, span=2026-03-18~2026-03-18)"
+    },
+    {
+      "occurrences_count": 1,
+      "first_seen": "2026-03-18",
+      "last_seen": "2026-03-18",
+      "polarity": -1,
+      "expected_confidence": 0.11,
+      "label": "edit-bash-edit-bash (occ=1, span=2026-03-18~2026-03-18)"
+    },
+    {
+      "occurrences_count": 1,
+      "first_seen": "2026-03-18",
+      "last_seen": "2026-03-18",
+      "polarity": -1,
+      "expected_confidence": 0.11,
+      "label": "edit-bash-agent (occ=1, span=2026-03-18~2026-03-18)"
+    },
+    {
+      "occurrences_count": 1,
+      "first_seen": "2026-03-19",
+      "last_seen": "2026-03-19",
+      "polarity": -1,
+      "expected_confidence": 0.14,
+      "label": "bash-agent-edit (occ=1, span=2026-03-19~2026-03-19)"
+    },
+    {
+      "occurrences_count": 1,
+      "first_seen": "2026-03-19",
+      "last_seen": "2026-03-19",
+      "polarity": -1,
+      "expected_confidence": 0.14,
+      "label": "bash-edit (occ=1, span=2026-03-19~2026-03-19)"
+    },
+    {
+      "occurrences_count": 2,
+      "first_seen": "2026-03-18",
+      "last_seen": "2026-03-19",
+      "polarity": -1,
+      "expected_confidence": 0.51,
+      "label": "edit (occ=2, span=2026-03-18~2026-03-19)"
+    },
+    {
+      "occurrences_count": 1,
+      "first_seen": "2026-03-19",
+      "last_seen": "2026-03-19",
+      "polarity": -1,
+      "expected_confidence": 0.14,
+      "label": "bash-edit-2 (occ=1, span=2026-03-19~2026-03-19)"
+    },
+    {
+      "occurrences_count": 2,
+      "first_seen": "2026-03-17",
+      "last_seen": "2026-03-19",
+      "polarity": -1,
+      "expected_confidence": 0.51,
+      "label": "agent-edit (occ=2, span=2026-03-17~2026-03-19)"
+    },
+    {
+      "occurrences_count": 7,
+      "first_seen": "2026-03-17",
+      "last_seen": "2026-03-19",
+      "polarity": -1,
+      "expected_confidence": 0.84,
+      "label": "bash-edit-bash (occ=7, span=2026-03-17~2026-03-19)"
+    },
+    {
+      "occurrences_count": 6,
+      "first_seen": "2026-03-17",
+      "last_seen": "2026-03-19",
+      "polarity": -1,
+      "expected_confidence": 0.82,
+      "label": "bash-edit-6-2d (occ=6, span=2026-03-17~2026-03-19)"
+    },
+    {
+      "occurrences_count": 2,
+      "first_seen": "2026-03-18",
+      "last_seen": "2026-03-19",
+      "polarity": -1,
+      "expected_confidence": 0.51,
+      "label": "edit-bash-edit (occ=2, span=2026-03-18~2026-03-19)"
+    },
+    {
+      "occurrences_count": 6,
+      "first_seen": "2026-03-17",
+      "last_seen": "2026-03-19",
+      "polarity": -1,
+      "expected_confidence": 0.82,
+      "label": "bash-edit-6-2d-2 (occ=6, span=2026-03-17~2026-03-19)"
+    },
+    {
+      "occurrences_count": 4,
+      "first_seen": "2026-03-18",
+      "last_seen": "2026-03-19",
+      "polarity": -1,
+      "expected_confidence": 0.76,
+      "label": "edit-agent (occ=4, span=2026-03-18~2026-03-19)"
+    },
+    {
+      "occurrences_count": 7,
+      "first_seen": "2026-03-18",
+      "last_seen": "2026-03-19",
+      "polarity": -1,
+      "expected_confidence": 0.84,
+      "label": "edit-bash (occ=7, span=2026-03-18~2026-03-19)"
+    },
+    {
+      "occurrences_count": 7,
+      "first_seen": "2026-03-17",
+      "last_seen": "2026-03-19",
+      "polarity": -1,
+      "expected_confidence": 0.84,
+      "label": "bash-edit-bash-2d (occ=7, span=2026-03-17~2026-03-19)"
+    },
+    {
+      "occurrences_count": 8,
+      "first_seen": "2026-03-16",
+      "last_seen": "2026-03-19",
+      "polarity": -1,
+      "expected_confidence": 0.86,
+      "label": "write-write (occ=8, span=2026-03-16~2026-03-19)"
+    },
+    {
+      "occurrences_count": 8,
+      "first_seen": "2026-03-17",
+      "last_seen": "2026-03-19",
+      "polarity": -1,
+      "expected_confidence": 0.86,
+      "label": "edit-bash-8 (occ=8, span=2026-03-17~2026-03-19)"
+    },
+    {
+      "occurrences_count": 8,
+      "first_seen": "2026-03-17",
+      "last_seen": "2026-03-19",
+      "polarity": -1,
+      "expected_confidence": 0.86,
+      "label": "bash-edit-8 (occ=8, span=2026-03-17~2026-03-19)"
+    }
+  ]
+}

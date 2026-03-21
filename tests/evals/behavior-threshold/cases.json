@@ -1,0 +1,802 @@
+{
+  "name": "行為門檻值",
+  "variable_file": "~/.claude/scripts/learner-suggestions.js",
+  "variable_description": "habitThreshold (0.6) 和 antiPatternThreshold (0.4) — 決定行為是否達到生成建議的門檻",
+  "meta": {
+    "habit_threshold": 0.6,
+    "anti_pattern_threshold": 0.4
+  },
+  "cases": [
+    {
+      "label": "bash-bash",
+      "pattern": "Bash→Bash",
+      "polarity": 1,
+      "confidence": 1.15,
+      "should_trigger": true
+    },
+    {
+      "label": "bash-bash-bash",
+      "pattern": "Bash→Bash→Bash",
+      "polarity": 1,
+      "confidence": 1.1,
+      "should_trigger": true
+    },
+    {
+      "label": "bash-bash-bash-bash",
+      "pattern": "Bash→Bash→Bash→Bash",
+      "polarity": 1,
+      "confidence": 1.05,
+      "should_trigger": true
+    },
+    {
+      "label": "bash-agent",
+      "pattern": "Bash→Agent",
+      "polarity": -1,
+      "confidence": 0.96,
+      "should_trigger": true
+    },
+    {
+      "label": "agent-bash",
+      "pattern": "Agent→Bash",
+      "polarity": -1,
+      "confidence": 0.97,
+      "should_trigger": true
+    },
+    {
+      "label": "write-write",
+      "pattern": "Write→Write",
+      "polarity": -1,
+      "confidence": 0.86,
+      "should_trigger": true
+    },
+    {
+      "label": "agent-agent",
+      "pattern": "Agent→Agent",
+      "polarity": -1,
+      "confidence": 0.79,
+      "should_trigger": true
+    },
+    {
+      "label": "agent-bash-bash",
+      "pattern": "Agent→Bash→Bash",
+      "polarity": -1,
+      "confidence": 0.93,
+      "should_trigger": true
+    },
+    {
+      "label": "anti-2026-03-16-sid37",
+      "pattern": "anti-pattern",
+      "polarity": -1,
+      "confidence": 1.1,
+      "should_trigger": true
+    },
+    {
+      "label": "bash-bash-agent",
+      "pattern": "Bash→Bash→Agent",
+      "polarity": -1,
+      "confidence": 0.94,
+      "should_trigger": true
+    },
+    {
+      "label": "bash-agent-bash",
+      "pattern": "Bash→Agent→Bash",
+      "polarity": -1,
+      "confidence": 0.92,
+      "should_trigger": true
+    },
+    {
+      "label": "bash-bash-bash-agent",
+      "pattern": "Bash→Bash→Bash→Agent",
+      "polarity": -1,
+      "confidence": 0.92,
+      "should_trigger": true
+    },
+    {
+      "label": "bash-agent-bash",
+      "pattern": "Bash→Bash→Agent→Bash",
+      "polarity": 1,
+      "confidence": 0.91,
+      "should_trigger": true
+    },
+    {
+      "label": "edit-bash",
+      "pattern": "Edit→Bash",
+      "polarity": -1,
+      "confidence": 0.93,
+      "should_trigger": true
+    },
+    {
+      "label": "bash-edit",
+      "pattern": "Bash→Edit",
+      "polarity": -1,
+      "confidence": 0.91,
+      "should_trigger": true
+    },
+    {
+      "label": "bash-edit-bash",
+      "pattern": "Bash→Edit→Bash",
+      "polarity": -1,
+      "confidence": 0.86,
+      "should_trigger": true
+    },
+    {
+      "label": "edit",
+      "pattern": "Edit→Edit",
+      "polarity": -1,
+      "confidence": 0.89,
+      "should_trigger": true
+    },
+    {
+      "label": "edit-bash",
+      "pattern": "Edit→Bash→Bash",
+      "polarity": -1,
+      "confidence": 0.92,
+      "should_trigger": true
+    },
+    {
+      "label": "bash-edit",
+      "pattern": "Bash→Bash→Edit",
+      "polarity": -1,
+      "confidence": 0.89,
+      "should_trigger": true
+    },
+    {
+      "label": "repeated-edit",
+      "pattern": "Edit→Edit→Edit",
+      "polarity": -1,
+      "confidence": 0.84,
+      "should_trigger": true
+    },
+    {
+      "label": "edit-bash",
+      "pattern": "Edit→Bash→Bash→Bash",
+      "polarity": -1,
+      "confidence": 0.89,
+      "should_trigger": true
+    },
+    {
+      "label": "repeated-edit",
+      "pattern": "Edit→Edit→Edit→Edit",
+      "polarity": -1,
+      "confidence": 0.82,
+      "should_trigger": true
+    },
+    {
+      "label": "bash-edit-bash",
+      "pattern": "Bash→Bash→Edit→Bash",
+      "polarity": -1,
+      "confidence": 0.84,
+      "should_trigger": true
+    },
+    {
+      "label": "bash-edit",
+      "pattern": "Bash→Write",
+      "polarity": -1,
+      "confidence": 0.89,
+      "should_trigger": true
+    },
+    {
+      "label": "edit-agent",
+      "pattern": "Write→Agent",
+      "polarity": -1,
+      "confidence": 0.39,
+      "should_trigger": true
+    },
+    {
+      "label": "edit-bash",
+      "pattern": "Write→Bash",
+      "polarity": -1,
+      "confidence": 0.86,
+      "should_trigger": true
+    },
+    {
+      "label": "bash-edit",
+      "pattern": "Bash→Bash→Write",
+      "polarity": -1,
+      "confidence": 0.86,
+      "should_trigger": true
+    },
+    {
+      "label": "repeated-edit",
+      "pattern": "Write→Write→Write",
+      "polarity": -1,
+      "confidence": 0.73,
+      "should_trigger": true
+    },
+    {
+      "label": "edit-bash",
+      "pattern": "Write→Write→Bash",
+      "polarity": -1,
+      "confidence": 0.73,
+      "should_trigger": true
+    },
+    {
+      "label": "edit-bash",
+      "pattern": "Write→Bash→Bash",
+      "polarity": -1,
+      "confidence": 0.86,
+      "should_trigger": true
+    },
+    {
+      "label": "bash-edit-bash",
+      "pattern": "Bash→Write→Bash",
+      "polarity": -1,
+      "confidence": 0.84,
+      "should_trigger": true
+    },
+    {
+      "label": "bash-edit",
+      "pattern": "Bash→Bash→Bash→Write",
+      "polarity": -1,
+      "confidence": 0.84,
+      "should_trigger": true
+    },
+    {
+      "label": "edit-bash",
+      "pattern": "Write→Write→Bash→Bash",
+      "polarity": -1,
+      "confidence": 0.73,
+      "should_trigger": true
+    },
+    {
+      "label": "edit-bash",
+      "pattern": "Write→Bash→Bash→Bash",
+      "polarity": -1,
+      "confidence": 0.84,
+      "should_trigger": true
+    },
+    {
+      "label": "bash-edit-bash",
+      "pattern": "Bash→Bash→Write→Bash",
+      "polarity": -1,
+      "confidence": 0.82,
+      "should_trigger": true
+    },
+    {
+      "label": "bash-edit-bash",
+      "pattern": "Bash→Write→Bash→Bash",
+      "polarity": -1,
+      "confidence": 0.84,
+      "should_trigger": true
+    },
+    {
+      "label": "bash-edit",
+      "pattern": "Bash→Bash→Bash→Edit",
+      "polarity": -1,
+      "confidence": 0.86,
+      "should_trigger": true
+    },
+    {
+      "label": "bash-edit-bash",
+      "pattern": "Bash→Edit→Bash→Bash",
+      "polarity": -1,
+      "confidence": 0.84,
+      "should_trigger": true
+    },
+    {
+      "label": "agent-bash",
+      "pattern": "Agent→Bash→Bash→Bash",
+      "polarity": -1,
+      "confidence": 0.89,
+      "should_trigger": true
+    },
+    {
+      "label": "agent-edit",
+      "pattern": "Agent→Write",
+      "polarity": -1,
+      "confidence": 0.51,
+      "should_trigger": true
+    },
+    {
+      "label": "agent-edit-bash",
+      "pattern": "Agent→Write→Bash",
+      "polarity": -1,
+      "confidence": 0.51,
+      "should_trigger": true
+    },
+    {
+      "label": "agent-edit-bash",
+      "pattern": "Agent→Write→Bash→Bash",
+      "polarity": -1,
+      "confidence": 0.21,
+      "should_trigger": false
+    },
+    {
+      "label": "parallel-delegate",
+      "pattern": "Bash→Agent→Agent",
+      "polarity": -1,
+      "confidence": 0.39,
+      "should_trigger": true
+    },
+    {
+      "label": "parallel-delegate",
+      "pattern": "Bash→Bash→Agent→Agent",
+      "polarity": -1,
+      "confidence": 0.39,
+      "should_trigger": true
+    },
+    {
+      "label": "bash-agent-bash",
+      "pattern": "Bash→Agent→Bash→Bash",
+      "polarity": -1,
+      "confidence": 0.89,
+      "should_trigger": true
+    },
+    {
+      "label": "edit-bash-edit",
+      "pattern": "Edit→Bash→Bash→Edit",
+      "polarity": -1,
+      "confidence": 0.55,
+      "should_trigger": true
+    },
+    {
+      "label": "bash-edit",
+      "pattern": "Bash→Edit→Edit",
+      "polarity": -1,
+      "confidence": 0.82,
+      "should_trigger": true
+    },
+    {
+      "label": "edit-bash",
+      "pattern": "Edit→Edit→Bash",
+      "polarity": -1,
+      "confidence": 0.86,
+      "should_trigger": true
+    },
+    {
+      "label": "bash-edit",
+      "pattern": "Bash→Edit→Edit→Edit",
+      "polarity": -1,
+      "confidence": 0.82,
+      "should_trigger": true
+    },
+    {
+      "label": "edit-bash",
+      "pattern": "Edit→Edit→Edit→Bash",
+      "polarity": -1,
+      "confidence": 0.82,
+      "should_trigger": true
+    },
+    {
+      "label": "agent-bash-edit",
+      "pattern": "Agent→Bash→Bash→Write",
+      "polarity": -1,
+      "confidence": 0.11,
+      "should_trigger": false
+    },
+    {
+      "label": "edit-bash",
+      "pattern": "Edit→Edit→Bash→Bash",
+      "polarity": -1,
+      "confidence": 0.84,
+      "should_trigger": true
+    },
+    {
+      "label": "bash-edit",
+      "pattern": "Bash→Bash→Edit→Edit",
+      "polarity": -1,
+      "confidence": 0.82,
+      "should_trigger": true
+    },
+    {
+      "label": "edit",
+      "pattern": "Write→Edit",
+      "polarity": -1,
+      "confidence": 0.82,
+      "should_trigger": true
+    },
+    {
+      "label": "skill-review-session-2026-03-18",
+      "pattern": "SessionType→SkillReview",
+      "polarity": 1,
+      "confidence": 0.11,
+      "should_trigger": true
+    },
+    {
+      "label": "learner-executor-role-2026-03-18",
+      "pattern": "RolePattern→LearnerExecutor",
+      "polarity": 1,
+      "confidence": 0.11,
+      "should_trigger": true
+    },
+    {
+      "label": "context-forwarding-efficiency-2026-03-18",
+      "pattern": "ContextForwarding→DecisionMaking",
+      "polarity": 1,
+      "confidence": 0.11,
+      "should_trigger": true
+    },
+    {
+      "label": "execution-evidence-requirement-2026-03-18",
+      "pattern": "CompletionCriteria→ObjectiveEvidence",
+      "polarity": 1,
+      "confidence": 0.11,
+      "should_trigger": true
+    },
+    {
+      "label": "parallel-delegate",
+      "pattern": "Agent→Bash→Agent",
+      "polarity": -1,
+      "confidence": 0.57,
+      "should_trigger": true
+    },
+    {
+      "label": "parallel-delegate",
+      "pattern": "Bash→Agent→Bash→Agent",
+      "polarity": -1,
+      "confidence": 0.55,
+      "should_trigger": true
+    },
+    {
+      "label": "parallel-delegate",
+      "pattern": "Agent→Bash→Agent→Bash",
+      "polarity": -1,
+      "confidence": 0.39,
+      "should_trigger": true
+    },
+    {
+      "label": "edit-bash-agent",
+      "pattern": "Edit→Bash→Bash→Agent",
+      "polarity": -1,
+      "confidence": 0.11,
+      "should_trigger": false
+    },
+    {
+      "label": "anti-2026-03-18-sid1776",
+      "pattern": "anti-pattern",
+      "polarity": -1,
+      "confidence": 0.11,
+      "should_trigger": false
+    },
+    {
+      "label": "anti-2026-03-18-sid1776",
+      "pattern": "anti-pattern",
+      "polarity": -1,
+      "confidence": 0.11,
+      "should_trigger": false
+    },
+    {
+      "label": "agent-edit",
+      "pattern": "Agent→Edit",
+      "polarity": -1,
+      "confidence": 0.73,
+      "should_trigger": true
+    },
+    {
+      "label": "bash-agent-edit",
+      "pattern": "Bash→Agent→Edit",
+      "polarity": -1,
+      "confidence": 0.73,
+      "should_trigger": true
+    },
+    {
+      "label": "agent-edit",
+      "pattern": "Agent→Edit→Edit",
+      "polarity": -1,
+      "confidence": 0.39,
+      "should_trigger": true
+    },
+    {
+      "label": "edit-bash-agent",
+      "pattern": "Edit→Bash→Agent",
+      "polarity": -1,
+      "confidence": 0.11,
+      "should_trigger": false
+    },
+    {
+      "label": "agent-edit",
+      "pattern": "Agent→Edit→Edit→Edit",
+      "polarity": -1,
+      "confidence": 0.39,
+      "should_trigger": true
+    },
+    {
+      "label": "bash-edit-bash-agent",
+      "pattern": "Bash→Edit→Bash→Agent",
+      "polarity": -1,
+      "confidence": 0.11,
+      "should_trigger": false
+    },
+    {
+      "label": "edit-agent",
+      "pattern": "Edit→Agent",
+      "polarity": -1,
+      "confidence": 0.76,
+      "should_trigger": true
+    },
+    {
+      "label": "edit-agent",
+      "pattern": "Edit→Edit→Agent",
+      "polarity": -1,
+      "confidence": 0.11,
+      "should_trigger": false
+    },
+    {
+      "label": "bash-agent-edit",
+      "pattern": "Bash→Agent→Edit→Edit",
+      "polarity": -1,
+      "confidence": 0.11,
+      "should_trigger": false
+    },
+    {
+      "label": "edit",
+      "pattern": "Edit→Write",
+      "polarity": -1,
+      "confidence": 0.51,
+      "should_trigger": true
+    },
+    {
+      "label": "edit-agent-bash",
+      "pattern": "Edit→Agent→Bash",
+      "polarity": -1,
+      "confidence": 0.51,
+      "should_trigger": true
+    },
+    {
+      "label": "repeated-edit",
+      "pattern": "Edit→Write→Write",
+      "polarity": -1,
+      "confidence": 0.11,
+      "should_trigger": false
+    },
+    {
+      "label": "repeated-edit",
+      "pattern": "Write→Write→Edit",
+      "polarity": -1,
+      "confidence": 0.11,
+      "should_trigger": false
+    },
+    {
+      "label": "agent-edit-bash",
+      "pattern": "Agent→Edit→Bash",
+      "polarity": -1,
+      "confidence": 0.11,
+      "should_trigger": false
+    },
+    {
+      "label": "repeated-edit",
+      "pattern": "Write→Write→Write→Edit",
+      "polarity": -1,
+      "confidence": 0.11,
+      "should_trigger": false
+    },
+    {
+      "label": "bash-agent-edit",
+      "pattern": "Bash→Bash→Agent→Edit",
+      "polarity": -1,
+      "confidence": 0.51,
+      "should_trigger": true
+    },
+    {
+      "label": "agent-edit-bash",
+      "pattern": "Agent→Edit→Bash→Bash",
+      "polarity": -1,
+      "confidence": 0.11,
+      "should_trigger": false
+    },
+    {
+      "label": "bash-agent-edit-bash",
+      "pattern": "Bash→Agent→Edit→Bash",
+      "polarity": -1,
+      "confidence": 0.11,
+      "should_trigger": false
+    },
+    {
+      "label": "edit-bash-edit",
+      "pattern": "Edit→Bash→Edit",
+      "polarity": -1,
+      "confidence": 0.51,
+      "should_trigger": true
+    },
+    {
+      "label": "bash-edit-bash-edit",
+      "pattern": "Bash→Edit→Bash→Edit",
+      "polarity": -1,
+      "confidence": 0.51,
+      "should_trigger": true
+    },
+    {
+      "label": "edit-bash-edit-bash",
+      "pattern": "Edit→Bash→Edit→Bash",
+      "polarity": -1,
+      "confidence": 0.51,
+      "should_trigger": true
+    },
+    {
+      "label": "parallel-delegate",
+      "pattern": "Agent→Agent→Bash",
+      "polarity": -1,
+      "confidence": 0.11,
+      "should_trigger": false
+    },
+    {
+      "label": "parallel-delegate",
+      "pattern": "Bash→Agent→Agent→Bash",
+      "polarity": -1,
+      "confidence": 0.11,
+      "should_trigger": false
+    },
+    {
+      "label": "parallel-delegate",
+      "pattern": "Agent→Agent→Bash→Bash",
+      "polarity": -1,
+      "confidence": 0.11,
+      "should_trigger": false
+    },
+    {
+      "label": "edit-bash-edit",
+      "pattern": "Write→Bash→Write",
+      "polarity": -1,
+      "confidence": 0.11,
+      "should_trigger": false
+    },
+    {
+      "label": "edit-bash-edit",
+      "pattern": "Edit→Bash→Edit→Edit",
+      "polarity": -1,
+      "confidence": 0.51,
+      "should_trigger": true
+    },
+    {
+      "label": "bash-edit-bash",
+      "pattern": "Bash→Edit→Edit→Bash",
+      "polarity": -1,
+      "confidence": 0.73,
+      "should_trigger": true
+    },
+    {
+      "label": "edit-bash-edit",
+      "pattern": "Edit→Edit→Bash→Edit",
+      "polarity": -1,
+      "confidence": 0.51,
+      "should_trigger": true
+    },
+    {
+      "label": "bash-edit-bash-edit",
+      "pattern": "Bash→Write→Bash→Write",
+      "polarity": -1,
+      "confidence": 0.11,
+      "should_trigger": false
+    },
+    {
+      "label": "edit-bash-edit-bash",
+      "pattern": "Write→Bash→Write→Bash",
+      "polarity": -1,
+      "confidence": 0.11,
+      "should_trigger": false
+    },
+    {
+      "label": "edit-agent",
+      "pattern": "Write→Edit→Agent",
+      "polarity": 1,
+      "confidence": 0.11,
+      "should_trigger": false
+    },
+    {
+      "label": "edit-agent-bash",
+      "pattern": "Edit→Agent→Bash→Bash",
+      "polarity": -1,
+      "confidence": 0.14,
+      "should_trigger": false
+    },
+    {
+      "label": "bash-edit-agent",
+      "pattern": "Bash→Edit→Agent",
+      "polarity": -1,
+      "confidence": 0.14,
+      "should_trigger": false
+    },
+    {
+      "label": "parallel-delegate",
+      "pattern": "Agent→Agent→Agent",
+      "polarity": -1,
+      "confidence": 0.51,
+      "should_trigger": true
+    },
+    {
+      "label": "bash-edit-agent",
+      "pattern": "Bash→Bash→Edit→Agent",
+      "polarity": -1,
+      "confidence": 0.14,
+      "should_trigger": false
+    },
+    {
+      "label": "bash-edit",
+      "pattern": "Bash→Write→Write",
+      "polarity": 1,
+      "confidence": 0.14,
+      "should_trigger": false
+    },
+    {
+      "label": "repeated-edit",
+      "pattern": "Write→Edit→Edit",
+      "polarity": -1,
+      "confidence": 0.14,
+      "should_trigger": false
+    },
+    {
+      "label": "bash-agent-edit",
+      "pattern": "Bash→Agent→Write",
+      "polarity": -1,
+      "confidence": 0.14,
+      "should_trigger": false
+    },
+    {
+      "label": "bash-edit",
+      "pattern": "Bash→Bash→Write→Write",
+      "polarity": -1,
+      "confidence": 0.14,
+      "should_trigger": false
+    },
+    {
+      "label": "bash-edit",
+      "pattern": "Bash→Write→Write→Write",
+      "polarity": -1,
+      "confidence": 0.14,
+      "should_trigger": false
+    },
+    {
+      "label": "repeated-edit",
+      "pattern": "Write→Write→Write→Write",
+      "polarity": -1,
+      "confidence": 0.14,
+      "should_trigger": false
+    },
+    {
+      "label": "edit-bash-agent",
+      "pattern": "Write→Bash→Bash→Agent",
+      "polarity": -1,
+      "confidence": 0.14,
+      "should_trigger": false
+    },
+    {
+      "label": "bash-agent-edit",
+      "pattern": "Bash→Bash→Agent→Write",
+      "polarity": -1,
+      "confidence": 0.14,
+      "should_trigger": false
+    },
+    {
+      "label": "bash-agent-edit-bash",
+      "pattern": "Bash→Agent→Write→Bash",
+      "polarity": -1,
+      "confidence": 0.14,
+      "should_trigger": false
+    },
+    {
+      "label": "bash-edit-bash",
+      "pattern": "Bash→Write→Write→Bash",
+      "polarity": -1,
+      "confidence": 0.14,
+      "should_trigger": false
+    },
+    {
+      "label": "bash-edit",
+      "pattern": "Bash→Write→Edit",
+      "polarity": -1,
+      "confidence": 0.14,
+      "should_trigger": false
+    },
+    {
+      "label": "bash-edit",
+      "pattern": "Bash→Bash→Write→Edit",
+      "polarity": -1,
+      "confidence": 0.14,
+      "should_trigger": false
+    },
+    {
+      "label": "bash-edit",
+      "pattern": "Bash→Write→Edit→Edit",
+      "polarity": -1,
+      "confidence": 0.14,
+      "should_trigger": false
+    },
+    {
+      "label": "parallel-delegate",
+      "pattern": "Agent→Agent→Agent→Agent",
+      "polarity": -1,
+      "confidence": 0.14,
+      "should_trigger": false
+    }
+  ]
+}

@@ -1,0 +1,127 @@
+{
+  "name": "Judge 確定性評分權重",
+  "variable_file": "~/.claude/scripts/judge-scoring.js",
+  "variable_description": "scoreDeterministic 函式中各維度的配分和檢查邏輯",
+  "cases": [
+    {
+      "path": "rules/深度路由.md",
+      "type": "rule",
+      "ground_truth_deterministic": 43,
+      "label": "深度路由規則（得 43 分：有 MUST/NEVER、有例子、行數超標）"
+    },
+    {
+      "path": "rules/瀏覽器工具選擇.md",
+      "type": "rule",
+      "ground_truth_deterministic": 43,
+      "label": "瀏覽器工具選擇規則（得 43 分）"
+    },
+    {
+      "path": "rules/寫作規範.md",
+      "type": "rule",
+      "ground_truth_deterministic": 50,
+      "label": "寫作規範規則（滿分 rule）"
+    },
+    {
+      "path": "rules/常駐服務.md",
+      "type": "rule",
+      "ground_truth_deterministic": 50,
+      "label": "常駐服務規則（滿分 rule）"
+    },
+    {
+      "path": "skills/wording",
+      "type": "skill",
+      "ground_truth_deterministic": 50,
+      "label": "wording skill（滿分 skill）"
+    },
+    {
+      "path": "skills/os-control",
+      "type": "skill",
+      "ground_truth_deterministic": 50,
+      "label": "os-control skill（滿分 skill）"
+    },
+    {
+      "path": "skills/skill-judge",
+      "type": "skill",
+      "ground_truth_deterministic": 50,
+      "label": "skill-judge skill（滿分 skill）"
+    },
+    {
+      "path": "skills/craft",
+      "type": "skill",
+      "ground_truth_deterministic": 50,
+      "label": "craft skill（滿分 skill）"
+    },
+    {
+      "path": "rules/測試規範.md",
+      "type": "rule",
+      "ground_truth_deterministic": 50,
+      "label": "測試規範規則（滿分 rule）"
+    },
+    {
+      "path": "rules/本地模型委派.md",
+      "type": "rule",
+      "ground_truth_deterministic": 50,
+      "label": "本地模型委派規則（滿分 rule）"
+    },
+    {
+      "path": "rules/並行執行.md",
+      "type": "rule",
+      "ground_truth_deterministic": 50,
+      "label": "並行執行規則（滿分 rule）"
+    },
+    {
+      "path": "rules/閉環規範.md",
+      "type": "rule",
+      "ground_truth_deterministic": 50,
+      "label": "閉環規範規則（滿分 rule）"
+    },
+    {
+      "path": "hooks/modules/metrics.js",
+      "type": "hook",
+      "ground_truth_deterministic": 50,
+      "label": "metrics hook（滿分 hook）"
+    },
+    {
+      "path": "rules/詢問規範.md",
+      "type": "rule",
+      "ground_truth_deterministic": 50,
+      "label": "詢問規範規則（滿分 rule）"
+    },
+    {
+      "path": "rules/模組職責分離.md",
+      "type": "rule",
+      "ground_truth_deterministic": 50,
+      "label": "模組職責分離規則（滿分 rule）"
+    },
+    {
+      "path": "agents/executor.md",
+      "type": "agent",
+      "ground_truth_deterministic": 50,
+      "label": "executor agent（滿分 agent）"
+    },
+    {
+      "path": "hooks/modules/heartbeat.js",
+      "type": "hook",
+      "ground_truth_deterministic": 50,
+      "label": "heartbeat hook（滿分 hook）"
+    },
+    {
+      "path": "hooks/modules/notification.js",
+      "type": "hook",
+      "ground_truth_deterministic": 50,
+      "label": "notification hook（滿分 hook）"
+    },
+    {
+      "path": "hooks/modules/context-injector.js",
+      "type": "hook",
+      "ground_truth_deterministic": 40,
+      "label": "context-injector hook（得 40 分：無 handler/factory 結構）"
+    },
+    {
+      "path": "hooks/modules/flow-observer.js",
+      "type": "hook",
+      "ground_truth_deterministic": 50,
+      "label": "flow-observer hook（滿分 hook）"
+    }
+  ]
+}

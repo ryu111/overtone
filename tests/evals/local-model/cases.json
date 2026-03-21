@@ -1,0 +1,29 @@
+{
+  "name": "本地模型 System Prompt — Commit 分類",
+  "description": "測量本地模型 commit message 分類準確度 — 給定變更描述，回傳正確的 type(scope)",
+  "variable_file": "self:system_prompt",
+  "variable_description": "cases.json 內的 system_prompt 欄位 — 調整分類規則、scope 命名規範、few-shot 範例",
+  "system_prompt": "你是 commit message 分類器。根據變更描述，回覆正確的 type(scope)。\n只回覆 type(scope)，不要其他文字。不要思考過程。\n\n可用 type: feat（新功能）, fix（修 bug）, refactor（重構）, chore（雜務/同步/清理）, test（測試）, docs（文件內容更新）\n\nscope 規則：\n- 使用具體元件名（如 security-kb、reviewer），不使用目錄名（如 skills、agents）\n- 路徑 skills/X/SKILL.md → scope 是 X，不是 skills\n- 路徑 agents/X.md → scope 是 X，不是 agents\n- 更新索引、同步數字、刪除未使用檔案 → type 是 chore，不是 docs\n- 測試檔案的 scope 用被測的原始模組名（guards），不用測試檔案名（pre-bash-guard）\n- 同步/更新 spec/ 下的索引或數字 → chore(spec)，不是 docs\n- scope 是「被改的最具體模組」，從檔案路徑的最後一段取。例如 spec/index.md → spec\n- 自動化維護（同步數字、更新索引）的 scope 用被改的目錄名\n- 「同步 X 到 Y」的 scope 用 Y 的目錄（目的地），不用 X（來源）\n- scope 必須從變更描述中提到的檔案路徑推導，不自行發明概念詞\n\n範例：\n輸入：新增 hooks/modules/notification.js，支援 macOS 通知\n輸出：feat(notification)\n\n輸入：修正 guards.js 正則表達式漏判 rm --recursive\n輸出：fix(guards)\n\n輸入：新增 skills/security-kb/SKILL.md 安全審查知識域\n輸出：feat(security-kb)\n\n輸入：新增 agents/reviewer.md 審查者 agent\n輸出：feat(reviewer)\n\n輸入：更新 spec/index.md 的元件目錄段\n輸出：chore(spec)\n\n輸入：新增 pre-bash-guard 的邊界測試案例\n輸出：test(guards)",
+  "cases": [
+    { "input": "新增 skills/security-kb/SKILL.md 安全審查知識域", "expected": "feat(security-kb)", "label": "新增 skill" },
+    { "input": "修正 hook-client.js 的 timeout 未生效問題", "expected": "fix(hook-client)", "label": "修 bug" },
+    { "input": "重構 flow-observer.js 將 emit 邏輯抽出為獨立函式", "expected": "refactor(flow-observer)", "label": "重構" },
+    { "input": "更新 spec/index.md 的元件目錄段", "expected": "chore(spec)", "label": "雜務更新" },
+    { "input": "新增 pre-bash-guard 的邊界測試案例", "expected": "test(guards)", "label": "新增測試" },
+    { "input": "更新 docs/架構演進.md 加入事件驅動說明", "expected": "docs(架構演進)", "label": "更新文件" },
+    { "input": "新增 agents/reviewer.md 審查者 agent 定義", "expected": "feat(reviewer)", "label": "新增 agent" },
+    { "input": "修正 learner.js 行為偵測的 confidence 計算錯誤", "expected": "fix(learner)", "label": "修邏輯錯誤" },
+    { "input": "重構 maintainer.js 將 Phase A/B/C 拆分為獨立函式", "expected": "refactor(maintainer)", "label": "拆分函式" },
+    { "input": "同步 rules/ 數量到 roadmap.md", "expected": "chore(maintainer)", "label": "同步數字" },
+    { "input": "為 context-injector.js 補充整合測試", "expected": "test(context-injector)", "label": "補充測試" },
+    { "input": "修正 settings.json 的 hook 路徑錯誤", "expected": "fix(settings)", "label": "修設定檔" },
+    { "input": "新增 heartbeat 心跳引擎模組", "expected": "feat(heartbeat)", "label": "新增功能模組" },
+    { "input": "刪除未使用的 old-scorer.js 檔案", "expected": "chore(old-scorer)", "label": "刪除死碼" },
+    { "input": "重構 judge-scoring.js 改為分類型評分維度", "expected": "refactor(judge-scoring)", "label": "改架構" },
+    { "input": "修正 briefing-builder.js 的 UTC 時區偏移", "expected": "fix(briefing-builder)", "label": "修時區 bug" },
+    { "input": "新增 eval 基礎設施用於 autoresearch 迭代", "expected": "feat(eval)", "label": "新增 eval 系統" },
+    { "input": "更新 docs/vision.md 加入 L5 客製化願景", "expected": "docs(vision)", "label": "更新願景" },
+    { "input": "將 model-router.js 的 fallback 邏輯簡化", "expected": "refactor(model-router)", "label": "簡化邏輯" },
+    { "input": "修正 wrapup.js Phase C 推送遺漏 overtone repo", "expected": "fix(wrapup)", "label": "修收尾遺漏" }
+  ]
+}

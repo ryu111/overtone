@@ -1,0 +1,127 @@
+{
+  "name": "Judge 語意評分 prompt",
+  "variable_file": "~/.claude/scripts/judge-scoring.js",
+  "variable_description": "scoreWithModel 函式中的 system prompt 和評分維度定義",
+  "cases": [
+    {
+      "path": "rules/深度路由.md",
+      "type": "rule",
+      "ground_truth_semantic": 45,
+      "label": "深度路由規則（高分 rule）"
+    },
+    {
+      "path": "rules/瀏覽器工具選擇.md",
+      "type": "rule",
+      "ground_truth_semantic": 45,
+      "label": "瀏覽器工具選擇規則（高分 rule）"
+    },
+    {
+      "path": "rules/寫作規範.md",
+      "type": "rule",
+      "ground_truth_semantic": 45,
+      "label": "寫作規範規則（高分 rule）"
+    },
+    {
+      "path": "rules/常駐服務.md",
+      "type": "rule",
+      "ground_truth_semantic": 45,
+      "label": "常駐服務規則（高分 rule）"
+    },
+    {
+      "path": "skills/wording",
+      "type": "skill",
+      "ground_truth_semantic": 45,
+      "label": "wording skill（高分 skill）"
+    },
+    {
+      "path": "skills/os-control",
+      "type": "skill",
+      "ground_truth_semantic": 39,
+      "label": "os-control skill（中高分 skill）"
+    },
+    {
+      "path": "skills/skill-judge",
+      "type": "skill",
+      "ground_truth_semantic": 43,
+      "label": "skill-judge skill（中高分 skill）"
+    },
+    {
+      "path": "skills/craft",
+      "type": "skill",
+      "ground_truth_semantic": 43,
+      "label": "craft skill（中高分 skill）"
+    },
+    {
+      "path": "rules/測試規範.md",
+      "type": "rule",
+      "ground_truth_semantic": 44,
+      "label": "測試規範規則（中高分 rule）"
+    },
+    {
+      "path": "rules/本地模型委派.md",
+      "type": "rule",
+      "ground_truth_semantic": 44,
+      "label": "本地模型委派規則（中高分 rule）"
+    },
+    {
+      "path": "rules/並行執行.md",
+      "type": "rule",
+      "ground_truth_semantic": 32,
+      "label": "並行執行規則（中低分 rule）"
+    },
+    {
+      "path": "rules/閉環規範.md",
+      "type": "rule",
+      "ground_truth_semantic": 32,
+      "label": "閉環規範規則（中低分 rule）"
+    },
+    {
+      "path": "hooks/modules/metrics.js",
+      "type": "hook",
+      "ground_truth_semantic": 35,
+      "label": "metrics hook（中低分 hook）"
+    },
+    {
+      "path": "rules/詢問規範.md",
+      "type": "rule",
+      "ground_truth_semantic": 37,
+      "label": "詢問規範規則（中低分 rule）"
+    },
+    {
+      "path": "rules/模組職責分離.md",
+      "type": "rule",
+      "ground_truth_semantic": 37,
+      "label": "模組職責分離規則（中低分 rule）"
+    },
+    {
+      "path": "agents/executor.md",
+      "type": "agent",
+      "ground_truth_semantic": 20,
+      "label": "executor agent（低分 agent）"
+    },
+    {
+      "path": "hooks/modules/heartbeat.js",
+      "type": "hook",
+      "ground_truth_semantic": 20,
+      "label": "heartbeat hook（低分 hook）"
+    },
+    {
+      "path": "hooks/modules/notification.js",
+      "type": "hook",
+      "ground_truth_semantic": 25,
+      "label": "notification hook（低分 hook）"
+    },
+    {
+      "path": "hooks/modules/context-injector.js",
+      "type": "hook",
+      "ground_truth_semantic": 30,
+      "label": "context-injector hook（低分 hook）"
+    },
+    {
+      "path": "hooks/modules/flow-observer.js",
+      "type": "hook",
+      "ground_truth_semantic": 30,
+      "label": "flow-observer hook（低分 hook）"
+    }
+  ]
+}

@@ -1,0 +1,227 @@
+{
+  "name": "行為分類 prompt",
+  "variable_file": "~/.claude/scripts/learner-suggestions.js",
+  "variable_description": "generateSuggestions 中針對 polarity=1 行為的分類 system prompt（Rule/自動化/Skill 三選一）",
+  "cases": [
+    {
+      "pattern": "Bash→Bash",
+      "description": "2. 自動化腳本 — 5 次重複的相同操作序列應自動化，降低人工成本。",
+      "polarity": 1,
+      "confidence": 1.15,
+      "occurrences": 51,
+      "firstSeen": "2026-03-16",
+      "lastSeen": "2026-03-19",
+      "expected_type": "automation",
+      "label": "bash-bash"
+    },
+    {
+      "pattern": "Bash→Bash→Bash",
+      "description": "1. Rule — 獨立 Bash 應並行執行，違反「預設並行」原則需文字固化",
+      "polarity": 1,
+      "confidence": 1.1,
+      "occurrences": 37,
+      "firstSeen": "2026-03-16",
+      "lastSeen": "2026-03-19",
+      "expected_type": "rule",
+      "label": "bash-bash-bash"
+    },
+    {
+      "pattern": "Bash→Bash→Bash→Bash",
+      "description": "2. 自動化腳本 — 5 次重複的機械序列應提取為 shell script，避免手動重複執行。",
+      "polarity": 1,
+      "confidence": 1.05,
+      "occurrences": 27,
+      "firstSeen": "2026-03-16",
+      "lastSeen": "2026-03-19",
+      "expected_type": "automation",
+      "label": "bash-bash-bash-bash"
+    },
+    {
+      "pattern": "Bash→Bash→Agent→Bash",
+      "description": "1. 建議固化為 Rule",
+      "polarity": 1,
+      "confidence": 0.91,
+      "occurrences": 11,
+      "firstSeen": "2026-03-17",
+      "lastSeen": "2026-03-19",
+      "expected_type": "rule",
+      "label": "bash-agent-bash"
+    },
+    {
+      "pattern": "CompletionCriteria→ObjectiveEvidence",
+      "description": "執行型 executor 完成後必須提供客觀證據（測試 pass/fail、exit code、日誌）。本次 learner 任務的完成證據是：提取的行為模式數 + behaviors.jsonl 記錄。",
+      "polarity": 1,
+      "confidence": 0.11,
+      "occurrences": 1,
+      "firstSeen": "2026-03-18",
+      "lastSeen": "2026-03-18",
+      "expected_type": "rule",
+      "label": "execution-evidence-requirement-2026-03-18"
+    },
+    {
+      "pattern": "anti-pattern",
+      "description": "Thinking Process:\n\n1.  **Analyze the Request:**\n    *   Role: Nova System AI Assistant.\n    *   Task: Answer a specific question about a recurring problem pattern.\n    *   Input Data: Signal (blocks=1",
+      "polarity": -1,
+      "confidence": 1.1,
+      "occurrences": 37,
+      "firstSeen": "2026-03-16",
+      "lastSeen": "2026-03-19",
+      "expected_type": "fix",
+      "label": "anti-2026-03-16-sid37"
+    },
+    {
+      "pattern": "Agent→Bash",
+      "description": "Thinking Process:\n\n1.  **Analyze the Request:**\n    *   Role: Nova System AI Assistant.\n    *   Task: Answer a specific question about a recurring problem pattern.\n    *   Input Data:\n        *   Sign",
+      "polarity": -1,
+      "confidence": 0.97,
+      "occurrences": 16,
+      "firstSeen": "2026-03-16",
+      "lastSeen": "2026-03-19",
+      "expected_type": "fix",
+      "label": "agent-bash"
+    },
+    {
+      "pattern": "Bash→Agent",
+      "description": "Thinking Process:\n\n1.  **Analyze the Request:**\n    *   Role: Nova System AI Assistant.\n    *   Task: Answer the user's question directly without showing thought process.\n    *   Input: A recurring is",
+      "polarity": -1,
+      "confidence": 0.96,
+      "occurrences": 15,
+      "firstSeen": "2026-03-16",
+      "lastSeen": "2026-03-19",
+      "expected_type": "fix",
+      "label": "bash-agent"
+    },
+    {
+      "pattern": "Bash→Bash→Agent",
+      "description": "Guard 危險關鍵詞的正則表達式配置可能不完整或搜尋邏輯未執行，導致實際存在的關鍵詞未被匹配。",
+      "polarity": -1,
+      "confidence": 0.94,
+      "occurrences": 14,
+      "firstSeen": "2026-03-16",
+      "lastSeen": "2026-03-19",
+      "expected_type": "fix",
+      "label": "bash-bash-agent"
+    },
+    {
+      "pattern": "Agent→Bash→Bash",
+      "description": "Hook 信號採集中斷或 context 丟失，導致指標無法正確記錄（參考 MEMORY 中「SubagentStop hook 因 context 中斷可能漏記」Bug pattern）。",
+      "polarity": -1,
+      "confidence": 0.93,
+      "occurrences": 13,
+      "firstSeen": "2026-03-16",
+      "lastSeen": "2026-03-19",
+      "expected_type": "fix",
+      "label": "agent-bash-bash"
+    },
+    {
+      "pattern": "Edit→Bash",
+      "description": "監測邏輯被 try/catch 或條件短路靜默吞掉，未實際執行檢查 — 需讀源碼確認 blocks/errors/修正關鍵詞 是否真的檢查，還是直接返回預設值。",
+      "polarity": -1,
+      "confidence": 0.93,
+      "occurrences": 13,
+      "firstSeen": "2026-03-17",
+      "lastSeen": "2026-03-19",
+      "expected_type": "fix",
+      "label": "edit-bash"
+    },
+    {
+      "pattern": "Bash→Agent→Bash",
+      "description": "根因：守衛判定條件未觸發或缺失，系統記錄空結果而非實際阻擋狀態——需檢查 guards.js 的判定邏輯是否完整涵蓋所有操作。",
+      "polarity": -1,
+      "confidence": 0.92,
+      "occurrences": 12,
+      "firstSeen": "2026-03-16",
+      "lastSeen": "2026-03-19",
+      "expected_type": "fix",
+      "label": "bash-agent-bash"
+    },
+    {
+      "pattern": "Bash→Bash→Bash→Agent",
+      "description": "根據「禁止靜默失敗」原則，最可能的根因是：**某個 catch 塊在吞掉異常，導致 errors 計數為 0 但實際故障未被記錄**（應 grep 找空 catch 或缺少通知的 error handler）。",
+      "polarity": -1,
+      "confidence": 0.92,
+      "occurrences": 12,
+      "firstSeen": "2026-03-16",
+      "lastSeen": "2026-03-19",
+      "expected_type": "fix",
+      "label": "bash-bash-bash-agent"
+    },
+    {
+      "pattern": "Edit→Bash→Bash",
+      "description": "Guard 規則判定全部 allow，或 PreToolUse hook 未正常分發至 guards.js。",
+      "polarity": -1,
+      "confidence": 0.92,
+      "occurrences": 12,
+      "firstSeen": "2026-03-17",
+      "lastSeen": "2026-03-19",
+      "expected_type": "fix",
+      "label": "edit-bash"
+    },
+    {
+      "pattern": "Bash→Edit",
+      "description": "系統健康檢查或冷啟動的預設狀態被誤當成實際事件記錄，導致空報告重複寫入日誌。",
+      "polarity": -1,
+      "confidence": 0.91,
+      "occurrences": 11,
+      "firstSeen": "2026-03-17",
+      "lastSeen": "2026-03-19",
+      "expected_type": "fix",
+      "label": "bash-edit"
+    },
+    {
+      "pattern": "Edit→Edit",
+      "description": "**根因**：PreToolUse hook 的 `updatedInput` 替換時未完整保留原始欄位，導致關鍵參數遺失但操作仍執行，但沒有觸發 guard 攔截（blocks=0）或錯誤提示（errors=0）。",
+      "polarity": -1,
+      "confidence": 0.89,
+      "occurrences": 10,
+      "firstSeen": "2026-03-17",
+      "lastSeen": "2026-03-19",
+      "expected_type": "fix",
+      "label": "edit"
+    },
+    {
+      "pattern": "Bash→Bash→Edit",
+      "description": "操作完成但結果未被驗證，或檢查點被靜默略過（無警告通知）。",
+      "polarity": -1,
+      "confidence": 0.89,
+      "occurrences": 10,
+      "firstSeen": "2026-03-17",
+      "lastSeen": "2026-03-19",
+      "expected_type": "fix",
+      "label": "bash-edit"
+    },
+    {
+      "pattern": "Edit→Bash→Bash→Bash",
+      "description": "nova-server 不可用時 fallback 路徑繞過記錄系統，或本地模型 down 導致 judge 的修正步驟被跳過。",
+      "polarity": -1,
+      "confidence": 0.89,
+      "occurrences": 10,
+      "firstSeen": "2026-03-17",
+      "lastSeen": "2026-03-19",
+      "expected_type": "fix",
+      "label": "edit-bash"
+    },
+    {
+      "pattern": "Bash→Write",
+      "description": "評估邏輯未執行或檢測閾值未達 — 工作負載太輕（無 block 決策、無錯誤事件、無修正關鍵詞可檢測）導致數據採樣為零，無法反映系統實際狀況。",
+      "polarity": -1,
+      "confidence": 0.89,
+      "occurrences": 10,
+      "firstSeen": "2026-03-17",
+      "lastSeen": "2026-03-19",
+      "expected_type": "fix",
+      "label": "bash-edit"
+    },
+    {
+      "pattern": "Agent→Bash→Bash→Bash",
+      "description": "本地模型（vllm-mlx）不可用，askLocalModel 走 fallback 回傳預設值，judge/maintainer 因無有效判定資料跳過所有邏輯，形同虛設。",
+      "polarity": -1,
+      "confidence": 0.89,
+      "occurrences": 10,
+      "firstSeen": "2026-03-17",
+      "lastSeen": "2026-03-19",
+      "expected_type": "fix",
+      "label": "agent-bash"
+    }
+  ]
+}
