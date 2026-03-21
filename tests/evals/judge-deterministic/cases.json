@@ -24,8 +24,8 @@
     {
       "path": "rules/常駐服務.md",
       "type": "rule",
-      "ground_truth_deterministic": 50,
-      "label": "常駐服務規則（滿分 rule）"
+      "ground_truth_deterministic": 43,
+      "label": "常駐服務規則（得 43 分：行數 87 超過 80 行上限）"
     },
     {
       "path": "skills/wording",
@@ -72,8 +72,8 @@
     {
       "path": "rules/閉環規範.md",
       "type": "rule",
-      "ground_truth_deterministic": 50,
-      "label": "閉環規範規則（滿分 rule）"
+      "ground_truth_deterministic": 43,
+      "label": "閉環規範規則（得 43 分：行數 131 超過 80 行上限）"
     },
     {
       "path": "hooks/modules/metrics.js",
