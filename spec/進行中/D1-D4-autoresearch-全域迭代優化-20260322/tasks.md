@@ -13,13 +13,13 @@
 
 ## Phase 2 — 需標記 ground truth（半天建好）
 
-| # | 目標 | 狀態 |
-|:-:|------|:----:|
-| 7 | Session 摘要 prompt | pending |
-| 8 | F 級改善建議 prompt | pending |
-| 9 | 根因分析 prompt | pending |
-| 10 | 工具推薦 prompt | pending |
-| 11 | 決策 prompt | pending |
+| # | 目標 | 狀態 | Baseline | 最終 |
+|:-:|------|:----:|:--------:|:----:|
+| 7 | Session 摘要 prompt | pending | — | — |
+| 8 | F 級改善建議 prompt | eval-ready | 5.9% | — |
+| 9 | 根因分析 prompt | pending | — | — |
+| 10 | 工具推薦 prompt | pending | — | — |
+| 11 | 決策 prompt | ceiling(90%) | 80-90% | 90.0% |
 
 ## Phase 3 — 需基礎設施
 
