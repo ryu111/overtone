@@ -5,7 +5,7 @@
  * 對每個 polarity=-1 的反模式 case，用根因 system prompt + askLocalModel 重新分析，
  * 用關鍵詞 overlap 比較（提取名詞/動詞比對）。
  *
- * 主指標：keyword overlap rate（ground truth 根因關鍵詞在生成結果中的覆蓋率）
+ * 主指標：semantic similarity（本地模型語意判斷，0-1）
  */
 
 import { join } from 'path';
@@ -20,56 +20,29 @@ const data = await import('./cases.json');
 const { name, variable_file, variable_description, cases } = data.default ?? data;
 
 // 根因分析 system prompt（來自 learner-suggestions.js 行 97 附近）
-const ROOT_CAUSE_SYSTEM = `你是 Nova 系統的根因分析器。找出反覆問題的根本原因。不說「可能」，直接說「根因：X」。引用信號數據。只回覆一行。`;
+const ROOT_CAUSE_SYSTEM = `你是 Nova 系統的根因分析器。Nova 是 Claude Code 的 hook/plugin 系統，包含：
+- guards.js：Bash 危險命令攔截（regex 黑名單）
+- flow-observer.js：session 事件觀察
+- context-injector.js：上下文注入
+- learner.js：行為偵測
+- judge.js：品質評分
+- 本地模型（vllm-mlx Qwen3-8B）：語意判斷
 
-/**
- * 提取文字中的技術關鍵詞（中文名詞片段 + 英文技術詞）
- * 排除停用詞，保留 guard、hook、catch、signal 等技術詞
- */
-function extractKeywords(text) {
-  if (!text) return [];
-  const keywords = new Set();
+常見根因類型：
+- 靜默失敗：catch {} 吞掉錯誤、hook 無回應
+- 服務不可用：本地模型 timeout、nova-server 掛掉
+- 門檻/閾值問題：檢測條件過嚴或過寬
+- 邏輯缺口：某路徑未覆蓋、fallback 路徑繞過記錄
 
-  // 提取英文技術詞（2+ 字元）
-  const enWords = text.match(/[a-zA-Z][a-zA-Z0-9._-]{1,}/g) || [];
-  const enStop = new Set(['the', 'and', 'or', 'in', 'of', 'to', 'a', 'an', 'is', 'are', 'was', 'be', 'for', 'on', 'at', 'by', 'with', 'this', 'that', 'it', 'not', 'from', 'as', 'if', 'may', 'can', 'but', 'so', 'no', 'will', 'vs', 'ie']);
-  for (const w of enWords) {
-    if (w.length >= 2 && !enStop.has(w.toLowerCase())) {
-      keywords.add(w.toLowerCase());
-    }
-  }
+信號解讀：
+- blocks=0, errors=0：可能是監控層失效（靜默失敗）、服務不可用導致記錄中斷、或檢測邏輯未覆蓋此模式
+- fixKeywords=0：無修正嘗試，說明問題未被察覺或無自動修復機制
+- blocks>0：guard 有攔截，問題在於攔截後的處理邏輯
+- errors>0：有錯誤記錄，找出錯誤來源
 
-  // 提取中文關鍵詞（2-5 字元的中文名詞片段）
-  const zhMatches = text.match(/[\u4e00-\u9fff]{2,5}/g) || [];
-  const stopCh = new Set(['的了在是都有和與或但而等及並且什麼這那他她它我你我們你們他們如果雖然因為所以但是可以需要應該可能導致根據']);
-  for (const zh of zhMatches) {
-    let hasStop = false;
-    for (const c of zh) {
-      if (stopCh.has(c)) { hasStop = true; break; }
-    }
-    if (!hasStop && zh.length >= 2) keywords.add(zh);
-  }
+直接說「根因：X」，引用信號數據。只回覆一行。`;
 
-  return [...keywords];
-}
-
-/**
- * 計算生成根因對 ground truth 的關鍵詞覆蓋率
- */
-function calculateOverlap(generated, groundTruth) {
-  if (!generated || !groundTruth) return 0;
-
-  const gtKeywords = extractKeywords(groundTruth);
-  if (gtKeywords.length === 0) return 0;
-
-  const genLower = generated.toLowerCase();
-  let hits = 0;
-  for (const kw of gtKeywords) {
-    if (genLower.includes(kw.toLowerCase())) hits++;
-  }
-
-  return hits / gtKeywords.length;
-}
+import { semanticScore } from '../semantic-judge.js';
 
 /**
  * 對單一 case 重新生成根因分析，回傳 overlap rate
@@ -111,11 +84,11 @@ async function evaluateCase(c) {
     };
   }
 
-  const overlap = calculateOverlap(generated, c.ground_truth);
+  const score = await semanticScore(generated, c.ground_truth);
 
   return {
     label: c.label,
-    overlap,
+    overlap: score,
     skipped: false,
     pattern: c.pattern,
     generated: generated?.slice(0, 80),
@@ -128,7 +101,11 @@ console.log(`\n執行 ${name} Eval（${cases.length} 個 cases）...`);
 console.log(`variable: ${variable_file}`);
 console.log(`variable_description: ${variable_description}\n`);
 
-const results = await Promise.all(cases.map(evaluateCase));
+// 序列執行避免打爆本地模型（每 case 2 次 LLM 呼叫）
+const results = [];
+for (const c of cases) {
+  results.push(await evaluateCase(c));
+}
 
 // 計算指標
 const validResults = results.filter((r) => !r.skipped);

@@ -5,7 +5,7 @@
  * 對每個 case，讀取元件檔案，用本地模型重新生成建議，
  * 比較建議是否涵蓋 ground truth 的核心問題。
  *
- * 主指標：coverage（生成建議涵蓋 ground truth 關鍵詞的比例）
+ * 主指標：semantic similarity（本地模型語意判斷，0-1）
  */
 
 import { join } from 'path';
@@ -49,51 +49,20 @@ function readComponentContent(path, type) {
   }
 }
 
-/**
- * 從 ground truth suggestions 提取核心關鍵詞
- * 每條 suggestion 取前 2 個中文實質詞（排除常見停用詞）
- */
-function extractKeywords(suggestions) {
-  const stopWords = new Set(['的', '了', '在', '是', '都', '有', '和', '與', '或', '但', '而', '等', '及', '並', '且']);
-  const keywords = [];
-
-  for (const s of suggestions) {
-    // 去掉開頭的 "- " 前綴
-    const text = s.replace(/^[-\s]+/, '');
-
-    // 提取前 15 個字的核心詞（冒號前的問題描述）
-    const mainPart = text.split('：')[0] || text;
-    const words = mainPart.slice(0, 20).split('').filter(c => /[\u4e00-\u9fff]/.test(c) && !stopWords.has(c));
-    if (words.length >= 3) {
-      // 取前 3 個字組成關鍵詞
-      keywords.push(words.slice(0, 3).join(''));
-    }
-  }
-
-  return keywords;
-}
+import { semanticScore } from '../semantic-judge.js';
 
 /**
- * 計算生成建議對 ground truth 的覆蓋率
- * 策略：ground truth 中每個關鍵詞，看是否出現在生成的建議中
+ * 計算生成建議對 ground truth 的語意覆蓋率
+ * 對每條 ground truth suggestion，找生成建議中最相似的，取最佳匹配分數
  */
-function calculateCoverage(generated, groundTruth) {
+async function calculateCoverage(generated, groundTruth) {
   if (!generated || generated.length === 0) return 0;
   if (!groundTruth || groundTruth.length === 0) return 1;
 
-  const gtKeywords = extractKeywords(groundTruth);
-  if (gtKeywords.length === 0) return 0;
+  const genText = generated.join('\n');
+  const gtText = groundTruth.join('\n');
 
-  const generatedText = generated.join(' ');
-  let hits = 0;
-
-  for (const kw of gtKeywords) {
-    if (generatedText.includes(kw)) {
-      hits++;
-    }
-  }
-
-  return hits / gtKeywords.length;
+  return await semanticScore(genText, gtText);
 }
 
 /**
@@ -144,7 +113,7 @@ ${content}
     return { label: c.label, coverage: 0, skipped: false, reason: '解析失敗' };
   }
 
-  const coverage = calculateCoverage(suggestions, c.ground_truth_suggestions);
+  const coverage = await calculateCoverage(suggestions, c.ground_truth_suggestions);
 
   return {
     label: c.label,
@@ -162,7 +131,10 @@ console.log(`\n執行 ${name} Eval（${cases.length} 個 cases）...`);
 console.log(`variable: ${variable_file}`);
 console.log(`variable_description: ${variable_description}\n`);
 
-const results = await Promise.all(cases.map(evaluateCase));
+const results = [];
+for (const c of cases) {
+  results.push(await evaluateCase(c));
+}
 
 // 計算指標
 const validResults = results.filter((r) => !r.skipped);
