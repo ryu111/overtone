@@ -6,30 +6,135 @@
   "skill_name": "commit-convention",
   "skill_description": "Conventional commit 知識域。WHEN: 撰寫 commit message、判斷 commit 拆分策略、選擇 type/scope 時使用。NOT: 程式碼撰寫、PR 審查。",
   "cases": [
-    { "task": "幫我寫這次改動的 commit message", "expected": "positive", "label": "直接要求寫 commit" },
-    { "task": "這些改動應該分幾個 commit？", "expected": "positive", "label": "commit 拆分策略" },
-    { "task": "這個改動用 feat 還是 fix？", "expected": "positive", "label": "選擇 commit type" },
-    { "task": "commit scope 該用什麼？hooks 還是 guards？", "expected": "positive", "label": "選擇 scope" },
-    { "task": "幫我用 conventional commit 格式整理 message", "expected": "positive", "label": "conventional commit 格式" },
-    { "task": "refactor 和 chore 的差別是什麼？", "expected": "positive", "label": "type 語意區分" },
-    { "task": "我同時改了 3 個模組，commit 怎麼組織？", "expected": "positive", "label": "多模組 commit 組織" },
-    { "task": "commit message 的最佳實踐是什麼？", "expected": "positive", "label": "commit 最佳實踐" },
-    { "task": "這個 bug fix 的 commit body 要怎麼寫？", "expected": "positive", "label": "commit body 撰寫" },
-    { "task": "我做了重構又修了 bug，該分開 commit 嗎？", "expected": "positive", "label": "混合變更拆分" },
-    { "task": "刪掉沒用到的程式碼，commit type 用什麼？", "expected": "positive", "label": "刪除代碼 type 選擇" },
-    { "task": "breaking change 要怎麼標記在 commit 裡？", "expected": "positive", "label": "breaking change 標記" },
-
-    { "task": "幫我寫一個 REST API endpoint", "expected": "negative", "label": "寫程式碼" },
-    { "task": "修復這個 TypeError bug", "expected": "negative", "label": "修 bug" },
-    { "task": "跑測試看看有沒有壞掉", "expected": "negative", "label": "跑測試" },
-    { "task": "部署到 production 環境", "expected": "negative", "label": "部署" },
-    { "task": "設計資料庫 schema", "expected": "negative", "label": "資料庫設計" },
-    { "task": "幫我做 code review", "expected": "negative", "label": "code review" },
-    { "task": "建立新的 React component", "expected": "negative", "label": "前端開發" },
-    { "task": "這個 API 的效能怎麼優化？", "expected": "negative", "label": "效能優化" },
-    { "task": "寫 API 文件", "expected": "negative", "label": "寫文件" },
-    { "task": "重構這個函式讓它更好讀", "expected": "negative", "label": "重構程式碼（非 commit）" },
-    { "task": "幫我建立 PR 並寫描述", "expected": "negative", "label": "建 PR" },
-    { "task": "分析這個 error log 找根因", "expected": "negative", "label": "除錯分析" }
+    {
+      "task": "幫我寫這次改動的 commit message",
+      "expected": "positive",
+      "label": "直接要求寫 commit"
+    },
+    {
+      "task": "這些改動應該分幾個 commit？",
+      "expected": "positive",
+      "label": "commit 拆分策略"
+    },
+    {
+      "task": "這個改動用 feat 還是 fix？",
+      "expected": "positive",
+      "label": "選擇 commit type"
+    },
+    {
+      "task": "commit scope 該用什麼？hooks 還是 guards？",
+      "expected": "positive",
+      "label": "選擇 scope"
+    },
+    {
+      "task": "幫我用 conventional commit 格式整理 message",
+      "expected": "positive",
+      "label": "conventional commit 格式"
+    },
+    {
+      "task": "refactor 和 chore 的差別是什麼？",
+      "expected": "positive",
+      "label": "type 語意區分"
+    },
+    {
+      "task": "我同時改了 3 個模組，commit 怎麼組織？",
+      "expected": "positive",
+      "label": "多模組 commit 組織"
+    },
+    {
+      "task": "commit message 的最佳實踐是什麼？",
+      "expected": "positive",
+      "label": "commit 最佳實踐"
+    },
+    {
+      "task": "這個 bug fix 的 commit body 要怎麼寫？",
+      "expected": "positive",
+      "label": "commit body 撰寫"
+    },
+    {
+      "task": "我做了重構又修了 bug，該分開 commit 嗎？",
+      "expected": "positive",
+      "label": "混合變更拆分"
+    },
+    {
+      "task": "刪掉沒用到的程式碼，commit type 用什麼？",
+      "expected": "positive",
+      "label": "刪除代碼 type 選擇"
+    },
+    {
+      "task": "breaking change 要怎麼標記在 commit 裡？",
+      "expected": "positive",
+      "label": "breaking change 標記"
+    },
+    {
+      "task": "幫我寫一個 REST API endpoint",
+      "expected": "negative",
+      "label": "寫程式碼"
+    },
+    {
+      "task": "修復這個 TypeError bug",
+      "expected": "negative",
+      "label": "修 bug"
+    },
+    {
+      "task": "跑測試看看有沒有壞掉",
+      "expected": "negative",
+      "label": "跑測試"
+    },
+    {
+      "task": "部署到 production 環境",
+      "expected": "negative",
+      "label": "部署"
+    },
+    {
+      "task": "設計資料庫 schema",
+      "expected": "negative",
+      "label": "資料庫設計"
+    },
+    {
+      "task": "幫我做 code review",
+      "expected": "negative",
+      "label": "code review"
+    },
+    {
+      "task": "建立新的 React component",
+      "expected": "negative",
+      "label": "前端開發"
+    },
+    {
+      "task": "這個 API 的效能怎麼優化？",
+      "expected": "negative",
+      "label": "效能優化"
+    },
+    {
+      "task": "寫 API 文件",
+      "expected": "negative",
+      "label": "寫文件"
+    },
+    {
+      "task": "重構這個函式讓它更好讀",
+      "expected": "negative",
+      "label": "重構程式碼（非 commit）"
+    },
+    {
+      "task": "幫我建立 PR 並寫描述",
+      "expected": "negative",
+      "label": "建 PR"
+    },
+    {
+      "task": "分析這個 error log 找根因",
+      "expected": "negative",
+      "label": "除錯分析"
+    },
+    {
+      "task": "修正 guards.js 的防禦邏輯",
+      "expected": "positive",
+      "label": "[flywheel] 修正 guards.js 的防禦邏輯"
+    },
+    {
+      "task": "do something",
+      "expected": "positive",
+      "label": "[flywheel] do something"
+    }
   ]
 }
