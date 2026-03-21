@@ -1,0 +1,107 @@
+{
+  "name": "工具推薦 prompt",
+  "variable_file": "~/.claude/scripts/tool-matcher.js",
+  "variable_description": "MATCHER_SYSTEM prompt 和 scoreToolByKeyword 邏輯",
+  "cases": [
+    {
+      "task": "幫我截圖這個網頁並存成 PNG",
+      "expected_tools": ["pinchtab", "screencapture"],
+      "label": "網頁截圖"
+    },
+    {
+      "task": "自動填寫登入表單並提交",
+      "expected_tools": ["pinchtab", "agent-browser"],
+      "label": "表單自動填寫"
+    },
+    {
+      "task": "提交 Pull Request 並設定 reviewers",
+      "expected_tools": ["gh", "git"],
+      "label": "GitHub PR 操作"
+    },
+    {
+      "task": "執行 bun test 跑單元測試",
+      "expected_tools": ["bun"],
+      "label": "執行測試"
+    },
+    {
+      "task": "查詢 SQLite 資料庫中最近 100 筆記錄",
+      "expected_tools": ["sqlite3"],
+      "label": "資料庫查詢"
+    },
+    {
+      "task": "發送 HTTP POST 請求到 API 並解析 JSON 回應",
+      "expected_tools": ["curl", "jq"],
+      "label": "HTTP 請求並解析 JSON"
+    },
+    {
+      "task": "控制 macOS 視窗並自動點擊按鈕",
+      "expected_tools": ["osascript"],
+      "label": "macOS GUI 自動化"
+    },
+    {
+      "task": "監控網頁內容變化並在有更新時通知",
+      "expected_tools": ["pinchtab"],
+      "label": "網頁內容監控"
+    },
+    {
+      "task": "在 GitHub 上建立 issue 並加上標籤",
+      "expected_tools": ["gh"],
+      "label": "GitHub issue 管理"
+    },
+    {
+      "task": "安裝 npm 套件並確認沒有安全漏洞",
+      "expected_tools": ["bun"],
+      "label": "套件安裝與安全檢查"
+    },
+    {
+      "task": "擷取需要登入的網頁資料",
+      "expected_tools": ["pinchtab"],
+      "label": "需登入的資料擷取"
+    },
+    {
+      "task": "執行 git commit 並 push 到遠端",
+      "expected_tools": ["git"],
+      "label": "Git 提交推送"
+    },
+    {
+      "task": "從 JSON 回應中提取特定欄位並轉成 CSV",
+      "expected_tools": ["jq"],
+      "label": "JSON 轉換處理"
+    },
+    {
+      "task": "對有 bot detection 的購物網站進行爬蟲",
+      "expected_tools": ["pinchtab"],
+      "label": "反爬蟲網站資料擷取"
+    },
+    {
+      "task": "在多個 Tab 同時爬取不同頁面",
+      "expected_tools": ["pinchtab"],
+      "label": "多 Tab 並行瀏覽"
+    },
+    {
+      "task": "CI/CD 環境中一次性截圖驗收 UI",
+      "expected_tools": ["agent-browser"],
+      "label": "CI 環境截圖"
+    },
+    {
+      "task": "需要執行 JavaScript eval 取得頁面動態資料",
+      "expected_tools": ["agent-browser"],
+      "label": "JS eval 頁面資料"
+    },
+    {
+      "task": "對 SQLite 資料庫做 migration 並備份",
+      "expected_tools": ["sqlite3", "git"],
+      "label": "資料庫 migration"
+    },
+    {
+      "task": "查看 git log 找出最近哪個 commit 引入了 bug",
+      "expected_tools": ["git"],
+      "label": "Git 歷史查詢"
+    },
+    {
+      "task": "使用鍵盤快捷鍵（Cmd+A）選取所有文字",
+      "expected_tools": ["agent-browser"],
+      "label": "鍵盤 modifier combo"
+    }
+  ]
+}

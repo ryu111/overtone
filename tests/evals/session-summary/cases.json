@@ -1,0 +1,207 @@
+{
+  "name": "Session 摘要 prompt",
+  "variable_file": "~/.claude/scripts/briefing-builder.js",
+  "variable_description": "summarySystem prompt — 控制摘要的風格、長度、具體度（行 63-70）",
+  "cases": [
+    {
+      "label": "修改程式碼並完成測試",
+      "toolCounts": {"Read": 1, "Edit": 1},
+      "promptCount": 1,
+      "agentCount": 0,
+      "prompts": ["請修復 heartbeat timeout bug"],
+      "agents": [],
+      "recentCommits": "fix(heartbeat): 修正 maxTotalTime 計算錯誤",
+      "ground_truth": "本次 session 修改了程式碼並完成測試。"
+    },
+    {
+      "label": "重構 guards 模組並加測試",
+      "toolCounts": {"Read": 5, "Edit": 3, "Bash": 8},
+      "promptCount": 2,
+      "agentCount": 1,
+      "prompts": ["重構 guards.js 為宣告式介面", "跑測試確認"],
+      "agents": ["executor"],
+      "recentCommits": "refactor(guards): 統一 guard 模組為宣告式介面\ntest(guards): 新增 guard 覆蓋率測試",
+      "ground_truth": "重構 guards.js 為宣告式介面，並由 executor 完成，共修改 3 個檔案，測試全過。"
+    },
+    {
+      "label": "新增心跳引擎",
+      "toolCounts": {"Read": 8, "Write": 2, "Edit": 4, "Bash": 5},
+      "promptCount": 3,
+      "agentCount": 2,
+      "prompts": ["設計心跳系統", "實作 heartbeat daemon", "驗收測試"],
+      "agents": ["planner", "executor"],
+      "recentCommits": "feat(heartbeat): 新增 daemon lifecycle 模組\ntest(heartbeat): E2E 心跳任務測試",
+      "ground_truth": "設計並實作心跳引擎，planner 與 executor 協作完成，新增 2 個檔案，測試通過。"
+    },
+    {
+      "label": "分析 session-summaries 資料格式",
+      "toolCounts": {"Read": 3, "Bash": 4},
+      "promptCount": 1,
+      "agentCount": 0,
+      "prompts": ["分析 session-summaries.jsonl 格式"],
+      "agents": [],
+      "recentCommits": "",
+      "ground_truth": "分析 session-summaries.jsonl 格式，確認欄位結構，無程式碼修改。"
+    },
+    {
+      "label": "修復 updatedInput REPLACE 語意 bug",
+      "toolCounts": {"Read": 4, "Edit": 2, "Bash": 3},
+      "promptCount": 1,
+      "agentCount": 0,
+      "prompts": ["修復 PreToolUse updatedInput 欄位丟失問題"],
+      "agents": [],
+      "recentCommits": "fix(hooks): 修正 updatedInput 為 REPLACE 語意，保留 subagent_type 欄位",
+      "ground_truth": "修復 PreToolUse hook updatedInput 丟失欄位的 bug，確認測試通過。"
+    },
+    {
+      "label": "新增 tool-matcher 語意匹配模組",
+      "toolCounts": {"Read": 6, "Write": 1, "Edit": 5, "Bash": 4},
+      "promptCount": 2,
+      "agentCount": 1,
+      "prompts": ["實作 tool-matcher.js 意圖→工具語意匹配", "跑整合測試"],
+      "agents": ["executor"],
+      "recentCommits": "feat(tool-matcher): 新增意圖→工具語意匹配模組\ntest(tool-matcher): 關鍵詞匹配單元測試",
+      "ground_truth": "實作 tool-matcher.js 語意匹配模組，含 scoreToolByKeyword 和 semanticMatch，測試全通過。"
+    },
+    {
+      "label": "建立 eval 基礎設施",
+      "toolCounts": {"Read": 10, "Write": 6, "Bash": 8},
+      "promptCount": 3,
+      "agentCount": 2,
+      "prompts": ["建立 judge-semantic eval", "建立 judge-deterministic eval", "驗收測試"],
+      "agents": ["planner", "executor"],
+      "recentCommits": "feat(evals): 新增 judge-semantic 和 judge-deterministic eval\nchore(evals): 建立 eval-runner.js 共用腳本",
+      "ground_truth": "建立 judge-semantic 和 judge-deterministic eval，各含 cases.json 和 run.js，並驗收通過。"
+    },
+    {
+      "label": "修復本地模型 Thinking 無限循環",
+      "toolCounts": {"Read": 5, "Edit": 3, "Bash": 6},
+      "promptCount": 2,
+      "agentCount": 0,
+      "prompts": ["診斷 Qwen3.5 thinking 無法關閉問題", "切換至 Qwen3-8B"],
+      "agents": [],
+      "recentCommits": "fix(local-model): 切換 Qwen3.5→Qwen3-8B，解決 thinking 無法關閉問題",
+      "ground_truth": "診斷並修復 Qwen3.5 thinking 循環問題，切換至 Qwen3-8B，Phase B 從 56s 降至 1s。"
+    },
+    {
+      "label": "實作 spec-tasks 任務管理 CLI",
+      "toolCounts": {"Read": 3, "Write": 1, "Edit": 2, "Bash": 5},
+      "promptCount": 2,
+      "agentCount": 0,
+      "prompts": ["建立 spec-tasks.js create/claim/complete 指令", "更新 spec/index.md"],
+      "agents": [],
+      "recentCommits": "feat(spec): 新增 spec-tasks.js 三狀態任務管理\ndocs(spec): 更新 index.md 任務追蹤格式",
+      "ground_truth": "實作 spec-tasks.js 任務管理 CLI，支援 create/claim/complete/index 四個指令，並更新 spec/index.md。"
+    },
+    {
+      "label": "分析 judge 評分品質並找根因",
+      "toolCounts": {"Read": 7, "Bash": 5},
+      "promptCount": 2,
+      "agentCount": 1,
+      "prompts": ["審查 judge.js 評分邏輯", "找出 F 級元件共同問題"],
+      "agents": ["debugger"],
+      "recentCommits": "",
+      "ground_truth": "審查 judge.js 評分邏輯，發現 F 級元件共同問題為 description 欄位缺失，提出改善建議。"
+    },
+    {
+      "label": "更新 dashboard 事件流 Tab",
+      "toolCounts": {"Read": 4, "Edit": 6, "Bash": 3},
+      "promptCount": 2,
+      "agentCount": 0,
+      "prompts": ["更新 Flow Visualizer 事件流 Tab", "修復 SSE 連線斷線重連"],
+      "agents": [],
+      "recentCommits": "fix(dashboard): 修正 SSE 斷線重連邏輯\nfeat(dashboard): 更新事件流 Tab 顯示格式",
+      "ground_truth": "更新 Flow Visualizer 事件流 Tab，修復 SSE 斷線重連問題，共修改 6 個前端檔案。"
+    },
+    {
+      "label": "新增 skill-judge 評分工具",
+      "toolCounts": {"Read": 5, "Write": 2, "Edit": 3, "Bash": 4},
+      "promptCount": 2,
+      "agentCount": 1,
+      "prompts": ["建立 skill-judge.js 評分 CLI", "整合至 wrapup 流程"],
+      "agents": ["executor"],
+      "recentCommits": "feat(skill-judge): 新增 Skill 品質評分 CLI\nchore(wrapup): 整合 skill-judge 至 Phase B",
+      "ground_truth": "建立 skill-judge.js 評分 CLI，整合至 wrapup.js Phase B，executor 協助完成。"
+    },
+    {
+      "label": "重構 context-injector 聚合邏輯",
+      "toolCounts": {"Read": 6, "Edit": 4, "Bash": 3},
+      "promptCount": 1,
+      "agentCount": 0,
+      "prompts": ["重構 context-injector 為獨立模組"],
+      "agents": [],
+      "recentCommits": "refactor(context-injector): 從 flow-observer 拆分 injectBriefing 為獨立模組",
+      "ground_truth": "重構 context-injector 模組，從 flow-observer 拆分聚合注入邏輯，符合單一資料方向原則。"
+    },
+    {
+      "label": "建立 D4 並行任務架構",
+      "toolCounts": {"Read": 8, "Write": 4, "Edit": 6, "Bash": 10},
+      "promptCount": 4,
+      "agentCount": 4,
+      "prompts": ["設計 D4 並行任務架構", "Phase 1 並行實作", "Phase 2 並行實作", "Reviewer 審查"],
+      "agents": ["planner", "executor-1", "executor-2", "reviewer"],
+      "recentCommits": "feat(深度路由): 支援 D4 多 executor 並行\ntest(深度路由): 架構測試鎖定",
+      "ground_truth": "設計並實作 D4 並行任務架構，planner+2 executor+reviewer 協作，Phase 1 和 Phase 2 並行執行。"
+    },
+    {
+      "label": "修復 commit message 觸發 guard 問題",
+      "toolCounts": {"Read": 3, "Edit": 2, "Bash": 4},
+      "promptCount": 1,
+      "agentCount": 0,
+      "prompts": ["修復 commit message 含危險詞觸發 guard 誤判"],
+      "agents": [],
+      "recentCommits": "fix(guards): 排除 commit message 中的危險詞誤判",
+      "ground_truth": "修復 commit message 含危險關鍵詞（如 killall）觸發 pre-bash-guard 誤判的問題。"
+    },
+    {
+      "label": "實作 learner 行為偵測模組",
+      "toolCounts": {"Read": 6, "Write": 1, "Edit": 4, "Bash": 5},
+      "promptCount": 2,
+      "agentCount": 1,
+      "prompts": ["實作 learner.js 行為偵測", "整合至 SessionEnd hook"],
+      "agents": ["executor"],
+      "recentCommits": "feat(learner): 新增行為偵測模組，支援 polarity 分類\nchore(hooks): 整合 learner 至 SessionEnd",
+      "ground_truth": "實作 learner.js 行為偵測模組，支援 polarity±1 分類，並整合至 SessionEnd hook。"
+    },
+    {
+      "label": "調查 hook-errors.jsonl 靜默失敗",
+      "toolCounts": {"Read": 4, "Bash": 6},
+      "promptCount": 1,
+      "agentCount": 0,
+      "prompts": ["調查最近 hook 錯誤根因"],
+      "agents": [],
+      "recentCommits": "",
+      "ground_truth": "調查 hook-errors.jsonl，發現 nova-server 啟動失敗導致 dispatch 靜默丟失，建議修復 lockfile 清理邏輯。"
+    },
+    {
+      "label": "優化 wrapup.js Phase B 效能",
+      "toolCounts": {"Read": 5, "Edit": 3, "Bash": 4},
+      "promptCount": 1,
+      "agentCount": 0,
+      "prompts": ["優化 wrapup.js Phase B 本地模型呼叫"],
+      "agents": [],
+      "recentCommits": "perf(wrapup): Phase B 多個 askLocalModel 改為 Promise.all 並行",
+      "ground_truth": "優化 wrapup.js Phase B，將多個 askLocalModel 呼叫改為 Promise.all 並行，Phase B 從 8s 降至 2s。"
+    },
+    {
+      "label": "新增 Skill Forge 自動生成流程",
+      "toolCounts": {"Read": 7, "Write": 3, "Edit": 5, "Bash": 6},
+      "promptCount": 3,
+      "agentCount": 2,
+      "prompts": ["設計 Skill Forge 架構", "實作 skill-forge.js", "測試 skill 生成品質"],
+      "agents": ["planner", "executor"],
+      "recentCommits": "feat(skill-forge): 新增 Skill 自動生成模組\ntest(skill-forge): 生成品質驗收測試",
+      "ground_truth": "設計並實作 Skill Forge 自動生成流程，planner+executor 協作，確認生成 skill 通過 skill-judge 評分。"
+    },
+    {
+      "label": "修復 SessionEnd 背景 agent 循環",
+      "toolCounts": {"Read": 5, "Edit": 3, "Bash": 4},
+      "promptCount": 2,
+      "agentCount": 0,
+      "prompts": ["診斷 SessionEnd → maintainer → claude -p → SessionEnd 無限循環", "修復 DISABLE_HOOKS 缺失"],
+      "agents": [],
+      "recentCommits": "fix(maintainer): 加入 DISABLE_HOOKS env 防止 claude -p 觸發 hooks 循環",
+      "ground_truth": "診斷並修復 SessionEnd → maintainer → claude -p → SessionEnd 無限循環，根因為缺少 DISABLE_HOOKS env。"
+    }
+  ]
+}

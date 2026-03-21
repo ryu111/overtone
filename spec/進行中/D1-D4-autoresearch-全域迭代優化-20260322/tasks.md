@@ -15,10 +15,10 @@
 
 | # | 目標 | 狀態 | Baseline | 最終 |
 |:-:|------|:----:|:--------:|:----:|
-| 7 | Session 摘要 prompt | pending | — | — |
+| 7 | Session 摘要 prompt | eval-ready | 50.2% | — |
 | 8 | F 級改善建議 prompt | eval-ready | 5.9% | — |
-| 9 | 根因分析 prompt | pending | — | — |
-| 10 | 工具推薦 prompt | pending | — | — |
+| 9 | 根因分析 prompt | eval-ready | 8.1% | — |
+| 10 | 工具推薦 prompt | eval-ready | 72.5% | — |
 | 11 | 決策 prompt | ceiling(90%) | 80-90% | 90.0% |
 
 ## Phase 3 — 需基礎設施

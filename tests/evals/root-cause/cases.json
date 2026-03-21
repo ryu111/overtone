@@ -1,0 +1,207 @@
+{
+  "name": "根因分析 prompt",
+  "variable_file": "~/.claude/scripts/learner-suggestions.js",
+  "variable_description": "反模式根因分析的 system prompt（行 97 附近）",
+  "cases": [
+    {
+      "id": "agent-agent",
+      "pattern": "Agent→Agent",
+      "signals": {"blocks": 0, "errors": 0, "fixKeywords": 0},
+      "occurrences": 3,
+      "firstSeen": "2026-03-16",
+      "lastSeen": "2026-03-16",
+      "ground_truth": "修正條件判定邏輯缺失或過於嚴格，導致應攔截的異常狀態無法觸發 guard 或修正機制（靜默漏過）。",
+      "label": "case-agent-agent"
+    },
+    {
+      "id": "agent-bash-bash",
+      "pattern": "Agent→Bash→Bash",
+      "signals": {"blocks": 0, "errors": 0, "fixKeywords": 0},
+      "occurrences": 5,
+      "firstSeen": "2026-03-16",
+      "lastSeen": "2026-03-17",
+      "ground_truth": "Hook 信號採集中斷或 context 丟失，導致指標無法正確記錄（參考 MEMORY 中 SubagentStop hook 因 context 中斷可能漏記 Bug pattern）。",
+      "label": "case-agent-bash-bash"
+    },
+    {
+      "id": "bash-bash-agent",
+      "pattern": "Bash→Bash→Agent",
+      "signals": {"blocks": 0, "errors": 0, "fixKeywords": 0},
+      "occurrences": 4,
+      "firstSeen": "2026-03-16",
+      "lastSeen": "2026-03-17",
+      "ground_truth": "Guard 危險關鍵詞的正則表達式配置可能不完整或搜尋邏輯未執行，導致實際存在的關鍵詞未被匹配。",
+      "label": "case-bash-bash-agent"
+    },
+    {
+      "id": "bash-agent-bash",
+      "pattern": "Bash→Agent→Bash",
+      "signals": {"blocks": 0, "errors": 0, "fixKeywords": 0},
+      "occurrences": 6,
+      "firstSeen": "2026-03-16",
+      "lastSeen": "2026-03-18",
+      "ground_truth": "根因：守衛判定條件未觸發或缺失，系統記錄空結果而非實際阻擋狀態——需檢查 guards.js 的判定邏輯是否完整涵蓋所有操作。",
+      "label": "case-bash-agent-bash"
+    },
+    {
+      "id": "bash-bash-bash-agent",
+      "pattern": "Bash→Bash→Bash→Agent",
+      "signals": {"blocks": 0, "errors": 0, "fixKeywords": 0},
+      "occurrences": 8,
+      "firstSeen": "2026-03-16",
+      "lastSeen": "2026-03-19",
+      "ground_truth": "根據「禁止靜默失敗」原則，最可能的根因是：某個 catch 塊在吞掉異常，導致 errors 計數為 0 但實際故障未被記錄（應 grep 找空 catch 或缺少通知的 error handler）。",
+      "label": "case-bash-bash-bash-agent"
+    },
+    {
+      "id": "edit-bash-1",
+      "pattern": "Edit→Bash",
+      "signals": {"blocks": 0, "errors": 0, "fixKeywords": 0},
+      "occurrences": 5,
+      "firstSeen": "2026-03-16",
+      "lastSeen": "2026-03-18",
+      "ground_truth": "監測邏輯被 try/catch 或條件短路靜默吞掉，未實際執行檢查 — 需讀源碼確認 blocks/errors/修正關鍵詞 是否真的檢查，還是直接返回預設值。",
+      "label": "case-edit-bash-1"
+    },
+    {
+      "id": "bash-edit-1",
+      "pattern": "Bash→Edit",
+      "signals": {"blocks": 0, "errors": 0, "fixKeywords": 0},
+      "occurrences": 4,
+      "firstSeen": "2026-03-16",
+      "lastSeen": "2026-03-17",
+      "ground_truth": "系統健康檢查或冷啟動的預設狀態被誤當成實際事件記錄，導致空報告重複寫入日誌。",
+      "label": "case-bash-edit-1"
+    },
+    {
+      "id": "bash-edit-bash",
+      "pattern": "Bash→Edit→Bash",
+      "signals": {"blocks": 0, "errors": 0, "fixKeywords": 0},
+      "occurrences": 7,
+      "firstSeen": "2026-03-16",
+      "lastSeen": "2026-03-19",
+      "ground_truth": "Guard 規則配置過寬鬆，關鍵詞清單不完整未涵蓋該 session 的危險操作模式。",
+      "label": "case-bash-edit-bash"
+    },
+    {
+      "id": "edit-1",
+      "pattern": "Edit→Edit",
+      "signals": {"blocks": 0, "errors": 0, "fixKeywords": 0},
+      "occurrences": 3,
+      "firstSeen": "2026-03-16",
+      "lastSeen": "2026-03-16",
+      "ground_truth": "根因：PreToolUse hook 的 updatedInput 替換時未完整保留原始欄位，導致關鍵參數遺失但操作仍執行，但沒有觸發 guard 攔截（blocks=0）或錯誤提示（errors=0）。",
+      "label": "case-edit-1"
+    },
+    {
+      "id": "edit-bash-2",
+      "pattern": "Edit→Bash→Bash",
+      "signals": {"blocks": 0, "errors": 0, "fixKeywords": 0},
+      "occurrences": 5,
+      "firstSeen": "2026-03-17",
+      "lastSeen": "2026-03-18",
+      "ground_truth": "Guard 規則判定全部 allow，或 PreToolUse hook 未正常分發至 guards.js。",
+      "label": "case-edit-bash-2"
+    },
+    {
+      "id": "bash-edit-2",
+      "pattern": "Bash→Bash→Edit",
+      "signals": {"blocks": 0, "errors": 0, "fixKeywords": 0},
+      "occurrences": 4,
+      "firstSeen": "2026-03-17",
+      "lastSeen": "2026-03-18",
+      "ground_truth": "操作完成但結果未被驗證，或檢查點被靜默略過（無警告通知）。",
+      "label": "case-bash-edit-2"
+    },
+    {
+      "id": "edit-bash-3",
+      "pattern": "Edit→Bash→Bash→Bash",
+      "signals": {"blocks": 0, "errors": 0, "fixKeywords": 0},
+      "occurrences": 6,
+      "firstSeen": "2026-03-17",
+      "lastSeen": "2026-03-19",
+      "ground_truth": "nova-server 不可用時 fallback 路徑繞過記錄系統，或本地模型 down 導致 judge 的修正步驟被跳過。",
+      "label": "case-edit-bash-3"
+    },
+    {
+      "id": "repeated-edit-1",
+      "pattern": "Edit→Edit→Edit→Edit",
+      "signals": {"blocks": 0, "errors": 0, "fixKeywords": 0},
+      "occurrences": 9,
+      "firstSeen": "2026-03-16",
+      "lastSeen": "2026-03-20",
+      "ground_truth": "靜默失敗——操作被吞掉了但沒有記錄（可能在 catch 裡被 ignore 或監控層級缺口）。",
+      "label": "case-repeated-edit-1"
+    },
+    {
+      "id": "bash-edit-bash-2",
+      "pattern": "Bash→Bash→Edit→Bash",
+      "signals": {"blocks": 0, "errors": 0, "fixKeywords": 0},
+      "occurrences": 5,
+      "firstSeen": "2026-03-17",
+      "lastSeen": "2026-03-19",
+      "ground_truth": "本地模型 (vllm-mlx) 啟動失敗或 timeout → 走 fallback 邏輯返回預設零值。",
+      "label": "case-bash-edit-bash-2"
+    },
+    {
+      "id": "bash-edit-3",
+      "pattern": "Bash→Write",
+      "signals": {"blocks": 0, "errors": 0, "fixKeywords": 0},
+      "occurrences": 4,
+      "firstSeen": "2026-03-17",
+      "lastSeen": "2026-03-18",
+      "ground_truth": "評估邏輯未執行或檢測閾值未達 — 工作負載太輕（無 block 決策、無錯誤事件、無修正關鍵詞可檢測）導致數據採樣為零，無法反映系統實際狀況。",
+      "label": "case-bash-write"
+    },
+    {
+      "id": "edit-agent",
+      "pattern": "Write→Agent",
+      "signals": {"blocks": 0, "errors": 0, "fixKeywords": 0},
+      "occurrences": 3,
+      "firstSeen": "2026-03-18",
+      "lastSeen": "2026-03-18",
+      "ground_truth": "防護機制執行但未記錄輸出，導致無法追蹤執行結果（靜默執行反模式）。",
+      "label": "case-write-agent"
+    },
+    {
+      "id": "edit-bash-4",
+      "pattern": "Write→Bash",
+      "signals": {"blocks": 0, "errors": 0, "fixKeywords": 0},
+      "occurrences": 6,
+      "firstSeen": "2026-03-18",
+      "lastSeen": "2026-03-20",
+      "ground_truth": "修復流程的觸發條件邏輯有誤——很可能是 if (blocks > 0 || errors > 0) 這類守衛條件設得過嚴，導致即使應該檢查，流程也因為計數為 0 就被跳過。",
+      "label": "case-write-bash"
+    },
+    {
+      "id": "bash-edit-4",
+      "pattern": "Bash→Bash→Write",
+      "signals": {"blocks": 0, "errors": 0, "fixKeywords": 0},
+      "occurrences": 5,
+      "firstSeen": "2026-03-18",
+      "lastSeen": "2026-03-20",
+      "ground_truth": "檢查邏輯未正確執行或掃描對象為空（如檢查範圍配置錯誤、未掃描到實際改動的檔案），導致全部指標歸零。",
+      "label": "case-bash-bash-write"
+    },
+    {
+      "id": "repeated-edit-2",
+      "pattern": "Write→Write→Write",
+      "signals": {"blocks": 0, "errors": 0, "fixKeywords": 0},
+      "occurrences": 7,
+      "firstSeen": "2026-03-18",
+      "lastSeen": "2026-03-21",
+      "ground_truth": "根因：儲存裝置未觸發錯誤或修正機制導致問題未被偵測與處理。",
+      "label": "case-write-write-write"
+    },
+    {
+      "id": "edit-bash-5",
+      "pattern": "Write→Write→Bash",
+      "signals": {"blocks": 0, "errors": 0, "fixKeywords": 0},
+      "occurrences": 4,
+      "firstSeen": "2026-03-19",
+      "lastSeen": "2026-03-21",
+      "ground_truth": "根因：儲存裝置未觸發錯誤或修正機制導致問題反覆出現。",
+      "label": "case-write-write-bash"
+    }
+  ]
+}
