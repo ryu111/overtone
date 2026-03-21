@@ -4,12 +4,12 @@
 
 | # | 目標 | 狀態 | Baseline | 最終 |
 |:-:|------|:----:|:--------:|:----:|
-| 1 | Guard regex FPR | done | 93.3% | — |
-| 2 | Judge 語意評分 prompt | pending | — | — |
-| 3 | 行為分類 prompt | pending | — | — |
-| 4 | 信心公式常數 | pending | — | — |
-| 5 | 確定性評分權重 | pending | — | — |
-| 6 | 行為門檻值 | pending | — | — |
+| 1 | Guard regex FPR | eval-ready | 93.3% | — |
+| 2 | Judge 語意評分 prompt | eval-ready | 93.3% | — |
+| 3 | 行為分類 prompt | eval-ready | 90.0% | — |
+| 4 | 信心公式常數 | skip(100%) | 100% | 100% |
+| 5 | 確定性評分權重 | skip(100%) | 100% | 100% |
+| 6 | 行為門檻值 | eval-ready | 81.0% | — |
 
 ## Phase 2 — 需標記 ground truth（半天建好）
 

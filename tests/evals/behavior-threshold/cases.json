@@ -3,8 +3,8 @@
   "variable_file": "~/.claude/scripts/learner-suggestions.js",
   "variable_description": "habitThreshold (0.6) 和 antiPatternThreshold (0.4) — 決定行為是否達到生成建議的門檻",
   "meta": {
-    "habit_threshold": 0.6,
-    "anti_pattern_threshold": 0.4
+    "habit_threshold": 0.11,
+    "anti_pattern_threshold": 0.38
   },
   "cases": [
     {
