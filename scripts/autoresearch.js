@@ -13,9 +13,8 @@
  *   5. 輸出 results.tsv
  */
 
-import { readFileSync, writeFileSync, copyFileSync, existsSync, mkdirSync } from "node:fs";
+import { readFileSync, writeFileSync, copyFileSync, existsSync } from "node:fs";
 import { join, dirname, resolve, basename } from "node:path";
-import { homedir } from "node:os";
 import { spawnSync } from "node:child_process";
 import { askLocalModelJSON } from "/Users/sbu/.claude/scripts/local-model.js";
 

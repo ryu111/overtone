@@ -237,7 +237,7 @@ function aggregateSkillStats(triggers) {
  * 從 taskSnippet 生成 eval case
  * 基於高頻 skill 和真實任務樣本
  */
-function generateSkillCases(skillName, tasks) {
+function generateSkillCases(_skillName, tasks) {
   const cases = [];
 
   for (const task of tasks) {
@@ -379,10 +379,6 @@ async function runSkillFlywheel() {
   // 總結
   const totalTriggers = triggers.length;
   const uniqueSkills = stats.size;
-  const avgPerSession = totalTriggers > 0
-    ? (sorted.reduce((s, [, v]) => s + v.count, 0) / totalTriggers).toFixed(1)
-    : 0;
-
   console.log(`\n  摘要：`);
   console.log(`    總觸發次數:   ${totalTriggers} 次`);
   console.log(`    唯一 skills:  ${uniqueSkills} 個`);

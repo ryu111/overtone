@@ -163,13 +163,13 @@ _目前無待做任務_
 
 | 任務 | 類型 | 完成時間 | 結果 |
 |------|------|---------|------|
+| D2-Skill-description-批次迭代 | 功能 | 2026-03-21 | — |
+| D2-eval-flywheel-自動擴充 | 功能 | 2026-03-21 | — |
+| D2-autoresearch-script-自動化 | 功能 | 2026-03-21 | — |
+| D1-Skill-觸發統計收集 | 功能 | 2026-03-21 | — |
+| D1-Guard-eval-edge-case-擴充 | 功能 | 2026-03-21 | — |
+| D1-本地模型並行防護-semaphore | 功能 | 2026-03-21 | — |
+| D1-Ralph-loop-收尾整合 | 功能 | 2026-03-21 | — |
 | undefined | undefined | 2026-03-20 | 3 個 GitHub Skill（A 級）+ Acid Test 6/6 + 真 |
 | capability-probe 修復 | 修復 | 2026-03-18 | 修復完成，timeout 從 42 次降到 0 次 |
 | 2026-03-15_nova-server-observability | — | — | — |
-| 2026-03-16_health-check | — | — | — |
-| tool-registry | — | — | — |
-| gap-analyzer | — | — | — |
-| r4-e2e-verification | — | — | — |
-| r4-e2e-integration | — | — | — |
-| session-wrapup-refactor | — | — | — |
-| dashboard-g3-unify | — | — | — |
