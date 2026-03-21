@@ -1,0 +1,5 @@
+iteration	metric	status	meta
+0	0.944444	baseline	{"habit_threshold":0.11,"anti_pattern_threshold":0.38}
+1	0.809524	discard	{"habit_threshold":0.21,"anti_pattern_threshold":0.48}
+2	0.809524	discard	{"habit_threshold":0.21,"anti_pattern_threshold":0.48}
+3	0.809524	discard	{"habit_threshold":0.21,"anti_pattern_threshold":0.48}
