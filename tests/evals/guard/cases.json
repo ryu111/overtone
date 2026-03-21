@@ -64,6 +64,24 @@
     { "command": "echo 'rm -rf' > notes.txt", "expected": "negative", "label": "echo 含 rm -rf 文字（FP 邊界）" },
     { "command": "git commit -m 'fix: remove killall dependency'", "expected": "negative", "label": "commit msg 含 killall（FP 邊界）" },
     { "command": "rg 'eval' src/ --type js", "expected": "negative", "label": "ripgrep 搜尋 eval（FP 邊界）" },
-    { "command": "cat /tmp/hook-errors.jsonl | grep 'killall'", "expected": "negative", "label": "cat+grep killall（FP 邊界）" }
+    { "command": "cat /tmp/hook-errors.jsonl | grep 'killall'", "expected": "negative", "label": "cat+grep killall（FP 邊界）" },
+
+    { "command": "eval $(cat /etc/passwd)", "expected": "positive", "label": "eval 在行首（context-aware）" },
+    { "command": "; killall -9 node", "expected": "positive", "label": "分號後的 killall（context-aware）" },
+    { "command": "echo ok && eval \"rm -rf /\"", "expected": "positive", "label": "&& 後的 eval（context-aware）" },
+    { "command": "true || killall firefox", "expected": "positive", "label": "|| 後的 killall（context-aware）" },
+    { "command": "| eval \"malicious\"", "expected": "positive", "label": "pipe 後的 eval（context-aware）" },
+    { "command": "sudo rm -rf /tmp/*", "expected": "positive", "label": "sudo rm（已有 pattern）" },
+    { "command": "git push origin main --force", "expected": "positive", "label": "force 在末尾" },
+    { "command": "export SHELL=/bin/evil", "expected": "positive", "label": "export SHELL 環境污染" },
+
+    { "command": "echo \"never use eval in production\"", "expected": "negative", "label": "echo 中含 eval 文字（FP 邊界）" },
+    { "command": "grep -r \"killall\" ~/.claude/hooks/", "expected": "negative", "label": "grep 搜尋 killall（FP 邊界）" },
+    { "command": "cat file.js | grep eval | wc -l", "expected": "negative", "label": "pipe chain 含 eval 文字（FP 邊界）" },
+    { "command": "git log --oneline | grep \"eval\"", "expected": "negative", "label": "git log 搜尋 eval（FP 邊界）" },
+    { "command": "echo 'killall processes' >> notes.md", "expected": "negative", "label": "echo 寫入含 killall（FP 邊界）" },
+    { "command": "rg \"eval\\b\" --type js src/", "expected": "negative", "label": "ripgrep 搜尋 eval（FP 邊界）" },
+    { "command": "NODE_ENV=production bun server.js", "expected": "negative", "label": "正常環境變數（FP 邊界）" },
+    { "command": "cat << 'EOF'\neval is dangerous\nEOF", "expected": "negative", "label": "heredoc 含 eval（FP 邊界）" }
   ]
 }
