@@ -1,0 +1,223 @@
+{
+  "name": "F 級改善建議 prompt",
+  "variable_file": "~/.claude/scripts/judge-improvements.js",
+  "variable_description": "improvementSystem prompt 和 generateImprovements 邏輯",
+  "cases": [
+    {
+      "path": "skills/code-review",
+      "type": "skill",
+      "score": 50,
+      "weakDimension": "",
+      "ground_truth_suggestions": [
+        "- 補全截斷的參考檔案連結，確保 `../testing/refer` 後綴完整且對應檔案存在。",
+        "- 補充「信心過濾」的計算邏輯，明確定義模型如何評估信心區間。",
+        "- 釐清 `reviewer` 消費者代理的具體職責，避免描述模糊導致執行歧義。"
+      ],
+      "label": "case-00-skill-skills-code-review"
+    },
+    {
+      "path": "rules/深度路由.md",
+      "type": "rule",
+      "score": 35,
+      "weakDimension": "",
+      "ground_truth_suggestions": [
+        "- 釐清流程中斷邏輯，明確區分「自動接續」與「失敗時 AskUserQuestion」的觸發條件以避免衝突",
+        "- 統一模型指派規則，解決表格中 Sonnet 預設與文字描述中 Planner/Reviewer 固定 Opus 的矛盾",
+        "- 補充任務複雜度的具體量化標準，確保 Main Agent 選擇路由深度時具備可執行的判斷依據"
+      ],
+      "label": "case-01-rule-rules-深度路由-md"
+    },
+    {
+      "path": "rules/模組職責分離.md",
+      "type": "rule",
+      "score": 50,
+      "weakDimension": "語意（知識深度/清晰度）",
+      "ground_truth_suggestions": [
+        "- 術語定義混淆，將「Hook 類型」誤導為「資料方向」，缺乏架構理論支撐：改用標準架構術語（如 Producer/Consumer），明確區分事件消費與狀態寫入的邊界",
+        "- metrics.js 分類邏輯矛盾，被 server.js import 通常代表提供數據而非讀取數據：修正 metrics.js 職責為「寫出/提供」，並說明其數據流向是輸出至監控系統而非讀取外部上下文",
+        "- 缺乏技術實作規範，僅有原則無具體介面約束：補充模組間的通訊介面定義（如 Event Bus 規範），明確哪些操作屬於「讀」哪些屬於「寫」的代碼層級約束"
+      ],
+      "label": "case-02-rule-rules-模組職責分離-md"
+    },
+    {
+      "path": "rules/本地模型委派.md",
+      "type": "rule",
+      "score": 28,
+      "weakDimension": "語意（知識深度/清晰度）",
+      "ground_truth_suggestions": [
+        "- 文件內容截斷，'Qwen3.5 Thinking Mode 注意事項' 未寫完，導致操作規範缺失。：補全該章節，明確 Qwen3.5 在本地模型中的思考模式限制與提示詞規範。",
+        "- 語意分數為 0，但文中缺乏語意評估的具體定義與標準。：補充語意評分的具體指標（如上下文一致性、意圖識別準確度），解釋為何語意分數低。",
+        "- 決策流程中缺乏語意反饋機制，僅依賴可靠度計分。：在「本地模型作為決策者」章節增加語意驗證步驟，確保模型決策符合預期語意而非僅是形式正確。"
+      ],
+      "label": "case-03-rule-rules-本地模型委派-md"
+    },
+    {
+      "path": "skills/auto",
+      "type": "skill",
+      "score": 35,
+      "weakDimension": "語意（知識深度/清晰度）",
+      "ground_truth_suggestions": [
+        "- 判斷流程章節完全空白，缺乏核心決策邏輯：補充具體判斷標準，如檔案數量、模組依賴、風險等級的閾值條件",
+        "- 深度對照表缺乏量化指標，語意模糊：在表格中增加具體數值範圍（如檔案數≤3 為 D1，≥5 為 D4）及明確的觸發條件",
+        "- NEVER 規則缺乏執行驗證機制：在流程末尾加入自我檢查清單，確保 D2+ 任務符合規範後才執行"
+      ],
+      "label": "case-04-skill-skills-auto"
+    },
+    {
+      "path": "rules/並行執行.md",
+      "type": "rule",
+      "score": 58,
+      "weakDimension": "確定性（frontmatter/結構）",
+      "ground_truth_suggestions": [
+        "- 缺少 Frontmatter 元數據區塊：在文件開頭添加 YAML 區塊，包含版本號、規則優先級與執行模式設定",
+        "- 判斷標準過於抽象導致執行不確定：將「無依賴」轉化為具體的代碼檢查步驟或條件列表，明確界定並行觸發條件",
+        "- 結構缺乏標準化格式：統一規則格式，包含條件、動作、例外與預期輸出，確保解析一致性"
+      ],
+      "label": "case-05-rule-rules-並行執行-md"
+    },
+    {
+      "path": "hooks/modules/notification.js",
+      "type": "hook",
+      "score": 57,
+      "weakDimension": "語意（知識深度/清晰度）",
+      "ground_truth_suggestions": [
+        "- AppleScript 注入風險：對 title 和 message 進行轉義處理，避免特殊字符破壞腳本結構。",
+        "- 缺乏錯誤處理：將 spawnSync 包裹在 try-catch 區塊中，捕獲執行錯誤並返回適當狀態。",
+        "- 輸入驗證不足：檢查 input 對象是否存在，確保 message 為有效字串，避免空值傳遞。"
+      ],
+      "label": "case-06-hook-hooks-modules-notification-js"
+    },
+    {
+      "path": "skills/agent-browser",
+      "type": "skill",
+      "score": 30,
+      "weakDimension": "語意（知識深度/清晰度）",
+      "ground_truth_suggestions": [
+        "- 文件內容截斷：補全 'Snapshot is core' 段落後的說明，確保文件完整。",
+        "- 語意映射模糊：補充解釋參數（如 -i -c）如何影響 AI 對頁面結構的語意理解。",
+        "- 狀態管理不明：釐清 '無狀態' 與 'Session 隔離' 的差異，說明 AI 如何維持跨指令上下文。"
+      ],
+      "label": "case-07-skill-skills-agent-browser"
+    },
+    {
+      "path": "skills/dead-code",
+      "type": "skill",
+      "score": 50,
+      "weakDimension": "語意（知識深度/清晰度）",
+      "ground_truth_suggestions": [
+        "- NEVER 章節內容截斷，CLI 刪除規則不完整：補全規則：NEVER 刪除 CLI 命令定義，除非確認 settings.json 或 CLI 配置無引用且無外部調用",
+        "- False Positive 處理依賴外部文件，缺乏即時判斷依據：在技能內容中嵌入具體 grep 正則表達式，如 /require\\(.*variable\\)/ 或 /eval\\(.*\\)/，減少對外部參考文件的依賴",
+        "- Public API 定義模糊，決策樹邏輯不清晰：明確定義 Public API 範圍，例如包含 index.ts 導出、package.json exports 或 barrel files，避免誤判"
+      ],
+      "label": "case-08-skill-skills-dead-code"
+    },
+    {
+      "path": "skills/architecture",
+      "type": "skill",
+      "score": 50,
+      "weakDimension": "語意（知識深度/清晰度）",
+      "ground_truth_suggestions": [
+        "- Tradeoff 維度缺乏具體量化指標或設計模式對應，導致決策依據模糊。：為每個維度添加具體指標（如 QPS、延遲閾值）及對應的設計模式範例。",
+        "- 並發決策樹混入系統內部檔案路徑，缺乏通用性原則說明。：移除特定檔案名稱，改為解釋原子寫入、CAS 等機制原理及適用場景。",
+        "- ADR 模板僅引用外部路徑，未內嵌關鍵欄位結構，無法直接生成完整決策記錄。：在技能內容中直接嵌入 ADR 標準欄位（狀態、背景、決策、後果）的結構範本。"
+      ],
+      "label": "case-09-skill-skills-architecture"
+    },
+    {
+      "path": "skills/autonomous-control",
+      "type": "skill",
+      "score": 50,
+      "weakDimension": "語意（知識深度/清晰度）",
+      "ground_truth_suggestions": [
+        "- 核心機制描述空洞，未說明 heartbeat 如何偵測佇列項目及觸發 spawn 的具體流程：補充 heartbeat daemon 監聽佇列的輪詢機制或事件驅動邏輯，明確觸發條件",
+        "- 安全防護措施缺乏實作細節，OVERTONE_SPAWNED 過濾環境變數的具體規則不明：明確列出被過濾的敏感變數清單及繼承邏輯，補充子 session 的隔離範圍",
+        "- 錯誤處理與狀態管理缺失，NEVER 條款未說明異常發生時的恢復機制：增加佇列項目失敗重試策略及 daemon 崩潰後的狀態恢復流程說明"
+      ],
+      "label": "case-10-skill-skills-autonomous-control"
+    },
+    {
+      "path": "rules/開發流程.md",
+      "type": "rule",
+      "score": 35,
+      "weakDimension": "語意（知識深度/清晰度）",
+      "ground_truth_suggestions": [
+        "- 術語定義模糊，'L1-L4 自我進化' 與 'Slopsquatting' 缺乏標準解釋，造成執行歧義。：明確定義能力階層標準，修正安全術語為 'Typosquatting' 或 'Supply Chain Security'，並補充驗證命令範例。",
+        "- 缺乏具體執行步驟，僅有原則性指示，未提供搜尋與驗證的實作流程。：新增具體操作指引，例如使用 'npm view' 檢查包狀態，並規定搜尋結果需記錄於 PR 描述或文檔中。",
+        "- 未涵蓋知識更新與文檔同步機制，導致搜尋後的最佳實踐無法傳承。：增加 '文檔同步' 步驟，要求實作後必須更新 'rules/開發流程.md' 並提交知識庫更新記錄。"
+      ],
+      "label": "case-11-rule-rules-開發流程-md"
+    },
+    {
+      "path": "hooks/modules/metrics.js",
+      "type": "hook",
+      "score": 40,
+      "weakDimension": "語意（知識深度/清晰度）",
+      "ground_truth_suggestions": [
+        "- 程式碼截斷導致語法錯誤：補全 detectAnomalies 函式邏輯，確保所有括號與語句正確結束。",
+        "- 缺乏對外暴露的 API 介面：在 createMetrics 回傳物件中提供 incrementDispatch, recordError 等公共方法供外部調用。",
+        "- 存在未使用的狀態變數：移除未引用的 RSS_THRESHOLD_MB, taskDepth, sessionDuration 等變數，或補充相關邏輯。"
+      ],
+      "label": "case-12-hook-hooks-modules-metrics-js"
+    },
+    {
+      "path": "hooks/modules/context-injector.js",
+      "type": "hook",
+      "score": 50,
+      "weakDimension": "語意（知識深度/清晰度）",
+      "ground_truth_suggestions": [
+        "- Hardcoded file path reduces portability and clarity：Use environment variables or configurable path instead of hardcoded homedir()",
+        "- Silent error handling hides context injection failures：Throw errors or return structured error objects instead of returning null on exception",
+        "- Raw string aggregation lacks structured data semantics：Return structured objects for context and validate JSONL schema before processing"
+      ],
+      "label": "case-13-hook-hooks-modules-context-injector"
+    },
+    {
+      "path": "rules/總結格式.md",
+      "type": "rule",
+      "score": 35,
+      "weakDimension": "語意（知識深度/清晰度）",
+      "ground_truth_suggestions": [
+        "- 深度標準 D0-D4 未定義，導致執行歧義：補充 D0-D4 的明確定義（如 D0=設定，D4=架構重構）",
+        "- 數字證據缺乏量化範例，難以驗證成果：增加具體範例（如測試覆蓋率提升 10%、延遲降低 50ms）",
+        "- 建議生成邏輯缺失，未說明如何從完成項推導：新增規則要求基於完成項的痛點分析來生成短期建議"
+      ],
+      "label": "case-14-rule-rules-總結格式-md"
+    },
+    {
+      "path": "hooks/modules/guards.js",
+      "type": "hook",
+      "score": 50,
+      "weakDimension": "語意（知識深度/清晰度）",
+      "ground_truth_suggestions": [
+        "- 程式碼截斷導致語法錯誤：補全 evaluateEdit 函數邏輯，確保 if 條件與結尾大括號完整。",
+        "- 錯誤處理預設放行存在安全風險：將 try-catch 中的 catch 分支預設決策改為 block，避免解析失敗時繞過檢查。",
+        "- 正則表達式易被繞過：結合命令解析器替代純正則匹配，並處理參數空格變體與命令替換情況。"
+      ],
+      "label": "case-15-hook-hooks-modules-guards-js"
+    },
+    {
+      "path": "hooks/modules/heartbeat.js",
+      "type": "hook",
+      "score": 49,
+      "weakDimension": "語意（知識深度/清晰度）",
+      "ground_truth_suggestions": [
+        "- buildSelfDrivePrompt 混合三個職責（工作流定義、工具調用、自驅邏輯），導致 prompt 成為黑盒。命令式 20+ 行 step 無法快速傳達模組意圖，維護時難以理解核心決策規則。：重構為兩層結構：(1) 頂層 prompt 使用宣言式語法（「分析待做/待觀察/待決定 → 執行最高優先任務 → 若無待做則分析缺口」），(2) 工具細節移至分離的 CLI helper 或 SKILL.md，prompt 只引用。同時在模組檔頭加註明 focus 語意、session timeout、失敗重試策略等邊界條件。",
+        "- 缺乏決策模型文檔。heartbeat 沒有記錄 focus 比重分配、缺口度量、優先級判斷等決策規則，使用者無法驗證或改進自驅邏輯，導致黑盒依賴。：建立 ~/.claude/skills/heartbeat/SKILL.md，補充：(1) 決策樹（何時 spawn、focus 可選值及比重範例）、(2) 度量方式（缺口檢測用什麼指標，例：test fail count、spec TODO count）、(3) 任務拆分粒度標準、(4) 失敗恢復策略。prompt 改為引用此文檔。",
+        "- 工具路徑硬編碼（`'bun ~/.claude/scripts/notion-tasks.js'`），路徑變更時斷掉，無錯誤處理。：改為配置驅動：`const notionTasksCmd = loadConfig().notionTasksPath || 'bun ~/.claude/scripts/notion-tasks.js'`，搭配檢查檔案存在；或改為呼叫程式 API 而非 shell 命令。加 try-catch 捕捉執行錯誤，失敗時 emit 事件供 metrics 追蹤。"
+      ],
+      "label": "case-16-hook-hooks-modules-heartbeat-js"
+    },
+    {
+      "path": "rules/測試規範.md",
+      "type": "rule",
+      "score": 51,
+      "weakDimension": "確定性（frontmatter/結構）",
+      "ground_truth_suggestions": [
+        "- 缺失 frontmatter 元數據。規則文件需要 name、description、type 三欄位以支援知識管理系統索引，目前完全缺失。：在內容開頭加入 frontmatter 區塊：\n---\nname: 測試規範\ndescription: 測試編寫和審查的強制性流程規範\ntype: feedback\n---",
+        "- 指令不明確。「MUST 讀取 nova-test skill」只說了動作，沒說何時讀、讀完後執行什麼、不讀會怎樣。缺乏確定性。：改為具體行為序列：「📋 MUST 在新增/修改/審查測試前，讀取 nova-test skill 的決策樹（何該測、何不測、怎麼測），按其維度框架設計測試。執行測試後驗證覆蓋度。\"",
+        "- 適用場景列舉不完整。四項場景後無分類說明，讀者看不出這些是「選其一」還是「全都適用」。：改為結構化格式：\n**何時觸發**：\n- 新增測試 → 讀決策樹確定測試維度\n- 修改測試 → 檢查改動是否仍符合 Testing Trophy\n- 審查測試 → 驗證維度完整度 + 風險驅動覆蓋\n- Test fail → 按根因分類重新補測"
+      ],
+      "label": "case-17-rule-rules-測試規範-md"
+    }
+  ]
+}

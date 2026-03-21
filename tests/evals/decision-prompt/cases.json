@@ -1,0 +1,187 @@
+{
+  "name": "決策 prompt",
+  "variable_file": "~/.claude/scripts/decision.js",
+  "variable_description": "buildDecisionPrompt 中的決策規則和 system prompt",
+  "cases": [
+    {
+      "state": {
+        "repo": "nova",
+        "hasChanges": true
+      },
+      "expected_action": "commit",
+      "expected_context": "chore(maintainer): 同步 Rules 數量",
+      "label": "case-00-commit-nova"
+    },
+    {
+      "state": {
+        "repo": "nova",
+        "hasChanges": true
+      },
+      "expected_action": "commit",
+      "expected_context": "chore(maintainer): hooks 更新 1 個 + 其他 1 個檔案",
+      "label": "case-01-commit-nova"
+    },
+    {
+      "state": {
+        "repo": "nova",
+        "hasChanges": true
+      },
+      "expected_action": "commit",
+      "expected_context": "chore(maintainer): scripts 更新（heartbeat、maintainer 等） + 其他 1 個檔案",
+      "label": "case-02-commit-nova"
+    },
+    {
+      "state": {
+        "repo": "nova",
+        "hasChanges": true
+      },
+      "expected_action": "commit",
+      "expected_context": "chore(maintainer): 同步 Rules 數量",
+      "label": "case-03-commit-nova"
+    },
+    {
+      "state": {
+        "repo": "overtone",
+        "hasChanges": true
+      },
+      "expected_action": "commit",
+      "expected_context": "chore(maintainer): 其他 6 個檔案",
+      "label": "case-04-commit-overtone"
+    },
+    {
+      "state": {
+        "repo": "overtone",
+        "hasChanges": true
+      },
+      "expected_action": "commit",
+      "expected_context": "chore(maintainer): 其他 1 個檔案",
+      "label": "case-05-commit-overtone"
+    },
+    {
+      "state": {
+        "repo": "overtone",
+        "hasChanges": true
+      },
+      "expected_action": "commit",
+      "expected_context": "chore(maintainer): 其他 1 個檔案",
+      "label": "case-06-commit-overtone"
+    },
+    {
+      "state": {
+        "repo": "overtone",
+        "hasChanges": true
+      },
+      "expected_action": "commit",
+      "expected_context": "chore(maintainer): 其他 1 個檔案",
+      "label": "case-07-commit-overtone"
+    },
+    {
+      "state": {
+        "errorCount": 10,
+        "clusters": 0
+      },
+      "expected_action": "skip",
+      "expected_context": "errors=10",
+      "label": "case-08-skip-learner"
+    },
+    {
+      "state": {
+        "errorCount": 10,
+        "clusters": 0
+      },
+      "expected_action": "skip",
+      "expected_context": "errors=10",
+      "label": "case-09-skip-learner"
+    },
+    {
+      "state": {
+        "errorCount": 10,
+        "clusters": 0
+      },
+      "expected_action": "skip",
+      "expected_context": "errors=10",
+      "label": "case-10-skip-learner"
+    },
+    {
+      "state": {
+        "errorCount": 10,
+        "clusters": 0
+      },
+      "expected_action": "skip",
+      "expected_context": "errors=10",
+      "label": "case-11-skip-learner"
+    },
+    {
+      "state": {
+        "candidates": 7,
+        "avgConfidence": 0.54
+      },
+      "expected_action": "skip",
+      "expected_context": "processed=0 deployed=0",
+      "label": "case-12-skip-no-candidates"
+    },
+    {
+      "state": {
+        "candidates": 55,
+        "avgConfidence": 0.76
+      },
+      "expected_action": "skip",
+      "expected_context": "processed=0 deployed=0",
+      "label": "case-13-skip-no-candidates"
+    },
+    {
+      "state": {
+        "candidates": 7,
+        "avgConfidence": 0.56
+      },
+      "expected_action": "skip",
+      "expected_context": "processed=0 deployed=0",
+      "label": "case-14-skip-no-candidates"
+    },
+    {
+      "state": {
+        "candidates": 64,
+        "avgConfidence": 0.79
+      },
+      "expected_action": "skip",
+      "expected_context": "processed=0 deployed=0",
+      "label": "case-15-skip-no-candidates"
+    },
+    {
+      "state": {
+        "repo": "nova",
+        "hasChanges": true
+      },
+      "expected_action": "commit",
+      "expected_context": "chore(maintainer): 其他 1 個檔案",
+      "label": "case-16-commit-nova"
+    },
+    {
+      "state": {
+        "repo": "overtone",
+        "hasChanges": true
+      },
+      "expected_action": "commit",
+      "expected_context": "chore(maintainer): 文件更新 1 份",
+      "label": "case-17-commit-overtone"
+    },
+    {
+      "state": {
+        "repo": "overtone",
+        "hasChanges": true
+      },
+      "expected_action": "commit",
+      "expected_context": "chore(maintainer): 其他 2 個檔案",
+      "label": "case-18-commit-overtone"
+    },
+    {
+      "state": {
+        "repo": "nova",
+        "hasChanges": true
+      },
+      "expected_action": "commit",
+      "expected_context": "chore(maintainer): scripts 更新（heartbeat） + 其他 1 個檔案",
+      "label": "case-19-commit-nova"
+    }
+  ]
+}
