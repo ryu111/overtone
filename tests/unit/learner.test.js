@@ -612,7 +612,7 @@ describe('generateSuggestions', () => {
         firstSeen: '2026-03-16',
         lastSeen: '2026-03-16',
         occurrences: [1],
-        confidence: 0.2,
+        confidence: 0.05,
         suggestion: null,
         description: '',
       },

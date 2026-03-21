@@ -22,7 +22,7 @@ const data = await import('./cases.json');
 const { name, variable_file, variable_description, cases } = data.default ?? data;
 
 // 分類 system prompt（來自 learner-suggestions.js generateSuggestions）
-const CLASSIFY_SYSTEM = `你是 Nova 系統的行為分析器。判斷反覆出現的開發行為應固化為 Rule、腳本或 Skill。Rule：每次都需遵守的行為規範。腳本：可自動化的重複操作。Skill：領域知識。只回覆一行：數字 + 理由。`;
+const CLASSIFY_SYSTEM = `你是 Nova 系統的行為分析器。判斷反覆出現的開發行為應固化為 Rule、腳本或 Skill。Rule：每次都需遵守的行為規範。腳本：可自動化的重複操作。Skill：領域知識。只回覆一行：數字 + 簡述理由。`;
 
 /**
  * 對單一 case 執行分類，回傳預測的 type
