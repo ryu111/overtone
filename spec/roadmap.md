@@ -9,12 +9,13 @@ v0.30+ 採用「單腦 + 深度路由 + 輕量 Worker」模式（見 `docs/spec/
 五層定義見 `docs/vision.md`，R1 詳細設計見 `docs/spec/L1-L2-守衛與閉環-實作計劃.md`。
 
 **現有基礎**（不動的部分）：
-- Rules 16 個（全域行為規範，完整）
-- Skills 27 個（知識庫，完整）
+- Rules 19 個（全域行為規範，完整）
+- Skills 28 個（知識庫，完整）
 - Agents 3 個（planner/executor/reviewer，已適配新架構）
 - Flow Visualizer（hooks 事件記錄 → SSE → 即時顯示，完整閉環）
 - Guards 2 個（pre-bash-guard + pre-edit-guard）
 - Commands /nova-flow + 10+ skills 提供命令入口
+- Evals 13 個（autoresearch 量化改進系統）
 
 **需重建的部分**（v0.29 scripts/lib 已清除）：
 所有 L1-L3 的執行層腳本（engine/framework 類 .js 檔案）已被清除，

@@ -793,5 +793,8 @@ describe('spawn 穩定性驗證', () => {
     const last = JSON.parse(lines[lines.length - 1]);
     expect(last.event).toBe('heartbeat-spawn');
     expect(last.error).toContain('spawn test error');
+
+    // 清理測試殘留，避免汙染生產日誌
+    try { writeFileSync(hookErrorsPath, '', 'utf-8'); } catch (_) { /* 忽略 */ }
   });
 });
