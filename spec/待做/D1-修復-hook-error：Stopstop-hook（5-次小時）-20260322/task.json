@@ -1,0 +1,12 @@
+{
+  "name": "修復 hook error：Stop:stop-hook（5 次/小時）",
+  "type": "修復",
+  "priority": "P1",
+  "depth": "D1",
+  "description": "過去 1 小時累積 5 個 hook error。\n根因聚類：1 個\n最頻繁：Stop:stop-hook（5 次）\n錯誤樣本：session_id_mismatch\n\n自動建立於 2026-03-22T05:41:21.973Z",
+  "subtasks": [],
+  "created": "2026-03-22T05:41:21.974Z",
+  "claimed": null,
+  "completed": null,
+  "result": null
+}
