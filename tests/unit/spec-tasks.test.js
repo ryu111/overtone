@@ -94,6 +94,30 @@ describe('createTask', () => {
     const result = createTask('capability probe 修復', '修復', '', { depth: 'D1' }, TEMP_SPEC_DIR);
     expect(result.name).toContain('capability-probe-修復');
   });
+
+  test('D0 不產出 spec.md', () => {
+    const result = createTask('設定修改', '雜務', '', { depth: 'D0' }, TEMP_SPEC_DIR);
+    expect(existsSync(join(result.path, 'task.json'))).toBe(true);
+    expect(existsSync(join(result.path, 'spec.md'))).toBe(false);
+  });
+
+  test('D1 自動產出 spec.md', () => {
+    const result = createTask('修復 bug', '修復', '某個 bug', { depth: 'D1' }, TEMP_SPEC_DIR);
+    expect(existsSync(join(result.path, 'spec.md'))).toBe(true);
+    const content = readFileSync(join(result.path, 'spec.md'), 'utf-8');
+    expect(content).toContain('# 修復 bug');
+    expect(content).toContain('某個 bug');
+    expect(existsSync(join(result.path, 'design.md'))).toBe(false);
+  });
+
+  test('D2+ 產出 spec.md + design.md + tasks.md', () => {
+    const result = createTask('跨模組重構', '重構', '大型重構', { depth: 'D2' }, TEMP_SPEC_DIR);
+    expect(existsSync(join(result.path, 'spec.md'))).toBe(true);
+    expect(existsSync(join(result.path, 'design.md'))).toBe(true);
+    expect(existsSync(join(result.path, 'tasks.md'))).toBe(true);
+    const design = readFileSync(join(result.path, 'design.md'), 'utf-8');
+    expect(design).toContain('D2');
+  });
 });
 
 // ─── listTasks ───────────────────────────────────────────────────────────────
