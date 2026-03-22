@@ -67,7 +67,7 @@
 
 ---
 
-### Scripts（50）
+### Scripts（51）
 
 | 名稱 | 簡述 |
 |------|------|
@@ -103,6 +103,7 @@
 | maintainer | 本地模型驅動的維護 agent（v2：模型決策 + 程式碼執行） |
 | manage-component | 元件管理 CLI |
 | memory-reclaim | 記憶體回收 |
+| os-control-driver | OS-level 自動化操控 Claude CLI |
 | prepare-lora-data | 從現有資料合成 LoRA 訓練集 |
 | ralph-stop | 關閉 ralph-loop |
 | session-cleanup | Session 日誌滾動清理 |
@@ -155,14 +156,13 @@ _目前無進行中的任務_
 
 ---
 
-### 待做（4）
+### 待做（3）
 
 | 任務 | 類型 | 優先 | 深度 | 建立時間 |
 |------|------|:----:|:----:|---------|
 | 修復 hook error：Stop:stop-hook（5 次/小時） | 修復 | P1 | D1 | 2026-03-22 |
 | Learner-behaviors-噪音根因修復 | 功能 | P2 | D1 | 2026-03-22 |
 | 未引用-skill-歸檔或加入-agent | 功能 | P2 | D1 | 2026-03-22 |
-| D2-OS-Control-自驅引擎 | 功能 | P2 | D1 | 2026-03-22 |
 
 ---
 
@@ -170,6 +170,7 @@ _目前無進行中的任務_
 
 | 任務 | 類型 | 完成時間 | 結果 |
 |------|------|---------|------|
+| D2-OS-Control-自驅引擎 | 功能 | 2026-03-22 | Phase 1-3 全部完成 |
 | D1-server-js-行數治理 | 功能 | 2026-03-22 | — |
 | D1-health-check-測試補齊 | 功能 | 2026-03-22 | — |
 | D1-acid-test-瘦身 | 功能 | 2026-03-22 | — |
@@ -179,4 +180,3 @@ _目前無進行中的任務_
 | D1-rules-數量治理 | 功能 | 2026-03-22 | — |
 | D1-eval-離線-fallback | 功能 | 2026-03-22 | — |
 | D1-heartbeat-spawn-error-修復 | 功能 | 2026-03-22 | — |
-| D1-context-injector-瘦身 | 功能 | 2026-03-22 | — |
