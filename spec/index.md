@@ -1,5 +1,5 @@
 # 專案索引
-> 自動產生於 2026-03-21
+> 自動產生於 2026-03-22
 
 ## 元件目錄
 
@@ -37,7 +37,7 @@
 | architecture | "系統架構設計知識域。WHEN: 架構決策（ADR）、設計模式選擇、技術 tradeoff 分析、並發策略選擇時使用。NOT: 純程式碼實作、bug 修復、日常 |
 | auto | 深度路由決策。WHAT: 根據設計決策密度選 D0-D4 + 委派策略。WHEN: Main 接到任何任務、或不確定自己做還是委派時。KEYWORDS: 深度、 |
 | claude-dev | Claude Code Plugin 開發知識。hooks、agents、skills、commands 的 API 格式、settings 設定系統與 Ove |
-| closed-loop | 元件閉環檢查。新增/修改/刪除 Skill、Agent、Hook 時確認依賴完整、資訊流通、spec 文件同步。修改元件文件時由 rules/閉環規範.md 觸 |
+| closed-loop | 元件閉環驗證。新增/修改/刪除 Skill、Agent、Hook 時，確認跨元件依賴完整、資訊流通、spec 文件同步。只在元件之間存在依賴需要驗證時觸發（如新 |
 | code-review | "PR Review 知識域：四維度結構化審查 + 回饋分級。WHEN: 審查 PR、code review、撰寫審查回饋時使用。NOT: 撰寫新程式碼、deb |
 | commit-convention | "Conventional commit 知識域。WHEN: 撰寫 commit message、判斷 commit 拆分策略、選擇 type/scope 時使 |
 | craft | "軟體工藝知識域：Overtone 製作原則、設計品味、競品基準、程式碼層級設計模式。WHEN: 設計決策品質判斷、競品對標時使用。NOT: 教科書級基礎知識、 |
@@ -58,17 +58,18 @@
 | pr-auto-review | GitHub PR 自動審查知識域：gh CLI 驅動的 diff 分析 + 結構化 review comment 產出。WHEN: 自動化 PR 審查、批量  |
 | release-notes | Release Notes 自動生成知識域：git log 分析 + Conventional Commit 分類 + 結構化 changelog 產出。WHE |
 | security-kb | "安全審查知識：OWASP Top 10、JS 安全模式、STRIDE 威脅建模、供應鏈安全。WHEN: 安全審查、威脅建模、檢查注入風險時使用。NOT: 功能 |
-| skill-judge | Evaluate Agent Skill design quality against official specifications and best pra |
+| skill-judge | 對 Skill 設計品質進行多維度評分（知識密度、觸發精準度、結構完整性等）。在需要量化評估 Skill 整體設計優劣、生成改善建議報告、或進行 Skill 品 |
 | thinking | "結構化思維工具：卡關脫困策略、反向驗證法、化繁為簡級聯。WHEN: 設計決策僵局、複雜問題需要拆解、方案需要反向驗證時使用。NOT: 直接可執行的簡單任務。" |
 | wording | 措詞正確性知識域。涵蓋四級指令強度標記（⛔📋💡🔧）、emoji-關鍵詞搭配規則、語氣校準（技術文件/commit/agent prompt/對話）、繁體中 |
 
 ---
 
-### Scripts（49）
+### Scripts（50）
 
 | 名稱 | 簡述 |
 |------|------|
 | acid-test | L2 Acid Test 端到端驗收腳本 |
+| autoresearch-task | heartbeat 自驅：找最低分 eval 跑 autoresearch |
 | briefing-builder | Session 摘要 + 簡報生成 |
 | capability-probe | 能力邊界探測 + 模型更新 |
 | component-health | 元件維護（文件搬遷、lockfile 修復、lifecycle、capability probe） |
@@ -145,11 +146,9 @@
 
 ## 任務狀態
 
-### 進行中（1）
+### 進行中（0）
 
-| 任務 | 類型 | 優先 | 深度 | 認領時間 |
-|------|------|:----:|:----:|---------|
-| D4-autoresearch-全域迭代優化 | 功能 | P2 | D1 | 2026-03-21 |
+_目前無進行中的任務_
 
 ---
 
@@ -163,13 +162,13 @@ _目前無待做任務_
 
 | 任務 | 類型 | 完成時間 | 結果 |
 |------|------|---------|------|
+| D2-自驅autoresearch整合 | 功能 | 2026-03-22 | — |
+| D1-autoresearch支援prompt變數 | 功能 | 2026-03-22 | — |
+| D1-Skill-全量掃描修復 | 功能 | 2026-03-22 | — |
+| D4-autoresearch-全域迭代優化 | 功能 | 2026-03-21 | — |
+| D1-語意judge一致性驗證 | 功能 | 2026-03-21 | — |
+| D0-Guard-阻擋事件日誌 | 功能 | 2026-03-21 | — |
+| D0-D4任務歸檔-roadmap同步 | 功能 | 2026-03-21 | — |
 | D2-Skill-description-批次迭代 | 功能 | 2026-03-21 | — |
 | D2-eval-flywheel-自動擴充 | 功能 | 2026-03-21 | — |
 | D2-autoresearch-script-自動化 | 功能 | 2026-03-21 | — |
-| D1-Skill-觸發統計收集 | 功能 | 2026-03-21 | — |
-| D1-Guard-eval-edge-case-擴充 | 功能 | 2026-03-21 | — |
-| D1-本地模型並行防護-semaphore | 功能 | 2026-03-21 | — |
-| D1-Ralph-loop-收尾整合 | 功能 | 2026-03-21 | — |
-| undefined | undefined | 2026-03-20 | 3 個 GitHub Skill（A 級）+ Acid Test 6/6 + 真 |
-| capability-probe 修復 | 修復 | 2026-03-18 | 修復完成，timeout 從 42 次降到 0 次 |
-| 2026-03-15_nova-server-observability | — | — | — |
