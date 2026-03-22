@@ -10,8 +10,11 @@
 
 import { join } from 'path';
 import { homedir } from 'os';
+import { requireLlm } from '../eval-runner.js';
 
 const HOME = homedir();
+
+await requireLlm('behavior-classify');
 
 // 讀取 learner-suggestions.js 的 askLocalModel 和分類邏輯
 const { stripThinking } = await import(join(HOME, '.claude/scripts/learner-suggestions.js'));

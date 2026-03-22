@@ -6,6 +6,23 @@
  *   negative = 不期望動作（allow / no-trigger）
  */
 
+/**
+ * 檢查本地 LLM 是否可用（vllm-mlx port 8000）
+ * 離線時輸出 metric:0.000000 並 exit，避免 eval 卡住
+ */
+export async function requireLlm(evalName) {
+  try {
+    const res = await fetch('http://127.0.0.1:8000/v1/models', {
+      signal: AbortSignal.timeout(2000),
+    });
+    if (!res.ok) throw new Error('not ok');
+  } catch {
+    console.log(`[${evalName}] LLM offline — skipping`);
+    console.log('metric:0.000000');
+    process.exit(0);
+  }
+}
+
 export function calculateMetrics(results) {
   let tp = 0, fp = 0, tn = 0, fn = 0;
 

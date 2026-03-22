@@ -11,8 +11,11 @@
 import { join } from 'path';
 import { homedir } from 'os';
 import { existsSync, readFileSync } from 'fs';
+import { requireLlm } from '../eval-runner.js';
 
 const HOME = homedir();
+
+await requireLlm('improvement-prompt');
 
 const localModel = await import(join(HOME, '.claude/scripts/local-model.js'));
 const askLocalModelJSON = localModel.askLocalModelJSON;

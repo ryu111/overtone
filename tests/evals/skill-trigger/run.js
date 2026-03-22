@@ -8,7 +8,9 @@
  */
 import { join } from 'path';
 import { homedir } from 'os';
-import { calculateMetrics, printReport } from '../eval-runner.js';
+import { calculateMetrics, printReport, requireLlm } from '../eval-runner.js';
+
+await requireLlm('skill-trigger');
 
 const { askLocalModel } = await import(join(homedir(), '.claude/scripts/local-model.js'));
 const data = await import('./cases.json');

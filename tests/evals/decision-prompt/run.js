@@ -9,8 +9,11 @@
 
 import { join } from 'path';
 import { homedir } from 'os';
+import { requireLlm } from '../eval-runner.js';
 
 const HOME = homedir();
+
+await requireLlm('decision-prompt');
 
 const localModel = await import(join(HOME, '.claude/scripts/local-model.js'));
 const askLocalModel = localModel.askLocalModel;
