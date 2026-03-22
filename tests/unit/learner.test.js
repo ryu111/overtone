@@ -771,3 +771,143 @@ describe('stripThinking', () => {
     expect(behaviors[0].suggestion.content).toBe('1. 建議固化為 Rule，此為格式規範');
   });
 });
+
+// ─── 6. 跨 session 累積 E2E 測試 ─────────────────────────────────────────────
+
+describe('跨 session 累積行為偵測', () => {
+  function makeSession(sid, date, repeatedSubseqs, extra = {}) {
+    return {
+      sid,
+      date,
+      repeatedSubseqs,
+      blocks: extra.blocks || 0,
+      errors: extra.errors || 0,
+      fixKeywords: extra.fixKeywords || 0,
+    };
+  }
+
+  test('3 個 session 跨 2 天累積同一行為 → 信心達 lifecycle 閾值 0.50', () => {
+    const history = [];
+    const pattern = 'Read→Edit→Bash';
+
+    // Session 1: Day 1
+    const s1 = makeSession(1, '2026-03-20', [{ seq: pattern }]);
+    analyzeAndUpdate(s1, history, new Date('2026-03-20T12:00:00Z'));
+    expect(history.length).toBe(1);
+    expect(history[0].occurrences).toEqual([1]);
+    const conf1 = history[0].confidence;
+
+    // Session 2: Day 1（同日不同 session）
+    const s2 = makeSession(2, '2026-03-20', [{ seq: pattern }]);
+    analyzeAndUpdate(s2, history, new Date('2026-03-20T18:00:00Z'));
+    expect(history[0].occurrences).toEqual([1, 2]);
+    const conf2 = history[0].confidence;
+    expect(conf2).toBeGreaterThan(conf1);
+
+    // Session 3: Day 2（跨天）
+    const s3 = makeSession(3, '2026-03-21', [{ seq: pattern }]);
+    analyzeAndUpdate(s3, history, new Date('2026-03-21T10:00:00Z'));
+    expect(history[0].occurrences).toEqual([1, 2, 3]);
+    expect(history[0].firstSeen).toBe('2026-03-20');
+    expect(history[0].lastSeen).toBe('2026-03-21');
+    const conf3 = history[0].confidence;
+    expect(conf3).toBeGreaterThan(conf2);
+    expect(conf3).toBeGreaterThanOrEqual(0.50);
+  });
+
+  test('5 個 session 跨 3 天 → 信心持續上升，達 lifecycle 閾值', () => {
+    const history = [];
+    const pattern = 'Grep→Read→Edit';
+    const sessions = [
+      { sid: 10, date: '2026-03-15' },
+      { sid: 11, date: '2026-03-15' },
+      { sid: 12, date: '2026-03-16' },
+      { sid: 13, date: '2026-03-17' },
+      { sid: 14, date: '2026-03-17' },
+    ];
+
+    let prevConf = -1;
+    for (const s of sessions) {
+      const session = makeSession(s.sid, s.date, [{ seq: pattern }]);
+      analyzeAndUpdate(session, history, new Date(s.date + 'T12:00:00Z'));
+      expect(history[0].confidence).toBeGreaterThanOrEqual(prevConf);
+      prevConf = history[0].confidence;
+    }
+
+    expect(history[0].occurrences).toHaveLength(5);
+    expect(history[0].confidence).toBeGreaterThanOrEqual(0.50);
+  });
+
+  test('不同行為分別累積，互不干擾', () => {
+    const history = [];
+    const patternA = 'Read→Edit';
+    const patternB = 'Bash→Bash→Bash';
+
+    // Session 1: 兩種行為都出現
+    const s1 = makeSession(1, '2026-03-20', [{ seq: patternA }, { seq: patternB }]);
+    analyzeAndUpdate(s1, history, new Date('2026-03-20T12:00:00Z'));
+    expect(history.length).toBe(2);
+
+    // Session 2: 只有 patternA
+    const s2 = makeSession(2, '2026-03-21', [{ seq: patternA }]);
+    analyzeAndUpdate(s2, history, new Date('2026-03-21T12:00:00Z'));
+
+    const behaviorA = history.find(b => b.pattern === patternA);
+    const behaviorB = history.find(b => b.pattern === patternB);
+
+    expect(behaviorA.occurrences).toEqual([1, 2]);
+    expect(behaviorB.occurrences).toEqual([1]);
+    expect(behaviorA.confidence).toBeGreaterThan(behaviorB.confidence);
+  });
+
+  test('反模式跨 session 累積 → 信心達反模式閾值 0.38', () => {
+    const history = [];
+
+    // 3 個 session 都有 errors（反模式）
+    for (let i = 1; i <= 3; i++) {
+      const date = `2026-03-${19 + Math.floor(i / 2)}`;
+      const s = makeSession(i * 10, date, [], { blocks: 2, errors: 1 });
+      analyzeAndUpdate(s, history, new Date(date + 'T12:00:00Z'));
+    }
+
+    const antiPatterns = history.filter(b => b.polarity === -1);
+    expect(antiPatterns.length).toBeGreaterThanOrEqual(1);
+
+    const accumulated = antiPatterns.find(b => b.occurrences.length >= 2);
+    expect(accumulated).toBeDefined();
+    expect(accumulated.confidence).toBeGreaterThanOrEqual(0.38);
+  });
+
+  test('完整閉環：累積 → 信心達標 → suggestion 可觸發 → lifecycle 候選', () => {
+    const history = [];
+    const pattern = 'Read→Edit→Bash';
+
+    // 累積 5 個 session 跨 3 天
+    const sessions = [
+      { sid: 1, date: '2026-03-15' },
+      { sid: 2, date: '2026-03-15' },
+      { sid: 3, date: '2026-03-16' },
+      { sid: 4, date: '2026-03-16' },
+      { sid: 5, date: '2026-03-17' },
+    ];
+
+    for (const s of sessions) {
+      const session = makeSession(s.sid, s.date, [{ seq: pattern }]);
+      analyzeAndUpdate(session, history, new Date(s.date + 'T12:00:00Z'));
+    }
+
+    const behavior = history[0];
+    expect(behavior.confidence).toBeGreaterThanOrEqual(0.50);
+
+    // 模擬 suggestion 生成後設定 type
+    behavior.suggestion = { type: 'skill', content: '建議固化為自動化 Skill' };
+
+    // 驗證 lifecycle 候選條件
+    const LIFECYCLE_THRESHOLD = 0.50;
+    const isCandidate =
+      behavior.confidence >= LIFECYCLE_THRESHOLD &&
+      behavior.suggestion?.type === 'skill' &&
+      behavior.deployed !== true;
+    expect(isCandidate).toBe(true);
+  });
+});
