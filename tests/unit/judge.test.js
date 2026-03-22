@@ -464,9 +464,10 @@ describe('resolveSemanticScore', () => {
     expect(logMessages[0]).toContain('歷史語意分數 35');
   });
 
-  test('模型失敗（sem === null）+ 無歷史分數 → 回傳 null', () => {
-    const result = resolveSemanticScore(null, 'skills/new', [], noopLog);
-    expect(result).toBeNull();
+  test('模型失敗（sem === null）+ 無歷史分數 → 回傳保守分數 25', () => {
+    const result = resolveSemanticScore(null, 'skills/new', [], captureLog);
+    expect(result).toBe(25);
+    expect(logMessages.some(m => m.includes('保守分數 25'))).toBe(true);
   });
 
   test('模型回傳 total=0（視為失敗）+ 有歷史 → 使用歷史', () => {
@@ -489,21 +490,21 @@ describe('resolveSemanticScore', () => {
     expect(result).toBe(35);
   });
 
-  test('歷史分數全為 0 → 回傳 null', () => {
+  test('歷史分數全為 0 → 回傳保守分數 25', () => {
     const existingScores = [
       { path: 'skills/bad', semantic: 0, total: 30 },
       { path: 'skills/bad', semantic: 0, total: 25 },
     ];
-    const result = resolveSemanticScore(null, 'skills/bad', existingScores, noopLog);
-    expect(result).toBeNull();
+    const result = resolveSemanticScore(null, 'skills/bad', existingScores, captureLog);
+    expect(result).toBe(25);
   });
 
-  test('其他元件的歷史分數不會被使用', () => {
+  test('其他元件的歷史分數不會被使用 → 回傳保守分數 25', () => {
     const existingScores = [
       { path: 'skills/other', semantic: 45, total: 90 },
     ];
-    const result = resolveSemanticScore(null, 'skills/target', existingScores, noopLog);
-    expect(result).toBeNull();
+    const result = resolveSemanticScore(null, 'skills/target', existingScores, captureLog);
+    expect(result).toBe(25);
   });
 });
 
