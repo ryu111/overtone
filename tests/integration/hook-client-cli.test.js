@@ -200,13 +200,16 @@ describe('error log 只在恢復鏈全失敗時記錄（all-failed 語意）', (
 describe('dispatch fallback 順序（fallback-first 架構鎖定）', () => {
   const src = readFileSync(join(CLAUDE_DIR, 'hooks/hook-client.js'), 'utf-8');
 
-  test('autoStart 以 detached spawn 背景執行（不被 process exit 截斷）', () => {
+  test('SessionStart 同步重試 + 其他事件背景 autostart', () => {
     const catchBlock = src.match(/\} catch \(e1\) \{[\s\S]*?(?=\n\})/);
     expect(catchBlock).not.toBeNull();
+    // SessionStart/UserPromptSubmit: 同步 autoStart + 重試
+    expect(catchBlock[0]).toContain('await autoStart()');
+    expect(catchBlock[0]).toContain('tryDispatch()');
+    // 其他事件: 背景 detached spawn
     expect(catchBlock[0]).toContain("'__autostart'");
     expect(catchBlock[0]).toContain('Bun.spawn');
     expect(src).toContain("if (eventType === '__autostart')");
-    expect(catchBlock[0]).not.toMatch(/await\s+autoStart\(\)/);
   });
 
   test('tryFallback 出現在 detached autostart spawn 之前（有 fallback 時先 fallback）', () => {
