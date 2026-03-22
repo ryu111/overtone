@@ -3,10 +3,11 @@
 
 ## 元件目錄
 
-### Rules（18）
+### Rules（19）
 
 | 名稱 | 簡述 |
 |------|------|
+| 主動關聯工具 | 主動關聯已有工具（觸發時機、做法） |
 | 失敗與修復 | 失敗與修復（3 次失敗 STOP 協議、完成證據（Evidence Requirements）、根因修復） |
 | 本地模型委派 | 本地模型委派（三層決策分配、委派前四維評估、能力邊界） |
 | 並行執行 | 並行執行（依賴偵測、前景並行 vs 背景） |
@@ -28,7 +29,7 @@
 
 ---
 
-### Skills（28）
+### Skills（30）
 
 | 名稱 | 簡述 |
 |------|------|
@@ -46,6 +47,8 @@
 | evolve | "知識進化引擎（含內化知識庫）。WHEN: 分析知識積累狀態、查詢已內化的跨專案經驗、決定是否升級為 Skill/Agent 時使用。NOT: 專案特定知識、一 |
 | issue-triage | GitHub Issue 自動分類知識域：gh CLI 驅動的 Issue 分析 + 類型/優先序/深度路由判定。WHEN: Issue 自動分類、批量 tri |
 | jsonl-truncate-n | "JSONL 日誌截斷策略。WHEN: 處理 Nova 系統 JSONL 檔案的截斷、決定保留數量時使用。NOT: 一般檔案操作、非 JSONL 格式。" |
+| mlx-finetune | "MLX LoRA 微調知識域：資料準備、訓練指令、adapter 管理、多角色部署。WHEN: 需要微調本地模型（客服、NPC、專業助手）時使用。NOT: 推 |
+| mlx-rl | "MLX 強化學習知識域：環境設計、觀測/動作/獎勵設計、DQN/PPO 訓練迴圈、遊戲 AI 整合。WHEN: 需要訓練即時決策 agent（遊戲 AI、自動 |
 | nova-autonomous-control | "自主成長閉環控制。WHEN: 配置 heartbeat 自驅策略、設定 focus 方向、管理本地任務批次執行時使用。NOT: 一般開發工作、手動任務執行。" |
 | nova-pm | 產品探索與需求釐清。引導 planner agent 以 PM 角色探索需求、定義範圍、比較方案。三種模式：discovery（D1）、product（D2）、 |
 | nova-spec | 產品規格管理。建立、追蹤、歸檔 spec/design 文件。使用者說「寫規格」「提案」「歸檔」或觸發 /spec:propose、/spec:done、/sp |
@@ -151,11 +154,12 @@ _目前無進行中的任務_
 
 ---
 
-### 待做（1）
+### 待做（2）
 
 | 任務 | 類型 | 優先 | 深度 | 建立時間 |
 |------|------|:----:|:----:|---------|
 | 修復 hook error：Stop:stop-hook（5 次/小時） | 修復 | P1 | D1 | 2026-03-22 |
+| Nova-Control-App-macOS-iOS-控制中心 | 產品 | P1 | D4 | 2026-03-22 |
 
 ---
 
