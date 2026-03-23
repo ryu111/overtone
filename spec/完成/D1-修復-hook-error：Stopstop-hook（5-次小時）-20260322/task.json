@@ -6,7 +6,7 @@
   "description": "過去 1 小時累積 5 個 hook error。\n根因聚類：1 個\n最頻繁：Stop:stop-hook（5 次）\n錯誤樣本：session_id_mismatch\n\n自動建立於 2026-03-22T05:41:21.973Z",
   "subtasks": [],
   "created": "2026-03-22T05:41:21.974Z",
-  "claimed": null,
-  "completed": null,
-  "result": null
+  "claimed": "2026-03-23T00:59:26.494Z",
+  "completed": "2026-03-23T00:59:26.508Z",
+  "result": "根因：舊版 stop hook session_id_mismatch 累計 bug。現版本 isRecent fallback 已修復。"
 }

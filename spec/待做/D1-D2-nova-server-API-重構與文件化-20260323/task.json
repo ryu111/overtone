@@ -1,0 +1,12 @@
+{
+  "name": "D2-nova-server-API-重構與文件化",
+  "type": "重構",
+  "priority": "P2",
+  "depth": "D1",
+  "description": "盤點 nova-server 約 40 個 API 端點，分類重構（內部/對外），產出 OpenAPI 或 Markdown API 文件。目標：nova-control 按 API 文件獨立開發，兩端解耦。",
+  "subtasks": [],
+  "created": "2026-03-23T13:21:00.577Z",
+  "claimed": null,
+  "completed": null,
+  "result": null
+}

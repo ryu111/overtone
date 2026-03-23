@@ -1,0 +1,12 @@
+{
+  "name": "未引用-skill-歸檔或加入-agent",
+  "type": "功能",
+  "priority": "P2",
+  "depth": "D1",
+  "description": "",
+  "subtasks": [],
+  "created": "2026-03-22T11:47:24.216Z",
+  "claimed": "2026-03-23T01:02:15.581Z",
+  "completed": "2026-03-23T01:02:15.594Z",
+  "result": "歸檔 nova-autonomous-control（與 os-control-driver 重疊）。其餘 10 個保留（7 個動態觸發 + 3 個低頻有用）。skill 總數 30→29。"
+}

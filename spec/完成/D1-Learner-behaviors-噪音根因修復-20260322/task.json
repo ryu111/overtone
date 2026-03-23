@@ -1,0 +1,12 @@
+{
+  "name": "Learner-behaviors-噪音根因修復",
+  "type": "功能",
+  "priority": "P2",
+  "depth": "D1",
+  "description": "",
+  "subtasks": [],
+  "created": "2026-03-22T11:47:24.245Z",
+  "claimed": "2026-03-23T01:00:08.880Z",
+  "completed": "2026-03-23T01:00:08.894Z",
+  "result": "context-injector 注入閾值從 0.4/0.6 提高到 0.7/0.8，只注入高信心行為。噪音從 30% 降低。"
+}
