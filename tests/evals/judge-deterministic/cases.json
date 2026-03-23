@@ -12,8 +12,8 @@
     {
       "path": "rules/瀏覽器工具選擇.md",
       "type": "rule",
-      "ground_truth_deterministic": 43,
-      "label": "瀏覽器工具選擇規則（得 43 分）"
+      "ground_truth_deterministic": 50,
+      "label": "瀏覽器工具選擇規則（滿分 rule：83 行在 10-150 範圍內）"
     },
     {
       "path": "rules/寫作規範.md",
@@ -24,8 +24,8 @@
     {
       "path": "rules/常駐服務.md",
       "type": "rule",
-      "ground_truth_deterministic": 43,
-      "label": "常駐服務規則（得 43 分：行數 87 超過 80 行上限）"
+      "ground_truth_deterministic": 50,
+      "label": "常駐服務規則（滿分 rule：86 行在 10-150 範圍內）"
     },
     {
       "path": "skills/wording",
@@ -72,8 +72,8 @@
     {
       "path": "rules/閉環規範.md",
       "type": "rule",
-      "ground_truth_deterministic": 43,
-      "label": "閉環規範規則（得 43 分：行數 131 超過 80 行上限）"
+      "ground_truth_deterministic": 50,
+      "label": "閉環規範規則（滿分 rule：143 行在 10-150 範圍內）"
     },
     {
       "path": "hooks/modules/metrics.js",
@@ -102,8 +102,8 @@
     {
       "path": "hooks/modules/heartbeat.js",
       "type": "hook",
-      "ground_truth_deterministic": 50,
-      "label": "heartbeat hook（滿分 hook）"
+      "ground_truth_deterministic": 40,
+      "label": "heartbeat hook（得 40 分：304 行超過 300 上限）"
     },
     {
       "path": "hooks/modules/notification.js",
@@ -114,8 +114,8 @@
     {
       "path": "hooks/modules/context-injector.js",
       "type": "hook",
-      "ground_truth_deterministic": 40,
-      "label": "context-injector hook（得 40 分：無 handler/factory 結構）"
+      "ground_truth_deterministic": 50,
+      "label": "context-injector hook（滿分 hook：已有 export const on 結構）"
     },
     {
       "path": "hooks/modules/flow-observer.js",
