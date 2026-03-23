@@ -1,0 +1,12 @@
+{
+  "name": "D1-Interactive-Ask-API",
+  "type": "功能",
+  "priority": "P2",
+  "depth": "D1",
+  "description": "實作 3 個 Interactive Ask 端點：POST/GET /api/ask + POST /api/ask/answer，含 SSE 事件廣播",
+  "subtasks": [],
+  "created": "2026-03-23T16:10:49.236Z",
+  "claimed": "2026-03-23T16:10:49.252Z",
+  "completed": null,
+  "result": null
+}
