@@ -1,7 +1,7 @@
-import { describe, test, expect, beforeEach } from 'bun:test';
+import { describe, test, expect, beforeEach, afterAll } from 'bun:test';
 import { homedir, tmpdir } from 'os';
 import { join } from 'path';
-import { writeFileSync, mkdirSync } from 'fs';
+import { writeFileSync, mkdirSync, readFileSync, existsSync, unlinkSync } from 'fs';
 
 const { setEventsFilePath } = await import(join(homedir(), '.claude/scripts/flow/event-writer.js'));
 
@@ -10,6 +10,23 @@ const TEST_EVENTS_DIR = join(tmpdir(), `flow-hooks-test-${Date.now()}`);
 mkdirSync(TEST_EVENTS_DIR, { recursive: true });
 const EVENTS_FILE = join(TEST_EVENTS_DIR, 'test-events.jsonl');
 setEventsFilePath(EVENTS_FILE);
+
+// 保存真實 session 檔案，測試後還原（避免汙染真實 session_id）
+const SESSION_FILES = [
+  join(homedir(), '.claude/data/current-session-id'),
+  join(homedir(), '.claude/data/nova-session-tmp'),
+];
+const savedSessionFiles = SESSION_FILES.map(f => {
+  try { return existsSync(f) ? readFileSync(f, 'utf-8') : null; } catch { return null; }
+});
+afterAll(() => {
+  SESSION_FILES.forEach((f, i) => {
+    try {
+      if (savedSessionFiles[i] !== null) writeFileSync(f, savedSessionFiles[i]);
+      else if (existsSync(f)) unlinkSync(f);
+    } catch {}
+  });
+});
 
 const { evaluate: evaluateStart } = await import(
   join(homedir(), '.claude/hooks/scripts/session/on-start-flow.js')
