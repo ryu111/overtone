@@ -3,7 +3,7 @@
   "variable_file": "~/.claude/scripts/learner-suggestions.js",
   "variable_description": "habitThreshold (0.6) 和 antiPatternThreshold (0.4) — 決定行為是否達到生成建議的門檻",
   "meta": {
-    "habit_threshold": 0.11,
+    "habit_threshold": 0.18,
     "anti_pattern_threshold": 0.38
   },
   "cases": [
@@ -389,28 +389,28 @@
       "label": "skill-review-session-2026-03-18",
       "pattern": "SessionType→SkillReview",
       "polarity": 1,
-      "confidence": 0.11,
+      "confidence": 0.2,
       "should_trigger": true
     },
     {
       "label": "learner-executor-role-2026-03-18",
       "pattern": "RolePattern→LearnerExecutor",
       "polarity": 1,
-      "confidence": 0.11,
+      "confidence": 0.2,
       "should_trigger": true
     },
     {
       "label": "context-forwarding-efficiency-2026-03-18",
       "pattern": "ContextForwarding→DecisionMaking",
       "polarity": 1,
-      "confidence": 0.11,
+      "confidence": 0.2,
       "should_trigger": true
     },
     {
       "label": "execution-evidence-requirement-2026-03-18",
       "pattern": "CompletionCriteria→ObjectiveEvidence",
       "polarity": 1,
-      "confidence": 0.11,
+      "confidence": 0.2,
       "should_trigger": true
     },
     {

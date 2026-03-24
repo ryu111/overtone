@@ -6,7 +6,7 @@
   "description": "## Phase 4：Session 復用 + 信心路由 + 任務優先級\n\n### 子任務\n1. 空閒 session 偵測 — findOrCreateSession 優先復用無人使用的 session\n2. 信心路由表 — 任務類型 → 信心閾值（D0-D4、Skill修改、L5決策等）\n3. pending-decision TTL + auto_resolve — low 3天/medium 5天/high 永不自動\n4. 佇列去重 + 上限管理 — 最多 20 筆，超過時最舊 low auto_resolve\n5. 任務優先級排序 — 影響度 40% + 歷史成功率 25% + 依賴性 20% + 新鮮度 15%\n6. Telegram 推播整合 — high/critical 即時推播（via tg-notify.js）\n\n### 驗收\n- 有空閒 session → 復用（不開新 tab）\n- D3 任務自動寫入 pending-decision\n- TTL 過期 → auto_resolve\n- 優先級排序正確\n\n### 依賴\nPhase 3 完成\n\n### 預估\nD2，2-3 sessions",
   "subtasks": [],
   "created": "2026-03-24T02:50:00.630Z",
-  "claimed": null,
+  "claimed": "2026-03-24T03:21:36.144Z",
   "completed": null,
   "result": null
 }

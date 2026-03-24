@@ -6,7 +6,7 @@
   "description": "## Phase 3：多支線排程器\n\n### 子任務\n1. heartbeat.json 加 branches[] 配置 — 6 條支線（品質守衛/基建/功能開發/Autoresearch/知識進化/L5產品）\n2. heartbeat.js 從單迴圈改為排程器 — 每次 tick 選到期+最高優先的支線\n3. branch-state.json — 各支線狀態（lastRun, consecutiveFails, cooldown）\n4. 每條支線的 OODA prompt 模板 — buildBranchPrompt(branchName, snapshot)\n5. 支線冷卻期 — 失敗後 2x interval 冷卻\n6. 支線間互不阻塞 — A 失敗不影響 B\n\n### 驗收\n- heartbeat tick → 正確選擇到期支線\n- 多支線輪替執行\n- 單支線失敗後冷卻，其他支線正常\n- bun test 全過\n\n### 依賴\nPhase 2 完成\n\n### 預估\nD2，3 sessions",
   "subtasks": [],
   "created": "2026-03-24T02:49:52.397Z",
-  "claimed": null,
+  "claimed": "2026-03-24T03:21:36.131Z",
   "completed": null,
   "result": null
 }
