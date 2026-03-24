@@ -31,7 +31,7 @@
 
 ---
 
-### Skills（30）
+### Skills（31）
 
 | 名稱 | 簡述 |
 |------|------|
@@ -43,6 +43,7 @@
 | code-review | "PR Review 知識域：四維度結構化審查 + 回饋分級。WHEN: 審查 PR、code review、撰寫審查回饋時使用。NOT: 撰寫新程式碼、deb |
 | commit-convention | "Conventional commit 知識域。WHEN: 撰寫 commit message、判斷 commit 拆分策略、選擇 type/scope 時使 |
 | craft | "軟體工藝知識域：Overtone 製作原則、設計品味、競品基準、程式碼層級設計模式。WHEN: 設計決策品質判斷、競品對標時使用。NOT: 教科書級基礎知識、 |
+| cross-session | 跨 Session 協作知識域。當需要其他專案 session 配合時使用：發送跨專案任務、讀取待辦、回報完成。所有 session 共用此 skill 以正確 |
 | database | "資料庫審查知識：SQL 效能、索引策略、migration 安全。WHEN: 審查 SQL 查詢、設計索引、migration 安全性檢查時使用。NOT: 應 |
 | dead-code | "死碼清理知識：knip/depcheck 工具、手動清理策略、安全刪除。WHEN: 清理未使用程式碼、codebase 瘦身時使用。NOT: 功能開發、重構。 |
 | debugging | "除錯方法論與根因分析框架。WHEN: 遇到 bug 需要根因分析（RCA）、重現問題、診斷並發問題時使用。NOT: 功能開發、架構設計。" |
