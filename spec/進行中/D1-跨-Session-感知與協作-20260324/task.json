@@ -1,0 +1,12 @@
+{
+  "name": "跨 Session 感知與協作",
+  "type": "功能",
+  "priority": "P2",
+  "depth": "D1",
+  "description": "Phase 1-4：projects 元資料、session registry、context-injector 感知注入、cross-dispatch 任務派發",
+  "subtasks": [],
+  "created": "2026-03-24T07:53:57.909Z",
+  "claimed": "2026-03-24T07:53:57.924Z",
+  "completed": null,
+  "result": null
+}
