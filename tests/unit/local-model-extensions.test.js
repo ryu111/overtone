@@ -282,10 +282,10 @@ describe('模組職責分離', () => {
     expect(result.decision).toBe('allow');
   });
 
-  test('context-injector 原始碼包含 8 個 inject 函式', () => {
+  test('context-injector 原始碼包含 9 個 inject 函式', () => {
     const src = readFileSync(join(homedir(), '.claude/hooks/modules/context-injector.js'), 'utf-8');
     const injectFns = src.match(/function inject\w+/g) || [];
-    expect(injectFns.length).toBe(8);
+    expect(injectFns.length).toBe(9);
     expect(src).toContain('function injectBriefing');
     expect(src).toContain('function injectLearnerContext');
     expect(src).toContain('function injectJudgeContext');
@@ -293,6 +293,7 @@ describe('模組職責分離', () => {
     expect(src).toContain('function injectImprovements');
     expect(src).toContain('function injectCapabilityBoundary');
     expect(src).toContain('function injectInstinctContext');
+    expect(src).toContain('function injectPendingDecisions');
   });
 
   test('improvements JSONL 可被正確解析', () => {
