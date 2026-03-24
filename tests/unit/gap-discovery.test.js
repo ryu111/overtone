@@ -69,10 +69,12 @@ describe('collectFromCapabilityProbe', () => {
 });
 
 describe('collectFromScores', () => {
+  const today = new Date().toISOString().slice(0, 10);
+
   test('只取 F/C 級（total < 80），跳過 >= 80', async () => {
     const mockScores = [
-      '{"date":"2026-03-17","path":"skills/test","total":45,"grade":"F","suggestions":["改善覆蓋率"]}',
-      '{"date":"2026-03-17","path":"skills/ok","total":90,"grade":"A","suggestions":[]}',
+      `{"date":"${today}","path":"skills/test","total":45,"grade":"F","suggestions":["改善覆蓋率"]}`,
+      `{"date":"${today}","path":"skills/ok","total":90,"grade":"A","suggestions":[]}`,
     ].join('\n');
     const signals = await collectFromScores(mockScores);
     expect(signals).toHaveLength(1);
@@ -82,7 +84,7 @@ describe('collectFromScores', () => {
   });
 
   test('total 60-79 → warning', async () => {
-    const mockScores = '{"date":"2026-03-17","path":"skills/mid","total":70,"grade":"C","suggestions":[]}';
+    const mockScores = `{"date":"${today}","path":"skills/mid","total":70,"grade":"C","suggestions":[]}`;
     const signals = await collectFromScores(mockScores);
     expect(signals[0].severity).toBe('warning');
   });
@@ -90,7 +92,7 @@ describe('collectFromScores', () => {
   test('跳過有 ✅ 標記的行（即 # 開頭的行）', async () => {
     const mockScores = [
       '# [TRUNCATED] 截斷標記',
-      '{"date":"2026-03-17","path":"skills/bad","total":50,"grade":"F","suggestions":[]}',
+      `{"date":"${today}","path":"skills/bad","total":50,"grade":"F","suggestions":[]}`,
     ].join('\n');
     const signals = await collectFromScores(mockScores);
     expect(signals).toHaveLength(1);
