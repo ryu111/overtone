@@ -7,6 +7,6 @@
   "subtasks": [],
   "created": "2026-03-24T07:53:57.909Z",
   "claimed": "2026-03-24T07:53:57.924Z",
-  "completed": null,
-  "result": null
+  "completed": "2026-03-24T07:59:36.607Z",
+  "result": "Phase 1-5 全部完成：projects 元資料、session registry、context-injector 感知注入、cross-dispatch API + queue、dogfooding 派發任務給 nova-control"
 }

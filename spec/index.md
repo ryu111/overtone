@@ -151,11 +151,9 @@
 
 ## 任務狀態
 
-### 進行中（1）
+### 進行中（0）
 
-| 任務 | 類型 | 優先 | 深度 | 認領時間 |
-|------|------|:----:|:----:|---------|
-| 跨 Session 感知與協作 | 功能 | P2 | D1 | 2026-03-24 |
+_目前無進行中的任務_
 
 ---
 
@@ -169,6 +167,7 @@ _目前無待做任務_
 
 | 任務 | 類型 | 完成時間 | 結果 |
 |------|------|---------|------|
+| 跨 Session 感知與協作 | 功能 | 2026-03-24 | Phase 1-5 全部完成：projects 元資料、session regi |
 | [自驅] L1 behavior-threshold habitThreshold 校正 | 修復 | 2026-03-24 | habitThreshold 0.11→0.18，Macro F1 0.944→ |
 | [自驅] L1 heartbeat 模組瘦身至 300 行以內 | 重構 | 2026-03-24 | Phase 3 拆分 branch-scheduler.js 已解決膨脹問題 |
 | Phase4-Session復用與智慧策略 | 功能 | 2026-03-24 | os-control-driver 空閒 session 偵測復用 + deci |
@@ -178,4 +177,3 @@ _目前無待做任務_
 | undefined | undefined | 2026-03-23 | Phase 1 完成：12 個 Swift 檔案，所有 Section 已接真實 |
 | D1-Interactive-Ask-API | 功能 | 2026-03-23 | 3 端點實作完成：POST/GET /api/ask + POST /api/a |
 | D2-nova-server-API-重構與文件化 | 重構 | 2026-03-23 | 44 端點分類重構 + 1348 行 API 文件 + 2 個缺失端點補齊 +  |
-| 未引用-skill-歸檔或加入-agent | 功能 | 2026-03-23 | 歸檔 nova-autonomous-control（與 os-control- |
