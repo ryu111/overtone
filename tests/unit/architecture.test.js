@@ -11,7 +11,7 @@ const SERVER_PATH = join(HOOKS_DIR, "server.js");
 const EVENT_BUS_PATH = join(HOOKS_DIR, "event-bus.js");
 
 function readFile(p) { return readFileSync(p, "utf-8"); }
-function lineCount(p) { return readFile(p).split("\n").length; }
+function lineCount(p) { return readFile(p).trimEnd().split("\n").length; }
 
 // ── server.js 純淨性 ──
 describe("server.js 純淨性", () => {
