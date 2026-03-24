@@ -3,17 +3,21 @@
 
 ## 元件目錄
 
-### Rules（21）
+### Rules（26）
 
 | 名稱 | 簡述 |
 |------|------|
 | 主動關聯工具 | 主動關聯已有工具（觸發時機、做法） |
 | 失敗與修復 | 失敗與修復（3 次失敗 STOP 協議、完成證據（Evidence Requirements）、根因修復） |
 | 本地模型委派 | 本地模型委派（三層決策分配、委派前四維評估、能力邊界） |
-| 成功即進化 | 成功即進化（觸發條件、進化流程） |
 | 全自動模式規範 | 全自動模式規範（原因、方案、實作） |
+| 回報誠實度 | 回報誠實度（核心原則、「程式碼正確」≠「功能正常」、cross-dispatch 完成回報格式） |
+| 成功即進化 | 成功即進化（觸發條件、進化流程） |
+| 自我認知 | 自我認知（執行環境、行為影響） |
+| 自壓縮 | 自壓縮（觸發條件、防迴圈、Session 替換） |
 | 並行執行 | 並行執行（依賴偵測、前景並行 vs 背景） |
 | 事件驅動架構 | 事件驅動架構（第一性原理、統一 Stream 模型、同步例外） |
+| 命名衝突防護 | 命名衝突防護（內建指令（保留名稱）、為什麼、命名前檢查） |
 | 知識管理 | 知識管理（知識持久化：自動分類、分類決策樹、單一來源原則（DRY）） |
 | 迭代語意 | 迭代語意（迭代的前提條件） |
 | 常駐服務 | 常駐服務管理（命名規範、自動啟動、防重複啟動） |
@@ -22,7 +26,8 @@
 | 測試規範 | 測試規範（測試位置） |
 | 開發流程 | 開發流程（先搜再寫、網搜強化（L1-L4 自我進化）、依賴安全（Slopsquatting 防護）） |
 | 詢問規範 | 詢問規範（核心規則、提問紀律） |
-| 寫作規範 | 寫作規範（語言設定、強調標記、術語一致性） |
+| 跨-Session-協作 | 跨 Session 協作（Scope 邊界、自動派發、接收任務） |
+| 寫作規範 | 寫作規範（語言設定、強調標記、Wording Skill 觸發） |
 | 模組職責分離 | 模組職責分離（單一資料方向原則、判斷方法、現有模組職責表） |
 | 總結格式 | 總結格式（格式、Spec 任務追蹤、index.md 同步規則） |
 | 瀏覽器工具選擇 | 瀏覽器工具選擇（為什麼 PinchTab 優先、路由規則、PinchTab 已知限制） |
@@ -52,7 +57,6 @@
 | jsonl-truncate-n | "JSONL 日誌截斷策略。WHEN: 處理 Nova 系統 JSONL 檔案的截斷、決定保留數量時使用。NOT: 一般檔案操作、非 JSONL 格式。" |
 | mlx-finetune | "MLX LoRA 微調知識域：資料準備、訓練指令、adapter 管理、多角色部署。WHEN: 需要微調本地模型（客服、NPC、專業助手）時使用。NOT: 推 |
 | mlx-rl | "MLX 強化學習知識域：環境設計、觀測/動作/獎勵設計、DQN/PPO 訓練迴圈、遊戲 AI 整合。WHEN: 需要訓練即時決策 agent（遊戲 AI、自動 |
-| nova-autonomous-control.archived | "自主成長閉環控制。WHEN: 配置 heartbeat 全自動策略、設定 focus 方向、管理本地任務批次執行時使用。NOT: 一般開發工作、手動任務執行。" |
 | nova-pm | 產品探索與需求釐清。引導 planner agent 以 PM 角色探索需求、定義範圍、比較方案。三種模式：discovery（D1）、product（D2）、 |
 | nova-spec | 產品規格管理。建立、追蹤、歸檔 spec/design 文件。使用者說「寫規格」「提案」「歸檔」或觸發 /spec:propose、/spec:done、/sp |
 | nova-test | 測試策略知識域。什麼該測、什麼不該測、怎麼測、何時跑。基於 Testing Trophy + 風險驅動。撰寫或審查測試時使用。 |
@@ -65,11 +69,12 @@
 | security-kb | "安全審查知識：OWASP Top 10、JS 安全模式、STRIDE 威脅建模、供應鏈安全。WHEN: 安全審查、威脅建模、檢查注入風險時使用。NOT: 功能 |
 | skill-judge | 對 Skill 設計品質進行多維度評分（知識密度、觸發精準度、結構完整性等）。在需要量化評估 Skill 整體設計優劣、生成改善建議報告、或進行 Skill 品 |
 | thinking | "結構化思維工具：卡關脫困策略、反向驗證法、化繁為簡級聯。WHEN: 設計決策僵局、複雜問題需要拆解、方案需要反向驗證時使用。NOT: 直接可執行的簡單任務。" |
+| ui-review | "UI/UX 設計審查知識域：佈局合理性、互動流程、視覺一致性、可用性、平台規範合規。WHEN: 審查 UI 設計稿（Pencil .pen、Figma、截圖） |
 | wording | 措詞正確性知識域。涵蓋四級指令強度標記（⛔📋💡🔧）、emoji-關鍵詞搭配規則、語氣校準（技術文件/commit/agent prompt/對話）、繁體中 |
 
 ---
 
-### Scripts（51）
+### Scripts（54）
 
 | 名稱 | 簡述 |
 |------|------|
@@ -78,6 +83,7 @@
 | briefing-builder | Session 摘要 + 簡報生成 |
 | capability-probe | 能力邊界探測 + 模型更新 |
 | component-health | 元件維護（文件搬遷、lockfile 修復、lifecycle、capability probe） |
+| cross-session-probe | 跨 Session 能力校準 |
 | daemon-utils | daemon 基礎設施共用函式 |
 | daily-logger | 每日日誌聚合器 |
 | decision | Phase 2 模型決策輔助函式 |
@@ -108,8 +114,10 @@
 | os-control-driver | OS-level 自動化操控 Claude CLI |
 | prepare-lora-data | 從現有資料合成 LoRA 訓練集 |
 | ralph-stop | 關閉 ralph-loop |
+| self-compact | 自壓縮觸發器（含 session 替換） |
 | session-cleanup | Session 日誌滾動清理 |
 | session-recorder | Session 摘要與簡報記錄（Phase 4a + 4b 包裝） |
+| session-rename | SessionStart 後自動命名 session |
 | session-spawner | claude -p spawn 封裝 |
 | skill-forge | Skill 建立引擎（forgeSkill + improveSkill + deploySkill） |
 | skill-janitor | Skill 庫存管理（pruning + 健康度檢查） |
