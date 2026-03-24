@@ -157,16 +157,9 @@ _目前無進行中的任務_
 
 ---
 
-### 待做（6）
+### 待做（0）
 
-| 任務 | 類型 | 優先 | 深度 | 建立時間 |
-|------|------|:----:|:----:|---------|
-| Phase4-Session復用與智慧策略 | 功能 | P2 | D1 | 2026-03-24 |
-| Phase1-決策佇列與關鍵通知 | 功能 | P2 | D1 | 2026-03-24 |
-| [自驅] L1 behavior-threshold habitThreshold 校正 | 修復 | P2 | D1 | 2026-03-23 |
-| Phase2-OODA-閉環-Snapshot-Δmetric | 功能 | P2 | D1 | 2026-03-24 |
-| [自驅] L1 heartbeat 模組瘦身至 300 行以內 | 重構 | P2 | D1 | 2026-03-23 |
-| Phase3-多支線排程器 | 功能 | P2 | D1 | 2026-03-24 |
+_目前無待做任務_
 
 ---
 
@@ -174,13 +167,13 @@ _目前無進行中的任務_
 
 | 任務 | 類型 | 完成時間 | 結果 |
 |------|------|---------|------|
+| [自驅] L1 behavior-threshold habitThreshold 校正 | 修復 | 2026-03-24 | habitThreshold 0.11→0.18，Macro F1 0.944→ |
+| [自驅] L1 heartbeat 模組瘦身至 300 行以內 | 重構 | 2026-03-24 | Phase 3 拆分 branch-scheduler.js 已解決膨脹問題 |
+| Phase4-Session復用與智慧策略 | 功能 | 2026-03-24 | os-control-driver 空閒 session 偵測復用 + deci |
+| Phase3-多支線排程器 | 功能 | 2026-03-24 | branch-scheduler.js（6 支線排程）+ heartbeat 整 |
+| Phase2-OODA-閉環-Snapshot-Δmetric | 功能 | 2026-03-24 | self-drive-eval.js（snapshot + Δmetric +  |
+| Phase1-決策佇列與關鍵通知 | 功能 | 2026-03-24 | decisions.js helper + context-injector 注 |
 | undefined | undefined | 2026-03-23 | Phase 1 完成：12 個 Swift 檔案，所有 Section 已接真實 |
 | D1-Interactive-Ask-API | 功能 | 2026-03-23 | 3 端點實作完成：POST/GET /api/ask + POST /api/a |
 | D2-nova-server-API-重構與文件化 | 重構 | 2026-03-23 | 44 端點分類重構 + 1348 行 API 文件 + 2 個缺失端點補齊 +  |
 | 未引用-skill-歸檔或加入-agent | 功能 | 2026-03-23 | 歸檔 nova-autonomous-control（與 os-control- |
-| Learner-behaviors-噪音根因修復 | 功能 | 2026-03-23 | context-injector 注入閾值從 0.4/0.6 提高到 0.7/0 |
-| 修復 hook error：Stop:stop-hook（5 次/小時） | 修復 | 2026-03-23 | 根因：舊版 stop hook session_id_mismatch 累計 b |
-| D2-OS-Control-自驅引擎 | 功能 | 2026-03-22 | Phase 1-3 全部完成 |
-| D1-server-js-行數治理 | 功能 | 2026-03-22 | — |
-| D1-health-check-測試補齊 | 功能 | 2026-03-22 | — |
-| D1-acid-test-瘦身 | 功能 | 2026-03-22 | — |

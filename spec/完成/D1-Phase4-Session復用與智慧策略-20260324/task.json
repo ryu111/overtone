@@ -7,6 +7,6 @@
   "subtasks": [],
   "created": "2026-03-24T02:50:00.630Z",
   "claimed": "2026-03-24T03:21:36.144Z",
-  "completed": null,
-  "result": null
+  "completed": "2026-03-24T03:31:59.218Z",
+  "result": "os-control-driver 空閒 session 偵測復用 + decisions API + branches API"
 }

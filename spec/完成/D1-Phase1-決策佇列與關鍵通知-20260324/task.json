@@ -7,6 +7,6 @@
   "subtasks": [],
   "created": "2026-03-24T02:49:38.780Z",
   "claimed": "2026-03-24T03:21:36.102Z",
-  "completed": null,
-  "result": null
+  "completed": "2026-03-24T03:31:59.178Z",
+  "result": "decisions.js helper + context-injector 注入 + heartbeat 通知 emit + notifications API"
 }
