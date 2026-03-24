@@ -1,0 +1,12 @@
+{
+  "name": "Phase2-OODA-閉環-Snapshot-Δmetric",
+  "type": "功能",
+  "priority": "P2",
+  "depth": "D1",
+  "description": "## Phase 2：OODA 閉環基礎（Snapshot + Δmetric + 動態 Prompt）\n\n### 子任務\n1. Pre-task snapshot 收集 — bun test 結果 + scores.jsonl 最近平均 + error count → /tmp/pre-task-snapshot.json\n2. Post-task snapshot 收集 — 同上結構 → /tmp/post-task-snapshot.json\n3. Δmetric 計算 + reward signal → self-drive-history.jsonl\n4. buildSelfDrivePrompt() 動態化 — 注入上輪結果摘要、品質趨勢、避免清單\n5. evaluate() 函式 — reward > 0.3 成功 / < -0.1 回歸標記\n\n### 驗收\n- 每輪自驅前後有 snapshot\n- history.jsonl 記錄 Δmetric + reward\n- Prompt 包含上輪結果和趨勢方向\n\n### 依賴\nPhase 1 完成\n\n### 預估\nD2，2 sessions",
+  "subtasks": [],
+  "created": "2026-03-24T02:49:45.049Z",
+  "claimed": null,
+  "completed": null,
+  "result": null
+}

@@ -1,0 +1,12 @@
+{
+  "name": "Phase1-決策佇列與關鍵通知",
+  "type": "功能",
+  "priority": "P2",
+  "depth": "D1",
+  "description": "## Phase 1：決策佇列 + 關鍵時刻通知（最高優先）\n\n### 子任務\n1. pending-decisions.jsonl 格式定義 + 讀寫 helper（~/.claude/scripts/lib/decisions.js）\n2. context-injector.js 加 injectPendingDecisions() — SessionStart 注入待決定事項\n3. heartbeat.js 加決策寫入點 — D3+/失敗3次/指標下降 → 寫入 pending-decisions.jsonl\n4. nova-server SSE 廣播 notification 事件類型（sd:done, sd:circuit-break, sd:decision-pending, test:regression）\n5. Nova Control App iOS — handleSSEEvent 加 8 種通知觸發（見 spec/change/通知觸發表.md）\n6. Nova Control App macOS — 加 UNUserNotificationCenter 支援\n\n### 驗收\n- pending-decisions.jsonl 可讀寫\n- context-injector 注入待決定 → Claude 先處理佇列再回答\n- iOS 收到 SSE 通知事件 → 彈 local notification\n- macOS 收到 SSE 通知事件 → 彈系統通知\n\n### 依賴\n無（Phase 1 獨立）\n\n### 預估\nD2，2-3 sessions",
+  "subtasks": [],
+  "created": "2026-03-24T02:49:38.780Z",
+  "claimed": null,
+  "completed": null,
+  "result": null
+}
