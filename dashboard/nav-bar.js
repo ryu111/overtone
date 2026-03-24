@@ -229,7 +229,7 @@ if (currentIdx >= 0 && current) {
 
     <div class="loop-bottom">
       <div class="panel">
-        <div class="panel-title">最近自驅成果</div>
+        <div class="panel-title">最近全自動成果</div>
         <div class="loop-achievements" id="lp-log">載入中...</div>
       </div>
       <div class="panel">
@@ -298,7 +298,7 @@ if (currentIdx >= 0 && current) {
         ? `<div class="loop-task">${todoTop || '（載入中）'}</div>`
         : '<div style="color:var(--muted,#6b7280)">佇列空 — 下次 tick 將觸發分析</div>';
 
-      // 最近自驅成果
+      // 最近全自動成果
       const hbSessions = (Array.isArray(sessions) ? sessions : []).filter(s => s.source === 'heartbeat').slice(-10).reverse();
       $('lp-log').innerHTML = hbSessions.length > 0
         ? hbSessions.map(s => {
@@ -312,7 +312,7 @@ if (currentIdx >= 0 && current) {
             const meta = [ts, exitCode, attempt].filter(Boolean).join(' · ');
             return `<div class="loop-ach-card ${cardClass}"><span class="loop-ach-icon">${icon}</span><div class="loop-ach-body"><div class="loop-ach-task">${task}</div>${meta ? `<div class="loop-ach-meta">${meta}</div>` : ''}</div></div>`;
           }).join('')
-        : '<div style="color:var(--muted,#6b7280)">尚無自驅記錄</div>';
+        : '<div style="color:var(--muted,#6b7280)">尚無全自動記錄</div>';
 
       // 統計（對齊 API 實際欄位）+ 成功率趨勢
       if (stats) {
@@ -325,7 +325,7 @@ if (currentIdx >= 0 && current) {
           ? `<span class="loop-trend">${recent5.map(s => s.status === 'success' ? '✅' : '❌').join('')}</span>`
           : '<span style="color:var(--muted,#6b7280)">—</span>';
         $('lp-stats').innerHTML = [
-          ['自驅 Session', total],
+          ['全自動 Session', total],
           ['成功', `<span class="lc-green">${ok}</span>`],
           ['失敗', fail > 0 ? `<span class="lc-red">${fail}</span>` : '0'],
           ['成功率', sr + '%'],

@@ -2,9 +2,9 @@
 
 ## 動機（Why）
 
-- **問題**：Nova 的自驅機制已完成「發現缺口 → 執行改善」的流程，但改善後無法驗證效果。heartbeat 執行改善任務後，只記錄 exitCode 和 sessionId，不記錄「改善了什麼元件」「改善前後的能力差異」。capability-probe 每次 session 更新能力邊界，但無 before/after 快照可供比對。improvements.jsonl 有建議但無執行結果追蹤。
+- **問題**：Nova 的全自動機制已完成「發現缺口 → 執行改善」的流程，但改善後無法驗證效果。heartbeat 執行改善任務後，只記錄 exitCode 和 sessionId，不記錄「改善了什麼元件」「改善前後的能力差異」。capability-probe 每次 session 更新能力邊界，但無 before/after 快照可供比對。improvements.jsonl 有建議但無執行結果追蹤。
 - **目標**：改善任務完成後，系統能自動比對 before/after 能力快照、計算 delta、歸因到具體改善動作，形成可量化的進化證據。
-- **不做的代價**：自驅系統持續消耗資源執行改善，但無法分辨哪些改善有效、哪些無效，導致反覆投入無效改善。
+- **不做的代價**：全自動系統持續消耗資源執行改善，但無法分辨哪些改善有效、哪些無效，導致反覆投入無效改善。
 
 ## 範圍
 
@@ -25,15 +25,15 @@
 
 ## 使用者故事
 
-身為 Nova 自驅系統，我想要在每次改善任務完成後知道「改善前後能力有何變化」，以便決定是否繼續投入同類改善。
+身為 Nova 全自動系統，我想要在每次改善任務完成後知道「改善前後能力有何變化」，以便決定是否繼續投入同類改善。
 
-身為開發者，我想要查看 improvements.jsonl 就能知道每個改善建議的執行結果和效果 delta，以便評估自驅系統的 ROI。
+身為開發者，我想要查看 improvements.jsonl 就能知道每個改善建議的執行結果和效果 delta，以便評估全自動系統的 ROI。
 
 ## 行為規格
 
 ### 正常路徑
 
-1. heartbeat poll 取得改善任務（`[自驅]` 前綴的任務）
+1. heartbeat poll 取得改善任務（`[全自動]` 前綴的任務）
 2. executeTask 開始前 → 擷取 capability-boundary.json 快照（before）
 3. executeTask 執行 → spawn claude session
 4. session 完成 → 擷取 capability-boundary.json 快照（after）
@@ -51,7 +51,7 @@
 
 ### 邊界條件
 
-- 非改善任務（無 `[自驅]` 前綴） → 不擷取快照，行為與現在完全相同
+- 非改善任務（無 `[全自動]` 前綴） → 不擷取快照，行為與現在完全相同
 - 改善任務但 before/after 相同 → delta = 0，正常記錄（表示改善可能需要更多 session 才能反映）
 - 並行 heartbeat tick（不應發生，但防禦） → 各自獨立擷取快照，互不影響
 
@@ -62,7 +62,7 @@
 | 欄位 | 型別 | 必填 | 說明 |
 |------|------|:----:|------|
 | task | object | 是 | Notion 任務物件（含 name, id, priority） |
-| task.name | string | 是 | 任務名稱（`[自驅]` 前綴識別改善任務） |
+| task.name | string | 是 | 任務名稱（`[全自動]` 前綴識別改善任務） |
 
 ### 輸出 — session-summaries.jsonl 擴展欄位
 
@@ -105,7 +105,7 @@ function computeDelta(before, after) → { capabilitiesChanged, strengthUpgrades
 // 計算兩個快照的差異
 
 function isImprovementTask(taskName) → boolean
-// 判斷是否為改善任務（[自驅] 前綴）
+// 判斷是否為改善任務（[全自動] 前綴）
 
 function updateImprovementRecord(taskName, result, delta, deps) → void
 // 回寫 improvements.jsonl 的執行結果

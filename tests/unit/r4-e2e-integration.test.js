@@ -1,4 +1,4 @@
-// r4-e2e-integration.test.js — R4 自驅閉環端到端整合測試
+// r4-e2e-integration.test.js — R4 全自動閉環端到端整合測試
 // 驗證 5 個場景：完整迴圈 / 學習反饋 / 格式相容 / 降級容錯 / 多迴圈累積
 import { describe, test, expect, afterEach } from 'bun:test';
 import { writeFileSync, mkdirSync, rmSync, existsSync, readFileSync, appendFileSync } from 'fs';
@@ -122,9 +122,9 @@ function suggestionToNotionTask(suggestion) {
   return { id: suggestion.id, name: suggestion.title, priority: suggestion.suggestedPriority };
 }
 
-// ─── 場景 1：完整自驅迴圈（Happy Path） ──────────────────────────────────────
+// ─── 場景 1：完整全自動迴圈（Happy Path） ──────────────────────────────────────
 
-describe('場景 1：完整自驅迴圈（Happy Path）', () => {
+describe('場景 1：完整全自動迴圈（Happy Path）', () => {
   let tmpEnv;
   afterEach(() => tmpEnv?.cleanup());
 

@@ -149,12 +149,12 @@
       </div>
     </section>
 
-    <!-- 區塊 C：自驅成果 -->
+    <!-- 區塊 C：全自動成果 -->
     <section class="sys-section" id="sys-sec-results">
-      <div class="sys-section-title">自驅成果</div>
+      <div class="sys-section-title">全自動成果</div>
       <div class="sys-grid">
         <div class="sys-card">
-          <div class="sys-card-header">最近自驅成果</div>
+          <div class="sys-card-header">最近全自動成果</div>
           <div id="sys-loop-log"></div>
         </div>
         <div class="sys-card">

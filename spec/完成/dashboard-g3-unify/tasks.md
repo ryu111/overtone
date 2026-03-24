@@ -115,7 +115,7 @@ Phase 5（sequential）: 驗收
   - 下次 Tick 倒數計時
   - Notion 待做顯示
   - 循環流程高亮（4 步驟）
-  - 最近自驅成果列表
+  - 最近全自動成果列表
   - 統計面板
   - 資料來源：`/processes`（已有）+ `/api/notion-todo` + `/api/sessions-summary`
   - 3 秒自動 fetch + 1 秒倒數 tick

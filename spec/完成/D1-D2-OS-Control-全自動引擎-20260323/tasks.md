@@ -1,4 +1,4 @@
-# OS-Control 自驅引擎 — 實作任務
+# OS-Control 全自動引擎 — 實作任務
 
 ## Phase 依賴圖
 
@@ -150,10 +150,10 @@ Phase 3（sequential）: 測試 + 驗收
 **說明**：
 1. 設定 `heartbeat.json` 的 `osControl.enabled: true`
 2. 觸發 heartbeat tick（或等待自然觸發）
-3. 確認自驅 tab 在 iTerm2 中建立
+3. 確認全自動 tab 在 iTerm2 中建立
 4. 確認 prompt 寫入並 Claude 開始回應
 5. 確認完成偵測正確觸發
-6. 關閉自驅 tab → 確認下次 tick 降級到 `claude -p`
+6. 關閉全自動 tab → 確認下次 tick 降級到 `claude -p`
 7. 設定 `osControl.enabled: false` → 確認走現有路徑
 
 **驗收**：

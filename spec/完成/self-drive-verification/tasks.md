@@ -16,14 +16,14 @@ Phase 3（sequential）: T4 E2E 測試 + T5 全測試通過（依賴 Phase 2）
 
 **新增函式**：
 
-1. `isImprovementTask(taskName)` — 判斷 `[自驅]` 前綴
+1. `isImprovementTask(taskName)` — 判斷 `[全自動]` 前綴
 2. `snapshotBoundary(deps)` — 讀取 capability-boundary.json，精簡為 `{ capabilities: { [name]: { strength, coverageHits, missingHits } }, timestamp }`
 3. `computeDelta(before, after)` — 計算 `{ capabilitiesChanged, strengthUpgrades, totalCoverageGain, totalMissingReduction }`
 4. `updateImprovementRecord(taskName, result, delta, deps)` — 讀取 improvements.jsonl → 模糊匹配 → 回寫 executedAt/executionResult/delta
 
 **注意**：
 - snapshotBoundary 呼叫 capability-probe.js 的 getBoundary(deps)
-- updateImprovementRecord 的匹配邏輯：去掉 `[自驅]` 前綴 → trim → 檢查 improvements entry 的 suggestion 欄位是否包含此子字串
+- updateImprovementRecord 的匹配邏輯：去掉 `[全自動]` 前綴 → trim → 檢查 improvements entry 的 suggestion 欄位是否包含此子字串
 - 所有函式都 export（可測試）
 - 所有 IO 都走 deps DI（可 mock）
 
@@ -33,7 +33,7 @@ Phase 3（sequential）: T4 E2E 測試 + T5 全測試通過（依賴 Phase 2）
 
 **新增測試**（在「能力 4」section 擴展）：
 
-1. `isImprovementTask('[自驅] 建立 docker Skill') === true`
+1. `isImprovementTask('[全自動] 建立 docker Skill') === true`
 2. `isImprovementTask('修復 bug') === false`
 3. `computeDelta(before, after)` 正確計算 strengthUpgrades
 4. `computeDelta` 正確處理新增能力（before 沒有，after 有）
@@ -60,7 +60,7 @@ session 完成後（在 summary 寫入前）：
   if (isImprovement) {
     const afterSnapshot = snapshotBoundary(deps)
     const delta = computeDelta(beforeSnapshot, afterSnapshot)
-    const target = task.name.replace(/^\[自驅\]\s*/, '')
+    const target = task.name.replace(/^\[全自動\]\s*/, '')
     improvementInfo = { target, beforeSnapshot, afterSnapshot, delta }
     // 回寫 improvements.jsonl
     try { updateImprovementRecord(task.name, result.status, delta, deps) }
@@ -88,7 +88,7 @@ session 完成後（在 summary 寫入前）：
    - 寫入 initial improvements.jsonl（docker 建議）
    - mock spawnSession 成功
    - mock snapshotBoundary：before 回傳 missing，after 回傳 weak（模擬能力提升）
-   - 執行 executeTask（task.name = '[自驅] 建立 docker Skill'）
+   - 執行 executeTask（task.name = '[全自動] 建立 docker Skill'）
    - 驗證 session-summaries.jsonl 含 improvement.delta.strengthUpgrades = 1
    - 驗證 improvements.jsonl 被回寫 executedAt + executionResult = 'success' + delta
 

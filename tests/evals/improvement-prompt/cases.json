@@ -201,8 +201,8 @@
       "score": 49,
       "weakDimension": "語意（知識深度/清晰度）",
       "ground_truth_suggestions": [
-        "- buildSelfDrivePrompt 混合三個職責（工作流定義、工具調用、自驅邏輯），導致 prompt 成為黑盒。命令式 20+ 行 step 無法快速傳達模組意圖，維護時難以理解核心決策規則。：重構為兩層結構：(1) 頂層 prompt 使用宣言式語法（「分析待做/待觀察/待決定 → 執行最高優先任務 → 若無待做則分析缺口」），(2) 工具細節移至分離的 CLI helper 或 SKILL.md，prompt 只引用。同時在模組檔頭加註明 focus 語意、session timeout、失敗重試策略等邊界條件。",
-        "- 缺乏決策模型文檔。heartbeat 沒有記錄 focus 比重分配、缺口度量、優先級判斷等決策規則，使用者無法驗證或改進自驅邏輯，導致黑盒依賴。：建立 ~/.claude/skills/heartbeat/SKILL.md，補充：(1) 決策樹（何時 spawn、focus 可選值及比重範例）、(2) 度量方式（缺口檢測用什麼指標，例：test fail count、spec TODO count）、(3) 任務拆分粒度標準、(4) 失敗恢復策略。prompt 改為引用此文檔。",
+        "- buildSelfDrivePrompt 混合三個職責（工作流定義、工具調用、全自動邏輯），導致 prompt 成為黑盒。命令式 20+ 行 step 無法快速傳達模組意圖，維護時難以理解核心決策規則。：重構為兩層結構：(1) 頂層 prompt 使用宣言式語法（「分析待做/待觀察/待決定 → 執行最高優先任務 → 若無待做則分析缺口」），(2) 工具細節移至分離的 CLI helper 或 SKILL.md，prompt 只引用。同時在模組檔頭加註明 focus 語意、session timeout、失敗重試策略等邊界條件。",
+        "- 缺乏決策模型文檔。heartbeat 沒有記錄 focus 比重分配、缺口度量、優先級判斷等決策規則，使用者無法驗證或改進全自動邏輯，導致黑盒依賴。：建立 ~/.claude/skills/heartbeat/SKILL.md，補充：(1) 決策樹（何時 spawn、focus 可選值及比重範例）、(2) 度量方式（缺口檢測用什麼指標，例：test fail count、spec TODO count）、(3) 任務拆分粒度標準、(4) 失敗恢復策略。prompt 改為引用此文檔。",
         "- 工具路徑硬編碼（`'bun ~/.claude/scripts/notion-tasks.js'`），路徑變更時斷掉，無錯誤處理。：改為配置驅動：`const notionTasksCmd = loadConfig().notionTasksPath || 'bun ~/.claude/scripts/notion-tasks.js'`，搭配檢查檔案存在；或改為呼叫程式 API 而非 shell 命令。加 try-catch 捕捉執行錯誤，失敗時 emit 事件供 metrics 追蹤。"
       ],
       "label": "case-16-hook-hooks-modules-heartbeat-js"

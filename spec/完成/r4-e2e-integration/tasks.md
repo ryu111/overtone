@@ -19,11 +19,11 @@
 
 **驗收**：helper 函式可被後續 describe 區塊使用，無語法錯誤。
 
-### T2：場景 1 -- 完整自驅迴圈（~100 行）
+### T2：場景 1 -- 完整全自動迴圈（~100 行）
 
 **檔案**：`~/projects/overtone/tests/unit/r4-e2e-integration.test.js`（接續 T1）
 
-- [ ] `describe('場景 1：完整自驅迴圈（Happy Path）')`
+- [ ] `describe('場景 1：完整全自動迴圈（Happy Path）')`
 - [ ] `test('gap-discovery → Notion sync → heartbeat → task-adapter → execute → record → probe → 收斂')` 包含：
   - discoverGaps _mock 注入 → 取 suggestions
   - syncToNotion mock createTask → 驗證 created >= 1

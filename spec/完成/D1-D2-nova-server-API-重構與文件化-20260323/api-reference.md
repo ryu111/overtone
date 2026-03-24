@@ -187,7 +187,7 @@ curl -X POST http://127.0.0.1:3457/modules/reload
 | memory | object | RSS/Heap/HeapTotal/External（MB） |
 | metrics | object | 累計指標快照 |
 | anomalies | array | 偵測到的異常 |
-| heartbeat | object | 自驅引擎狀態 |
+| heartbeat | object | 全自動引擎狀態 |
 | activeAgents | object | 活躍背景 agent |
 | warning | string? | RSS > 200MB 時出現 |
 
@@ -221,8 +221,8 @@ data: {"type":"session_start","cwd":"/Users/sbu/projects/overtone","meta":"Sessi
 | session_start | SessionStart hook |
 | session_end | SessionEnd hook |
 | agent_status | /agent/status 回報 |
-| heartbeat_poll | 自驅引擎輪詢 |
-| heartbeat_spawn | 自驅引擎啟動 session |
+| heartbeat_poll | 全自動引擎輪詢 |
+| heartbeat_spawn | 全自動引擎啟動 session |
 | idle_detected | 閒置偵測 |
 
 ```bash
@@ -567,7 +567,7 @@ curl http://127.0.0.1:3457/api/hook-errors
 
 ### GET /api/daily-logs
 
-每日自驅日誌。
+每日全自動日誌。
 
 **Response**
 
@@ -1227,7 +1227,7 @@ curl -X POST http://127.0.0.1:3457/api/llm/toggle \
 
 ### POST /api/heartbeat/toggle
 
-啟動或停止自驅引擎（heartbeat）。
+啟動或停止全自動引擎（heartbeat）。
 
 > 待實作 — iOS 客戶端已呼叫但後端尚未實作。
 

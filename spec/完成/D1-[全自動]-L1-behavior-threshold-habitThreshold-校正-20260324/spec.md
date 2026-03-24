@@ -1,4 +1,4 @@
-# [自驅] L1 behavior-threshold habitThreshold 校正
+# [全自動] L1 behavior-threshold habitThreshold 校正
 
 ## 動機（Why）
 

@@ -148,7 +148,7 @@ describe('heartbeat module', () => {
   });
 });
 
-// ─── heartbeat idle → 自驅測試 ───
+// ─── heartbeat idle → 全自動測試 ───
 describe('heartbeat idle path (self-drive)', () => {
   it('Notion 空時 emit sd:start', () => {
     // heartbeat handler 在 poll 回 idle 時應 emit sd:start

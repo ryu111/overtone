@@ -1,4 +1,4 @@
-# OS-Control 自驅引擎 — 技術設計
+# OS-Control 全自動引擎 — 技術設計
 
 ## 深度路由：D2
 **理由**：跨模組整合（heartbeat + 新 os-control-driver + session-spawner fallback），設計決策密度中等（3 個主要決策：完成偵測策略、session 管理方式、降級機制），但不涉及安全架構變更。
@@ -112,7 +112,7 @@ export async function checkAvailability() {
 }
 
 /**
- * 查找或建立自驅 session tab
+ * 查找或建立全自動 session tab
  * 如果名為 'nova-self-drive' 的 tab 已存在且 Claude CLI 在跑 → 重用
  * 否則建立新 tab → 啟動 claude（互動模式）
  */
@@ -152,7 +152,7 @@ export async function readSessionText(tabIndex, opts = {}) {
 }
 
 /**
- * 健康檢查：自驅 tab 是否仍存活、Claude CLI 是否在跑
+ * 健康檢查：全自動 tab 是否仍存活、Claude CLI 是否在跑
  */
 export async function healthCheck(tabIndex) {
   // return { alive: boolean, claudeRunning: boolean }
@@ -168,7 +168,7 @@ export async function healthCheck(tabIndex) {
 {
   osControl: {
     available: boolean,      // 上次檢查結果
-    tabIndex: number | null, // 自驅 tab 索引
+    tabIndex: number | null, // 全自動 tab 索引
     rounds: number,          // 本次 tick 執行的輪數
     lastMode: 'os-control' | 'claude-p' | null,
   }
@@ -225,8 +225,8 @@ export async function healthCheck(tabIndex) {
 
 不新增熱鍵。使用者自然中斷方式：
 
-1. **切到自驅 tab 手動打字**：Claude CLI 收到使用者輸入，OS-control 的下次 `readSessionText()` 會偵測到非預期的文字變化，標記 `interrupted`
-2. **關閉自驅 tab**：下次 `healthCheck()` 回報 `alive: false`，heartbeat 自動降級
+1. **切到全自動 tab 手動打字**：Claude CLI 收到使用者輸入，OS-control 的下次 `readSessionText()` 會偵測到非預期的文字變化，標記 `interrupted`
+2. **關閉全自動 tab**：下次 `healthCheck()` 回報 `alive: false`，heartbeat 自動降級
 3. **修改 heartbeat.json 設定 `osControl.enabled: false`**：下次 tick 讀取 config 時跳過 OS-control
 
 ## 降級邏輯
@@ -305,7 +305,7 @@ ctx.timer('hb:tick', interval)
 | 1 | 完成偵測誤判（Claude 還在輸出就以為完成了） | 中 | 高 | stableCount 設 3（9 秒穩定期）+ prompt 符號雙重確認 |
 | 2 | iTerm2 `text` 屬性回傳空或亂碼 | 低 | 高 | 加 retry + 空值檢測 + 降級 |
 | 3 | 多行 prompt 輸入被 Claude CLI 提前處理 | 中 | 中 | 單行 prompt 為主；多行用 `write text without newline` 逐行送 |
-| 4 | 使用者意外切到自驅 tab 打字導致上下文混亂 | 中 | 中 | `readSessionText()` 偵測非預期輸入，標記 interrupted，下次 tick 重建 session |
+| 4 | 使用者意外切到全自動 tab 打字導致上下文混亂 | 中 | 中 | `readSessionText()` 偵測非預期輸入，標記 interrupted，下次 tick 重建 session |
 | 5 | Claude CLI 版本升級改變 prompt 符號格式 | 低 | 中 | 文字穩定度為主要偵測手段，不依賴特定符號 |
 
 **Pre-mortem 結論**：無「高機率 + 高影響」的無防護情境。方案可行。
@@ -321,5 +321,5 @@ ctx.timer('hb:tick', interval)
 
 1. **不做跨終端支援**：只支援 iTerm2，不支援 Terminal.app / Warp。原因：iTerm2 有最完整的 AppleScript API，且是使用者唯一使用的終端。
 2. **不做自動安裝/設定輔助使用權限**：權限需使用者手動授予，OS-control 只檢查和降級。原因：安全考量 + macOS 不允許程式自動授權。
-3. **不做 session 內容持久化**：不保存自驅 session 的對話歷史到檔案。原因：Claude CLI 本身已有 session 持久化（`--resume`），不重複實作。
-4. **不做 Dashboard 整合**：自驅 tab 的即時狀態不顯示在 Dashboard 上。原因：留後續迭代，先確保核心功能穩定。
+3. **不做 session 內容持久化**：不保存全自動 session 的對話歷史到檔案。原因：Claude CLI 本身已有 session 持久化（`--resume`），不重複實作。
+4. **不做 Dashboard 整合**：全自動 tab 的即時狀態不顯示在 Dashboard 上。原因：留後續迭代，先確保核心功能穩定。

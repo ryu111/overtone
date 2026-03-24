@@ -1,4 +1,4 @@
-// r4-self-drive-loop.test.js — R4 自驅閉環端到端整合測試
+// r4-self-drive-loop.test.js — R4 全自動閉環端到端整合測試
 // 驗證 R4 完成標準的 5 個閉環能力，全部使用 mock，不觸碰真實外部系統
 import { describe, test, expect, beforeEach, afterEach } from 'bun:test';
 import { writeFileSync, mkdirSync, rmSync, existsSync, readFileSync, appendFileSync } from 'fs';
@@ -389,8 +389,8 @@ describe('R4 E2E: 能力 4 — 驗證改善效果', () => {
   });
 
   describe('改善效果驗證純函式', () => {
-    test('isImprovementTask 識別 [自驅] 前綴', () => {
-      expect(isImprovementTask('[自驅] 建立 docker Skill')).toBe(true);
+    test('isImprovementTask 識別 [全自動] 前綴', () => {
+      expect(isImprovementTask('[全自動] 建立 docker Skill')).toBe(true);
       expect(isImprovementTask('修復 bug')).toBe(false);
       expect(isImprovementTask('')).toBe(false);
       expect(isImprovementTask(null)).toBe(false);
@@ -484,7 +484,7 @@ describe('R4 E2E: 能力 4 — 驗證改善效果', () => {
       writeFileSync,
     };
 
-    const task = { id: 'notion-improve-1', name: '[自驅] 建立 docker 相關 Skill 或工具', priority: 'P1' };
+    const task = { id: 'notion-improve-1', name: '[全自動] 建立 docker 相關 Skill 或工具', priority: 'P1' };
     const execResult = await executeTask(task, { _stateFile: join(TMP_DIR, 'hb-state.json'), maxRetries: 0 }, execDeps);
 
     // 驗證成功
@@ -571,7 +571,7 @@ describe('R4 E2E: 能力 4 — 驗證改善效果', () => {
       writeFileSync,
     };
 
-    const task = { id: 'notion-fail-1', name: '[自驅] 建立 k8s 相關 Skill 或工具', priority: 'P1' };
+    const task = { id: 'notion-fail-1', name: '[全自動] 建立 k8s 相關 Skill 或工具', priority: 'P1' };
     const execResult = await executeTask(task, { _stateFile: join(TMP_DIR, 'hb-state-fail.json'), maxRetries: 0 }, execDeps);
 
     expect(execResult.status).toBe('failed');

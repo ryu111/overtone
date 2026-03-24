@@ -38,7 +38,7 @@ Phase 4（串行）: T8（驗收，依賴全部完成）
    - 4 個 `<section>` 區塊（見 design.md HTML 結構設計）
    - 區塊 A「即時狀態」：心跳狀態 + 服務狀態 + 循環流程
    - 區塊 B「資源監控」：Memory 趨勢 + Server 資訊 + 模組
-   - 區塊 C「自驅成果」：最近自驅成果 + 統計 + Notion 待做
+   - 區塊 C「全自動成果」：最近全自動成果 + 統計 + Notion 待做
    - 區塊 D「管理工具」：用 `<details>` 包裝，含 Hook Errors 摘要 + Lock 管理 + Anomalies + 操作
    - 新 ID：`sys-loop-steps`、`sys-loop-log`、`sys-loop-stats`、`sys-loop-notion`、`sys-admin-badge`
 

@@ -59,7 +59,7 @@ Nova Dashboard 現有 8 個 Tab，存在 3 個資訊架構問題：
 ```
 [即時狀態]        ← 頂部：心跳 + 服務狀態 + 循環流程
 [資源監控]        ← 中部：Memory 趨勢 + Server 資訊 + 模組
-[自驅成果]        ← 下部：最近成果 + 統計 + Notion 待做
+[全自動成果]        ← 下部：最近成果 + 統計 + Notion 待做
 [管理工具]        ← 底部（預設折疊）：Lock 管理 + 操作按鈕 + Anomalies
 ```
 
@@ -76,7 +76,7 @@ Nova Dashboard 現有 8 個 Tab，存在 3 個資訊架構問題：
 | **Heartbeat 狀態** | 系統 Tab > 即時狀態區（完整） | Header（保留指示燈） | Header 的 `⚡` 按鈕和 active 狀態保留，不重複顯示數據 |
 | **Heartbeat 統計** | 系統 Tab > 即時狀態區 | 原自主循環（已合併） | 合併後自然消除 |
 | **Git Commits** | 營運 > 監控（Git 活動 Card） | 營運 > 日誌（Git Commits 區段） | 日誌 Sub-Tab 的 Git Commits 區段改為「今日 N 筆 commit」摘要行 + 「查看完整」跳轉監控 Sub-Tab |
-| **Session 記錄** | 營運 > 監控（Session 記錄 Card） | 原自主循環的 session 列表 | 合併後，系統 Tab 的「自驅成果」只顯示 heartbeat session，不重複顯示全部 session |
+| **Session 記錄** | 營運 > 監控（Session 記錄 Card） | 原自主循環的 session 列表 | 合併後，系統 Tab 的「全自動成果」只顯示 heartbeat session，不重複顯示全部 session |
 | **Session 摘要** | 營運 > 日誌（Session 摘要區段） | 營運 > 監控（保留完整列表） | 日誌顯示當日摘要，監控顯示最近 N 筆——用途不同，不算重複 |
 
 ### 去重原則
@@ -117,12 +117,12 @@ Lock 管理 │ 操作
 | Server 資訊 | 原 Server 資訊 | Uptime + SSE 連線 + 版本 |
 | 模組 | 原模組 | Handler Keys + 模組列表 |
 
-#### 區塊 C：自驅成果（查看歷史）
+#### 區塊 C：全自動成果（查看歷史）
 
 | Card | 來源 | 說明 |
 |------|------|------|
-| 最近自驅成果 | 原自主循環「最近自驅成果」 | 最近 10 筆 heartbeat session（成功/失敗 + 任務名 + 時間） |
-| 統計 | 原自主循環「統計」 | 自驅 Session 數 + 成功率 + 趨勢 |
+| 最近全自動成果 | 原自主循環「最近全自動成果」 | 最近 10 筆 heartbeat session（成功/失敗 + 任務名 + 時間） |
+| 統計 | 原自主循環「統計」 | 全自動 Session 數 + 成功率 + 趨勢 |
 | Notion 待做 | 原自主循環「Notion 任務」 | 佇列數量 + 最上面任務名 |
 
 #### 區塊 D：管理工具（偶爾使用，預設折疊）
@@ -159,7 +159,7 @@ Scenario: 系統 Tab 區塊分層
   Given 使用者點擊「系統」Tab
   Then 頂部顯示「即時狀態」區塊（心跳 + 服務 + 循環流程）
   And 中部顯示「資源監控」區塊（Memory + Server + 模組）
-  And 下部顯示「自驅成果」區塊（成果 + 統計 + Notion）
+  And 下部顯示「全自動成果」區塊（成果 + 統計 + Notion）
   And 底部顯示「管理工具」區塊（預設折疊）
 
 Scenario: 管理工具自動展開

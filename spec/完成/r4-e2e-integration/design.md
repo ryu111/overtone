@@ -1,4 +1,4 @@
-# R4 自驅閉環 E2E 整合測試 -- 技術設計
+# R4 全自動閉環 E2E 整合測試 -- 技術設計
 
 ## 深度路由：D2
 **理由**：新建 1 個測試檔案，消費 6 個現有模組但不修改它們的 API。非安全敏感，D1 不足（跨 6 模組整合需設計 mock 架構），D3 過度（純測試檔案不需 reviewer）。
@@ -67,10 +67,10 @@ function suggestionToNotionTask(suggestion)
 
 ## 具體測試案例
 
-### 場景 1：完整自驅迴圈（Happy Path）
+### 場景 1：完整全自動迴圈（Happy Path）
 
 ```
-describe('場景 1：完整自驅迴圈')
+describe('場景 1：完整全自動迴圈')
 
 test('gap-discovery → Notion sync → heartbeat → task-adapter → execute → record → probe → 第二輪 gap')
 ```
@@ -203,8 +203,8 @@ function makeHeartbeatDeps(overrides) { ... }
 function makeProbeDeps(tmpEnv, overrides) { ... }
 function suggestionToNotionTask(suggestion) { ... }
 
-// ─── 場景 1：完整自驅迴圈 ─────────────────────────────────────
-describe('場景 1：完整自驅迴圈（Happy Path）', () => { ... });
+// ─── 場景 1：完整全自動迴圈 ─────────────────────────────────────
+describe('場景 1：完整全自動迴圈（Happy Path）', () => { ... });
 
 // ─── 場景 2：學習反饋閉環 ─────────────────────────────────────
 describe('場景 2：學習反饋閉環', () => { ... });

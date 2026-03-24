@@ -11,7 +11,7 @@
 | 失敗與修復 | 失敗與修復（3 次失敗 STOP 協議、完成證據（Evidence Requirements）、根因修復） |
 | 本地模型委派 | 本地模型委派（三層決策分配、委派前四維評估、能力邊界） |
 | 成功即進化 | 成功即進化（觸發條件、進化流程） |
-| 自驅模式規範 | 自驅模式規範（原因、方案、實作） |
+| 全自動模式規範 | 全自動模式規範（原因、方案、實作） |
 | 並行執行 | 並行執行（依賴偵測、前景並行 vs 背景） |
 | 事件驅動架構 | 事件驅動架構（第一性原理、統一 Stream 模型、同步例外） |
 | 知識管理 | 知識管理（知識持久化：自動分類、分類決策樹、單一來源原則（DRY）） |
@@ -52,7 +52,7 @@
 | jsonl-truncate-n | "JSONL 日誌截斷策略。WHEN: 處理 Nova 系統 JSONL 檔案的截斷、決定保留數量時使用。NOT: 一般檔案操作、非 JSONL 格式。" |
 | mlx-finetune | "MLX LoRA 微調知識域：資料準備、訓練指令、adapter 管理、多角色部署。WHEN: 需要微調本地模型（客服、NPC、專業助手）時使用。NOT: 推 |
 | mlx-rl | "MLX 強化學習知識域：環境設計、觀測/動作/獎勵設計、DQN/PPO 訓練迴圈、遊戲 AI 整合。WHEN: 需要訓練即時決策 agent（遊戲 AI、自動 |
-| nova-autonomous-control.archived | "自主成長閉環控制。WHEN: 配置 heartbeat 自驅策略、設定 focus 方向、管理本地任務批次執行時使用。NOT: 一般開發工作、手動任務執行。" |
+| nova-autonomous-control.archived | "自主成長閉環控制。WHEN: 配置 heartbeat 全自動策略、設定 focus 方向、管理本地任務批次執行時使用。NOT: 一般開發工作、手動任務執行。" |
 | nova-pm | 產品探索與需求釐清。引導 planner agent 以 PM 角色探索需求、定義範圍、比較方案。三種模式：discovery（D1）、product（D2）、 |
 | nova-spec | 產品規格管理。建立、追蹤、歸檔 spec/design 文件。使用者說「寫規格」「提案」「歸檔」或觸發 /spec:propose、/spec:done、/sp |
 | nova-test | 測試策略知識域。什麼該測、什麼不該測、怎麼測、何時跑。基於 Testing Trophy + 風險驅動。撰寫或審查測試時使用。 |
@@ -74,7 +74,7 @@
 | 名稱 | 簡述 |
 |------|------|
 | acid-test | L2 Acid Test 端到端驗收腳本 |
-| autoresearch-task | heartbeat 自驅：找最低分 eval 跑 autoresearch |
+| autoresearch-task | heartbeat 全自動：找最低分 eval 跑 autoresearch |
 | briefing-builder | Session 摘要 + 簡報生成 |
 | capability-probe | 能力邊界探測 + 模型更新 |
 | component-health | 元件維護（文件搬遷、lockfile 修復、lifecycle、capability probe） |
@@ -169,8 +169,8 @@ _目前無待做任務_
 | 任務 | 類型 | 完成時間 | 結果 |
 |------|------|---------|------|
 | 跨 Session 感知與協作 | 功能 | 2026-03-24 | Phase 1-5 全部完成：projects 元資料、session regi |
-| [自驅] L1 behavior-threshold habitThreshold 校正 | 修復 | 2026-03-24 | habitThreshold 0.11→0.18，Macro F1 0.944→ |
-| [自驅] L1 heartbeat 模組瘦身至 300 行以內 | 重構 | 2026-03-24 | Phase 3 拆分 branch-scheduler.js 已解決膨脹問題 |
+| [全自動] L1 behavior-threshold habitThreshold 校正 | 修復 | 2026-03-24 | habitThreshold 0.11→0.18，Macro F1 0.944→ |
+| [全自動] L1 heartbeat 模組瘦身至 300 行以內 | 重構 | 2026-03-24 | Phase 3 拆分 branch-scheduler.js 已解決膨脹問題 |
 | Phase4-Session復用與智慧策略 | 功能 | 2026-03-24 | os-control-driver 空閒 session 偵測復用 + deci |
 | Phase3-多支線排程器 | 功能 | 2026-03-24 | branch-scheduler.js（6 支線排程）+ heartbeat 整 |
 | Phase2-OODA-閉環-Snapshot-Δmetric | 功能 | 2026-03-24 | self-drive-eval.js（snapshot + Δmetric +  |

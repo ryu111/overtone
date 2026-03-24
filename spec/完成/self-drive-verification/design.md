@@ -36,12 +36,12 @@
 // ─── 新增純函式（heartbeat.js export）─────────────────────────────────────
 
 /**
- * 判斷任務是否為自驅改善任務
+ * 判斷任務是否為全自動改善任務
  * @param {string} taskName
  * @returns {boolean}
  */
 export function isImprovementTask(taskName) {
-  return typeof taskName === 'string' && taskName.startsWith('[自驅]');
+  return typeof taskName === 'string' && taskName.startsWith('[全自動]');
 }
 
 /**
@@ -70,13 +70,13 @@ export function computeDelta(before, after) {
 
 /**
  * 回寫 improvements.jsonl — 更新最新一筆匹配的建議
- * @param {string} taskName — 任務名稱（含 [自驅] 前綴）
+ * @param {string} taskName — 任務名稱（含 [全自動] 前綴）
  * @param {"success"|"failed"} result
  * @param {object} delta — computeDelta 回傳值
  * @param {object} [deps] — DI：{ improvementsFile, existsSync, readFileSync, writeFileSync }
  */
 export function updateImprovementRecord(taskName, result, delta, deps = {}) {
-  // 讀取 improvements.jsonl → 找到 title 包含 taskName 去掉 [自驅] 後的子字串的最新一筆
+  // 讀取 improvements.jsonl → 找到 title 包含 taskName 去掉 [全自動] 後的子字串的最新一筆
   // 更新 executedAt, executionResult, delta 欄位
   // 回寫整個 improvements.jsonl
 }
@@ -114,10 +114,10 @@ executeTask(task, config, deps):
 {
   "date": "2026-03-17T10:00:00.000Z",
   "source": "heartbeat",
-  "task": "[自驅] 建立 docker 相關 Skill",
+  "task": "[全自動] 建立 docker 相關 Skill",
   "status": "success",
   "proofOfWork": { "exitCode": 0, "duration": 120, "sessionId": "sess-123", "attempt": 0 },
-  "summary": "心跳任務完成：[自驅] 建立 docker 相關 Skill",
+  "summary": "心跳任務完成：[全自動] 建立 docker 相關 Skill",
   // NEW
   "improvement": {
     "target": "建立 docker 相關 Skill",
@@ -197,7 +197,7 @@ executeTask(task, config, deps):
 
 | # | 失敗情境 | 機率 | 影響 | 預防措施 |
 |---|---------|:----:|:----:|---------|
-| 1 | 改善任務名稱格式不一致，updateImprovementRecord 找不到匹配的 entry | 中 | 中 | 模糊匹配：去掉 `[自驅]` 前綴後，檢查 suggestion 欄位是否包含任務名稱的子字串 |
+| 1 | 改善任務名稱格式不一致，updateImprovementRecord 找不到匹配的 entry | 中 | 中 | 模糊匹配：去掉 `[全自動]` 前綴後，檢查 suggestion 欄位是否包含任務名稱的子字串 |
 | 2 | capability-boundary.json 在 session 執行期間被 SessionEnd hook（capability-probe）覆寫，before/after 無法反映真實變化 | 中 | 低 | before 是深拷貝（JSON.parse(JSON.stringify)），after 在 session 結束後讀取最新值（這正是我們想要的） |
 | 3 | improvements.jsonl 在 deduplicateImprovements 時把剛回寫的 entry 截斷 | 低 | 中 | updateImprovementRecord 修改現有 entry（非新增），dedup 保留最新，不受影響 |
 | 4 | snapshotBoundary 在 boundary 檔案很大時拖慢 executeTask | 低 | 低 | 快照只取 capabilities 的 3 個欄位，且 JSON.parse < 5ms |
@@ -206,7 +206,7 @@ executeTask(task, config, deps):
 
 | 測試檔案 | 驗收條件 |
 |---------|---------|
-| `r4-self-drive-loop.test.js` | isImprovementTask 正確識別 `[自驅]` 前綴 |
+| `r4-self-drive-loop.test.js` | isImprovementTask 正確識別 `[全自動]` 前綴 |
 | `r4-self-drive-loop.test.js` | computeDelta 正確計算 strengthUpgrades（missing→weak = +1） |
 | `r4-self-drive-loop.test.js` | computeDelta 正確計算 totalCoverageGain 和 totalMissingReduction |
 | `r4-self-drive-loop.test.js` | 改善任務 executeTask E2E：session-summaries 含 improvement 欄位 |

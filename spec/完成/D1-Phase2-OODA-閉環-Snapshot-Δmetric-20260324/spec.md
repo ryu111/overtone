@@ -12,7 +12,7 @@
 5. evaluate() 函式 — reward > 0.3 成功 / < -0.1 回歸標記
 
 ### 驗收
-- 每輪自驅前後有 snapshot
+- 每輪全自動前後有 snapshot
 - history.jsonl 記錄 Δmetric + reward
 - Prompt 包含上輪結果和趨勢方向
 
