@@ -21,10 +21,10 @@ describe("server.js 純淨性", () => {
     expect(lineCount(SERVER_PATH)).toBeLessThanOrEqual(400);
   });
 
-  it("setInterval 限制（SSE heartbeat + graceful restart）", () => {
+  it("setInterval 限制（SSE heartbeat + graceful restart + memory watchdog）", () => {
     const matches = code.match(/setInterval/g) || [];
-    // SSE heartbeat 1 個 + graceful restart checker 1 個
-    expect(matches.length).toBeLessThanOrEqual(2);
+    // SSE heartbeat 1 個 + graceful restart checker 1 個 + memory watchdog 1 個
+    expect(matches.length).toBeLessThanOrEqual(3);
   });
 
   it("不含 SELF_DRIVE_PROMPT", () => {
