@@ -9,27 +9,8 @@ mock.module('node:child_process', () => ({
 
 const mod = await import(join(homedir(), '.claude/hooks/modules/notification.js') + `?t=${Date.now()}`);
 const handler = mod.on.Notification;
-const { sanitize } = mod;
 
 describe('notification module', () => {
-  describe('sanitize', () => {
-    test('轉義雙引號', () => {
-      expect(sanitize('hello "world"')).toBe('hello \\"world\\"');
-    });
-
-    test('轉義反斜線', () => {
-      expect(sanitize('path\\to\\file')).toBe('path\\\\to\\\\file');
-    });
-
-    test('同時轉義反斜線和雙引號', () => {
-      expect(sanitize('say \\"hi\\"')).toBe('say \\\\\\"hi\\\\\\"');
-    });
-
-    test('無特殊字元時不變', () => {
-      expect(sanitize('hello world')).toBe('hello world');
-    });
-  });
-
   describe('handler', () => {
     test('正常輸入回傳 allow', () => {
       const result = handler({ title: 'Nova', message: 'OK' });

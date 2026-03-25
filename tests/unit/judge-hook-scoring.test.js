@@ -13,10 +13,10 @@ describe('judge hook scoring', () => {
     expect(score).toBe(50);
   });
 
-  test('notification.js 確定性分 = 40', () => {
+  test('notification.js 確定性分 = 30', () => {
     const score = scoreDeterministic(join(modulesDir, 'notification.js'), 'hook');
-    // export(10) + on handler(10) + try-catch(10) + 行數(10)（osascript 移除後有 console.log）
-    expect(score).toBe(40);
+    // on handler(10) + lifecycle export(10) + 行數(10)（sanitize 移除後精簡）
+    expect(score).toBe(30);
   });
 
   test('metrics.js（utility 模組）確定性分 = 50', () => {
