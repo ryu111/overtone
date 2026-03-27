@@ -21,7 +21,7 @@ function makeCtx(overrides = {}) {
   return {
     sessionEvents: [],
     novaStatus: '',
-    nova-brainStatus: '',
+    novaBrainStatus: '',
     behaviors: [],
     hookErrors: [],
     skillUsage: { total: 0, unreferenced: [] },
