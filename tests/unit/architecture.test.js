@@ -173,6 +173,46 @@ describe("依賴方向", () => {
   });
 });
 
+// ── 膨脹偵測 ──
+describe("檔案膨脹偵測（≤500 行）", () => {
+  const SCRIPTS_DIR = join(homedir(), ".claude/scripts");
+  // 白名單：確實需要超過 500 行的檔案 + 理由
+  const WHITELIST = new Set([
+    "scripts/os-control-driver.js", // OS 自動化 driver，6 個 task 函式 + AppleScript 模板
+    "scripts/gap-discovery.js",     // 能力缺口掃描，多維度分析邏輯（586 行，待拆分）
+    "scripts/heartbeat.js",         // 自驅引擎，狀態機 + 分支調度（550 行，待拆分）
+    "scripts/tool-registry.js",     // 工具註冊表，宣告式資料（504 行，略超）
+  ]);
+
+  function scanAllJs(dir, base = "") {
+    const results = [];
+    try {
+      for (const entry of readdirSync(dir, { withFileTypes: true })) {
+        const rel = base ? `${base}/${entry.name}` : entry.name;
+        if (entry.isDirectory() && !["node_modules", "_archived", "lib"].includes(entry.name)) {
+          results.push(...scanAllJs(join(dir, entry.name), rel));
+        } else if (entry.name.endsWith(".js")) {
+          results.push({ rel, path: join(dir, entry.name) });
+        }
+      }
+    } catch { /* dir not found */ }
+    return results;
+  }
+
+  const targets = [
+    ...scanAllJs(SCRIPTS_DIR, "scripts"),
+    ...scanAllJs(join(homedir(), ".claude/hooks"), "hooks"),
+  ];
+
+  for (const { rel, path } of targets) {
+    if (WHITELIST.has(rel)) continue;
+    it(`${rel} ≤ 500 行`, () => {
+      const lines = readFile(path).trimEnd().split("\n").length;
+      expect(lines).toBeLessThanOrEqual(500);
+    });
+  }
+});
+
 // ── osascript 統一 ──
 describe("osascript 統一到 scripts/os/", () => {
   const SCRIPTS_DIR = join(homedir(), ".claude/scripts");
