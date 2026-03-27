@@ -1,22 +1,23 @@
 # 專案索引
-> 自動產生於 2026-03-24
+> 自動產生於 2026-03-27
 
 ## 元件目錄
 
-### Rules（26）
+### Rules（27）
 
 | 名稱 | 簡述 |
 |------|------|
 | 主動關聯工具 | 主動關聯已有工具（觸發時機、做法） |
-| 失敗與修復 | 失敗與修復（3 次失敗 STOP 協議、完成證據（Evidence Requirements）、根因修復） |
+| 失敗與修復 | 失敗與修復（3 次失敗 STOP 協議、完成證據（Evidence Requirements）、根因修復（第一次就做對）） |
 | 本地模型委派 | 本地模型委派（三層決策分配、委派前四維評估、能力邊界） |
 | 全自動模式規範 | 全自動模式規範（原因、方案、實作） |
 | 回報誠實度 | 回報誠實度（核心原則、「程式碼正確」≠「功能正常」、cross-dispatch 完成回報格式） |
 | 成功即進化 | 成功即進化（觸發條件、進化流程） |
 | 自我認知 | 自我認知（執行環境、行為影響） |
 | 自壓縮 | 自壓縮（觸發條件、防迴圈、Session 替換） |
+| 完成後反思 | 完成後反思（1. 方向對嗎？、2. 還能更好嗎？、3. 有沒有異常信號我忽略了？） |
 | 並行執行 | 並行執行（依賴偵測、前景並行 vs 背景） |
-| 事件驅動架構 | 事件驅動架構（第一性原理、統一 Stream 模型、同步例外） |
+| 事件驅動架構 | 事件驅動架構（第一性原理、Client 資料同步：SSE-first、Client 資料取得流程） |
 | 命名衝突防護 | 命名衝突防護（內建指令（保留名稱）、為什麼、命名前檢查） |
 | 知識管理 | 知識管理（知識持久化：自動分類、分類決策樹、單一來源原則（DRY）） |
 | 迭代語意 | 迭代語意（迭代的前提條件） |
@@ -36,7 +37,7 @@
 
 ---
 
-### Skills（31）
+### Skills（27）
 
 | 名稱 | 簡述 |
 |------|------|
@@ -55,8 +56,6 @@
 | evolve | "知識進化引擎（含內化知識庫）。WHEN: 分析知識積累狀態、查詢已內化的跨專案經驗、決定是否升級為 Skill/Agent 時使用。NOT: 專案特定知識、一 |
 | issue-triage | GitHub Issue 自動分類知識域：gh CLI 驅動的 Issue 分析 + 類型/優先序/深度路由判定。WHEN: Issue 自動分類、批量 tri |
 | jsonl-truncate-n | "JSONL 日誌截斷策略。WHEN: 處理 Nova 系統 JSONL 檔案的截斷、決定保留數量時使用。NOT: 一般檔案操作、非 JSONL 格式。" |
-| mlx-finetune | "MLX LoRA 微調知識域：資料準備、訓練指令、adapter 管理、多角色部署。WHEN: 需要微調本地模型（客服、NPC、專業助手）時使用。NOT: 推 |
-| mlx-rl | "MLX 強化學習知識域：環境設計、觀測/動作/獎勵設計、DQN/PPO 訓練迴圈、遊戲 AI 整合。WHEN: 需要訓練即時決策 agent（遊戲 AI、自動 |
 | nova-pm | 產品探索與需求釐清。引導 planner agent 以 PM 角色探索需求、定義範圍、比較方案。三種模式：discovery（D1）、product（D2）、 |
 | nova-spec | 產品規格管理。建立、追蹤、歸檔 spec/design 文件。使用者說「寫規格」「提案」「歸檔」或觸發 /spec:propose、/spec:done、/sp |
 | nova-test | 測試策略知識域。什麼該測、什麼不該測、怎麼測、何時跑。基於 Testing Trophy + 風險驅動。撰寫或審查測試時使用。 |
@@ -65,11 +64,9 @@
 | pinchtab | "Chrome 瀏覽器操控 — Pinchtab HTTP API。WHEN: 需要網頁自動化、表單填寫、截圖擷取且 PinchTab 常駐服務（port 98 |
 | pr | "GitHub PR 建立工具。WHEN: 功能完成、需要建立 Pull Request 並組裝結構化描述時使用。NOT: 程式碼開發過程、code revie |
 | pr-auto-review | GitHub PR 自動審查知識域：gh CLI 驅動的 diff 分析 + 結構化 review comment 產出。WHEN: 自動化 PR 審查、批量  |
-| release-notes | Release Notes 自動生成知識域：git log 分析 + Conventional Commit 分類 + 結構化 changelog 產出。WHE |
 | security-kb | "安全審查知識：OWASP Top 10、JS 安全模式、STRIDE 威脅建模、供應鏈安全。WHEN: 安全審查、威脅建模、檢查注入風險時使用。NOT: 功能 |
 | skill-judge | 對 Skill 設計品質進行多維度評分（知識密度、觸發精準度、結構完整性等）。在需要量化評估 Skill 整體設計優劣、生成改善建議報告、或進行 Skill 品 |
 | thinking | "結構化思維工具：卡關脫困策略、反向驗證法、化繁為簡級聯。WHEN: 設計決策僵局、複雜問題需要拆解、方案需要反向驗證時使用。NOT: 直接可執行的簡單任務。" |
-| ui-review | "UI/UX 設計審查知識域：佈局合理性、互動流程、視覺一致性、可用性、平台規範合規。WHEN: 審查 UI 設計稿（Pencil .pen、Figma、截圖） |
 | wording | 措詞正確性知識域。涵蓋四級指令強度標記（⛔📋💡🔧）、emoji-關鍵詞搭配規則、語氣校準（技術文件/commit/agent prompt/對話）、繁體中 |
 
 ---
@@ -122,7 +119,7 @@
 | skill-forge | Skill 建立引擎（forgeSkill + improveSkill + deploySkill） |
 | skill-janitor | Skill 庫存管理（pruning + 健康度檢查） |
 | smoke-test | 整合驗證腳本 |
-| spec-tasks | 本地任務管理模組 |
+| spec-tasks | 本地任務管理模組（CLI 入口 + re-export） |
 | task-adapter | R4.3 新任務快速適應機制 |
 | tg-ask | Telegram inline keyboard 互動詢問 |
 | tg-notify | Telegram 推送通知（純發訊息，不等回應） |
