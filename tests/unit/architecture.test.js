@@ -217,6 +217,71 @@ describe("檔案膨脹偵測", () => {
   }
 });
 
+// ── 環形依賴偵測 ──
+describe("模組環形依賴偵測", () => {
+  const MODULES_DIR = join(homedir(), ".claude/hooks/modules");
+  const modules = readdirSync(MODULES_DIR).filter(f => f.endsWith(".js"));
+
+  // 建立 import 圖
+  function getImports(filePath) {
+    const code = readFile(filePath);
+    const imports = [];
+    const re = /(?:import|require)\s*\(?['"]\.\/([^'"]+)['"]/g;
+    let m;
+    while ((m = re.exec(code)) !== null) {
+      imports.push(m[1].replace(/\.js$/, ""));
+    }
+    return imports;
+  }
+
+  it("hooks/modules/ 無環形依賴", () => {
+    const graph = {};
+    for (const mod of modules) {
+      const name = mod.replace(/\.js$/, "");
+      graph[name] = getImports(join(MODULES_DIR, mod));
+    }
+    // DFS 檢測環形
+    const visited = new Set();
+    const stack = new Set();
+    function hasCycle(node) {
+      if (stack.has(node)) return true;
+      if (visited.has(node)) return false;
+      visited.add(node);
+      stack.add(node);
+      for (const dep of (graph[node] || [])) {
+        if (hasCycle(dep)) return true;
+      }
+      stack.delete(node);
+      return false;
+    }
+    for (const node of Object.keys(graph)) {
+      expect(hasCycle(node)).toBe(false);
+    }
+  });
+
+  it("hook module 不互相 import（只能 import 共用 utils）", () => {
+    const moduleNames = new Set(modules.map(m => m.replace(/\.js$/, "")));
+    for (const mod of modules) {
+      const imports = getImports(join(MODULES_DIR, mod));
+      const crossImports = imports.filter(i => moduleNames.has(i));
+      expect(crossImports).toEqual([]);
+    }
+  });
+});
+
+// ── Guard 覆蓋率 ──
+describe("Guard 覆蓋率", () => {
+  it("PROTECTED_PATHS 涵蓋 ~/.claude/ 下所有核心子目錄", () => {
+    const { PROTECTED_PATHS } = require(join(homedir(), ".claude/hooks/modules/guards.js"));
+    const protectedDirs = PROTECTED_PATHS.filter(p => p.endsWith("/"));
+    // 核心目錄必須被保護
+    const required = ["agents/", "skills/", "hooks/", "commands/", "data/", "rules/", "scripts/", "config/"];
+    for (const dir of required) {
+      expect(protectedDirs).toContain(dir);
+    }
+  });
+});
+
 // ── osascript 統一 ──
 describe("osascript 統一到 scripts/os/", () => {
   const SCRIPTS_DIR = join(homedir(), ".claude/scripts");
