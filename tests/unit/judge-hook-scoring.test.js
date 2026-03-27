@@ -19,11 +19,7 @@ describe('judge hook scoring', () => {
     expect(score).toBe(40);
   });
 
-  test('metrics.js（utility 模組）確定性分 = 50', () => {
-    const score = scoreDeterministic(join(modulesDir, 'metrics.js'), 'hook');
-    // export(10) + createMetrics factory(10) + try-catch(10) + 行數 10-300(10) + 無 console.log(10) = 50
-    expect(score).toBe(50);
-  });
+  // metrics.js 已遷移到 nova-server/lib/metrics.js
 
   test('flow-observer.js 有 on handler 得分', () => {
     const score = scoreDeterministic(join(modulesDir, 'flow-observer.js'), 'hook');

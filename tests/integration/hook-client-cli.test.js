@@ -104,31 +104,34 @@ describe('pollHealth spawn 後等待時間', () => {
   });
 });
 
-// ─── server.js SIGTERM handler ────────────────────────────────────────────────
+// ─── server.js SIGTERM handler（已遷移到 ~/projects/nova-server/）────────────
+// 這些測試現在指向 nova-server 的新位置
 
 describe('server.js SIGTERM handler', () => {
+  const SERVER_PATH = join(homedir(), 'projects/nova-server/server.js');
+
   test('server.js 含 SIGTERM handler', () => {
-    const src = readFileSync(join(CLAUDE_DIR, 'hooks/server.js'), 'utf-8');
+    const src = readFileSync(SERVER_PATH, 'utf-8');
     expect(src).toContain("process.on('SIGTERM'");
   });
 
   test('server.js 含 SIGINT handler', () => {
-    const src = readFileSync(join(CLAUDE_DIR, 'hooks/server.js'), 'utf-8');
+    const src = readFileSync(SERVER_PATH, 'utf-8');
     expect(src).toContain("process.on('SIGINT'");
   });
 
   test('server.js 含 gracefulShutdown 函式', () => {
-    const src = readFileSync(join(CLAUDE_DIR, 'hooks/server.js'), 'utf-8');
+    const src = readFileSync(SERVER_PATH, 'utf-8');
     expect(src).toContain('function gracefulShutdown(');
   });
 
   test('gracefulShutdown 呼叫 bus.destroy()', () => {
-    const src = readFileSync(join(CLAUDE_DIR, 'hooks/server.js'), 'utf-8');
+    const src = readFileSync(SERVER_PATH, 'utf-8');
     expect(src).toContain('bus.destroy()');
   });
 
   test('bus.destroy 有 try-catch 包裹', () => {
-    const src = readFileSync(join(CLAUDE_DIR, 'hooks/server.js'), 'utf-8');
+    const src = readFileSync(SERVER_PATH, 'utf-8');
     const shutdownFn = src.match(/function gracefulShutdown[\s\S]*?^}/m);
     expect(shutdownFn).not.toBeNull();
     expect(shutdownFn[0]).toContain('try');
