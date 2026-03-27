@@ -67,7 +67,7 @@ export function someFunction(arg, _deps = { execSync }) {
 
 ## 資料模型
 
-- 截圖輸出目錄：`/tmp/overtone-screenshots/`（自動建立）
+- 截圖輸出目錄：`/tmp/nova-brain-screenshots/`（自動建立）
 - 無持久化狀態
 
 ## 執行步驟

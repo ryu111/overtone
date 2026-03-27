@@ -35,7 +35,7 @@ describe('pre-edit-guard', () => {
 
   describe('一般路徑放行', () => {
     const allowedCases = [
-      '/Users/sbu/projects/overtone/src/index.js',
+      '/Users/sbu/projects/nova-brain/src/index.js',
       '/tmp/test.txt',
       `${CLAUDE_DIR}/projects/test/state.json`,
       `${CLAUDE_DIR}/memory/MEMORY.md`,

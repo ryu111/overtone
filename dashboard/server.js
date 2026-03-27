@@ -4,7 +4,7 @@ import { homedir } from "os";
 import { execSync } from "child_process";
 
 const CLAUDE_DIR = join(homedir(), ".claude");
-const OVERTONE_DIR = join(homedir(), "projects/overtone");
+const OVERTONE_DIR = join(homedir(), "projects/nova-brain");
 const DASHBOARD_DIR = join(OVERTONE_DIR, "dashboard");
 const PORT = 3500;
 
@@ -71,7 +71,7 @@ async function handleApi(path, req) {
       });
       return j({
         nova: parse(execSync(`git -C "${CLAUDE_DIR}" log --format='%H|%s|%ai' -10`, { encoding: "utf-8" })),
-        overtone: parse(execSync(`git -C "${OVERTONE_DIR}" log --format='%H|%s|%ai' -10`, { encoding: "utf-8" })),
+        nova-brain: parse(execSync(`git -C "${OVERTONE_DIR}" log --format='%H|%s|%ai' -10`, { encoding: "utf-8" })),
       });
     }
 

@@ -68,7 +68,7 @@ describe('registry.js', () => {
 ### 入口一：專案根目錄（主要入口）
 
 ```bash
-# 在 /Users/sbu/projects/overtone/ 執行
+# 在 /Users/sbu/projects/nova-brain/ 執行
 bun test
 ```
 
@@ -114,10 +114,10 @@ const registry = require(path.join(SCRIPTS_LIB, 'registry.js'));
 |------|---------|
 | 檔案系統 | `mkdtempSync` 建立獨立 tmp 目錄，`afterEach` 清理 |
 | 環境變數 | `beforeEach` 存 / `afterEach` 還原 `process.env` |
-| 全域 store | `OVERTONE_TEST=1`（setup.js 已設定）阻止寫入 `~/.overtone/` |
+| 全域 store | `OVERTONE_TEST=1`（setup.js 已設定）阻止寫入 `~/.nova-brain/` |
 | 模組快取 | 有狀態的 singleton 需在測試間重置 |
 
-⛔ 不可寫入共享路徑（`~/.overtone/`、專案目錄內的非 tmp 路徑）。
+⛔ 不可寫入共享路徑（`~/.nova-brain/`、專案目錄內的非 tmp 路徑）。
 
 詳細規範與程式碼範例見 `~/.claude/skills/testing/references/testing-conventions.md` §7。
 

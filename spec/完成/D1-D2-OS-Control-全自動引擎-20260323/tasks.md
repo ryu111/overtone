@@ -127,8 +127,8 @@ Phase 3（sequential）: 測試 + 驗收
 
 **執行者**：executor
 **檔案**：
-- `~/projects/overtone/tests/unit/os-control-driver.test.js`（新增）
-- `~/projects/overtone/tests/integration/heartbeat-oscontrol.test.js`（新增）
+- `~/projects/nova-brain/tests/unit/os-control-driver.test.js`（新增）
+- `~/projects/nova-brain/tests/integration/heartbeat-oscontrol.test.js`（新增）
 **說明**：
 - 單元測試：
   - checkAvailability 各場景（iTerm2 在/不在、權限有/無）

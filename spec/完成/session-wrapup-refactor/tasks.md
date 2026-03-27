@@ -23,7 +23,7 @@ Phase 5（串行）: T6（依賴 Phase 4 全部完成）
 - **驗收**：`bun test wrapup-marker.test.js` pass
 
 ### T2: wrapup-marker.test.js — 單元測試
-- **檔案**：`~/projects/overtone/tests/unit/wrapup-marker.test.js`（新增）
+- **檔案**：`~/projects/nova-brain/tests/unit/wrapup-marker.test.js`（新增）
 - **內容**：
   - writeMarker 寫入正確格式
   - readMarker 讀取 / 不存在 / 損壞
@@ -90,8 +90,8 @@ Phase 5（串行）: T6（依賴 Phase 4 全部完成）
 
 ### T5: 整合測試 + 架構測試
 - **檔案**：
-  - `~/projects/overtone/tests/unit/session-wrapup.test.js`（新增）
-  - `~/projects/overtone/tests/unit/architecture.test.js`（修改）
+  - `~/projects/nova-brain/tests/unit/session-wrapup.test.js`（新增）
+  - `~/projects/nova-brain/tests/unit/architecture.test.js`（修改）
 - **內容**：
   - **session-wrapup.test.js**：
     - 安全網：marker 存在 → skip

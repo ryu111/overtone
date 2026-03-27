@@ -29,7 +29,7 @@
 | # | 檔案 | 位置 | 行數 | 用途 | 消費者 |
 |---|------|------|------|------|--------|
 | 1 | gap-analyzer.js | `~/.claude/scripts/` | ~300 | Finding → Gap 轉換 + CLI | gap-fixer.js, evolution.js, evolve skill |
-| 2 | gap-analyzer.test.js | `~/projects/overtone/tests/unit/` | ~200 | 單元測試 | bun test |
+| 2 | gap-analyzer.test.js | `~/projects/nova-brain/tests/unit/` | ~200 | 單元測試 | bun test |
 
 ### 修改檔案
 

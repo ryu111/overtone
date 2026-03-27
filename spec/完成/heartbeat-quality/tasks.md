@@ -114,21 +114,21 @@ Phase 4（sequential，依賴 Phase 1-3）: T4a → T4b → T4c（都改同一�
 ## Group D：測試擴充（Phase 4, sequential）
 
 ### T4a — Group A 測試（空 catch 修復驗證）
-- **檔案**：`~/projects/overtone/tests/unit/heartbeat.test.js`
+- **檔案**：`~/projects/nova-brain/tests/unit/heartbeat.test.js`
 - **新增測試**：
   1. `loadConfig JSON 損壞時 console.error 被呼叫`（mock console.error，觸發 JSON parse error）
   2. `resetTask fallback 失敗時有 log`（mock deps.resetTask throw → 驗證 console.error）
   3. `NOTION_TOKEN .zshrc 讀取失敗時有 log`（需要從 makeListTasks 測試，或驗證 catch 存在）
 
 ### T4b — Group B 測試（穩定性防護驗證）
-- **檔案**：`~/projects/overtone/tests/unit/heartbeat.test.js`
+- **檔案**：`~/projects/nova-brain/tests/unit/heartbeat.test.js`
 - **新增測試**：
   1. `Phase 1 while 超過 MAX_BATCH 時 break`（mock poll 永遠返回 execute，驗證 handler 不卡死且 executed <= 50）
   2. `deps null 時 handler 不 throw`（不呼叫 init 直接觸發 handler）
   3. `spawnSession CLI 不在 PATH 時回傳 ok: false`（mock Bun.which 回傳 null）
 
 ### T4c — Group C 測試（spawn 穩定性驗證）
-- **檔案**：`~/projects/overtone/tests/unit/heartbeat.test.js`
+- **檔案**：`~/projects/nova-brain/tests/unit/heartbeat.test.js`
 - **新增測試**：
   1. `spawn 失敗寫入 hook-errors.jsonl`（mock spawn throw → 讀取 /tmp/hook-errors.jsonl 最後一行）
   2. `claude CLI 不存在時 spawnSession 回傳 error`（驗證 error message 包含 'not found'）

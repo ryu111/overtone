@@ -152,7 +152,7 @@ bun gap-discovery.js --min-confidence 50 # 只顯示信心 >= 50 的建議
 | 上游（消費） | gap-analyzer.js | 結構性缺口（analyzeGaps API） |
 | 上游（消費） | capability-probe.js | 能力缺口（getWeakCapabilities API）|
 | 上游（讀取） | ~/.claude/data/scores.jsonl | 品質缺口（F/C 級元件）|
-| 上游（讀取） | ~/projects/overtone/spec/roadmap.md | 進度缺口（未完成項目）|
+| 上游（讀取） | ~/projects/nova-brain/spec/roadmap.md | 進度缺口（未完成項目）|
 | 上游（消費） | notion-tasks.js | Notion dedup 查詢 + 建立任務（createTask API）|
 | 下游（被消費） | heartbeat self-drive | 取代 self-drive-prompt.md 的 AI 分析 |
 | 下游（被消費） | CLI 使用者 | 手動檢視系統缺口 |

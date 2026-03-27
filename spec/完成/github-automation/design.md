@@ -171,8 +171,8 @@
 |------|---------|
 | Judge 評分 | 3 個 Skill 全部 >= 80 分（B 級）|
 | Acid Test | 6 Phase 全部通過（--mock 模式）|
-| 真實 PR review | 對 ryu111/overtone 任一 PR 產出 >= 1 個結構化 comment |
-| 真實 Issue triage | 對 ryu111/overtone 任一 Issue 產出完整分類結果 |
+| 真實 PR review | 對 ryu111/nova-brain 任一 PR 產出 >= 1 個結構化 comment |
+| 真實 Issue triage | 對 ryu111/nova-brain 任一 Issue 產出完整分類結果 |
 | 真實 Release notes | 從最近 10 個 commit 產出分類後的 markdown |
 | tool-registry | `tool-registry.json` 包含 3 個新 `skill:` 條目 |
 | 跨領域偵測 | 至少 1 個 Skill 的模式被 detectCrossDomain 辨識 |
@@ -181,7 +181,7 @@
 
 1. **不做 GitHub Actions 整合**：本次只建立知識型 Skill，CI/CD 整合是獨立且更大的需求（D3+）
 2. **不做自動 merge/close**：安全敏感操作留給人類，本次 Skill 只提供「建議」不執行「動作」
-3. **不做多 repo 泛化**：先聚焦 ryu111/nova 和 ryu111/overtone，泛化邏輯留後續
+3. **不做多 repo 泛化**：先聚焦 ryu111/nova 和 ryu111/nova-brain，泛化邏輯留後續
 4. **不做全自動 forge**：方案 A 手動撰寫優先，全自動 forge 作為延伸目標
 
 ---

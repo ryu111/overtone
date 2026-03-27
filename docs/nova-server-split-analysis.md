@@ -106,7 +106,7 @@ hook-client.js fallback
 │   ├── branch-scheduler.js
 │   ├── apns.js
 │   └── registry.js
-└── dashboard/             # Flow Visualizer 前端（從 overtone/dashboard/ 搬來）
+└── dashboard/             # Flow Visualizer 前端（從 nova-brain/dashboard/ 搬來）
 ```
 
 ### 不搬的（留在 ~/.claude/）

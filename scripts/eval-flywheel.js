@@ -13,8 +13,8 @@ import { homedir, tmpdir } from 'node:os';
 const HOME = homedir();
 const HOOK_ERRORS_PATH = join(tmpdir(), 'hook-errors.jsonl');
 const SKILL_TRIGGERS_PATH = join(HOME, '.claude/data/skill-triggers.jsonl');
-const GUARD_CASES_PATH = join(HOME, 'projects/overtone/tests/evals/guard/cases.json');
-const SKILL_CASES_DIR = join(HOME, 'projects/overtone/tests/evals/skill-trigger');
+const GUARD_CASES_PATH = join(HOME, 'projects/nova-brain/tests/evals/guard/cases.json');
+const SKILL_CASES_DIR = join(HOME, 'projects/nova-brain/tests/evals/skill-trigger');
 
 // ─── 通用工具 ───────────────────────────────────────────────────────────────
 
@@ -194,7 +194,7 @@ async function runGuardFlywheel() {
     console.log('\n  執行 guard eval 確認影響...');
     const { spawnSync } = await import('node:child_process');
     const result = spawnSync('bun', ['tests/evals/guard/run.js'], {
-      cwd: join(HOME, 'projects/overtone'),
+      cwd: join(HOME, 'projects/nova-brain'),
       encoding: 'utf-8',
       env: { ...process.env },
     });

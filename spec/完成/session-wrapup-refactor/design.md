@@ -31,8 +31,8 @@
 | 1 | wrapup-marker.js | ~/.claude/scripts/wrapup-marker.js | ~40 | marker 讀寫（writeMarker / readMarker / isComplete） |
 | 2 | wrapup-stop-hook.sh | ~/.claude/hooks/wrapup-stop-hook.sh | ~50 | Stop Hook 腳本（檢查 marker，block/allow） |
 | 3 | session-wrapup-safety.js | ~/.claude/hooks/session-wrapup-safety.js | ~60 | SessionEnd 安全網（marker 不存在時執行確定性收尾） |
-| 4 | wrapup-marker.test.js | ~/projects/overtone/tests/unit/wrapup-marker.test.js | ~80 | marker 模組測試 |
-| 5 | session-wrapup.test.js | ~/projects/overtone/tests/unit/session-wrapup.test.js | ~100 | 安全網 + 整合測試 |
+| 4 | wrapup-marker.test.js | ~/projects/nova-brain/tests/unit/wrapup-marker.test.js | ~80 | marker 模組測試 |
+| 5 | session-wrapup.test.js | ~/projects/nova-brain/tests/unit/session-wrapup.test.js | ~100 | 安全網 + 整合測試 |
 
 ### 修改檔案
 

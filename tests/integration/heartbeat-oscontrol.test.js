@@ -83,7 +83,7 @@ describe('heartbeat config 向後相容', () => {
       enabled: false,
       focus: '',
       mode: 'production',
-      projects: ['~/projects/overtone'],
+      projects: ['~/projects/nova-brain'],
     };
     // 不應 crash
     expect(oldConfig.osControl?.enabled).toBeUndefined();

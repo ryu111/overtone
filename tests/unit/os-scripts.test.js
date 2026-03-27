@@ -90,7 +90,7 @@ describe('screenshot.js', () => {
       };
       const result = captureScreen(undefined, deps);
       expect(result.ok).toBe(true);
-      expect(result.path).toMatch(/\/tmp\/overtone-screenshots\/screen-\d+\.png/);
+      expect(result.path).toMatch(/\/tmp\/nova-brain-screenshots\/screen-\d+\.png/);
       expect(capturedArgs[0]).toContain('-x');
     });
 

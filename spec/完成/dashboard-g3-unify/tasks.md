@@ -21,7 +21,7 @@ Phase 5（sequential）: 驗收
 ### T1.1 建立 API Router 模組
 - **檔案**：新增 `~/.claude/scripts/flow/api-router.js`
 - **內容**：
-  - 從 `~/projects/overtone/dashboard/server.js` 搬遷所有 `/api/*` handler
+  - 從 `~/projects/nova-brain/dashboard/server.js` 搬遷所有 `/api/*` handler
   - export `handleDashboardApi(pathname, req)` 函式
   - 將 `execSync`（git log）改為非同步 `Bun.spawn`
   - 路由清單：scores, behaviors, improvements, sessions-summary, scripts, components, git, locks, daemons, llm, system, decisions, notion-todo, actions/clear-locks, actions/trigger-maintainer, actions/reload-modules

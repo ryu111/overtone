@@ -79,7 +79,7 @@ function heartbeatSummaryHtml(sessions) {
 
 /** 合併雙 repo git commits 並按日期排序 */
 function mergeGitCommits(git, limit = 8) {
-  const arr = Array.isArray(git) ? git : [...(git?.nova || []), ...(git?.overtone || [])];
+  const arr = Array.isArray(git) ? git : [...(git?.nova || []), ...(git?.nova-brain || [])];
   return arr.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0)).slice(0, limit);
 }
 
@@ -226,7 +226,7 @@ function generateMeetingNotes(data) {
   }
 
   // 最近活動
-  const recentGit = [...(data.git?.nova || []), ...(data.git?.overtone || [])].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 5);
+  const recentGit = [...(data.git?.nova || []), ...(data.git?.nova-brain || [])].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 5);
   const allSessions = data.sessions || [];
   const userSessions = allSessions.filter(s => s.source !== 'heartbeat');
   const recentSessions = (userSessions.length > 0 ? userSessions : allSessions).slice(-3).reverse();

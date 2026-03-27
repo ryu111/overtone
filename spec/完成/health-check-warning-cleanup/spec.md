@@ -13,7 +13,7 @@
 1. **`checkClosedLoop` orphan-skill 偵測**：擴展引用來源，涵蓋 commands、EXTRA_SKILLS 動態注入、`disable-model-invocation: true` + `user-invocable: false`（domain knowledge skill）3 個管道
 2. **`checkSkillCoverage` orphan-script 偵測**：擴展引用來源，涵蓋 settings.json hook commands、hooks/modules import、scripts 間 import、agents content、commands content、CLAUDE.md + rules 引用 6 個管道
 3. **18 個 SKILL.md reference 索引缺漏修補**：在 SKILL.md 中補上 `./references/` backtick 索引
-4. **測試更新**：更新 overtone 的 `health-check.test.js` 驗證新偵測邏輯
+4. **測試更新**：更新 nova-brain 的 `health-check.test.js` 驗證新偵測邏輯
 
 ### Out-of-scope
 

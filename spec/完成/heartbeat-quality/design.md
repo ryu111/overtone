@@ -34,7 +34,7 @@
 | 1 | `~/.claude/hooks/modules/heartbeat.js` | 空 catch 加 log（L14）、while 上限（L94）、deps guard（L86） |
 | 2 | `~/.claude/scripts/heartbeat.js` | 空 catch 加 log（L229、L346）、CLI fallback 效能（L374） |
 | 3 | `~/.claude/scripts/session-spawner.js` | process.kill catch 加 debug log（L167）、spawn 前健康檢查、spawn 失敗寫 hook-errors.jsonl |
-| 4 | `~/projects/overtone/tests/unit/heartbeat.test.js` | 新增 8+ 測試覆蓋所有修復點 |
+| 4 | `~/projects/nova-brain/tests/unit/heartbeat.test.js` | 新增 8+ 測試覆蓋所有修復點 |
 
 ### API 設計
 

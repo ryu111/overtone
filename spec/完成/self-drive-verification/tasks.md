@@ -29,7 +29,7 @@ Phase 3（sequential）: T4 E2E 測試 + T5 全測試通過（依賴 Phase 2）
 
 ### T2：純函式單元測試 — executor
 
-**檔案**：`~/projects/overtone/tests/unit/r4-self-drive-loop.test.js`
+**檔案**：`~/projects/nova-brain/tests/unit/r4-self-drive-loop.test.js`
 
 **新增測試**（在「能力 4」section 擴展）：
 
@@ -79,7 +79,7 @@ session 完成後（在 summary 寫入前）：
 
 ### T4：改善效果驗證閉環 E2E 測試 — executor
 
-**檔案**：`~/projects/overtone/tests/unit/r4-self-drive-loop.test.js`
+**檔案**：`~/projects/nova-brain/tests/unit/r4-self-drive-loop.test.js`
 
 **新增測試**（在「能力 4」section 擴展）：
 

@@ -67,7 +67,7 @@
 |------|------|
 | **外部來源** | Anthropic `doc-coauthoring`、`internal-comms`、LobeHub `claude-code-mastery` |
 | **功能** | 技術文件協作撰寫、內部溝通格式、文件品質標準 |
-| **為什麼需要** | Overtone 有 `doc-updater` agent 和 `wording` skill，但 `wording` 聚焦**措詞正確性**（指令強度、模糊量詞），不覆蓋**文件結構和品質**。doc-updater agent 沒有對應的文件品質知識 skill。當需要撰寫大型技術文件（如 overtone.md 規格文件）時，缺少結構化的文件品質標準。 |
+| **為什麼需要** | Overtone 有 `doc-updater` agent 和 `wording` skill，但 `wording` 聚焦**措詞正確性**（指令強度、模糊量詞），不覆蓋**文件結構和品質**。doc-updater agent 沒有對應的文件品質知識 skill。當需要撰寫大型技術文件（如 nova-brain.md 規格文件）時，缺少結構化的文件品質標準。 |
 | **建議實作** | 新增 `references/doc-quality-checklist.md` 到 `wording` skill，覆蓋：文件結構金字塔、讀者分析、資訊密度控制、範例與反範例比例。 |
 | **優先級** | **P2** — 提升 doc-updater agent 的輸出品質 |
 
@@ -294,7 +294,7 @@
 **Overtone 優點：**
 - **Knowledge Delta 分層**：明確區分 Expert / Activation / Redundant，每個 reference 標注 delta 級別 — 這是 skill 設計的最佳實踐
 - **設計品味指南**：design-taste.md 覆蓋視覺/配色/動效/反模式，這在所有外部 skill 中是獨一無二的
-- **Overtone 專有原則**：overtone-principles.md 是高度定制化的製作原則，不是泛泛的 Clean Code
+- **Overtone 專有原則**：nova-brain-principles.md 是高度定制化的製作原則，不是泛泛的 Clean Code
 - **競品基準矩陣**：六維度評估框架（competitor-benchmark.md），用於 Acid Test
 
 **Overtone 缺點：**

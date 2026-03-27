@@ -57,7 +57,7 @@ export function decayConfidence(confidence, daysSinceLastSeen) {
 | # | 檔案 | 變更內容 |
 |---|------|---------|
 | 1 | `~/.claude/scripts/task-adapter.js` | `decayConfidence` 加入 daysSinceLastSeen <= 1 保護 |
-| 2 | `~/projects/overtone/tests/unit/r4-self-drive-loop.test.js` | 無需修改（根因修復後測試自然通過） |
+| 2 | `~/projects/nova-brain/tests/unit/r4-self-drive-loop.test.js` | 無需修改（根因修復後測試自然通過） |
 
 ### 不新增檔案
 

@@ -38,7 +38,7 @@
 
 | # | 檔案 | 位置 | 用途 |
 |---|------|------|------|
-| 1 | task-adapter.test.js | `~/projects/overtone/tests/unit/` | 分類 + 匹配 + 規劃 + 記錄 + 清理 |
+| 1 | task-adapter.test.js | `~/projects/nova-brain/tests/unit/` | 分類 + 匹配 + 規劃 + 記錄 + 清理 |
 
 ### API 設計
 

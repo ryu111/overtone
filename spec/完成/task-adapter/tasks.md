@@ -63,7 +63,7 @@
 
 ### T5：純函式測試
 
-**檔案**：`~/projects/overtone/tests/unit/task-adapter.test.js`
+**檔案**：`~/projects/nova-brain/tests/unit/task-adapter.test.js`
 
 - [ ] `classifyTask` 測試：
   - 英文 "fix bug in auth module" → type: "bug-fix"
@@ -89,7 +89,7 @@
 
 ### T6：整合測試
 
-**檔案**：`~/projects/overtone/tests/unit/task-adapter.test.js`（接續 T5）
+**檔案**：`~/projects/nova-brain/tests/unit/task-adapter.test.js`（接續 T5）
 
 - [ ] `lookupPattern` 測試：
   - 精確匹配存在 + confidence >= 0.6 → 回傳 pattern
@@ -116,7 +116,7 @@
 
 ### T7：邊界條件測試
 
-**檔案**：`~/projects/overtone/tests/unit/task-adapter.test.js`（接續 T6）
+**檔案**：`~/projects/nova-brain/tests/unit/task-adapter.test.js`（接續 T6）
 
 - [ ] loadPatterns 損壞 JSON → 回傳空模型
 - [ ] loadPatterns 檔案不存在 → 回傳空模型

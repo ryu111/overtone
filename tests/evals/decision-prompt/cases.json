@@ -41,39 +41,39 @@
     },
     {
       "state": {
-        "repo": "overtone",
+        "repo": "nova-brain",
         "hasChanges": true
       },
       "expected_action": "commit",
       "expected_context": "chore(maintainer): 其他 6 個檔案",
-      "label": "case-04-commit-overtone"
+      "label": "case-04-commit-nova-brain"
     },
     {
       "state": {
-        "repo": "overtone",
+        "repo": "nova-brain",
         "hasChanges": true
       },
       "expected_action": "commit",
       "expected_context": "chore(maintainer): 其他 1 個檔案",
-      "label": "case-05-commit-overtone"
+      "label": "case-05-commit-nova-brain"
     },
     {
       "state": {
-        "repo": "overtone",
+        "repo": "nova-brain",
         "hasChanges": true
       },
       "expected_action": "commit",
       "expected_context": "chore(maintainer): 其他 1 個檔案",
-      "label": "case-06-commit-overtone"
+      "label": "case-06-commit-nova-brain"
     },
     {
       "state": {
-        "repo": "overtone",
+        "repo": "nova-brain",
         "hasChanges": true
       },
       "expected_action": "commit",
       "expected_context": "chore(maintainer): 其他 1 個檔案",
-      "label": "case-07-commit-overtone"
+      "label": "case-07-commit-nova-brain"
     },
     {
       "state": {
@@ -158,21 +158,21 @@
     },
     {
       "state": {
-        "repo": "overtone",
+        "repo": "nova-brain",
         "hasChanges": true
       },
       "expected_action": "commit",
       "expected_context": "chore(maintainer): 文件更新 1 份",
-      "label": "case-17-commit-overtone"
+      "label": "case-17-commit-nova-brain"
     },
     {
       "state": {
-        "repo": "overtone",
+        "repo": "nova-brain",
         "hasChanges": true
       },
       "expected_action": "commit",
       "expected_context": "chore(maintainer): 其他 2 個檔案",
-      "label": "case-18-commit-overtone"
+      "label": "case-18-commit-nova-brain"
     },
     {
       "state": {

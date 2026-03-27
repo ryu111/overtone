@@ -28,7 +28,7 @@
 | # | 檔案 | 變更內容 |
 |---|------|---------|
 | 1 | `~/.claude/scripts/heartbeat.js` | 新增 snapshotBoundary / computeDelta / isImprovementTask / updateImprovementRecord 4 個純函式；修改 executeTask 流程加入快照邏輯 |
-| 2 | `~/projects/overtone/tests/unit/r4-self-drive-loop.test.js` | 新增「能力 4」驗證效果閉環的完整測試 |
+| 2 | `~/projects/nova-brain/tests/unit/r4-self-drive-loop.test.js` | 新增「能力 4」驗證效果閉環的完整測試 |
 
 ### API 設計
 
@@ -177,7 +177,7 @@ executeTask(task, config, deps):
 | 步驟 | 檔案 | 說明 |
 |------|------|------|
 | 1a | `~/.claude/scripts/heartbeat.js` | 新增 isImprovementTask、snapshotBoundary、computeDelta、updateImprovementRecord 4 個 export 純函式 |
-| 1b | `~/projects/overtone/tests/unit/r4-self-drive-loop.test.js` | 新增純函式單元測試（isImprovementTask、computeDelta） |
+| 1b | `~/projects/nova-brain/tests/unit/r4-self-drive-loop.test.js` | 新增純函式單元測試（isImprovementTask、computeDelta） |
 
 ### Phase 2：流程整合（sequential，依賴 Phase 1）
 
@@ -189,7 +189,7 @@ executeTask(task, config, deps):
 
 | 步驟 | 檔案 | 說明 |
 |------|------|------|
-| 3 | `~/projects/overtone/tests/unit/r4-self-drive-loop.test.js` | 擴展「能力 4」section，新增改善效果驗證閉環的 E2E 測試 |
+| 3 | `~/projects/nova-brain/tests/unit/r4-self-drive-loop.test.js` | 擴展「能力 4」section，新增改善效果驗證閉環的 E2E 測試 |
 
 ## Pre-mortem
 

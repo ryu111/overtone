@@ -9,7 +9,7 @@ import { afterEach, beforeEach } from 'bun:test';
 let _tmpDir = null;
 
 beforeEach(() => {
-  _tmpDir = mkdtempSync(join(tmpdir(), 'overtone-test-'));
+  _tmpDir = mkdtempSync(join(tmpdir(), 'nova-brain-test-'));
 });
 
 afterEach(() => {

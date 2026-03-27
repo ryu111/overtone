@@ -73,7 +73,7 @@ type ErrorCode = 'UNSUPPORTED_PLATFORM' | 'PERMISSION_DENIED' | 'COMMAND_FAILED'
 
 ### 儲存
 
-- 截圖輸出：`/tmp/overtone-screenshots/screenshot-{type}-{YYYYMMDD}-{HHmmss}-{SSS}.png`
+- 截圖輸出：`/tmp/nova-brain-screenshots/screenshot-{type}-{YYYYMMDD}-{HHmmss}-{SSS}.png`
 - 無持久化狀態（所有腳本是無狀態純函式）
 
 ## 介面契約
@@ -155,7 +155,7 @@ export function listVoices(_deps?) → OsResult<{ voices: {name, lang}[] }>
 - [ ] 非 macOS 平台回傳 UNSUPPORTED_PLATFORM
 - [ ] killProcess 拒絕 PID <= 1 和自身 PID
 - [ ] `bun test` 所有 OS 腳本測試通過
-- [ ] 截圖輸出到 /tmp/overtone-screenshots/
+- [ ] 截圖輸出到 /tmp/nova-brain-screenshots/
 
 ## 風險
 

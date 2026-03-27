@@ -114,7 +114,7 @@ export async function executeAction(goal, opts = {}, _deps = {}) {
 
   for (let i = 1; i <= maxRounds; i++) {
     // 1. 截圖
-    const screenshot = screenshotFn({ outputPath: `/tmp/overtone-computer-use/round-${i}.png` });
+    const screenshot = screenshotFn({ outputPath: `/tmp/nova-brain-computer-use/round-${i}.png` });
     if (!screenshot.ok) return { ok: false, error: screenshot.error, message: screenshot.message };
 
     // 2. 分析（由呼叫者透過 _deps.analyzeFn 注入，或預設回傳 null）
@@ -137,9 +137,9 @@ export async function executeAction(goal, opts = {}, _deps = {}) {
 
 ## 資料模型
 
-- computer-use 截圖：`/tmp/overtone-computer-use/round-{N}.png`
+- computer-use 截圖：`/tmp/nova-brain-computer-use/round-{N}.png`
 - 無持久化狀態
-- 清理策略：每次 executeAction 開始時清空 /tmp/overtone-computer-use/
+- 清理策略：每次 executeAction 開始時清空 /tmp/nova-brain-computer-use/
 
 ## 執行步驟
 

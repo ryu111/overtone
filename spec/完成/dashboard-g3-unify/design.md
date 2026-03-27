@@ -183,7 +183,7 @@ server.js 的 `FLOW_STATIC` 需新增：
 | 測試檔案 | 驗收條件 |
 |---------|---------|
 | curl /api/scores | 回傳 JSON array，status 200 |
-| curl /api/git | 回傳 `{nova: [...], overtone: [...]}` |
+| curl /api/git | 回傳 `{nova: [...], nova-brain: [...]}` |
 | curl /api/components | 回傳 `{rules, skills, agents, hooks}` 皆為數字 |
 | curl /api/llm | 回傳 `{status: "online"|"offline"}` |
 | PinchTab text | 頁面包含「品質」「監控」「自主循環」Tab 文字 |

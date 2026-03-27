@@ -14,7 +14,7 @@ Overtone 資料分為兩類：
 
 ## 資料源清單
 
-### Session-scoped 資料（`~/.overtone/sessions/{sessionId}/`）
+### Session-scoped 資料（`~/.nova-brain/sessions/{sessionId}/`）
 
 | 檔案 | 用途 | 寫入頻率 | 預期大小 |
 |------|------|---------|---------|
@@ -30,7 +30,7 @@ Overtone 資料分為兩類：
 
 ---
 
-### Global-scoped 資料（`~/.overtone/global/{projectHash}/`）
+### Global-scoped 資料（`~/.nova-brain/global/{projectHash}/`）
 
 每個專案透過 `projectRoot` 的 SHA-256 前 8 字元 hash 隔離儲存。
 
@@ -49,7 +49,7 @@ Overtone 資料分為兩類：
 
 ---
 
-### 系統層資料（`~/.overtone/`）
+### 系統層資料（`~/.nova-brain/`）
 
 | 檔案 | 用途 | 備注 |
 |------|------|------|

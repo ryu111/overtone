@@ -21,7 +21,7 @@
 - gap-analyzer.js 本身（消費 health-check 結果，R3.1 下一步）
 - AI 語意判斷（所有檢查皆為確定性檔案系統比對）
 - 自動修復（只偵測不修復，修復由 gap-fixer.js 負責）
-- 跨 repo 一致性檢查（overtone 測試引用 nova 模組，屬 review-checklist 第 4 層人工範疇）
+- 跨 repo 一致性檢查（nova-brain 測試引用 nova 模組，屬 review-checklist 第 4 層人工範疇）
 
 ## 使用者故事
 

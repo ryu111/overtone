@@ -1,5 +1,5 @@
 {
-  "name": "overtone-docs",
+  "name": "nova-brain",
   "private": true,
   "scripts": {
     "test": "bash scripts/test-parallel.sh --unit",

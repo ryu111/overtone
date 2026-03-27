@@ -5,7 +5,7 @@
 | 文件 | 執行策略 |
 |------|---------|
 | `~/.claude/CLAUDE.md` | 永遠載入 → 全域強制規則 → 精簡、只放每次都需要的 |
-| `overtone/CLAUDE.md` | 專案開啟時載入 → 專案特定規則 → 指向全域，不重複 |
+| `nova-brain/CLAUDE.md` | 專案開啟時載入 → 專案特定規則 → 指向全域，不重複 |
 | `MEMORY.md` | 永遠載入 → 跨 session 記憶 → 只記狀態，不記知識 |
 | `rules/*.md`（無 paths） | session 啟動載入 → 全域補充規則 → CLAUDE.md 溢出時拆分 |
 | `rules/*.md`（有 paths） | 讀到匹配檔案才載入 → 條件知識 → subagent 看不到 |
@@ -283,7 +283,7 @@ ln -sfn ~/dotfiles/claude/rules ~/.claude/rules
 | 位置 | 規則數（估計） | 性質 |
 |------|:---:|------|
 | `~/.claude/CLAUDE.md` | ~25 條 | 全域強制 |
-| `~/projects/overtone/CLAUDE.md` | ~8 條 | 專案特定 |
+| `~/projects/nova-brain/CLAUDE.md` | ~8 條 | 專案特定 |
 | 26 個 SKILL.md 的 NEVER 區塊 | ~130 條 | 領域反模式 |
 | SKILL.md body 的 MUST 規則 | ~40 條 | 流程性 |
 | 多個 MEMORY.md | ~15 條 | 規則偽裝成記憶 |
@@ -294,7 +294,7 @@ ln -sfn ~/dotfiles/claude/rules ~/.claude/rules
 |------|---------|
 | `updatedInput 是 REPLACE` | CLAUDE.md + MEMORY.md + claude-dev SKILL.md |
 | `禁止靜默失敗 / catch 不可空` | CLAUDE.md + craft SKILL.md |
-| `元件閉環` | CLAUDE.md + overtone CLAUDE.md + claude-dev SKILL.md |
+| `元件閉環` | CLAUDE.md + nova-brain CLAUDE.md + claude-dev SKILL.md |
 | `Hook output 雙通道` | MEMORY.md + claude-dev references |
 | `BDD 驅動` | CLAUDE.md + testing SKILL.md + auto SKILL.md |
 
@@ -355,7 +355,7 @@ MEMORY.md (~140 行) 中 ~60% 是架構知識和設計決策，不是記憶：
 | 項目 | Main Agent | Subagent | Hook 觸發 | 說明 |
 |------|:---------:|:--------:|:---------:|------|
 | `~/.claude/CLAUDE.md` | ✅ | ✅ | ✅ `User/session_start` | 全域 CLAUDE.md 正常 |
-| `overtone/CLAUDE.md` | ✅ | ✅ | ✅ `Project/session_start` | 專案 CLAUDE.md 正常 |
+| `nova-brain/CLAUDE.md` | ✅ | ✅ | ✅ `Project/session_start` | 專案 CLAUDE.md 正常 |
 | `test-global.md`（無 paths） | ✅ | ✅ | ✅ `User/session_start` | **全域 rules 完全可用** |
 | `test-conditional.md`（有 paths） | ✅ | ❌ | ❌ 未觸發 | **載入但走不同管道** |
 | Mid-session 新增 rules | ❌ | — | — | 設計行為，非 bug |

@@ -530,7 +530,7 @@ R4（依賴 R1-R3 重建完成）───────────────�
 
 - 18 個 agents、18 個 workflow 模板、31 個 commands
 - 實測 3.3x token 浪費（233k vs 70k）
-- Pipeline 架構文件見 `docs/spec/overtone-*.md`（歷史參考）
+- Pipeline 架構文件見 `docs/spec/nova-brain-*.md`（歷史參考）
 - 架構重設計分析見 `docs/spec/架構重設計.md`
 
 </details>

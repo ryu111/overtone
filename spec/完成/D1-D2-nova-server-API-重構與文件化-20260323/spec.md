@@ -11,7 +11,7 @@
 ### In-scope
 
 - 盤點全部 40+ 端點，標記消費者和分類（Internal / Public-Read / Public-Write）
-- 產出完整 API 參考文件（Markdown），放在 nova-control 和 overtone 都能讀取的位置
+- 產出完整 API 參考文件（Markdown），放在 nova-control 和 nova-brain 都能讀取的位置
 - 從 server.js 遷移 6 個 Public 端點到 api-router.js（hook-errors、daily-logs、graph、config、sessions、sessions/:id/events）
 - server.js 瘦身至只保留 Internal 端點 + 路由轉發
 - 合併重複端點：/api/sessions-summary 和 /api/sessions

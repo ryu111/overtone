@@ -23,7 +23,7 @@ Phase 3（sequential，依賴 Phase 2）: CLI 驗收
 
 ## Phase 2：單元測試
 
-- [ ] T2.1 建立 `~/projects/overtone/tests/unit/gap-analyzer.test.js`
+- [ ] T2.1 建立 `~/projects/nova-brain/tests/unit/gap-analyzer.test.js`
 - [ ] T2.2 GAP_MAP 完整性：斷言覆蓋 health-check 所有 16 個已知 finding.type
 - [ ] T2.3 `findingToGap` 正常路徑：每個 type 產出正確 category + repairHint + priority
 - [ ] T2.4 `findingToGap` fallback：未知 type → category "unknown"

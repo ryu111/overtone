@@ -102,7 +102,7 @@
 
 ### 儲存
 
-- computer-use 截圖：`/tmp/overtone-computer-use/round-{N}.png`
+- computer-use 截圖：`/tmp/nova-brain-computer-use/round-{N}.png`
 - 無其他持久化狀態
 
 ## 介面契約

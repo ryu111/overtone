@@ -44,7 +44,7 @@ Phase 5: 回歸驗證 + 文件閉環（D0）
 
 | # | 任務 | 檔案 | 狀態 |
 |---|------|------|:----:|
-| P1.1 | 實作 `analyzeImpact(rule)` — grep 所有 `~/.claude/` 和 `~/projects/overtone/` 找受影響檔案 | `~/.claude/scripts/impact-analyzer.js` | ✅ |
+| P1.1 | 實作 `analyzeImpact(rule)` — grep 所有 `~/.claude/` 和 `~/projects/nova-brain/` 找受影響檔案 | `~/.claude/scripts/impact-analyzer.js` | ✅ |
 | P1.2 | 實作 `formatReport()` — 結構化影響報告（按類型分群） | 同上 | ✅ |
 | P1.3 | Maintainer 簡報整合 — rules/ 有變更時在簡報中提醒跑 impact analysis | `maintainer.js` 修改 | ✅ |
 | P1.4 | 測試 — 16 個測試（extractKeywords + searchImpacts + groupByFile + classifyFile + analyzeImpact + formatReport） | `tests/unit/impact-analyzer.test.js` | ✅ |

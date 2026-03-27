@@ -29,7 +29,7 @@
 | # | 檔案 | 位置 | 行數 | 用途 |
 |---|------|------|------|------|
 | 1 | health-check.js | `~/.claude/scripts/` | ~500 | 四維度健康檢查（CLI + import） |
-| 2 | health-check.test.js | `~/projects/overtone/tests/` | ~300 | 單元測試 + 整合測試 |
+| 2 | health-check.test.js | `~/projects/nova-brain/tests/` | ~300 | 單元測試 + 整合測試 |
 
 ### 修改檔案
 
@@ -169,4 +169,4 @@ Agent 和 Skill 的 SKILL.md / agent.md 使用 YAML frontmatter。解析策略�
 1. **不做自動修復**：health-check 只偵測不修復。修復是 gap-fixer.js 的職責（關注點分離）
 2. **不做 AI 語意分析**：所有檢查都是確定性的檔案存在/引用比對。「skill 品質好不好」不在 scope 內
 3. **不做 maintainer.js 整合**：maintainer.js 呼叫 runQuick() 可延後到 gap-analyzer.js 完成後一起整合
-4. **不做跨 repo 檢查**：overtone 引用 nova 模組的一致性屬於 review-checklist 第 4 層人工範疇
+4. **不做跨 repo 檢查**：nova-brain 引用 nova 模組的一致性屬於 review-checklist 第 4 層人工範疇

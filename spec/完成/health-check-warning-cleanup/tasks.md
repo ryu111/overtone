@@ -133,7 +133,7 @@ script 引用判定用 basename 匹配（`content.includes(scriptName)`）。
 
 ## Phase 3：測試更新（sequential，與 Phase 2 可並行）
 
-### T3：修改 `~/projects/overtone/tests/unit/health-check.test.js`
+### T3：修改 `~/projects/nova-brain/tests/unit/health-check.test.js`
 
 **executor**: sonnet
 

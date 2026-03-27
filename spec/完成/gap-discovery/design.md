@@ -40,7 +40,7 @@
 
 | # | 檔案 | 位置 | 用途 |
 |---|------|------|------|
-| 1 | gap-discovery.test.js | ~/projects/overtone/tests/unit/ | 4 源收集 + 合併 + 信心 + 排序 + Notion 同步 |
+| 1 | gap-discovery.test.js | ~/projects/nova-brain/tests/unit/ | 4 源收集 + 合併 + 信心 + 排序 + Notion 同步 |
 
 ### API 設計
 

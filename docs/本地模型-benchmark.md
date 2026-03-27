@@ -41,6 +41,6 @@
 ## 最終決策
 
 - 模型：Qwen3-8B-4bit（mlx-community/Qwen3-8B-4bit）
-- LaunchAgent：com.overtone.vllm-mlx，開機自動啟動
+- LaunchAgent：com.nova-brain.vllm-mlx，開機自動啟動
 - Phase B 收尾：從 56-131s 降到 ~1s
 - 全程收尾（A+B+C+D）：~5s

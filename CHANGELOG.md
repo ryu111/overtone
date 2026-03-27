@@ -186,7 +186,7 @@
 
 #### 步驟 2：pluginRoot 修復 ✅
 
-**修復 knowledge-archiver.js 路徑引用（刪除 plugins/overtone/ 後適配）**
+**修復 knowledge-archiver.js 路徑引用（刪除 plugins/nova-brain/ 後適配）**
 
 - ~/.claude/scripts/lib/knowledge/knowledge-archiver.js：`pluginRoot` 計算邏輯修正
 - 確保歸檔機制在全域模式下正確識別 Overtone 內部路徑
@@ -229,7 +229,7 @@
 #### 文件同步
 
 - `handoff-protocol.md`：新增 Exit Criteria 欄位 + Main Agent 處理規則
-- `docs/spec/overtone.md`：版本更新 v0.28.56 → v0.28.81
+- `docs/spec/nova-brain.md`：版本更新 v0.28.56 → v0.28.81
 - `docs/status.md`：近期變更更新、版本號同步
 
 ---
@@ -495,7 +495,7 @@
 #### 文件同步
 - `docs/status.md`：測試 4277 → 4297（20 個新測試）、版本 0.28.64 → 0.28.65、測試檔案 188 → 190、近期變更更新
 - `CHANGELOG.md`：新增本條目
-- `plugins/overtone/skills/testing/references/auto-discovered.md`：自動記錄開發內容
+- `plugins/nova-brain/skills/testing/references/auto-discovered.md`：自動記錄開發內容
 
 #### 測試
 - 測試 4297 pass / 0 fail（190 files）
@@ -580,7 +580,7 @@
 - **靜態問題庫**：24 題跨五面向結構化問題
   - 功能需求（6 題）、操作流程（5 題）、UI 設計（4 題）、邊界條件（5 題）、驗收標準（4 題）
 
-- **Session 持久化**：`~/.overtone/interviews/{sessionId}/` 目錄管理
+- **Session 持久化**：`~/.nova-brain/interviews/{sessionId}/` 目錄管理
   - state.json：訪談狀態 + 階段進度
   - phases.jsonl：各階段回應記錄（JSONL append-only）
 
@@ -739,7 +739,7 @@
 ### 製作原則內化完成——Agent Prompt + Validate 四模式品質檢查
 
 #### 核心功能
-- **Overtone 製作原則 Checklist**：新增 `skills/craft/references/overtone-principles.md`
+- **Overtone 製作原則 Checklist**：新增 `skills/craft/references/nova-brain-principles.md`
   - 三條製作原則檢查項目（完全閉環、自動修復、補全能力）
   - 驗證品質信號（測試、審查、BDD 規格）
   - 供 developer 在元件設計時自檢、manage-component.js create 成功後附加提示
@@ -763,7 +763,7 @@
   - 所有 color 字段強制加引號（例如 `color: "#FFA500"` 而非 `color: #FFA500`）
 
 #### 測試補強
-- 新增 `tests/unit/overtone-principles.test.js`（checklist 驗證）
+- 新增 `tests/unit/nova-brain-principles.test.js`（checklist 驗證）
 - 新增 `tests/unit/validate-agents-four-modes.test.js`（四模式檢查）
 - 擴展 `tests/unit/config-api.test.js`（hex color 引號修正）
 - BDD 全覆蓋：3 個 Feature、30+ Scenario
@@ -784,7 +784,7 @@
 - **Intent Journal**：記錄每次使用者 prompt（用戶意圖）
   - `instinct.js` emit() 新增 `options: { skipDedup, extraFields }` 參數
   - `on-submit-handler.js` 每次 UserPromptSubmit 記錄 `intent_journal` 類型觀察
-  - 儲存：`~/.overtone/sessions/{sessionId}/observations.jsonl`
+  - 儲存：`~/.nova-brain/sessions/{sessionId}/observations.jsonl`
 
 - **Session 結果配對**：SessionEnd 配對用戶 prompt + 執行結果
   - `session-end-handler.js` 新增 `resolveSessionResult(sessionId)` 函式
@@ -837,7 +837,7 @@
 
 #### 文件同步
 - `docs/status.md`：版本更新、測試 3366 → 3378（+12）
-- `roadmap.md`：init-overtone 項目標記 ✅
+- `roadmap.md`：init-nova-brain 項目標記 ✅
 
 ---
 
@@ -911,7 +911,7 @@
   - `plugin.json`：版本 0.28.47 → 0.28.48
   - `docs/status.md`：版本更新，測試 3231 → 3238（+7），檔案 139 → 140
   - `CLAUDE.md`：scripts/lib 清單更新（38 個模組），Hook 架構行數對齊
-  - `docs/spec/overtone.md`：版本 v0.28.47 → v0.28.48
+  - `docs/spec/nova-brain.md`：版本 v0.28.47 → v0.28.48
 
 - **測試**：3238 pass / 0 fail（140 個測試檔，+7 tests）
 
@@ -923,7 +923,7 @@
 
 - **Statusline State 集中式管理**（新模組 `statusline-state.js`）：
   - 職責：集中管理 statusline 顯示狀態（activeAgents、workflowType、idle）
-  - 狀態檔：`~/.overtone/sessions/{sessionId}/statusline-state.json`
+  - 狀態檔：`~/.nova-brain/sessions/{sessionId}/statusline-state.json`
   - 事件：agent:start / agent:stop / turn:stop / workflow:init
   - TTL 機制：idle 狀態持續 10 分鐘無更新 → 視為過期，statusline 自動收回
 
@@ -946,10 +946,10 @@
   - session-id-bridge.test.js 新增隔離驗證
 
 - **改進**：
-  - `plugins/overtone/scripts/get-workflow-context.js`：更新邏輯對齐新狀態模型
-  - `plugins/overtone/scripts/lib/paths.js`：路徑管理對齐
-  - `plugins/overtone/hooks/scripts/session/on-stop.js`：Session 停止邏輯同步
-  - `plugins/overtone/hooks/scripts/tool/pre-task.js`：Task 前置處理同步
+  - `plugins/nova-brain/scripts/get-workflow-context.js`：更新邏輯對齐新狀態模型
+  - `plugins/nova-brain/scripts/lib/paths.js`：路徑管理對齐
+  - `plugins/nova-brain/hooks/scripts/session/on-stop.js`：Session 停止邏輯同步
+  - `plugins/nova-brain/hooks/scripts/tool/pre-task.js`：Task 前置處理同步
   - 測試新增 6 項（statusline-ttl、並行 agent 殘留、initState 守衛）
 
 - **測試**：預期 3208+ pass / 0 fail（138+ 個測試檔）
@@ -961,9 +961,9 @@
 ### Claude-Dev Skill 迭代 5 完成——整合 & 精簡
 
 - **CLAUDE.md 文件規範整理**：
-  - hooks.json 格式規範（三層嵌套）改為 cross-reference → `plugins/overtone/skills/claude-dev/references/hooks-api.md`
-  - Agent prompt 四模式（信心過濾 + 邊界清單 + 誤判防護 + 停止條件）改為 cross-reference → `plugins/overtone/skills/claude-dev/references/agent-api.md`
-  - 元件閉環規則（Skill → Agent 消費 → Hook 注入 → Guard 保護）改為 cross-reference → `plugins/overtone/skills/claude-dev/references/overtone-conventions.md`
+  - hooks.json 格式規範（三層嵌套）改為 cross-reference → `plugins/nova-brain/skills/claude-dev/references/hooks-api.md`
+  - Agent prompt 四模式（信心過濾 + 邊界清單 + 誤判防護 + 停止條件）改為 cross-reference → `plugins/nova-brain/skills/claude-dev/references/agent-api.md`
+  - 元件閉環規則（Skill → Agent 消費 → Hook 注入 → Guard 保護）改為 cross-reference → `plugins/nova-brain/skills/claude-dev/references/nova-brain-conventions.md`
 
 - **Workflow 補齊**：
   - `quick.md`：補齊 DOCS stage（第 55-61 行），與 registry SoT 對齊
@@ -986,7 +986,7 @@
 - **文件同步**：
   - `docs/status.md`：版本 0.28.45 → 0.28.46，近期變更更新，測試 3141 → 3208（+67）
   - `README.md`：版本、agent 數、skill 數、knowledge domain 數全部對齊
-  - `docs/spec/overtone.md`：版本 v0.28.44 → v0.28.46，agent 數 17 → 18
+  - `docs/spec/nova-brain.md`：版本 v0.28.44 → v0.28.46，agent 數 17 → 18
 
 - **測試**：3208 pass / 0 fail（138 個測試檔）
 
@@ -1016,7 +1016,7 @@
 
 - **新增第 15 個 knowledge domain skill**：claude-dev
   - 內容：hooks API（格式、驗證）、agent API（prompt 四模式、frontmatter）
-  - Reference 檔案：hooks-api.md、agent-api.md、overtone-conventions.md
+  - Reference 檔案：hooks-api.md、agent-api.md、nova-brain-conventions.md
 
 - **Agent Frontmatter 更新**：
   - developer、architect 加入 `skills: [claude-dev, ...]`
@@ -1051,11 +1051,11 @@
   - 驗證 SessionStart 自動修復的完整鏈路
 
 - **改進**：
-  - `plugins/overtone/hooks/scripts/session/on-start.js`：加入 state.sanitize() 呼叫
-  - `plugins/overtone/scripts/lib/state.js`：新增 sanitize() 和 enforceInvariants() 互補機制
+  - `plugins/nova-brain/hooks/scripts/session/on-start.js`：加入 state.sanitize() 呼叫
+  - `plugins/nova-brain/scripts/lib/state.js`：新增 sanitize() 和 enforceInvariants() 互補機制
 
 - **清理**：
-  - `plugins/overtone/scripts/lib/paths.js`：移除死碼 `paths.session.activeAgent`（[刪除未使用]）
+  - `plugins/nova-brain/scripts/lib/paths.js`：移除死碼 `paths.session.activeAgent`（[刪除未使用]）
 
 - **測試**：3083 pass / 0 fail（132 個測試檔）（+22 tests）
 
@@ -1141,18 +1141,18 @@
 ## [0.28.33] - 2026-03-04
 
 ### Status Line TTL 防護：Agent 停止後殘留清理
-- **On-Stop Cleanup 重構**：`plugins/overtone/hooks/scripts/agent/on-stop.js`
+- **On-Stop Cleanup 重構**：`plugins/nova-brain/hooks/scripts/agent/on-stop.js`
   - activeAgents cleanup 提前到 `findActualStageKey` 前執行，確保任何路徑都清除殘留
   - instanceId 解析提前，第一個 `updateStateAtomic` 只做 cleanup
   - `active-agent.json` 刪除策略：cleanup 後 activeAgents 為空才刪除；收斂後備份刪除
   - `agent:complete` timeline 事件提前 emit
-- **Status Line TTL 過濾**：`plugins/overtone/scripts/statusline.js`
+- **Status Line TTL 過濾**：`plugins/nova-brain/scripts/statusline.js`
   - `buildAgentDisplay()` 的 activeAgents fallback 加 30 分鐘 TTL
   - 邏輯：有 active stage → 永不過期；無 active stage → 30 分鐘 TTL
-- **State TTL 防護**：`plugins/overtone/scripts/lib/state.js`
+- **State TTL 防護**：`plugins/nova-brain/scripts/lib/state.js`
   - `getNextStageHint` 的 activeAgents 讀取加 TTL 過濾邏輯
   - 過期殘留不阻擋下一步 hint
-- **Pre-Compact TTL 防護**：`plugins/overtone/hooks/scripts/session/pre-compact.js`
+- **Pre-Compact TTL 防護**：`plugins/nova-brain/hooks/scripts/session/pre-compact.js`
   - 活躍 agents 列表加 TTL 過濾，避免殘留誤報
 - **測試**：
   - `tests/unit/statusline-ttl.test.js`：4 scenarios（TTL 過濾）
@@ -1254,7 +1254,7 @@
 
 ### Level 2：卡點識別（失敗模式聚合）
 - **Failure Tracker**（新模組）：`scripts/lib/failure-tracker.js`
-  - `recordFailure(sessionId, stage, agent, error)`：在 fail/reject 時記錄失敗到 `~/.overtone/global/{projectHash}/failures.jsonl`
+  - `recordFailure(sessionId, stage, agent, error)`：在 fail/reject 時記錄失敗到 `~/.nova-brain/global/{projectHash}/failures.jsonl`
   - `getFailurePatterns(projectHash, opts)`：聚合分析 byStage/byAgent/topPattern
   - `formatFailureWarnings(stage, agent)`：生成 stage 相關失敗模式警告
   - `formatFailureSummary(projectHash, opts)`：失敗摘要（週期、頻次、建議）
@@ -1315,7 +1315,7 @@
   - `saveScore(sessionId, stage, data)`：記錄單次評分
   - `queryScores(sessionId, stage, opts)`：查詢評分歷史
   - `getScoreSummary(sessionId, opts)`：彙總報告（含趨勢分析）
-  - 儲存路徑：`~/.overtone/global/{projectHash}/scores.jsonl`
+  - 儲存路徑：`~/.nova-brain/global/{projectHash}/scores.jsonl`
 - **Registry 設定**：
   - `scoringConfig: { gradedStages: ['DEV','REVIEW','TEST'], lowScoreThreshold: 3.0 }`
   - `scoringDefaults: { compareWindowSize: 10, maxRecordsPerStage: 50 }`
@@ -1358,7 +1358,7 @@
   - `summarizeGlobal(observations)`：觀察摘要
   - `decayGlobal(observations, days)`：時間衰減（> 30 days 降權）
   - `pruneGlobal(observations, maxSize)`：超大刪舊
-  - 儲存路徑：`~/.overtone/global/{projectHash}/observations.jsonl`
+  - 儲存路徑：`~/.nova-brain/global/{projectHash}/observations.jsonl`
 - **Registry 設定**：`globalInstinctDefaults: { graduationThreshold: 0.85, projectHashLength: 12 }`
 - **Workflow 整合**：
   - SessionStart：注入全域觀察背景
@@ -1460,7 +1460,7 @@
 
 ### 文檔
 - 更新 docs/status.md：版本狀態、核心指標（knowledge domain 7→8、Skill 數 15→16）、近期變更
-- 更新 docs/spec/overtone.md：版本 v0.28.5、決策記錄補齊
+- 更新 docs/spec/nova-brain.md：版本 v0.28.5、決策記錄補齊
 
 ---
 
@@ -1621,7 +1621,7 @@
 ### 文檔
 - 更新 CLAUDE.md：Hook 架構（7 → 9 個，~1269 行 → ~1602 行）
 - 更新 docs/status.md：版本、測試指標、hook 數量、近期變更
-- 更新 docs/spec/overtone-架構.md：Hook 清單、hook-utils 函式數量、timeline events 計數
+- 更新 docs/spec/nova-brain-架構.md：Hook 清單、hook-utils 函式數量、timeline events 計數
 - 新增 Skill：ref-bdd-guide、ref-failure-handling、ref-wording-guide
 
 ---
@@ -1682,7 +1682,7 @@
 - `serveStatic` 擴展為從 `web/` 根目錄服務，支援 `vendor/` 子目錄
 
 ### 文檔
-- `CLAUDE.md` 目錄結構更新為 `plugins/overtone/` 架構（D-H1）
+- `CLAUDE.md` 目錄結構更新為 `plugins/nova-brain/` 架構（D-H1）
 - `HANDOFF.md` 修正行數統計、skill 數量（18→27）、補齊 Phase 9-12（D-H2、D-M2、D-M3）
 - 新增 `README.md`、`CHANGELOG.md`（D-L1、D-L2）
 

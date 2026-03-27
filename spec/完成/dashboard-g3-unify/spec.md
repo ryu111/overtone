@@ -81,7 +81,7 @@ N/A — 所有 API 回傳格式與 3500 相同，僅搬遷位置。
 | `/api/sessions-summary` | GET | `SessionSummary[]` | session 摘要（原 3500 的 /api/sessions） |
 | `/api/scripts` | GET | `Script[]` | 腳本清單 |
 | `/api/components` | GET | `{rules, skills, agents, hooks}` | 元件計數 |
-| `/api/git` | GET | `{nova: Commit[], overtone: Commit[]}` | 雙 repo commits |
+| `/api/git` | GET | `{nova: Commit[], nova-brain: Commit[]}` | 雙 repo commits |
 | `/api/locks` | GET | `Lock[]` | Lockfile 狀態 |
 | `/api/daemons` | GET | `{maintainer, judge, learner}` | daemon 日誌 |
 | `/api/llm` | GET | `{status, model}` | LLM 健康 |
@@ -107,7 +107,7 @@ N/A — 所有 API 回傳格式與 3500 相同，僅搬遷位置。
 |------|------|------|
 | 上游 | `~/.claude/hooks/server.js` (349 行) | 核心 server，需要加載新的 API router |
 | 上游 | `~/.claude/scripts/flow/*.js` (8 檔) | 現有前端模組 |
-| 上游 | `~/projects/overtone/dashboard/` (4 檔) | 遷移來源 |
+| 上游 | `~/projects/nova-brain/dashboard/` (4 檔) | 遷移來源 |
 | 下游 | hook-client.js | 不受影響（/dispatch 路由不變） |
 
 ## 驗收標準

@@ -243,7 +243,7 @@ export default {
     try {
       const spawned = spawnSession(PROMPT, {
         timeout: 300000,
-        cwd: join(homedir(), 'projects/overtone'),
+        cwd: join(homedir(), 'projects/nova-brain'),
       });
 
       if (!spawned.ok) {

@@ -24,6 +24,6 @@
     { "input": "新增 eval 基礎設施用於 autoresearch 迭代", "expected": "feat(eval)", "label": "新增 eval 系統" },
     { "input": "更新 docs/vision.md 加入 L5 客製化願景", "expected": "docs(vision)", "label": "更新願景" },
     { "input": "將 model-router.js 的 fallback 邏輯簡化", "expected": "refactor(model-router)", "label": "簡化邏輯" },
-    { "input": "修正 wrapup.js Phase C 推送遺漏 overtone repo", "expected": "fix(wrapup)", "label": "修收尾遺漏" }
+    { "input": "修正 wrapup.js Phase C 推送遺漏 nova-brain repo", "expected": "fix(wrapup)", "label": "修收尾遺漏" }
   ]
 }

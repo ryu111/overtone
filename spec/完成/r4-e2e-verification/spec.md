@@ -138,7 +138,7 @@ R4 完成標準的 5 個能力對應 5 條端到端鏈路：
 - [x] 5 條端到端鏈路各有至少 1 個正常路徑 + 1 個錯誤路徑測試
 - [x] 不觸碰真實外部系統（Notion API、LLM、Claude CLI）
 - [x] 整合測試總執行時間 < 2 秒
-- [x] 測試檔案放在 `~/projects/overtone/tests/unit/` 下（與現有風格一致）
+- [x] 測試檔案放在 `~/projects/nova-brain/tests/unit/` 下（與現有風格一致）
 
 ## 風險
 

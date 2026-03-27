@@ -23,7 +23,7 @@
 
 - GitHub Actions / CI-CD 整合（獨立需求，不屬於本次）
 - GitHub Webhook 即時觸發（本次用手動或心跳觸發）
-- 跨 repo 操作（本次只操作 ryu111/nova 和 ryu111/overtone）
+- 跨 repo 操作（本次只操作 ryu111/nova 和 ryu111/nova-brain）
 - PR merge 自動化（安全敏感，留給人類決策）
 - Issue 自動關閉（需更多驗證策略）
 
@@ -139,7 +139,7 @@
 | 效能 | 單次 Issue triage < 10 秒 |
 | 效能 | Release notes 生成 < 15 秒 |
 | 安全 | 不在 review comment 中暴露內部路徑 |
-| 相容性 | 支援 ryu111/nova 和 ryu111/overtone 兩個 repo |
+| 相容性 | 支援 ryu111/nova 和 ryu111/nova-brain 兩個 repo |
 
 ## 依賴
 

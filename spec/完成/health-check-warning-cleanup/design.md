@@ -1,7 +1,7 @@
 # health-check 57 Warning 分類清理 -- 技術設計
 
 ## 深度路由：D2
-**理由**：跨 2 個 repo（nova + overtone），修改 1 個核心腳本 + 18 個 SKILL.md + 1 個測試檔，需 planner 拆分但無安全敏感性。
+**理由**：跨 2 個 repo（nova + nova-brain），修改 1 個核心腳本 + 18 個 SKILL.md + 1 個測試檔，需 planner 拆分但無安全敏感性。
 
 ---
 
@@ -28,7 +28,7 @@
 | # | 檔案 | 變更內容 |
 |---|------|---------|
 | 1 | `~/.claude/scripts/health-check.js` | 新增 scanCommands + scanRules + scanScriptContents；修改 checkClosedLoop + checkSkillCoverage |
-| 2 | `~/projects/overtone/tests/unit/health-check.test.js` | 新增 4 個管道偵測的陽性/陰性測試 |
+| 2 | `~/projects/nova-brain/tests/unit/health-check.test.js` | 新增 4 個管道偵測的陽性/陰性測試 |
 | 3-20 | 18 個 `~/.claude/skills/*/SKILL.md` | 補上 reference 索引行 |
 
 ### API 設計
@@ -118,7 +118,7 @@ function scanScriptContents() {
 
 | 步驟 | 檔案 | 說明 |
 |------|------|------|
-| 3.1 | `~/projects/overtone/tests/unit/health-check.test.js` | 新增 orphan-skill 陽性測試：mock skill 在 commands 中被引用 → 不報 orphan |
+| 3.1 | `~/projects/nova-brain/tests/unit/health-check.test.js` | 新增 orphan-skill 陽性測試：mock skill 在 commands 中被引用 → 不報 orphan |
 | 3.2 | 同上 | 新增 orphan-skill 陽性測試：mock domain-knowledge skill（user-invocable: false）→ 不報 orphan |
 | 3.3 | 同上 | 新增 orphan-skill 陽性測試：mock EXTRA_SKILLS 引用 → 不報 orphan |
 | 3.4 | 同上 | 新增 orphan-script 陽性測試：mock script 在 settings.json hook 中被引用 → 不報 orphan |

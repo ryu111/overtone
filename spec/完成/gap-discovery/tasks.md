@@ -66,7 +66,7 @@ Phase 2（parallel）:   T4 + T5（測試 + 整合，依賴 Phase 1 完成）
 
 ### T4：測試套件
 
-**檔案**：`~/projects/overtone/tests/unit/gap-discovery.test.js`
+**檔案**：`~/projects/nova-brain/tests/unit/gap-discovery.test.js`
 **行數**：~200 行
 **說明**：覆蓋所有純函式 + mock 整合測試
 

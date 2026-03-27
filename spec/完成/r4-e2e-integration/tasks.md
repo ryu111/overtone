@@ -9,7 +9,7 @@
 
 ### T1：共用 Helper + Mock 資料（~80 行）
 
-**檔案**：`~/projects/overtone/tests/unit/r4-e2e-integration.test.js`
+**檔案**：`~/projects/nova-brain/tests/unit/r4-e2e-integration.test.js`
 
 - [ ] 建立檔案，import `bun:test` + 6 個真實模組（gap-discovery, capability-probe, task-adapter, heartbeat, session-spawner 的 suggestDepth/buildPrompt）
 - [ ] 定義 MOCK 常數（沿用 r4-self-drive-loop.test.js 的 MOCK_GAPS, MOCK_WEAK_CAPS, MOCK_SCORES, MOCK_ROADMAP, MOCK_NOTION_TASKS）
@@ -21,7 +21,7 @@
 
 ### T2：場景 1 -- 完整全自動迴圈（~100 行）
 
-**檔案**：`~/projects/overtone/tests/unit/r4-e2e-integration.test.js`（接續 T1）
+**檔案**：`~/projects/nova-brain/tests/unit/r4-e2e-integration.test.js`（接續 T1）
 
 - [ ] `describe('場景 1：完整全自動迴圈（Happy Path）')`
 - [ ] `test('gap-discovery → Notion sync → heartbeat → task-adapter → execute → record → probe → 收斂')` 包含：
@@ -38,7 +38,7 @@
 
 ### T3：場景 2 -- 學習反饋閉環（~60 行）
 
-**檔案**：`~/projects/overtone/tests/unit/r4-e2e-integration.test.js`（接續 T2）
+**檔案**：`~/projects/nova-brain/tests/unit/r4-e2e-integration.test.js`（接續 T2）
 
 - [ ] `describe('場景 2：學習反饋閉環')`
 - [ ] `test('exploration → success record → pattern 複用 → 連續失敗 → 清除 → exploration')` 包含：
@@ -53,7 +53,7 @@
 
 ### T4：場景 3 -- 跨模組資料格式相容性（~100 行）
 
-**檔案**：`~/projects/overtone/tests/unit/r4-e2e-integration.test.js`（接續 T3）
+**檔案**：`~/projects/nova-brain/tests/unit/r4-e2e-integration.test.js`（接續 T3）
 
 - [ ] `describe('場景 3：跨模組資料格式相容性')`
 - [ ] 6 個 test，各驗證一個跨模組邊界：
@@ -68,7 +68,7 @@
 
 ### T5：場景 4 -- 降級容錯（~60 行）
 
-**檔案**：`~/projects/overtone/tests/unit/r4-e2e-integration.test.js`（接續 T4）
+**檔案**：`~/projects/nova-brain/tests/unit/r4-e2e-integration.test.js`（接續 T4）
 
 - [ ] `describe('場景 4：降級容錯')`
 - [ ] `test('4a: gap-discovery 某源失敗 → 其餘源仍產出')` — _mock 中 gaps=null, scores=undefined → suggestions 仍有結果
@@ -79,7 +79,7 @@
 
 ### T6：場景 5 -- 多迴圈累積（~80 行）
 
-**檔案**：`~/projects/overtone/tests/unit/r4-e2e-integration.test.js`（接續 T5）
+**檔案**：`~/projects/nova-brain/tests/unit/r4-e2e-integration.test.js`（接續 T5）
 
 - [ ] `describe('場景 5：多迴圈累積 -- 系統收斂')`
 - [ ] `test('3 輪迴圈：缺口遞減 + confidence 遞增 + boundary 累積')` 包含：

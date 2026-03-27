@@ -40,7 +40,7 @@ Hook 事件分發。所有 Claude session hook 事件經此端點路由到對應
   "input": {
     "tool_name": "Bash",
     "tool_input": { "command": "ls" },
-    "cwd": "/Users/sbu/projects/overtone"
+    "cwd": "/Users/sbu/projects/nova-brain"
   }
 }
 ```
@@ -206,9 +206,9 @@ Server-Sent Events (SSE) 即時事件流。連線後先回放最近 20 筆事件
 **Response**：`text/event-stream`
 
 ```
-data: {"type":"hook_trigger","event_type":"PreToolUse","matcher":"Bash","decision":"allow","handler_count":2,"meta":"PreToolUse:Bash → allow (2)","cwd":"/Users/sbu/projects/overtone"}
+data: {"type":"hook_trigger","event_type":"PreToolUse","matcher":"Bash","decision":"allow","handler_count":2,"meta":"PreToolUse:Bash → allow (2)","cwd":"/Users/sbu/projects/nova-brain"}
 
-data: {"type":"session_start","cwd":"/Users/sbu/projects/overtone","meta":"Session started"}
+data: {"type":"session_start","cwd":"/Users/sbu/projects/nova-brain","meta":"Session started"}
 ```
 
 每 15 秒發送 heartbeat comment（`: heartbeat\n\n`）。
@@ -400,7 +400,7 @@ Session 列表（從 timeline events 建立索引）。
 [
   {
     "id": 1711180800000,
-    "cwd": "/Users/sbu/projects/overtone",
+    "cwd": "/Users/sbu/projects/nova-brain",
     "startTs": 1711180800000,
     "endTs": 1711184400000,
     "eventCount": 42
@@ -456,7 +456,7 @@ Session 摘要列表（從 session-summaries.jsonl 讀取，由 SessionEnd 背�
 [
   {
     "ts": "2026-03-23T10:00:00.000Z",
-    "project": "overtone",
+    "project": "nova-brain",
     "summary": "修復 guard 邏輯",
     "filesChanged": 3,
     "testsRun": true
@@ -480,7 +480,7 @@ Session 對話流（解析 transcript JSONL）。
 
 | 參數 | 型別 | 必填 | 說明 |
 |------|------|:----:|------|
-| project | string | 是 | 專案名稱（如 "overtone"） |
+| project | string | 是 | 專案名稱（如 "nova-brain"） |
 | limit | number | 否 | 訊息數上限，預設 50 |
 
 **Response**
@@ -504,7 +504,7 @@ Session 對話流（解析 transcript JSONL）。
 | desc | string? | 工具操作摘要（tool_use 時） |
 
 ```bash
-curl "http://127.0.0.1:3457/api/sessions/transcript?project=overtone&limit=20"
+curl "http://127.0.0.1:3457/api/sessions/transcript?project=nova-brain&limit=20"
 ```
 
 **消費者**：Control App (iOS SessionDetailView)
@@ -519,7 +519,7 @@ curl "http://127.0.0.1:3457/api/sessions/transcript?project=overtone&limit=20"
 
 ```json
 {
-  "overtone": {
+  "nova-brain": {
     "lastUser": "修復 guard 邏輯",
     "lastAssistant": "已修復並通過測試",
     "ts": 1711180800
@@ -715,7 +715,7 @@ curl http://127.0.0.1:3457/api/components
 
 ### GET /api/git
 
-Git 活動（nova + overtone 最近 10 筆 commit）。
+Git 活動（nova + nova-brain 最近 10 筆 commit）。
 
 **Response**
 
@@ -724,7 +724,7 @@ Git 活動（nova + overtone 最近 10 筆 commit）。
   "nova": [
     { "hash": "abc1234", "subject": "fix(guards): 修正阻擋邏輯", "date": "2026-03-23 10:00:00 +0800" }
   ],
-  "overtone": [
+  "nova-brain": [
     { "hash": "def5678", "subject": "test: 新增 architecture 測試", "date": "2026-03-23 09:30:00 +0800" }
   ]
 }
@@ -801,7 +801,7 @@ API 用量 + 活躍 session 偵測。
   "fiveHour": 0.35,
   "sevenDay": 0.12,
   "sessions": {
-    "overtone": { "context": 0.45, "ts": 1711180800, "active": true },
+    "nova-brain": { "context": 0.45, "ts": 1711180800, "active": true },
     "nova-control": { "context": 0, "ts": 1711170000, "active": false }
   }
 }
@@ -901,7 +901,7 @@ curl http://127.0.0.1:3457/api/tasks-todo
 ```json
 {
   "projects": [
-    { "name": "overtone", "cwd": "/Users/sbu/projects/overtone", "pinned": true, "lastActiveAt": 1711180800000 },
+    { "name": "nova-brain", "cwd": "/Users/sbu/projects/nova-brain", "pinned": true, "lastActiveAt": 1711180800000 },
     { "name": "nova-control", "cwd": "/Users/sbu/projects/nova-control", "pinned": false, "lastActiveAt": 1711170000000 }
   ]
 }
@@ -925,8 +925,8 @@ curl http://127.0.0.1:3457/api/projects
 {
   "projects": [
     {
-      "name": "overtone",
-      "cwd": "/Users/sbu/projects/overtone",
+      "name": "nova-brain",
+      "cwd": "/Users/sbu/projects/nova-brain",
       "pinned": true,
       "lastActiveAt": 1711180800000,
       "tasks": [
@@ -998,7 +998,7 @@ curl -X POST http://127.0.0.1:3457/api/projects \
 **Request**
 
 ```json
-{ "name": "overtone", "pinned": true }
+{ "name": "nova-brain", "pinned": true }
 ```
 
 | 欄位 | 型別 | 必填 | 說明 |
@@ -1015,7 +1015,7 @@ curl -X POST http://127.0.0.1:3457/api/projects \
 ```bash
 curl -X PATCH http://127.0.0.1:3457/api/projects \
   -H 'Content-Type: application/json' \
-  -d '{"name":"overtone","pinned":true}'
+  -d '{"name":"nova-brain","pinned":true}'
 ```
 
 **消費者**：Control App (macOS)
@@ -1059,7 +1059,7 @@ curl -X DELETE http://127.0.0.1:3457/api/projects \
 **Request**
 
 ```json
-{ "cwd": "/Users/sbu/projects/overtone", "taskName": "D1-修復-bug" }
+{ "cwd": "/Users/sbu/projects/nova-brain", "taskName": "D1-修復-bug" }
 ```
 
 | 欄位 | 型別 | 必填 | 說明 |
@@ -1076,7 +1076,7 @@ curl -X DELETE http://127.0.0.1:3457/api/projects \
 ```bash
 curl -X POST http://127.0.0.1:3457/api/tasks/delete \
   -H 'Content-Type: application/json' \
-  -d '{"cwd":"/Users/sbu/projects/overtone","taskName":"D1-修復-bug"}'
+  -d '{"cwd":"/Users/sbu/projects/nova-brain","taskName":"D1-修復-bug"}'
 ```
 
 **消費者**：Control App (macOS TaskSection)
@@ -1091,7 +1091,7 @@ curl -X POST http://127.0.0.1:3457/api/tasks/delete \
 
 ```json
 {
-  "cwd": "/Users/sbu/projects/overtone",
+  "cwd": "/Users/sbu/projects/nova-brain",
   "prompt": "執行任務：D2-nova-server-API-重構"
 }
 ```
@@ -1114,7 +1114,7 @@ curl -X POST http://127.0.0.1:3457/api/tasks/delete \
 ```bash
 curl -X POST http://127.0.0.1:3457/api/spawn \
   -H 'Content-Type: application/json' \
-  -d '{"cwd":"/Users/sbu/projects/overtone","prompt":"bun test"}'
+  -d '{"cwd":"/Users/sbu/projects/nova-brain","prompt":"bun test"}'
 ```
 
 **消費者**：Control App (macOS), Control App (iOS)
@@ -1129,7 +1129,7 @@ curl -X POST http://127.0.0.1:3457/api/spawn \
 
 ```json
 {
-  "cwd": "/Users/sbu/projects/overtone",
+  "cwd": "/Users/sbu/projects/nova-brain",
   "command": "/ask 這個 bug 怎麼修？"
 }
 ```
@@ -1152,7 +1152,7 @@ curl -X POST http://127.0.0.1:3457/api/spawn \
 ```bash
 curl -X POST http://127.0.0.1:3457/api/terminal/send \
   -H 'Content-Type: application/json' \
-  -d '{"cwd":"/Users/sbu/projects/overtone","command":"/ask 進度如何？"}'
+  -d '{"cwd":"/Users/sbu/projects/nova-brain","command":"/ask 進度如何？"}'
 ```
 
 **消費者**：Control App (macOS), Control App (iOS)
@@ -1169,7 +1169,7 @@ curl -X POST http://127.0.0.1:3457/api/terminal/send \
 
 ```json
 {
-  "cwd": "/Users/sbu/projects/overtone",
+  "cwd": "/Users/sbu/projects/nova-brain",
   "command": ""
 }
 ```
@@ -1188,7 +1188,7 @@ curl -X POST http://127.0.0.1:3457/api/terminal/send \
 ```bash
 curl -X POST http://127.0.0.1:3457/api/terminal/interrupt \
   -H 'Content-Type: application/json' \
-  -d '{"cwd":"/Users/sbu/projects/overtone","command":""}'
+  -d '{"cwd":"/Users/sbu/projects/nova-brain","command":""}'
 ```
 
 **消費者**：Control App (iOS)
@@ -1234,7 +1234,7 @@ curl -X POST http://127.0.0.1:3457/api/llm/toggle \
 **Request**
 
 ```json
-{ "cwd": "/Users/sbu/projects/overtone", "prompt": "start" }
+{ "cwd": "/Users/sbu/projects/nova-brain", "prompt": "start" }
 ```
 
 | 欄位 | 型別 | 必填 | 說明 |

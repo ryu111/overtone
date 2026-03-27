@@ -87,7 +87,7 @@ health-check 執行時間較長的原因：
 
 statusline.js 設計約束：
 - 純本地讀取，無網路呼叫
-- 只讀取 `~/.overtone/sessions/{sid}/statusline-state.json`（小型 JSON）
+- 只讀取 `~/.nova-brain/sessions/{sid}/statusline-state.json`（小型 JSON）
 - 不做任何計算密集操作
 
 若 statusline 執行超過 100ms，常見原因：

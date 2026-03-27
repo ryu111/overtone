@@ -19,7 +19,7 @@
 
 ### T2：單元測試 + 整合測試
 - **執行者**：executor
-- **檔案**：`~/projects/overtone/tests/health-check.test.js`（新增，~300 行）
+- **檔案**：`~/projects/nova-brain/tests/health-check.test.js`（新增，~300 行）
 - **依賴**：T1 完成
 - **內容**：
   1. scan 層測試（scanSkills、scanAgents、scanHooks 回傳正確結構）
