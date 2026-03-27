@@ -172,3 +172,40 @@ describe("依賴方向", () => {
     expect(code).not.toContain("hooks/");
   });
 });
+
+// ── osascript 統一 ──
+describe("osascript 統一到 scripts/os/", () => {
+  const SCRIPTS_DIR = join(homedir(), ".claude/scripts");
+  const ALLOWED_DIRS = ["scripts/os/", "scripts/emergency-stop.sh"];
+
+  function scanJsFiles(dir, base = "") {
+    const results = [];
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const rel = base ? `${base}/${entry.name}` : entry.name;
+      if (entry.isDirectory() && entry.name !== "node_modules") {
+        results.push(...scanJsFiles(join(dir, entry.name), rel));
+      } else if (entry.name.endsWith(".js")) {
+        results.push({ rel, path: join(dir, entry.name) });
+      }
+    }
+    return results;
+  }
+
+  const allJs = [
+    ...scanJsFiles(SCRIPTS_DIR, "scripts"),
+    ...scanJsFiles(join(homedir(), ".claude/hooks"), "hooks"),
+  ];
+
+  for (const { rel, path } of allJs) {
+    const isAllowed = ALLOWED_DIRS.some(d => rel.startsWith(d));
+    if (isAllowed) continue;
+    // tool-registry.js 只是字串參考，不是實際呼叫
+    if (rel.includes("tool-registry")) continue;
+
+    it(`${rel} 不直接呼叫 osascript`, () => {
+      const code = readFile(path);
+      const hasSpawn = /(?:spawnSync|execSync|spawn)\s*\(\s*(?:\[?\s*["']osascript|["']osascript)/.test(code);
+      expect(hasSpawn).toBe(false);
+    });
+  }
+});
