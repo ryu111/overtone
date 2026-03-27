@@ -11,7 +11,7 @@
 | Repo         | 路徑                   | GitHub            | 內容                         |
 | ------------ | ---------------------- | ----------------- | ---------------------------- |
 | **nova**     | `~/.claude/`           | `ryu111/nova`     | nova 全域專案 SoT            |
-| **overtone** | `~/projects/overtone/` | `ryu111/overtone` | 開發輔助（tests/docs/specs） |
+| **nova-brain** | `~/projects/nova-brain/` | `ryu111/nova-brain` | 開發輔助（tests/docs/specs） |
 
 每次迭代完成後，📋 MUST commit 並 push 兩個 repo 的變更。
 
@@ -29,7 +29,7 @@
 ## 目錄結構
 
 ```
-overtone/
+nova-brain/
 ├── tests/          # 單元 + 整合測試（1354 pass）
 ├── spec/           # 三狀態任務管理（待做/進行中/完成）
 ├── docs/           # 設計文件 + 願景
