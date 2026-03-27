@@ -1,5 +1,6 @@
 // architecture.test.js — 架構防護測試
-// 確保 event-bus 架構不被破壞：server 純淨、模組獨立、介面正確
+// 確保 hook 模組獨立性、依賴方向、Guard 覆蓋率
+// server.js + event-bus.js 已遷移到 ~/projects/nova-server/，相關測試在那邊
 import { describe, it, expect } from "bun:test";
 import { readFileSync, readdirSync } from "fs";
 import { join } from "path";
@@ -7,68 +8,9 @@ import { homedir } from "os";
 
 const HOOKS_DIR = join(homedir(), ".claude/hooks");
 const MODULES_DIR = join(HOOKS_DIR, "modules");
-const SERVER_PATH = join(HOOKS_DIR, "server.js");
-const EVENT_BUS_PATH = join(HOOKS_DIR, "event-bus.js");
 
 function readFile(p) { return readFileSync(p, "utf-8"); }
 function lineCount(p) { return readFile(p).trimEnd().split("\n").length; }
-
-// ── server.js 純淨性 ──
-describe("server.js 純淨性", () => {
-  const code = readFile(SERVER_PATH);
-
-  it("行數 <= 400", () => {
-    expect(lineCount(SERVER_PATH)).toBeLessThanOrEqual(400);
-  });
-
-  it("setInterval 限制（SSE heartbeat + graceful restart + memory watchdog）", () => {
-    const matches = code.match(/setInterval/g) || [];
-    // SSE heartbeat 1 個 + graceful restart checker 1 個 + memory watchdog 1 個
-    expect(matches.length).toBeLessThanOrEqual(3);
-  });
-
-  it("不含 SELF_DRIVE_PROMPT", () => {
-    expect(code).not.toContain("SELF_DRIVE_PROMPT");
-  });
-
-  it("不含 spawnSession import（由 lifecycle 模組負責）", () => {
-    expect(code).not.toContain("spawnSession");
-  });
-
-  it("不含 notify 函式定義（由 notification 模組負責）", () => {
-    expect(code).not.toMatch(/function notify\(/);
-  });
-
-  it("保留 dispatch export", () => {
-    expect(code).toContain("export {");
-    expect(code).toContain("dispatch");
-  });
-
-  it("import event-bus.js", () => {
-    expect(code).toContain("event-bus");
-  });
-});
-
-// ── event-bus.js ──
-describe("event-bus.js", () => {
-  const code = readFile(EVENT_BUS_PATH);
-
-  it("行數 <= 150", () => {
-    expect(lineCount(EVENT_BUS_PATH)).toBeLessThanOrEqual(150);
-  });
-
-  it("使用 xstream", () => {
-    expect(code).toContain("xstream");
-  });
-
-  it("不 import modules/", () => {
-    expect(code).not.toContain("modules/");
-  });
-
-  it("export createEventBus", () => {
-    expect(code).toContain("createEventBus");
-  });
-});
 
 // ── 模組獨立性 ──
 describe("模組獨立性", () => {
