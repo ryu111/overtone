@@ -267,13 +267,12 @@ describe('模組職責分離', () => {
     expect(result.hookSpecificOutput).toBeUndefined();
   });
 
-  test('context-injector.js 純注入 — 只有 SessionStart handler', async () => {
+  test('context-injector.js 純注入 — SessionStart + UserPromptSubmit handler', async () => {
     const mod = await import(join(homedir(), '.claude/hooks/modules/context-injector.js') + `?t=${Date.now()}`);
     expect(mod.on.SessionStart).toBeDefined();
-    // 不應有其他 handler keys
+    expect(mod.on.UserPromptSubmit).toBeDefined();
     const keys = Object.keys(mod.on);
-    expect(keys.length).toBe(1);
-    expect(keys[0]).toBe('SessionStart');
+    expect(keys.length).toBe(2);
   });
 
   test('context-injector SessionStart 回傳 decision=allow', async () => {
