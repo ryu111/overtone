@@ -697,7 +697,7 @@ describe('真實 ~/.claude/ 整合', () => {
         console.error(`  [${f.check}] ${f.element}: ${f.description}`);
       }
     }
-    expect(warnings.length).toBeLessThanOrEqual(1); // 遷移過渡期允許 1 個 warning
+    expect(warnings.length).toBe(0);
   });
 
   it('runAll 執行時間 <2000ms', async () => {
