@@ -1,0 +1,20 @@
+iteration	metric	status	description
+0	0.387500	baseline	initial state
+1	0.400000	keep	type-specific guidance in judge-improvements.js
+2	0.425000	keep	sync type-specific guidance to run.js eval
+3	0.400000	discard	hook few-shot examples in guidance (rule regressed)
+4	0.370833	discard	per-suggestion comparison (slower, worse)
+5	0.387500	discard	hook-only user prompt analysis (overall down)
+6	0.412500	discard	hook-only user prompt retry (still below keep)
+7	0.437500	keep	500-char semantic comparison window (hook 25→35%)
+8	0.462500	keep	800-char window (hook 40%, 0 low-coverage cases)
+9	0.425000	discard	hook user prompt hint (rule regressed)
+10	0.450000	discard	3000-char content (unknown type appeared)
+11	0.475000	keep	precise issue/fix format (hook 45%, 0 low-coverage)
+12	0.487500	keep	severity hierarchy (skill 52%)
+13	0.475000	discard	temperature 0.1 (skill regressed)
+14	0.450000	discard	hook few-shot examples (overall down)
+15	0.487500	keep	rule contradiction detection dimension
+16	0.450000	discard	skill decision tree blank dimension
+17	-	discard	1200-char window (model hung)
+18	-	discard	50-char limit (model hung)
