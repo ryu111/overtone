@@ -44,6 +44,6 @@ describe("CLI 整合", () => {
       { env: { ...process.env, HOME: process.env.HOME }, stdio: "pipe", timeout: 10000 }
     );
     const output = (proc.stdout || "").toString() + (proc.stderr || "").toString();
-    expect(typeof output).toBe("string");
+    expect(output.length).toBeGreaterThan(0);
   });
 });

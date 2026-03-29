@@ -21,9 +21,8 @@ describe("CLI 整合", () => {
       { stdio: "pipe", timeout: 10000 }
     );
 
-    // Bun 並行測試時 spawnSync 可能靜默失敗（pid=undefined），跳過斷言
-    // API 功能已由其他測試覆蓋，此測試僅驗證 CLI 入口
-    if (proc.pid === undefined) return;
+    // Bun 並行測試時 spawnSync 可能靜默失敗
+    expect(proc.pid).toBeDefined();
 
     // timeout（signal=SIGTERM）或正常退出都算通過——只要能啟動 CLI 就行
     const output = (proc.stdout || "").toString() + (proc.stderr || "").toString();

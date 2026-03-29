@@ -383,17 +383,7 @@ describe("planForTask", () => {
     expect(plan.depth).toBe("D3");
   });
 
-  it("所有依賴失敗 → 不 throw，回傳 fallback", async () => {
-    const deps = makeMemoryDeps();
-    deps.matchTools = async () => { throw new Error("網路失敗"); };
-    deps.suggestDepth = () => { throw new Error("模組失敗"); };
-    let plan;
-    expect(async () => {
-      plan = await planForTask("some task", {}, deps);
-    }).not.toThrow();
-    plan = await planForTask("some task", {}, deps);
-    expect(plan.source).toBe("fallback");
-  });
+  // 重複的 fallback 測試已合併到「邊界條件」describe 中
 });
 
 // ─── recordOutcome ────────────────────────────────────────────────────────────

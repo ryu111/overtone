@@ -59,15 +59,18 @@ describe('Hook Client fallback evaluate 執行', () => {
 });
 
 describe('Hook Client HTTP dispatch', () => {
-  test('nova-server 連線測試（容許未啟動）', async () => {
-    let connected = false;
+  test('nova-server /health 回傳正確結構（server 在線時）', async () => {
     try {
       const res = await fetch('http://127.0.0.1:3457/health', {
         signal: AbortSignal.timeout(500),
       });
-      if (res.ok) connected = true;
-    } catch (e) { /* cleanup */ }
-    expect(typeof connected).toBe('boolean');
+      if (!res.ok) return; // server 不在線，跳過（E2E 另測）
+      const data = await res.json();
+      expect(data.status).toBe('ok');
+      expect(data.title).toBe('nova-server');
+    } catch {
+      // server 未啟動，此測試不適用 — E2E 測試覆蓋
+    }
   });
 });
 
@@ -76,11 +79,8 @@ describe('Hook Client HTTP dispatch', () => {
 // ─── 新增：hasFallback 函式測試 ───────────────────────────────────────────────
 
 // 從生產檔案中提取 FALLBACK_MODULES 和 hasFallback 的邏輯，用於隔離單元測試
-const FALLBACK_MODULES_FOR_TEST = {
-  'PreToolUse:Bash': { path: 'hooks/modules/guards.js', fn: 'evaluateBash' },
-  'PreToolUse:Write': { path: 'hooks/modules/guards.js', fn: 'evaluateEdit' },
-  'PreToolUse:Edit': { path: 'hooks/modules/guards.js', fn: 'evaluateEdit' },
-};
+// 重用頂部的 FALLBACK_MODULES（DRY）
+const FALLBACK_MODULES_FOR_TEST = FALLBACK_MODULES;
 
 function hasFallback(event, match) {
   if (match) {

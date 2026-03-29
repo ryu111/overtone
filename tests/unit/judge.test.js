@@ -184,7 +184,7 @@ describe('scoreDeterministic — agent', () => {
     const agentPath = join(TMP_DIR, 'agent-with-disallowed.md');
     // 使用一個確定存在的 skill（architecture）
     const realSkillExists = existsSync(join(homedir(), '.claude/skills/architecture/SKILL.md'));
-    if (!realSkillExists) return; // 若不存在則跳過
+    expect(realSkillExists).toBe(true); // architecture skill 必須存在
 
     const content = [
       '---',

@@ -150,11 +150,7 @@ describe("檔案膨脹偵測", () => {
     it(`${rel} 有效碼 ≤ 800 行（超過為 warning）`, () => {
       const code = readFile(path);
       const effective = effectiveLineCount(code);
-      if (effective > 800) {
-        console.warn(`⚠️ ${rel}: ${effective} 有效碼行（建議檢視設計，可能需要拆分）`);
-      }
-      // 不 fail — 行數是 warning，設計原則才是判斷依據
-      expect(true).toBe(true);
+      expect(effective).toBeLessThanOrEqual(800);
     });
   }
 });
