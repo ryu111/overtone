@@ -3,7 +3,7 @@
  *
  * 測試策略：
  * 1. COMMANDS 路由完整性：5 個子命令都已註冊
- * 2. cmdStatus：正確讀取 behaviors/lifecycle/skills/instinct 狀態
+ * 2. cmdStatus：正確讀取 behaviors/lifecycle/skills/instinct（data/internalized.md）狀態
  * 3. cmdInternalize：信心過濾 + 泛化 + 重複偵測
  * 4. CLI help 輸出
  */

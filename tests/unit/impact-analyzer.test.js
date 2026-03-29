@@ -148,10 +148,10 @@ describe("analyzeImpact", () => {
 	test("完整流程：關鍵詞 → 搜尋 → 分群 → 分類", () => {
 		const mockExec = (cmd) => {
 			if (cmd.includes("commit")) {
-				return "/mock/rules/commit-規範.md:3:commit message 格式\n/mock/scripts/maintainer.js:100:generate commit message\n";
+				return "/mock/rules/寫作規範.md:3:commit message 格式\n/mock/scripts/maintainer.js:100:generate commit message\n";
 			}
 			if (cmd.includes("message")) {
-				return "/mock/rules/commit-規範.md:3:commit message 格式\n/mock/scripts/maintainer.js:100:generate commit message\n/mock/scripts/maintainer.js:200:message template\n";
+				return "/mock/rules/寫作規範.md:3:commit message 格式\n/mock/scripts/maintainer.js:100:generate commit message\n/mock/scripts/maintainer.js:200:message template\n";
 			}
 			if (cmd.includes("中文")) {
 				return "/mock/rules/語言設定.md:5:全部中文\n";
@@ -200,7 +200,7 @@ describe("formatReport", () => {
 			keywords: ["commit", "message"],
 			impacts: [
 				{
-					file: "/home/.claude/rules/commit-規範.md",
+					file: "/home/.claude/rules/寫作規範.md",
 					hits: 2,
 					keywords: ["commit", "message"],
 					lines: [

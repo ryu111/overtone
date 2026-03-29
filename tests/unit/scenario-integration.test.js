@@ -293,13 +293,13 @@ describe("場景五：影響分析端到端", () => {
 		const result = analyzeImpact("commit message 規範", {
 			execSync: (cmd) => {
 				if (cmd.includes("commit")) {
-					return "/mock/rules/commit-規範.md:3:commit format\n/mock/scripts/maintainer.js:50:commit message\n";
+					return "/mock/rules/寫作規範.md:3:commit format\n/mock/scripts/maintainer.js:50:commit message\n";
 				}
 				if (cmd.includes("message")) {
 					return "/mock/scripts/maintainer.js:50:commit message\n";
 				}
 				if (cmd.includes("規範")) {
-					return "/mock/rules/commit-規範.md:3:commit 規範\n/mock/rules/寫作規範.md:10:寫作規範\n";
+					return "/mock/rules/寫作規範.md:3:commit 規範\n/mock/rules/寫作規範.md:10:寫作規範\n";
 				}
 				return "";
 			},
