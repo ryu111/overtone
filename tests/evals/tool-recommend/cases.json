@@ -22,7 +22,7 @@
     {
       "task": "提交 Pull Request 並設定 reviewers",
       "expected_tools": [
-        "pr",
+        "gh",
         "git"
       ],
       "label": "GitHub PR 操作"
@@ -37,6 +37,7 @@
     {
       "task": "查詢 SQLite 資料庫中最近 100 筆記錄",
       "expected_tools": [
+        "sqlite3",
         "database"
       ],
       "label": "資料庫查詢"
@@ -65,15 +66,14 @@
     {
       "task": "在 GitHub 上建立 issue 並加上標籤",
       "expected_tools": [
-        "pr",
-        "pr-auto-review"
+        "gh"
       ],
       "label": "GitHub issue 管理"
     },
     {
       "task": "安裝 npm 套件並確認沒有安全漏洞",
       "expected_tools": [
-        "security-kb"
+        "bun"
       ],
       "label": "套件安裝與安全檢查"
     },
@@ -94,7 +94,8 @@
     {
       "task": "對有 bot detection 的購物網站進行爬蟲",
       "expected_tools": [
-        "pinchtab"
+        "pinchtab",
+        "agent-browser"
       ],
       "label": "反爬蟲網站資料擷取"
     },
@@ -122,7 +123,7 @@
     {
       "task": "對 SQLite 資料庫做 migration 並備份",
       "expected_tools": [
-        "database",
+        "sqlite3",
         "git"
       ],
       "label": "資料庫 migration"

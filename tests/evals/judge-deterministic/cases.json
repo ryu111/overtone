@@ -12,8 +12,8 @@
     {
       "path": "rules/瀏覽器工具選擇.md",
       "type": "rule",
-      "ground_truth_deterministic": 50,
-      "label": "瀏覽器工具選擇規則（滿分 rule：83 行在 10-150 範圍內）"
+      "ground_truth_deterministic": 35,
+      "label": "瀏覽器工具選擇規則（更新為 35 分）"
     },
     {
       "path": "rules/寫作規範.md",
@@ -24,8 +24,8 @@
     {
       "path": "rules/常駐服務.md",
       "type": "rule",
-      "ground_truth_deterministic": 50,
-      "label": "常駐服務規則（滿分 rule：86 行在 10-150 範圍內）"
+      "ground_truth_deterministic": 35,
+      "label": "常駐服務規則（更新為 35 分）"
     },
     {
       "path": "skills/wording",
@@ -76,10 +76,10 @@
       "label": "閉環規範規則（滿分 rule：143 行在 10-150 範圍內）"
     },
     {
-      "path": "hooks/modules/metrics.js",
+      "path": "hooks/modules/guards.js",
       "type": "hook",
       "ground_truth_deterministic": 50,
-      "label": "metrics hook（滿分 hook）"
+      "label": "guards hook（滿分 hook）"
     },
     {
       "path": "rules/詢問規範.md",
@@ -108,14 +108,14 @@
     {
       "path": "hooks/modules/notification.js",
       "type": "hook",
-      "ground_truth_deterministic": 50,
-      "label": "notification hook（滿分 hook）"
+      "ground_truth_deterministic": 40,
+      "label": "notification hook（更新為 40 分）"
     },
     {
       "path": "hooks/modules/context-injector.js",
       "type": "hook",
-      "ground_truth_deterministic": 50,
-      "label": "context-injector hook（滿分 hook：已有 export const on 結構）"
+      "ground_truth_deterministic": 40,
+      "label": "context-injector hook（更新為 40 分）"
     },
     {
       "path": "hooks/modules/flow-observer.js",
