@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'bun:test';
-import { buildPrompt, spawnSession, parseStreamJson } from '../../../../.claude/scripts/session-spawner.js';
+import { buildPrompt, spawnSession, parseStreamJson, classifyCrash } from '../../../../.claude/scripts/session-spawner.js';
 
 // ─── buildPrompt ─────────────────────────────────────────────────────────────
 
