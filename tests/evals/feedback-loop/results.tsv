@@ -1,2 +1,7 @@
 iteration	metric	status	description
 0	0.726667	baseline	initial state (kw=100% sem=45.3%)
+1	0.726667	keep	scenario examples (content value, score stable)
+2	0.720000	keep	coverage judge prompt (more accurate scoring)
+3	0.726667	keep	keyword sliding window extraction
+4	0.733333	keep	specific action steps (知識回寫 20→60%)
+5	0.733333	keep	scanner补充 guidance (content value)
