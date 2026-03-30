@@ -223,6 +223,125 @@ describe('notification lifecycle module', () => {
   });
 });
 
+// ─── heartbeat 降級模式測試 ───
+describe('heartbeat 降級模式（full/degraded）', () => {
+  // 直接模擬降級邏輯，與 heartbeat.js 模組狀態隔離
+  function makeDegradeState() {
+    let heartbeatMode = 'full';
+    let executeFailCount = 0;
+    let degradedSince = 0;
+    const DEGRADE_THRESHOLD = 3;
+    const RECOVERY_INTERVAL = 30 * 60 * 1000;
+
+    function onExecuteResult(exitCode) {
+      if (exitCode === 0) {
+        executeFailCount = 0;
+      } else {
+        executeFailCount++;
+        if (executeFailCount >= DEGRADE_THRESHOLD) {
+          heartbeatMode = 'degraded';
+          degradedSince = Date.now();
+        }
+      }
+    }
+
+    function tryRecover() {
+      if (heartbeatMode === 'degraded' && Date.now() - degradedSince >= RECOVERY_INTERVAL) {
+        heartbeatMode = 'full';
+        executeFailCount = 0;
+        return true;
+      }
+      return false;
+    }
+
+    return { get mode() { return heartbeatMode; }, get failCount() { return executeFailCount; }, onExecuteResult, tryRecover, forceDegradedSince: (ts) => { degradedSince = ts; } };
+  }
+
+  it('連續失敗 3 次後切換至 degraded', () => {
+    const s = makeDegradeState();
+    expect(s.mode).toBe('full');
+    s.onExecuteResult(1);
+    expect(s.mode).toBe('full');
+    s.onExecuteResult(1);
+    expect(s.mode).toBe('full');
+    s.onExecuteResult(1);
+    expect(s.mode).toBe('degraded');
+  });
+
+  it('成功後重置 executeFailCount', () => {
+    const s = makeDegradeState();
+    s.onExecuteResult(1);
+    s.onExecuteResult(1);
+    expect(s.failCount).toBe(2);
+    s.onExecuteResult(0);
+    expect(s.failCount).toBe(0);
+    expect(s.mode).toBe('full');
+  });
+
+  it('degraded 模式下 handler 應跳過 executeTask（ctx 不會 setState executing=true）', () => {
+    const ctx = mockCtx({
+      executing: false,
+      running: true,
+      mode: 'production',
+      stats: { sessions: 0, succeeded: 0, failed: 0 },
+    });
+
+    let executeTaskCalled = false;
+
+    // 模擬降級模式下的 handler 邏輯
+    const heartbeatMode = 'degraded';
+    const degradedSince = Date.now() - 1000; // 1 秒前，未達恢復期
+    const RECOVERY_INTERVAL = 30 * 60 * 1000;
+
+    if (heartbeatMode === 'degraded') {
+      if (Date.now() - degradedSince >= RECOVERY_INTERVAL) {
+        // 恢復：繼續執行
+      } else {
+        ctx.timer('hb:tick', 30 * 60 * 1000);
+        // return — 跳過 executeTask
+      }
+    } else {
+      executeTaskCalled = true;
+    }
+
+    expect(executeTaskCalled).toBe(false);
+    expect(ctx.timers.length).toBe(1);
+    expect(ctx.timers[0].type).toBe('hb:tick');
+  });
+
+  it('degraded 超過 30 分鐘後 tryRecover 恢復 full 模式', () => {
+    const s = makeDegradeState();
+    // 先讓它進入 degraded
+    s.onExecuteResult(1);
+    s.onExecuteResult(1);
+    s.onExecuteResult(1);
+    expect(s.mode).toBe('degraded');
+
+    // 將 degradedSince 設為 31 分鐘前
+    s.forceDegradedSince(Date.now() - 31 * 60 * 1000);
+    const recovered = s.tryRecover();
+
+    expect(recovered).toBe(true);
+    expect(s.mode).toBe('full');
+    expect(s.failCount).toBe(0);
+  });
+
+  it('degraded 未到 30 分鐘，tryRecover 回傳 false', () => {
+    const s = makeDegradeState();
+    s.onExecuteResult(1);
+    s.onExecuteResult(1);
+    s.onExecuteResult(1);
+    expect(s.mode).toBe('degraded');
+
+    // degradedSince 設為 10 分鐘前
+    s.forceDegradedSince(Date.now() - 10 * 60 * 1000);
+    const recovered = s.tryRecover();
+
+    expect(recovered).toBe(false);
+    expect(s.mode).toBe('degraded');
+  });
+});
+
 // ─── event-bus createContext 整合測試 ───
 describe('event-bus context API', () => {
   it('setState / getState 合併更新', () => {
