@@ -1,0 +1,112 @@
+{
+  "name": "Feedback Loop Skill 品質",
+  "variable_file": "~/.claude/skills/feedback-loop/SKILL.md",
+  "variable_description": "feedback-loop Skill 的協議內容、流程圖、反模式表",
+  "cases": [
+    {
+      "scenario": "試了 3 次 AppleScript 才成功，現在要繼續做下一件事",
+      "expected_protocol": "成功即進化",
+      "expected_action": "立即寫入 Skill reference（前提條件 + 正確步驟 + 常見陷阱）",
+      "expected_keywords": ["立即", "寫入", "reference", "失敗路徑"],
+      "label": "成功後知識回寫"
+    },
+    {
+      "scenario": "派了 executor 做任務，20 分鐘沒收到回報",
+      "expected_protocol": "自驅任務迴圈",
+      "expected_action": "主動檢查狀態，診斷是否超時或阻塞",
+      "expected_keywords": ["timeout", "10min", "nudge", "診斷"],
+      "label": "任務超時監控"
+    },
+    {
+      "scenario": "executor 回報說卡在 AskUserQuestion",
+      "expected_protocol": "自驅任務迴圈",
+      "expected_action": "判斷能否代答，能就代答，不能才升級使用者",
+      "expected_keywords": ["AskUserQuestion", "代答", "升級"],
+      "label": "AskUser 阻塞排除"
+    },
+    {
+      "scenario": "收到 executor 回報 Calmar ratio 0.3，不太理想",
+      "expected_protocol": "自驅任務迴圈",
+      "expected_action": "不接受，反思為什麼不夠好，探索新方向",
+      "expected_keywords": ["不夠好", "反思", "新方向", "收斂"],
+      "label": "結果不滿意反思"
+    },
+    {
+      "scenario": "完成了一個 API endpoint 但 iOS 背景 SSE 會斷開",
+      "expected_protocol": "回報與反思",
+      "expected_action": "區分程式碼正確 vs 功能正常，回報已知限制",
+      "expected_keywords": ["已知限制", "驗證方式", "完成"],
+      "label": "誠實回報已知限制"
+    },
+    {
+      "scenario": "規格文件寫好了，使用者問是否完成",
+      "expected_protocol": "回報與反思",
+      "expected_action": "標注規格完成而非功能完成，只有驗證完成才能回報完成",
+      "expected_keywords": ["規格完成", "實作完成", "驗證完成"],
+      "label": "三層完成模型"
+    },
+    {
+      "scenario": "使用者說「你怎麼又忘了回報 Manager」",
+      "expected_protocol": "行為偏差修復",
+      "expected_action": "修當前問題 + 找結構性根因 + 修規則 + 驗證，一次走完不分段",
+      "expected_keywords": ["結構性根因", "修改規則", "立即", "不等"],
+      "label": "行為偏差完整迴圈"
+    },
+    {
+      "scenario": "發現規則存在但被跳過了",
+      "expected_protocol": "行為偏差修復",
+      "expected_action": "診斷為什麼被跳過：觸發條件？流程圖外？語氣？反例？",
+      "expected_keywords": ["觸發條件", "流程圖", "語氣", "反例"],
+      "label": "斷鏈診斷"
+    },
+    {
+      "scenario": "理解了問題也分析了根因，但只說「下次會注意」沒改規則",
+      "expected_protocol": "行為偏差修復",
+      "expected_action": "這是反模式，必須立即修規則不靠記憶",
+      "expected_keywords": ["NEVER", "下次", "立即", "記憶"],
+      "label": "禁止說下次會改"
+    },
+    {
+      "scenario": "人工發現了一個 feedback-audit 沒掃到的問題",
+      "expected_protocol": "成功即進化",
+      "expected_action": "修當前問題 + 補掃描規則到 feedback-audit",
+      "expected_keywords": ["掃描", "偵測", "自動"],
+      "label": "人工發現補掃描器"
+    },
+    {
+      "scenario": "完成非瑣碎任務後要做什麼",
+      "expected_protocol": "回報與反思",
+      "expected_action": "30 秒三問：方向對嗎？還能更好嗎？有異常信號嗎？",
+      "expected_keywords": ["方向", "更好", "異常信號"],
+      "label": "完成後反思三問"
+    },
+    {
+      "scenario": "派發任務後在閒置等回報",
+      "expected_protocol": "自驅任務迴圈",
+      "expected_action": "這是反模式，應該主動查、主動推",
+      "expected_keywords": ["主動", "閒置", "反模式"],
+      "label": "禁止被動等回報"
+    },
+    {
+      "scenario": "使用者指出問題後只分析了根因但沒修規則，等使用者說改",
+      "expected_protocol": "行為偏差修復",
+      "expected_action": "這是最常見的斷鏈，使用者指出本身就是確認，應立即修",
+      "expected_keywords": ["斷鏈", "確認", "立即"],
+      "label": "禁止分析完就停"
+    },
+    {
+      "scenario": "session 結束回報時只列了好的成果沒提已知問題",
+      "expected_protocol": "回報與反思",
+      "expected_action": "違反完整誠實回報，已知問題不可隱藏",
+      "expected_keywords": ["完整", "誠實", "隱藏"],
+      "label": "禁止只報好的"
+    },
+    {
+      "scenario": "收到使用者修正後怎麼判斷要存 memory 還是修 rule",
+      "expected_protocol": "行為偏差修復",
+      "expected_action": "找結構性根因修規則，不只存 feedback memory",
+      "expected_keywords": ["結構", "規則", "memory"],
+      "label": "修規則優先於存 memory"
+    }
+  ]
+}
