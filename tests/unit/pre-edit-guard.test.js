@@ -27,8 +27,8 @@ describe('pre-edit-guard', () => {
     for (const [filePath, label] of protectedCases) {
       test(`阻擋 ${label} 路徑`, () => {
         const result = evaluate({ tool_input: { file_path: filePath } });
-        expect(result.decision).toBe('block');
-        expect(result.reason).toContain('保護');
+        expect(result.hookSpecificOutput?.permissionDecision).toBe('deny');
+        expect(result.hookSpecificOutput?.permissionDecisionReason).toContain('保護');
       });
     }
   });
@@ -44,18 +44,18 @@ describe('pre-edit-guard', () => {
     for (const filePath of allowedCases) {
       test(`放行 ${filePath}`, () => {
         const result = evaluate({ tool_input: { file_path: filePath } });
-        expect(result.decision).toBe('allow');
+        expect(result.hookSpecificOutput?.permissionDecision).toBe('allow');
       });
     }
   });
 
   describe('邊界情況', () => {
     test('空 input', () => {
-      expect(evaluate({}).decision).toBe('allow');
+      expect(evaluate({}).hookSpecificOutput?.permissionDecision).toBe('allow');
     });
 
     test('null file_path', () => {
-      expect(evaluate({ tool_input: { file_path: null } }).decision).toBe('allow');
+      expect(evaluate({ tool_input: { file_path: null } }).hookSpecificOutput?.permissionDecision).toBe('allow');
     });
   });
 });

@@ -31,7 +31,7 @@ describe('Hook Client E2E（stdin → stdout）', () => {
 
     if (output.trim()) {
       const result = JSON.parse(output.trim());
-      expect(result.decision).toBe('block');
+      expect(result.hookSpecificOutput?.permissionDecision).toBe('deny');
     }
   });
 
@@ -48,7 +48,7 @@ describe('Hook Client E2E（stdin → stdout）', () => {
     expect(exitCode).toBe(0);
     if (output.trim()) {
       const result = JSON.parse(output.trim());
-      expect(result.decision).not.toBe('block');
+      expect(result.hookSpecificOutput?.permissionDecision).not.toBe('deny');
     }
   });
 });
@@ -182,7 +182,7 @@ describe('error log 只在恢復鏈全失敗時記錄（all-failed 語意）', (
 
     if (output.trim()) {
       const result = JSON.parse(output.trim());
-      expect(result.decision).toBe('block');
+      expect(result.hookSpecificOutput?.permissionDecision).toBe('deny');
     }
   });
 

@@ -36,25 +36,25 @@ describe('Hook Client fallback evaluate 執行', () => {
   test('bash-guard block 危險命令', async () => {
     const { evaluateBash } = await import(join(CLAUDE_DIR, 'hooks/modules/guards.js'));
     const result = evaluateBash({ tool_input: { command: 'rm -rf /' } });
-    expect(result.decision).toBe('block');
+    expect(result.hookSpecificOutput?.permissionDecision).toBe('deny');
   });
 
   test('bash-guard allow 安全命令', async () => {
     const { evaluateBash } = await import(join(CLAUDE_DIR, 'hooks/modules/guards.js'));
     const result = evaluateBash({ tool_input: { command: 'ls -la' } });
-    expect(result.decision).toBe('allow');
+    expect(result.hookSpecificOutput?.permissionDecision).toBe('allow');
   });
 
   test('edit-guard block 保護路徑', async () => {
     const { evaluateEdit } = await import(join(CLAUDE_DIR, 'hooks/modules/guards.js'));
     const result = evaluateEdit({ tool_input: { file_path: join(CLAUDE_DIR, 'settings.json') } });
-    expect(result.decision).toBe('block');
+    expect(result.hookSpecificOutput?.permissionDecision).toBe('deny');
   });
 
   test('edit-guard allow 非保護路徑', async () => {
     const { evaluateEdit } = await import(join(CLAUDE_DIR, 'hooks/modules/guards.js'));
     const result = evaluateEdit({ tool_input: { file_path: '/tmp/safe-file.txt' } });
-    expect(result.decision).toBe('allow');
+    expect(result.hookSpecificOutput?.permissionDecision).toBe('allow');
   });
 });
 
@@ -176,7 +176,7 @@ describe('error log 只在恢復鏈全失敗時記錄（all-failed 語意）', (
   test('dispatch 失敗 + fallback 成功 → 不應寫入 hook-errors.jsonl', async () => {
     const { evaluateBash } = await import(join(CLAUDE_DIR, 'hooks/modules/guards.js'));
     const result = evaluateBash({ tool_input: { command: 'ls' } });
-    expect(result.decision).toBe('allow');
+    expect(result.hookSpecificOutput?.permissionDecision).toBe('allow');
   });
 
   test('tryFallback 對有 fallback 的事件回傳 true', () => {
