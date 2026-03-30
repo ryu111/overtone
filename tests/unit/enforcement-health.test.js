@@ -30,9 +30,9 @@ describe("enforcement-health", () => {
 		const { checkLayer1 } = await import("/Users/sbu/.claude/scripts/enforcement-health.js");
 		const result = checkLayer1(0);
 		expect(result.layer).toBe(1);
-		expect(result.total).toBe(3);
+		expect(result.total).toBe(2); // s1 + s3（s2 的 selfReviewRate=null 被排除）
 		expect(result.active).toBe(2); // s1 + s3 有數據
-		expect(result.rate).toBeCloseTo(2 / 3, 1);
+		expect(result.rate).toBeCloseTo(2 / 2, 1);
 	});
 
 	test("rate = 0（無 compliance 記錄）→ critical alert", async () => {
