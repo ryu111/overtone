@@ -1,11 +1,32 @@
 import { describe, test, expect, beforeEach, afterEach } from 'bun:test';
-import { existsSync, readFileSync, unlinkSync, writeFileSync, mkdirSync } from 'node:fs';
+import { existsSync, readFileSync, unlinkSync, writeFileSync, mkdirSync, renameSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 
 // 直接載入 flow-observer 模組（不 mock 檔案系統，用真實 /tmp/）
 const mod = await import(join(homedir(), '.claude/hooks/modules/flow-observer.js') + `?t=${Date.now()}`);
 const handlers = mod.on;
+
+// ── flow-events 隔離：防止測試事件污染生產環境 ──────────
+const FLOW_EVENTS_PATH = '/tmp/nova-flow-events.jsonl';
+const FLOW_EVENTS_BACKUP = '/tmp/nova-flow-events.jsonl.hook-test-backup';
+
+beforeEach(() => {
+	if (existsSync(FLOW_EVENTS_PATH)) {
+		renameSync(FLOW_EVENTS_PATH, FLOW_EVENTS_BACKUP);
+	}
+});
+
+afterEach(() => {
+	// 清除測試寫入的事件
+	if (existsSync(FLOW_EVENTS_PATH)) {
+		unlinkSync(FLOW_EVENTS_PATH);
+	}
+	// 恢復備份
+	if (existsSync(FLOW_EVENTS_BACKUP)) {
+		renameSync(FLOW_EVENTS_BACKUP, FLOW_EVENTS_PATH);
+	}
+});
 
 // ── 測試用暫存檔案清單 ──────────────────────────────
 const tmpFiles = [];
