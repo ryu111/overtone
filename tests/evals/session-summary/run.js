@@ -30,6 +30,7 @@ const SUMMARY_SYSTEM = `你是 Nova 系統的 session 摘要生成器。
 - 使用繁體中文，具體檔案名和數字（不說「一些改動」，說「修改 guards.js 的 3 個 regex」）
 - 從工具使用和 commit 記錄推斷主要活動
 - 重點：產出了什麼（程式碼/文件/設定），而非過程（讀了/搜了）
+- 簡單 session（1-2 個工具、1 個 commit）用簡短摘要，不展開技術細節
 
 範例：
 輸入：工具 Read:15, Bash:8, Edit:3 | commit: feat(heartbeat) 新增心跳引擎
@@ -37,7 +38,32 @@ const SUMMARY_SYSTEM = `你是 Nova 系統的 session 摘要生成器。
 
 只回覆摘要文字。`;
 
-import { semanticScore } from '../semantic-judge.js';
+import { semanticScore as _semanticScore } from '../semantic-judge.js';
+
+// 覆寫 semanticScore：800 字窗口取代預設 200 字
+async function semanticScore(generated, groundTruth) {
+  if (!generated || !groundTruth) return 0;
+  const JUDGE_SYSTEM = `你是語意相似度裁判。判斷兩段文字是否在描述相同的核心概念。
+只回覆一個數字 0-5：
+0 = 完全無關
+1 = 主題相關但內容不同
+2 = 描述類似的問題但角度不同
+3 = 核心概念相同，細節不同
+4 = 內容高度一致，措辭不同
+5 = 語意完全等價
+只回覆數字，不要其他文字。`;
+  const prompt = `文字 A：${generated.slice(0, 800)}
+
+文字 B：${groundTruth.slice(0, 800)}
+
+語意相似度（0-5）：`;
+  const result = await askLocalModel(prompt, '0', null, {
+    system: JUDGE_SYSTEM,
+    temperature: 0.1,
+  });
+  const score = parseInt((result || '0').trim().match(/\d/)?.[0] || '0', 10);
+  return Math.min(score, 5) / 5;
+}
 
 /**
  * 對單一 case 重新生成摘要，回傳 overlap rate
