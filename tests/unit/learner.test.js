@@ -373,7 +373,7 @@ describe('analyzeAndUpdate — 行為歷史比對', () => {
       fixKeywords: 0,
       repeatedSubseqs: [{ seq: 'Edit→Bash', count: 2 }],
     };
-    const result = analyzeAndUpdate(session, existing);
+    const result = analyzeAndUpdate(session, existing, new Date('2026-03-16'));
     const behavior = result.find(b => b.pattern === 'Edit→Bash');
     expect(behavior.occurrences.length).toBe(2); // 不重複
   });
