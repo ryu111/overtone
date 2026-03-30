@@ -234,6 +234,7 @@ describe('spawnSession 可靠性', () => {
     const mockChild = {
       pid: 99999,
       stdin: {
+        writable: true,
         write: () => { throw new Error('EPIPE'); },
         end: () => {},
       },
@@ -255,6 +256,7 @@ describe('spawnSession 可靠性', () => {
     const mockChild = {
       pid: 99999,
       stdin: {
+        writable: true,
         write: () => {},
         end: () => { throw new Error('stream destroyed'); },
       },
