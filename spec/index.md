@@ -63,11 +63,12 @@
 
 ---
 
-### Scripts（58）
+### Scripts（62）
 
 | 名稱 | 簡述 |
 |------|------|
 | acid-test | L2 Acid Test 端到端驗收腳本（入口 + orchestrator） |
+| audit-api-contract | 掃描 nova-server GET endpoints 的 JSON schema 是否與 Swift struct 對齊 |
 | autoresearch-task | heartbeat 全自動：找最低分 eval 跑 autoresearch |
 | briefing-builder | Session 摘要 + 簡報生成 |
 | capability-probe | 能力邊界探測 + 模型更新 |
@@ -94,6 +95,7 @@
 | judge-improvements | F 級改善建議生成（從 judge.js 拆分） |
 | judge-scores | 評分記錄的讀寫、去重、截斷（從 judge.js 拆分） |
 | judge-scoring | 確定性評分 + 語意評分（從 judge.js 拆分） |
+| layer-kpi-collector | 收集 Nova 各層（L1-L4）KPI 指標 |
 | learner | 行為習慣偵測器 |
 | learner-analysis | 行為分析純函式模組 |
 | learner-suggestions | 建議生成模組 |
@@ -105,6 +107,8 @@
 | os-control-driver | OS-level 自動化操控 Claude CLI |
 | prepare-lora-data | 從現有資料合成 LoRA 訓練集 |
 | ralph-stop | 關閉 ralph-loop |
+| regression-watch | 監控品質回歸 |
+| self-check | 自檢閉環腳本（4 Phase: scan → aggregate → act → persist） |
 | self-compact | 自壓縮觸發器（含 session 替換） |
 | session-cleanup | Session 日誌滾動清理 |
 | session-recorder | Session 摘要與簡報記錄（Phase 4a + 4b 包裝） |
@@ -171,6 +175,7 @@ _目前無進行中的任務_
 
 | 任務 | 類型 | 完成時間 | 結果 |
 |------|------|---------|------|
+| test-stale-detection | 功能 | 2026-03-30 | — |
 | 跨 Session 感知與協作 | 功能 | 2026-03-24 | Phase 1-5 全部完成：projects 元資料、session regi |
 | [全自動] L1 behavior-threshold habitThreshold 校正 | 修復 | 2026-03-24 | habitThreshold 0.11→0.18，Macro F1 0.944→ |
 | [全自動] L1 heartbeat 模組瘦身至 300 行以內 | 重構 | 2026-03-24 | Phase 3 拆分 branch-scheduler.js 已解決膨脹問題 |
@@ -180,4 +185,3 @@ _目前無進行中的任務_
 | Phase1-決策佇列與關鍵通知 | 功能 | 2026-03-24 | decisions.js helper + context-injector 注 |
 | undefined | undefined | 2026-03-23 | Phase 1 完成：12 個 Swift 檔案，所有 Section 已接真實 |
 | D1-Interactive-Ask-API | 功能 | 2026-03-23 | 3 端點實作完成：POST/GET /api/ask + POST /api/a |
-| D2-nova-server-API-重構與文件化 | 重構 | 2026-03-23 | 44 端點分類重構 + 1348 行 API 文件 + 2 個缺失端點補齊 +  |
