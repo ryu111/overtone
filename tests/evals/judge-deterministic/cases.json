@@ -114,14 +114,14 @@
     {
       "path": "hooks/modules/context-injector.js",
       "type": "hook",
-      "ground_truth_deterministic": 40,
-      "label": "context-injector hook（更新為 40 分）"
+      "ground_truth_deterministic": 50,
+      "label": "context-injector hook（滿分 hook：290 行在 10-300 範圍內）"
     },
     {
       "path": "hooks/modules/flow-observer.js",
       "type": "hook",
-      "ground_truth_deterministic": 50,
-      "label": "flow-observer hook（滿分 hook）"
+      "ground_truth_deterministic": 40,
+      "label": "flow-observer hook（得 40 分：420 行超過 300 上限）"
     }
   ]
 }
