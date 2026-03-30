@@ -321,4 +321,70 @@ describe('spawnSession 可靠性', () => {
     expect(outcome.exitCode).toBe(0);
     expect(outcome.stdout).toContain('result');
   });
+
+  test('stdin.writable = false 時 log 並跳過（不回傳錯誤）', () => {
+    const mockChild = {
+      pid: 12345,
+      stdin: { writable: false, write: () => { throw new Error('should not be called'); }, end: () => {} },
+      stdout: (async function* () { yield Buffer.from(''); })(),
+      exited: Promise.resolve(0),
+    };
+    const deps = {
+      env: { PATH: '/usr/bin' },
+      spawn: () => mockChild,
+      which: () => '/usr/local/bin/claude',
+    };
+    // stdin not writable → log & skip，仍回傳 ok: true
+    const result = spawnSession('test prompt', {}, deps);
+    expect(result.ok).toBe(true);
+  });
+
+  test('stdin = null 時 log 並跳過（不崩潰）', () => {
+    const mockChild = {
+      pid: 12345,
+      stdin: null,
+      stdout: (async function* () { yield Buffer.from(''); })(),
+      exited: Promise.resolve(0),
+    };
+    const deps = {
+      env: { PATH: '/usr/bin' },
+      spawn: () => mockChild,
+      which: () => '/usr/local/bin/claude',
+    };
+    const result = spawnSession('test prompt', {}, deps);
+    expect(result.ok).toBe(true);
+  });
+});
+
+// ─── classifyCrash ─────────────────────────────────────────────────────────────
+
+describe('classifyCrash', () => {
+  test('exit code 137 → OOM_KILLED', () => {
+    expect(classifyCrash({ exitCode: 137 })).toBe('OOM_KILLED');
+  });
+
+  test('exit code 143 → SIGTERM', () => {
+    expect(classifyCrash({ exitCode: 143 })).toBe('SIGTERM');
+  });
+
+  test('exit code 130 → SIGINT', () => {
+    expect(classifyCrash({ exitCode: 130 })).toBe('SIGINT');
+  });
+
+  test('exit code 1 + stdout 含 hook → HOOK_LOOP', () => {
+    expect(classifyCrash({ exitCode: 1, stdout: 'Error: hook failed to run' })).toBe('HOOK_LOOP');
+  });
+
+  test('exit code 1 without hook keyword → UNKNOWN_EXIT_1', () => {
+    expect(classifyCrash({ exitCode: 1, stdout: 'some error' })).toBe('UNKNOWN_EXIT_1');
+  });
+
+  test('exit code 2 → UNKNOWN_EXIT_2', () => {
+    expect(classifyCrash({ exitCode: 2 })).toBe('UNKNOWN_EXIT_2');
+  });
+
+  test('stdout 預設為空字串（不崩潰）', () => {
+    expect(() => classifyCrash({ exitCode: 1 })).not.toThrow();
+    expect(classifyCrash({ exitCode: 1 })).toBe('UNKNOWN_EXIT_1');
+  });
 });
