@@ -11,7 +11,7 @@
       "prompts": ["請修復 heartbeat timeout bug"],
       "agents": [],
       "recentCommits": "fix(heartbeat): 修正 maxTotalTime 計算錯誤",
-      "ground_truth": "本次 session 修改了程式碼並完成測試。"
+      "ground_truth": "修正 heartbeat timeout 計算邏輯，調整 maxTotalTime 的計算方式以避免逾時誤判。"
     },
     {
       "label": "重構 guards 模組並加測試",

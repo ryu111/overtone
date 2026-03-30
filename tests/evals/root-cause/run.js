@@ -76,9 +76,12 @@ async function semanticScore(generated, groundTruth) {
  * 對單一 case 重新生成根因分析，回傳 overlap rate
  */
 async function evaluateCase(c) {
-  const signalStr = c.signals
-    ? `blocks=${c.signals.blocks || 0}, errors=${c.signals.errors || 0}, 修正關鍵詞=${c.signals.fixKeywords || 0}`
-    : 'blocks=0, errors=0, 修正關鍵詞=0';
+  const s = c.signals || {};
+  const extraSignals = Object.entries(s)
+    .filter(([k]) => !['blocks', 'errors', 'fixKeywords'].includes(k))
+    .map(([k, v]) => `${k}=${v}`)
+    .join(', ');
+  const signalStr = `blocks=${s.blocks || 0}, errors=${s.errors || 0}, 修正關鍵詞=${s.fixKeywords || 0}${extraSignals ? ', ' + extraSignals : ''}`;
 
   const prompt = `以下是一個反覆出現的問題：
 

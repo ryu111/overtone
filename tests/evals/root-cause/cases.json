@@ -6,7 +6,13 @@
     {
       "id": "agent-agent",
       "pattern": "Agent→Agent",
-      "signals": {"blocks": 0, "errors": 0, "fixKeywords": 0},
+      "signals": {
+        "blocks": 0,
+        "errors": 0,
+        "fixKeywords": 0,
+        "guardHit": false,
+        "hookTimeout": false
+      },
       "occurrences": 3,
       "firstSeen": "2026-03-16",
       "lastSeen": "2026-03-16",
@@ -16,7 +22,12 @@
     {
       "id": "agent-bash-bash",
       "pattern": "Agent→Bash→Bash",
-      "signals": {"blocks": 0, "errors": 0, "fixKeywords": 0},
+      "signals": {
+        "blocks": 0,
+        "errors": 1,
+        "fixKeywords": 0,
+        "hookTimeout": true
+      },
       "occurrences": 5,
       "firstSeen": "2026-03-16",
       "lastSeen": "2026-03-17",
@@ -26,7 +37,12 @@
     {
       "id": "bash-bash-agent",
       "pattern": "Bash→Bash→Agent",
-      "signals": {"blocks": 0, "errors": 0, "fixKeywords": 0},
+      "signals": {
+        "blocks": 0,
+        "errors": 0,
+        "fixKeywords": 0,
+        "guardHit": false
+      },
       "occurrences": 4,
       "firstSeen": "2026-03-16",
       "lastSeen": "2026-03-17",
@@ -36,7 +52,12 @@
     {
       "id": "bash-agent-bash",
       "pattern": "Bash→Agent→Bash",
-      "signals": {"blocks": 0, "errors": 0, "fixKeywords": 0},
+      "signals": {
+        "blocks": 0,
+        "errors": 0,
+        "fixKeywords": 0,
+        "guardHit": false
+      },
       "occurrences": 6,
       "firstSeen": "2026-03-16",
       "lastSeen": "2026-03-18",
@@ -46,7 +67,12 @@
     {
       "id": "bash-bash-bash-agent",
       "pattern": "Bash→Bash→Bash→Agent",
-      "signals": {"blocks": 0, "errors": 0, "fixKeywords": 0},
+      "signals": {
+        "blocks": 0,
+        "errors": 0,
+        "fixKeywords": 0,
+        "emptyCatch": true
+      },
       "occurrences": 8,
       "firstSeen": "2026-03-16",
       "lastSeen": "2026-03-19",
@@ -56,7 +82,12 @@
     {
       "id": "edit-bash-1",
       "pattern": "Edit→Bash",
-      "signals": {"blocks": 0, "errors": 0, "fixKeywords": 0},
+      "signals": {
+        "blocks": 0,
+        "errors": 0,
+        "fixKeywords": 0,
+        "monitorSkipped": true
+      },
       "occurrences": 5,
       "firstSeen": "2026-03-16",
       "lastSeen": "2026-03-18",
@@ -66,7 +97,12 @@
     {
       "id": "bash-edit-1",
       "pattern": "Bash→Edit",
-      "signals": {"blocks": 0, "errors": 0, "fixKeywords": 0},
+      "signals": {
+        "blocks": 0,
+        "errors": 0,
+        "fixKeywords": 0,
+        "coldStart": true
+      },
       "occurrences": 4,
       "firstSeen": "2026-03-16",
       "lastSeen": "2026-03-17",
@@ -76,7 +112,12 @@
     {
       "id": "bash-edit-bash",
       "pattern": "Bash→Edit→Bash",
-      "signals": {"blocks": 0, "errors": 0, "fixKeywords": 0},
+      "signals": {
+        "blocks": 0,
+        "errors": 0,
+        "fixKeywords": 0,
+        "guardHit": false
+      },
       "occurrences": 7,
       "firstSeen": "2026-03-16",
       "lastSeen": "2026-03-19",
@@ -86,7 +127,12 @@
     {
       "id": "edit-1",
       "pattern": "Edit→Edit",
-      "signals": {"blocks": 0, "errors": 0, "fixKeywords": 0},
+      "signals": {
+        "blocks": 0,
+        "errors": 0,
+        "fixKeywords": 0,
+        "updatedInputMissing": true
+      },
       "occurrences": 3,
       "firstSeen": "2026-03-16",
       "lastSeen": "2026-03-16",
@@ -96,7 +142,13 @@
     {
       "id": "edit-bash-2",
       "pattern": "Edit→Bash→Bash",
-      "signals": {"blocks": 0, "errors": 0, "fixKeywords": 0},
+      "signals": {
+        "blocks": 0,
+        "errors": 0,
+        "fixKeywords": 0,
+        "guardHit": false,
+        "hookDispatch": false
+      },
       "occurrences": 5,
       "firstSeen": "2026-03-17",
       "lastSeen": "2026-03-18",
@@ -106,7 +158,12 @@
     {
       "id": "bash-edit-2",
       "pattern": "Bash→Bash→Edit",
-      "signals": {"blocks": 0, "errors": 0, "fixKeywords": 0},
+      "signals": {
+        "blocks": 0,
+        "errors": 0,
+        "fixKeywords": 0,
+        "verifySkipped": true
+      },
       "occurrences": 4,
       "firstSeen": "2026-03-17",
       "lastSeen": "2026-03-18",
@@ -116,7 +173,13 @@
     {
       "id": "edit-bash-3",
       "pattern": "Edit→Bash→Bash→Bash",
-      "signals": {"blocks": 0, "errors": 0, "fixKeywords": 0},
+      "signals": {
+        "blocks": 0,
+        "errors": 0,
+        "fixKeywords": 0,
+        "serverDown": true,
+        "modelDown": true
+      },
       "occurrences": 6,
       "firstSeen": "2026-03-17",
       "lastSeen": "2026-03-19",
@@ -126,7 +189,12 @@
     {
       "id": "repeated-edit-1",
       "pattern": "Edit→Edit→Edit→Edit",
-      "signals": {"blocks": 0, "errors": 0, "fixKeywords": 0},
+      "signals": {
+        "blocks": 0,
+        "errors": 0,
+        "fixKeywords": 0,
+        "emptyCatch": true
+      },
       "occurrences": 9,
       "firstSeen": "2026-03-16",
       "lastSeen": "2026-03-20",
@@ -136,7 +204,13 @@
     {
       "id": "bash-edit-bash-2",
       "pattern": "Bash→Bash→Edit→Bash",
-      "signals": {"blocks": 0, "errors": 0, "fixKeywords": 0},
+      "signals": {
+        "blocks": 0,
+        "errors": 0,
+        "fixKeywords": 0,
+        "modelDown": true,
+        "fallback": true
+      },
       "occurrences": 5,
       "firstSeen": "2026-03-17",
       "lastSeen": "2026-03-19",
@@ -146,7 +220,12 @@
     {
       "id": "bash-edit-3",
       "pattern": "Bash→Write",
-      "signals": {"blocks": 0, "errors": 0, "fixKeywords": 0},
+      "signals": {
+        "blocks": 0,
+        "errors": 0,
+        "fixKeywords": 0,
+        "lowWorkload": true
+      },
       "occurrences": 4,
       "firstSeen": "2026-03-17",
       "lastSeen": "2026-03-18",
@@ -156,7 +235,12 @@
     {
       "id": "edit-agent",
       "pattern": "Write→Agent",
-      "signals": {"blocks": 0, "errors": 0, "fixKeywords": 0},
+      "signals": {
+        "blocks": 0,
+        "errors": 0,
+        "fixKeywords": 0,
+        "silentExec": true
+      },
       "occurrences": 3,
       "firstSeen": "2026-03-18",
       "lastSeen": "2026-03-18",
@@ -166,7 +250,12 @@
     {
       "id": "edit-bash-4",
       "pattern": "Write→Bash",
-      "signals": {"blocks": 0, "errors": 0, "fixKeywords": 0},
+      "signals": {
+        "blocks": 0,
+        "errors": 0,
+        "fixKeywords": 0,
+        "triggerConditionStrict": true
+      },
       "occurrences": 6,
       "firstSeen": "2026-03-18",
       "lastSeen": "2026-03-20",
@@ -176,7 +265,12 @@
     {
       "id": "bash-edit-4",
       "pattern": "Bash→Bash→Write",
-      "signals": {"blocks": 0, "errors": 0, "fixKeywords": 0},
+      "signals": {
+        "blocks": 0,
+        "errors": 0,
+        "fixKeywords": 0,
+        "scanScopeEmpty": true
+      },
       "occurrences": 5,
       "firstSeen": "2026-03-18",
       "lastSeen": "2026-03-20",
@@ -186,7 +280,12 @@
     {
       "id": "repeated-edit-2",
       "pattern": "Write→Write→Write",
-      "signals": {"blocks": 0, "errors": 0, "fixKeywords": 0},
+      "signals": {
+        "blocks": 0,
+        "errors": 0,
+        "fixKeywords": 0,
+        "storageNoError": true
+      },
       "occurrences": 7,
       "firstSeen": "2026-03-18",
       "lastSeen": "2026-03-21",
@@ -196,7 +295,12 @@
     {
       "id": "edit-bash-5",
       "pattern": "Write→Write→Bash",
-      "signals": {"blocks": 0, "errors": 0, "fixKeywords": 0},
+      "signals": {
+        "blocks": 0,
+        "errors": 0,
+        "fixKeywords": 0,
+        "storageNoError": true
+      },
       "occurrences": 4,
       "firstSeen": "2026-03-19",
       "lastSeen": "2026-03-21",
