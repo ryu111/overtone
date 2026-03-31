@@ -124,7 +124,7 @@ describe("auto-mode-state", () => {
     }
 
     try {
-      const { writeAutoTarget, readAutoTarget } = await getMod();
+      const { writeAutoTarget } = await getMod();
       const target = { goal: "提升測試覆蓋率", deadline: "2026-04-01" };
       writeAutoTarget(target);
 
