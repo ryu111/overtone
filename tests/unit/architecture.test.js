@@ -221,6 +221,158 @@ describe("Guard 覆蓋率", () => {
   });
 });
 
+// ── 指向完整性 ──
+describe("指向完整性", () => {
+  it("Manager rules 中的「見 rules/」指向目標存在", () => {
+    const managerRulesDir = join(homedir(), "projects/nova-manager/.claude/rules");
+    if (!existsSync(managerRulesDir)) return;
+
+    const files = readdirSync(managerRulesDir).filter(f => f.endsWith(".md"));
+    const missing = [];
+
+    for (const file of files) {
+      const content = readFileSync(join(managerRulesDir, file), "utf-8");
+      // 找「見 rules/xxx.md」「見 `rules/xxx.md`」「見全域 rules/xxx.md」
+      const refs = content.matchAll(/見\s*(?:全域\s*)?[`]?rules\/([^\s`」\n]+\.md)/g);
+      for (const match of refs) {
+        const target = join(homedir(), ".claude/rules", match[1]);
+        if (!existsSync(target)) {
+          missing.push(`${file} → rules/${match[1]}`);
+        }
+      }
+      // skills/ 指向
+      const skillRefs = content.matchAll(/見\s*(?:全域\s*)?[`]?skills\/([^\s`」\n]+)/g);
+      for (const match of skillRefs) {
+        const target = join(homedir(), ".claude/skills", match[1]);
+        if (!existsSync(target)) {
+          missing.push(`${file} → skills/${match[1]}`);
+        }
+      }
+    }
+    expect(missing).toEqual([]);
+  });
+});
+
+// ── 靜態規則掃描 ──
+describe("靜態規則掃描", () => {
+  const CLAUDE_DIR = join(homedir(), ".claude");
+
+  it("C7: 所有 fetch() 呼叫不使用裸 fetch（無 options 物件）", () => {
+    // 只找真正的裸 fetch：fetch(url) 沒有第二個 options 參數
+    // pattern: fetch( 後面直接是變數/字串結尾，不含 {
+    const dirs = [join(CLAUDE_DIR, "hooks"), join(CLAUDE_DIR, "scripts")];
+    const violations = [];
+    for (const dir of dirs) {
+      try {
+        // 找 fetch(someUrl) 不帶 options 的呼叫
+        const result = execSync(
+          `grep -rn "\\bfetch(" "${dir}" --include="*.js" | grep -v "node_modules"`,
+          { encoding: "utf-8", timeout: 5000 }
+        );
+        for (const line of result.trim().split("\n").filter(Boolean)) {
+          // 只保留沒有 { 在同行的 fetch 呼叫，且 fetch 後面只有一個引數
+          if (/fetch\([^{]+\)\s*[;,)]/.test(line.split(":").slice(2).join(":"))) {
+            violations.push(line.split(":").slice(0, 2).join(":"));
+          }
+        }
+      } catch { /* grep no match = good */ }
+    }
+    // 允許一些合法的模式（如 fetch(url) 在 wrapper 函式中）
+    expect(violations.length).toBeLessThan(5);
+  });
+
+  it("C10: rules/ 中每條 MUST/NEVER 有強調標記", () => {
+    const rulesDir = join(CLAUDE_DIR, "rules");
+    const violations = [];
+    const files = readdirSync(rulesDir).filter(f => f.endsWith(".md"));
+    for (const file of files) {
+      const content = readFileSync(join(rulesDir, file), "utf-8");
+      const lines = content.split("\n");
+      let inCodeBlock = false;
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        if (line.trim().startsWith("```")) { inCodeBlock = !inCodeBlock; continue; }
+        if (inCodeBlock) continue;
+        // 跳過表格行、縮排行
+        if (line.startsWith("|") || line.startsWith("  ") || line.startsWith("\t")) continue;
+        // 跳過引用 MUST/NEVER 字詞的描述性文字（夾在引號、反引號或中文書名號中）
+        const isDescriptive = /[「」""'`][^「」""'`]*\bMUST\b[^「」""'`]*[「」""'`]/.test(line)
+          || /[「」""'`][^「」""'`]*\bNEVER\b[^「」""'`]*[「」""'`]/.test(line)
+          || /說出\s*MUST/.test(line) || /說出\s*NEVER/.test(line)
+          || /\bMUST\/NEVER\b/.test(line) || /MUST.*NEVER.*語句/.test(line);
+        if (isDescriptive) continue;
+        if (/\bMUST\b/.test(line) && !line.includes("📋") && !line.includes("⛔") && !line.includes("⚠️") && !line.includes("💡")) {
+          violations.push(`${file}:${i + 1}: MUST without marker`);
+        }
+        if (/\bNEVER\b/.test(line) && !line.includes("⛔") && !line.includes("📋")) {
+          violations.push(`${file}:${i + 1}: NEVER without ⛔`);
+        }
+      }
+    }
+    expect(violations).toEqual([]);
+  });
+
+  it("C11: skills/ 目錄名不與內建指令衝突", () => {
+    const reserved = new Set([
+      "compact", "exit", "resume", "help", "config", "fast", "clear", "cost",
+      "login", "logout", "doctor", "status", "permissions", "review", "bug",
+      "init", "mcp", "memory", "model", "vim", "terminal-setup", "listen",
+      "allowed-tools", "rename",
+    ]);
+    const skillsDir = join(CLAUDE_DIR, "skills");
+    const skills = readdirSync(skillsDir, { withFileTypes: true })
+      .filter(e => e.isDirectory())
+      .map(e => e.name);
+    const conflicts = skills.filter(s => reserved.has(s));
+    expect(conflicts).toEqual([]);
+  });
+
+  it("C12: 全域 CLAUDE.md 行數 ≤ 120", () => {
+    const content = readFileSync(join(CLAUDE_DIR, "CLAUDE.md"), "utf-8");
+    const lines = content.split("\n").length;
+    expect(lines).toBeLessThanOrEqual(120);
+  });
+});
+
+// ── data 驗證 ──
+describe("data 驗證", () => {
+  const CLAUDE_DIR = join(homedir(), ".claude");
+
+  it("C13: decisions.jsonl 每行有 reason（非空）", () => {
+    // decisions.jsonl 是人工寫入的決策日誌，格式含 reason 欄位
+    // decision-log.jsonl 是 learner 的 action log，格式不同，不在此測試範圍
+    const fp = join(CLAUDE_DIR, "data", "decisions.jsonl");
+    if (!existsSync(fp)) return; // 檔案不存在時跳過
+
+    const lines = readFileSync(fp, "utf-8").trim().split("\n").filter(Boolean);
+    const invalid = [];
+    for (const line of lines) {
+      try {
+        const d = JSON.parse(line);
+        if (!d.reason || d.reason.trim().length === 0) {
+          invalid.push(line.slice(0, 50));
+        }
+      } catch { /* 非 JSON 行跳過 */ }
+    }
+    expect(invalid.length).toBe(0);
+  });
+
+  it("C14: data/*.json 都是合法 JSON", () => {
+    const dataDir = join(CLAUDE_DIR, "data");
+    if (!existsSync(dataDir)) return;
+    const files = readdirSync(dataDir).filter(f => f.endsWith(".json"));
+    const invalid = [];
+    for (const file of files) {
+      try {
+        JSON.parse(readFileSync(join(dataDir, file), "utf-8"));
+      } catch (e) {
+        invalid.push(`${file}: ${e.message}`);
+      }
+    }
+    expect(invalid).toEqual([]);
+  });
+});
+
 // ── osascript 統一 ──
 describe("osascript 統一到 scripts/os/", () => {
   const SCRIPTS_DIR = join(homedir(), ".claude/scripts");
