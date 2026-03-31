@@ -136,9 +136,9 @@ describe('computeConfidence', () => {
 // ─── 2. BEHAVIOR_PATTERNS 偵測測試 ────────────────────────────────────────────
 
 describe('BEHAVIOR_PATTERNS', () => {
-  test('BEHAVIOR_PATTERNS export 存在且包含 6 個模式', () => {
+  test('BEHAVIOR_PATTERNS export 存在且包含 10 個模式', () => {
     expect(Array.isArray(BEHAVIOR_PATTERNS)).toBe(true);
-    expect(BEHAVIOR_PATTERNS.length).toBe(6);
+    expect(BEHAVIOR_PATTERNS.length).toBe(10);
   });
 
   test('每個 pattern 有 id、detect、polarity、impact、description', () => {
@@ -191,6 +191,125 @@ describe('BEHAVIOR_PATTERNS', () => {
     const pattern = BEHAVIOR_PATTERNS.find(p => p.id === 'good-compliance');
     expect(pattern.detect({ signals: { compliance: { selfReviewRate: 0.9, testRate: 0.85 } } })).toBe(true);
     expect(pattern.detect({ signals: { compliance: { selfReviewRate: 0.7, testRate: 0.9 } } })).toBe(false);
+  });
+
+  test('skip-post-accept-questions: xd-complete 後 5 分鐘內有 cross-dispatch 但無 ask_question → 偵測到', () => {
+    const pattern = BEHAVIOR_PATTERNS.find(p => p.id === 'skip-post-accept-questions');
+    const now = Date.now();
+    // 正向：有 xd-complete，後面有 cross-dispatch 但無 ask_question
+    const positive = {
+      signals: {
+        flowEvents: [
+          { type: 'xd-complete', ts: now },
+          { type: 'cross-dispatch', ts: now + 60000 },
+        ],
+      },
+    };
+    // 反向：有 xd-complete，後面有 cross-dispatch 也有 ask_question
+    const negative = {
+      signals: {
+        flowEvents: [
+          { type: 'xd-complete', ts: now },
+          { type: 'ask_question', ts: now + 30000 },
+          { type: 'cross-dispatch', ts: now + 60000 },
+        ],
+      },
+    };
+    // 反向：有 xd-complete，後面無任何 dispatch
+    const noDispatch = {
+      signals: {
+        flowEvents: [
+          { type: 'xd-complete', ts: now },
+        ],
+      },
+    };
+    expect(pattern.detect(positive)).toBe(true);
+    expect(pattern.detect(negative)).toBe(false);
+    expect(pattern.detect(noDispatch)).toBe(false);
+    expect(pattern.detect({ signals: { flowEvents: [] } })).toBe(false);
+  });
+
+  test('dispatch-without-research: prompt < 30 words → 偵測到', () => {
+    const pattern = BEHAVIOR_PATTERNS.find(p => p.id === 'dispatch-without-research');
+    // 正向：prompt 只有 5 個詞
+    const shortPrompt = {
+      signals: { agentDispatches: [{ prompt: 'fix the bug now', type: 'executor' }] },
+    };
+    // 反向：prompt 有 30+ 個詞
+    const longPrompt = {
+      signals: {
+        agentDispatches: [{
+          prompt: 'Please fix the authentication bug in the login flow. The issue occurs when the user submits the form with an empty password field. Expected behavior is to show a validation error.',
+          type: 'executor',
+        }],
+      },
+    };
+    // 反向：沒有 dispatch
+    const noDispatch = { signals: { agentDispatches: [] } };
+    expect(pattern.detect(shortPrompt)).toBe(true);
+    expect(pattern.detect(longPrompt)).toBe(false);
+    expect(pattern.detect(noDispatch)).toBe(false);
+    // 邊界：prompt 為空字串 → split 得 ['']，wordCount=1（< 30），視為缺少背景而觸發
+    const emptyPrompt = { signals: { agentDispatches: [{ prompt: '', type: 'executor' }] } };
+    expect(pattern.detect(emptyPrompt)).toBe(true);
+  });
+
+  test('repeated-same-correction: 同關鍵詞出現 2+ 次 → 偵測到', () => {
+    const pattern = BEHAVIOR_PATTERNS.find(p => p.id === 'repeated-same-correction');
+    // 正向：corrections >= 2 且 correctionKeywords 有重複
+    const repeated = {
+      signals: {
+        corrections: 2,
+        correctionKeywords: ['繁體中文', 'test', '繁體中文'],
+      },
+    };
+    // 反向：corrections >= 2 但 correctionKeywords 無重複
+    const noRepeat = {
+      signals: {
+        corrections: 2,
+        correctionKeywords: ['繁體中文', 'test', 'emoji'],
+      },
+    };
+    // 反向：corrections < 2
+    const fewCorrections = {
+      signals: {
+        corrections: 1,
+        correctionKeywords: ['同一詞', '同一詞'],
+      },
+    };
+    expect(pattern.detect(repeated)).toBe(true);
+    expect(pattern.detect(noRepeat)).toBe(false);
+    expect(pattern.detect(fewCorrections)).toBe(false);
+    expect(pattern.detect({ signals: {} })).toBe(false);
+  });
+
+  test('incomplete-closed-loop: component_deleted 或 closedLoop warning → 偵測到', () => {
+    const pattern = BEHAVIOR_PATTERNS.find(p => p.id === 'incomplete-closed-loop');
+    // 正向：有 component_deleted 事件
+    const componentDeleted = {
+      signals: {
+        flowEvents: [{ type: 'component_deleted', name: 'old-skill' }],
+      },
+    };
+    // 正向：有 closedLoop compliance_warning
+    const closedLoopWarning = {
+      signals: {
+        flowEvents: [{ type: 'compliance_warning', metric: 'closedLoop' }],
+      },
+    };
+    // 反向：其他 compliance_warning
+    const otherWarning = {
+      signals: {
+        flowEvents: [{ type: 'compliance_warning', metric: 'testRate' }],
+      },
+    };
+    // 反向：空事件
+    const empty = { signals: { flowEvents: [] } };
+    expect(pattern.detect(componentDeleted)).toBe(true);
+    expect(pattern.detect(closedLoopWarning)).toBe(true);
+    expect(pattern.detect(otherWarning)).toBe(false);
+    expect(pattern.detect(empty)).toBe(false);
+    expect(pattern.detect({ signals: {} })).toBe(false);
   });
 });
 
