@@ -11,7 +11,6 @@ const HOOKS_DIR = join(homedir(), ".claude/hooks");
 const MODULES_DIR = join(HOOKS_DIR, "modules");
 
 function readFile(p) { return readFileSync(p, "utf-8"); }
-function lineCount(p) { return readFile(p).trimEnd().split("\n").length; }
 
 // ── 模組獨立性 ──
 describe("模組獨立性", () => {
