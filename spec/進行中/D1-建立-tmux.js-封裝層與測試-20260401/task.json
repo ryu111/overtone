@@ -1,12 +1,12 @@
 {
-  "name": "重構-vision-loop-機械工具化",
+  "name": "建立-tmux.js-封裝層與測試",
   "type": "功能",
   "priority": "P2",
   "depth": "D1",
   "description": "",
   "subtasks": [],
-  "created": "2026-03-31T16:32:48.682Z",
-  "claimed": "2026-03-31T16:32:53.066Z",
+  "created": "2026-03-31T16:41:27.518Z",
+  "claimed": "2026-03-31T16:41:32.836Z",
   "completed": null,
   "result": null
 }
