@@ -1,6 +1,6 @@
 // judge.test.js — R1.4 Judge 單元測試
 import { describe, test, expect, beforeEach, afterEach } from 'bun:test';
-import { writeFileSync, appendFileSync, mkdirSync, rmSync, existsSync } from 'fs';
+import { writeFileSync, readFileSync, appendFileSync, mkdirSync, rmSync, existsSync } from 'fs';
 import { join } from 'path';
 import { tmpdir, homedir } from 'os';
 
@@ -692,5 +692,160 @@ describe('deduplicateImprovements', () => {
 
   test('空陣列回傳空陣列', () => {
     expect(deduplicateImprovements([])).toEqual([]);
+  });
+});
+
+// ─── 14. scoreDeterministicDetailed ─────────────────────────────────────────
+
+const { scoreDeterministicDetailed } = await import(join(homedir(), '.claude/scripts/judge-scoring.js'));
+
+describe('scoreDeterministicDetailed — hook 類新維度', () => {
+  beforeEach(setup);
+  afterEach(teardown);
+
+  test('有 fetch 且有 AbortSignal → fetch-timeout 通過', () => {
+    const hookPath = join(TMP_DIR, 'fetch-ok.js');
+    const content = [
+      'export const on = { "Test": () => {} };',
+      'try {',
+      '  fetch("http://example.com", { signal: AbortSignal.timeout(3000) });',
+      '} catch (e) { console.error(e); }',
+    ].join('\n');
+    writeFileSync(hookPath, content);
+    const result = scoreDeterministicDetailed(content, 'hook', hookPath);
+    const fetchDim = result.dimensions.find(d => d.name === 'fetch-timeout');
+    expect(fetchDim).toBeDefined();
+    expect(fetchDim.score).toBe(5);
+    expect(fetchDim.passed).toBe(true);
+  });
+
+  test('有 fetch 但無 timeout → fetch-timeout 失分', () => {
+    const hookPath = join(TMP_DIR, 'fetch-bad.js');
+    const content = [
+      'export const on = { "Test": () => {} };',
+      'fetch("http://example.com", { method: "POST" });',
+    ].join('\n');
+    writeFileSync(hookPath, content);
+    const result = scoreDeterministicDetailed(content, 'hook', hookPath);
+    const fetchDim = result.dimensions.find(d => d.name === 'fetch-timeout');
+    expect(fetchDim.score).toBe(0);
+    expect(fetchDim.passed).toBe(false);
+  });
+
+  test('無 fetch → fetch-timeout 自動通過', () => {
+    const hookPath = join(TMP_DIR, 'no-fetch.js');
+    const content = 'export const on = {}; try {} catch (e) {}';
+    writeFileSync(hookPath, content);
+    const result = scoreDeterministicDetailed(content, 'hook', hookPath);
+    const fetchDim = result.dimensions.find(d => d.name === 'fetch-timeout');
+    expect(fetchDim.score).toBe(5);
+  });
+
+  test('catch { /* 有內容 */ } → no-empty-catch 通過', () => {
+    const hookPath = join(TMP_DIR, 'catch-ok.js');
+    const content = 'try { doSomething(); } catch { /* ignore */ }';
+    writeFileSync(hookPath, content);
+    const result = scoreDeterministicDetailed(content, 'hook', hookPath);
+    const catchDim = result.dimensions.find(d => d.name === 'no-empty-catch');
+    expect(catchDim.score).toBe(5);
+    expect(catchDim.passed).toBe(true);
+  });
+
+  test('catch {} 完全空 → no-empty-catch 失分', () => {
+    const hookPath = join(TMP_DIR, 'empty-catch.js');
+    const content = 'try { doSomething(); } catch {}';
+    writeFileSync(hookPath, content);
+    const result = scoreDeterministicDetailed(content, 'hook', hookPath);
+    const catchDim = result.dimensions.find(d => d.name === 'no-empty-catch');
+    expect(catchDim.score).toBe(0);
+    expect(catchDim.passed).toBe(false);
+  });
+
+  test('total 與 scoreDeterministic 一致', () => {
+    const hookPath = join(TMP_DIR, 'consistent.js');
+    const content = [
+      'export const on = { "Test": (input) => {',
+      '  try { return {}; } catch (e) { console.error(e); }',
+      '} };',
+      ...Array(15).fill('// line'),
+    ].join('\n');
+    writeFileSync(hookPath, content);
+    const detailed = scoreDeterministicDetailed(content, 'hook', hookPath);
+    const direct = scoreDeterministic(hookPath, 'hook');
+    expect(detailed.total).toBe(direct);
+  });
+});
+
+describe('scoreDeterministicDetailed — rule 類新維度', () => {
+  beforeEach(setup);
+  afterEach(teardown);
+
+  test('含模糊量詞「一些」→ no-vague-terms 失分', () => {
+    const rulePath = join(TMP_DIR, 'vague.md');
+    writeFileSync(rulePath, '## 規則\n\n📋 MUST 等待一些時間\n\n反例：壞\n正例：好\n');
+    const content = readFileSync(rulePath, 'utf-8');
+    const result = scoreDeterministicDetailed(content, 'rule', rulePath);
+    const vagDim = result.dimensions.find(d => d.name === 'no-vague-terms');
+    expect(vagDim.score).toBe(0);
+    expect(vagDim.passed).toBe(false);
+  });
+
+  test('無模糊量詞 → no-vague-terms 通過', () => {
+    const rulePath = join(TMP_DIR, 'clear.md');
+    writeFileSync(rulePath, '## 規則\n\n📋 MUST 等待 3 秒\n\n反例：壞\n正例：好\n');
+    const content = readFileSync(rulePath, 'utf-8');
+    const result = scoreDeterministicDetailed(content, 'rule', rulePath);
+    const vagDim = result.dimensions.find(d => d.name === 'no-vague-terms');
+    expect(vagDim.score).toBe(5);
+  });
+
+  test('指向不存在的 rules/xxx.md → refs-exist 失分', () => {
+    const rulePath = join(TMP_DIR, 'bad-ref.md');
+    writeFileSync(rulePath, '## 規則\n\n見 `rules/不存在的檔案-xyz.md` 詳細說明\n');
+    const content = readFileSync(rulePath, 'utf-8');
+    const result = scoreDeterministicDetailed(content, 'rule', rulePath);
+    const refDim = result.dimensions.find(d => d.name === 'refs-exist');
+    expect(refDim.score).toBe(0);
+  });
+
+  test('無指向或指向存在的檔案 → refs-exist 通過', () => {
+    const rulePath = join(TMP_DIR, 'no-ref.md');
+    writeFileSync(rulePath, '## 規則\n\n📋 MUST 做好事\n');
+    const content = readFileSync(rulePath, 'utf-8');
+    const result = scoreDeterministicDetailed(content, 'rule', rulePath);
+    const refDim = result.dimensions.find(d => d.name === 'refs-exist');
+    expect(refDim.score).toBe(5);
+  });
+
+  test('agent 和 executor 混用 → term-consistency 失分', () => {
+    const rulePath = join(TMP_DIR, 'mixed-terms.md');
+    writeFileSync(rulePath, '## 規則\n\n📋 MUST 委派給 agent\n\nexecutor 執行任務時...\n');
+    const content = readFileSync(rulePath, 'utf-8');
+    const result = scoreDeterministicDetailed(content, 'rule', rulePath);
+    const termDim = result.dimensions.find(d => d.name === 'term-consistency');
+    expect(termDim.score).toBe(0);
+  });
+
+  test('術語一致只用 agent → term-consistency 通過', () => {
+    const rulePath = join(TMP_DIR, 'consistent-terms.md');
+    writeFileSync(rulePath, '## 規則\n\n📋 MUST 委派給 agent\n\nagent 執行任務時...\n');
+    const content = readFileSync(rulePath, 'utf-8');
+    const result = scoreDeterministicDetailed(content, 'rule', rulePath);
+    const termDim = result.dimensions.find(d => d.name === 'term-consistency');
+    expect(termDim.score).toBe(5);
+  });
+
+  test('dimensions 陣列包含 must-never-marks, has-examples, line-count, no-vague-terms, refs-exist, term-consistency', () => {
+    const rulePath = join(TMP_DIR, 'full-rule.md');
+    writeFileSync(rulePath, '## 規則\n\n📋 MUST 做事\n\n反例：壞\n正例：好\n');
+    const content = readFileSync(rulePath, 'utf-8');
+    const result = scoreDeterministicDetailed(content, 'rule', rulePath);
+    const names = result.dimensions.map(d => d.name);
+    expect(names).toContain('must-never-marks');
+    expect(names).toContain('has-examples');
+    expect(names).toContain('line-count');
+    expect(names).toContain('no-vague-terms');
+    expect(names).toContain('refs-exist');
+    expect(names).toContain('term-consistency');
   });
 });
