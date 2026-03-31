@@ -103,31 +103,24 @@
 | local-model | AI 模型 client（單一來源） |
 | maintainer | 本地模型驅動的維護 agent（v2：模型決策 + 程式碼執行） |
 | manage-component | 元件管理 CLI |
-| memory-reclaim | 記憶體回收 |
 | os-control-driver | OS-level 自動化操控 Claude CLI |
-| prepare-lora-data | 從現有資料合成 LoRA 訓練集 |
 | ralph-stop | 關閉 ralph-loop |
 | regression-watch | 監控品質回歸 |
 | self-check | 自檢閉環腳本（4 Phase: scan → aggregate → act → persist） |
 | self-compact | 自壓縮觸發器（含 session 替換） |
-| session-cleanup | Session 日誌滾動清理 |
 | session-recorder | Session 摘要與簡報記錄（Phase 4a + 4b 包裝） |
 | session-rename | SessionStart 後自動命名 session |
 | session-spawner | claude -p spawn 封裝 |
 | skill-forge | Skill 建立引擎（forgeSkill + improveSkill + deploySkill） |
 | skill-janitor | Skill 庫存管理（pruning + 健康度檢查） |
 | smoke-flow | Feedback Loop 主動流程測試（Phase 7） |
-| smoke-test | 整合驗證腳本 |
 | spec-tasks | 本地任務管理模組（CLI 入口 + re-export） |
 | task-adapter | R4.3 新任務快速適應機制 |
-| tg-ask | Telegram inline keyboard 互動詢問 |
-| tg-patch | 在 Telegram plugin 加入 callback_query handler |
 | tool-matcher | 意圖→工具語意匹配：給定任務描述，從 tool-registry 推薦工具組合 |
 | tool-registry | 工具索引：掃描 5 種工具來源，建立統一查詢索引 |
 | trace-flow | Feedback Loop 事件鏈追蹤（Phase 7） |
 | wake-sessions | 一鍵恢復 pinned session |
 | wrapup | session 收尾編排器 |
-| wrapup-benchmark | Phase B 效能 + 品質對比（本地 MLX vs Haiku API） |
 | wrapup-marker | session 收尾 marker 讀寫 |
 
 ---

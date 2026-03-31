@@ -26,7 +26,7 @@ Overtone 資料分為兩類：
 
 **保留期限**：超過 **7 天**（`DEFAULT_MAX_AGE_DAYS`）未更新的 session 目錄由 `cleanupStaleSessions()` 自動刪除。
 
-**清理機制**：`session-cleanup.js` 的 `runCleanup()` 在 `SessionEnd` hook 觸發，保護當前 session 不被刪除。
+**清理機制**：`runCleanup()` 在 `SessionEnd` hook 觸發，保護當前 session 不被刪除（session-cleanup.js 已移除）。
 
 ---
 
@@ -66,9 +66,9 @@ Overtone 資料分為兩類：
 
 | 資料類別 | 預設保留期限 | 常數名稱 | 定義位置 |
 |---------|------------|---------|---------|
-| Session 目錄 | 7 天 | `DEFAULT_MAX_AGE_DAYS` | `session-cleanup.js` |
-| 暫存檔（.tmp/.bak/.lock） | 1 小時 | `DEFAULT_ORPHAN_MAX_AGE_HOURS` | `session-cleanup.js` |
-| Global hash 目錄（孤兒） | 30 天 | `DEFAULT_GLOBAL_MAX_AGE_DAYS` | `session-cleanup.js` |
+| Session 目錄 | 7 天 | `DEFAULT_MAX_AGE_DAYS` | ~~session-cleanup.js~~（已刪除） |
+| 暫存檔（.tmp/.bak/.lock） | 1 小時 | `DEFAULT_ORPHAN_MAX_AGE_HOURS` | ~~session-cleanup.js~~（已刪除） |
+| Global hash 目錄（孤兒） | 30 天 | `DEFAULT_GLOBAL_MAX_AGE_DAYS` | ~~session-cleanup.js~~（已刪除） |
 | Global JSONL 資料 | 永久 | — | 手動或 `data.js gc` |
 
 ---
