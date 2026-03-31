@@ -155,12 +155,9 @@
 
 ## 任務狀態
 
-### 進行中（2）
+### 進行中（0）
 
-| 任務 | 類型 | 優先 | 深度 | 認領時間 | 狀態 |
-|------|------|:----:|:----:|---------|------|
-| OS-Control v2 Phase 2：guards 擴展與測試 | 功能 | P2 | D1 | 2026-03-31 | 進行中 |
-| B2-Judge重設計-scoring擴展與F級actionable | 功能 | P2 | D1 | 2026-03-31 | 進行中 |
+_目前無進行中的任務_
 
 ---
 
@@ -174,13 +171,13 @@ _目前無待做任務_
 
 | 任務 | 類型 | 完成時間 | 結果 |
 |------|------|---------|------|
+| B2-Judge重設計-scoring擴展與F級actionable | 功能 | 2026-03-31 | — |
+| OS-Control v2 Phase 2：guards 擴展與測試 | 功能 | 2026-03-31 | — |
+| os-control-driver 遷移到 tmux | 功能 | 2026-03-31 | — |
+| 建立-tmux.js-封裝層與測試 | 功能 | 2026-03-31 | — |
 | 重構-vision-loop-機械工具化 | 功能 | 2026-03-31 | — |
 | OS-Control-v2-Phase1-新建三個檔案 | 功能 | 2026-03-31 | — |
 | learner 新增4個行為模式 | 功能 | 2026-03-31 | — |
 | 改寫-judge-improvements-prompt與過濾 | 功能 | 2026-03-31 | — |
 | test-stale-detection | 功能 | 2026-03-30 | — |
 | 跨 Session 感知與協作 | 功能 | 2026-03-24 | Phase 1-5 全部完成：projects 元資料、session regi |
-| [全自動] L1 behavior-threshold habitThreshold 校正 | 修復 | 2026-03-24 | habitThreshold 0.11→0.18，Macro F1 0.944→ |
-| [全自動] L1 heartbeat 模組瘦身至 300 行以內 | 重構 | 2026-03-24 | Phase 3 拆分 branch-scheduler.js 已解決膨脹問題 |
-| Phase4-Session復用與智慧策略 | 功能 | 2026-03-24 | os-control-driver 空閒 session 偵測復用 + deci |
-| Phase3-多支線排程器 | 功能 | 2026-03-24 | branch-scheduler.js（6 支線排程）+ heartbeat 整 |
