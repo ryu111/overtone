@@ -1,5 +1,5 @@
 # 專案索引
-> 自動產生於 2026-03-30
+> 自動產生於 2026-03-31
 
 ## 元件目錄
 
@@ -45,17 +45,17 @@
 | code-review | "PR Review 知識域：四維度結構化審查 + 回饋分級。WHEN: 審查 PR、code review、撰寫審查回饋時使用。NOT: 撰寫新程式碼、deb |
 | commit-convention | "Conventional commit 知識域。WHEN: 撰寫 commit message、判斷 commit 拆分策略、選擇 type/scope 時使 |
 | craft | "軟體工藝知識域：Nova 製作原則、設計品味、競品基準、程式碼層級設計模式。WHEN: 設計決策品質判斷、競品對標時使用。NOT: 教科書級基礎知識、一般 c |
-| cross-session | 跨 Session 協作知識域。發送跨專案任務、讀取待辦、回報完成的 API 與流程。WHEN: 需要其他專案 session 配合時（改了 API 需要 iO |
+| cross-session | "跨 Session 協作知識域。發送跨專案任務、讀取待辦、回報完成的 API 與流程。WHEN: 需要其他專案 session 配合時（改了 API 需要 i |
 | dead-code | "死碼清理知識：knip/depcheck 工具、手動清理策略、安全刪除。WHEN: 清理未使用程式碼、codebase 瘦身時使用。NOT: 功能開發、重構。 |
 | debugging | "除錯方法論與根因分析框架。WHEN: 遇到 bug 需要根因分析（RCA）、重現問題、診斷並發問題時使用。NOT: 功能開發、架構設計。" |
-| feedback-loop | 回饋迴圈知識域：成功即進化、自驅任務迴圈、回報與反思的完整協議。WHEN: 完成任務後的反思、自驅任務的監控與排障、品質回報時使用。NOT: 初次任務規劃、架構 |
-| nova-pm | 產品探索與需求釐清。引導 planner agent 以 PM 角色探索需求、定義範圍、比較方案。WHEN: 需求不明確需要釐清、規格討論前的 PM 探索、D1 |
-| nova-spec | 產品規格管理。建立、追蹤、歸檔 spec/design 文件。WHEN: 使用者說「寫規格」「提案」「歸檔」或觸發 /spec:propose、/spec:do |
-| nova-test | 測試策略知識域。什麼該測、什麼不該測、怎麼測、何時跑。基於 Testing Trophy + 風險驅動。WHEN: 新增測試、審查測試設計、處理 test fa |
+| feedback-loop | "回饋迴圈知識域：成功即進化、自驅任務迴圈、回報與反思的完整協議。WHEN: 完成任務後的反思、自驅任務的監控與排障、品質回報時使用。NOT: 初次任務規劃、架 |
+| nova-pm | "產品探索與需求釐清。引導 planner agent 以 PM 角色探索需求、定義範圍、比較方案。WHEN: 需求不明確需要釐清、規格討論前的 PM 探索、D |
+| nova-spec | "產品規格管理。建立、追蹤、歸檔 spec/design 文件。WHEN: 使用者說「寫規格」「提案」「歸檔」或觸發 /spec:propose、/spec:d |
+| nova-test | "測試策略知識域。什麼該測、什麼不該測、怎麼測、何時跑。基於 Testing Trophy + 風險驅動。WHEN: 新增測試、審查測試設計、處理 test f |
 | onboard | "專案掃描與 CLAUDE.md 骨架生成。WHEN: 初次進入新專案、需要產生或補充 CLAUDE.md 時使用。NOT: 已有完整 CLAUDE.md 的日 |
 | os-control | "OS 操控知識域：桌面自動化、系統管理、螢幕截圖、音訊控制、WebSocket 即時通訊。WHEN: 需要作業系統層級操作（非瀏覽器）時使用。NOT: 純程式 |
 | pinchtab | "Chrome 瀏覽器操控 — Pinchtab HTTP API。WHEN: 需要網頁自動化、表單填寫、截圖擷取且 PinchTab 常駐服務（port 98 |
-| refactoring | 重構決策知識域：設計分析、拆分策略、品質指標。WHEN: 判斷何時該拆（SRP 違反）、何時不該拆（高內聚）、選擇重構手法（Extract Module/Hel |
+| refactoring | "重構決策知識域：設計分析、拆分策略、品質指標。WHEN: 判斷何時該拆（SRP 違反）、何時不該拆（高內聚）、選擇重構手法（Extract Module/He |
 | skill-judge | 對 Skill 設計品質進行多維度評分（知識密度、觸發精準度、結構完整性等）。WHEN: 量化評估 Skill 整體設計優劣、生成改善建議報告、進行 Skill |
 | system-audit | "系統審查自動化。10 條交叉引用掃描 + P0/P1/P2 診斷 + 品質閘門。WHEN: /audit 觸發、Manager 說「整理」「健康檢查」「清點」 |
 | thinking | "結構化思維工具：卡關脫困策略、反向驗證法、化繁為簡級聯。WHEN: 設計決策僵局、複雜問題需要拆解、方案需要反向驗證時使用。NOT: 直接可執行的簡單任務。" |
@@ -63,12 +63,14 @@
 
 ---
 
-### Scripts（62）
+### Scripts（60）
 
 | 名稱 | 簡述 |
 |------|------|
 | acid-test | L2 Acid Test 端到端驗收腳本（入口 + orchestrator） |
 | audit-api-contract | 掃描 nova-server GET endpoints 的 JSON schema 是否與 Swift struct 對齊 |
+| auto-mode | 全自動模式 CLI 工具 |
+| auto-mode-state | 全自動模式 v2 狀態管理 |
 | autoresearch-task | heartbeat 全自動：找最低分 eval 跑 autoresearch |
 | briefing-builder | Session 摘要 + 簡報生成 |
 | capability-probe | 能力邊界探測 + 模型更新 |
@@ -81,6 +83,8 @@
 | error-analyzer | hook error 聚類 + 去重 + 本地任務建立 |
 | evolution | 進化引擎統一 CLI |
 | feedback-audit | Feedback Loop Phase 2：元件掃描器 + Registry |
+| feedback-audit-health | 健康判定、Registry、報告、Flow Health |
+| feedback-audit-suggestions | 孤立引用掃描 + 自動升降級建議 |
 | gap-analyzer | Finding → Gap 轉換層 |
 | gap-discovery | R4.2 缺口自動發現引擎 |
 | gap-fixer | Gap 修復策略引擎 |
@@ -108,6 +112,7 @@
 | regression-watch | 監控品質回歸 |
 | self-check | 自檢閉環腳本（4 Phase: scan → aggregate → act → persist） |
 | self-compact | 自壓縮觸發器（含 session 替換） |
+| session-ctl | Session 管理 CLI 工具 |
 | session-recorder | Session 摘要與簡報記錄（Phase 4a + 4b 包裝） |
 | session-rename | SessionStart 後自動命名 session |
 | session-spawner | claude -p spawn 封裝 |
@@ -150,17 +155,19 @@
 
 ## 任務狀態
 
-### 進行中（0）
+### 進行中（3）
 
-_目前無進行中的任務_
+| 任務 | 類型 | 優先 | 深度 | 認領時間 | 狀態 |
+|------|------|:----:|:----:|---------|------|
+| OS-Control v2 Phase 2：guards 擴展與測試 | 功能 | P2 | D1 | 2026-03-31 | 進行中 |
+| B2-Judge重設計-scoring擴展與F級actionable | 功能 | P2 | D1 | 2026-03-31 | 進行中 |
+| 重構-vision-loop-機械工具化 | 功能 | P2 | D1 | 2026-03-31 | 進行中 |
 
 ---
 
-### 待做（1）
+### 待做（0）
 
-| 任務 | 類型 | 優先 | 深度 | 建立時間 |
-|------|------|:----:|:----:|---------|
-| Hook-系統全面優化 | 功能 | P2 | D1 | 2026-03-30 |
+_目前無待做任務_
 
 ---
 
@@ -168,6 +175,9 @@ _目前無進行中的任務_
 
 | 任務 | 類型 | 完成時間 | 結果 |
 |------|------|---------|------|
+| OS-Control-v2-Phase1-新建三個檔案 | 功能 | 2026-03-31 | — |
+| learner 新增4個行為模式 | 功能 | 2026-03-31 | — |
+| 改寫-judge-improvements-prompt與過濾 | 功能 | 2026-03-31 | — |
 | test-stale-detection | 功能 | 2026-03-30 | — |
 | 跨 Session 感知與協作 | 功能 | 2026-03-24 | Phase 1-5 全部完成：projects 元資料、session regi |
 | [全自動] L1 behavior-threshold habitThreshold 校正 | 修復 | 2026-03-24 | habitThreshold 0.11→0.18，Macro F1 0.944→ |
@@ -175,6 +185,3 @@ _目前無進行中的任務_
 | Phase4-Session復用與智慧策略 | 功能 | 2026-03-24 | os-control-driver 空閒 session 偵測復用 + deci |
 | Phase3-多支線排程器 | 功能 | 2026-03-24 | branch-scheduler.js（6 支線排程）+ heartbeat 整 |
 | Phase2-OODA-閉環-Snapshot-Δmetric | 功能 | 2026-03-24 | self-drive-eval.js（snapshot + Δmetric +  |
-| Phase1-決策佇列與關鍵通知 | 功能 | 2026-03-24 | decisions.js helper + context-injector 注 |
-| undefined | undefined | 2026-03-23 | Phase 1 完成：12 個 Swift 檔案，所有 Section 已接真實 |
-| D1-Interactive-Ask-API | 功能 | 2026-03-23 | 3 端點實作完成：POST/GET /api/ask + POST /api/a |
