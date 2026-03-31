@@ -127,6 +127,16 @@ describe("runP0", () => {
 			if (url.includes("cross-dispatch")) {
 				return { json: async () => [] };
 			}
+			if (url.includes("/api/projects")) {
+				return {
+					json: async () => ({
+						projects: [
+							{ name: "nova-brain", pinned: true },
+							{ name: "nova-control", pinned: true },
+						],
+					}),
+				};
+			}
 			if (url.includes("sessions/active")) {
 				return {
 					json: async () => [
@@ -137,7 +147,7 @@ describe("runP0", () => {
 			throw new Error("unexpected");
 		});
 
-		const result = await runP0({ projects: ["~/projects/nova-brain"] });
+		const result = await runP0({});
 
 		expect(result.hasAction).toBe(true);
 		expect(result.detail).toContain("pinned session 消失");
