@@ -1,12 +1,12 @@
 {
-  "name": "建立-tmux-dashboard-腳本",
+  "name": "D2-cross-dispatch-tmux-delivery",
   "type": "功能",
   "priority": "P2",
   "depth": "D1",
   "description": "",
   "subtasks": [],
-  "created": "2026-03-31T19:13:49.195Z",
-  "claimed": "2026-03-31T19:13:49.209Z",
+  "created": "2026-03-31T19:14:58.466Z",
+  "claimed": "2026-03-31T19:14:58.480Z",
   "completed": null,
   "result": null
 }
