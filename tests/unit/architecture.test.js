@@ -2,7 +2,8 @@
 // 確保 hook 模組獨立性、依賴方向、Guard 覆蓋率
 // server.js + event-bus.js 已遷移到 ~/projects/nova-server/，相關測試在那邊
 import { describe, it, expect } from "bun:test";
-import { readFileSync, readdirSync } from "fs";
+import { readFileSync, readdirSync, existsSync } from "fs";
+import { execSync } from "child_process";
 import { join } from "path";
 import { homedir } from "os";
 
