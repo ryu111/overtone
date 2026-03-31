@@ -1,12 +1,12 @@
 {
-  "name": "建立-tmux.js-封裝層與測試",
+  "name": "os-control-driver 遷移到 tmux",
   "type": "功能",
   "priority": "P2",
   "depth": "D1",
   "description": "",
   "subtasks": [],
-  "created": "2026-03-31T16:41:27.518Z",
-  "claimed": "2026-03-31T16:41:32.836Z",
+  "created": "2026-03-31T16:44:39.746Z",
+  "claimed": "2026-03-31T16:44:42.858Z",
   "completed": null,
   "result": null
 }
