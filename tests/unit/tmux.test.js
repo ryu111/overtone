@@ -90,6 +90,16 @@ describe("tmux", () => {
     expect(deps.calls[0]).toContain("-l");
   });
 
+  test("sendKeys — 支援 session:window 格式的 target", async () => {
+    const { sendKeys } = await import(TMUX);
+    const deps = makeDeps({});
+    sendKeys("nova-brain:0", "echo hello", deps);
+    // target 帶冒號格式應完整傳遞給 tmux
+    expect(deps.calls[0]).toContain('"nova-brain:0"');
+    expect(deps.calls[1]).toContain('"nova-brain:0"');
+    expect(deps.calls[1]).toContain("Enter");
+  });
+
   test("capturePaneOutput — 讀取輸出", async () => {
     const { capturePaneOutput } = await import(TMUX);
     const deps = makeDeps({ "capture-pane": "line1\nline2\nline3\n" });
