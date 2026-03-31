@@ -8,7 +8,7 @@ import {
 	mock,
 	test,
 } from "bun:test";
-import { existsSync, mkdirSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 
@@ -67,8 +67,6 @@ describe("runP0", () => {
 		);
 
 		// patch existsSync 讓它在 report path 傳回 true
-		const origExistsSync = globalThis.existsSync;
-
 		// 由於函式直接用 import 的 existsSync，我們改 mock fetch 且放真實的 report
 		// 但需要讓 heartbeat.js 讀到我們的 tmpDir report
 		// → 改測可控的路徑：提供一個沒有 P0 action 的環境做對照
