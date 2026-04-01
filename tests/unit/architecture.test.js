@@ -439,3 +439,34 @@ describe("nova-server 無同步阻塞", () => {
     expect(violations).toEqual([]);
   });
 });
+
+// ── flow-observer toolName vs settings.json PreToolUse matcher 一致性 ──
+describe("flow-observer × settings.json 一致性", () => {
+  it("flow-observer 處理的每個 toolName 都有對應的 PreToolUse matcher", () => {
+    const foCode = readFileSync(join(homedir(), ".claude/hooks/modules/flow-observer.js"), "utf-8");
+    const settings = JSON.parse(readFileSync(join(homedir(), ".claude/settings.json"), "utf-8"));
+
+    // 提取 flow-observer 中的 toolName === "xxx" 和 toolName === 'xxx'
+    const toolNames = new Set();
+    const re = /toolName\s*===\s*["'](\w+)["']/g;
+    let m;
+    while ((m = re.exec(foCode)) !== null) {
+      toolNames.add(m[1]);
+    }
+
+    // 提取 settings.json 的 PreToolUse matchers
+    const matchers = new Set();
+    for (const entry of (settings.hooks?.PreToolUse || [])) {
+      if (entry.matcher) {
+        // matcher 可能是 "Write|Edit" 格式
+        for (const part of entry.matcher.split("|")) {
+          matchers.add(part.trim());
+        }
+      }
+    }
+
+    // 每個 flow-observer 處理的 tool 都應有 matcher
+    const missing = [...toolNames].filter(t => !matchers.has(t));
+    expect(missing).toEqual([]);
+  });
+});
