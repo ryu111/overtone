@@ -119,4 +119,47 @@ describe("tmux", () => {
     const deps = makeDeps({ throw: "not found" });
     expect(killSession("nova-brain", deps)).toBe(false);
   });
+
+  test("isSessionIdle — 有 ❯ prompt 回傳 true", async () => {
+    const { isSessionIdle } = await import(TMUX);
+    const deps = makeDeps({ "capture-pane": "some output\n❯ " });
+    expect(isSessionIdle("nova-brain", deps)).toBe(true);
+  });
+
+  test("isSessionIdle — 無 prompt 回傳 false", async () => {
+    const { isSessionIdle } = await import(TMUX);
+    const deps = makeDeps({ "capture-pane": "running tests...\nstill working" });
+    expect(isSessionIdle("nova-brain", deps)).toBe(false);
+  });
+
+  test("isSessionIdle — capture 失敗回傳 false", async () => {
+    const { isSessionIdle } = await import(TMUX);
+    const deps = makeDeps({ throw: "no session" });
+    expect(isSessionIdle("nova-brain", deps)).toBe(false);
+  });
+
+  test("sendKeysWhenIdle — idle 時立即送出", async () => {
+    const { sendKeysWhenIdle } = await import(TMUX);
+    const deps = makeDeps({ "capture-pane": "❯ " });
+    const result = await sendKeysWhenIdle("nova-brain", "echo hi", { maxWaitMs: 5000, pollMs: 100 }, deps);
+    expect(result.sent).toBe(true);
+    expect(result.timedOut).toBeUndefined();
+  });
+
+  test("safeInjectKeys — 呼叫序列正確（Escape → C-e → 空格 → C-a → C-k → 文字 → Enter → sleep → C-y → BSpace）", async () => {
+    const { safeInjectKeys } = await import(TMUX);
+    const deps = makeDeps({});
+    await safeInjectKeys("nova-brain:0.1", "hello world", deps);
+    // 預期序列：Escape, C-e, 空格, C-a, C-k, -l text, Enter, C-y, BSpace
+    expect(deps.calls.length).toBeGreaterThanOrEqual(8);
+    expect(deps.calls[0]).toContain("Escape");
+    expect(deps.calls[1]).toContain("C-e");
+    expect(deps.calls[3]).toContain("C-a");
+    expect(deps.calls[4]).toContain("C-k");
+    expect(deps.calls[5]).toContain("-l");
+    expect(deps.calls[5]).toContain("hello world");
+    expect(deps.calls[6]).toContain("Enter");
+    expect(deps.calls[7]).toContain("C-y");
+    expect(deps.calls[8]).toContain("BSpace");
+  });
 });

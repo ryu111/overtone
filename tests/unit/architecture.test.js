@@ -200,10 +200,18 @@ describe("模組環形依賴偵測", () => {
   });
 
   it("hook module 不互相 import（只能 import 共用 utils）", () => {
+    // heartbeat 系列允許內部 import（heartbeat.js → heartbeat-config/resilience/v2）
+    const heartbeatFamily = new Set(["heartbeat-config", "heartbeat-resilience", "heartbeat-v2"]);
     const moduleNames = new Set(modules.map(m => m.replace(/\.js$/, "")));
     for (const mod of modules) {
       const imports = getImports(join(MODULES_DIR, mod));
-      const crossImports = imports.filter(i => moduleNames.has(i));
+      const modName = mod.replace(/\.js$/, "");
+      const crossImports = imports.filter(i => {
+        if (!moduleNames.has(i)) return false;
+        // heartbeat.js 可以 import heartbeat-* 系列
+        if (modName === "heartbeat" && heartbeatFamily.has(i)) return false;
+        return true;
+      });
       expect(crossImports).toEqual([]);
     }
   });
