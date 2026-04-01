@@ -410,3 +410,24 @@ describe("osascript 統一到 scripts/os/", () => {
     });
   }
 });
+
+// ── Server 同步阻塞防護 ──
+describe("nova-server 無同步阻塞", () => {
+  const SERVER_DIR = join(homedir(), "projects/nova-server");
+
+  it("server.js + api/*.js + flow/*.js 不含 sleepSync", () => {
+    if (!existsSync(SERVER_DIR)) return;
+    const violations = [];
+    const dirs = [SERVER_DIR, join(SERVER_DIR, "api"), join(SERVER_DIR, "flow")];
+    for (const dir of dirs) {
+      if (!existsSync(dir)) continue;
+      for (const file of readdirSync(dir).filter(f => f.endsWith(".js"))) {
+        const content = readFileSync(join(dir, file), "utf-8");
+        if (content.includes("Bun.sleepSync")) {
+          violations.push(`${dir.split("/").pop()}/${file}`);
+        }
+      }
+    }
+    expect(violations).toEqual([]);
+  });
+});
