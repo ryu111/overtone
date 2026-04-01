@@ -441,6 +441,52 @@ describe("nova-server 無同步阻塞", () => {
 });
 
 // ── flow-observer toolName vs settings.json PreToolUse matcher 一致性 ──
+describe("AskUserQuestion 全鏈路防護", () => {
+  const hookClientCode = readFileSync(join(homedir(), ".claude/hooks/hook-client.js"), "utf-8");
+  const foCode = readFileSync(join(homedir(), ".claude/hooks/modules/flow-observer.js"), "utf-8");
+  const settings = JSON.parse(readFileSync(join(homedir(), ".claude/settings.json"), "utf-8"));
+  const managerCode = existsSync(join(homedir(), "projects/nova-server/api/manager.js"))
+    ? readFileSync(join(homedir(), "projects/nova-server/api/manager.js"), "utf-8")
+    : "";
+
+  it("hook-client.js 有 AskUserQuestion 段且包含 spawnSync curl /api/ask", () => {
+    expect(hookClientCode).toMatch(/AskUserQuestion/);
+    expect(hookClientCode).toMatch(/spawnSync.*curl.*\/api\/ask/s);
+  });
+
+  it("hook-client.js AskUserQuestion 段有 return false（不干擾 CLI）", () => {
+    // AskUserQuestion 段必須 return false，不能 outputAllow
+    const askBlock = hookClientCode.match(/if\s*\(toolName\s*===\s*['"]AskUserQuestion['"].*?return\s+false;/s);
+    expect(askBlock).not.toBeNull();
+  });
+
+  it("settings.json PreToolUse matcher 包含 AskUserQuestion", () => {
+    const matchers = new Set();
+    for (const entry of (settings.hooks?.PreToolUse || [])) {
+      if (entry.matcher) {
+        for (const part of entry.matcher.split("|")) matchers.add(part.trim());
+      }
+    }
+    expect(matchers.has("AskUserQuestion")).toBe(true);
+  });
+
+  it("flow-observer.js 有 PreToolUse:AskUserQuestion handler", () => {
+    expect(foCode).toMatch(/["']PreToolUse:AskUserQuestion["']/);
+  });
+
+  it("nova-server manager.js POST /api/ask 有 broadcast ask_question", () => {
+    if (!managerCode) return; // skip if nova-server not available
+    expect(managerCode).toMatch(/\/api\/ask.*POST/s);
+    expect(managerCode).toMatch(/broadcast.*ask_question/s);
+  });
+
+  it("nova-server manager.js POST /api/ask/answer 有 tmux 轉送", () => {
+    if (!managerCode) return; // skip if nova-server not available
+    expect(managerCode).toMatch(/\/api\/ask\/answer/);
+    expect(managerCode).toMatch(/tmux.*send[_-]keys/s);
+  });
+});
+
 describe("flow-observer × settings.json 一致性", () => {
   it("flow-observer 處理的每個 toolName 都有對應的 PreToolUse matcher", () => {
     const foCode = readFileSync(join(homedir(), ".claude/hooks/modules/flow-observer.js"), "utf-8");
