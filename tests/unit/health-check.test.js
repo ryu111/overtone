@@ -638,9 +638,9 @@ describe('CLI 整合', () => {
     expect(parsed.metadata).toBeDefined();
   });
 
-  it('stdout 為合法 JSON（--quick 模式）', () => {
+  it('stdout 為合法 JSON（quick 子命令）', () => {
     const output = execSync(
-      `bun ${HC_PATH} --quick`,
+      `bun ${HC_PATH} quick`,
       { encoding: 'utf-8', timeout: 10000 }
     );
     const parsed = JSON.parse(output);
@@ -649,7 +649,7 @@ describe('CLI 整合', () => {
 
   it('指定 check 參數時只跑該 check', () => {
     const output = execSync(
-      `bun ${HC_PATH} closedLoop`,
+      `bun ${HC_PATH} run closedLoop`,
       { encoding: 'utf-8', timeout: 10000 }
     );
     const parsed = JSON.parse(output);
