@@ -487,6 +487,43 @@ describe("AskUserQuestion 全鏈路防護", () => {
   });
 });
 
+// ── cross-dispatch 處理單一責任 ──
+describe("cross-dispatch 處理單一責任", () => {
+  const ciCode = readFileSync(join(homedir(), ".claude/hooks/modules/context-injector.js"), "utf-8");
+
+  it("injectSessionAwareness 不碰 cross-dispatch（不 ack、不讀 nova-cross-tasks）", () => {
+    // 提取 injectSessionAwareness 函式體
+    const fnStart = ciCode.indexOf("function injectSessionAwareness(");
+    const fnBody = ciCode.slice(fnStart, ciCode.indexOf("\nfunction ", fnStart + 1));
+    expect(fnBody).not.toContain("nova-cross-tasks");
+    expect(fnBody).not.toContain("ackWithRetry");
+    expect(fnBody).not.toContain("跨專案任務（給你的");
+  });
+
+  it("UserPromptSubmit 是唯一處理 cross-dispatch pending 的掛載點", () => {
+    // 提取 injectSessionAwareness 函式體，確認不含 nova-cross-tasks
+    const fnStart = ciCode.indexOf("function injectSessionAwareness(");
+    const fnEnd = ciCode.indexOf("\nfunction ", fnStart + 1);
+    const fnBody = fnEnd > 0 ? ciCode.slice(fnStart, fnEnd) : ciCode.slice(fnStart, fnStart + 2000);
+    expect(fnBody).not.toContain("nova-cross-tasks");
+    // 確認 UserPromptSubmit 區塊有讀取 cross-tasks
+    const upsStart = ciCode.indexOf("UserPromptSubmit:");
+    const upsBody = ciCode.slice(upsStart, upsStart + 3000);
+    expect(upsBody).toContain("nova-cross-tasks.jsonl");
+  });
+
+  it("UserPromptSubmit 有冪等追蹤（nova-dispatch-injected.json）", () => {
+    expect(ciCode).toContain("nova-dispatch-injected.json");
+    expect(ciCode).toContain("newTasks");
+    expect(ciCode).toContain("injected.has(t.id)");
+  });
+
+  it("三問閉環有 TTL 自動過期（防止無限積壓）", () => {
+    expect(ciCode).toContain("expiredByTTL");
+    expect(ciCode).toContain("300000");
+  });
+});
+
 describe("flow-observer × settings.json 一致性", () => {
   it("flow-observer 處理的每個 toolName 都有對應的 PreToolUse matcher", () => {
     const foCode = readFileSync(join(homedir(), ".claude/hooks/modules/flow-observer.js"), "utf-8");
