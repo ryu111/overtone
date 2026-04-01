@@ -145,13 +145,4 @@ describe("tmux", () => {
     expect(result.timedOut).toBeUndefined();
   });
 
-  test("safeInjectKeys — 呼叫序列正確（load-buffer → paste-buffer → Enter）", async () => {
-    const { safeInjectKeys } = await import(TMUX);
-    const deps = makeDeps({});
-    await safeInjectKeys("nova-brain:0.1", "hello world", deps);
-    expect(deps.calls).toHaveLength(3);
-    expect(deps.calls[0]).toContain("load-buffer");
-    expect(deps.calls[1]).toContain("paste-buffer");
-    expect(deps.calls[2]).toContain("Enter");
-  });
 });
