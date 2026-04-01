@@ -76,29 +76,29 @@ describe("tmux", () => {
     const { sendKeys } = await import(TMUX);
     const deps = makeDeps({});
     sendKeys("nova-brain", "echo hello", deps);
-    expect(deps.calls).toHaveLength(3); // Escape + text + Enter
-    expect(deps.calls[0]).toContain("Escape"); // 清除 feedback 彈窗
-    expect(deps.calls[1]).toContain("send-keys");
-    expect(deps.calls[1]).toContain("-l");
-    expect(deps.calls[2]).toContain("Enter");
+    expect(deps.calls).toHaveLength(4); // Escape + load-buffer + paste-buffer + Enter
+    expect(deps.calls[0]).toContain("Escape");
+    expect(deps.calls[1]).toContain("load-buffer");
+    expect(deps.calls[2]).toContain("paste-buffer");
+    expect(deps.calls[3]).toContain("Enter");
   });
 
   test("sendKeys — 特殊字元不被 shell 解讀", async () => {
     const { sendKeys } = await import(TMUX);
     const deps = makeDeps({});
     sendKeys("nova-brain", 'echo $HOME "hello" `date`', deps);
-    // -l flag 確保 $HOME 不被展開（index 1 因為 0 是 Escape）
-    expect(deps.calls[1]).toContain("-l");
+    // load-buffer 確保 $HOME 不被展開（index 1 因為 0 是 Escape）
+    expect(deps.calls[1]).toContain("load-buffer");
   });
 
   test("sendKeys — 支援 session:window 格式的 target", async () => {
     const { sendKeys } = await import(TMUX);
     const deps = makeDeps({});
     sendKeys("nova-brain:0", "echo hello", deps);
-    // target 帶冒號格式應完整傳遞給 tmux（index +1 因 Escape）
-    expect(deps.calls[1]).toContain('"nova-brain:0"');
-    expect(deps.calls[2]).toContain('"nova-brain:0"');
-    expect(deps.calls[2]).toContain("Enter");
+    // target 帶冒號格式應完整傳遞給 tmux（Escape + load-buffer + paste-buffer + Enter）
+    expect(deps.calls[2]).toContain('"nova-brain:0"'); // paste-buffer
+    expect(deps.calls[3]).toContain('"nova-brain:0"'); // Enter
+    expect(deps.calls[3]).toContain("Enter");
   });
 
   test("capturePaneOutput — 讀取輸出", async () => {
@@ -146,15 +146,14 @@ describe("tmux", () => {
     expect(result.timedOut).toBeUndefined();
   });
 
-  test("safeInjectKeys — 呼叫序列正確（Escape → 文字 → Enter）", async () => {
+  test("safeInjectKeys — 呼叫序列正確（Escape → load-buffer → paste-buffer → Enter）", async () => {
     const { safeInjectKeys } = await import(TMUX);
     const deps = makeDeps({});
     await safeInjectKeys("nova-brain:0.1", "hello world", deps);
-    // 預期序列：Escape, -l text, Enter（簡單直送，不操作 kill ring）
-    expect(deps.calls).toHaveLength(3);
+    expect(deps.calls).toHaveLength(4);
     expect(deps.calls[0]).toContain("Escape");
-    expect(deps.calls[1]).toContain("-l");
-    expect(deps.calls[1]).toContain("hello world");
-    expect(deps.calls[2]).toContain("Enter");
+    expect(deps.calls[1]).toContain("load-buffer");
+    expect(deps.calls[2]).toContain("paste-buffer");
+    expect(deps.calls[3]).toContain("Enter");
   });
 });
