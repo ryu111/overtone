@@ -1,0 +1,12 @@
+{
+  "name": "修復三問閉環積壓",
+  "type": "功能",
+  "priority": "P2",
+  "depth": "D1",
+  "description": "",
+  "subtasks": [],
+  "created": "2026-04-01T18:46:22.666Z",
+  "claimed": "2026-04-01T18:46:22.680Z",
+  "completed": "2026-04-01T18:46:22.694Z",
+  "result": ""
+}
