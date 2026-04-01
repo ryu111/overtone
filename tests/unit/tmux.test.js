@@ -146,20 +146,15 @@ describe("tmux", () => {
     expect(result.timedOut).toBeUndefined();
   });
 
-  test("safeInjectKeys — 呼叫序列正確（Escape → C-e → 空格 → C-a → C-k → 文字 → Enter → sleep → C-y → BSpace）", async () => {
+  test("safeInjectKeys — 呼叫序列正確（Escape → 文字 → Enter）", async () => {
     const { safeInjectKeys } = await import(TMUX);
     const deps = makeDeps({});
     await safeInjectKeys("nova-brain:0.1", "hello world", deps);
-    // 預期序列：Escape, C-e, 空格, C-a, C-k, -l text, Enter, C-y, BSpace
-    expect(deps.calls.length).toBeGreaterThanOrEqual(8);
+    // 預期序列：Escape, -l text, Enter（簡單直送，不操作 kill ring）
+    expect(deps.calls).toHaveLength(3);
     expect(deps.calls[0]).toContain("Escape");
-    expect(deps.calls[1]).toContain("C-e");
-    expect(deps.calls[3]).toContain("C-a");
-    expect(deps.calls[4]).toContain("C-k");
-    expect(deps.calls[5]).toContain("-l");
-    expect(deps.calls[5]).toContain("hello world");
-    expect(deps.calls[6]).toContain("Enter");
-    expect(deps.calls[7]).toContain("C-y");
-    expect(deps.calls[8]).toContain("BSpace");
+    expect(deps.calls[1]).toContain("-l");
+    expect(deps.calls[1]).toContain("hello world");
+    expect(deps.calls[2]).toContain("Enter");
   });
 });
