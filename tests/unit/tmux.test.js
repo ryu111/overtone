@@ -76,28 +76,29 @@ describe("tmux", () => {
     const { sendKeys } = await import(TMUX);
     const deps = makeDeps({});
     sendKeys("nova-brain", "echo hello", deps);
-    expect(deps.calls).toHaveLength(2);
-    expect(deps.calls[0]).toContain("send-keys");
-    expect(deps.calls[0]).toContain("-l");
-    expect(deps.calls[1]).toContain("Enter");
+    expect(deps.calls).toHaveLength(3); // Escape + text + Enter
+    expect(deps.calls[0]).toContain("Escape"); // 清除 feedback 彈窗
+    expect(deps.calls[1]).toContain("send-keys");
+    expect(deps.calls[1]).toContain("-l");
+    expect(deps.calls[2]).toContain("Enter");
   });
 
   test("sendKeys — 特殊字元不被 shell 解讀", async () => {
     const { sendKeys } = await import(TMUX);
     const deps = makeDeps({});
     sendKeys("nova-brain", 'echo $HOME "hello" `date`', deps);
-    // -l flag 確保 $HOME 不被展開
-    expect(deps.calls[0]).toContain("-l");
+    // -l flag 確保 $HOME 不被展開（index 1 因為 0 是 Escape）
+    expect(deps.calls[1]).toContain("-l");
   });
 
   test("sendKeys — 支援 session:window 格式的 target", async () => {
     const { sendKeys } = await import(TMUX);
     const deps = makeDeps({});
     sendKeys("nova-brain:0", "echo hello", deps);
-    // target 帶冒號格式應完整傳遞給 tmux
-    expect(deps.calls[0]).toContain('"nova-brain:0"');
+    // target 帶冒號格式應完整傳遞給 tmux（index +1 因 Escape）
     expect(deps.calls[1]).toContain('"nova-brain:0"');
-    expect(deps.calls[1]).toContain("Enter");
+    expect(deps.calls[2]).toContain('"nova-brain:0"');
+    expect(deps.calls[2]).toContain("Enter");
   });
 
   test("capturePaneOutput — 讀取輸出", async () => {
