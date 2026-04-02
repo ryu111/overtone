@@ -214,8 +214,8 @@ describe("模組環形依賴偵測", () => {
   });
 
   it("hook module 不互相 import（只能 import 共用 utils）", () => {
-    // heartbeat 系列允許內部 import（heartbeat.js → heartbeat-config/resilience/v2）
-    const heartbeatFamily = new Set(["heartbeat-config", "heartbeat-resilience", "heartbeat-v2"]);
+    // heartbeat 系列已搬到 lib/，modules/ 下不再有獨立檔案
+    const heartbeatFamily = new Set();
     const moduleNames = new Set(modules.map(m => m.replace(/\.js$/, "")));
     for (const mod of modules) {
       const imports = getImports(join(MODULES_DIR, mod));

@@ -26,7 +26,7 @@ function makeTmpDir() {
 // ─── 載入測試對象 ─────────────────────────────────────────────────────────────
 
 const { runP0, runP1, runP2 } = await import(
-	"../../../../.claude/hooks/modules/heartbeat-v2.js"
+	"../../../../.claude/hooks/modules/lib/heartbeat-priority.js"
 );
 
 // ─── runP0 — 系統完整性 ───────────────────────────────────────────────────────
