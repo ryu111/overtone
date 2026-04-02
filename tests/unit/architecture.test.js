@@ -43,34 +43,48 @@ describe("模組獨立性", () => {
 });
 
 // ── Lifecycle 模組介面 ──
-describe("lifecycle 模組介面", () => {
-  const lifecycleModules = ["heartbeat.js"];
+describe("統一模組介面（on={} + init/destroy）", () => {
+  const busModules = [
+    { file: "heartbeat.js", events: ["hb:tick"], hasInit: true, hasDestroy: true },
+    { file: "watchdog.js", events: ["watchdog:scan"], hasInit: true, hasDestroy: true },
+  ];
 
-  for (const file of lifecycleModules) {
-    it(`${file} export default 含 name + subscribe + handler`, async () => {
+  for (const { file, events, hasInit, hasDestroy } of busModules) {
+    it(`${file} on={} 包含 bus events: ${events.join(",")}`, async () => {
       const mod = await import(join(MODULES_DIR, file) + `?t=${Date.now()}`);
-      const def = mod.default;
-      expect(def).toBeDefined();
-      expect(typeof def.name).toBe("string");
-      expect(Array.isArray(def.subscribe)).toBe(true);
-      expect(def.subscribe.length).toBeGreaterThan(0);
-      expect(typeof def.handler).toBe("function");
+      expect(mod.on).toBeDefined();
+      for (const evt of events) {
+        expect(typeof mod.on[evt]).toBe("function");
+      }
     });
 
-    it(`${file} handler 是 async function`, async () => {
-      const mod = await import(join(MODULES_DIR, file) + `?t=${Date.now()}`);
-      const def = mod.default;
-      expect(typeof def.handler).toBe("function");
-    });
+    if (hasInit) {
+      it(`${file} export init()`, async () => {
+        const mod = await import(join(MODULES_DIR, file) + `?t=${Date.now()}`);
+        expect(typeof mod.init).toBe("function");
+      });
+    }
   }
 
-  it("notification.js 同時有 on（sync）和 lifecycle（async）", async () => {
+  it("notification.js on={} 包含 Notification + bus events", async () => {
     const mod = await import(join(MODULES_DIR, "notification.js") + `?t=${Date.now()}`);
     expect(mod.on).toBeDefined();
     expect(mod.on.Notification).toBeDefined();
-    expect(mod.lifecycle).toBeDefined();
-    expect(mod.lifecycle.subscribe).toBeDefined();
-    expect(typeof mod.lifecycle.handler).toBe("function");
+    expect(mod.on["task:completed"]).toBeDefined();
+    expect(mod.on["sd:done"]).toBeDefined();
+  });
+
+  it("所有模組不再使用 subscribe/handler lifecycle 格式", async () => {
+    const moduleFiles = readdirSync(MODULES_DIR).filter(f => f.endsWith(".js"));
+    for (const file of moduleFiles) {
+      const mod = await import(join(MODULES_DIR, file) + `?t=${Date.now()}`);
+      // default export 不應有 subscribe
+      if (mod.default) {
+        expect(mod.default.subscribe).toBeUndefined();
+      }
+      // lifecycle export 不應存在
+      expect(mod.lifecycle).toBeUndefined();
+    }
   });
 });
 
