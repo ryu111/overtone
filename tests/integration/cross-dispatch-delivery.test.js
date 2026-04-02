@@ -16,6 +16,7 @@ async function dispatch(prompt, opts = {}) {
 			source_cwd: opts.source_cwd || SOURCE_CWD,
 			prompt,
 			priority: opts.priority || "normal",
+			_skipDelivery: true,
 		}),
 		signal: AbortSignal.timeout(5000),
 	});

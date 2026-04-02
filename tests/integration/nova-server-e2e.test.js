@@ -22,6 +22,7 @@ describeE2E("cross-dispatch 全流程", () => {
         source_cwd: "/tmp/test-source",
         target_cwd: "/tmp/test-target",
         prompt: "E2E test dispatch",
+        _skipDelivery: true,
       }),
     });
     const { id } = await createRes.json();
