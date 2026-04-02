@@ -35,8 +35,8 @@ describe("模組獨立性", () => {
       expect(importLines.length).toBe(0);
     });
 
-    it(`${file} 不 import server.js`, () => {
-      const importLines = code.split("\n").filter(l => /^\s*import\b/.test(l) && l.includes("server"));
+    it(`${file} 不 import server.js（server-api.js 除外）`, () => {
+      const importLines = code.split("\n").filter(l => /^\s*import\b/.test(l) && l.includes("server") && !l.includes("server-api"));
       expect(importLines.length).toBe(0);
     });
   }
