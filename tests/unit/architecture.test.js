@@ -44,27 +44,7 @@ describe("模組獨立性", () => {
 
 // ── Lifecycle 模組介面 ──
 describe("統一模組介面（on={} + init/destroy）", () => {
-  const busModules = [
-    { file: "heartbeat.js", events: ["hb:tick"], hasInit: true, hasDestroy: true },
-    { file: "watchdog.js", events: ["watchdog:scan"], hasInit: true, hasDestroy: true },
-  ];
-
-  for (const { file, events, hasInit, hasDestroy } of busModules) {
-    it(`${file} on={} 包含 bus events: ${events.join(",")}`, async () => {
-      const mod = await import(join(MODULES_DIR, file) + `?t=${Date.now()}`);
-      expect(mod.on).toBeDefined();
-      for (const evt of events) {
-        expect(typeof mod.on[evt]).toBe("function");
-      }
-    });
-
-    if (hasInit) {
-      it(`${file} export init()`, async () => {
-        const mod = await import(join(MODULES_DIR, file) + `?t=${Date.now()}`);
-        expect(typeof mod.init).toBe("function");
-      });
-    }
-  }
+  // heartbeat + watchdog 已搬至 nova-server/services/，modules/ 不再有這些檔案
 
   it("notification.js on={} 包含 Notification + bus events", async () => {
     const mod = await import(join(MODULES_DIR, "notification.js") + `?t=${Date.now()}`);
@@ -94,7 +74,7 @@ describe("Judge 資料管線檔名一致性", () => {
   // 所有讀取 judge 評分的消費者，必須引用正確檔名
   const consumers = [
     { name: "context-injector.js", path: join(MODULES_DIR, "context-injector.js") },
-    { name: "heartbeat.js", path: join(MODULES_DIR, "heartbeat.js") },
+    // heartbeat.js 已搬至 nova-server/services/
     { name: "briefing-builder.js", path: join(homedir(), ".claude/scripts/briefing-builder.js") },
   ];
 
@@ -164,8 +144,7 @@ describe("檔案膨脹偵測", () => {
     it(`${rel} 有效碼 ≤ 800 行（超過為 warning）`, () => {
       const code = readFile(path);
       const effective = effectiveLineCount(code);
-      // heartbeat.js 暫時 1000（v2 priority loop 加入後需拆分）
-      const limit = rel.includes("heartbeat") ? 1000 : 800;
+      const limit = 800;
       expect(effective).toBeLessThanOrEqual(limit);
     });
   }
