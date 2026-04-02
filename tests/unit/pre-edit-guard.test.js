@@ -58,4 +58,62 @@ describe('pre-edit-guard', () => {
       expect(evaluate({ tool_input: { file_path: null } }).hookSpecificOutput?.permissionDecision).toBe('allow');
     });
   });
+
+  describe('寫入內容安全檢查', () => {
+    const dangerousCases = [
+      ['eval(code)', 'eval('],
+      ['new Function("return 1")', 'new Function('],
+      ['dangerouslySetInnerHTML={{ __html: x }}', 'dangerouslySetInnerHTML'],
+      ['el.innerHTML = userInput', 'innerHTML ='],
+      ['document.write(data)', 'document.write('],
+      ['child_process.exec(cmd)', 'child_process.exec('],
+      ['os.system("rm -rf /")', 'os.system('],
+      ['from os import system', 'from os import system'],
+      ['pickle.load(f)', 'pickle.load'],
+    ];
+
+    for (const [content, label] of dangerousCases) {
+      test(`阻擋危險內容：${label}`, () => {
+        const result = evaluate({
+          tool_input: { file_path: '/tmp/test.js', new_string: content },
+        });
+        expect(result.hookSpecificOutput?.permissionDecision).toBe('deny');
+        expect(result.hookSpecificOutput?.permissionDecisionReason).toContain('危險');
+      });
+    }
+
+    test('Write tool content 也檢查', () => {
+      const result = evaluate({
+        tool_input: { file_path: '/tmp/test.js', content: 'eval(code)' },
+      });
+      expect(result.hookSpecificOutput?.permissionDecision).toBe('deny');
+    });
+
+    test('排除 hooks/modules/ 路徑', () => {
+      const result = evaluate({
+        tool_input: {
+          file_path: `${CLAUDE_DIR}/hooks/modules/test.js`,
+          new_string: 'child_process.exec(cmd)',
+        },
+      });
+      // hooks/modules/ 下的檔案會被 PROTECTED_PATHS 的 hooks/ 規則阻擋，
+      // 但阻擋原因是路徑保護而非內容安全
+      expect(result.hookSpecificOutput?.permissionDecision).toBe('deny');
+      expect(result.hookSpecificOutput?.permissionDecisionReason).toContain('保護');
+    });
+
+    test('安全內容放行', () => {
+      const result = evaluate({
+        tool_input: { file_path: '/tmp/test.js', new_string: 'console.log("hello")' },
+      });
+      expect(result.hookSpecificOutput?.permissionDecision).toBe('allow');
+    });
+
+    test('空 content 放行', () => {
+      const result = evaluate({
+        tool_input: { file_path: '/tmp/test.js', new_string: '' },
+      });
+      expect(result.hookSpecificOutput?.permissionDecision).toBe('allow');
+    });
+  });
 });

@@ -1,0 +1,12 @@
+{
+  "name": "新增 scanStaleDocs 掃描函式並整合到 self-check",
+  "type": "功能",
+  "priority": "P2",
+  "depth": "D1",
+  "description": "",
+  "subtasks": [],
+  "created": "2026-04-02T10:12:33.392Z",
+  "claimed": "2026-04-02T10:12:33.407Z",
+  "completed": null,
+  "result": null
+}
