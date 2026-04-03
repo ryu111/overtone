@@ -1,0 +1,334 @@
+{
+  "name": "本地模型 A/B/C Benchmark",
+  "description": "比較 Qwen3-8B / Gemma4-26B / Gemma4-31B 在 6 個本地模型任務上的表現",
+  "tasks": [
+    {
+      "id": "session-summary",
+      "name": "Session 摘要",
+      "type": "text",
+      "system": "你是 Nova 系統的 session 摘要生成器。\n\n規則：\n- 2-3 句話，涵蓋：做了什麼、結果如何\n- 使用繁體中文，具體檔案名和數字（不說「一些改動」，說「修改 guards.js 的 3 個 regex」）\n- 從工具使用和 commit 記錄推斷主要活動\n- 重點：產出了什麼（程式碼/文件/設定），而非過程（讀了/搜了）\n- 簡單 session（1-2 個工具、1 個 commit）用簡短摘要，不展開技術細節\n\n只回覆摘要文字。",
+      "cases": [
+        {
+          "label": "修改程式碼並完成測試",
+          "prompt": "根據以下 session 資料，寫一段 2-3 句的中文摘要：\n\n工具使用：{\"Read\":1,\"Edit\":1}\n使用者指令：請修復 heartbeat timeout bug\n委派 agent：無\nGit commits：\nfix(heartbeat): 修正 maxTotalTime 計算錯誤",
+          "ground_truth": "修正 heartbeat timeout 計算邏輯，調整 maxTotalTime 的計算方式以避免逾時誤判。"
+        },
+        {
+          "label": "重構 guards 模組並加測試",
+          "prompt": "根據以下 session 資料，寫一段 2-3 句的中文摘要：\n\n工具使用：{\"Read\":5,\"Edit\":3,\"Bash\":8}\n使用者指令：重構 guards.js 為宣告式介面 | 跑測試確認\n委派 agent：executor\nGit commits：\nrefactor(guards): 統一 guard 模組為宣告式介面\ntest(guards): 新增 guard 覆蓋率測試",
+          "ground_truth": "重構 guards.js 為宣告式介面，並由 executor 完成，共修改 3 個檔案，測試全過。"
+        },
+        {
+          "label": "新增心跳引擎",
+          "prompt": "根據以下 session 資料，寫一段 2-3 句的中文摘要：\n\n工具使用：{\"Read\":8,\"Write\":2,\"Edit\":4,\"Bash\":5}\n使用者指令：設計心跳系統 | 實作 heartbeat daemon | 驗收測試\n委派 agent：planner, executor\nGit commits：\nfeat(heartbeat): 新增 daemon lifecycle 模組\ntest(heartbeat): E2E 心跳任務測試",
+          "ground_truth": "設計並實作心跳引擎，planner 與 executor 協作完成，新增 2 個檔案，測試通過。"
+        },
+        {
+          "label": "分析 session 資料格式",
+          "prompt": "根據以下 session 資料，寫一段 2-3 句的中文摘要：\n\n工具使用：{\"Read\":3,\"Bash\":4}\n使用者指令：分析 session-summaries.jsonl 格式\n委派 agent：無",
+          "ground_truth": "分析 session-summaries.jsonl 格式，確認欄位結構，無程式碼修改。"
+        },
+        {
+          "label": "跨專案協調大型任務",
+          "prompt": "根據以下 session 資料，寫一段 2-3 句的中文摘要：\n\n工具使用：{\"Bash\":153,\"Edit\":12,\"Write\":4}\n使用者指令：協調三個專案並行迭代完成\n委派 agent：executor, executor, executor, reviewer\nGit commits：\nfeat(ai-media): 完成 EP05 影片 Phase 3\nfix(nova-quant): 修復 SOL 持倉清理\nchore(nova): 補充常駐服務規範",
+          "ground_truth": "協調三個專案並行完成：ai-media EP05 影片 Phase 3、nova-quant SOL 持倉修復、nova 常駐服務規範補充。"
+        },
+        {
+          "label": "bug fix 單檔修改",
+          "prompt": "根據以下 session 資料，寫一段 2-3 句的中文摘要：\n\n工具使用：{\"Read\":2,\"Edit\":1,\"Bash\":3}\n使用者指令：修復 statusline 不顯示的 bug\n委派 agent：無\nGit commits：\nfix(statusline): 加 exit 0 避免 jq 失敗導致非零退出",
+          "ground_truth": "修復 statusline 不顯示的 bug，在 statusline.sh 結尾加入 exit 0 確保腳本始終返回成功。"
+        },
+        {
+          "label": "多步驟功能開發",
+          "prompt": "根據以下 session 資料，寫一段 2-3 句的中文摘要：\n\n工具使用：{\"Read\":12,\"Write\":3,\"Edit\":8,\"Bash\":15}\n使用者指令：實作 cross-dispatch 系統 | 整合 hook\n委派 agent：planner, executor, executor\nGit commits：\nfeat(cross-dispatch): 新增跨專案任務派發 API\nfeat(hooks): context-injector 整合 dispatch 注入\ntest(dispatch): 端到端測試",
+          "ground_truth": "實作跨專案 dispatch 系統，包含 API、hook 整合和端到端測試，3 個新檔案。"
+        },
+        {
+          "label": "純研究無產出",
+          "prompt": "根據以下 session 資料，寫一段 2-3 句的中文摘要：\n\n工具使用：{\"Read\":15,\"Bash\":5}\n使用者指令：研究 vllm-mlx 效能瓶頸\n委派 agent：無",
+          "ground_truth": "研究 vllm-mlx 效能瓶頸，讀取了多個設定和日誌檔案，無程式碼變更。"
+        },
+        {
+          "label": "文件更新",
+          "prompt": "根據以下 session 資料，寫一段 2-3 句的中文摘要：\n\n工具使用：{\"Read\":4,\"Edit\":5}\n使用者指令：更新 roadmap 和 vision 文件\n委派 agent：無\nGit commits：\ndocs: 更新 roadmap Layer 4 進度\ndocs: 修訂 vision L5 願景",
+          "ground_truth": "更新 roadmap Layer 4 進度和 vision L5 願景文件，共修改 2 個文件。"
+        },
+        {
+          "label": "簡單設定修改",
+          "prompt": "根據以下 session 資料，寫一段 2-3 句的中文摘要：\n\n工具使用：{\"Edit\":1}\n使用者指令：改 port 設定\n委派 agent：無\nGit commits：\nchore: 修改 nova-server port 從 3456 到 3457",
+          "ground_truth": "修改 nova-server port 設定從 3456 到 3457。"
+        }
+      ]
+    },
+    {
+      "id": "commit-message",
+      "name": "Commit Message 生成",
+      "type": "text",
+      "system": "你是 Nova 專案的維護 agent。根據以下狀態，決定需要執行的維護動作。\n\n決策規則：\n- 有變更但無 commit → commit\n- 無實質變更 → 不輸出任何動作（回覆「無需動作」）\n\n格式：ACTION: commit | repo=REPO | message=MESSAGE\n\n⚠️ message 必須使用繁體中文。\n\n範例：\n- ACTION: commit | repo=nova | message=chore(maintainer): 同步 Rules 數量\n- ACTION: commit | repo=nova-brain | message=chore(maintainer): 新增 guard 測試用例\n- ACTION: commit | repo=nova | message=chore(maintainer): 更新 hooks 模組",
+      "cases": [
+        {
+          "label": "Nova rules 變更",
+          "prompt": "## Nova (~/.claude/) 變更\n```\nM rules/深度路由.md\nM rules/閉環規範.md\n```\n\n## 實際元件數量\nRules=22, Skills=15, Agents=8, HookModules=6",
+          "ground_truth": "ACTION: commit | repo=nova | message=chore(maintainer): 更新深度路由和閉環規範",
+          "criteria": "commit message 包含具體檔案名或主題，格式正確"
+        },
+        {
+          "label": "nova-brain 測試新增",
+          "prompt": "## nova-brain 變更\n```\nA tests/unit/new-guard.test.js\nM tests/unit/architecture.test.js\n```\n\n## 實際元件數量\nRules=22, Skills=15, Agents=8, HookModules=6",
+          "ground_truth": "ACTION: commit | repo=nova-brain | message=chore(maintainer): 新增 new-guard.test.js 測試用例",
+          "criteria": "commit message 提及新檔案名，格式正確"
+        },
+        {
+          "label": "hooks 模組修改",
+          "prompt": "## Nova (~/.claude/) 變更\n```\nM hooks/modules/guards.js\nM hooks/modules/flow-observer.js\n```\n\n## 實際元件數量\nRules=22, Skills=15, Agents=8, HookModules=6",
+          "ground_truth": "ACTION: commit | repo=nova | message=chore(maintainer): hooks 更新 2 個",
+          "criteria": "提及 hooks 或模組名"
+        },
+        {
+          "label": "數量同步",
+          "prompt": "## 實際元件數量\nRules=23, Skills=15, Agents=8, HookModules=6\n\n## Roadmap 記載的數量\nRules 22 個, Skills 15 個, Agents 8 個",
+          "ground_truth": "ACTION: commit | repo=nova | message=chore(maintainer): 同步 Rules 數量",
+          "criteria": "提及同步或數量更新"
+        },
+        {
+          "label": "多 repo 同時有變更",
+          "prompt": "## Nova (~/.claude/) 變更\n```\nM scripts/maintainer.js\n```\n\n## nova-brain 變更\n```\nM tests/unit/maintainer.test.js\n```\n\n## 實際元件數量\nRules=22, Skills=15, Agents=8, HookModules=6",
+          "ground_truth": "ACTION: commit | repo=nova | message=chore(maintainer): scripts 更新 maintainer.js\nACTION: commit | repo=nova-brain | message=chore(maintainer): 更新 maintainer.test.js",
+          "criteria": "產出兩個 commit action，分別對應兩個 repo"
+        },
+        {
+          "label": "無變更",
+          "prompt": "## 實際元件數量\nRules=22, Skills=15, Agents=8, HookModules=6\n\n## Roadmap 記載的數量\nRules 22 個, Skills 15 個, Agents 8 個",
+          "ground_truth": "無需動作",
+          "criteria": "不輸出 ACTION 或回覆無需動作"
+        },
+        {
+          "label": "scripts 更新",
+          "prompt": "## Nova (~/.claude/) 變更\n```\nM scripts/briefing-builder.js\nM scripts/local-model.js\nM scripts/judge-scoring.js\n```\n\n## 實際元件數量\nRules=22, Skills=15, Agents=8, HookModules=6",
+          "ground_truth": "ACTION: commit | repo=nova | message=chore(maintainer): scripts 更新（briefing-builder、local-model 等）",
+          "criteria": "提及 scripts 或具體檔名"
+        },
+        {
+          "label": "刪除檔案",
+          "prompt": "## nova-brain 變更\n```\nD tests/unit/old-test.js\nD tests/unit/deprecated.test.js\n```\n\n## 實際元件數量\nRules=22, Skills=15, Agents=8, HookModules=6",
+          "ground_truth": "ACTION: commit | repo=nova-brain | message=chore(maintainer): 刪除過時測試檔案",
+          "criteria": "提及刪除"
+        },
+        {
+          "label": "rules 新增",
+          "prompt": "## Nova (~/.claude/) 變更\n```\nA rules/討論與命令.md\n```\n\n## 實際元件數量\nRules=23, Skills=15, Agents=8, HookModules=6\n\n## Roadmap 記載的數量\nRules 22 個",
+          "ground_truth": "ACTION: commit | repo=nova | message=chore(maintainer): 新增 討論與命令 規則文檔",
+          "criteria": "提及新增和檔名"
+        },
+        {
+          "label": "skills 修改",
+          "prompt": "## Nova (~/.claude/) 變更\n```\nM skills/nova-test/SKILL.md\nM skills/nova-test/references/testing-trophy.md\n```\n\n## 實際元件數量\nRules=22, Skills=15, Agents=8, HookModules=6",
+          "ground_truth": "ACTION: commit | repo=nova | message=chore(maintainer): 更新 nova-test skill",
+          "criteria": "提及 skill 名稱"
+        }
+      ]
+    },
+    {
+      "id": "quality-scoring",
+      "name": "品質評分",
+      "type": "json",
+      "system": "你是 Nova 系統的元件品質評分器。\n\n評分規則：\n- 每個維度根據定義嚴格計分，不可給人情分\n- comment 必須指出具體問題（引用程式碼中的變數名、行為、缺陷），禁止泛泛而談\n\n只回覆 JSON，第一個字元必須是 {。",
+      "cases": [
+        {
+          "label": "高品質 skill",
+          "prompt": "評估以下 skill 的品質（0-50 分），考慮：\n- 知識價值 (0-15)\n- 結構清晰度 (0-15)\n- 實用性 (0-10)\n- 維護性 (0-10)\n\n檔案路徑：~/.claude/skills/nova-test/SKILL.md\n內容：\n---\nname: nova-test\ndescription: 測試方法論 — Testing Trophy + 風險驅動覆蓋\n---\n\n# Nova Test\n\n## 決策樹\n何該測？何不測？怎麼測？\n\n### 該測\n- 業務邏輯的核心路徑\n- 跨模組整合點\n- 已知的 regression\n\n### 不測\n- 第三方 API 的內部邏輯\n- 純 getter/setter\n- 已有框架保證的行為\n\n格式：{\"knowledge\":N,\"clarity\":N,\"utility\":N,\"maintainability\":N,\"total\":N}",
+          "ground_truth": {"knowledge": 12, "clarity": 13, "utility": 8, "maintainability": 8, "total": 41},
+          "criteria": "total 在 35-50 範圍，JSON 格式正確"
+        },
+        {
+          "label": "低品質 hook",
+          "prompt": "評估以下 hook 的品質（0-50 分），考慮：\n- 知識價值 (0-15)\n- 結構清晰度 (0-15)\n- 實用性 (0-10)\n- 維護性 (0-10)\n\n檔案路徑：~/.claude/hooks/modules/heartbeat.js\n內容：\nconst on = {};\non.Heartbeat = async (input) => {\n  // TODO: implement\n  return { decision: 'allow' };\n};\nexport { on };\n\n格式：{\"knowledge\":N,\"clarity\":N,\"utility\":N,\"maintainability\":N,\"total\":N}",
+          "ground_truth": {"knowledge": 2, "clarity": 5, "utility": 1, "maintainability": 3, "total": 11},
+          "criteria": "total 在 5-20 範圍，JSON 格式正確"
+        },
+        {
+          "label": "中等品質 rule",
+          "prompt": "評估以下 rule 的品質（0-50 分），考慮：\n- 知識價值 (0-15)\n- 結構清晰度 (0-15)\n- 實用性 (0-10)\n- 維護性 (0-10)\n\n檔案路徑：~/.claude/rules/並行執行.md\n內容：\n## 並行執行\n\n- MUST 獨立任務並行執行\n- MUST 無依賴 + 規範明確 → 全部並行\n- NEVER 先做一個確認格式\n\n### 依賴偵測\n1. 修改相同檔案？ → 序列\n2. 有引用關係？ → 序列\n3. 需要前一步輸出？ → 序列\n4. 以上皆否 → 並行\n\n格式：{\"knowledge\":N,\"clarity\":N,\"utility\":N,\"maintainability\":N,\"total\":N}",
+          "ground_truth": {"knowledge": 8, "clarity": 10, "utility": 7, "maintainability": 6, "total": 31},
+          "criteria": "total 在 25-40 範圍，JSON 格式正確"
+        },
+        {
+          "label": "空檔案",
+          "prompt": "評估以下 skill 的品質（0-50 分），考慮：\n- 知識價值 (0-15)\n- 結構清晰度 (0-15)\n- 實用性 (0-10)\n- 維護性 (0-10)\n\n檔案路徑：~/.claude/skills/empty/SKILL.md\n內容：\n---\nname: empty\n---\n\n格式：{\"knowledge\":N,\"clarity\":N,\"utility\":N,\"maintainability\":N,\"total\":N}",
+          "ground_truth": {"knowledge": 0, "clarity": 2, "utility": 0, "maintainability": 1, "total": 3},
+          "criteria": "total 在 0-10 範圍，JSON 格式正確"
+        },
+        {
+          "label": "有 reference 的 skill",
+          "prompt": "評估以下 skill 的品質（0-50 分），考慮：\n- 知識價值 (0-15)\n- 結構清晰度 (0-15)\n- 實用性 (0-10)\n- 維護性 (0-10)\n\n檔案路徑：~/.claude/skills/cross-session/SKILL.md\n內容：\n---\nname: cross-session\ndescription: 跨 session 協作 — API 用法、prompt 寫法、能力校準\n---\n\n# Cross-Session\n\n## API\nPOST /api/cross-dispatch { target_cwd, prompt, source_cwd }\nPOST /api/cross-dispatch/complete { id, summary }\n\n## Prompt 寫法\n- 包含背景、動作、驗證方式\n- 討論式預設\n\n## References\n- references/dispatch-api.md\n- references/prompt-template.md\n\n格式：{\"knowledge\":N,\"clarity\":N,\"utility\":N,\"maintainability\":N,\"total\":N}",
+          "ground_truth": {"knowledge": 11, "clarity": 12, "utility": 9, "maintainability": 7, "total": 39},
+          "criteria": "total 在 30-50 範圍，JSON 格式正確"
+        },
+        {
+          "label": "agent 檔案",
+          "prompt": "評估以下 agent 的品質（0-50 分），考慮：\n- 知識價值 (0-15)\n- 結構清晰度 (0-15)\n- 實用性 (0-10)\n- 維護性 (0-10)\n\n檔案路徑：~/.claude/agents/executor.md\n內容：\n---\nname: executor\nmodel: sonnet\nskills: [nova-test, closed-loop]\n---\n\n你是程式碼執行者。依照計劃實作程式碼、執行測試、commit。\n\n格式：{\"knowledge\":N,\"clarity\":N,\"utility\":N,\"maintainability\":N,\"total\":N}",
+          "ground_truth": {"knowledge": 5, "clarity": 8, "utility": 6, "maintainability": 7, "total": 26},
+          "criteria": "total 在 20-35 範圍，JSON 格式正確"
+        },
+        {
+          "label": "完整 hook 模組",
+          "prompt": "評估以下 hook 的品質（0-50 分），考慮：\n- 知識價值 (0-15)\n- 結構清晰度 (0-15)\n- 實用性 (0-10)\n- 維護性 (0-10)\n\n檔案路徑：~/.claude/hooks/modules/guards.js\n內容：\nimport { existsSync } from 'node:fs';\n\nconst RULES = [\n  { pattern: /rm\\s+-rf/, block: true, reason: '危險操作：遞迴刪除' },\n  { pattern: /git\\s+push.*--force/, block: true, reason: 'force push 不允許' },\n];\n\nconst on = {};\non.PreToolUse = async (input) => {\n  if (input.tool_name !== 'Bash') return { decision: 'allow' };\n  const cmd = input.tool_input?.command || '';\n  for (const rule of RULES) {\n    if (rule.pattern.test(cmd)) {\n      return { decision: 'block', reason: rule.reason };\n    }\n  }\n  return { decision: 'allow' };\n};\nexport { on };\n\n格式：{\"knowledge\":N,\"clarity\":N,\"utility\":N,\"maintainability\":N,\"total\":N}",
+          "ground_truth": {"knowledge": 10, "clarity": 13, "utility": 9, "maintainability": 8, "total": 40},
+          "criteria": "total 在 30-50 範圍，JSON 格式正確"
+        },
+        {
+          "label": "重複內容 rule",
+          "prompt": "評估以下 rule 的品質（0-50 分），考慮：\n- 知識價值 (0-15)\n- 結構清晰度 (0-15)\n- 實用性 (0-10)\n- 維護性 (0-10)\n\n檔案路徑：~/.claude/rules/test.md\n內容：\n## 測試\n\n要寫測試。\n測試很重要。\n一定要寫測試。\n不寫測試不行。\n\n格式：{\"knowledge\":N,\"clarity\":N,\"utility\":N,\"maintainability\":N,\"total\":N}",
+          "ground_truth": {"knowledge": 1, "clarity": 2, "utility": 1, "maintainability": 1, "total": 5},
+          "criteria": "total 在 0-15 範圍，JSON 格式正確"
+        },
+        {
+          "label": "技術深度 skill",
+          "prompt": "評估以下 skill 的品質（0-50 分），考慮：\n- 知識價值 (0-15)\n- 結構清晰度 (0-15)\n- 實用性 (0-10)\n- 維護性 (0-10)\n\n檔案路徑：~/.claude/skills/claude-dev/SKILL.md\n內容：\n---\nname: claude-dev\ndescription: Claude Code 開發知識 — daemon ops、SSE events、hook 系統\n---\n\n# Claude Dev\n\n## Daemon Operations\n- lockfile 機制：/tmp/nova-server.lock\n- graceful restart：SIGTERM → drain → restart\n- spawn 設定：stdout 導向 /tmp/nova-server.log\n\n## SSE Events\n- session_start/end、ask_question/answer\n- 新增 event 需更新 NC Swift enum\n\n## Hook 系統\n- PreToolUse → PostToolUse → SessionEnd\n- handler 回傳 { decision, reason, hookSpecificOutput }\n\n## References\n- references/daemon-operations.md\n- references/sse-events.md\n\n格式：{\"knowledge\":N,\"clarity\":N,\"utility\":N,\"maintainability\":N,\"total\":N}",
+          "ground_truth": {"knowledge": 14, "clarity": 12, "utility": 9, "maintainability": 7, "total": 42},
+          "criteria": "total 在 35-50 範圍，JSON 格式正確"
+        },
+        {
+          "label": "格式不佳的 rule",
+          "prompt": "評估以下 rule 的品質（0-50 分），考慮：\n- 知識價值 (0-15)\n- 結構清晰度 (0-15)\n- 實用性 (0-10)\n- 維護性 (0-10)\n\n檔案路徑：~/.claude/rules/misc.md\n內容：\n記得要commit\n不要忘了push\n測試要跑\nreview要做\n還有什麼...CI/CD也要注意\n\n格式：{\"knowledge\":N,\"clarity\":N,\"utility\":N,\"maintainability\":N,\"total\":N}",
+          "ground_truth": {"knowledge": 1, "clarity": 1, "utility": 1, "maintainability": 0, "total": 3},
+          "criteria": "total 在 0-10 範圍，JSON 格式正確"
+        }
+      ]
+    },
+    {
+      "id": "improvement-suggestion",
+      "name": "改善建議",
+      "type": "json",
+      "system": "你是 Nova 系統的品質改善顧問。\n\n規則：\n- suggestion 格式：「{具體位置} + {具體動作} + {期望效果}」\n- 不接受模糊描述\n- 最多 3 個，按嚴重度排序\n- 使用繁體中文\n\n只回覆 JSON 陣列，不要用 code block 包裝。第一個字元必須是 [。\n\n範例輸出：\n[{\"suggestion\":\"heartbeat.js：將 console.log 替換為 stderr 輸出，避免汙染 stdout\",\"target\":\"無 console.log\",\"priority\":\"high\"}]",
+      "cases": [
+        {
+          "label": "heartbeat.js F 級",
+          "prompt": "你是 Nova 品質改善顧問。以下元件需要改善：\n\n元件：~/.claude/hooks/modules/heartbeat.js（hook）\n總分：55/100（確定性 30/50 + 語意 25/50）\n等級：F\n\n確定性評分明細：\n- export: 10/10 ✓\n- on handler: 10/10 ✓\n- error handling: 0/10 ✗\n- 行數合理: 10/10 ✓\n- 無 console.log: 0/10 ✗\n\n弱維度：error handling, 無 console.log\n\n請針對弱維度提出 1-3 個具體改善建議。格式：JSON array，每項 {\"suggestion\": \"具體改善描述\", \"target\": \"目標維度\", \"priority\": \"high|medium|low\"}。",
+          "ground_truth": [{"suggestion": "heartbeat.js：將所有 console.log 改為 timeline emit 或 stderr，確保 hook 不汙染 stdout", "target": "無 console.log", "priority": "high"}],
+          "criteria": "建議具體（提及檔名和動作），JSON array 格式正確"
+        },
+        {
+          "label": "context-injector 語意弱",
+          "prompt": "你是 Nova 品質改善顧問。以下元件需要改善：\n\n元件：~/.claude/hooks/modules/context-injector.js（hook）\n總分：72/100（確定性 45/50 + 語意 27/50）\n等級：C\n\n確定性評分明細：\n- export: 10/10 ✓\n- on handler: 10/10 ✓\n- error handling: 10/10 ✓\n- 行數合理: 5/10 ✗\n- 無 console.log: 10/10 ✓\n\n弱維度：行數合理（543 行超過 300 行上限）\n\n請針對弱維度提出 1-3 個具體改善建議。",
+          "ground_truth": [{"suggestion": "context-injector.js（543 行）：拆分為 dispatch-handler.js 和 session-context.js，各自 <300 行", "target": "行數合理", "priority": "high"}],
+          "criteria": "建議具體（提及行數和拆分方案），JSON array 格式正確"
+        },
+        {
+          "label": "A 級元件",
+          "prompt": "你是 Nova 品質改善顧問。以下元件需要改善：\n\n元件：~/.claude/hooks/modules/guards.js（hook）\n總分：92/100（確定性 50/50 + 語意 42/50）\n等級：A\n\n確定性評分明細：\n- export: 10/10 ✓\n- on handler: 10/10 ✓\n- error handling: 10/10 ✓\n- 行數合理: 10/10 ✓\n- 無 console.log: 10/10 ✓\n\n弱維度：無（語意偏弱）\n\n請針對弱維度提出 1-3 個具體改善建議。",
+          "ground_truth": [{"suggestion": "guards.js：增加 JSDoc 型別註解，提升 IDE 體驗和語意分數", "target": "語意品質", "priority": "low"}],
+          "criteria": "建議優先級低（因為已是 A 級），JSON array 格式正確"
+        },
+        {
+          "label": "notification 缺少文件",
+          "prompt": "你是 Nova 品質改善顧問。以下元件需要改善：\n\n元件：~/.claude/hooks/modules/notification.js（hook）\n總分：65/100（確定性 40/50 + 語意 25/50）\n等級：D\n\n確定性評分明細：\n- export: 10/10 ✓\n- on handler: 10/10 ✓\n- error handling: 10/10 ✓\n- 行數合理: 10/10 ✓\n- 無 console.log: 0/10 ✗\n\n弱維度：無 console.log\n\n請針對弱維度提出 1-3 個具體改善建議。",
+          "ground_truth": [{"suggestion": "notification.js：將 console.log 替換為 writeFileSync 到 /tmp/nova-notification.log，避免 stdout 汙染", "target": "無 console.log", "priority": "medium"}],
+          "criteria": "建議具體提及替換方案，JSON array 格式正確"
+        },
+        {
+          "label": "rule 缺 frontmatter",
+          "prompt": "你是 Nova 品質改善顧問。以下元件需要改善：\n\n元件：~/.claude/rules/測試規範.md（rule）\n總分：60/100（確定性 25/50 + 語意 35/50）\n等級：D\n\n確定性評分明細：\n- frontmatter: 0/10 ✗\n- MUST/NEVER 標記: 10/10 ✓\n- 正反例: 5/10 ✗\n- 長度合理: 10/10 ✓\n- 無重複引用: 0/10 ✗\n\n弱維度：frontmatter, 正反例, 無重複引用\n\n請針對弱維度提出 1-3 個具體改善建議。",
+          "ground_truth": [{"suggestion": "測試規範.md：在開頭加入 frontmatter（name, description, type），確保索引系統能正確分類", "target": "frontmatter", "priority": "high"}],
+          "criteria": "建議提及 frontmatter 格式，JSON array 格式正確"
+        }
+      ]
+    },
+    {
+      "id": "behavior-analysis",
+      "name": "行為分析",
+      "type": "text",
+      "system": "你是 Nova 行為分析器。針對 AI Agent 行為模式提供簡短改善建議。只回覆一行。",
+      "cases": [
+        {
+          "label": "dispatch-without-research",
+          "prompt": "行為 ID：dispatch-without-research\n描述：跨專案 dispatch 時未先研究可行方案\n出現次數：5\n\n這個行為應如何改善？用一行繁體中文回覆。",
+          "ground_truth": "dispatch 前先搜尋相關 skill 和程式碼，確認方案可行再派發。"
+        },
+        {
+          "label": "skip-test-after-fix",
+          "prompt": "行為 ID：skip-test-after-fix\n描述：修復 bug 後未執行測試驗證\n出現次數：3\n\n這個行為應如何改善？用一行繁體中文回覆。",
+          "ground_truth": "修復後必須執行 bun test 驗證，未通過不得回報完成。"
+        },
+        {
+          "label": "serial-search",
+          "prompt": "行為 ID：serial-search\n描述：搜尋時序列猜測路徑而非並行搜多個可能位置\n出現次數：8\n\n這個行為應如何改善？用一行繁體中文回覆。",
+          "ground_truth": "不確定位置時，並行搜尋多個可能路徑，不序列猜測。"
+        },
+        {
+          "label": "premature-abstraction",
+          "prompt": "行為 ID：premature-abstraction\n描述：為一次性操作建立不必要的抽象層\n出現次數：2\n\n這個行為應如何改善？用一行繁體中文回覆。",
+          "ground_truth": "一次性操作直接寫，不建抽象；等同類操作出現 3 次再提取。"
+        },
+        {
+          "label": "context-bloat",
+          "prompt": "行為 ID：context-bloat\n描述：在主 context 中執行廣泛探索，導致 context 膨脹\n出現次數：4\n\n這個行為應如何改善？用一行繁體中文回覆。",
+          "ground_truth": "廣泛探索委派 subagent 執行，保持主 context 精簡。"
+        },
+        {
+          "label": "positive-parallel-execution",
+          "prompt": "行為 ID：parallel-execution\n描述：正確地將獨立任務並行執行\n出現次數：12\n\n這個行為應如何改善？用一行繁體中文回覆。",
+          "ground_truth": "良好行為，持續保持獨立任務並行執行的模式。"
+        },
+        {
+          "label": "symptom-fix-only",
+          "prompt": "行為 ID：symptom-fix-only\n描述：只修症狀不找根因，導致同類問題反覆出現\n出現次數：3\n\n這個行為應如何改善？用一行繁體中文回覆。",
+          "ground_truth": "修復前先找根因，修復後建立防護（測試或 lint 規則）防止再發。"
+        },
+        {
+          "label": "no-closure-check",
+          "prompt": "行為 ID：no-closure-check\n描述：完成任務後未做閉環檢查（消費者、引用、文件同步）\n出現次數：6\n\n這個行為應如何改善？用一行繁體中文回覆。",
+          "ground_truth": "完成後讀取 closed-loop skill 確認所有消費者和引用已更新。"
+        },
+        {
+          "label": "ask-unnecessary",
+          "prompt": "行為 ID：ask-unnecessary\n描述：可自主決策的事情卻停下來問使用者\n出現次數：4\n\n這個行為應如何改善？用一行繁體中文回覆。",
+          "ground_truth": "可逆且不影響他人的決策直接執行，不問使用者。"
+        },
+        {
+          "label": "good-root-cause",
+          "prompt": "行為 ID：good-root-cause-analysis\n描述：正確地先分析根因再修復，建立防護\n出現次數：7\n\n這個行為應如何改善？用一行繁體中文回覆。",
+          "ground_truth": "良好行為，持續保持根因分析 → 修復 → 建防護的模式。"
+        }
+      ]
+    },
+    {
+      "id": "lifecycle-decision",
+      "name": "生命週期決策",
+      "type": "text",
+      "system": "你是 Nova 系統的 AI 助手。直接回答，不輸出思考過程。回覆格式依指示（純文字或 JSON）。",
+      "cases": [
+        {
+          "label": "需要 commit 的情境",
+          "prompt": "評估以下 skill 的品質（0-50 分），考慮：\n- 知識價值（這個 skill 提供了什麼 Claude 不知道的知識？）(0-15)\n- 結構清晰度（是否容易理解和使用？）(0-15)\n- 實用性（實際使用時有效嗎？）(0-10)\n- 維護性（容易更新嗎？會過時嗎？）(0-10)\n\n檔案路徑：~/.claude/skills/feedback-loop/SKILL.md\n內容：\n---\nname: feedback-loop\ndescription: 回饋迴圈 — 回報、反思、自驅、成功進化\n---\n\n# Feedback Loop\n\n## 回報協議\n三層完成：規格/實作/驗證。只有驗證才算完成。\n\n## 反思三問\n1. 方向對嗎？\n2. 還能更好嗎？\n3. 有異常信號嗎？\n\n只回覆一個 JSON：{\"knowledge\":N,\"clarity\":N,\"utility\":N,\"maintainability\":N,\"total\":N}\n不要思考過程。",
+          "ground_truth": "{\"knowledge\":10,\"clarity\":11,\"utility\":8,\"maintainability\":7,\"total\":36}",
+          "criteria": "回傳合法 JSON，total 在 25-50"
+        },
+        {
+          "label": "改善建議生成",
+          "prompt": "以下 Skill 品質評分不足（45/100），請提供 3 個具體改善建議：\n\nSkill 名稱：wording\n當前分數：45/100\n\n內容前 2000 字：\n---\nname: wording\ndescription: 措詞規範\n---\n\n# Wording\n\n用詞要精確。\n\n只回覆 3 個改善建議，每行一個，格式：- <建議>",
+          "ground_truth": "- 補充具體的措詞範例和反例\n- 新增各語境（commit、rule、dispatch）的用語規範\n- 加入自動檢查機制",
+          "criteria": "包含 2-3 個以 - 開頭的建議"
+        },
+        {
+          "label": "無需動作",
+          "prompt": "評估以下 skill 的品質（0-50 分），考慮：\n- 知識價值 (0-15)\n- 結構清晰度 (0-15)\n- 實用性 (0-10)\n- 維護性 (0-10)\n\n檔案路徑：~/.claude/skills/architecture/SKILL.md\n內容：\n---\nname: architecture\ndescription: 架構設計原則\n---\n\n# Architecture\n\n## 模組職責分離\n寫出/讀入/判定三方向。\n\n## 依賴方向\n上層可依賴下層，反之不可。\n\n只回覆一個 JSON：{\"knowledge\":N,\"clarity\":N,\"utility\":N,\"maintainability\":N,\"total\":N}",
+          "ground_truth": "{\"knowledge\":8,\"clarity\":9,\"utility\":7,\"maintainability\":6,\"total\":30}",
+          "criteria": "回傳合法 JSON，total 在 20-40"
+        },
+        {
+          "label": "低分 skill 改善",
+          "prompt": "以下 Skill 品質評分不足（30/100），請提供 3 個具體改善建議：\n\nSkill 名稱：empty-skill\n當前分數：30/100\n\n內容前 2000 字：\n---\nname: empty-skill\n---\n\n# Empty\n\nTODO\n\n只回覆 3 個改善建議，每行一個，格式：- <建議>",
+          "ground_truth": "- 補充完整的 description 欄位\n- 新增實際知識內容（目前只有 TODO）\n- 加入 references 引用具體資料",
+          "criteria": "包含 2-3 個以 - 開頭的建議"
+        },
+        {
+          "label": "高分評估",
+          "prompt": "評估以下 skill 的品質（0-50 分），考慮：\n- 知識價值 (0-15)\n- 結構清晰度 (0-15)\n- 實用性 (0-10)\n- 維護性 (0-10)\n\n檔案路徑：~/.claude/skills/nova-spec/SKILL.md\n內容：\n---\nname: nova-spec\ndescription: 規格撰寫方法 — spec/design/tasks 三件套\n---\n\n# Nova Spec\n\n## Spec 格式\n- 問題陳述\n- 約束條件\n- 成功標準\n\n## Design 格式\n- 方案比較（表格）\n- 選擇理由\n- 技術細節\n\n## Tasks 格式\n- Phase 分組\n- 依賴關係\n- 驗收標準\n\n## References\n- references/spec-format.md\n- references/design-format.md\n\n只回覆一個 JSON：{\"knowledge\":N,\"clarity\":N,\"utility\":N,\"maintainability\":N,\"total\":N}",
+          "ground_truth": "{\"knowledge\":13,\"clarity\":14,\"utility\":9,\"maintainability\":8,\"total\":44}",
+          "criteria": "回傳合法 JSON，total 在 35-50"
+        }
+      ]
+    }
+  ]
+}
