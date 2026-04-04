@@ -511,15 +511,13 @@ describe("cross-dispatch 處理單一責任", () => {
     expect(ciCode).toContain("injected.has(t.id)");
   });
 
-  it("三問閉環有 TTL 自動過期（防止無限積壓）", () => {
-    expect(ciCode).toContain("expiredByTTL");
-    expect(ciCode).toContain("300000");
+  it("三問閉環有時間自動過期（防止無限積壓）", () => {
+    expect(ciCode).toContain("7200000");
   });
 
-  it("closure-pending 項含 cwd（per-session 隔離，防止跨 session 阻擋）", () => {
-    // 寫入 closure 時帶 cwd
-    const closureWrite = ciCode.slice(ciCode.indexOf("nova-closure-pending"), ciCode.indexOf("closure tracking error"));
-    expect(closureWrite).toContain("cwd: myCwd");
+  it("closure 追蹤統一到 archive（source_cwd per-session 隔離）", () => {
+    expect(ciCode).toContain("closureAnswered");
+    expect(ciCode).toContain("source_cwd");
   });
 
   it("自動引擎 dispatch 完成不建 closure 項（有自己的 staleCount 反饋）", () => {
@@ -534,7 +532,7 @@ describe("cross-dispatch 處理單一責任", () => {
       guardsCode.indexOf("三問閉環"),
       guardsCode.indexOf("三問閉環") + 500,
     );
-    expect(closureSection).toContain("c.cwd");
+    expect(closureSection).toContain("source_cwd");
     expect(closureSection).toContain("myCwd");
   });
 });
