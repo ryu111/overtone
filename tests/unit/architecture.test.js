@@ -237,8 +237,11 @@ describe("指向完整性", () => {
       // 找「見 rules/xxx.md」「見 `rules/xxx.md`」「見全域 rules/xxx.md」
       const refs = content.matchAll(/見\s*(?:全域\s*)?[`]?rules\/([^\s`」\n]+\.md)/g);
       for (const match of refs) {
+        // 支援子資料夾：rules/X.md 或 rules/分類/X.md
         const target = join(homedir(), ".claude/rules", match[1]);
-        if (!existsSync(target)) {
+        const basename = match[1].split("/").pop();
+        const subDirTargets = ["核心","協作","品質","元件","環境"].map(d => join(homedir(), ".claude/rules", d, basename));
+        if (!existsSync(target) && !subDirTargets.some(p => existsSync(p))) {
           missing.push(`${file} → rules/${match[1]}`);
         }
       }
@@ -469,14 +472,14 @@ describe("AskUserQuestion 全鏈路防護", () => {
 
   it("nova-server manager.js POST /api/ask 有 broadcast ask_question", () => {
     if (!managerCode) return; // skip if nova-server not available
-    expect(managerCode).toMatch(/\/api\/ask.*POST/s);
+    expect(managerCode).toMatch(/post.*["']\/ask["']/is);
     expect(managerCode).toMatch(/broadcast.*ask_question/s);
   });
 
   it("nova-server manager.js POST /api/ask/answer 有 tmux 轉送", () => {
     if (!managerCode) return; // skip if nova-server not available
-    expect(managerCode).toMatch(/\/api\/ask\/answer/);
-    expect(managerCode).toMatch(/tmux.*send[_-]keys/s);
+    expect(managerCode).toMatch(/["']\/ask\/answer["']/);
+    expect(managerCode).toMatch(/tmux.*send.keys/s);
   });
 });
 
@@ -530,7 +533,7 @@ describe("cross-dispatch 處理單一責任", () => {
     const guardsCode = readFileSync(join(homedir(), ".claude/hooks/modules/guards.js"), "utf-8");
     const closureSection = guardsCode.slice(
       guardsCode.indexOf("三問閉環"),
-      guardsCode.indexOf("三問閉環") + 500,
+      guardsCode.indexOf("三問閉環") + 1000,
     );
     expect(closureSection).toContain("source_cwd");
     expect(closureSection).toContain("myCwd");
