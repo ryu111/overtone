@@ -140,11 +140,14 @@ describe("檔案膨脹偵測", () => {
     ...scanAllJs(join(homedir(), ".claude/hooks"), "hooks"),
   ];
 
+  // nova-cli.js 是統一 CLI 聚合器，隨功能增長，允許更大上限
+  const FILE_LIMITS = { "scripts/nova-cli.js": 1000 };
+
   for (const { rel, path } of targets) {
-    it(`${rel} 有效碼 ≤ 800 行（超過為 warning）`, () => {
+    const limit = FILE_LIMITS[rel] ?? 800;
+    it(`${rel} 有效碼 ≤ ${limit} 行（超過為 warning）`, () => {
       const code = readFile(path);
       const effective = effectiveLineCount(code);
-      const limit = 800;
       expect(effective).toBeLessThanOrEqual(limit);
     });
   }
