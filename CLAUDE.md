@@ -55,7 +55,7 @@ bun ~/.claude/scripts/spec-tasks.js index         # 更新 spec/index.md
 ## 開發規範
 
 - **文件位置**：設計文件寫在 `docs/`，⚠️ 不要寫在 `~/.claude/` 下
-- **元件閉環**：見 `~/.claude/rules/閉環規範.md` → `~/.claude/skills/closed-loop/`
+- **元件閉環**：見 `~/.claude/rules/品質/閉環規範.md` → `~/.claude/skills/closed-loop/`
 
 ## Hook 改動驗收
 
