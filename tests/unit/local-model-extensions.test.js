@@ -284,7 +284,7 @@ describe('模組職責分離', () => {
   test('context-injector 原始碼包含 14 個 inject 函式', () => {
     const src = readFileSync(join(homedir(), '.claude/hooks/modules/context-injector.js'), 'utf-8');
     const injectFns = src.match(/function inject\w+/g) || [];
-    expect(injectFns.length).toBe(14);
+    expect(injectFns.length).toBe(15);
     expect(src).toContain('function injectBriefing');
     expect(src).toContain('function injectLearnerContext');
     expect(src).toContain('function injectJudgeContext');
