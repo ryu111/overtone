@@ -136,9 +136,9 @@ describe('computeConfidence', () => {
 // ─── 2. BEHAVIOR_PATTERNS 偵測測試 ────────────────────────────────────────────
 
 describe('BEHAVIOR_PATTERNS', () => {
-  test('BEHAVIOR_PATTERNS export 存在且包含 14 個模式', () => {
+  test('BEHAVIOR_PATTERNS export 存在且包含 18 個模式', () => {
     expect(Array.isArray(BEHAVIOR_PATTERNS)).toBe(true);
-    expect(BEHAVIOR_PATTERNS.length).toBe(14);
+    expect(BEHAVIOR_PATTERNS.length).toBe(18);
   });
 
   test('每個 pattern 有 id、detect、polarity、impact、description', () => {
