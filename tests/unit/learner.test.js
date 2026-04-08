@@ -136,9 +136,9 @@ describe('computeConfidence', () => {
 // ─── 2. BEHAVIOR_PATTERNS 偵測測試 ────────────────────────────────────────────
 
 describe('BEHAVIOR_PATTERNS', () => {
-  test('BEHAVIOR_PATTERNS export 存在且包含 12 個模式', () => {
+  test('BEHAVIOR_PATTERNS export 存在且包含 14 個模式', () => {
     expect(Array.isArray(BEHAVIOR_PATTERNS)).toBe(true);
-    expect(BEHAVIOR_PATTERNS.length).toBe(12);
+    expect(BEHAVIOR_PATTERNS.length).toBe(14);
   });
 
   test('每個 pattern 有 id、detect、polarity、impact、description', () => {
@@ -310,6 +310,54 @@ describe('BEHAVIOR_PATTERNS', () => {
     expect(pattern.detect(otherWarning)).toBe(false);
     expect(pattern.detect(empty)).toBe(false);
     expect(pattern.detect({ signals: {} })).toBe(false);
+  });
+
+  test('tool-success-rate-drop: failRate > 30% 且 totalTools >= 10 → 偵測到', () => {
+    const pattern = BEHAVIOR_PATTERNS.find(p => p.id === 'tool-success-rate-drop');
+    // 正向：10 個工具，4 個失敗 (40%)
+    expect(pattern.detect({
+      toolCounts: { Bash: 6, Read: 4 },
+      signals: { toolFailures: 4 },
+    })).toBe(true);
+    // 反向：10 個工具，2 個失敗 (20%)
+    expect(pattern.detect({
+      toolCounts: { Bash: 6, Read: 4 },
+      signals: { toolFailures: 2 },
+    })).toBe(false);
+    // 反向：樣本太小 (< 10)
+    expect(pattern.detect({
+      toolCounts: { Bash: 5, Read: 4 },
+      signals: { toolFailures: 4 },
+    })).toBe(false);
+    // 反向：無 toolCounts
+    expect(pattern.detect({ signals: { toolFailures: 0 } })).toBe(false);
+  });
+
+  test('silent-failure: compliance 全 null 且 totalPrompts > 5 → 偵測到', () => {
+    const pattern = BEHAVIOR_PATTERNS.find(p => p.id === 'silent-failure');
+    // 正向：compliance 全 null，totalPrompts > 5
+    expect(pattern.detect({
+      signals: {
+        compliance: { selfReviewRate: null, testRate: null },
+        totalPrompts: 10,
+      },
+    })).toBe(true);
+    // 反向：totalPrompts <= 5
+    expect(pattern.detect({
+      signals: {
+        compliance: { selfReviewRate: null, testRate: null },
+        totalPrompts: 3,
+      },
+    })).toBe(false);
+    // 反向：compliance 有值
+    expect(pattern.detect({
+      signals: {
+        compliance: { selfReviewRate: 0.8, testRate: null },
+        totalPrompts: 10,
+      },
+    })).toBe(false);
+    // 反向：無 compliance
+    expect(pattern.detect({ signals: { totalPrompts: 10 } })).toBe(false);
   });
 });
 
