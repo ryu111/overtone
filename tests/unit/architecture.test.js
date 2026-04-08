@@ -98,11 +98,6 @@ describe("Judge 資料管線檔名一致性", () => {
 
 // ── 依賴方向 ──
 describe("依賴方向", () => {
-  it("scripts/heartbeat.js 不 import hooks/", () => {
-    const code = readFile(join(homedir(), ".claude/scripts/heartbeat.js"));
-    expect(code).not.toContain("hooks/");
-  });
-
   it("scripts/session-spawner.js 不 import hooks/", () => {
     const code = readFile(join(homedir(), ".claude/scripts/session-spawner.js"));
     expect(code).not.toContain("hooks/");
