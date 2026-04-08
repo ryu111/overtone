@@ -127,4 +127,42 @@ describe("tool-validator", () => {
     });
     expect(result.hookSpecificOutput?.hookEventName).toBe("PostToolUse");
   });
+
+  test("exitCode 為 undefined 時不應觸發任何警告（防誤判）", () => {
+    const result = handler({
+      tool_name: "Bash",
+      tool_input: { command: "bun test" },
+      tool_result: { stdout: "5 pass\n0 fail" },
+      // exitCode 和 exit_code 都不存在
+    });
+    expect(result.hookSpecificOutput).toBeUndefined();
+  });
+
+  test("bun test exit code 非 0 但 0 fail 時不注入警告", () => {
+    const result = handler({
+      tool_name: "Bash",
+      tool_input: { command: "bun test" },
+      tool_result: { exitCode: 1, stdout: "268 pass\n0 fail" },
+    });
+    expect(result.hookSpecificOutput).toBeUndefined();
+  });
+
+  test("bun test fail 數量在 stderr 也能偵測", () => {
+    const result = handler({
+      tool_name: "Bash",
+      tool_input: { command: "bun test" },
+      tool_result: { exitCode: 1, stdout: "", stderr: "3 fail" },
+    });
+    expect(result.hookSpecificOutput?.additionalContext).toContain("3 fail");
+  });
+
+  test("git push exitCode 為 undefined 不應觸發警告（防誤判）", () => {
+    const result = handler({
+      tool_name: "Bash",
+      tool_input: { command: "git push origin main" },
+      tool_result: { stdout: "main -> main" },
+      // exitCode 不存在
+    });
+    expect(result.hookSpecificOutput).toBeUndefined();
+  });
 });
