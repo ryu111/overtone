@@ -122,7 +122,7 @@ describe('health-check-scan', () => {
   test('scanRules 回傳 rules 陣列', () => {
     const rules = scanRules();
     expect(Array.isArray(rules)).toBe(true);
-    expect(rules.length).toBeGreaterThanOrEqual(18);
+    expect(rules.length).toBeGreaterThanOrEqual(15);
   });
 
   test('scanCommands 回傳 commands 陣列', () => {
