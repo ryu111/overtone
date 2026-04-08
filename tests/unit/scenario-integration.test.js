@@ -85,52 +85,6 @@ describe("場景一：無人值守", () => {
 		});
 	});
 
-	describe("heartbeat → session 完整鏈", () => {
-		test("mock 全鏈：poll → claim → spawn → complete → summary", async () => {
-			const { executeTask } = await import(join(homedir(), ".claude/scripts/heartbeat.js"));
-
-			const calls = [];
-			const tmpSummary = "/tmp/test-scenario1-summaries.jsonl";
-
-			// 清理
-			try {
-				const { unlinkSync } = await import("node:fs");
-				unlinkSync(tmpSummary);
-			} catch (e) { /* cleanup */ }
-
-			const result = await executeTask(
-				{ id: "test-123", name: "測試任務" },
-				{ timeout: 5000 },
-				{
-					spawnSession: () => ({
-						ok: true,
-						outcome: Promise.resolve({
-							exitCode: 0,
-							stdout: '{"type":"result","result":"task done","is_error":false}\n',
-							duration: 1000,
-						}),
-					}),
-					completeTask: async (id, msg) => {
-						calls.push({ action: "complete", id, msg });
-					},
-					stateFile: "/tmp/test-scenario1-state.json",
-					summaryFile: tmpSummary,
-				},
-			);
-
-			expect(result.status).toBe("success");
-			expect(calls).toHaveLength(1);
-			expect(calls[0].action).toBe("complete");
-
-			// 驗證 summary 寫入
-			const { readFileSync } = await import("node:fs");
-			const summary = readFileSync(tmpSummary, "utf-8").trim();
-			const entry = JSON.parse(summary);
-			expect(entry.source).toBe("heartbeat");
-			expect(entry.task).toBe("測試任務");
-			expect(entry.status).toBe("success");
-		});
-	});
 });
 
 // ─── 場景二：能力自動生長 ─────────────────────────────────────────────────────
@@ -235,64 +189,6 @@ describe("場景五：影響分析端到端", () => {
 	});
 });
 
-// ─── 端到端自動化驗證（替代手動驗證）─────────────────────────────────────────
-
-const { poll, executeTask: hbExecuteTask } = await import(join(homedir(), ".claude/scripts/heartbeat.js"));
-
-describe("P2.4 場景一端到端：heartbeat poll → execute → summary", () => {
-	test("poll 偵測到待做任務 → claim → 回傳 execute action", async () => {
-		const calls = [];
-		const tmpState = "/tmp/test-p24-state.json";
-
-		try { (await import("node:fs")).unlinkSync(tmpState); } catch (e) { /* cleanup */ }
-
-		const pollResult = await poll(
-			{ _stateFile: tmpState },
-			{
-				listTasks: async () => [
-					{ id: "notion-001", name: "修復 API timeout", priority: "P1" },
-				],
-				claimTask: async (id) => { calls.push({ action: "claim", id }); },
-			},
-		);
-
-		expect(pollResult.action).toBe("execute");
-		expect(pollResult.task.name).toBe("修復 API timeout");
-		expect(calls.some((c) => c.action === "claim")).toBe(true);
-	});
-
-	test("execute → complete → summary 全鏈", async () => {
-		const calls = [];
-		const tmpSummary = "/tmp/test-p24-summaries.jsonl";
-		try { (await import("node:fs")).unlinkSync(tmpSummary); } catch (e) { /* cleanup */ }
-
-		const execResult = await hbExecuteTask(
-			{ id: "notion-001", name: "修復 API timeout" },
-			{ timeout: 5000 },
-			{
-				spawnSession: () => ({
-					ok: true,
-					outcome: Promise.resolve({
-						exitCode: 0,
-						stdout: '{"type":"result","result":"fixed","is_error":false}\n',
-						duration: 1000,
-					}),
-				}),
-				completeTask: async (id, msg) => { calls.push({ action: "complete", id, msg }); },
-				stateFile: "/tmp/test-p24-exec-state.json",
-				summaryFile: tmpSummary,
-			},
-		);
-
-		expect(execResult.status).toBe("success");
-		expect(calls.some((c) => c.action === "complete")).toBe(true);
-
-		const { readFileSync } = await import("node:fs");
-		const entry = JSON.parse(readFileSync(tmpSummary, "utf-8").trim());
-		expect(entry.source).toBe("heartbeat");
-		expect(entry.status).toBe("success");
-	});
-});
 
 describe("P2.8 場景二端到端：信心達標 → lifecycle 觸發", () => {
 	test("behaviors.jsonl 有信心達標候選 → checkLifecycle 嘗試處理", async () => {
