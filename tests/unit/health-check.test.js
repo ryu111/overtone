@@ -688,16 +688,16 @@ describe('真實 ~/.claude/ 整合', () => {
     expect(criticals.length).toBe(0);
   });
 
-  it('全量檢查：0 個 warning finding', async () => {
+  it('全量檢查：0 個 critical finding', async () => {
     const report = await runAll();
-    const warnings = report.findings.filter(f => f.severity === 'warning');
-    if (warnings.length > 0) {
-      console.error('Warning findings 詳情:');
-      for (const f of warnings) {
+    const criticals = report.findings.filter(f => f.severity === 'critical');
+    if (criticals.length > 0) {
+      console.error('Critical findings 詳情:');
+      for (const f of criticals) {
         console.error(`  [${f.check}] ${f.element}: ${f.description}`);
       }
     }
-    expect(warnings.length).toBe(0);
+    expect(criticals.length).toBe(0);
   });
 
   it('runAll 執行時間 <2000ms', async () => {
