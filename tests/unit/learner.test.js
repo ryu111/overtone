@@ -373,7 +373,8 @@ describe('analyzeAndUpdate', () => {
     const session = makeSessionData({ toolFailures: 4 });
     session.sid = 11;
     session.date = '2026-03-15';
-    const result = analyzeAndUpdate(session, existing);
+    // 傳入 nowOverride 固定日期，避免 confidence 計算受真實時間影響
+    const result = analyzeAndUpdate(session, existing, new Date('2026-03-15'));
     const behavior = result.find(b => b.id === 'frequent-failures');
     expect(behavior.occurrences).toContain(11);
     expect(behavior.occurrences.length).toBe(3);

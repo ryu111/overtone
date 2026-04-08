@@ -1,12 +1,19 @@
-import { describe, test, expect } from 'bun:test';
+import { describe, test, expect, beforeAll, afterAll } from 'bun:test';
 import { homedir } from 'os';
 import { join } from 'path';
+import { writeFileSync, unlinkSync } from 'fs';
 
 const { evaluateEdit: evaluate } = await import(join(homedir(), '.claude/hooks/modules/guards.js'));
 
 const CLAUDE_DIR = join(homedir(), '.claude');
 
+// HARD GATE 需要 routing file 才能放行非 query 操作
+// 測試環境中 cwd 未設定，projName 為 "unknown"
+const ROUTING_FILE = '/tmp/nova-routing-level-unknown.txt';
+
 describe('pre-edit-guard', () => {
+  beforeAll(() => { writeFileSync(ROUTING_FILE, 'D1'); });
+  afterAll(() => { try { unlinkSync(ROUTING_FILE); } catch {} });
   describe('保護路徑阻擋', () => {
     const protectedCases = [
       [`${CLAUDE_DIR}/CLAUDE.md`, 'CLAUDE.md'],

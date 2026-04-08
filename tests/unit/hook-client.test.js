@@ -1,7 +1,7 @@
-import { describe, test, expect } from 'bun:test';
+import { describe, test, expect, beforeAll, afterAll } from 'bun:test';
 import { join } from 'path';
 import { homedir } from 'os';
-import { existsSync } from 'fs';
+import { existsSync, writeFileSync, unlinkSync } from 'fs';
 
 const CLAUDE_DIR = join(homedir(), '.claude');
 
@@ -32,7 +32,13 @@ describe('Hook Client fallback 模組對應', () => {
   });
 });
 
+// HARD GATE 需要 routing file — evaluateEdit 呼叫時 cwd 未設定，projName 為 "unknown"
+const ROUTING_FILE_HC = '/tmp/nova-routing-level-unknown.txt';
+
 describe('Hook Client fallback evaluate 執行', () => {
+  beforeAll(() => { writeFileSync(ROUTING_FILE_HC, 'D1'); });
+  afterAll(() => { try { unlinkSync(ROUTING_FILE_HC); } catch {} });
+
   test('bash-guard block 危險命令', async () => {
     const { evaluateBash } = await import(join(CLAUDE_DIR, 'hooks/modules/guards.js'));
     const result = evaluateBash({ tool_input: { command: 'rm -rf /' } });
