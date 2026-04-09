@@ -44,7 +44,7 @@
 
 ---
 
-### Scripts（64）
+### Scripts（65）
 
 | 名稱 | 簡述 |
 |------|------|
@@ -92,6 +92,7 @@
 | maintainer | 本地模型驅動的維護 agent（v2：模型決策 + 程式碼執行） |
 | manage-component | 元件管理 CLI |
 | nova-cli | Nova 統一 CLI 入口 |
+| os-control-driver | OS-level 自動化操控 Claude CLI |
 | persist | 收尾第三階段：確定性持久化 |
 | reflect | 收尾第二階段：LLM 反思 |
 | regression-watch | 監控品質回歸 |
