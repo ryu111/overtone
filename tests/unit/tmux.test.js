@@ -17,7 +17,13 @@ function makeDeps(responses = {}) {
     }
     return "";
   });
-  return { execSync: fn, calls };
+  // spawnSync mock：紀錄 argv 陣列和 stdin 內容，回傳空 stdout
+  const spawnCalls = [];
+  const spawnFn = mock((argv, opts = {}) => {
+    spawnCalls.push({ argv, stdin: opts.stdin });
+    return { stdout: new Uint8Array(), stderr: new Uint8Array(), exitCode: 0 };
+  });
+  return { execSync: fn, spawnSync: spawnFn, calls, spawnCalls };
 }
 
 describe("tmux", () => {
@@ -76,28 +82,34 @@ describe("tmux", () => {
     const { sendKeys } = await import(TMUX);
     const deps = makeDeps({});
     sendKeys("nova-brain", "echo hello", deps);
-    expect(deps.calls).toHaveLength(3); // load-buffer + paste-buffer + Enter
-    expect(deps.calls[0]).toContain("load-buffer");
-    expect(deps.calls[1]).toContain("paste-buffer");
-    expect(deps.calls[2]).toContain("Enter");
+    // load-buffer 走 spawnSync（stdin pipe）
+    expect(deps.spawnCalls).toHaveLength(1);
+    expect(deps.spawnCalls[0].argv).toEqual(["tmux", "load-buffer", "-"]);
+    // paste-buffer + Enter 走 execSync
+    expect(deps.calls).toHaveLength(2);
+    expect(deps.calls[0]).toContain("paste-buffer");
+    expect(deps.calls[1]).toContain("Enter");
   });
 
   test("sendKeys — 特殊字元不被 shell 解讀", async () => {
     const { sendKeys } = await import(TMUX);
     const deps = makeDeps({});
-    sendKeys("nova-brain", 'echo $HOME "hello" `date`', deps);
-    // load-buffer 確保 $HOME 不被展開
-    expect(deps.calls[0]).toContain("load-buffer");
+    const payload = 'echo $HOME "hello" `date`';
+    sendKeys("nova-brain", payload, deps);
+    // stdin pipe 確保 $HOME、backtick 不被 shell 展開（整串原文傳遞）
+    const stdin = deps.spawnCalls[0].stdin;
+    const decoded = new TextDecoder().decode(stdin);
+    expect(decoded).toBe(payload);
   });
 
   test("sendKeys — 支援 session:window 格式的 target", async () => {
     const { sendKeys } = await import(TMUX);
     const deps = makeDeps({});
     sendKeys("nova-brain:0", "echo hello", deps);
-    // target 帶冒號格式應完整傳遞給 tmux（load-buffer + paste-buffer + Enter）
-    expect(deps.calls[1]).toContain('"nova-brain:0"'); // paste-buffer
-    expect(deps.calls[2]).toContain('"nova-brain:0"'); // Enter
-    expect(deps.calls[2]).toContain("Enter");
+    // target 帶冒號格式應完整傳遞給 tmux paste-buffer + Enter（calls[0]/[1]）
+    expect(deps.calls[0]).toContain('"nova-brain:0"'); // paste-buffer
+    expect(deps.calls[1]).toContain('"nova-brain:0"'); // Enter
+    expect(deps.calls[1]).toContain("Enter");
   });
 
   test("capturePaneOutput — 讀取輸出", async () => {
