@@ -1,0 +1,134 @@
+import { describe, expect, test, beforeEach, afterEach } from "bun:test";
+import { mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { homedir } from "node:os";
+import { join } from "node:path";
+
+const MODULE_PATH = join(homedir(), ".claude/hooks/modules/task-dispatch-guard.js");
+
+const TEST_CWD = "/tmp/task-dispatch-guard-test";
+const TEST_SESSION_ID = "test-session-abc";
+const ENCODED = TEST_CWD.replace(/\//g, "-");
+const SESSION_DIR = join(homedir(), ".claude/projects", ENCODED);
+const JSONL_PATH = join(SESSION_DIR, `${TEST_SESSION_ID}.jsonl`);
+
+const COMPACT_MARKER = '"content":"This session is being continued from a previous conversation"';
+
+beforeEach(() => {
+	mkdirSync(SESSION_DIR, { recursive: true });
+});
+afterEach(() => {
+	try { rmSync(SESSION_DIR, { recursive: true, force: true }); } catch {}
+});
+
+function writeJsonl(content) {
+	writeFileSync(JSONL_PATH, content);
+}
+
+function dispatchLine(id) {
+	// 模擬 API 回應中的 dispatch id（jsonl tool_result 是 escaped 形式）
+	return `{"type":"tool_result","content":"{\\"ok\\":true,\\"id\\":\\"${id}\\"}"}`;
+}
+
+function rawDispatchLine(id) {
+	// 模擬直接寫到 jsonl 的 raw 形式
+	return `{"id":"${id}","status":"pending"}`;
+}
+
+describe("task-dispatch-guard", () => {
+	test("純對話 session（dispatch=0）放行", async () => {
+		writeJsonl('{"name":"Read"}\n{"name":"Grep"}\n');
+		const mod = await import(`${MODULE_PATH}?t=${Date.now()}`);
+		const result = mod.on.Stop({ cwd: TEST_CWD, session_id: TEST_SESSION_ID });
+		expect(result.decision).toBe("allow");
+	});
+
+	test("dispatch === taskCreate（平衡）放行", async () => {
+		writeJsonl(
+			`${dispatchLine("xd-1775729535985-abcd")}\n` +
+			`${dispatchLine("xd-1775729535986-efgh")}\n` +
+			`{"name":"TaskCreate"}\n{"name":"TaskCreate"}\n`
+		);
+		const mod = await import(`${MODULE_PATH}?t=${Date.now()}`);
+		const check = mod.checkDispatchTaskBalance(TEST_CWD, TEST_SESSION_ID);
+		expect(check.dispatchCount).toBe(2);
+		expect(check.taskCreateCount).toBe(2);
+		expect(check.shouldBlock).toBe(false);
+	});
+
+	test("dispatch > taskCreate block 並給出原因", async () => {
+		writeJsonl(
+			`${dispatchLine("xd-1775729535985-a001")}\n` +
+			`${dispatchLine("xd-1775729535986-a002")}\n` +
+			`${dispatchLine("xd-1775729535987-a003")}\n`
+		);
+		const mod = await import(`${MODULE_PATH}?t=${Date.now()}`);
+		const result = mod.on.Stop({ cwd: TEST_CWD, session_id: TEST_SESSION_ID });
+		expect(result.decision).toBe("block");
+		expect(result.reason).toContain("3 個 cross-dispatch");
+		expect(result.reason).toContain("0 個 TaskCreate");
+	});
+
+	test("重複的 xd-ID 去重（唯一計數）", async () => {
+		// 同一個 dispatch id 在 jsonl 出現多次（delivered、review、complete 三階段各寫一次）
+		const id = "xd-1775729535985-dup1";
+		writeJsonl(
+			`${dispatchLine(id)}\n` +
+			`${dispatchLine(id)}\n` +
+			`${dispatchLine(id)}\n` +
+			`{"name":"TaskCreate"}\n`
+		);
+		const mod = await import(`${MODULE_PATH}?t=${Date.now()}`);
+		const check = mod.checkDispatchTaskBalance(TEST_CWD, TEST_SESSION_ID);
+		expect(check.dispatchCount).toBe(1);
+		expect(check.shouldBlock).toBe(false);
+	});
+
+	test("compact marker 之前的 dispatch 不計入", async () => {
+		// 歷史：5 個 dispatch + 0 task → compact → 1 dispatch + 1 task
+		// 舊邏輯：6 dispatch / 1 task → block
+		// 新邏輯：只計 compact 後 → 1 / 1 → allow
+		const history = Array.from({ length: 5 }, (_, i) => dispatchLine(`xd-1775729500000-h00${i}`)).join("\n");
+		const afterCompact = `{"type":"user","message":{${COMPACT_MARKER}}}\n` +
+			`${dispatchLine("xd-1775729900000-new1")}\n` +
+			`{"name":"TaskCreate"}\n`;
+		writeJsonl(history + "\n" + afterCompact);
+		const mod = await import(`${MODULE_PATH}?t=${Date.now()}`);
+		const check = mod.checkDispatchTaskBalance(TEST_CWD, TEST_SESSION_ID);
+		expect(check.dispatchCount).toBe(1);
+		expect(check.taskCreateCount).toBe(1);
+		expect(check.shouldBlock).toBe(false);
+	});
+
+	test("無 compact marker 時計算全檔", async () => {
+		writeJsonl(
+			`${dispatchLine("xd-1775729535985-all1")}\n` +
+			`${dispatchLine("xd-1775729535986-all2")}\n`
+		);
+		const mod = await import(`${MODULE_PATH}?t=${Date.now()}`);
+		const check = mod.checkDispatchTaskBalance(TEST_CWD, TEST_SESSION_ID);
+		expect(check.dispatchCount).toBe(2);
+	});
+
+	test("raw 和 escaped 形式都能計數", async () => {
+		writeJsonl(
+			`${rawDispatchLine("xd-1775729535985-raw1")}\n` +
+			`${dispatchLine("xd-1775729535986-esc1")}\n`
+		);
+		const mod = await import(`${MODULE_PATH}?t=${Date.now()}`);
+		const check = mod.checkDispatchTaskBalance(TEST_CWD, TEST_SESSION_ID);
+		expect(check.dispatchCount).toBe(2);
+	});
+
+	test("cwd 或 session_id 缺失放行（fail-open）", async () => {
+		const mod = await import(`${MODULE_PATH}?t=${Date.now()}`);
+		expect(mod.on.Stop({}).decision).toBe("allow");
+		expect(mod.on.Stop({ cwd: TEST_CWD }).decision).toBe("allow");
+		expect(mod.on.Stop({ session_id: "x" }).decision).toBe("allow");
+	});
+
+	test("jsonl 檔不存在放行（fail-open）", async () => {
+		const mod = await import(`${MODULE_PATH}?t=${Date.now()}`);
+		const result = mod.on.Stop({ cwd: "/nonexistent", session_id: "missing" });
+		expect(result.decision).toBe("allow");
+	});
+});
