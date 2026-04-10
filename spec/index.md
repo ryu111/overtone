@@ -44,7 +44,7 @@
 
 ---
 
-### Scripts（65）
+### Scripts（60）
 
 | 名稱 | 簡述 |
 |------|------|
@@ -72,7 +72,6 @@
 | gap-discovery | R4.2 缺口自動發現引擎 |
 | gap-fixer | Gap 修復策略引擎 |
 | git-sync | Git 操作工具（commit + push + commit message 生成） |
-| handoff-score | 評分 compact handoff 完整度 |
 | health-check | Nova 系統四維度確定性健康檢查 |
 | health-check-checks | Check 層 |
 | health-check-scan | Scan 層 |
@@ -87,7 +86,6 @@
 | learner-analysis | 行為分析純函式模組 |
 | learner-suggestions | 建議生成模組 |
 | lifecycle-orchestrator | Skill Lifecycle 串聯引擎 |
-| llm-watchdog | vllm-mlx 自動重啟守護程序 |
 | local-model | AI 模型 client（單一來源） |
 | maintainer | 本地模型驅動的維護 agent（v2：模型決策 + 程式碼執行） |
 | manage-component | 元件管理 CLI |
@@ -100,16 +98,13 @@
 | self-compact | 自壓縮觸發器（含 session 替換） |
 | session-ctl | Session 管理 CLI 工具 |
 | session-recorder | Session 摘要與簡報記錄（Phase 4a + 4b 包裝） |
-| session-rename | SessionStart 後自動命名 session |
 | session-spawner | claude -p spawn 封裝 |
 | skill-forge | Skill 建立引擎（forgeSkill + improveSkill + deploySkill） |
 | skill-janitor | Skill 庫存管理（pruning + 健康度檢查） |
 | smoke-flow | Feedback Loop 主動流程測試（Phase 7） |
 | spec-tasks | 本地任務管理模組（CLI 入口 + re-export） |
-| task-adapter | R4.3 新任務快速適應機制 |
 | tool-matcher | 意圖→工具語意匹配：給定任務描述，從 tool-registry 推薦工具組合 |
 | tool-registry | 工具索引：掃描 5 種工具來源，建立統一查詢索引 |
-| trace-flow | Feedback Loop 事件鏈追蹤（Phase 7） |
 | wake-sessions | 一鍵恢復 pinned session |
 | wrapup | session 收尾編排器（極簡） |
 | wrapup-marker | session 收尾 marker 讀寫 |
