@@ -9,6 +9,7 @@ const {
   scoreDeterministic,
   grade,
   shouldRun,
+  shouldRunFromPaths,
   getTrend,
   readScores,
   saveScore,
@@ -304,7 +305,7 @@ describe('grade', () => {
   });
 });
 
-// ─── 6. shouldRun ───────────────────────────────────────────────────────────
+// ─── 6. shouldRun / shouldRunFromPaths ──────────────────────────────────────
 
 describe('shouldRun', () => {
   test('回傳布林值', () => {
@@ -313,8 +314,21 @@ describe('shouldRun', () => {
   });
 
   test('~/.claude 不是 git repo 或無變更 → 不 throw，回傳 false 或 true', () => {
-    // 只確保不拋出例外
     expect(() => shouldRun()).not.toThrow();
+  });
+});
+
+describe('shouldRunFromPaths', () => {
+  test('null（git 失敗）→ true（fail-open，執行全量評分）', () => {
+    expect(shouldRunFromPaths(null)).toBe(true);
+  });
+
+  test('空 Set（確定無元件變更）→ false（跳過）', () => {
+    expect(shouldRunFromPaths(new Set())).toBe(false);
+  });
+
+  test('非空 Set（有元件變更）→ true', () => {
+    expect(shouldRunFromPaths(new Set(['skills/nova-test']))).toBe(true);
   });
 });
 
