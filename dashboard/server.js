@@ -136,7 +136,7 @@ async function handleApi(path, req) {
 
     if (path === "/api/events") {
       try {
-        const up = await fetch("http://127.0.0.1:3457/events", { signal: AbortSignal.timeout(3000) });
+        const up = await fetch("http://127.0.0.1:3457/events?clientId=nova-dashboard", { signal: AbortSignal.timeout(3000) });
         return new Response(up.body, { headers: { "Content-Type": "text/event-stream", "Cache-Control": "no-cache", "Access-Control-Allow-Origin": "*" } });
       } catch {
         return new Response(new ReadableStream({ start(c) { c.close(); } }), { headers: { "Content-Type": "text/event-stream", "Access-Control-Allow-Origin": "*" } });
