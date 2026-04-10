@@ -243,11 +243,12 @@ describe("指向完整性", () => {
           missing.push(`${file} → rules/${match[1]}`);
         }
       }
-      // skills/ 指向
+      // skills/ 指向（同時檢查全域和 manager 本地 skills 目錄）
       const skillRefs = content.matchAll(/見\s*(?:全域\s*)?[`]?skills\/([^\s`」\n]+)/g);
       for (const match of skillRefs) {
-        const target = join(homedir(), ".claude/skills", match[1]);
-        if (!existsSync(target)) {
+        const globalTarget = join(homedir(), ".claude/skills", match[1]);
+        const localTarget = join(managerRulesDir, "../skills", match[1]);
+        if (!existsSync(globalTarget) && !existsSync(localTarget)) {
           missing.push(`${file} → skills/${match[1]}`);
         }
       }
