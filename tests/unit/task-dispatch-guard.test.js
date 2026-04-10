@@ -163,3 +163,39 @@ describe("task-dispatch-guard", () => {
 		expect(r.warn).toBe(false);
 	});
 });
+
+describe("memory/行為替代結構修復的反模式偵測", () => {
+	function assistantLine(text) {
+		return JSON.stringify({ message: { role: "assistant", content: text } });
+	}
+
+	test("行為層面落地 → Stop 時應該有 systemMessage warn", async () => {
+		writeJsonl(assistantLine("行為層面落地就好，不需要補進 rule。") + "\n" + `{"name":"TaskCreate"}\n`);
+		const mod = await import(`${MODULE_PATH}?t=${Date.now()}`);
+		const r = mod.on.Stop({ cwd: TEST_CWD, session_id: TEST_SESSION_ID });
+		expect(r.decision).toBe("allow");
+		expect(r.systemMessage).toContain("memory/行為替代結構修復");
+	});
+
+	test("先記著這個 → 應該偵測到反模式", async () => {
+		writeJsonl(assistantLine("先記著這個問題。") + "\n" + `{"name":"TaskCreate"}\n`);
+		const mod = await import(`${MODULE_PATH}?t=${Date.now()}`);
+		const r = mod.on.Stop({ cwd: TEST_CWD, session_id: TEST_SESSION_ID });
+		expect(r.systemMessage).toContain("memory/行為替代結構修復");
+	});
+
+	test("要不要補進 rule → 應該偵測到反模式", async () => {
+		writeJsonl(assistantLine("要不要補進 rule？") + "\n" + `{"name":"TaskCreate"}\n`);
+		const mod = await import(`${MODULE_PATH}?t=${Date.now()}`);
+		const r = mod.on.Stop({ cwd: TEST_CWD, session_id: TEST_SESSION_ID });
+		expect(r.systemMessage).toContain("memory/行為替代結構修復");
+	});
+
+	test("正常對話無反模式 → 不應該 warn", async () => {
+		writeJsonl(assistantLine("已修改 rule 完成。") + "\n" + `{"name":"TaskCreate"}\n`);
+		const mod = await import(`${MODULE_PATH}?t=${Date.now()}`);
+		const r = mod.on.Stop({ cwd: TEST_CWD, session_id: TEST_SESSION_ID });
+		expect(r.decision).toBe("allow");
+		expect(r.systemMessage ?? "").not.toContain("memory/行為替代結構修復");
+	});
+});
