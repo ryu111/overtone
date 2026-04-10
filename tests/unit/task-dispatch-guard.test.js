@@ -199,3 +199,37 @@ describe("memory/行為替代結構修復的反模式偵測", () => {
 		expect(r.systemMessage ?? "").not.toContain("memory/行為替代結構修復");
 	});
 });
+
+describe("跳過 completed 直接 deleted 的偵測", () => {
+	function taskUpdateLine(taskId, status) {
+		return JSON.stringify({ name: "TaskUpdate", input: { taskId, status } });
+	}
+
+	test("直接 deleted 未經 completed → 應該 warn", async () => {
+		writeJsonl(
+			`{"name":"TaskCreate"}\n` +
+			taskUpdateLine("42", "deleted") + "\n"
+		);
+		const mod = await import(`${MODULE_PATH}?t=${Date.now()}`);
+		const r = mod.on.Stop({ cwd: TEST_CWD, session_id: TEST_SESSION_ID });
+		expect(r.systemMessage).toContain("跳過 completed 直接 deleted");
+	});
+
+	test("先 completed 再 deleted → 不應該 warn", async () => {
+		writeJsonl(
+			`{"name":"TaskCreate"}\n` +
+			taskUpdateLine("42", "completed") + "\n" +
+			taskUpdateLine("42", "deleted") + "\n"
+		);
+		const mod = await import(`${MODULE_PATH}?t=${Date.now()}`);
+		const r = mod.on.Stop({ cwd: TEST_CWD, session_id: TEST_SESSION_ID });
+		expect(r.systemMessage ?? "").not.toContain("跳過 completed 直接 deleted");
+	});
+
+	test("無 TaskUpdate → 不應該 warn", async () => {
+		writeJsonl(`{"name":"TaskCreate"}\n`);
+		const mod = await import(`${MODULE_PATH}?t=${Date.now()}`);
+		const r = mod.on.Stop({ cwd: TEST_CWD, session_id: TEST_SESSION_ID });
+		expect(r.systemMessage ?? "").not.toContain("跳過 completed 直接 deleted");
+	});
+});
