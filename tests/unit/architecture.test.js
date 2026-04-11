@@ -507,11 +507,12 @@ describe("cross-dispatch 處理單一責任", () => {
     expect(upsBody).toContain("nova-cross-tasks.jsonl");
   });
 
-  it("UserPromptSubmit 冪等追蹤用 Redis status 過濾（跳過 acknowledged）", () => {
+  it("UserPromptSubmit 冪等追蹤用 Redis status 過濾 + 同步 acknowledge", () => {
     // 舊機制：/tmp/nova-dispatch-injected.json（已移除）
-    // 新機制：只處理 pending/delivered，ackWithRetry 後 server 標記 acknowledged
+    // 新機制：只處理 pending/delivered，Bun.spawnSync curl /acknowledge（同步，確保 return 前 status 已更新）
     expect(ciCode).toContain("newTasks");
-    expect(ciCode).toContain("ackWithRetry");
+    expect(ciCode).toContain("Bun.spawnSync");
+    expect(ciCode).toContain("/acknowledge");
     expect(ciCode).not.toContain("nova-dispatch-injected.json");
   });
 
