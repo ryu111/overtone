@@ -5,7 +5,7 @@ import { join } from "node:path";
 
 const MODULE_PATH = join(homedir(), ".claude/hooks/modules/task-dispatch-guard.js");
 
-const TEST_CWD = "/tmp/task-dispatch-guard-test";
+const TEST_CWD = "/tmp/nova-manager-task-dispatch-test";
 const TEST_SESSION_ID = "test-session-abc";
 const ENCODED = TEST_CWD.replace(/\//g, "-");
 const SESSION_DIR = join(homedir(), ".claude/projects", ENCODED);
@@ -35,6 +35,13 @@ function rawDispatchLine(id) {
 }
 
 describe("task-dispatch-guard", () => {
+	test("非 nova-manager cwd 直接放行（不強制 TaskCreate）", async () => {
+		const mod = await import(`${MODULE_PATH}?t=${Date.now()}`);
+		const result = mod.checkDispatchTaskBalance("/tmp/other-project", "any-session");
+		expect(result.shouldBlock).toBe(false);
+		expect(result.dispatchCount).toBe(0);
+	});
+
 	test("純對話 session（dispatch=0）放行", async () => {
 		writeJsonl('{"name":"Read"}\n{"name":"Grep"}\n');
 		const mod = await import(`${MODULE_PATH}?t=${Date.now()}`);
