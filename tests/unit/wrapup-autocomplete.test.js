@@ -42,7 +42,20 @@ describe("wrapup autoComplete", () => {
 
   test("autoComplete 附帶 git log verification", () => {
     const src = readFileSync(WRAPUP, "utf-8");
-    expect(src).toContain("git log -1 --oneline");
+    expect(src).toContain("git log -1 --format=%s");
     expect(src).toContain("verification");
+  });
+
+  test("autoComplete 過濾 session 期間建立的 dispatch", () => {
+    const src = readFileSync(WRAPUP, "utf-8");
+    expect(src).toContain("sessionStartAt");
+    expect(src).toContain("nova-session-start-");
+    expect(src).toContain("d.createdAt");
+  });
+
+  test("autoComplete 摘要包含 git diff stat", () => {
+    const src = readFileSync(WRAPUP, "utf-8");
+    expect(src).toContain("diffStat");
+    expect(src).toContain("git diff --stat");
   });
 });
