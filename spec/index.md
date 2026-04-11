@@ -46,7 +46,7 @@
 
 ---
 
-### Scripts（62）
+### Scripts（61）
 
 | 名稱 | 簡述 |
 |------|------|
@@ -96,7 +96,6 @@
 | os-control-driver | OS-level 自動化操控 Claude CLI |
 | persist | 收尾第三階段：確定性持久化 |
 | reflect | 收尾第二階段：LLM 反思 |
-| regression-watch | 監控品質回歸 |
 | self-check | 自檢閉環腳本（4 Phase: scan → aggregate → act → persist） |
 | self-compact | 自壓縮觸發器（含 session 替換） |
 | session-ctl | Session 管理 CLI 工具 |
