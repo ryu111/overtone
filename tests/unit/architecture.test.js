@@ -507,10 +507,12 @@ describe("cross-dispatch 處理單一責任", () => {
     expect(upsBody).toContain("nova-cross-tasks.jsonl");
   });
 
-  it("UserPromptSubmit 有冪等追蹤（nova-dispatch-injected.json）", () => {
-    expect(ciCode).toContain("nova-dispatch-injected.json");
+  it("UserPromptSubmit 冪等追蹤用 Redis status 過濾（跳過 acknowledged）", () => {
+    // 舊機制：/tmp/nova-dispatch-injected.json（已移除）
+    // 新機制：只處理 pending/delivered，ackWithRetry 後 server 標記 acknowledged
     expect(ciCode).toContain("newTasks");
-    expect(ciCode).toContain("injected.has(t.id)");
+    expect(ciCode).toContain("ackWithRetry");
+    expect(ciCode).not.toContain("nova-dispatch-injected.json");
   });
 
   it("三問閉環有時間自動過期（防止無限積壓）", () => {
