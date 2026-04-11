@@ -12,9 +12,10 @@ describe("session-wrapup 架構", () => {
 		expect(mod.on.Stop).toBeDefined();
 	});
 
-	test("ralph-loop.js 模組存在且 export SessionStart", async () => {
+	test("ralph-loop.js 模組存在且 export UserPromptSubmit + Stop", async () => {
 		const mod = await import("../../../../.claude/hooks/modules/ralph-loop.js");
-		expect(mod.on.SessionStart).toBeDefined();
+		expect(mod.on.UserPromptSubmit).toBeDefined();
+		expect(mod.on.Stop).toBeDefined();
 	});
 
 	test("wrapup-marker.js 存在", () => {
