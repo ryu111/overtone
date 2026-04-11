@@ -1,4 +1,4 @@
-import { describe, test, expect, beforeAll, afterAll } from 'bun:test';
+import { describe, test, expect, beforeAll, beforeEach, afterAll } from 'bun:test';
 import { homedir } from 'os';
 import { join } from 'path';
 import { writeFileSync, unlinkSync } from 'fs';
@@ -8,6 +8,7 @@ const ROUTING_FILE = '/tmp/nova-routing-level-unknown.txt';
 
 describe('pre-bash-guard', () => {
   beforeAll(() => { writeFileSync(ROUTING_FILE, 'D1'); });
+  beforeEach(() => { writeFileSync(ROUTING_FILE, 'D1'); });
   afterAll(() => { try { unlinkSync(ROUTING_FILE); } catch {} });
   describe('危險命令阻擋', () => {
     const dangerousCases = [
