@@ -16,9 +16,16 @@ describe("Feedback Loop D1→D4 E2E", () => {
     const lines = content.split("\n").filter(Boolean);
     expect(lines.length).toBeGreaterThan(0);
 
-    // 最後一筆的 ts 在 24h 內
-    const last = JSON.parse(lines[lines.length - 1]);
-    const ts = typeof last.ts === "string" ? new Date(last.ts).getTime() : last.ts;
+    // 從後往前找第一個可解析的行（並行 worker 可能正在寫入導致截斷）
+    let ts = 0;
+    for (let i = lines.length - 1; i >= Math.max(0, lines.length - 5); i--) {
+      try {
+        const last = JSON.parse(lines[i]);
+        ts = typeof last.ts === "string" ? new Date(last.ts).getTime() : last.ts;
+        break;
+      } catch { /* 截斷行，跳過 */ }
+    }
+    expect(ts).toBeGreaterThan(0);
     expect(Date.now() - ts).toBeLessThan(86400000);
   });
 
@@ -26,8 +33,12 @@ describe("Feedback Loop D1→D4 E2E", () => {
   test("D2 Extract：extractSessionBehavior 回傳行為信號", async () => {
     const { extractSessionBehavior } = await import(join(SCRIPTS, "learner.js"));
 
-    // 用真實 flow-events（/tmp/nova-flow-events.jsonl）
-    const result = extractSessionBehavior();
+    // 重試最多 3 次（並行 worker 可能正在寫入 flow-events）
+    let result = null;
+    for (let i = 0; i < 3; i++) {
+      result = extractSessionBehavior();
+      if (result) break;
+    }
     expect(result).not.toBeNull();
     expect(result.sid).toBeDefined();
     expect(result.toolCounts).toBeDefined();
