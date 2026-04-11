@@ -10,13 +10,14 @@
 
 ---
 
-### Skills（27）
+### Skills（29）
 
 | 名稱 | 簡述 |
 |------|------|
 | agent-browser | "瀏覽器自動化 CLI 工具 — Vercel Labs 出品，Rust 核心 + Playwright。WHEN: 需要 JS 執行、鍵盤 modifier  |
 | architecture | "系統架構設計知識域。WHEN: 架構決策（ADR）、設計模式選擇、技術 tradeoff 分析、並發策略選擇時使用。NOT: 純程式碼實作、bug 修復、日常 |
 | auto | 深度路由決策。WHAT: 根據設計決策密度選 D0-D4 + 委派策略。WHEN: Main 接到任何任務、或不確定自己做還是委派時。NOT: 已分類的任務執行 |
+| auto-drive | "全自動引擎觀察知識域。觀察 nova auto-drive 迴圈健康狀態，判斷症狀根因，決定介入方式。WHEN: 自動引擎出現異常（RSS 高/loop 空轉 |
 | claude-dev | Claude Code Plugin 開發知識。hooks、agents、skills、commands 的 API 格式、settings 設定系統與 Nov |
 | closed-loop | 元件閉環驗證。新增/修改/刪除 Skill、Agent、Hook 時，確認跨元件依賴完整、資訊流通、spec 文件同步。WHEN: 新增 Skill 後確認 A |
 | code-review | "PR Review 知識域：四維度結構化審查 + 回饋分級。WHEN: 審查 PR、code review、撰寫審查回饋時使用。NOT: 撰寫新程式碼、deb |
@@ -26,6 +27,7 @@
 | cross-session | "跨 Session 協作知識域。發送跨專案任務、讀取待辦、回報完成的 API 與流程。WHEN: 需要其他專案 session 配合時（改了 API 需要 i |
 | dead-code | "死碼清理知識：knip/depcheck 工具、手動清理策略、安全刪除。WHEN: 清理未使用程式碼、codebase 瘦身時使用。NOT: 功能開發、重構。 |
 | debugging | "除錯方法論與根因分析框架。WHEN: 遇到 bug 需要根因分析（RCA）、重現問題、診斷並發問題時使用。NOT: 功能開發、架構設計。" |
+| dispatch-lifecycle | "Cross-dispatch 生命週期品質知識域。派發前品質檢查、執行中監控、完成驗收三段流程。WHEN: 派發 cross-dispatch 前、驗收完成時 |
 | feedback-loop | "回饋迴圈知識域：成功即進化、自驅任務迴圈、回報與反思的完整協議。WHEN: 完成任務後的反思、自驅任務的監控與排障、品質回報時使用。NOT: 初次任務規劃、架 |
 | local-model-dispatch | "本地模型（g4-26b）角色派發：五種角色 system prompt、work-stealing 並行模式、安全邊界、升降級閾值。WHEN: Main 要用 |
 | model-cascade | 大模型指揮小模型框架。四層架構：Router→Contract→Executor→Feedback Loop。WHEN: 需要多模型協作、任務分配、成本優化時。 |
@@ -44,7 +46,7 @@
 
 ---
 
-### Scripts（60）
+### Scripts（62）
 
 | 名稱 | 簡述 |
 |------|------|
@@ -56,6 +58,7 @@
 | autoresearch-task | heartbeat 全自動：找最低分 eval 跑 autoresearch |
 | briefing-builder | Session 摘要 + 簡報生成 |
 | capability-probe | 能力邊界探測 + 模型更新 |
+| chain-integrity | Nova 知識鏈完整性掃描器 |
 | collect | 收尾第一階段：確定性蒐證 |
 | component-health | 元件維護（文件搬遷、lockfile 修復、lifecycle、capability probe） |
 | cross-session-probe | 跨 Session 能力校準 |
@@ -98,6 +101,7 @@
 | self-compact | 自壓縮觸發器（含 session 替換） |
 | session-ctl | Session 管理 CLI 工具 |
 | session-recorder | Session 摘要與簡報記錄（Phase 4a + 4b 包裝） |
+| session-rename | SessionStart 後自動命名 session |
 | session-spawner | claude -p spawn 封裝 |
 | skill-forge | Skill 建立引擎（forgeSkill + improveSkill + deploySkill） |
 | skill-janitor | Skill 庫存管理（pruning + 健康度檢查） |
