@@ -35,13 +35,13 @@ describe("enforcement-health", () => {
 		expect(result.rate).toBeCloseTo(2 / 2, 1);
 	});
 
-	test("rate = 0（無 compliance 記錄）→ critical alert", async () => {
+	test("空檔案（無資料）→ warning alert", async () => {
 		writeFileSync(COMP_PATH, "");
 		const { assessOverall } = await import("/Users/sbu/.claude/scripts/enforcement-health.js");
 		const result = assessOverall();
 		const l1Alert = result.alerts.find((a) => a.layer === 1);
 		expect(l1Alert).toBeDefined();
-		expect(l1Alert.severity).toBe("critical");
+		expect(l1Alert.severity).toBe("warning");
 	});
 
 	test("所有層正常 → overall healthy", async () => {
