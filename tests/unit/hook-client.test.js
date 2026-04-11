@@ -1,4 +1,4 @@
-import { describe, test, expect, beforeAll, afterAll } from 'bun:test';
+import { describe, test, expect, beforeAll, beforeEach, afterAll } from 'bun:test';
 import { join } from 'path';
 import { homedir } from 'os';
 import { existsSync, writeFileSync, unlinkSync } from 'fs';
@@ -37,6 +37,7 @@ const ROUTING_FILE_HC = '/tmp/nova-routing-level-unknown.txt';
 
 describe('Hook Client fallback evaluate 執行', () => {
   beforeAll(() => { writeFileSync(ROUTING_FILE_HC, 'D1'); });
+  beforeEach(() => { writeFileSync(ROUTING_FILE_HC, 'D1'); });
   afterAll(() => { try { unlinkSync(ROUTING_FILE_HC); } catch {} });
 
   test('bash-guard block 危險命令', async () => {
