@@ -1,5 +1,5 @@
 import { describe, test, expect, beforeEach, afterEach } from 'bun:test';
-import { writeFileSync, existsSync, readFileSync, unlinkSync, renameSync } from 'fs';
+import { writeFileSync, existsSync, readFileSync, unlinkSync, copyFileSync } from 'fs';
 import {
   readFlowEvents,
   aggregateHookMetrics,
@@ -19,20 +19,17 @@ function writeEvents(events) {
 }
 
 beforeEach(() => {
-  // 備份現有檔案（若存在）
+  // 備份（copy 不移走，避免並行 worker 讀不到）
   if (existsSync(EVENTS_PATH)) {
-    renameSync(EVENTS_PATH, BACKUP_PATH);
+    copyFileSync(EVENTS_PATH, BACKUP_PATH);
   }
 });
 
 afterEach(() => {
-  // 清除測試寫入的檔案
-  if (existsSync(EVENTS_PATH)) {
-    unlinkSync(EVENTS_PATH);
-  }
-  // 恢復備份
+  // 恢復備份（覆寫測試寫入的內容）
   if (existsSync(BACKUP_PATH)) {
-    renameSync(BACKUP_PATH, EVENTS_PATH);
+    copyFileSync(BACKUP_PATH, EVENTS_PATH);
+    unlinkSync(BACKUP_PATH);
   }
 });
 
