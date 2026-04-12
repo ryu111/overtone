@@ -16,7 +16,7 @@
 |------|------|
 | agent-browser | "瀏覽器自動化 CLI 工具 — Vercel Labs 出品，Rust 核心 + Playwright。WHEN: 需要 JS 執行、鍵盤 modifier  |
 | architecture | "系統架構設計知識域。WHEN: 架構決策（ADR）、設計模式選擇、技術 tradeoff 分析、並發策略選擇時使用。NOT: 純程式碼實作、bug 修復、日常 |
-| ask | 分析當前工作狀態，產出結構化建議並讓使用者選擇執行。 |
+| ask | 分析當前工作狀態，產出結構化建議並讓使用者選擇執行。WHEN: 任務段落結束、輸出「本次完成」後需要給使用者下一步建議時觸發。NOT: 日常對話回覆、使用者已有 |
 | auto | 深度路由決策。WHAT: 根據設計決策密度選 D0-D4 + 委派策略。WHEN: Main 接到任何任務、或不確定自己做還是委派時。NOT: 已分類的任務執行 |
 | auto-drive | "全自動引擎觀察知識域。觀察 nova auto-drive 迴圈健康狀態，判斷症狀根因，決定介入方式。WHEN: 自動引擎出現異常（RSS 高/loop 空轉 |
 | claude-dev | Claude Code Plugin 開發知識。hooks、agents、skills、commands 的 API 格式、settings 設定系統與 Nov |
