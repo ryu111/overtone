@@ -10,7 +10,7 @@
 
 ---
 
-### Skills（30）
+### Skills（31）
 
 | 名稱 | 簡述 |
 |------|------|
@@ -32,6 +32,7 @@
 | feedback-loop | "回饋迴圈知識域：成功即進化、自驅任務迴圈、回報與反思的完整協議。WHEN: 完成任務後的反思、自驅任務的監控與排障、品質回報時使用。NOT: 初次任務規劃、架 |
 | local-model-dispatch | "本地模型（g4-26b）角色派發：五種角色 system prompt、work-stealing 並行模式、安全邊界、升降級閾值。WHEN: Main 要用 |
 | model-cascade | 大模型指揮小模型框架。四層架構：Router→Contract→Executor→Feedback Loop。WHEN: 需要多模型協作、任務分配、成本優化時。 |
+| multi-tier-routing | (D, G-tier) 二維路由 + Layer 過濾 + 升級階梯 g→haiku→sonnet→opus + 失敗 3 次升級 + Workflow loo |
 | nova-pm | "產品探索與需求釐清。引導 planner agent 以 PM 角色探索需求、定義範圍、比較方案。WHEN: 需求不明確需要釐清、規格討論前的 PM 探索、D |
 | nova-spec | "產品規格管理。建立、追蹤、歸檔 spec/design 文件。WHEN: 使用者說「寫規格」「提案」「歸檔」或觸發 /spec:propose、/spec:d |
 | nova-test | "測試策略知識域。什麼該測、什麼不該測、怎麼測、何時跑。基於 Testing Trophy + 風險驅動。WHEN: 新增測試、審查測試設計、處理 test f |
