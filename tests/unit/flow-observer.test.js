@@ -1,5 +1,12 @@
-import { describe, it, expect } from "bun:test";
+import { describe, it, expect, beforeAll } from "bun:test";
 import { on } from "../../../../.claude/hooks/modules/flow-observer.js";
+
+// flow-observer SessionStart 有寫入 ~/.claude/data/current-session-id 的副作用。
+// 在 bun test 環境下須透過 NOVA_HOOK_TEST=1 opt-out 以避免污染真實 session 檔
+// （見 ~/.claude/hooks/modules/flow-observer.js 的 IS_TEST guard）。
+beforeAll(() => {
+	process.env.NOVA_HOOK_TEST = "1";
+});
 
 describe("flow-observer: 事件 handler 存在", () => {
 	it("註冊所有必要 lifecycle handlers", () => {

@@ -1,8 +1,14 @@
 // local-model-extensions.test.js — Session 摘要 + Session 簡報 + Skill 改善建議
-import { describe, test, expect, beforeEach, afterEach } from 'bun:test';
+import { describe, test, expect, beforeEach, afterEach, beforeAll } from 'bun:test';
 import { writeFileSync, readFileSync, mkdirSync, rmSync, appendFileSync } from 'fs';
 import { join } from 'path';
 import { tmpdir, homedir } from 'os';
+
+// flow-observer SessionStart 有寫入 current-session-id 的副作用，
+// 用 NOVA_HOOK_TEST opt-out 避免污染真實檔案。
+beforeAll(() => {
+  process.env.NOVA_HOOK_TEST = '1';
+});
 
 // Import judge.js 的可測試函式
 const { generateImprovements, grade } = await import(join(homedir(), '.claude/scripts/judge.js'));

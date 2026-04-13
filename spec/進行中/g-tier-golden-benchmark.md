@@ -179,9 +179,14 @@ bun tests/benchmark/g-tier/runner.js --dry-run
 
 ## 關鍵風險
 
-1. **Medium/Hard 需要真實 26B 失敗樣本**：我目前是「推測 26B 弱點」，實際可能不準。若能取得 block-world 之前用 26B 時的失敗 log 會更好 — 建議 Manager 確認來源。
+1. **Medium/Hard 用理論推測 26B 弱點**（Manager 2026-04-13 回覆 xd-uq7a 確認）：
+   - **結論**：無歷史 26B 失敗 log 可用。理由：block-world 昨天才從 26B A4B → 31B（commit 1d5c0c2 之前也是 26B 但無 benchmark），所有先前 g4 failure 紀錄都是 g4-31B 舊版（非 Gemma）或 Qwen3-8B 時期，模型族完全不同。Nova 也沒有系統性收集 g4 failure log 的管線（這是 feedback-loop 另一個空窗）。
+   - **決策**：medium set 採理論推測繼續推，但每個 prompt 在 JSON schema 的 `rationale` 欄位必須註明推測依據（e.g. `locked context violation：26B 在 prompt < 4K 時會忽略 locked region，基於 MoE 架構 active 4B 參數不足維持長上下文約束`）。
+   - **校驗方法**：推測錯了就在 hard set 先做 empirical 對比（跑 31B/26B 看 pass rate），若 medium/hard 的 pass rate 分布接近（例如 31B 80% / 26B 75%），說明該題對 26B 不構成區分 → move 回 easy 或重設計。
+   - **可接受的失敗模式**：若輪 3 跑完發現 medium 對 26B/31B 區分力不足（total diff < 5），允許重開 spec 加入新 prompt 而不是卡住等 log。
 2. **Hard set 的 checker 難寫**：rule conflict / type design 這類 prompt 沒有固定答案，可能需要 LLM-as-judge（同模型評分可能 self-bias）或人工抽查。先寫 regex checker + 人工 spot-check 為主。
 3. **Runner 時間不穩定**：冷啟動、並發、記憶體壓力都影響 tok/s。要加 warm-up + 多輪取中位數。
+4. **feedback-loop 空窗** (Manager 指出 2026-04-13)：Nova 無系統性收集 g4 failure log 管線，每次換模型就失去比較基準。**建議後續**：新 spec `g-tier-failure-log-pipeline` 建立 multi-tier-loop 的 g-tier 失敗自動收集到 `/tmp/nova-g-failures.jsonl`，作為未來 benchmark iteration 的真實樣本來源。此 spec 獨立於本 benchmark，不阻塞本案。
 
 ## 與既有元件的關係
 
