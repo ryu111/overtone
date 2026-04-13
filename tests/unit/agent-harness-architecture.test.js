@@ -88,9 +88,9 @@ describe("Agent Harness Architecture", () => {
     expect(overLimit).toEqual([]);
   });
 
-  // 5.7：commands 只剩 3 個
-  test("commands/*.md 只有 audit, pr, skill-forge", () => {
+  // 5.7：commands 白名單（新增需同步更新此測試）
+  test("commands/*.md 白名單", () => {
     const cmds = readdirSync(join(CLAUDE, "commands")).filter(f => f.endsWith(".md")).sort();
-    expect(cmds).toEqual(["audit.md", "pr.md", "skill-forge.md"]);
+    expect(cmds).toEqual(["audit.md", "handoff.md", "pr.md", "skill-forge.md"]);
   });
 });
