@@ -49,9 +49,10 @@ describe("parseCompleteNotification", () => {
 		expect(r.dispatch_id).toBe("xd-1776-xyz1");
 	});
 
-	it("兩者皆無時 fallback unknown-ts", () => {
+	it("兩者皆無時 return null（xd-qrql：廢除 unknown-ts fallback 避免 SSE 回聲汙染）", () => {
+		// 含 commit 字樣但無 xd id 也無 7-40 hex hash → 視為無效通知
 		const r = parseCompleteNotification("✅ nova-brain 回報：修好了 commit 已完成");
-		expect(r.dispatch_id).toMatch(/^unknown-\d+$/);
+		expect(r).toBeNull();
 	});
 
 	it("prompt 過長（> 2000 chars）→ 不匹配（使用者對話/log 排除，xd-texh）", () => {
@@ -91,8 +92,9 @@ describe("parseCompleteNotification", () => {
 	});
 
 	// xd-1xos：討論式 dispatch 持久化守護
+	// xd-qrql：DISCUSSION_HINT_RE 收緊 — 只匹配強訊號 Clarifying Questions/討論回覆/待討論/需要你的看法
 	it("討論式 dispatch + 含 .md 路徑 → is_discussion=true, missing_discussion_file=false", () => {
-		const notice = "✅ nova-brain 回報：ralph-loop iter 討論完成 xd-zq6a，已寫 spec/討論/ralph-loop-iter.md";
+		const notice = "✅ nova-brain 回報：討論回覆 xd-zq6a Clarifying Questions 已答，已寫 spec/討論/ralph-loop-iter.md";
 		const r = parseCompleteNotification(notice);
 		expect(r).not.toBeNull();
 		expect(r.is_discussion).toBe(true);
@@ -100,7 +102,7 @@ describe("parseCompleteNotification", () => {
 	});
 
 	it("討論式 dispatch + 缺 .md 路徑 → missing_discussion_file=true", () => {
-		const notice = "✅ nova-brain 回報：討論回覆 xd-zq6a 提了 3 方案 + 推薦 + 盤點 + 根因假設";
+		const notice = "✅ nova-brain 回報：討論回覆 xd-zq6a 含 Clarifying Questions，3 個方案";
 		const r = parseCompleteNotification(notice);
 		expect(r).not.toBeNull();
 		expect(r.is_discussion).toBe(true);
@@ -113,6 +115,30 @@ describe("parseCompleteNotification", () => {
 		expect(r).not.toBeNull();
 		expect(r.is_discussion).toBe(false);
 		expect(r.missing_discussion_file).toBe(false);
+	});
+
+	// xd-qrql：false positive 修復 test case
+	it("方案 C 字樣但是真實 complete（含 xd id + commit）→ 不誤觸 missing_discussion_file", () => {
+		const notice = "✅ nova-brain 回報：ralph-loop iter 實作完成採納方案 C xd-tnek commit abc1234";
+		const r = parseCompleteNotification(notice);
+		expect(r).not.toBeNull();
+		expect(r.is_discussion).toBe(false);
+		expect(r.missing_discussion_file).toBe(false);
+	});
+
+	it("SSE 回聲 prompt（無 xd id + 無 commit hash）→ return null", () => {
+		const notice = "✅ nova-brain 回報：一些訊息但沒有 dispatch id 也沒有 hash";
+		// 無 xd- / 無 7-40 hex commit → fallback 不再 unknown-<timestamp>，直接 null
+		const r = parseCompleteNotification(notice);
+		expect(r).toBeNull();
+	});
+
+	it("正常 complete（含 xd id + commit hash）→ 正常 parse", () => {
+		const notice = "✅ nova-brain 回報：完成 xd-abc-def commit 9b9e03c";
+		const r = parseCompleteNotification(notice);
+		expect(r).not.toBeNull();
+		expect(r.dispatch_id).toBe("xd-abc-def");
+		expect(r.project).toBe("nova-brain");
 	});
 });
 
