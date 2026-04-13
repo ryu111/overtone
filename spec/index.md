@@ -10,7 +10,7 @@
 
 ---
 
-### Skills（34）
+### Skills（35）
 
 | 名稱 | 簡述 |
 |------|------|
@@ -42,6 +42,7 @@
 | onboard | "專案掃描與 CLAUDE.md 骨架生成。WHEN: 初次進入新專案、需要產生或補充 CLAUDE.md 時使用。NOT: 已有完整 CLAUDE.md 的日 |
 | os-control | "OS 操控知識域：桌面自動化、系統管理、螢幕截圖、音訊控制、WebSocket 即時通訊。WHEN: 需要作業系統層級操作（非瀏覽器）時使用。NOT: 純程式 |
 | pinchtab | "Chrome 瀏覽器操控 — Pinchtab HTTP API。WHEN: 需要網頁自動化、表單填寫、截圖擷取且 PinchTab 常駐服務（port 98 |
+| pipeline-quality-gate | "multi-tier-loop / g-executor pipeline 的 4 層品質驗證框架。WHEN: 設計或審查 executor/reviewer |
 | refactoring | "重構決策知識域：設計分析、拆分策略、品質指標。WHEN: 判斷何時該拆（SRP 違反）、何時不該拆（高內聚）、選擇重構手法（Extract Module/He |
 | self-evolution | "元認知自評框架：行動前客觀 checklist + 行動後 loop 模式反思。WHEN: dispatch 前、驗收前、重大決策前。NOT: 機械性操作、D |
 | skill-judge | 對 Skill 設計品質進行多維度評分（知識密度、觸發精準度、結構完整性等）。WHEN: 量化評估 Skill 整體設計優劣、生成改善建議報告、進行 Skill |
