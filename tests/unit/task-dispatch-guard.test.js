@@ -15,9 +15,12 @@ const COMPACT_MARKER = '"content":"This session is being continued from a previo
 
 beforeEach(() => {
 	mkdirSync(SESSION_DIR, { recursive: true });
+	// 清空 task-reminder 計數器（每測試獨立）
+	try { rmSync(`/tmp/nova-task-reminder-${TEST_SESSION_ID}.txt`); } catch {}
 });
 afterEach(() => {
 	try { rmSync(SESSION_DIR, { recursive: true, force: true }); } catch {}
+	try { rmSync(`/tmp/nova-task-reminder-${TEST_SESSION_ID}.txt`); } catch {}
 });
 
 function writeJsonl(content) {
@@ -238,5 +241,90 @@ describe("跳過 completed 直接 deleted 的偵測", () => {
 		const mod = await import(`${MODULE_PATH}?t=${Date.now()}`);
 		const r = mod.on.Stop({ cwd: TEST_CWD, session_id: TEST_SESSION_ID });
 		expect(r.systemMessage ?? "").not.toContain("跳過 completed 直接 deleted");
+	});
+});
+
+describe("task-reminder escalation (mrg5)", () => {
+	// 模擬 5 次 Edit + 0 TaskCreate 的 jsonl
+	function editsOnlyJsonl(n) {
+		return Array.from({ length: n }, () => `{"name":"Edit","input":{}}`).join("\n");
+	}
+
+	test("substantiveWork ≥3 + 0 TaskCreate 第 1/2 次仍是 warn（systemMessage 含進度提示）", async () => {
+		writeJsonl(editsOnlyJsonl(5));
+		const mod = await import(`${MODULE_PATH}?t=${Date.now()}`);
+		// 第 1 次 Stop
+		const r1 = mod.on.Stop({ cwd: TEST_CWD, session_id: TEST_SESSION_ID });
+		expect(r1.decision).toBe("allow");
+		expect(r1.systemMessage).toContain("第 1/3 次");
+		// 第 2 次 Stop
+		const r2 = mod.on.Stop({ cwd: TEST_CWD, session_id: TEST_SESSION_ID });
+		expect(r2.decision).toBe("allow");
+		expect(r2.systemMessage).toContain("第 2/3 次");
+	});
+
+	test("substantiveWork ≥3 + 0 TaskCreate 第 3 次升級為 block", async () => {
+		// 對 jsonl 路徑用 nova-brain 模擬：必須讓 reminderCount 機制走完
+		// 寫入 mock jsonl 並連續觸發 3 次 Stop
+		writeJsonl(editsOnlyJsonl(5));
+		const mod = await import(`${MODULE_PATH}?t=${Date.now()}`);
+		// 1
+		mod.on.Stop({ cwd: TEST_CWD, session_id: TEST_SESSION_ID });
+		// 2
+		mod.on.Stop({ cwd: TEST_CWD, session_id: TEST_SESSION_ID });
+		// 3 → block
+		const r3 = mod.on.Stop({ cwd: TEST_CWD, session_id: TEST_SESSION_ID });
+		expect(r3.decision).toBe("block");
+		expect(r3.reason).toContain("連續 3 次實質工作");
+		expect(r3.reason).toContain("Plan-First");
+	});
+
+	test("出現 TaskCreate 後計數器重置（之後又 substantiveWork=5 才從 1 開始計）", async () => {
+		const mod = await import(`${MODULE_PATH}?t=${Date.now()}`);
+		// 第 1 次：5 Edits 0 TaskCreate → count=1
+		writeJsonl(editsOnlyJsonl(5));
+		mod.on.Stop({ cwd: TEST_CWD, session_id: TEST_SESSION_ID });
+		expect(mod.getReminderCount(TEST_SESSION_ID)).toBe(1);
+		// 第 2 次：5 Edits + 1 TaskCreate → reset
+		writeJsonl(editsOnlyJsonl(5) + '\n{"name":"TaskCreate","input":{}}');
+		mod.on.Stop({ cwd: TEST_CWD, session_id: TEST_SESSION_ID });
+		expect(mod.getReminderCount(TEST_SESSION_ID)).toBe(0);
+		// 第 3 次：又退回 5 Edits 0 TaskCreate → 從 0 開始 → count=1（不是 2）
+		writeJsonl(editsOnlyJsonl(5));
+		const r3 = mod.on.Stop({ cwd: TEST_CWD, session_id: TEST_SESSION_ID });
+		expect(r3.decision).toBe("allow");
+		expect(r3.systemMessage).toContain("第 1/3 次");
+	});
+
+	test("Read/Grep only session 永遠不觸發累計（substantiveWork=0）", async () => {
+		writeJsonl([
+			'{"name":"Read","input":{}}',
+			'{"name":"Grep","input":{}}',
+			'{"name":"Read","input":{}}',
+			'{"name":"Grep","input":{}}',
+			'{"name":"Bash","input":{"command":"git log --oneline"}}',
+			'{"name":"Bash","input":{"command":"cat /tmp/x"}}',
+		].join("\n"));
+		const mod = await import(`${MODULE_PATH}?t=${Date.now()}`);
+		// 連跑 5 次都不該累計
+		for (let i = 0; i < 5; i++) {
+			const r = mod.on.Stop({ cwd: TEST_CWD, session_id: TEST_SESSION_ID });
+			expect(r.decision).toBe("allow");
+		}
+		expect(mod.getReminderCount(TEST_SESSION_ID)).toBe(0);
+	});
+
+	test("getReminderCount/incrementReminderCount/resetReminderCount 純函式行為", async () => {
+		const mod = await import(`${MODULE_PATH}?t=${Date.now()}`);
+		const sid = `unit-${Date.now()}`;
+		expect(mod.getReminderCount(sid)).toBe(0);
+		expect(mod.incrementReminderCount(sid)).toBe(1);
+		expect(mod.incrementReminderCount(sid)).toBe(2);
+		expect(mod.getReminderCount(sid)).toBe(2);
+		mod.resetReminderCount(sid);
+		expect(mod.getReminderCount(sid)).toBe(0);
+		// 缺 sessionId 安全
+		expect(mod.getReminderCount(null)).toBe(0);
+		expect(mod.incrementReminderCount(null)).toBe(0);
 	});
 });
