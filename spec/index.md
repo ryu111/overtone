@@ -50,7 +50,7 @@
 
 ---
 
-### Scripts（63）
+### Scripts（64）
 
 | 名稱 | 簡述 |
 |------|------|
@@ -100,6 +100,7 @@
 | os-control-driver | OS-level 自動化操控 Claude CLI |
 | persist | 收尾第三階段：確定性持久化 |
 | reflect | 收尾第二階段：LLM 反思 |
+| reflection-backfill | 一次性腳本，backfill 歷史 reflections.jsonl 的 resolved_at |
 | reflection-resolver | CLI 工具：掃 reflections.jsonl 自動回填 resolved_at |
 | rule-audit | 掃 ~/.claude/rules/**/*.md，抓所有 📋 MUST 條款， |
 | self-check | 自檢閉環腳本（4 Phase: scan → aggregate → act → persist） |
