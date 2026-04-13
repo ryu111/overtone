@@ -8,11 +8,12 @@
 
 ## 核心目標（討論式派發用）
 
-- **core_objective**：推進 `~/.claude/` 達 L1-L4，打造通用自主代理核心
+- **core_objective**：推進 `~/.claude/` 達 L1-L4，打造通用自主代理核心。本質是 **Agent Harness**（Guide + Sensor + Closed-Loop 三支柱）— 用 rules/skills/commands 引導 AI 行為、用 hooks 偵測實際執行、用 feedback loop 自我修正。**Feedback Loop 是做事守則**：每個行動必須閉環（觀察 → 驗證 → 改善），不做完就停。
 - **non_negotiables**（不可協商底線）：
   - 測試零容忍（全域元件改動必先跑測試，失敗不放行）
   - 治本優先（結構性缺陷 > 末端修補，不接受 workaround）
   - `~/.claude/` 唯一 SoT（禁止 fork / 禁止另建全域元件）
+  - Feedback Loop 閉環（每個產出必須有驗證證據，觀察 → 驗證 → 改善，半途而廢或靜默失敗均不接受）
 
 > 詳見 `~/.claude/rules/協作/討論式派發.md`。
 
