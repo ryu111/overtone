@@ -50,7 +50,7 @@
 
 ---
 
-### Scripts（64）
+### Scripts（65）
 
 | 名稱 | 簡述 |
 |------|------|
@@ -93,6 +93,7 @@
 | learner-analysis | 行為分析純函式模組 |
 | learner-suggestions | 建議生成模組 |
 | lifecycle-orchestrator | Skill Lifecycle 串聯引擎 |
+| llm-watchdog | vllm-mlx crash recovery |
 | local-model | AI 模型 client（單一來源） |
 | maintainer | 本地模型驅動的維護 agent（v2：模型決策 + 程式碼執行） |
 | manage-component | 元件管理 CLI |
