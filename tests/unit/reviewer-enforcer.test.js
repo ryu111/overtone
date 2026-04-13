@@ -140,6 +140,35 @@ describe("parseCompleteNotification", () => {
 		expect(r.dispatch_id).toBe("xd-abc-def");
 		expect(r.project).toBe("nova-brain");
 	});
+
+	// xd-jzjj: 完成即討論 next_action_proposal 偵測
+	it("含 next_action_proposal + verdict=continue → has_next_proposal=true, verdict=continue", () => {
+		const notice = "✅ nova-brain 回報：完成 xd-abc-def commit 9b9e03c next_action_proposal verdict:continue";
+		const r = parseCompleteNotification(notice);
+		expect(r).not.toBeNull();
+		expect(r.has_next_proposal).toBe(true);
+		expect(r.verdict).toBe("continue");
+	});
+
+	it("verdict=close 解析正確", () => {
+		const notice = '✅ nova-brain 回報：完成 xd-xxx commit abc1234 verdict: "close"';
+		const r = parseCompleteNotification(notice);
+		expect(r.verdict).toBe("close");
+		expect(r.has_next_proposal).toBe(true);
+	});
+
+	it("verdict=escalate 解析正確", () => {
+		const notice = "✅ nova-brain 回報：完成 xd-xxx commit abc1234 verdict=escalate";
+		const r = parseCompleteNotification(notice);
+		expect(r.verdict).toBe("escalate");
+	});
+
+	it("無 next_action_proposal → has_next_proposal=false, verdict=null", () => {
+		const notice = "✅ nova-brain 回報：完成 xd-abc-def commit 9b9e03c";
+		const r = parseCompleteNotification(notice);
+		expect(r.has_next_proposal).toBe(false);
+		expect(r.verdict).toBeNull();
+	});
 });
 
 describe("trackCompleteOnPrompt", () => {
