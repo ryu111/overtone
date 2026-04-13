@@ -208,6 +208,48 @@ describe("模組環形依賴偵測", () => {
   });
 });
 
+// ── Hook module 接線守護（xd-5mja 元盲點防護）──
+// 寫好 hook module 但忘記在 hook-client.js MODULE_HANDLERS 註冊 = 零執行次數
+// 本 test 確保：hooks/modules/*.js 有 `export const on` 的模組都必須在
+// hook-client.js 的 LOCAL_MODULES 某處出現（grep path match）
+describe("Hook module 接線完整性", () => {
+  const MODULES_DIR = join(homedir(), ".claude/hooks/modules");
+  const HOOK_CLIENT = join(homedir(), ".claude/hooks/hook-client.js");
+
+  // 豁免清單：不需要在 MODULE_HANDLERS 註冊的 module
+  // - lib/ 下是 helper，不是 event handler
+  // - 純資料庫/工具類（如 heartbeat-* 系列可能被 heartbeat.js 內部 import）
+  const EXEMPT = new Set([
+    "lib",
+    "heartbeat-data-collector",
+    "heartbeat-event-handlers",
+    "heartbeat-signals",
+    "heartbeat-utils",
+    "heartbeat-habit-core",
+    "habit-formation",
+  ]);
+
+  it("所有 export 非空 on object 的 hook module 都必須在 hook-client.js LOCAL_MODULES 註冊", () => {
+    const hookClientCode = readFile(HOOK_CLIENT);
+    const modules = readdirSync(MODULES_DIR).filter(f => f.endsWith(".js"));
+    const unwired = [];
+
+    for (const mod of modules) {
+      const name = mod.replace(/\.js$/, "");
+      if (EXEMPT.has(name)) continue;
+      const code = readFile(join(MODULES_DIR, mod));
+      // 檢查是否 export 非空 on object（含至少一個 handler key）
+      // 空 on = {} 是 library 模式（如 review-gate.js 被 agent 程式化呼叫）
+      if (!/export\s+const\s+on\s*=\s*\{[\s\S]*?\w+\s*:/.test(code)) continue;
+      // 檢查 hook-client 是否引用此 module path
+      if (!hookClientCode.includes(`hooks/modules/${mod}`)) {
+        unwired.push(mod);
+      }
+    }
+    expect(unwired).toEqual([]);
+  });
+});
+
 // ── Guard 覆蓋率 ──
 describe("Guard 覆蓋率", () => {
   it("PROTECTED_PATHS 涵蓋 ~/.claude/ 下所有核心子目錄", () => {
