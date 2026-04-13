@@ -10,7 +10,7 @@
 
 ---
 
-### Skills（35）
+### Skills（36）
 
 | 名稱 | 簡述 |
 |------|------|
@@ -32,6 +32,7 @@
 | dispatch-lifecycle | "Cross-dispatch 生命週期品質知識域。派發前品質檢查、執行中監控、完成驗收三段流程。WHEN: 派發 cross-dispatch 前、驗收完成時 |
 | executor-dispatch | Executor agent dispatch prompt 標準模板。涵蓋 Scope 邊界 / Linter 自檢 / Commit 流程 / 驗收回報四段 |
 | feedback-loop | "回饋迴圈知識域：成功即進化、自驅任務迴圈、回報與反思的完整協議。WHEN: 完成任務後的反思、自驅任務的監控與排障、品質回報時使用。NOT: 初次任務規劃、架 |
+| harness-invariants | 結構不變式（structural invariants）知識域 — 定義 AI 執行 Edit/Write 時不可違反的隱式約束，由 hooks/modules |
 | local-model-dispatch | "本地模型（g4-26b）角色派發：五種角色 system prompt、work-stealing 並行模式、安全邊界、升降級閾值。WHEN: Main 要用 |
 | model-cascade | 大模型指揮小模型框架。四層架構：Router→Contract→Executor→Feedback Loop。WHEN: 需要多模型協作、任務分配、成本優化時。 |
 | multi-tier-routing | (D, G-tier) 二維路由 + Layer 過濾 + 升級階梯 g→haiku→sonnet→opus + 失敗 3 次升級 + Workflow loo |
