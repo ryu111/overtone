@@ -1,0 +1,86 @@
+{
+  "level": "medium",
+  "description": "區分多檔 consistency + locked context。理論推測 26B 弱點（無歷史 26B failure log，spec 風險 1 已記錄）。prompt 精簡版，每題 rationale 嵌註釋。",
+  "tasks": [
+    {
+      "id": "med_01_multifile_api",
+      "rationale": "locked context violation — 26B 在 prompt < 4K 時會忽略 locked region，基於 MoE active 4B 維持約束能力不足",
+      "prompt": "給定 types.ts 已定義 `interface User { id: string; name: string; email: string; }`。**不得修改 types.ts**。寫 user-service.ts 實作 getUser(id: string): User | null 與 saveUser(u: User): void。只輸出 user-service.ts 程式碼。",
+      "max_tokens": 400,
+      "temperature": 0.2,
+      "check": { "type": "regex", "must_match": ["getUser", "saveUser", "User"], "must_not_match": ["interface\\s+User\\s*\\{"] }
+    },
+    {
+      "id": "med_02_naming_consistency",
+      "rationale": "命名慣例遵循 — 26B 上下文提示吸收能力弱，常忽略 snake_case/PascalCase 約束",
+      "prompt": "現有 module 用 snake_case 命名函數（如 `get_user_by_id`）和 PascalCase 命名 class（如 `UserStore`）。新增一個函數「根據 email 取得用戶」和一個 class「用戶會話管理」。只輸出兩個宣告。",
+      "max_tokens": 200,
+      "temperature": 0.2,
+      "check": { "type": "regex", "must_match": ["get_user_by_email|get_by_email", "class\\s+(UserSession|SessionManager)"], "must_not_match": ["getUserByEmail\\s*\\(", "user_session_manager\\s*=\\s*class"] }
+    },
+    {
+      "id": "med_03_preserve_behavior",
+      "rationale": "重構不改 behavior — 26B 常 drop console.log 或改 output 順序",
+      "prompt": "這個函數輸出 a → b → c：`function f() { console.log('a'); console.log('b'); console.log('c'); }`。重構成用陣列 forEach，輸出順序必須不變。只輸出重構後函數。",
+      "max_tokens": 200,
+      "temperature": 0.2,
+      "check": { "type": "regex", "must_match": ["forEach", "'a'", "'b'", "'c'"] }
+    },
+    {
+      "id": "med_04_error_channel",
+      "rationale": "統一錯誤處理 — 26B 常漏 try/catch 點",
+      "prompt": "把這段改成統一用 throw new Error(`ERR_${code}`) 格式，且所有 fetch 都包 try/catch：`async function load() { const r = await fetch('/api/x'); return r.json(); }`。只輸出改寫後函數。",
+      "max_tokens": 250,
+      "temperature": 0.2,
+      "check": { "type": "regex", "must_match": ["try", "catch", "throw new Error", "ERR_"] }
+    },
+    {
+      "id": "med_05_config_read",
+      "rationale": "禁 hardcode — 26B 常直接寫死常數，忽略 config 提示",
+      "prompt": "改寫以下函數讀取 config.json 的 `apiEndpoint` 欄位，不可 hardcode URL：`function call() { return fetch('http://localhost:3000/api'); }`。使用 readFileSync(+JSON.parse)。只輸出改寫後函數 + import。",
+      "max_tokens": 250,
+      "temperature": 0.2,
+      "check": { "type": "regex", "must_match": ["readFileSync", "config\\.json", "apiEndpoint"], "must_not_match": ["http://localhost"] }
+    },
+    {
+      "id": "med_06_hook_return_format",
+      "rationale": "遵循格式約束 — 26B 常產出『看起來對但欄位名錯』的結構",
+      "prompt": "Claude Code hook 的 return format 必須含 `{ hookSpecificOutput: { hookEventName, additionalContext } }`。寫一個 UserPromptSubmit handler function handle(input) 回傳 additionalContext 為 'hello'。只輸出函數。",
+      "max_tokens": 250,
+      "temperature": 0.2,
+      "check": { "type": "regex", "must_match": ["hookSpecificOutput", "hookEventName", "additionalContext", "hello", "UserPromptSubmit"] }
+    },
+    {
+      "id": "med_07_test_first",
+      "rationale": "給 test 實作 — 26B 常先改 test 而非實作",
+      "prompt": "Test 如下：`expect(reverseWords('hello world')).toBe('world hello');`。寫 reverseWords 實作讓 test pass，**不得修改 test**。只輸出 reverseWords 函數。",
+      "max_tokens": 200,
+      "temperature": 0.2,
+      "check": { "type": "regex", "must_match": ["reverseWords", "split", "reverse|join"] }
+    },
+    {
+      "id": "med_08_migration_shim",
+      "rationale": "向後相容 shim — 26B 常直接改 API 造成 breaking change",
+      "prompt": "舊 API `fetchUser(id)` 已 deprecated，新 API `userClient.get(id)`。寫一個 shim：舊名稱保留、內部呼新 API、印 deprecation warning。只輸出 shim 函數。",
+      "max_tokens": 250,
+      "temperature": 0.2,
+      "check": { "type": "regex", "must_match": ["fetchUser", "userClient", "deprecat|warning", "console"] }
+    },
+    {
+      "id": "med_09_trace_import",
+      "rationale": "精準重構 — 26B 常把不該動的 export 也搬走",
+      "prompt": "a.ts: `import { X } from './b.ts';`。b.ts: `export const X = 1; export const Y = 2;`。把 X 搬到 c.ts，更新 a.ts import 到 c.ts，**不得動 Y**。只輸出 a.ts、b.ts、c.ts 三段。",
+      "max_tokens": 300,
+      "temperature": 0.2,
+      "check": { "type": "regex", "must_match": ["c\\.ts", "export const X", "export const Y"], "must_not_match": ["// Y removed", "// removed Y"] }
+    },
+    {
+      "id": "med_10_locked_version",
+      "rationale": "版本鎖定約束 — 26B 可能用該版本不支援的新語法",
+      "prompt": "package.json 鎖定 `react: 16.8.0`。寫一個用 useState 的函數元件 Counter（16.8 支援 hooks 但不支援 concurrent features 如 useTransition）。不得用 useTransition / useDeferredValue。只輸出元件。",
+      "max_tokens": 250,
+      "temperature": 0.2,
+      "check": { "type": "regex", "must_match": ["useState", "Counter"], "must_not_match": ["useTransition", "useDeferredValue"] }
+    }
+  ]
+}

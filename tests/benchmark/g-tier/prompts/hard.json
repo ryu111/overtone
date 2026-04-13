@@ -1,0 +1,46 @@
+{
+  "level": "hard",
+  "description": "推理極限：複雜 rule + BDD + 架構決策。31B 應開始失敗部分，haiku 可能整批掉。hard checker 用 regex 基礎正確性（spec 風險 2：複雜答案需 LLM-judge 或人工抽查）。",
+  "tasks": [
+    {
+      "id": "hard_01_rule_conflict",
+      "rationale": "rule 優先序推理 — 31B 常把 transitive 衝突當 direct 衝突",
+      "prompt": "有三條 rule，優先序 A > B > C：\n- A: 新使用者必須在 24 小時內驗證 email\n- B: 驗證 email 需要 admin 手動批准\n- C: admin 每日只批准 10 個請求\n\n場景：今天已有 10 個批准，現在有 2 個新使用者同時註冊。問：(1) 哪條 rule 主導最終行為？(2) 兩個新使用者的命運各是什麼？(3) 哪條 rule 被抑制？解釋推理 3 步。",
+      "max_tokens": 800,
+      "temperature": 0.2,
+      "check": { "type": "regex", "must_match": ["A|優先", "admin|批准", "10|達到|超過|已滿"] }
+    },
+    {
+      "id": "hard_02_bdd_chain",
+      "rationale": "BDD state transition — 31B 能列出狀態但常漏邊界轉移",
+      "prompt": "狀態機：idle / loading / success / error / cancelled\n動作：start / finish / fail / cancel / retry\n規則：start 只從 idle；finish 只從 loading 到 success；fail 只從 loading 到 error；cancel 從 loading 或 error 到 cancelled；retry 從 error 或 cancelled 回 loading。\n\n列出 3 條合法 state transition 序列（每條至少 3 步），格式「state1 -[action]-> state2 -[action]-> state3 ...」。",
+      "max_tokens": 600,
+      "temperature": 0.2,
+      "check": { "type": "regex", "must_match": ["idle", "loading", "->", "start", "retry|cancel|finish|fail"] }
+    },
+    {
+      "id": "hard_03_type_design",
+      "rationale": "類型不變式設計 — 31B 能列約束但常互相矛盾",
+      "prompt": "設計 TypeScript 類型 Order，同時滿足：\n(1) 有 id: string 非空\n(2) 有 items: Item[] 至少 1 個\n(3) 有 status: 'draft' | 'paid' | 'shipped' | 'delivered'\n(4) status='paid' 時必須有 paidAt: Date\n(5) status='shipped' 時必須有 trackingNumber: string\n\n用 discriminated union + branded type 實現，所有非法狀態在編譯期阻擋。只輸出 type 宣告。",
+      "max_tokens": 800,
+      "temperature": 0.2,
+      "check": { "type": "regex", "must_match": ["type\\s+Order|interface\\s+Order", "'draft'|draft:", "'paid'|paid:", "paidAt", "trackingNumber"] }
+    },
+    {
+      "id": "hard_04_arch_tradeoff",
+      "rationale": "架構評分 — 31B 常把評分平均化失去區分力",
+      "prompt": "場景：高併發訊息佇列系統。方案 A (Kafka)、B (Redis Streams)、C (PostgreSQL LISTEN/NOTIFY)。品質屬性：吞吐量、延遲、持久性、運維複雜度、成本。\n\n產出評分矩陣（每項 1-5，5 最好），格式 markdown 表格。每個方案至少有一項得 5 和一項得 1-2（避免平均化）。結尾一句話推薦哪個適合新創 MVP。",
+      "max_tokens": 1000,
+      "temperature": 0.2,
+      "check": { "type": "regex", "must_match": ["Kafka", "Redis", "Postgre", "吞吐|latency|throughput", "5", "推薦|建議"] }
+    },
+    {
+      "id": "hard_05_root_cause",
+      "rationale": "根因推理 — 31B 常抓到症狀而非根因",
+      "prompt": "Bug：某 Node.js server 每隔 2-3 天 crash，錯誤 'heap out of memory'。嫌疑點：\n(a) setInterval 忘記 clearInterval\n(b) express middleware 累積 req.context\n(c) Bun.spawn 子進程 stdout buffer 未 drain\n(d) 大量 JSON.parse 大物件\n\n推論最可能根因（不是症狀緩解），給出：(1) 哪個嫌疑最可能 + 為何 (2) 如何最小 repro 驗證 (3) 修復方案（治本非 workaround）。",
+      "max_tokens": 800,
+      "temperature": 0.2,
+      "check": { "type": "regex", "must_match": ["根因|root", "(a|b|c|d)|clearInterval|drain|middleware", "修復|fix"] }
+    }
+  ]
+}
