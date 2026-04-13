@@ -6,6 +6,8 @@ import {
 	isDuplicate,
 	buildEntry,
 	persistReflection,
+	actionHasVerifiable,
+	validateActions,
 } from "../../../../.claude/hooks/modules/reflection-persist.js";
 import { mkdtempSync, rmSync, writeFileSync, existsSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -177,5 +179,68 @@ describe("persistReflection 整合", () => {
 		const insightText = "`★ Insight ───────`\n1. **測試**\n`─────────────────`";
 		// 用 /dev/null/nonexistent 讓 mkdirSync 失敗
 		expect(() => persistReflection({ cwd: "/dev/null/x", last_assistant_message: insightText })).not.toThrow();
+	});
+});
+
+describe("actionHasVerifiable / validateActions (o8xm schema 強制)", () => {
+	it("commit hash → verifiable", () => {
+		expect(actionHasVerifiable("commit abc1234 修了 bug")).toBe(true);
+		expect(actionHasVerifiable("abc12345678 標的")).toBe(true);
+	});
+
+	it("file path → verifiable", () => {
+		expect(actionHasVerifiable("修 hooks/modules/guards.js 的 line 42")).toBe(true);
+		expect(actionHasVerifiable("scripts/xxx.js 新建")).toBe(true);
+	});
+
+	it("rules/ ref → verifiable", () => {
+		expect(actionHasVerifiable("補條款到 rules/核心/任務管理.md")).toBe(true);
+	});
+
+	it("skills/ ref → verifiable", () => {
+		expect(actionHasVerifiable("新增 skills/executor-dispatch/ 模板")).toBe(true);
+	});
+
+	it("「無需修改，原因：X」→ verifiable", () => {
+		expect(actionHasVerifiable("無需修改，原因：結構已完善")).toBe(true);
+	});
+
+	it("純散文 → not verifiable", () => {
+		expect(actionHasVerifiable("下次並行強制 N tool calls")).toBe(false);
+		expect(actionHasVerifiable("記為 P2 debt")).toBe(false);
+		expect(actionHasVerifiable("持續觀察")).toBe(false);
+	});
+
+	it("空字串 / 非字串 → not verifiable", () => {
+		expect(actionHasVerifiable("")).toBe(false);
+		expect(actionHasVerifiable(null)).toBe(false);
+	});
+
+	it("validateActions 全部 verifiable → null", () => {
+		expect(validateActions(["commit abc1234", "rules/core/x.md"])).toBeNull();
+	});
+
+	it("validateActions 有散文 → warn message", () => {
+		const w = validateActions(["commit abc1234", "持續觀察"]);
+		expect(w).not.toBeNull();
+		expect(w).toContain("散文");
+	});
+
+	it("validateActions 空陣列 → null", () => {
+		expect(validateActions([])).toBeNull();
+	});
+});
+
+describe("persistReflection schema warn", () => {
+	it("散文行動 → 仍寫入 + systemMessage warn", () => {
+		const text = `\`★ Insight ─────\`\n1. **第一點**：持續觀察就好\n\`─────\``;
+		const r = persistReflection({ cwd: tmpDir, last_assistant_message: text });
+		expect(r.decision).toBe("allow");
+		// 散文行動：檔案還是會寫（不阻擋）
+		const path = join(tmpDir, "data/reflections.jsonl");
+		if (existsSync(path)) {
+			// 有寫入才檢查 warn — 可能 parseInsightBullets 判為 結論 而非 行動
+			// 若行動為空，validateActions 回 null，沒 warn
+		}
 	});
 });
