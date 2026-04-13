@@ -132,4 +132,16 @@ describe("enforceOnStop", () => {
 	it("fail-open：無 session_id → allow 不 crash", () => {
 		expect(enforceOnStop({}).decision).toBe("allow");
 	});
+
+	it("成功驗收後 reset block_count（避免單調遞增失守護）", () => {
+		saveState(SID, {
+			complete_seen: [{ dispatch_id: "xd-1", project: "p", ts: 1, reviewed: true }],
+			reviewer_spawned: [],
+			block_count: 2,
+		});
+		const r = enforceOnStop({ session_id: SID });
+		expect(r.decision).toBe("allow");
+		const s = loadState(SID);
+		expect(s.block_count).toBe(0);
+	});
 });
