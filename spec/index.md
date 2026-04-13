@@ -51,7 +51,7 @@
 
 ---
 
-### Scripts（65）
+### Scripts（66）
 
 | 名稱 | 簡述 |
 |------|------|
@@ -64,6 +64,7 @@
 | briefing-builder | Session 摘要 + 簡報生成 |
 | capability-probe | 能力邊界探測 + 模型更新 |
 | chain-integrity | Nova 知識鏈完整性掃描器 |
+| claude-md-drift-check | CLAUDE.md 進度漂移掃描 |
 | collect | 收尾第一階段：確定性蒐證 |
 | component-health | 元件維護（文件搬遷、lockfile 修復、lifecycle、capability probe） |
 | cross-session-probe | 跨 Session 能力校準 |
