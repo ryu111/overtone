@@ -6,6 +6,16 @@
 
 此 repo 提供 tests、docs、specs 支撐開發品質。實際程式碼存放在 `~/.claude/`（唯一 SoT）。
 
+## 核心目標（討論式派發用）
+
+- **core_objective**：推進 `~/.claude/` 達 L1-L4，打造通用自主代理核心
+- **non_negotiables**（不可協商底線）：
+  - 測試零容忍（全域元件改動必先跑測試，失敗不放行）
+  - 治本優先（結構性缺陷 > 末端修補，不接受 workaround）
+  - `~/.claude/` 唯一 SoT（禁止 fork / 禁止另建全域元件）
+
+> 詳見 `~/.claude/rules/協作/討論式派發.md`。
+
 ## 雙 Repo 管理
 
 | Repo         | 路徑                   | GitHub            | 內容                         |
