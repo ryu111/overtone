@@ -33,6 +33,27 @@ describe("parseCompleteNotification", () => {
 		expect(r.dispatch_id).toBe("xd-1776000-abc1");
 	});
 
+	it("短形式報告：無 xd- id 時 fallback 到 commit hash", () => {
+		const r = parseCompleteNotification("✅ nova-brain 回報：fix commit 9b9e03c");
+		expect(r).not.toBeNull();
+		expect(r.dispatch_id).toBe("commit-9b9e03c");
+	});
+
+	it("短形式報告：完整 40 字元 hash 截短為 7 字元", () => {
+		const r = parseCompleteNotification("✅ nova-brain 回報：commit abcdef0123456789abcdef0123456789abcdef01");
+		expect(r.dispatch_id).toBe("commit-abcdef0");
+	});
+
+	it("優先 xd- id 而非 commit hash（兩者同時存在）", () => {
+		const r = parseCompleteNotification("✅ nova-brain 回報：xd-1776-xyz1 commit 9b9e03c");
+		expect(r.dispatch_id).toBe("xd-1776-xyz1");
+	});
+
+	it("兩者皆無時 fallback unknown-ts", () => {
+		const r = parseCompleteNotification("✅ nova-brain 回報：修好了 commit 已完成");
+		expect(r.dispatch_id).toMatch(/^unknown-\d+$/);
+	});
+
 	it("無 ✅ 不匹配", () => {
 		expect(parseCompleteNotification("nova-brain 回報：完成 commit")).toBeNull();
 	});
