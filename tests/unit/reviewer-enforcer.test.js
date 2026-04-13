@@ -89,6 +89,31 @@ describe("parseCompleteNotification", () => {
 		expect(parseCompleteNotification(null)).toBeNull();
 		expect(parseCompleteNotification("")).toBeNull();
 	});
+
+	// xd-1xos：討論式 dispatch 持久化守護
+	it("討論式 dispatch + 含 .md 路徑 → is_discussion=true, missing_discussion_file=false", () => {
+		const notice = "✅ nova-brain 回報：ralph-loop iter 討論完成 xd-zq6a，已寫 spec/討論/ralph-loop-iter.md";
+		const r = parseCompleteNotification(notice);
+		expect(r).not.toBeNull();
+		expect(r.is_discussion).toBe(true);
+		expect(r.missing_discussion_file).toBe(false);
+	});
+
+	it("討論式 dispatch + 缺 .md 路徑 → missing_discussion_file=true", () => {
+		const notice = "✅ nova-brain 回報：討論回覆 xd-zq6a 提了 3 方案 + 推薦 + 盤點 + 根因假設";
+		const r = parseCompleteNotification(notice);
+		expect(r).not.toBeNull();
+		expect(r.is_discussion).toBe(true);
+		expect(r.missing_discussion_file).toBe(true);
+	});
+
+	it("實作式 dispatch（無討論 hint）→ is_discussion=false", () => {
+		const notice = "✅ nova-brain 回報：修復完成 commit abc1234";
+		const r = parseCompleteNotification(notice);
+		expect(r).not.toBeNull();
+		expect(r.is_discussion).toBe(false);
+		expect(r.missing_discussion_file).toBe(false);
+	});
 });
 
 describe("trackCompleteOnPrompt", () => {

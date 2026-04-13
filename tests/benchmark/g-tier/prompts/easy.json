@@ -1,0 +1,76 @@
+{
+  "level": "easy",
+  "description": "速度區分層，所有模型應 100% 通過。複用 block-world g-tier-31b-baseline.md 的 10 題類型，prompt 獨立撰寫（block-world 無 JSON 可直接引用）。",
+  "tasks": [
+    {
+      "id": "easy_01_simple_fn",
+      "prompt": "寫一個 JavaScript 函數 add(a, b)，回傳兩個數字的和。只輸出函數本體（一行箭頭函數）。",
+      "max_tokens": 80,
+      "temperature": 0.2,
+      "check": { "type": "regex", "must_match": ["\\badd\\b", "=>|return|function"] }
+    },
+    {
+      "id": "easy_02_module",
+      "prompt": "寫一個 ES module，匯出一個 function createBox() 建立 Three.js 的 BoxGeometry(1,1,1) + MeshBasicMaterial + Mesh。只輸出程式碼。",
+      "max_tokens": 200,
+      "temperature": 0.2,
+      "check": { "type": "regex", "must_match": ["BoxGeometry", "MeshBasic", "Mesh", "export"] }
+    },
+    {
+      "id": "easy_03_refactor",
+      "prompt": "把這段改為箭頭函數：var double = function(x) { return x * 2; }。只輸出改寫後一行。",
+      "max_tokens": 60,
+      "temperature": 0.2,
+      "check": { "type": "regex", "must_match": ["=>", "\\* 2"], "must_not_match": ["\\bvar\\s+double"] }
+    },
+    {
+      "id": "easy_04_algo",
+      "prompt": "寫一個函數 sum(arr)，用 Array.prototype.reduce 計算陣列總和。只輸出函數。",
+      "max_tokens": 80,
+      "temperature": 0.2,
+      "check": { "type": "regex", "must_match": ["reduce", "sum"] }
+    },
+    {
+      "id": "easy_05_edit",
+      "prompt": "把這個物件的 `usr` 欄位改名為 `user`：const cfg = { usr: 'alice', age: 30 };。只輸出改寫後該行。",
+      "max_tokens": 60,
+      "temperature": 0.2,
+      "check": { "type": "regex", "must_match": ["\\buser:", "alice"], "must_not_match": ["\\busr\\b"] }
+    },
+    {
+      "id": "easy_06_chunk",
+      "prompt": "寫一個函數 chunk(arr, size) 把陣列切成 size 個一組的二維陣列。例如 chunk([1,2,3,4,5],2) → [[1,2],[3,4],[5]]。",
+      "max_tokens": 200,
+      "temperature": 0.2,
+      "check": { "type": "regex", "must_match": ["chunk", "slice|push|for"] }
+    },
+    {
+      "id": "easy_07_raycast",
+      "prompt": "寫一個 Three.js 的函數 pickObject(camera, mouse, scene)，用 Raycaster 回傳 intersectObjects 第一個結果或 null。只輸出程式碼。",
+      "max_tokens": 250,
+      "temperature": 0.2,
+      "check": { "type": "regex", "must_match": ["Raycaster", "intersectObjects|intersectObject"] }
+    },
+    {
+      "id": "easy_08_state",
+      "prompt": "寫一個 class Player，建構式收 (x, y, z)，有屬性 position（THREE.Vector3）和方法 moveBy(dx, dy, dz) 更新 position。只輸出程式碼。",
+      "max_tokens": 250,
+      "temperature": 0.2,
+      "check": { "type": "regex", "must_match": ["class Player", "Vector3", "moveBy"] }
+    },
+    {
+      "id": "easy_09_fix_bug",
+      "prompt": "修復這個 off-by-one bug：for (let i = 0; i <= arr.length; i++) { sum += arr[i]; }。只輸出修正後的 for 迴圈那行。",
+      "max_tokens": 80,
+      "temperature": 0.2,
+      "check": { "type": "regex", "must_match": ["<\\s*arr\\.length"], "must_not_match": ["<=\\s*arr\\.length"] }
+    },
+    {
+      "id": "easy_10_dayNight",
+      "prompt": "寫一個函數 getDayNightColor(t) 根據 t∈[0,1] 用 Math.sin 和 lerp 在 black (0x000000) 和 white (0xffffff) 之間插值回傳顏色十六進位字串。只輸出程式碼。",
+      "max_tokens": 200,
+      "temperature": 0.2,
+      "check": { "type": "regex", "must_match": ["Math\\.sin|sin\\(", "getDayNightColor"] }
+    }
+  ]
+}
