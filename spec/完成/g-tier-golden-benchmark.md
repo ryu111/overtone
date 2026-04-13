@@ -193,3 +193,42 @@ bun tests/benchmark/g-tier/runner.js --dry-run
 - **config-sot skill**：med_07_config_read 的設計反向引用本 skill（benchmark 是驗證 skill 被遵守的工具）
 - **local-model.json**：runner 讀此 config 拿 endpoint，不硬編
 - **nova-test skill**：本 benchmark 本質是「測模型能力」而非「測程式碼行為」，歸類特殊，參考 Testing Trophy 決策樹時要明確區分
+
+## 最終結果（2026-04-14）
+
+### 3 model 分數（easy 10 + medium 10 + hard 5 = 25 題）
+
+| model | easy | medium | hard | total | pass% | avg tok/s |
+|-------|:----:|:------:|:----:|:-----:|:-----:|:---------:|
+| 31b (gemma-4-31b-it-4bit) | 6/10 | 7/10 | 3/5 | 16/25 | 64% | 23.6 |
+| haiku (claude-haiku-4-5) | 8/10 | 9/10 | 5/5 | 22/25 | 88% | 51.3 |
+| sonnet (claude-sonnet-4-6) | 9/10 | 9/10 | 3/5 | 21/25 | 84% | 15.6 |
+
+### Spread 驗收
+- 弱 vs 強 (31b vs sonnet) = 21 - 16 = **5**，剛達 spec ≥ 5 門檻 ✅
+- 弱 vs 強 (31b vs haiku) = 22 - 16 = **6** ✅
+- 逐題 3-model 顯著差異 = **9/25** > 8 門檻 ✅
+
+### 反常觀察：haiku 在 hard 贏 sonnet
+
+hard 5 題 haiku 5/5 全 pass，sonnet 3/5 — 這是本次最意外的結果。
+
+**可能根因**：
+1. **sonnet 回應長 + claude CLI timeout**：sonnet hard_05_root_cause 回 0 token（CLI timeout 60s 觸發空回應），而 haiku 更快更穩。這不是模型推理能力差異，而是 CLI 整合問題。
+2. **sonnet over-reasoning 懲罰**：sonnet 在 easy/medium 表現穩定但 tok/s 很慢（15.6 vs haiku 51.3），暗示它對簡單題也花大量 thinking，在 hard 的 long output 觸發 CLI timeout；haiku 直接快速產出反而不被 timeout 打斷。
+
+**學習**：
+- 模型選擇不是單純「能力越高越好」— hard 推理類任務 haiku 實測勝 sonnet 主因在**輸出速度穩定性**而非推理深度
+- reference_g4_optimization.md 應新增「model selection by difficulty + CLI timeout consideration」段落
+- 未來 benchmark 要改用 Anthropic SDK 直連取代 claude CLI，消除 timeout / 寫檔副作用 / 計 token 三問題
+
+### Runner 已知 bug（供下次改進）
+- claude CLI `-p` 在 cwd 會寫檔案（benchmark 期間誤產生 createBox.js 等），需 sandbox 目錄或 --permission-mode plan
+- regex checker 對語意完整性類題目（如 hard_04 score matrix）會誤判，需 LLM-judge
+- tokens 計算在 claude CLI fallback 用 `content.length/4` 估算，與 31b 的 `usage.completion_tokens` 不可直接比較
+
+### 實作輪次
+- [x] 輪 1: 設計（commit 8a44143）
+- [x] 輪 2+3: runner 架構 + easy 10 題跑完（xd-l4a0, commit 6a5f172）
+- [x] 輪 4: medium 10 + hard 5 題 + 全量 25x3 跑完（xd-frab, commit a282fee）
+- [x] 輪 5: 結論歸檔（本檔 → spec/完成/, xd-1ow9）
