@@ -10,7 +10,7 @@
 
 ---
 
-### Skills（33）
+### Skills（34）
 
 | 名稱 | 簡述 |
 |------|------|
@@ -24,6 +24,7 @@
 | code-review | "PR Review 知識域：四維度結構化審查 + 回饋分級。WHEN: 審查 PR、code review、撰寫審查回饋時使用。NOT: 撰寫新程式碼、deb |
 | commit-convention | "Conventional commit 知識域。WHEN: 撰寫 commit message、判斷 commit 拆分策略、選擇 type/scope 時使 |
 | component-classification | "元件分類框架：Hook/Rule/Skill/CLAUDE.md 四層職責分離方法論。WHEN: 新增規範前判斷歸屬層級、Rule 膨脹需要拆分、釐清 Hoo |
+| config-sot | "常數 drift 偵測與 config 化決策。WHEN: 發現字串/數字散落多處、修 A 漏 B 的 drift bug、設計新 config 檔、giti |
 | craft | "軟體工藝知識域：Nova 製作原則、設計品味、競品基準、程式碼層級設計模式。WHEN: 設計決策品質判斷、競品對標時使用。NOT: 教科書級基礎知識、一般 c |
 | cross-session | "跨 Session 協作知識域。發送跨專案任務、讀取待辦、回報完成的 API 與流程。WHEN: 需要其他專案 session 配合時（改了 API 需要 i |
 | dead-code | "死碼清理知識：knip/depcheck 工具、手動清理策略、安全刪除。WHEN: 清理未使用程式碼、codebase 瘦身時使用。NOT: 功能開發、重構。 |
