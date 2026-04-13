@@ -163,10 +163,24 @@ describe("persistReflection 整合", () => {
 		expect(existsSync(join(tmpDir, "data/reflections.jsonl"))).toBe(false);
 	});
 
+	it("★ Insight 章節有結論無行動 → 不 append + systemMessage warn", () => {
+		// explanatory style 的教學洞察：純觀察無 commit/file/rule
+		const insightText = [
+			"`★ Insight ───────`",
+			"- 反直覺發現：async 比 sync 慢",
+			"- 設計洞察：狀態最小化",
+			"`─────────────────`",
+		].join("\n");
+		const r = persistReflection({ cwd: tmpDir, last_assistant_message: insightText });
+		expect(r.decision).toBe("allow");
+		expect(r.systemMessage).toContain("無可驗證行動");
+		expect(existsSync(join(tmpDir, "data/reflections.jsonl"))).toBe(false);
+	});
+
 	it("連續 2 次同內容 → 只寫 1 條（dedup）", () => {
 		const insightText = [
 			"`★ Insight ───────`",
-			"1. **發現**：commit xyz9876 修了另一個 bug",
+			"1. **發現**：commit abc9876 修了另一個 bug",
 			"`─────────────────`",
 		].join("\n");
 		persistReflection({ cwd: tmpDir, last_assistant_message: insightText });
