@@ -65,47 +65,46 @@ describe("spawn lock 讀寫", () => {
 	});
 });
 
-describe("shouldSkipSpawn 決策", () => {
+describe("shouldSkipSpawn 決策 (xd-mfm0 改為純 age timeout)", () => {
 	const now = 1776092000000;
 
 	test("無 lock → 不 skip", () => {
 		expect(shouldSkipSpawn(null, now)).toBe(false);
 	});
 
-	test("lock age 30s 且 pid alive → skip (還在載入)", () => {
+	test("lock age 30s → skip (還在載入)", () => {
 		const lock = { pid: 99999, startedAt: now - 30_000 };
-		const fakeAlive = () => true;
-		expect(shouldSkipSpawn(lock, now, MODEL_LOAD_TIMEOUT_MS, fakeAlive)).toBe(true);
+		expect(shouldSkipSpawn(lock, now)).toBe(true);
 	});
 
-	test("lock age 60s 且 pid alive → skip (還在載入中)", () => {
+	test("lock age 60s → skip (xd-mfm0 bug 修復：不再因 pid 誤判而 kill)", () => {
 		const lock = { pid: 99999, startedAt: now - 60_000 };
-		const fakeAlive = () => true;
-		expect(shouldSkipSpawn(lock, now, MODEL_LOAD_TIMEOUT_MS, fakeAlive)).toBe(true);
+		expect(shouldSkipSpawn(lock, now)).toBe(true);
 	});
 
-	test("lock age 179s 且 pid alive → skip (尚未超時)", () => {
+	test("lock age 90s → skip (31B 載入中)", () => {
+		const lock = { pid: 99999, startedAt: now - 90_000 };
+		expect(shouldSkipSpawn(lock, now)).toBe(true);
+	});
+
+	test("lock age 179s → skip (尚未超時)", () => {
 		const lock = { pid: 99999, startedAt: now - 179_000 };
-		const fakeAlive = () => true;
-		expect(shouldSkipSpawn(lock, now, MODEL_LOAD_TIMEOUT_MS, fakeAlive)).toBe(true);
+		expect(shouldSkipSpawn(lock, now)).toBe(true);
 	});
 
-	test("lock age 180s 剛好 → 不 skip (當成載入失敗)", () => {
+	test("lock age 180s 剛好 → 不 skip (當成載入失敗 allow retry)", () => {
 		const lock = { pid: 99999, startedAt: now - 180_000 };
-		const fakeAlive = () => true;
-		expect(shouldSkipSpawn(lock, now, MODEL_LOAD_TIMEOUT_MS, fakeAlive)).toBe(false);
+		expect(shouldSkipSpawn(lock, now)).toBe(false);
 	});
 
 	test("lock age 300s → 不 skip (超時當失敗)", () => {
 		const lock = { pid: 99999, startedAt: now - 300_000 };
-		const fakeAlive = () => true;
-		expect(shouldSkipSpawn(lock, now, MODEL_LOAD_TIMEOUT_MS, fakeAlive)).toBe(false);
+		expect(shouldSkipSpawn(lock, now)).toBe(false);
 	});
 
-	test("lock age 30s 但 pid 已死 → 不 skip (允許新 spawn)", () => {
-		const lock = { pid: 99999, startedAt: now - 30_000 };
-		const fakeDead = () => false;
-		expect(shouldSkipSpawn(lock, now, MODEL_LOAD_TIMEOUT_MS, fakeDead)).toBe(false);
+	test("自訂 timeout 120s + age 100s → skip", () => {
+		const lock = { pid: 99999, startedAt: now - 100_000 };
+		expect(shouldSkipSpawn(lock, now, 120_000)).toBe(true);
 	});
 });
 

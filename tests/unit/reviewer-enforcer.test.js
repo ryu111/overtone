@@ -54,6 +54,29 @@ describe("parseCompleteNotification", () => {
 		expect(r.dispatch_id).toMatch(/^unknown-\d+$/);
 	});
 
+	it("prompt 過長（> 2000 chars）→ 不匹配（使用者對話/log 排除，xd-texh）", () => {
+		const long = "使用者閒聊".repeat(500) + "✅ nova-brain 回報：commit abc1234";
+		expect(parseCompleteNotification(long)).toBeNull();
+	});
+
+	it("✅ 出現在 prompt 中後段（> 120 char）→ 不匹配（quote 排除，xd-texh）", () => {
+		const mid = "a".repeat(200) + "✅ nova-brain 回報：commit abc1234";
+		expect(parseCompleteNotification(mid)).toBeNull();
+	});
+
+	it("✅ 出現在 prompt 前段（< 120 char）→ 正常匹配", () => {
+		const notice = "\n\n✅ nova-brain 回報：fix commit 9b9e03c 完成";
+		const r = parseCompleteNotification(notice);
+		expect(r).not.toBeNull();
+		expect(r.project).toBe("nova-brain");
+		expect(r.dispatch_id).toBe("commit-9b9e03c");
+	});
+
+	it("短訊息但無 commit → 不匹配（既有行為）", () => {
+		const r = parseCompleteNotification("✅ nova-brain 回報：進度更新 xd-abc1");
+		expect(r).toBeNull();
+	});
+
 	it("無 ✅ 不匹配", () => {
 		expect(parseCompleteNotification("nova-brain 回報：完成 commit")).toBeNull();
 	});
