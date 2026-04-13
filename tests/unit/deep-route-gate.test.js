@@ -8,9 +8,13 @@ const contextInjector = await import(join(homedir(), ".claude/hooks/modules/cont
 
 // 測試環境 cwd 未設 → projName = "unknown"
 const ROUTING_FILE = "/tmp/nova-routing-level-unknown.txt";
+// compact-recovery file 由 flow-observer PreCompact/PostCompact hook 寫入，
+// 在並行測試中可能污染 context-injector UserPromptSubmit 的 compact recovery 分支
+const RECOVERY_FILE = "/tmp/nova-compact-recovery-unknown.md";
 
 function clearRouting() {
 	if (existsSync(ROUTING_FILE)) unlinkSync(ROUTING_FILE);
+	if (existsSync(RECOVERY_FILE)) unlinkSync(RECOVERY_FILE);
 }
 function setRouting(level = "D1") {
 	writeFileSync(ROUTING_FILE, level);

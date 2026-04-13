@@ -262,26 +262,28 @@ describe("靜態規則掃描", () => {
   const CLAUDE_DIR = join(homedir(), ".claude");
 
   it("C7: 所有 fetch() 呼叫不使用裸 fetch（無 options 物件）", () => {
-    // 只找真正的裸 fetch：fetch(url) 沒有第二個 options 參數
-    // pattern: fetch( 後面直接是變數/字串結尾，不含 {
+    // 只找真正的裸 fetch：同一行沒有 options 物件字面量
+    // 合法：fetch(url, { ... }) / fetch(fn("/p"), { signal: ... })
+    // 違規：fetch(url) / fetch(url);
     const dirs = [join(CLAUDE_DIR, "hooks"), join(CLAUDE_DIR, "scripts")];
     const violations = [];
     for (const dir of dirs) {
       try {
-        // 找 fetch(someUrl) 不帶 options 的呼叫
         const result = execSync(
           `grep -rn "\\bfetch(" "${dir}" --include="*.js" | grep -v "node_modules"`,
           { encoding: "utf-8", timeout: 5000 }
         );
         for (const line of result.trim().split("\n").filter(Boolean)) {
-          // 只保留沒有 { 在同行的 fetch 呼叫，且 fetch 後面只有一個引數
-          if (/fetch\([^{]+\)\s*[;,)]/.test(line.split(":").slice(2).join(":"))) {
+          const content = line.split(":").slice(2).join(":");
+          // 有 options 物件（, { 或 fetch(, {）→ 合法
+          if (/,\s*\{/.test(content)) continue;
+          // 否則檢查 fetch 後是否只有單一引數
+          if (/\bfetch\([^)]*\)\s*[;,)]/.test(content)) {
             violations.push(line.split(":").slice(0, 2).join(":"));
           }
         }
       } catch { /* grep no match = good */ }
     }
-    // 允許一些合法的模式（如 fetch(url) 在 wrapper 函式中）
     expect(violations.length).toBeLessThan(5);
   });
 
