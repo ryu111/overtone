@@ -5,15 +5,13 @@ import { join } from "node:path";
 
 // PostCompact 自動注入接續指令 — 防回歸測試
 //
-// 修復前：hook-client.js output() 是 if-else if 鏈，systemMessage 優先輸出
-// 時會吃掉 hookSpecificOutput.additionalContext，model 看不到 ctx。
-// PostCompact handler 也只回 systemMessage，根本沒填 additionalContext。
-//
-// 修復後：
-//   1. flow-observer.js PostCompact handler 同時回 systemMessage 和
-//      hookSpecificOutput.additionalContext
-//   2. hook-client.js output() 兩者並存時都輸出
-//   3. 兜底寫 /tmp/nova-compact-recovery-{project}.md
+// 修正歷史：
+//   v1: 同時回 systemMessage + hookSpecificOutput.additionalContext
+//       → runtime schema validation fail（PostCompact event 不在 hookSpecificOutput
+//       允許清單，schema 只接受 PreToolUse/UserPromptSubmit/PostToolUse）
+//   v2 (current): 只回 systemMessage（給使用者看 + UI 提示）
+//       model context 注入由 PreCompact 寫 /tmp/nova-handoff + UserPromptSubmit
+//       hook 兜底接力（compact-recovery.md）
 
 const HOOK_CLIENT = join(process.env.HOME || "", ".claude/hooks/hook-client.js");
 
@@ -46,16 +44,13 @@ describe("PostCompact 自動注入", () => {
 		expect(out.systemMessage).toContain(testProject);
 	});
 
-	it("輸出同時含 hookSpecificOutput.additionalContext（給 model 看）", () => {
+	it("不輸出 hookSpecificOutput（PostCompact schema 不允許）", () => {
 		const r = runPostCompact({
 			cwd: `/Users/test/projects/${testProject}`,
 			compact_summary: "目標 X，下一步 Y，無阻塞",
 		});
 		const out = JSON.parse(r.stdout);
-		expect(out.hookSpecificOutput).toBeDefined();
-		expect(out.hookSpecificOutput.hookEventName).toBe("PostCompact");
-		expect(out.hookSpecificOutput.additionalContext).toContain("handoff");
-		expect(out.hookSpecificOutput.additionalContext).toContain(testProject);
+		expect(out.hookSpecificOutput).toBeUndefined();
 	});
 
 	it("兜底寫 compact-recovery.md 供 UserPromptSubmit 路徑接力", () => {
