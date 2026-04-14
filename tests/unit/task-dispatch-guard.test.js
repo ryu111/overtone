@@ -142,35 +142,19 @@ describe("task-dispatch-guard", () => {
 		expect(result.decision).toBe("allow");
 	});
 
-	test("checkAskUserQuestionUsage: askCount=0 + optionPatterns>3 → warn=true", async () => {
-		// 5 行 × 3 個字面 \n 列表 = 15 次，用 String.raw 產生字面 \n（模擬 jsonl JSON encoded 內容）
-		const one = String.raw`{"content":"要不要做這個？\nA. 方案一\nB. 方案二\nC. 方案三"}`;
-		writeJsonl(Array.from({ length: 5 }, () => one).join("\n"));
+	test("第二檢查 (AskUserQuestion 使用率) 已於 xd-00v5 全刪除 — checkAskUserQuestionUsage undefined", async () => {
 		const mod = await import(`${MODULE_PATH}?t=${Date.now()}`);
-		const r = mod.checkAskUserQuestionUsage(TEST_CWD, TEST_SESSION_ID);
-		expect(r.askCount).toBe(0);
-		expect(r.optionPatterns).toBeGreaterThan(3);
-		expect(r.warn).toBe(true);
+		expect(mod.checkAskUserQuestionUsage).toBeUndefined();
 	});
 
-	test("checkAskUserQuestionUsage: askCount>=1 → warn=false（有用工具就放過）", async () => {
-		const one = String.raw`{"content":"要不要做這個？\nA. 方案一\nB. 方案二\nC. 方案三"}`;
-		const lines =
-			`{"name":"AskUserQuestion"}\n` +
-			Array.from({ length: 5 }, () => one).join("\n");
-		writeJsonl(lines);
+	test("dispatch=0 + 大量 markdown 選項列表 + 0 AskUserQuestion → allow（D' 全刪後不再 warn）", async () => {
+		const one = String.raw`{"content":"A. 方案一\nB. 方案二\nC. 方案三"}`;
+		writeJsonl(Array.from({ length: 10 }, () => one).join("\n"));
 		const mod = await import(`${MODULE_PATH}?t=${Date.now()}`);
-		const r = mod.checkAskUserQuestionUsage(TEST_CWD, TEST_SESSION_ID);
-		expect(r.askCount).toBeGreaterThanOrEqual(1);
-		expect(r.warn).toBe(false);
-	});
-
-	test("checkAskUserQuestionUsage: 低於門檻（optionPatterns<=3）→ warn=false", async () => {
-		writeJsonl(String.raw`{"content":"A. 方案一\nB. 方案二"}` + "\n"); // 1 次 match
-		const mod = await import(`${MODULE_PATH}?t=${Date.now()}`);
-		const r = mod.checkAskUserQuestionUsage(TEST_CWD, TEST_SESSION_ID);
-		expect(r.optionPatterns).toBeLessThanOrEqual(3);
-		expect(r.warn).toBe(false);
+		const r = mod.on.Stop({ cwd: TEST_CWD, session_id: TEST_SESSION_ID });
+		expect(r.decision).toBe("allow");
+		expect(r.systemMessage ?? "").not.toContain("Markdown 選項");
+		expect(r.systemMessage ?? "").not.toContain("AskUserQuestion");
 	});
 });
 
