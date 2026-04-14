@@ -3,6 +3,7 @@ import {
 	checkDispatchPollerWired,
 	checkOrphanRuntimeScripts,
 	checkRecentResolvedRatio,
+	checkCtxTrackingWired,
 	runAllSentinels,
 	buildState,
 	loadConfig,
@@ -49,10 +50,19 @@ describe("checkRecentResolvedRatio sentinel", () => {
 	});
 });
 
+describe("checkCtxTrackingWired sentinel (sentinel 9, P5 reflexive metric)", () => {
+	it("ctx-tracker 已接 UPS + autonomy-scan-trigger 消費 pending_compact → passed=true", () => {
+		const r = checkCtxTrackingWired();
+		expect(r.passed).toBe(true);
+		expect(r.dimension).toBe("自我校準");
+		expect(r.evidence).toContain("wired");
+	});
+});
+
 describe("runAllSentinels", () => {
-	it("回傳 4 個 sentinel 結果（含 P5 sentinel 10）", () => {
+	it("回傳 5 個 sentinel 結果（含 P5 sentinel 9 + 10）", () => {
 		const sentinels = runAllSentinels();
-		expect(sentinels).toHaveLength(4);
+		expect(sentinels).toHaveLength(5);
 		for (const s of sentinels) {
 			expect(s).toHaveProperty("passed");
 			expect(s).toHaveProperty("dimension");
