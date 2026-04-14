@@ -28,10 +28,10 @@ describe("parseContextSize", () => {
 		expect(parseContextSize("Sonnet 4.5 (200K context)")).toBe(200_000);
 	});
 
-	it("無格式 → default 200000", () => {
-		expect(parseContextSize("unknown")).toBe(200_000);
-		expect(parseContextSize(null)).toBe(200_000);
-		expect(parseContextSize(undefined)).toBe(200_000);
+	it("無格式 → default 1M（fail-high，避免 200K 用戶被算成 >100%）", () => {
+		expect(parseContextSize("unknown")).toBe(1_000_000);
+		expect(parseContextSize(null)).toBe(1_000_000);
+		expect(parseContextSize(undefined)).toBe(1_000_000);
 	});
 });
 
