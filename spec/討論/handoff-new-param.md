@@ -152,3 +152,22 @@ Claude Code slash command 的 `$ARGUMENTS` 變數展開機制我沒實測過。�
 - discovered_adjacencies:
   - `/api/terminal/send` 對非 `/compact` slash 的支援度不明（可能影響未來其他 command 設計）
   - Claude Code `$ARGUMENTS` 機制在 command markdown 中的展開行為需驗證
+
+---
+
+## Round 5 reviewer REQUEST_CHANGES 修正（xd-bni5, 2026-04-14）
+
+### WARN 1 — writeHandoff 純函數未抽出
+**狀態**：接受現狀 + 記 follow-up TODO（nm 不要求本 Round 修）
+**決議**：功能等效（spawn 子 process ~100ms overhead 可接受）
+**TODO**：後續重構 self-compact.js 抽 `writeHandoff(cwd, project)` 純函數讓 clear mode 直接呼叫，避免子 process spawn。優先度 P3，無明確觸發條件。
+
+### WARN 2 — 測試數量失真（claim 12 vs actual 7）
+**根因**：xd-4qcv commit message + dispatch summary 宣稱 12 case 但實際只寫 7 it() block。這是回報失真，違反「壞消息先報不美化」non_negotiable。
+**選 X 修正**：補 5 個 reviewer 建議 case 真正達 12：
+1. 預設 compact 路徑不變（handoff.md 仍保留無參數 self-compact 呼叫）
+2. fallback 路徑：rules 自壓縮.md 明示 /clear 失敗退新 session
+3. spawn hook-client subprocess 失敗容錯（exitCode !== 0 處理）
+4. clear/compact mode handoff 檔格式一致（都走 PreCompact hook）
+5. $ARGUMENTS 判讀：非 'new' 走預設（防 `/handoff foo` 誤判）
+**驗證**：`bun test handoff-new-mode.test.js` → 12 pass 0 fail
