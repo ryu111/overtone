@@ -53,6 +53,43 @@ describe("verify-guard", () => {
 		expect(r.hookSpecificOutput?.additionalContext).toBeUndefined();
 	});
 
+	it("討論式 complete 含 spec/討論/ 路徑 → 豁免不 warn（xd-1frj）", () => {
+		_ws.lastVerifyTs = Date.now() - 15 * 60 * 1000;
+		const r = handler({
+			tool_name: "Bash",
+			tool_input: { command: `curl -X POST /api/cross-dispatch/complete -d '{"id":"xd-x","summary":"已寫入 spec/討論/askuq-modal-session-resume.md + verification passed","verification":{"output":"spec/討論/askuq-modal-session-resume.md"}}'` },
+		});
+		expect(r.hookSpecificOutput?.additionalContext).toBeUndefined();
+	});
+
+	it("討論式 complete verification.method=file_exists → 豁免不 warn（xd-1frj）", () => {
+		_ws.lastVerifyTs = Date.now() - 15 * 60 * 1000;
+		const r = handler({
+			tool_name: "Bash",
+			tool_input: { command: `curl -X POST /api/cross-dispatch/complete -d '{"id":"xd-x","summary":"討論完成，結論已記錄","verification":{"method":"file_exists","output":"spec/討論/x.md"}}'` },
+		});
+		expect(r.hookSpecificOutput?.additionalContext).toBeUndefined();
+	});
+
+	it("討論式 complete verification.type=manual → 豁免不 warn（xd-1frj）", () => {
+		_ws.lastVerifyTs = Date.now() - 15 * 60 * 1000;
+		const r = handler({
+			tool_name: "Bash",
+			tool_input: { command: `curl -X POST /api/cross-dispatch/complete -d '{"id":"xd-x","summary":"pure discussion dispatch no code change","verification":{"type":"manual","output":"討論式 dispatch，無實作，直接 ack"}}'` },
+		});
+		expect(r.hookSpecificOutput?.additionalContext).toBeUndefined();
+	});
+
+	it("heredoc -d @- 模式 → 豁免不 warn（xd-1frj 補修：_cmd 字串不含 payload）", () => {
+		_ws.lastVerifyTs = Date.now() - 15 * 60 * 1000;
+		// 真實 heredoc case：curl -d @- <<EOF ... EOF，_cmd 只記了 curl 命令本身，payload 在 stdin
+		const r = handler({
+			tool_name: "Bash",
+			tool_input: { command: `curl -sX POST http://127.0.0.1:3457/api/cross-dispatch/complete -H 'Content-Type: application/json' -d @-` },
+		});
+		expect(r.hookSpecificOutput?.additionalContext).toBeUndefined();
+	});
+
 	it("fail-open：malformed input → allow 不 throw", () => {
 		expect(() => handler(null)).not.toThrow();
 		expect(handler(null).decision).toBe("allow");
