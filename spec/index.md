@@ -53,7 +53,7 @@
 
 ---
 
-### Scripts（67）
+### Scripts（68）
 
 | 名稱 | 簡述 |
 |------|------|
@@ -62,6 +62,7 @@
 | audit-api-contract | 掃描 nova-server GET endpoints 的 JSON schema 是否與 Swift struct 對齊 |
 | auto-mode | 全自動模式 CLI 工具 |
 | auto-mode-state | 全自動模式 v2 狀態管理 |
+| autonomy-self-scan | Phase 0 (xd-phhg/8nfu) |
 | autoresearch-task | heartbeat 全自動：找最低分 eval 跑 autoresearch |
 | briefing-builder | Session 摘要 + 簡報生成 |
 | capability-probe | 能力邊界探測 + 模型更新 |
