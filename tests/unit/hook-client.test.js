@@ -200,4 +200,27 @@ describe('error log 只在恢復鏈全失敗時記錄（all-failed 語意）', (
   });
 });
 
+// ─── SessionStart ESC 注入（D方案 xd-3pl6/xvu4）靜態驗證 ────────────────────────
+import { readFileSync } from 'fs';
+describe('SessionStart ESC 注入靜態驗證（xd-xvu4）', () => {
+  const hookClientCode = readFileSync(join(CLAUDE_DIR, 'hooks/hook-client.js'), 'utf-8');
+
+  test('hook-client.js 含 SessionStart ESC press 呼叫', () => {
+    expect(hookClientCode).toContain("session-ctl.js'");
+    expect(hookClientCode).toContain("'esc'");
+    expect(hookClientCode).toContain("'press'");
+  });
+
+  test('ESC press 在 SessionStart 條件內', () => {
+    const escIdx = hookClientCode.indexOf("session-ctl.js'");
+    const ssIdx = hookClientCode.indexOf("eventType === 'SessionStart' && input?.cwd");
+    expect(ssIdx).toBeGreaterThan(-1);
+    expect(escIdx).toBeGreaterThan(ssIdx);
+  });
+
+  test('ESC press 後有 200ms debounce（Bun.sleep）', () => {
+    expect(hookClientCode).toContain('Bun.sleep(200)');
+  });
+});
+
 // E2E 和靜態分析測試已移至 tests/integration/hook-client-cli.test.js
