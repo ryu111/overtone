@@ -50,9 +50,9 @@ describe("checkRecentResolvedRatio sentinel", () => {
 });
 
 describe("runAllSentinels", () => {
-	it("回傳 3 個 sentinel 結果", () => {
+	it("回傳 4 個 sentinel 結果（含 P5 sentinel 10）", () => {
 		const sentinels = runAllSentinels();
-		expect(sentinels).toHaveLength(3);
+		expect(sentinels).toHaveLength(4);
 		for (const s of sentinels) {
 			expect(s).toHaveProperty("passed");
 			expect(s).toHaveProperty("dimension");
