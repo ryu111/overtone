@@ -54,6 +54,19 @@ describe("computeCtxPct", () => {
 	it("size 0 → null", () => {
 		expect(computeCtxPct({ input_tokens: 100 }, 0)).toBeNull();
 	});
+
+	it("auto-detect 1M context: total > 200K 時自動切 1M（hook 拿不到 display_name 兜底）", () => {
+		// 真實 case：232% bug — 464K tokens 在 200K 預設下變 232%，應 auto 切 1M = 46%
+		const usage = { input_tokens: 100_000, cache_creation_input_tokens: 0, cache_read_input_tokens: 364_000 };
+		expect(computeCtxPct(usage, 200_000)).toBe(46.4);
+	});
+
+	it("hard clamp 100%: 計算 >100 永遠返回 100", () => {
+		// 200K context 但 total 150K = 75%（不觸發 auto-detect 因為 < 200K）
+		expect(computeCtxPct({ input_tokens: 150_000 }, 200_000)).toBe(75);
+		// 極端 case：1.5M tokens 在 1M context = 150% → clamp 100
+		expect(computeCtxPct({ input_tokens: 1_500_000 }, 1_000_000)).toBe(100);
+	});
 });
 
 describe("buildTierMessage 三階梯", () => {
