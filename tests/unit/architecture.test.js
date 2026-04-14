@@ -136,7 +136,11 @@ describe("檔案膨脹偵測", () => {
   ];
 
   // nova-cli.js 是統一 CLI 聚合器，隨功能增長，允許更大上限
-  const FILE_LIMITS = { "scripts/nova-cli.js": 1000 };
+  // flow-observer.js 是核心 hook 模組（含 P4 handoff helper re-export），允許 ≤ 950
+  const FILE_LIMITS = {
+    "scripts/nova-cli.js": 1000,
+    "hooks/modules/flow-observer.js": 950,
+  };
 
   for (const { rel, path } of targets) {
     const limit = FILE_LIMITS[rel] ?? 800;
