@@ -4,6 +4,7 @@ import {
 	checkOrphanRuntimeScripts,
 	checkRecentResolvedRatio,
 	checkCtxTrackingWired,
+	checkStatuslineFieldConsumed,
 	runAllSentinels,
 	buildState,
 	loadConfig,
@@ -56,6 +57,18 @@ describe("checkCtxTrackingWired sentinel (sentinel 9, P5 reflexive metric)", () 
 		expect(r.passed).toBe(true);
 		expect(r.dimension).toBe("自我校準");
 		expect(r.evidence).toContain("wired");
+	});
+});
+
+describe("checkStatuslineFieldConsumed sentinel 10 (xd-mpsz 豁免 CLI/API 欄位)", () => {
+	it("CLI-native + server API 欄位豁免後 → passed=true", () => {
+		const r = checkStatuslineFieldConsumed();
+		expect(r.passed).toBe(true);
+		expect(r.dimension).toBe("META BLIND SPOT 防護");
+		// evidence 不應出現被豁免的 prefix
+		expect(r.evidence).not.toContain("context_window.");
+		expect(r.evidence).not.toContain("rate_limits.");
+		expect(r.evidence).not.toContain("heartbeat.");
 	});
 });
 
