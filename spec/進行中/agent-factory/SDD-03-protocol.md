@@ -80,7 +80,7 @@ envelope 6 欄（v1, 收斂於 v0.5）：
 }
 ```
 
-**schema_version 升級紀律**：v2 屬 🔴 Swap，需 reverse migration（v2 → v1 降級讀）。
+**schema_version 升級紀律**：v2 屬 **🔵 的 🔴 子類**（ns R4 一致性確認）— 同時屬 Contract-only（schema 改動）與 Swap（不可並存），走最嚴紀律：reverse migration（v2 → v1 降級讀）+ 三方 peer sign-off + shadow ≥ 14d + 使用者明示授權（升級五件套全套）。SDD-01 §8 升級五件套對此 case 全部生效。
 
 ### 3.4 Agent source identification
 
