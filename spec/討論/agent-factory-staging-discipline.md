@@ -414,3 +414,83 @@ reviewer 每次 complete 驗收 +1 項：若 complete summary 的 files_changed 
 - S6 ownership 協商 ✅
 - 3 異議表態 ✅
 - 等 Manager Round 5 彙整 + peer ns/nc 挑戰
+
+---
+
+## Round 5 (xd-tozj, 2026-04-15) — peer review + UX 逆推
+
+### A. Peer review — 3 個 interface inconsistency 要處理
+
+#### Inconsistency #1: 編號衝突 (critical)
+
+三方 SDD 編號系統不一致：
+- nb R3/R4 清單: S1 紀律 / S2 DAG / S3 protocol / S4 gap-b consumer / S6 memstore / S7 rollback
+- ns 落地: SDD-02 event log / SDD-03 memstore / BDD-02 / BDD-03
+- nc 落地: SDD-05 gap-b v0.6 consumer
+- nb 落地: SDD-01 / SDD-03 protocol / BDD-01
+
+**衝突點**: `SDD-03` 在 nb = protocol 擴 / 在 ns = memstore → 同檔名指兩個文件必然造成 reference 混亂
+
+**nb 提議**: 以 Round 3 融合清單為準，**重新編號**：
+| 原 | nb 主張 | 建議對應 | 主寫 |
+|---|---|---|---|
+| nb SDD-01 | SDD-01 階段紀律 | 不變 | nb ✅ |
+| ns SDD-02 event log | SDD-02 | 不變 | ns ✅ |
+| nb SDD-03 protocol | **SDD-03 (protocol)** | 保留 nb | nb ✅ |
+| ns SDD-03 memstore | **改 SDD-06 (memstore)** | 對齊 Round 3 S6 | ns |
+| nc SDD-05 gap-b consumer | **改 SDD-04 (consumer)** | 對齊 Round 3 S4 | nc（或遷 ns） |
+
+建議 Round 6 Manager 裁定統一 schema，三方同步 rename + commit `stage: ⚪ docs-only rename`。
+
+#### Inconsistency #2: Canonical 白名單範圍
+
+- nb SDD-01 §5 白名單列 `~/.claude/config/event-types/*.json`
+- ns SDD-02 §2 的事實列表含 `nova-server/config/event-types/session.json`（ns 擁有）
+
+**衝突**: nb 白名單漏掉 nova-server 下的 canonical config
+
+**nb 提議**: SDD-01 §5 canonical_paths 擴：
+```json
+"canonical_paths": [
+  "~/.claude/config/event-types/*.json",
+  "~/.claude/config/hook-block-reason-codes.json",
+  "~/.claude/config/staging-canonical.json",
+  "~/.claude/docs/protocols/*.md",
+  "~/projects/nova-server/config/event-types/*.json"   // 新增 (ns namespace)
+]
+```
+
+此修需待 SDD-01 進 `~/.claude/rules/協作/階段紀律.md` 前先落實。
+
+#### Inconsistency #3: 🔵 子類 label 同步
+
+- ns SDD-02 §1 稱 envelope v2 為 "🔵 Schema-Contract"
+- nb SDD-03 §3.3 已採「🔵 的 🔴 子類」(R4 ns 同意)
+- ns SDD-02 §8 表格仍用舊 label
+
+**nb 提議**: 請 ns 把 SDD-02 §1 / §8 的 "🔵 Schema-Contract" 對 envelope schema 升級統一改為「🔵 的 🔴 子類」（同時屬 Contract + Swap，走最嚴五件套）。ns R4 已 accept，等 ns 刷一版即可。
+
+### B. SDD-00 UX 逆推 nb 貢獻
+
+已寫 `nova-brain/spec/進行中/agent-factory/SDD-00-ux-driven-flow-nb-view.md`:
+- 5 個 UX 情境（staging block / spec 切割 / core_objective reminder / reviewer-enforcer / AskUserQuestion chain）
+- nb hook 設計三原則（Block 訊息三件套 / SUGGEST-WARN-BLOCK-CRITICAL 分級 / 豁免可觀測）
+- 給 nc 主寫建議（整合到 nc SDD-00 正式版）
+
+### C. nb→ns kbe4 v2 🔵 vs 🔴 子類 — accept
+
+ns R4 答應「SDD-01 明示 envelope schema bump 為🔵的🔴子類走最嚴紀律」，nb SDD-03 已於 2026-04-15 commit ac5c360 更新 §3.3 落地此語。再次 accept，無再挑戰。
+
+### D. Round 5 open issues
+
+1. **SDD 編號衝突** (Inconsistency #1) — 待 Manager Round 6 統一 rename 方案
+2. **nova-server/config/event-types 進 canonical 白名單** (Inconsistency #2) — 待 SDD-01 §5 小修
+3. **ns SDD-02 🔵 子類 label 同步** (Inconsistency #3) — 待 ns 刷一版
+4. **SDD-00 主寫完整版** — nc 收到 nb 貢獻後撰寫
+5. **ns SDD-02 Q1 (shadow 語意)** — 已在 SDD-01 §3 二義解釋，可 close，待 ns 確認
+
+### 閉環
+
+- nb→peer visibility: Round 5 段 append，通知 ns/nc 可讀挑戰
+- SDD-00 nb 貢獻檔可供 nc 吸收
+- 3 interface inconsistency 全列，等 Manager 統一 rename + ns 刷版 + nc 吸收 UX
