@@ -70,6 +70,21 @@ v0.5 event log 期間三方（nb/ns/nc）各踩紀律 bug：
 **為何排除 rules/**：rule 獨立治理（季度 Manager review，非 runtime contract）。
 **為何排除 CLAUDE.md**：描述文非 runtime 載入（blueprint yaml 段是例外，未來可獨立白名單）。
 
+### 5.1 🟣 Experiment 階段 side-effect 邊界（nc Round 4 補強）
+
+🟣 Experiment 階段的孵化器 spawn 行為**視為 canonical write**，需走 §6 三層落地守護。禁寫範圍（sandbox）：
+
+- ⛔ `~/.claude/`（全域元件池）
+- ⛔ nova-core repos（nova-brain / nova-server / nova-control / nova-manager）
+- ⛔ 全域 memory store（`memory/` / 未來 memstore_*）
+
+允許寫範圍：
+- ✅ `spec/實驗/` / feature branch workspace
+- ✅ 孵化器自身 workspace（隔離 scratch area）
+- ✅ L5 專案目錄（孵化產物的 target）
+
+**孵化器 spawn 後的 L4 agent**（內容物 🟣）其 tools_denied 必須包含上述禁寫範圍，由 `hooks/modules/incubation-guardrail.js`（S7 產出）enforce。
+
 ## 6. Contract-only 三層落地（Round 3 擴寫）
 
 **第 1 層 — PreToolUse:Edit/Write `staging-classifier-guard.js`**
@@ -99,9 +114,17 @@ reviewer agent 驗收時若 complete summary 的 `files_changed` 含 canonical p
 4. 三方 peer accept
 5. 使用者明示授權
 
-## 9. Commit message 必標 stage
+## 9. Commit message 必標 stage + peer dispatch 決策同步
+
+### 9.1 Commit message stage 標記
 
 每個 commit 的 message 需含 `stage: 🟢/🟡/🔴/🟣/🔵/⚪`（單標籤或多標籤 e.g. `stage: 🟢+🔵`），便於事後 git log 軌跡。
+
+### 9.2 Peer dispatch 決策同步（nc Round 4 補）
+
+📋 MUST peer dispatch prompt 內含決策（accept / reject / 立場修正 / enum 擴充）時，**必同步 append 至自身 spec 檔案**（通常是 `spec/討論/<topic>.md` Round N 段），否則他方匯整時會漏取此決策源，造成單方擴充誤判。
+
+派生來源：nc xd-mmbv 6-enum accept 寫於 peer prompt 未同步 spec → ns R3 匯整誤判 → xd-x9gt moderator 補洞事件。
 
 ## 10. 與 v0.5 踩坑映射（Round 2 nc 提出 + ns R2 採納）
 
@@ -110,6 +133,15 @@ reviewer agent 驗收時若 complete summary 的 `files_changed` 含 canonical p
 | nb 搶先 commit §7 canonical | 🟢 Additive | 🔵 Contract-only | §6 三層落地 + §9 stage 標記 |
 | ns writer 無 consumer 被誤稱 🟡 | 🟡 Parallel | 🟢 Additive（shadow 二義 (a)） | §3 嚴格區分 |
 | nc v0.5 Docs 含 decision | ⚪ Docs-only | 🟢 Additive（升級例外） | §2 例外條款 |
+
+### 10.5 非分類錯的紀律 bug（nc Round 4 補）
+
+除了分類誤判，v0.5 還踩兩個**流程紀律**bug，本 SDD 以 cross-reference 形式記錄：
+
+| 事件 | 根因 | 對應守護 rule / 條款 |
+|---|---|---|
+| Manager xd-qfhe 直接通知 nc close 繞過 ns/nb peer visibility → xd-pl01 撤銷 | hub-and-spoke 裁決 bypass peer 可見性 | 由 `rules/協作/peer-discussion-visibility.md` 守護。本 SDD 不重複規則只 cross-reference |
+| nc xd-mmbv 6-enum accept 寫 peer dispatch prompt 但未 append 自身 spec → ns R3 匯整誤判單方擴充 → xd-x9gt moderator 補洞 | peer dispatch 內含決策但未同步 persist 到自身 spec | §9 新增條款：**peer dispatch prompt 內含決策（accept / reject / 立場修正）時必同步 append 至自身 spec 檔案**，否則他方匯整時會漏取 |
 
 ## 11. 未決議題
 
