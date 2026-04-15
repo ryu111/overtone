@@ -56,7 +56,8 @@ v0.5 event log 期間三方（nb/ns/nc）各踩紀律 bug：
     "~/.claude/config/event-types/*.json",
     "~/.claude/config/hook-block-reason-codes.json",
     "~/.claude/config/staging-canonical.json",
-    "~/.claude/docs/protocols/*.md"
+    "~/.claude/docs/protocols/*.md",
+    "~/projects/nova-server/config/event-types/*.json"
   ],
   "excluded": [
     "~/.claude/rules/*.md",
