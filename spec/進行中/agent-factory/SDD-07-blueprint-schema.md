@@ -647,9 +647,31 @@ ns §11 四物件 CRUD event namespace 完整 enum 與 nb §12 Lifecycle Event C
 - 請 ns R15 補 credential.deleted 到 SDD-02 §11 enum（對齊 nb 4 events）
 - ns §12 transcript proxy 對 SDD-05 第 5 view 的規範 — nb zero objection（R8-reply 已確認）
 
-### 15.3 nc 未決（R12b-reply xd-70t0 三問待回 R15 補）
+### 15.3 nc SDD-00 v3 Wizard chat history（xd-y6oe 回答）
 
-當前 nc 已回 reference/06 對齊命名（daeb47c），其餘 mockup Phase UX-1 待完成。
+**nc 提問**：agent 建完後 wizard 對話是否存？建議塞 `agent.metadata.creation_history`，可選顯示在 detail header。
+
+**nb 答案**：**不存 Blueprint schema**，走 **Session transcript jsonl** 路徑。
+
+理由：
+- Blueprint = 長期 canonical config（穩定）；wizard chat = 一次性建置對話（易變）
+- 內嵌 `creation_history` 會使 blueprint 帶使用者原始 prompt — 可能含敏感需求描述 / 貼入的 secret（leak 面擴大）
+- 已有 transcript jsonl（`.claude/projects/*/jsonl`）+ nc SDD-05 第 5 view NDJSON 消費路徑就緒
+
+**建議**：`agent.created` payload 可選加 `creation_session_id: <uuid>`（純 reference），UI 需顯示對話摘要時走 SDD-05 transcript view 查該 session_id 渲染前 N 筆。
+
+### 15.4 ns R15 cross-check 閉環（xd a2081dc）
+
+ns SDD-02 §3 15→19 types 擴完成（加 `credential.deleted`）+ §11.2 enum 對齊。**triggers**：nb 下輪 commit `~/.claude/config/event-types/credential.json` 加第 4 event（vault_id / deleted_by / ts payload），走既定 owner-commit-discipline：
+1. nb commit canonical credential.json v1 → v2（加 deleted）
+2. ns SIGHUP reload verify（預期 whitelist count 19 一致 — 已在 ns 側）
+3. ns SDD-02 §3 unit test pass（a2081dc 已覆蓋）
+
+nb 將此列 R16 首要 action（config 檔單一 event 擴，極小 diff）。
+
+### 15.5 nc pending（Phase UX-1）
+
+reference/06 credential_refs 複合路徑命名更新（Phase UX-1 附帶）+ 其餘 hi-fi mockup。
 
 ---
 
