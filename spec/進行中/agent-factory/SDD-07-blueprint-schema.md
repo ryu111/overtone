@@ -10,6 +10,25 @@
 
 R7 接 Anthropic MA 官方示範（@boxaaron 2min demo）+ R8 nb 盤點揭露 Nova 當前 blueprint 缺 canonical schema 形式化。Nova 雖有擴充欄（role / core_objective / non_negotiables / pipeline 等 Nova 差異化）但缺官方對齊的 `model` / `mcp_servers` / 結構化 `tools` 欄，無法 machine-parse、無法 UI 驅動配置、無法 L3 孵化器 spawn 時校驗。本 SDD 定義 **two-tier schema**：tier 1 對齊官方 canonical、tier 2 保留 Nova 差異化。
 
+## 1.5 Four-Object Model（R10+ 使用者補料，MA 側邊欄 5-section 對應）
+
+使用者 2026-04-16 補料 MA 側邊欄截圖 → IA 非線性 stepper，而是 **4 個獨立物件 + 1 入口**：
+
+| Object | Nova 對應 | 關係 |
+|--------|-----------|------|
+| **Agent** (Blueprint) | 本 SDD-07 定義的 yaml | `environment_id` + `credential_refs[]` 引用其他物件 |
+| **Session** | 執行實例 + Transcript/Debug | `agent_id` + `environment_id` 執行時 resolve |
+| **Environment** | MCP servers + sandbox + 配置 | 一份 Environment 可被多 Agent 共用 |
+| **Credential Vault** | API keys / OAuth tokens | 獨立物件，workspace 級共用（MA demo Frame 8 驗證）|
+| Quickstart（入口）| 範本庫 + 「What do you want to build?」| 非物件，只是 entry point |
+
+**Blueprint schema 重大修正**（從本 Round 生效）：
+- `mcp_servers` **移出 tier 1**，改為 Environment 物件屬性
+- Blueprint tier 1 改放 `environment_id`（reference）
+- Credentials **永不放 Blueprint**，另建 Credential Vault 物件，Blueprint 用 `credential_refs: [<vault_id>:<key>]` 引用
+
+此修正比官方 MA agent.yaml 更結構化（官方 demo 也把 credential 拉出但 agent.yaml schema 未明示）。
+
 ## 2. Two-tier Schema 總覽
 
 ```yaml
@@ -17,10 +36,9 @@ R7 接 Anthropic MA 官方示範（@boxaaron 2min demo）+ R8 nb 盤點揭露 No
 model: claude-sonnet-4-6          # 必填
 system: |                         # 必填
   <agent-specific system prompt>
-mcp_servers:                      # optional
-  - name: <id>
-    url: <url-or-stdio-path>
-    type: url | stdio
+environment_id: <id>              # 必填（R10+ 修正：mcp_servers 移至 Environment 物件）
+credential_refs:                  # optional（R10+ 新增：引用 Credential Vault）
+  - <vault_id>:<key>
 tools:                            # optional
   - type: bash | edit_write | mcp_toolset | agent_toolset_YYYYMMDD
     permission_policy:
@@ -77,10 +95,17 @@ model_policy: depth-routed         # Nova 獨有：路由決定
 
 Agent 專屬 system prompt。**不混 rule 注入**（rule 注入由 Claude Code 全局機制處理，非 blueprint 欄位）。L3 孵化器 spawn 時以此欄為 agent system prompt base。
 
-### 3.3 `mcp_servers`（nc Screen 1.2 UI 對應）
+### 3.3 `environment_id` + Environment 物件（R10+ 修正，原 `mcp_servers` 移至此）
 
-陣列形式：
+Blueprint 只存 reference，Environment 物件獨立：
+
 ```yaml
+# Blueprint (Agent 物件)
+environment_id: nova-default-env
+
+# Environment 物件（nc Screen 1.2 + Environments 列表頁）
+# 存放位置: ~/.claude/environments/<env_id>.yaml
+environment_id: nova-default-env
 mcp_servers:
   - name: pencil
     url: stdio:///usr/local/bin/pencil-mcp
@@ -88,9 +113,14 @@ mcp_servers:
   - name: context7
     url: https://mcp.context7.com
     type: url
+sandbox:
+  allowed_write: [...]
+  denied_write: [~/.claude/**, nova-core/**]
 ```
 
-**UI 編輯 → `.mcp.json` persist**。`.mcp.json` 是 SDD-01 §5 canonical 白名單新增路徑（R10 nb 派生）。
+**UI 編輯 → `.mcp.json` persist**（當 Environment 為 default）+ `~/.claude/environments/<id>.yaml`（具名 Environment）。`.mcp.json` 是 SDD-01 §5 canonical 白名單路徑（R10 nb 派生）。
+
+**動機**（R10+ 使用者補料）：MA demo 一份 Environment 可多 Agent 共用，與 agent 生命週期解耦。強制獨立物件避免 environment 配置散落每個 blueprint。
 
 ### 3.4 `tools`（nc Screen 1.3 UI 對應 + §5.1 🟣 sandbox enforce）
 
@@ -121,6 +151,28 @@ tools:
 - `always_allow`：自動放行（官方）
 - `ask_user`：彈出 permission modal（Nova 擴充，對應 AskUserQuestion）
 - `deny`：block + 觸發 hook.blocked（Nova 擴充）
+
+### 3.4.5 Credential Vault 物件（R10+ 新增）
+
+Blueprint 永不內嵌 credentials，用 `credential_refs[]` 引用 Vault：
+
+```yaml
+# Blueprint
+credential_refs:
+  - box-oauth:access_token
+  - box-oauth:refresh_token
+
+# Credential Vault 物件（workspace 級，不進 git）
+# 存放位置: ~/.claude/vaults/<vault_id>.enc (加密)
+vault_id: box-oauth
+type: oauth
+values:
+  access_token: <encrypted>
+  refresh_token: <encrypted>
+shared_warning: "此 credential 被 workspace 所有 agent 共用"
+```
+
+**UI**：nc Credential vaults 頁面（MA demo Frame 8 對應）。**永不 git commit**（`.enc` 加密 + `.gitignore` 雙保險）。
 
 ### 3.5 `skills`（nc Screen 1.4 UI 對應）
 
