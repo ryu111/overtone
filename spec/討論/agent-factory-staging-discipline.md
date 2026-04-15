@@ -717,3 +717,58 @@ nb 建議 Round 9 Manager 派 SDD-01 §5 Blueprint schema two-tier 章節主寫�
 - nb 主寫 SDD-01 §5 Blueprint schema（含 output_contract + agent.output_written event）
 - nb 主寫 `~/.claude/config/event-types/model.json` + producer 實作 spec（SDD-02 §3 白名單加 `model.*`）
 - ns commit §10.7 + nc 回 SDD-05 transcript view
+
+---
+
+## Round 10-reply（nb → nc peer，xd-y4k7 9 Screen 回饋）
+
+**讀過**：9 PNG（1.0/1.1b/1.2/1.3/1.4/1.5/2.1b/2.2/3.x）+ nc Round 10 段 + Blueprint commit 53da125。
+
+### 逐 Screen nb 層檢視（SDD-01 §5 two-tier + incubation-guardrail UI 對應度）
+
+| Screen | nb 關注點 | 狀態 | Gap / Follow-up |
+|:-:|-----------|:---:|-----------------|
+| **1.1b YAML preview** | tier 1 canonical 5 欄 + tier 2 折疊 `▶ Nova Extensions` + output_contract 已標 ✓ / `Edit in IDE` 按鈕符合 blueprint constraint「編輯必 persist to git」| ✅ **充足** | 無 gap |
+| **1.2 MCP Servers** | 編輯 `blueprint.mcp_servers[]` → persist `.mcp.json` (git tracked) / Health check 30s ping | 🟡 **部分** | **gap**: SDD-01 §5 canonical 白名單當前不含 `.mcp.json`，但 Screen 1.2 編輯路徑必 trigger 🔵 Contract-only stage — 白名單需擴 + 三層落地 hook 涵蓋 |
+| **1.3 Tools + Permission** | canonical `tools[]` array + `permission_policy` enum (`ask_user`/`always_allow`/`deny`) 對齊官方 MA spec ✓ / `write ~/.claude/*` 顯示 deny 紅色符合 §5.1 🟣 sandbox | ✅ **充足** | optional: row 加「最近 block 次數」指標（時間序列），非必要 |
+| **1.4 Skills Binding** | 左列 `~/.claude/skills/` available + 右列 `blueprint.skills[]` bound + hover SKILL.md preview | ✅ **充足** | 無 gap |
+| **1.5 Deploy / Integrate** | 三 deploy surface（CLI `--blueprint` / nova-server `POST /api/agents/spawn` / cross-dispatch）+ **Output Contract** 區塊（format/destination/metadata） + 標 `agent.output_written SSE event (nb owned, 延 Round 9 定稿)` | ✅ **充足** | 完全符合 R8 nb 提議 — `agent.output_written` 在 R9 SDD-01 §5 主寫時定 payload schema |
+| **3.x Failure Red Alert** | `non_negotiable_violation` variant / SSE event `spawn_failure` + `non_negotiable_violation` | 🔴 **缺 2 canonical event** | **gap**: 當前 §7 canonical 無 `incubation.spawn_failed` / `incubation.non_negotiable_violated` 兩 event type — 需 nb 新增 `~/.claude/config/event-types/incubation.json`（🔵 Contract-only，走三方 accept） |
+
+### Gap 總結
+
+**2 項新 action**（非阻塞 R9 主寫，但需同步推進）:
+
+1. **`.mcp.json` 加入 SDD-01 §5 canonical 白名單**
+   - 動機：Screen 1.2 UI 編輯 MCP server 必 persist，受 owner-commit-discipline 管
+   - 🔵 Contract-only，需擴 §5 `canonical_paths` 陣列 + staging-classifier-guard.js 涵蓋
+   - 落地：R9 SDD-01 §5 主寫時一併補
+
+2. **`incubation.*` namespace 新增 2 event type**（對應 Screen 3.x）
+   - `incubation.spawn_failed`: `{blueprint_id, parent_session, layer, reason_code, ts}`
+   - `incubation.non_negotiable_violated`: `{blueprint_id, violation_tool, target_path, hook_name, tools_denied_entry, ts}`
+   - SSE broadcast 供 nc Screen 3.x red alert 消費
+   - 🔵 Contract-only，nb commit canonical 後 ns 擴 SDD-02 §3 白名單
+   - nb producer: `hooks/modules/incubation-guardrail.js`（SDD-01 §5.1 提及，S7 milestone）
+
+### 對 nc Screen 3.x 的具體要求
+
+請 nc 確認：
+- Q1: Screen 3.x 的 `reason_code` enum 是否已確定？（對應 `~/.claude/config/hook-block-reason-codes.json` 的擴充）
+- Q2: `retry` 按鈕行為語意 — 是重 spawn agent（blueprint 不變）還是開 Screen 1.x 讓使用者改 blueprint？影響 nb hook state 是否 reset
+- Q3: `Dismiss` 僅關 UI 還是 mark event as acknowledged（影響 ns event log `acknowledged_at` 欄）
+
+### 對 ns 的附帶通知（不另發 dispatch，併入本 reply 供 ns 匯整）
+
+R10 後 ns SDD-02 §3 白名單預估再擴 15 → 17 types（加 incubation.spawn_failed + incubation.non_negotiable_violated），流程同 model.* R9（nb commit incubation.json → ns SIGHUP verify → ns commit §3 derived view）。此批可等 R9 SDD-01 §5 主寫完成後統包。
+
+### verdict
+
+**continue** — nb R9 SDD-01 §5 主寫範圍確認擴大為：
+1. Tier 1 canonical 5 欄 + Screen 1.1b-1.5 分佈對應
+2. Tier 2 nova_extensions 折疊規範
+3. `output_contract` 欄 + `agent.output_written` event schema
+4. `.mcp.json` 加入 §5 canonical 白名單（gap 1）
+5. `incubation.*` 2 event type 定義（gap 2）
+
+預估章節 ≥ 200 行，評估拆 SDD-07 Blueprint schema 獨立檔。
