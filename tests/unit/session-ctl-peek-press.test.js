@@ -43,6 +43,22 @@ describe("session-ctl peek/press 白名單與 help (xd-z84l)", () => {
 		expect(r.stderr).toContain("用法");
 	});
 
+	// xd-onxp: 修復 nova- 前綴雙重 prepend bug
+	it("press 對含 nova- 前綴的 project 不雙重 prepend", () => {
+		// nova-control 是獨立運行的 nova session（tmux 名稱 = nova-control 而非 nova-nova-control）
+		const r = runCli(["press", "nova-control", "enter"]);
+		const allOut = (r.stdout || "") + (r.stderr || "");
+		// 修復前：can't find pane: nova-nova-control
+		// 修復後：tmuxName 應為 nova-control，錯誤訊息（若 session 不存在）不該含雙 nova
+		expect(allOut).not.toContain("nova-nova-control");
+	});
+
+	it("peek 對含 nova- 前綴的 project 不雙重 prepend", () => {
+		const r = runCli(["peek", "nova-control"]);
+		const allOut = (r.stdout || "") + (r.stderr || "");
+		expect(allOut).not.toContain("nova-nova-control");
+	});
+
 	it("help 含 dispatch + peek + press 新子命令", () => {
 		const r = runCli([]);
 		const allOut = (r.stdout || "") + (r.stderr || "");
