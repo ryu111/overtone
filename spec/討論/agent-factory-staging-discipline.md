@@ -373,3 +373,44 @@ reviewer 每次 complete 驗收 +1 項：若 complete summary 的 files_changed 
 - nb 強認領 3 項 + 協商 1 項 + 支援 3 項
 
 下 dispatch complete，等 Manager Round 4 彙整。
+
+---
+
+## Round 4 (xd-rv3l, 2026-04-15) — canonical SDD/BDD 初稿 + 異議表態
+
+### A. 清單最終定案：**11 份 (S1-S7 + B1-B4)**
+
+**保留 S7 孵化錯 agent 回滾 spec** 理由：
+- 孵化錯 agent 污染全域是**真 P0 風險**（v0.5 式搶先 commit 可回 revert，但孵化錯的 agent 可能已寫 memory / 改 state / 觸發 hook）
+- S7 是 Gap A 的 **pre-condition**，不是錦上添花（無回滾 spec = 無法啟動 L3 孵化器）
+- ns 12 份主張少 S7 可能是 scope bias（ns infra 層看不到孵化產物污染風險）
+- nc R2 明示「孵化錯 agent 不能靠 git revert 清乾淨」— 此關切需 S7 獨立文件覆蓋
+
+### B. 主寫初稿（3 份落地 `spec/進行中/agent-factory/`）
+
+- `SDD-01-階段紀律.md`: 六類 truth table + Gap A/B/C lifecycle + shadow 二義 + Contract-only 三層 + N 天分層 + 升級五件套 + v0.5 踩坑映射 + 3 未決議題 + 實作里程碑
+- `SDD-03-protocol.md`: §8 staging index + §9 event log integration + envelope v1 六欄 + agent source identification + payload 白名單載入 + 2 待定
+- `BDD-01-classifier-test.md`: Gherkin 12+ scenarios 覆蓋 hook 守護 / escape env / 排除路徑 / 多標籤 / pre-commit 第二層 / reviewer 抽樣第三層
+
+### C. Memstore (S6) ownership 協商 verdict
+
+**採 ns 建議：ns 主寫，nb co-review**
+
+理由：
+- ns R3 已分析 3 個具體 HTTP API 層衝突 (data-race / schema-incompatible / read-consistency)，比 nb 看得更深
+- ns 已提 shadow 期 last-write-wins + adapter blob + dual-read 具體解法
+- nb 主寫只會重覆 ns 既有內容
+- co-review 保留 nb hook 層視角 + rules 守門人審查
+
+### D. 3 異議最終表態
+
+1. **S6 memstore 主寫 → ns 主寫 / nb co-review（verdict: accept）** — 見 C
+2. **S3 擴既有 protocol 還是獨立新檔 → 擴既有 (verdict: 維持 nb 主張)** — SDD-03 初稿已以「append §8 + §9」形式落地，canonical 集中優於散落。若 ns 堅持獨立檔需給理由
+3. **B4 e2e rollback 歸屬 → nm+nb 合寫（verdict: 維持合寫主張）** — nm 寫孵化產物 eval + e2e rollback 主流程，nb 寫 `incubation-guardrail.js` hook 守 blueprint tools_denied（已在 Round 3 C 段列「支援 S7」）
+
+### 本輪閉環
+
+- SDD-01 / SDD-03 / BDD-01 三份初稿 ✅
+- S6 ownership 協商 ✅
+- 3 異議表態 ✅
+- 等 Manager Round 5 彙整 + peer ns/nc 挑戰
