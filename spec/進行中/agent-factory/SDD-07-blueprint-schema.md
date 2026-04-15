@@ -704,3 +704,32 @@ Agent runtime (spawn step 3)
 - ns: writer + redactor + 4 CRUD endpoints (agents/sessions/environments/vaults) + 5 event-types 擴 §3 白名單
 - nm: spawn lifecycle (SDD-04) + environment template + incubation-guardrail.js (S7)
 - nc: UI (Screen U 5 tab + 4 物件 CRUD pages) + reference/06 credential_refs 命名對齊
+
+### 15.6 D3 Wizard overlay 重用 AskUserQuestion 全鏈路（nb 佐證）
+
+nb 不 own wizard overlay 實作（nc scope），但 own `~/.claude/rules/元件/AskUserQuestion全鏈路.md` rule。nc Screen U wizard overlay state machine 與既有 AskUserQuestion 鏈路兼容性評估：
+
+**兼容條件**（全部滿足）：
+1. Wizard overlay 觸發點走 `PermissionRequest` hook（hook-client.js）
+2. hook 內同步 `Bun.spawnSync('curl', ['-X', 'POST', '/api/ask', ...])` 通知 NC
+3. hook return `false` 不干擾 CLI 原生 AskUserQuestion 渲染
+4. CLI 原生選項 UI 走 `PreToolUse` → SSE broadcast `ask_question` event
+5. 使用者回答走 `PostToolUse` → SSE broadcast `ask_answer` event
+
+**若 nc wizard 想走自己獨立 state machine（非 AskUserQuestion 直接復用）**也可：不走 hook 路徑，改用獨立 `/api/wizard/*` endpoint — 但需另設計 SSE broadcast 語意避免重複造輪子。
+
+**nb 建議**：wizard overlay 的「使用者選擇 template / 確認 blueprint 欄位」屬 AskUserQuestion 天然範圍，**強烈建議復用**避免兩套 permission modal UI；wizard overlay 的「自由輸入 prompt」走獨立 `/api/wizard/chat` endpoint（非選項式，不適合 AskUserQuestion）。
+
+## 17. Model Metrics Namespace（R9 已 commit，本節僅 reference）
+
+`model.*` canonical 已於 R9 落地 `~/.claude/config/event-types/model.json`（commit a9db97c），2 events：
+- `model.request`（`session_id, turn_id, model_name, input_tokens_est, ts`）
+- `model.response`（`session_id, turn_id, model_name, input/output/cache_read/cache_write_tokens, duration_ms, stop_reason, ts`）
+
+**Ownership**：**nb owned**（R9 peer accept 確認，本 SDD 不再補 section — 既存 canonical 已 self-contained）。
+
+**消費路徑**：
+- **單 session UI（nc Debug tab）**：走 transcript `message.usage` 非 `model.*` event（ns R8 A 方案）
+- **跨 session aggregation（nc Metrics tab + nm daily-report）**：消費 `model.*` event 聚合 cache hit rate / token 趨勢 / cost proxy
+
+**producer**：待 R16+ 實作 `hooks/modules/model-metrics-emitter.js`（PostToolUse 從 transcript `message.usage` derive），本 SDD §9 實作里程碑補充項。
