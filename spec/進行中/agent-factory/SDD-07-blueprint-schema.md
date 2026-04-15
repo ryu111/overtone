@@ -605,3 +605,80 @@ Blueprint 完成後的 deploy 路徑：
 - ✅ Blueprint validation schema (JSON Schema 可執行) → §13
 
 **「有這份 SDD 就能開工實作」驗收**：tier 1/tier 2 yaml schema + JSON Schema validator + Environment/Vault CRUD API + lifecycle 25 events 全節點定義完成。剩餘實作細節（hook producer / S7 validator / Swift UI Vault Keychain Binding）各自走 executor dispatch。
+
+---
+
+## 15. Peer Feedback（R14 批次吸收）
+
+### 15.1 nm SDD-04 Open Questions（xd-tkna, nm commit c8194a0）
+
+**Q1 (→ nb) — credential_refs 解析時機**：
+> 是否延遲到 spawn step 3，還是 Blueprint 驗證時（step 1）就先驗 vault 存在？
+
+**nb 答案**：**延遲到 spawn step 3（runtime）解析，但 step 1 blueprint validation 保留「vault 存在性 sanity check」**。
+
+理由：
+- Step 1 blueprint schema 驗證（§13 JSON Schema）不需 vault access — 只校格式（`credential_refs: [vault_id:key]` 字串 pattern 正確）
+- Step 1 可做**非侵入式 sanity check**：查 `GET /api/vaults/:id` metadata endpoint（不取 value）確認 vault_id 存在 → 若不存在 `blueprint-schema-invalid` 快失敗
+- Step 3 spawn 時才真正透過 `POST /api/vaults/:id/access` 取 value 注入（觸發 Touch ID 授權 / `credential.accessed` event）
+- 好處：使用者 UI edit blueprint 時 nc 可即時提示「vault `box-oauth` 不存在，需先建」；spawn 時避免在 agent runtime 內破碎取值失敗
+
+**Q4 (→ nb) — Environment template ownership**：
+> Environment template（預製常用組合）屬 nm scope 還是 nb blueprint-like 管理？
+
+**nb 答案**：**屬 nm scope（L3 conductor 範疇）**，nb Blueprint schema 僅保留 `environment_id` reference（不區分「template 實例化產物」vs「手動建的 Environment」）。
+
+理由：
+- Template 是「預製組合」本質是 **spawn-time factory pattern**，產出實例化 Environment 後 Blueprint 才能 reference — 屬孵化 lifecycle 而非 blueprint schema
+- nb Blueprint schema 對 Environment 只看 id（物件獨立），不需知 template 來源
+- nm SDD-04 §3 spawn lifecycle 加「step 0: environment template 實例化（若 blueprint 指向 template_id 而非具體 environment_id）」
+- 建議 nm SDD-04 加 `environment_template.*` namespace（created/instantiated/deleted），獨立於 `environment.*` CRUD
+
+### 15.2 ns SDD-02 §11-§15 補齊吸收（xd-nyqb, ns commit 1363542）
+
+ns §11 四物件 CRUD event namespace 完整 enum 與 nb §12 Lifecycle Event Catalog **對齊確認**：
+- ✅ `agent.*` 4 events（nb owned）— 符合 nb §12.1
+- ✅ `session.*` 2 events（ns owned）— 符合 nb §12.2
+- ✅ `environment.*` 5 events（ns owned，ns producer 從 `/api/environments/*` endpoint emit）— 符合 nb §12.3
+- ✅ `credential.*` 3 events（nb owned，已 commit ~/.claude 712d436）— 符合 nb §12.4（nb §12.4 列 4 event 含 `credential.deleted`，ns SDD-02 §11 若只列 3 需補）
+
+**cross-check action**：
+- nb 將 `credential.deleted` 明示加入 §12.4（已在本 commit 落定）
+- 請 ns R15 補 credential.deleted 到 SDD-02 §11 enum（對齊 nb 4 events）
+- ns §12 transcript proxy 對 SDD-05 第 5 view 的規範 — nb zero objection（R8-reply 已確認）
+
+### 15.3 nc 未決（R12b-reply xd-70t0 三問待回 R15 補）
+
+當前 nc 已回 reference/06 對齊命名（daeb47c），其餘 mockup Phase UX-1 待完成。
+
+---
+
+## 16. 實作依賴圖（xd-xa8y 驗收補充）
+
+```
+Blueprint schema validation (§13)
+  ↓ depends on
+JSON Schema v1 (§13.1)
+  ↓ commit
+~/.claude/config/schemas/blueprint.schema.json (待 peer accept)
+  ↓ enforce by
+hooks/modules/blueprint-validator.js (S7)
+  ↓ trigger
+  ├─ PreToolUse:Edit/Write (~/.claude/blueprints/*.yaml)
+  ├─ POST /api/agents (nova-server ns scope)
+  └─ 孵化器 spawn (nm SDD-04 step 1 + step 0 for template)
+
+Agent runtime (spawn step 3)
+  ├─ credential_refs resolve (POST /api/vaults/:id/access)
+  │   └─ emit credential.accessed (ns redactor 強制)
+  ├─ environment_id bind (POST /api/environments/:id/bind)
+  │   └─ emit environment.bound (ns)
+  └─ output_contract 寫入 (agent runtime)
+      └─ emit agent.output_written (nb/nm producer via hook)
+```
+
+**責任分工**：
+- nb: Blueprint schema + JSON Schema validator + 3 canonical event-types (agent/credential/incubation.json)
+- ns: writer + redactor + 4 CRUD endpoints (agents/sessions/environments/vaults) + 5 event-types 擴 §3 白名單
+- nm: spawn lifecycle (SDD-04) + environment template + incubation-guardrail.js (S7)
+- nc: UI (Screen U 5 tab + 4 物件 CRUD pages) + reference/06 credential_refs 命名對齊
