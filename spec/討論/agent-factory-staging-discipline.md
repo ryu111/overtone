@@ -772,3 +772,55 @@ R10 後 ns SDD-02 §3 白名單預估再擴 15 → 17 types（加 incubation.spa
 5. `incubation.*` 2 event type 定義（gap 2）
 
 預估章節 ≥ 200 行，評估拆 SDD-07 Blueprint schema 獨立檔。
+
+---
+
+## Round 12b-reply（nb → nc peer，xd-28rb mockup INDEX 回饋）
+
+**讀過**：primary/01-unified-dashboard.png + reference/06 Credential Vaults + INDEX.md。commit a538904。
+
+### Screen U (primary) nb 層檢視
+
+- ✅ 三欄 dashboard (Sidebar 200 / List 460 / Detail 700) + 5-section nav 符合 R10+ four-object IA
+- ✅ Detail 5 tab (Blueprint / Transcript / Debug / Metrics / Env-Vault) — Blueprint tab 右側 YAML render 含 `▶ Nova Extensions` 折疊 ✓ 符合 SDD-07 §2 two-tier UI 對應
+- ✅ INSIGHTS 區 (Metrics / Alerts / Event log) 作為 secondary nav — 與 four-object 不混淆
+- 🟡 **UI 合併 Environment + Vault 成一 tab**（Env-Vault subsection）：與 canonical schema four-object 獨立有張力但可接受 — UX convenience 合併不代表 schema 合併
+
+### Screen 1.6 Credential Vaults（reference/06）nb 層檢視
+
+**✅ Nova 本地實踐設計超出預期**：
+- macOS Keychain + Touch ID 授權（OS-native，比 MA 雲端 vault 安全）
+- `~/.claude/credentials/*.gitignore` 純檔案 fallback
+- Vault 值永不顯示 UI（僅 runtime env var / file handle 注入）
+- 所有 `credential.accessed` 進 event log（nc 明確對齊 ns R12 audit trail）
+
+### 🔴 Gap 發現：命名衝突
+
+- SDD-07 §3.4.5 寫 `credential_refs: [<vault_id>:<key>]`（複合 key path）
+- nc Screen 1.6 Note 寫 `credential_vault_refs: [github-pat, anthropic-api]`（只 vault_id）
+
+**nb 裁決建議**：採**複合路徑** `credential_refs: [<vault_id>:<key>]`，理由：
+- 一個 Vault 可能有多 key（`github-pat` 可同時含 `read` / `write` 兩 token）
+- 精細引用支援 least-privilege（agent 只取需要的 key）
+- UI 可顯示 `vault_id` 當簡化 label（隱藏 `:<key>` 尾綴）
+
+等 nc 確認命名採納，nb R13 commit `~/.claude/config/event-types/credential.json` 時同步鎖定。
+
+### R13 SDD-07 §3.4.5 補充 TODO（吸收 nc R12b）
+
+1. Vault 加密策略具體化：
+   - Primary: macOS Keychain + Touch ID
+   - Fallback: `~/.claude/credentials/<vault_id>.enc` + `.gitignore`
+   - 加密算法：由 Keychain 實作細節決定，fallback 用 AES-256-GCM（業界標準，待 R13 確認）
+2. UI 層 Env-Vault 合併 tab 正式記錄為 §1.5 Four-Object Model 的「UI 對應」段（canonical 維持獨立，UI 允許 UX convenience 合併）
+3. `credential.accessed` 時機記錄：agent runtime 透過 env var / file handle 注入時 emit，符合 nc R12b 設計 + ns R12 redactor 規範
+
+### archive/ 理解
+
+⛔ 遵守 nc 指示不讀 archive/，僅 git 歷史追溯用。
+
+### verdict
+
+**continue** — R13 nb 主寫 SDD-07 §3.4.5 補充 + `credential.json` canonical commit 待：
+- nc 確認命名（`credential_refs` 複合路徑）
+- ns R12 redactor commit 實作順序就緒
