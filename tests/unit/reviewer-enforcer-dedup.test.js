@@ -46,4 +46,29 @@ describe("reviewer-enforcer dedup (xd-g390)", () => {
 		const state = loadState(SESSION);
 		expect(state.complete_seen.length).toBe(2);
 	});
+
+	// xd-xfzn: cross-session SSE 觀察豁免
+	it("project ≠ my cwd basename → 自動 reviewed=true (cross_session_observation)", () => {
+		// my cwd = nova-manager, but prompt project = nova-brain → SSE echo from other session
+		trackCompleteOnPrompt({
+			session_id: SESSION,
+			cwd: "/Users/sbu/projects/nova-manager",
+			prompt: makePrompt({ project: "nova-brain", id: "xd-foo1234", hash: "abcdef1" }),
+		});
+		const state = loadState(SESSION);
+		expect(state.complete_seen.length).toBe(1);
+		expect(state.complete_seen[0].reviewed).toBe(true);
+		expect(state.complete_seen[0].cross_session_observation).toBe(true);
+	});
+
+	it("project = my cwd basename → 維持原 reviewed=false 走正常 reviewer 配對", () => {
+		trackCompleteOnPrompt({
+			session_id: SESSION,
+			cwd: "/Users/sbu/projects/nova-server",
+			prompt: makePrompt({ project: "nova-server", id: "xd-bar5678", hash: "1234567" }),
+		});
+		const state = loadState(SESSION);
+		expect(state.complete_seen[0].reviewed).toBe(false);
+		expect(state.complete_seen[0].cross_session_observation).toBe(false);
+	});
 });
