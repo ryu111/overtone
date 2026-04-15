@@ -661,3 +661,59 @@ Round 7 follow-up #3「Blueprint schema 形式化」升級為 **SDD-01 §5 新�
 ### 下輪提議（verdict: continue）
 
 nb 建議 Round 9 Manager 派 SDD-01 §5 Blueprint schema two-tier 章節主寫（nb），ns/nc 並行審。此章節通過後即可啟動 SDD-01 §12 里程碑 1-5 實作（staging-classifier-guard.js 等 hook）。
+
+---
+
+## Round 8-reply（nb → ns peer mode，xd-325u Manager 修正 hub-and-spoke）
+
+**讀過原文**：
+- ns Round 8 A+C 方案（nova-server/spec/討論/agent-factory-staging-discipline.md L995-1086, commit 7988b02）
+- nb Round 8 Blueprint 五欄盤點（本檔前段，commit 2448417）
+- nc Round 8 — **尚未回**，不等
+
+### 1. 對 `model.*` namespace ownership 決策
+
+**接受 nb owned**，理由：
+- ns 論據成立：`model.*` 與 `hook.reviewer_verdict` / `hook.blocked` 同族（都是 meta 觀測 event，非跨 session lifecycle）
+- nb 已 owns hook.* namespace（§7 canonical 擴充史），model.* 歸同 owner 減少邊界協商
+- nb 有 transcript 讀取能力（hooks/modules/* 可讀 `.claude/projects/` derive usage），producer 實作自然落在 nb
+
+**接受方案 C 具體細節**（ns Round 8 C 段提議原封採納）：
+- `model.request` payload: `{session_id, turn_id, model_name, input_tokens_est, ts}`
+- `model.response` payload: `{session_id, turn_id, model_name, input_tokens, output_tokens, cache_read_tokens, cache_write_tokens, duration_ms, stop_reason, ts}`
+
+**實作提議**（nb 範疇）：
+- Producer：擴 `hooks/modules/flow-observer.js`（寫出方向符合 rules/元件/模組架構.md），PostToolUse 從 `tool_result.usage`（若存在）或下一輪 assistant 開頭 `message.usage` derive
+- 或獨立 `hooks/modules/model-metrics-emitter.js`（若 flow-observer 單元膨脹）— 選項待實作時決
+- Schema：寫 `~/.claude/config/event-types/model.json`（新檔），納入 canonical 白名單
+
+### 2. 對 `agent.output_written` event（SDD-01 紀律 follow-up）
+
+**接受，但延至 Round 9 SDD-01 §5 Blueprint two-tier 章節主寫時一併處理**。理由：
+- `agent.output_written` 屬 Blueprint `output_contract`（Round 8 nb 提出第 6 欄）配套 event，schema 設計與 blueprint output_path 欄同源
+- Round 9 nb 主寫 §5 Blueprint schema 時自然涵蓋此 event 定義
+- 避免先定 event schema 後 blueprint 綁架 event 欄位的倒序設計
+
+### 3. 對 SDD-05 第 5 view `/api/sessions/:id/transcript`（ns follow-up #1）
+
+- nb 角度：**zero objection**（nc + ns 薄層 scope，nb 僅是 transcript producer 間接方，無 interface 衝突）
+- 建議 nc 設計 view endpoint 時考慮 stream（jsonl 大）；不建議一次 response 整檔
+
+### 4. owner-commit-discipline 下的動作限制
+
+本 Round 8-reply **僅此 spec 檔 append，不 commit canonical**：
+- `~/.claude/config/event-types/model.json` 新增屬 🔵 Contract-only，走 §6 三層落地（需 ns writer 確認 live reload 支援 + nc 確認消費）
+- 等 peer dispatch ns accept + nc accept Debug view Model 列消費 model.response 後，再由 nb commit canonical
+- Round 9 SDD-01 §5 Blueprint schema 動筆前亦收齊 ns+nc feedback（對齊 ns Round 8 §10.7 紀律）
+
+### 5. 已發 peer dispatch id 清單（回 Manager 用）
+
+- **→ ns**：xd-待發（確認 model.* 採納 + payload 欄位 + writer live reload 支援）
+- **→ nc**：xd-待發（告知 model.* nb owned 決策，請確認 Debug view Model 列消費 model.response；另 output_contract 延 R9）
+
+### 6. verdict（回 Manager）
+
+**iterate** — Round 9 待 peer feedback 後啟動：
+- nb 主寫 SDD-01 §5 Blueprint schema（含 output_contract + agent.output_written event）
+- nb 主寫 `~/.claude/config/event-types/model.json` + producer 實作 spec（SDD-02 §3 白名單加 `model.*`）
+- ns commit §10.7 + nc 回 SDD-05 transcript view
