@@ -91,6 +91,8 @@ v0.5 event log 期間三方（nb/ns/nc）各踩紀律 bug：
 **第 1 層 — PreToolUse:Edit/Write `staging-classifier-guard.js`**
 偵測 target path ∈ canonical_paths 且 diff 非空，檢查 session 是否有 `stage: 🔵` + `peer_accept: <id>` 或 escape env，缺則 block。
 
+**block 時同步 emit `hook.blocked` event**（nc R5 vertical slice 情境 2 要求）— payload 含 `hook_name: "staging-classifier-guard"` + `blocked_tool` + `reason_code: "canonical-contract-unsigned"` + `reason`。NC 訂閱 SSE 可即時顯示 block 告警到 menu_bar derived view（SDD-04 `/api/alerts/unresolved?type=staging`）。
+
 **第 2 層 — pre-commit hook**
 `.git/hooks/pre-commit` → `bun ~/.claude/hooks/scripts/staging-precommit.js`：掃 staged diff 對 canonical_paths，若改動則要求 commit message 含 stage 標記。
 
