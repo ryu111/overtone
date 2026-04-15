@@ -526,3 +526,49 @@ Manager 下 xd-8ku3：nc 完成 `agent-factory-ux.pen` 後，nb 用 pencil MCP �
 ### 等待條件
 
 nc 回報格式預期含 .pen 絕對路徑（例：`~/projects/nova-control/design/agent-factory-ux.pen` 或類似）。收到後自動觸發上述動作。
+
+---
+
+## Round 7 (xd-et9n, 2026-04-15) — MA tutorial 對照 + Pencil 接力推演
+
+### 任務 A. MA 四大物件覆蓋檢查
+
+讀 `nova-manager/docs/agent-factory/references/ma-tutorial-summary.md` (85 行)。對照 nb scope：
+
+| MA 物件 | Nova 對應 | nb 覆蓋狀態 | Gap / follow-up |
+|---|---|---|---|
+| **Agent** (system_prompt + MCP + skills + model) | SDD-01 階段紀律 + agent blueprint (CLAUDE.md Blueprint yaml 段) | 部分覆蓋 — rules/協作/討論式派發.md `core_objective` + SDD-00 §2 三件套 | **Gap**: blueprint 缺統一 schema doc (tools_allowed/denied、skills_bundled、pipeline) — 建議新 SDD 形式化 blueprint schema，或直接擴 SDD-01 §5 加入 "🟣 spawn 前 blueprint validator" 條款 |
+| **Session** (單一任務 context 隔離) | dispatch lifecycle (§7 dispatch.* 8 events) + ns SDD-02 session.* 2 events | ✓ 對齊 — dispatch_id 作為 correlation_id, session_id 分離 session-scoped events |  無 gap |
+| **Environment** (tools/files/network access + domain whitelist) | SDD-01 §5 canonical 白名單 + §5.1 🟣 sandbox 邊界 + hooks/guards.js tools_denied enforcement | 部分覆蓋 — canonical 白名單守「禁寫」；network whitelist 當前無 | **Gap**: network domain whitelist 未實作。建議 SDD-07 孵化回滾 spec 含「L4 spawn 時 system_prompt 驗證 + network policy 繼承」，或新 rule `rules/協作/network-whitelist.md` |
+| **Credentials Vault** (OAuth/API key) | settings.json permissions / macOS keychain (未 Nova 化) | 未覆蓋 | **Gap**: 全無對應設計。建議：L5 階段不急，L4 孵化 agent 需要的 OAuth credential 走 env var 或 1Password CLI integration，另案 spec |
+
+**計費模式** (Runtime $0.08/hr) — Nova 訂閱制 claude -p subprocess 無此費用，但 active/idle 追蹤邏輯相同 (ns session.* events 已支援 cause=idle_timeout)。
+
+**對話式建立 agent** (MA 第三種方式) — **SDD-00 情境 1 獲 Anthropic 官方驗證**。nb 角度：對話式建立 → blueprint 生成的 tools_denied 字串 → guards.js enforce，閉環可行。
+
+### 任務 B. Pencil 接力推演（5 annotations 落地）
+
+讀 nc agent-factory-ux.pen 5 frames (3MJ6x/K8sYU/21mJz/USYyx/UMSwK, active 但 memory 未存)，用 pencil MCP 加 5 nb-annotation-* sticky notes：
+
+| Note ID | Frame | 觀察 |
+|---|---|---|
+| `fndf0` | Screen 1.3 timeout | ⚠️ 60s timeout 是 nc 假設值，nb rule 未定義。Follow-up: nb 補 AskUser timeout per-severity 配置 |
+| `Z6bZJ` | Screen 1.4 stage pending widget | ⚠️ 無 event type 支援。Follow-up: 新 `stage.upgrade_pending` (🔵 Contract-only，nb+ns 同步) |
+| `OxRF1` | Screen 1.3 三件套驗證 | ✅ 違反條款 + copy-paste fix ✓ / ⚠️ 三條出路 Y/N/E 需澄清 E 語意 |
+| `xaXAL` | Screen 1.2 blueprint tools_denied | ✅ 對齊 §5.1 🟣 sandbox / Follow-up: SDD-07 含 spawn-time validator |
+| `1zoZO` | Screen 1.5 shadow window | ✅ 7d 正確 (infra 分層) / ⚠️ widget 應動態顯示 N 按 §7 分層 |
+
+### Round 7 follow-up 合計
+
+1. **AskUser timeout per-severity policy** (critical/normal/suggest) → nb rule 補充
+2. **stage.upgrade_pending event type** → nb+ns 同步 commit (🔵 Contract-only)
+3. **Blueprint schema 形式化** → 新 SDD 或擴 SDD-01 §5
+4. **Network whitelist policy** → 另案 spec（對應 MA Environment 第 4 維）
+5. **SDD-07 spawn-time system_prompt validator** → nm 主寫 incubation-rollback 時納入
+6. **Summary widget 動態 N 顯示** → nc SDD-00 微調
+
+### 紀律守護
+
+- ⛔ 不動 nc 5 frame 內任何 node ✓（僅 I 到 document root）
+- ✅ 所有 annotations 命名前綴 `nb-annotation-*` ✓
+- ✅ 6 gap 全列具體方案，不說「之後再補」
