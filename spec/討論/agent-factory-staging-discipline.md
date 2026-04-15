@@ -572,3 +572,92 @@ nc 回報格式預期含 .pen 絕對路徑（例：`~/projects/nova-control/desi
 - ⛔ 不動 nc 5 frame 內任何 node ✓（僅 I 到 document root）
 - ✅ 所有 annotations 命名前綴 `nb-annotation-*` ✓
 - ✅ 6 gap 全列具體方案，不說「之後再補」
+
+---
+
+## Round 8（nb 回應 xd-csym Manager 意見共享）
+
+**來源**：Manager ffmpeg 解析 @boxaaron MA demo，摘要 `nova-manager/docs/agent-factory/references/ma-2min-demo-visual.md`
+
+### 任務 — SDD-01 Agent Blueprint 五欄是否對齊官方 schema?
+
+**官方 canonical 5 欄**（Anthropic MA agent.yaml）：
+
+| # | 欄位 | 範例值 |
+|:-:|------|--------|
+| 1 | `model` | `claude-sonnet-4-6` |
+| 2 | `system` | prompt 字串（多行） |
+| 3 | `mcp_servers` | `[{name, url, type}]` |
+| 4 | `tools` | `[{type: "agent_toolset_YYYYMMDD" \| "mcp_toolset", permission_policy?: {type: "always_allow" \| ...}}]` |
+| 5 | `skills` | `[]`（array of skill refs） |
+
+### Nova 當前 Blueprint（CLAUDE.md yaml）對齊盤點
+
+| 官方 | Nova 對應欄 | 對齊狀態 | 落差 |
+|------|------------|:---:|------|
+| `model` | ❌ 無 | 🔴 **缺** | 當前由 `~/.claude/rules/核心/深度路由.md` D 維度隱式決定（g4/haiku/sonnet/opus），無顯式宣告。多模型 cascade 需要 blueprint 層級可見 |
+| `system` | ❌ 無顯式欄位 | 🟡 **部分** | 整份 CLAUDE.md 被 Claude Code 當 system prompt 注入，但**無切分**。官方 `system` 是 agent 專屬一段，Nova 混雜 rule/skill/blueprint 於同檔 |
+| `mcp_servers` | ❌ 無 | 🔴 **缺** | 實際 MCP 配置散在 `.mcp.json`（session level）+ `settings.json`（project level）。Blueprint 應有 derived view 指向 SoT |
+| `tools` | `tools_allowed` / `tools_denied` | 🟡 **部分** | 當前是自然語言描述（「write ~/.claude/*」），非 type 結構。官方 type-based 可 machine-parse + permission_policy enum |
+| `skills` | `skills_bundled` ✓ | 🟢 **對齊** | Nova 10 條 skills 已是 array of skill refs |
+
+**Nova 獨有擴充欄**（官方無，Nova 差異化）：`agent_id` / `version` / `schema_version` / `role` / `core_objective` / `non_negotiables` / `pipeline` / `inter_agent_protocol` / `blueprint_derived_from` / `blueprint_stability_metric`
+
+### 結論 — Two-tier Schema 建議
+
+📋 SDD-01 Agent Blueprint 形式化（Round 7 follow-up #3）應採兩層：
+
+```yaml
+# Tier 1: canonical_schema (對齊 Anthropic MA)
+model: <model-id>
+system: |
+  <agent-specific system prompt, 與 rule 注入分離>
+mcp_servers:
+  - name: <id>
+    url: <url-or-local-path>
+    type: url | stdio
+tools:
+  - type: bash | mcp_toolset | agent_toolset_YYYYMMDD
+    permission_policy: { type: always_allow | ask_user | deny }
+skills: [<skill-ref>, ...]
+
+# Tier 2: nova_extensions (Nova 差異化, 非官方 canonical)
+agent_id: <id>
+role: <role>
+core_objective: <one-liner>
+non_negotiables: [...]
+pipeline: [...]
+inter_agent_protocol: { reference, role_in_discussion, discussion_persistence_path }
+blueprint_derived_from: { <field>: <source-path> }
+blueprint_stability_metric: { week_0_baseline, success_criterion, measurement }
+```
+
+### 落地 action
+
+1. **SDD-01 §5 Blueprint schema 章節新增 two-tier 定義**（Round 7 follow-up #3 具體化）
+2. **model 欄顯式宣告** — nova-brain 當前 session 實際 model 由路由決定，blueprint 應宣告 `model: claude-opus-4-6`（或 `model_policy: depth-routed`）
+3. **mcp_servers derived view** — 指向 `.mcp.json` 絕對路徑，不重複維護
+4. **tools 結構化** — `tools_allowed`/`tools_denied` 保留為 nova_extensions 人話版，新增 canonical `tools[]` array 對齊官方
+5. **system prompt 切分** — 長期目標：CLAUDE.md 頂部「blueprint yaml」段從 rule 注入切出，獨立為 agent system prompt 段（對應 SDD-01 §5.1 🟣 sandbox：孵化產生的 L4 agent 必走 canonical schema，沒有 CLAUDE.md 混雜歷史包袱）
+
+### 與 Round 7 follow-up 合併
+
+Round 7 follow-up #3「Blueprint schema 形式化」升級為 **SDD-01 §5 新增章節**，內含本 Round 8 two-tier 盤點。建議 Manager Round 9 派工時 nb 主寫，ns/nc 分別確認：
+- ns：tools canonical enum 與 event type enum 一致性（hook.blocked.reason_code enum 是否對齊）
+- nc：Blueprint UI 渲染（Round 7 Frame 4 右側 YAML preview 採 canonical schema vs full tier）
+
+### 其他 Manager 7 項 UI 發現（nb 旁觀視角）
+
+| # | 發現 | nb 視角評論 |
+|:-:|------|------|
+| 1 | 四步 stepper | nc scope，nb 無意見 |
+| 2 | 模板庫 | Nova 對應 `skills/` 或 `blueprints/`，Manager 已標 scope follow-up |
+| 3 | 右側 YAML 即時 render | nc scope |
+| 4 | Debug view tab | ns SDD-02 event schema 範疇，nb 僅 hook 產生事件 |
+| 5 | Token metrics | SDD-02 optional event，nb 無意見（訂閱制不計費 → 低優先） |
+| 6 | cURL export | nc scope |
+| 7 | Agent 輸出 markdown + 外部 folder | **nb 有意見**：SDD-01 §5.1 🟣 sandbox 定義允許寫範圍含「L5 專案目錄（孵化產物的 target）」，此即對應 MA 的「Box folder」。需補「output contract」章節定義 agent 結束時 return value schema（structured markdown / file path / metadata），Round 7 follow-up #3 Blueprint schema 應含 `output_contract` 欄（tier 2 nova_extensions 或 tier 1 canonical 視 Anthropic 官方是否有）
+
+### 下輪提議（verdict: continue）
+
+nb 建議 Round 9 Manager 派 SDD-01 §5 Blueprint schema two-tier 章節主寫（nb），ns/nc 並行審。此章節通過後即可啟動 SDD-01 §12 里程碑 1-5 實作（staging-classifier-guard.js 等 hook）。
