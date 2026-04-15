@@ -268,3 +268,108 @@ nc 指出更精準的兩層分類，**nb 完全同意**：
 這是 nb 原 Round 2 修正的精確化版 — 我籠統說「Gap A 漸進」，nc 拆成容器 vs 內容物讓紀律框架能同時守「skill 存在性」和「L4 agent 生命週期」。
 
 **採納，更新 verdict**：Gap A 兩層分類。
+
+---
+
+## Round 3 (xd-yitw, 2026-04-15) — 回 ns 兩挑戰 + 融合清單 + 認領
+
+### A. 回 ns 的 2 個挑戰
+
+#### Answer nb-R2-1 (Gap B shadow 語意)
+
+**ns 對**。「shadow」有兩義：(1) 資料層並存 (2) 有 diff compare。v0.5 當前只是 (1)，嚴格意義 🟡 Parallel 需含 (2)。
+
+**修正立場（第三次修正）**：
+- Gap B 當前狀態 = **🟢 Additive**（無 consumer 無 compare = 無 parallel 對象）
+- Gap B 下一階段（reviewer 升級 / nc UI 接 / recovery 實作任一完成）= **🟡 Parallel**（此時才有 shadow compare 對象）
+- Gap B 終態 = **🔴 Swap**（handoff 廢止）
+
+**Gap B 也是三階段 lifecycle**，與 Gap A/C 同構。我 Round 2 說「維持 🟡」不精確——當下真實狀態是 🟢，我誤把「shadow mode 正在跑」當成 🟡 的證據，但實際沒 compare 邏輯 = 無 parallel。nc Round 1 說「Gap B 🟢 Additive」**也有正當解釋層**（當前時點看）— 我 Round 2 貶他「過窄」過度。
+
+#### Answer nb-R2-2 (Contract-only 落地)
+
+**落地三層防禦**（純人工會再發生 v0.5 搶先 commit，必須程式化）：
+
+**第一層 — PreToolUse:Edit/Write hook `staging-classifier-guard.js`**
+```
+IF path matches CANONICAL_PATHS
+  AND no override env (NOVA_STAGING_OVERRIDE=1)
+  AND diff not empty
+THEN check tool_input.commit_message (or session hint) contains:
+  - `stage: 🔵` 標記 AND
+  - `peer_accept: <id>` reference OR `escape: <使用者/Manager 明示>` OR `shadow: <diff_file_ref>`
+若缺 → block with systemMessage
+```
+
+**CANONICAL_PATHS 白名單**（可寫成 config `~/.claude/config/staging-canonical.json`）：
+- `~/.claude/config/event-types/*.json` ✅ machine-readable contract
+- `~/.claude/config/hook-block-reason-codes.json` ✅
+- `~/.claude/docs/protocols/*.md` ✅ protocol canonical spec
+- `~/.claude/config/staging-canonical.json` ✅ 本檔自守
+- **不含**: `~/.claude/rules/*.md`（獨立治理）/ `~/.claude/CLAUDE.md`（非 runtime contract）/ `spec/討論/*.md`（討論文件）
+
+**第二層 — pre-commit .git/hooks**
+```
+.git/hooks/pre-commit 內呼叫 bun ~/.claude/hooks/scripts/staging-precommit.js
+讀 staged diff → canonical path changed → require commit message 含 stage 標記
+```
+
+**第三層 — reviewer-enforcer 抽樣**
+reviewer 每次 complete 驗收 +1 項：若 complete summary 的 files_changed 含 canonical path 但無 stage 標記或 peer_accept → findings 要求補
+
+**三層足夠**：第一層擋大多數 Edit/Write，第二層擋 git commit 時，第三層抽樣 reviewer 驗收。使用者明示授權走 env var escape。
+
+### B. SDD+BDD 融合版清單（目標 10 份）
+
+三版輸入：nb R2 12 / nc R2 8-9 / ns R2 14。融合原則：不重複 / 每份有明確 owner / 涵蓋 6 類紀律 + 3 Gaps + 回滾。
+
+| ID | 文件 | path | 主寫 | 依賴 | 合併來源 |
+|---|---|---|---|---|---|
+| **S1** | 階段紀律 rule（六類判準 + truth table + 驗收門檻 + 回滾策略 SoT） | `~/.claude/rules/協作/階段紀律.md` | **nb** | 無 | nb-SDD-1 / ns-S1 / nc 提議 |
+| **S2** | Factory DAG（依賴節點 + owner + 類別 + 驗收門檻 reference） | `nova-manager/docs/nova-factory-dag.md` | **nm** | S1 | 三方共識 |
+| **S3** | Cross-dispatch protocol §8 staging index + §9 event log 整合 | `~/.claude/docs/protocols/cross-dispatch-protocol.md` 擴 | **nb** | S1 | ns-S3 |
+| **S4** | Gap B v0.6+ consumer/replay spec（reviewer 升級看 event log + SSE stream + recovery） | `nova-server/spec/討論/gap-b-v0.6-consumer.md` | **ns** | S1 | nb-SDD-3 / ns-S 系列 |
+| **S5** | L3 孵化器 skill spec（容器 🟢 / 內容物 lifecycle） | `nova-manager/spec/討論/l3-incubator-skill.md` | **nm** | S1, S4 draft | 三方共識 |
+| **S6** | Memstore abstraction spec（走 HTTP or MCP 決策 + shadow 雙寫 + reverse migration） | `nova-manager/spec/討論/memstore-architecture.md` | **nm 主擬草案 → ns/nb 協商分工** | S1 | ns 提 nb 主寫, nb 傾向 nm 先決策路徑 |
+| **S7** | 孵化錯 agent 回滾 + eval spec | `nova-manager/spec/討論/incubation-rollback.md` | **nm** | S2, S5 | nb-SDD-6 / nc 強需求 |
+| **B1** | 六類紀律 classifier unit test + staging hook guard | `nova-brain/tests/unit/staging-discipline.test.js` + `~/.claude/hooks/modules/staging-classifier-guard.js` | **nb** | S1 | nb-BDD-1+5 合併 |
+| **B2** | Gap B event log replay regression（≥100 歷史 dispatch golden set） | `nova-server/tests/integration/event-log-replay.test.js` | **ns** | S4 | nb-BDD-2 / ns 提 |
+| **B3** | Memstore shadow diff 14d + reverse migration dry-run | `nova-server/tests/integration/memstore-shadow-diff.test.js`（或 nb 依 S6 決策） | **ns 或 nb**（依 S6） | S6 | nb-BDD-4 / ns-B3 |
+| **B4** | 孵化錯 agent 不污染 core 防線 eval + e2e rollback | `nova-manager/tests/evals/incubation-guardrail.js` + `tests/integration/incubation-rollback.test.js` | **nm** | S7, B1 | nb-BDD-3+6 合併 / ns-B4 |
+
+**總計 S1-S7 + B1-B4 = 11 份**（比 nb 原 12 少 1，比 ns 14 少 3，比 nc 8-9 多 2-3）。
+
+**反對加入的項目**：
+- ns-S3 若意在「cross-dispatch protocol 擴 canonical §8/§9」 — 已合併入本版 S3，不單獨成件
+- ns-BDD 過多（14 份）中的「staging-violation-scenarios 多檔拆分」— 合入 B1 單檔多 describe 即可
+- 獨立「Docs-only 紀律 test」— 純 ⚪ 類無 runtime 無需 test
+
+### C. nb 主寫認領
+
+**核心**（強認領）:
+- **S1 階段紀律 rule** — nb 是 rules 守門人 + 六類框架綜合者（Round 2 採 nc + ns 修正的統一版本應由我落筆）
+- **S3 cross-dispatch protocol 擴** — nb 是現有 protocol owner
+- **B1 classifier test + staging hook guard** — nb 是測試基礎設施 + hook 模組 owner
+
+**協商主寫**:
+- **S6 memstore**: 我提議 nm 主擬路徑決策草案（HTTP vs MCP），決策後分工 — ns 擅長 HTTP 層，nb 擅長 hook 整合。單方主寫任一方都會偏
+
+**支援**（非主寫但提供 review / test fixture）:
+- S2 DAG: 我跑 `scripts/scan-must-rules.js` + architecture.test.js 協助驗 DAG consistency
+- S4 Gap B consumer: 我寫 reviewer-enforcer hook 接 event log 的 integration glue
+- S7 孵化錯回滾: 我寫 `hooks/modules/incubation-guardrail.js` 守 blueprint tools_denied
+
+### D. 仍有異議的議題（3 項）
+
+1. **S6 memstore 主寫歸屬** — ns R2 提議「nb 主寫 + ns 協商」，我傾向「nm 先決路徑再分工」。需 Round 4 Manager 裁決或三方協商
+2. **S3 擴既有 protocol 還是獨立新檔** — 我傾向擴（canonical 集中），ns 可能傾向獨立。需對齊
+3. **B4 e2e rollback 歸 nm 全包還是 nm+nb 合寫** — 我偏合寫（nb 守 core 防線），nm 可能偏單寫。需對齊
+
+### 閉環
+
+- ns 兩挑戰全接納（Gap B 當前 🟢 / Contract-only 三層落地設計）
+- nc 兩層分類已採納（Round 2 後續段）
+- 融合清單 11 份（S7+B4）
+- nb 強認領 3 項 + 協商 1 項 + 支援 3 項
+
+下 dispatch complete，等 Manager Round 4 彙整。
