@@ -29,6 +29,13 @@ R7 接 Anthropic MA 官方示範（@boxaaron 2min demo）+ R8 nb 盤點揭露 No
 
 此修正比官方 MA agent.yaml 更結構化（官方 demo 也把 credential 拉出但 agent.yaml schema 未明示）。
 
+### UI 對應（R13 nc accept：Env-Vault 合併 tab）
+
+Canonical schema 維持 Environment / Vault 獨立物件，但 **UI 層允許合併呈現** — nc Screen U Detail pane 的 `Env-Vault` tab 將 Environment subsection + Vault subsection 合併在同 tab，理由：
+- 使用者 mental model 把「agent 的外部配置」視為一類（UX convenience）
+- CRUD 流程實際獨立（Env 設定 vs Vault 授權各有獨立表單）
+- canonical 不受 UI 合併影響，SDD-02 event namespace 仍分 `environment.*` 與 `credential.*` 各自 CRUD
+
 ## 2. Two-tier Schema 總覽
 
 ```yaml
@@ -152,27 +159,50 @@ tools:
 - `ask_user`：彈出 permission modal（Nova 擴充，對應 AskUserQuestion）
 - `deny`：block + 觸發 hook.blocked（Nova 擴充）
 
-### 3.4.5 Credential Vault 物件（R10+ 新增）
+### 3.4.5 Credential Vault 物件（R10+ 新增，R13 補充）
 
-Blueprint 永不內嵌 credentials，用 `credential_refs[]` 引用 Vault：
+Blueprint 永不內嵌 credentials，用 `credential_refs[]` 複合路徑引用 Vault（R13 nc accept）：
 
 ```yaml
 # Blueprint
 credential_refs:
   - box-oauth:access_token
   - box-oauth:refresh_token
-
-# Credential Vault 物件（workspace 級，不進 git）
-# 存放位置: ~/.claude/vaults/<vault_id>.enc (加密)
-vault_id: box-oauth
-type: oauth
-values:
-  access_token: <encrypted>
-  refresh_token: <encrypted>
-shared_warning: "此 credential 被 workspace 所有 agent 共用"
+  - github-pat:read          # 支援一 Vault 多 key (least-privilege)
 ```
 
-**UI**：nc Credential vaults 頁面（MA demo Frame 8 對應）。**永不 git commit**（`.enc` 加密 + `.gitignore` 雙保險）。
+**命名選定**：`credential_refs: [<vault_id>:<key>]` 複合路徑（R13 定案，取代早期 `credential_vault_refs` 僅 vault_id 版本）。理由：一 Vault 可多 key（如 github-pat 同時含 read/write token）+ least-privilege（agent 只取需要 key）+ UI 可簡化只顯 `vault_id` 作 label 隱藏 `:<key>` 尾綴。
+
+#### 儲存策略（R13 nc accept）
+
+**Primary — macOS Keychain + Touch ID**（OS-native，比 MA 雲端 vault 更安全）：
+- Keychain service: `com.nova.vault.<vault_id>`
+- Touch ID 授權綁定（每次 agent runtime read 時觸發）
+- 加密由 macOS 原語負責（Secure Enclave 協助）
+
+**Fallback — 檔案加密**（Keychain 不可用時）：
+- 存放：`~/.claude/credentials/<vault_id>.enc`
+- 加密算法：**AES-256-GCM**（業界標準，authenticated encryption）
+- KDF：**argon2id**（password-based key derivation，抗 GPU 暴力破解）
+- master password 來源：使用者首次建 vault 輸入（不 persist，每次 session 重輸）
+- `.gitignore` 雙保險：`~/.claude/credentials/` 整目錄 gitignored
+
+#### 取值機制
+
+Agent runtime 取 credential 方式（UI 永不顯示明文，nc R12b 要求）：
+- env var 注入：`NOVA_VAULT_<VAULT_ID>_<KEY>=<decrypted>`（subprocess scope，session 結束銷毀）
+- file handle：臨時 `/tmp/nova-vault-<uuid>` 檔，agent exit 時刪除
+
+#### Event 觸發時機（對齊 ns R12 redactor）
+
+每次 runtime 取 credential 時 emit `credential.accessed`（§5.3）— audit trail 留 session_id / agent_id / vault_id / key_name / ts（**無明文值**，ns writer 強制 `redactCredentialPayload()` 再把關）。
+
+#### UI 對應
+
+nc Credential Vaults 頁（reference/06，MA demo Frame 8 對應）：
+- 列表顯示 vault_id / type / scope / last access（**永不顯示 value**）
+- Audit Log 按鈕 → 跳 `credential.accessed` event log filter view
+- 紅色安全警告：「Vault 值永不顯示在 UI — 僅在 agent runtime 透過 env var / file handle 注入」
 
 ### 3.5 `skills`（nc Screen 1.4 UI 對應）
 
