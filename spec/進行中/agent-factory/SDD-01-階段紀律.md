@@ -57,7 +57,9 @@ v0.5 event log 期間三方（nb/ns/nc）各踩紀律 bug：
     "~/.claude/config/hook-block-reason-codes.json",
     "~/.claude/config/staging-canonical.json",
     "~/.claude/docs/protocols/*.md",
-    "~/projects/nova-server/config/event-types/*.json"
+    "~/projects/nova-server/config/event-types/*.json",
+    "~/.mcp.json",
+    "**/.mcp.json"
   ],
   "excluded": [
     "~/.claude/rules/*.md",
@@ -70,6 +72,7 @@ v0.5 event log 期間三方（nb/ns/nc）各踩紀律 bug：
 
 **為何排除 rules/**：rule 獨立治理（季度 Manager review，非 runtime contract）。
 **為何排除 CLAUDE.md**：描述文非 runtime 載入（blueprint yaml 段是例外，未來可獨立白名單）。
+**為何加 `.mcp.json`（R10 nc Screen 1.2 派生）**：Blueprint `mcp_servers[]` UI 編輯的 persist target，Claude Code 本身 runtime load → runtime contract。編輯必走 🔵 Contract-only 三層落地。
 
 ### 5.1 🟣 Experiment 階段 side-effect 邊界（nc Round 4 補強）
 
