@@ -117,3 +117,33 @@ summary 只提 M1 未含其他 milestone, 且無量化拆分理由
 ---
 
 *本檔非正式 SDD-00，是 nb 向 nc 提交的 scope input。nc 主寫正式版。*
+
+---
+
+## 4. Vertical Slicing 驗證（xd-gw4z 要求）
+
+5 情境 × nb 層 check（SDD-01 rule/hook + SDD-03 protocol 是否支撐）：
+
+| # | 情境 | rule 支撐 | hook 實作 | protocol 支撐 | Gap / follow-up |
+|:-:|---|---|---|---|---|
+| 1 | Edit canonical block | SDD-01 §6 三層 ✓ | `staging-classifier-guard.js` (設計 ready, SDD-01 §12 milestone 待實作) | 無需 event emit | **Gap**: hook 尚未實作，SDD-01 通過後立即啟動 |
+| 2 | Spec 切割 block | `rules/品質/完成與閉環.md` ✓ | `spec-milestone-guard.js` ✓ 已落地 claude 17c3d9a | 無需 | 無 gap |
+| 3 | SessionStart core_objective reminder | `rules/協作/討論式派發.md` ✓ | `core-objective-reminder.js` ✓ 已落地 claude 17c3d9a | 無需 | 無 gap |
+| 4 | reviewer-enforcer cross-session 豁免 | `rules/協作/討論式派發持久化.md` ✓ | `reviewer-enforcer.js` ✓ 已擴 xd-qfhe fix | 無需 | 無 gap |
+| 5 | AskUserQuestion → NC SSE chain | `rules/元件/AskUserQuestion全鏈路.md` ✓ | `hook-client.js` PermissionRequest ✓ | **ns SSE `/events` broadcast + NC subscribe schema** | **Gap**: 需 ns 在 SDD-02 §6.2 擴 ask_question / ask_answer event type（當前只有 hook.* + session.* + dispatch.*），或復用既有 `/api/ask` 路徑 |
+
+### Vertical slice 閉環狀態
+
+- **閉環**: 情境 2/3/4（rule + hook + no protocol 需求）— 3/5
+- **半閉環**: 情境 1（rule ✓ / hook 設計 ready 待實作）— 1/5
+- **跨層 gap**: 情境 5（nb 已備 rule + hook, 需 ns event schema 擴充或 endpoint 確認）— 1/5
+
+### nb 向 ns 的 follow-up 要求（情境 5）
+
+請 ns 確認：`/api/ask` endpoint 當前是否已足以支援 NC subscribe？若否：
+- Option A: 新增 `ask.requested` / `ask.answered` event types 到 `nova-server/config/event-types/session.json`（🔵 Contract-only, producer+consumer 同步 commit）
+- Option B: 沿用現有 `/api/ask` POST + SSE channel（既有路徑）→ 情境 5 protocol gap close
+
+### nb 向 nc 的 follow-up 要求（情境 1）
+
+情境 1 UI 體驗 nc 若要做 menu_bar 通知「某 session 被 staging guard block」，需 hook.blocked event type 含 `hook_name: "staging-classifier-guard"` payload（已在 canonical 白名單 schema 支援）。nc 若要顯示，考慮 SDD-05 derived view 加 `/api/alerts/unresolved?type=staging` filter。
