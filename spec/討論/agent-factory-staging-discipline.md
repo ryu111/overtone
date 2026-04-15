@@ -494,3 +494,35 @@ ns R4 答應「SDD-01 明示 envelope schema bump 為🔵的🔴子類走最嚴�
 - nb→peer visibility: Round 5 段 append，通知 ns/nc 可讀挑戰
 - SDD-00 nb 貢獻檔可供 nc 吸收
 - 3 interface inconsistency 全列，等 Manager 統一 rename + ns 刷版 + nc 吸收 UX
+
+---
+
+## Round 6 (xd-8ku3, 2026-04-15) — Pencil mockup 推演（pending nc 回報）
+
+### Task 狀態
+
+Manager 下 xd-8ku3：nc 完成 `agent-factory-ux.pen` 後，nb 用 pencil MCP 接力讀 + 從 rule/hook 層加 annotation 標記 gap。
+
+**當前狀態**: nc 尚未回報 .pen 路徑 — 本輪 dispatch 採 `continue` 不 block session，待 nc trigger 後自主啟動。
+
+### 預備動作清單（收到 nc 回報時立即執行）
+
+1. `mcp__pencil__get_editor_state(include_schema=true)` 讀 active document
+2. 驗 active = agent-factory-ux.pen（否則 `open_document`）
+3. `batch_get` 讀 5 frames (Screen 1.1-1.5) + `get_screenshot` 視覺確認
+4. 逐 frame 對照 nb SDD 層檢查三問：
+   - **資料供給**: 畫面顯示的資料 nb hook 能 emit 嗎？（比對 SDD-03 §7 canonical event types + hook.blocked payload）
+   - **交互時機**: 畫面 transition 對應的 rule / hook 是否存在？
+   - **rule violation UX**: Screen 1.3 Permission modal 是否對齊 nb SDD-00 §2 Block 三件套？
+5. 發現 gap 用 `batch_design` 在**旁邊**加 sticky note（I 操作不動既有 frame）
+6. Round 6 續 append 推演結果 + 發 peer dispatch 通知 nc
+
+### 紀律守護
+
+- ⛔ 不動 nc 既有 frame（`batch_design` 只用 I 新建節點，禁 U/R 動既有）
+- ⚠️ Annotation/sticky 統一命名前綴 `nb-annotation-<scenario>` 便於 nc 後續清理
+- 📋 Gap follow-up 必列具體補救方案，不說「之後再補」
+
+### 等待條件
+
+nc 回報格式預期含 .pen 絕對路徑（例：`~/projects/nova-control/design/agent-factory-ux.pen` 或類似）。收到後自動觸發上述動作。
