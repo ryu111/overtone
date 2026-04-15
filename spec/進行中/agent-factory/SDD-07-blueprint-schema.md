@@ -129,6 +129,56 @@ sandbox:
 
 **動機**（R10+ 使用者補料）：MA demo 一份 Environment 可多 Agent 共用，與 agent 生命週期解耦。強制獨立物件避免 environment 配置散落每個 blueprint。
 
+#### 3.3.1 Environment 物件完整 schema（xd-xa8y 補齊）
+
+```yaml
+# ~/.claude/environments/<env_id>.yaml
+environment_id: <id>                # 必填，slug format [a-z0-9-]+
+version: <int>                      # 必填，schema_version
+created_at: <iso8601>
+updated_at: <iso8601>
+description: <text>                 # optional human-readable
+mcp_servers:
+  - name: <slug>
+    url: <url | stdio path>
+    type: url | stdio
+    timeout_ms: <int>               # optional，default 30000
+    health_check_interval_s: <int>  # optional，default 30
+sandbox:
+  allowed_write: [<path-glob>, ...]  # 必填，empty=全 deny
+  denied_write: [<path-glob>, ...]   # 必填，higher priority than allowed
+  allowed_read: [<path-glob>, ...]   # optional，default 全 allow
+  denied_read: [<path-glob>, ...]    # optional
+  network:
+    allowed_hosts: [<host-pattern>]  # optional，default 全 allow
+    denied_hosts: [<host-pattern>]   # optional
+binding_rules:
+  max_concurrent_agents: <int>       # optional，default unlimited
+  require_credential_refs: [<vault_id>, ...]  # optional，binding 時必有這些 vault
+```
+
+**敏感域紀律**：Environment **不含任何 secret**。OAuth tokens / API keys / passwords 一律放 Credential Vault（§3.4.5）。Environment 僅描述「配置結構」不含「配置值」。
+
+#### 3.3.2 Environment CRUD API
+
+| Method | Endpoint | 用途 | SSE event |
+|--------|----------|------|-----------|
+| `POST` | `/api/environments` | 建 | `environment.created` |
+| `GET` | `/api/environments` | 列表 | — |
+| `GET` | `/api/environments/:id` | 單筆 | — |
+| `PATCH` | `/api/environments/:id` | 更新 | `environment.updated` |
+| `DELETE` | `/api/environments/:id` | 刪 | `environment.deleted` |
+| `POST` | `/api/environments/:id/bind` | 綁 agent | `environment.bound` |
+| `POST` | `/api/environments/:id/unbind` | 解綁 | `environment.unbound` |
+
+**owner**：nova-server ns scope。**authorization**：使用者身份直接，無需額外 credential（Environment 不含 secret）。
+
+#### 3.3.3 Binding 規則（Agent ↔ Environment）
+
+- Blueprint `environment_id` 若指向不存在 Environment → `blueprint-schema-invalid` reason_code（§6）
+- Environment 刪除前若仍有 Agent binding → 422 reject + 列受影響 blueprint_id 清單
+- Environment `binding_rules.require_credential_refs` 定義的 vault 若 Agent blueprint `credential_refs` 缺 → `non-negotiable-violated`（§6）
+
 ### 3.4 `tools`（nc Screen 1.3 UI 對應 + §5.1 🟣 sandbox enforce）
 
 官方 MA type-based + Nova 擴充 `scope` path glob：
@@ -203,6 +253,28 @@ nc Credential Vaults 頁（reference/06，MA demo Frame 8 對應）：
 - 列表顯示 vault_id / type / scope / last access（**永不顯示 value**）
 - Audit Log 按鈕 → 跳 `credential.accessed` event log filter view
 - 紅色安全警告：「Vault 值永不顯示在 UI — 僅在 agent runtime 透過 env var / file handle 注入」
+
+#### 3.4.5.1 Vault CRUD API（xd-xa8y 補齊）
+
+| Method | Endpoint | 用途 | SSE event | 安全紀律 |
+|--------|----------|------|-----------|---------|
+| `POST` | `/api/vaults` | 建 Vault（使用者輸入 secret → Keychain 或加密檔）| `credential.created` | request body `value` 欄立即 redact，event payload 不含 |
+| `GET` | `/api/vaults` | 列表（metadata only，**無 value**） | — | 永不回 value |
+| `GET` | `/api/vaults/:id` | 單筆 metadata | — | 永不回 value |
+| `PATCH` | `/api/vaults/:id/rotate` | 換 secret | `credential.rotated` | 同 POST |
+| `DELETE` | `/api/vaults/:id` | 刪 | `credential.deleted`（待定）| — |
+| `POST` | `/api/vaults/:id/access` | agent runtime 取值內部 call | `credential.accessed` | 僅 agent runtime 可呼叫，走 mTLS / unix socket |
+| `GET` | `/api/vaults/:id/audit` | 查 access 歷史 | — | `credential.accessed` event log filter |
+
+**authorization**：
+- 公開 endpoint（建/列/刪/rotate）需使用者身份 + Touch ID（若 Keychain primary）
+- 內部 access endpoint 僅 agent runtime process 可呼叫（Unix socket `/tmp/nova-vault.sock` + peer creds check）
+
+**敏感域紀律**（ns R12/R13 強制）：
+- `payload_forbidden_fields`: `[access_token, refresh_token, client_secret, api_key, password, bearer]`
+- writer `redactCredentialPayload()` 8 pattern regex 強制 sanitize
+- value length ≤ 500 char 上限
+- 5 分鐘 de-bounce `credential.accessed`（同 session_id + vault_id + key_name tuple 去重）
 
 ### 3.5 `skills`（nc Screen 1.4 UI 對應）
 
@@ -348,3 +420,188 @@ Blueprint 完成後的 deploy 路徑：
 - SDD-02 §3 白名單 — 本 SDD 新增 3 event types 擴充（incubation.* 2 + agent.output_written 1）
 - SDD-03 §7 canonical event 總表 — 本 SDD namespace 擴充紀錄
 - SDD-05 derived view — 本 SDD 不涉（nc 另行主寫 transcript view）
+
+---
+
+## 12. Four-Object Lifecycle Event Catalog（xd-xa8y 補齊）
+
+本節列 4 物件完整 lifecycle events，對應 SDD-02 §3 canonical 白名單擴充。
+
+### 12.1 Agent namespace（`~/.claude/config/event-types/agent.json` 待 commit）
+
+| event_type | trigger | payload_fields | correlation_id |
+|------------|---------|----------------|----------------|
+| `agent.created` | `POST /api/agents` | `agent_id, blueprint_version, created_by, ts` | `agent_id` |
+| `agent.updated` | `PATCH /api/agents/:id` | `agent_id, blueprint_version, updated_by, changed_fields[], ts` | `agent_id` |
+| `agent.deleted` | `DELETE /api/agents/:id` | `agent_id, deleted_by, ts` | `agent_id` |
+| `agent.output_written` | agent runtime 寫 output_contract destination 後（§4.2） | `agent_id, session_id, output_path, bytes, format, generated_at` | `session_id` |
+
+### 12.2 Session namespace（`~/.claude/config/event-types/session.json` 當前已有，檢查補齊）
+
+| event_type | trigger | payload_fields | correlation_id |
+|------------|---------|----------------|----------------|
+| `session.started` | `POST /api/sessions`（含 `agent_id` + `environment_id` resolve） | `session_id, agent_id, environment_id, started_by, ts` | `session_id` |
+| `session.ended` | `PATCH /api/sessions/:id/end` 或 agent runtime exit | `session_id, end_reason, duration_ms, ts` | `session_id` |
+
+**end_reason enum**: `normal | timeout | error | user_stop | crash | idle_timeout`
+
+### 12.3 Environment namespace（`~/.claude/config/event-types/environment.json` 待 commit）
+
+| event_type | trigger | payload_fields | correlation_id |
+|------------|---------|----------------|----------------|
+| `environment.created` | `POST /api/environments` | `environment_id, version, created_by, ts` | `environment_id` |
+| `environment.updated` | `PATCH /api/environments/:id` | `environment_id, version, changed_fields[], ts` | `environment_id` |
+| `environment.deleted` | `DELETE /api/environments/:id` | `environment_id, deleted_by, ts` | `environment_id` |
+| `environment.bound` | `POST /api/environments/:id/bind` | `environment_id, agent_id, bound_by, ts` | `environment_id` |
+| `environment.unbound` | `POST /api/environments/:id/unbind` | `environment_id, agent_id, unbound_by, reason, ts` | `environment_id` |
+
+**reason enum (unbound)**: `agent_deleted | user_action | env_deleted | rebind`
+
+### 12.4 Credential namespace（`~/.claude/config/event-types/credential.json` ✅ R13 已 commit 712d436）
+
+| event_type | trigger | payload_fields | correlation_id | 敏感紀律 |
+|------------|---------|----------------|----------------|---------|
+| `credential.created` | `POST /api/vaults` | `vault_id, type, scope, created_by, ts` | `vault_id` | forbidden 6 fields / redactor |
+| `credential.accessed` | agent runtime 取值（5min de-bounce） | `vault_id, key_name, agent_id, session_id, access_method, ts` | `session_id` | 永無明文 value |
+| `credential.rotated` | `PATCH /api/vaults/:id/rotate` | `vault_id, key_name, rotated_by, ts` | `vault_id` | 同 created |
+| `credential.deleted` | `DELETE /api/vaults/:id` | `vault_id, deleted_by, ts` | `vault_id` | — |
+
+### 12.5 Incubation namespace（`~/.claude/config/event-types/incubation.json` 待 commit）
+
+見 §5.1 / §5.2（已定義）。
+
+### 12.6 SDD-02 §3 白名單最終預估
+
+當前 18 types（R13 後）→ 最終 25 types：
+- +agent.* 4 types（§12.1）
+- +environment.* 5 types（§12.3）
+- +incubation.* 2 types（§5）
+- credential.* 加 `deleted` → 3→4 types
+- session.* 檢查補齊
+
+**R14 batch commit 順序**（nb owned，ns accept order）：
+1. `agent.json`（含 `agent.output_written` — Screen 1.5 nc UI 消費要點）
+2. `environment.json`
+3. `incubation.json`
+
+每次 commit 觸發 ns SIGHUP reload + §3 白名單擴 + §10.x 記錄，對齊 R13 credential.* 流程。
+
+## 13. Blueprint JSON Schema Validation（xd-xa8y 補齊）
+
+本節定義 Blueprint yaml 的 JSON Schema，供孵化器 spawn 時校驗 + nc UI edit 時即時驗證。
+
+**最終落地**：`~/.claude/config/schemas/blueprint.schema.json`（🔵 Contract-only，三方 accept 後 commit）。
+
+### 13.1 JSON Schema v1
+
+```json
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nova/blueprint.schema.json",
+  "type": "object",
+  "required": ["agent_id", "version", "schema_version", "role", "core_objective", "non_negotiables", "model", "system", "environment_id"],
+  "properties": {
+    "agent_id": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+    "version": { "type": "integer", "minimum": 0 },
+    "schema_version": { "type": "integer", "enum": [1] },
+    "role": { "type": "string", "minLength": 1 },
+    "core_objective": { "type": "string", "minLength": 1 },
+    "non_negotiables": {
+      "type": "array",
+      "items": { "type": "string" },
+      "minItems": 3,
+      "maxItems": 5
+    },
+    "model": {
+      "oneOf": [
+        { "type": "string", "enum": ["claude-opus-4-6", "claude-sonnet-4-6", "claude-haiku-4-5-20251001"] },
+        { "type": "object", "required": ["model_policy"], "properties": { "model_policy": { "const": "depth-routed" } } }
+      ]
+    },
+    "system": { "type": "string", "minLength": 1 },
+    "environment_id": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+    "credential_refs": {
+      "type": "array",
+      "items": { "type": "string", "pattern": "^[a-z0-9-]+:[a-z0-9_]+$" },
+      "default": []
+    },
+    "tools": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["type", "permission_policy"],
+        "properties": {
+          "type": { "type": "string", "enum": ["bash", "edit_write", "mcp_toolset", "agent_toolset_20260401"] },
+          "permission_policy": {
+            "type": "object",
+            "required": ["type"],
+            "properties": { "type": { "enum": ["always_allow", "ask_user", "deny"] } }
+          },
+          "scope": {
+            "oneOf": [
+              { "type": "string" },
+              { "type": "array", "items": { "type": "string" } }
+            ]
+          },
+          "mcp_server_name": { "type": "string" }
+        }
+      }
+    },
+    "skills": { "type": "array", "items": { "type": "string" } },
+    "tools_denied": { "type": "array", "items": { "type": "string" }, "minItems": 1 },
+    "pipeline": { "type": "array", "items": { "type": "string" } },
+    "inter_agent_protocol": {
+      "type": "object",
+      "properties": {
+        "reference": { "type": "string" },
+        "role_in_discussion": { "type": "string" },
+        "discussion_persistence_path": { "type": "string" }
+      }
+    },
+    "output_contract": {
+      "type": "object",
+      "required": ["format", "destination"],
+      "properties": {
+        "format": { "type": "string", "enum": ["markdown", "json", "yaml"] },
+        "destination": { "type": "string", "pattern": "^[^\\0]+$" },
+        "metadata_fields": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "blueprint_derived_from": { "type": "object", "additionalProperties": { "type": "string" } },
+    "blueprint_stability_metric": {
+      "type": "object",
+      "properties": {
+        "week_0_baseline": { "type": "string" },
+        "success_criterion": { "type": "string" },
+        "measurement": { "type": "string" }
+      }
+    }
+  },
+  "additionalProperties": false
+}
+```
+
+### 13.2 Validator 實作要求
+
+- **位置**：`~/.claude/hooks/modules/blueprint-validator.js`（新建，S7 milestone）
+- **Trigger**：
+  - PreToolUse:Edit/Write 若 target path 符合 `~/.claude/blueprints/*.yaml` → block 若 schema invalid
+  - `POST /api/agents` request body → 422 若 invalid
+  - 孵化器 spawn 前 → `incubation.spawn_failed` with reason_code `blueprint-schema-invalid` 若 invalid
+- **錯誤訊息**：指向違反欄位 + JSON Pointer path + 修復建議
+
+### 13.3 nc UI 即時驗證（Screen 1.1b/1.3/1.4 對應）
+
+- nc editor 載 schema 即時 highlight 錯誤欄
+- `Edit in IDE` 按鈕前必驗（避免 persist invalid yaml 到 git）
+- Error 顯示對齊 reason_code enum（§6）
+
+## 14. xd-xa8y 補齊驗收 checklist
+
+- ✅ §5 Blueprint two-tier schema 完整欄位定義 → §2 + §3.x（tier 1 canonical + tier 2 nova_extensions）
+- ✅ §3.3 Environment 物件完整定義 → §3.3 + §3.3.1~3.3.3（含 schema + CRUD API + binding rules）
+- ✅ §3.4.5 Credential Vault 完整定義 → §3.4.5 + §3.4.5.1（含 CRUD + 敏感紀律 + event redact）
+- ✅ 四物件 lifecycle (created/updated/deleted/bound/unbound) → §12 Lifecycle Event Catalog
+- ✅ Blueprint validation schema (JSON Schema 可執行) → §13
+
+**「有這份 SDD 就能開工實作」驗收**：tier 1/tier 2 yaml schema + JSON Schema validator + Environment/Vault CRUD API + lifecycle 25 events 全節點定義完成。剩餘實作細節（hook producer / S7 validator / Swift UI Vault Keychain Binding）各自走 executor dispatch。
