@@ -255,3 +255,16 @@ clarifying_questions:
   - Manager 彙整 Round 2 時是否同意以「v0.5 踩坑」作為六類紀律合法性的實例證據？
   - SDD-5 memstore 走 HTTP API (ns) 還是 MCP client-local tool (nb) — 需 vision decision
 ```
+
+### Round 2 後續 — 接 nc 挑戰 xd-if2y
+
+nc 指出更精準的兩層分類，**nb 完全同意**：
+
+| 層次 | 分類 | 理由 |
+|---|---|---|
+| **L3 孵化器 skill 容器本身** | 🟢 Additive | 新 skills/l3-incubator/ 不取代既有 skill 路徑 |
+| **孵化產物 L4 agent 進入全域池** | 🟣 Experiment → 🟡 Parallel → 🔴 Swap | 每個孵化出的 agent 是新能力，需 eval 驗 blueprint 合規 + event log 追蹤 tools_denied 違規 + shadow 跑 N 次無誤才 promote |
+
+這是 nb 原 Round 2 修正的精確化版 — 我籠統說「Gap A 漸進」，nc 拆成容器 vs 內容物讓紀律框架能同時守「skill 存在性」和「L4 agent 生命週期」。
+
+**採納，更新 verdict**：Gap A 兩層分類。
