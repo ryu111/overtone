@@ -1,5 +1,5 @@
 # 專案索引
-> 自動產生於 2026-04-15
+> 自動產生於 2026-04-16
 
 ## 元件目錄
 
@@ -53,7 +53,7 @@
 
 ---
 
-### Scripts（68）
+### Scripts（69）
 
 | 名稱 | 簡述 |
 |------|------|
@@ -122,6 +122,7 @@
 | spec-tasks | 本地任務管理模組（CLI 入口 + re-export） |
 | tool-matcher | 意圖→工具語意匹配：給定任務描述，從 tool-registry 推薦工具組合 |
 | tool-registry | 工具索引：掃描 5 種工具來源，建立統一查詢索引 |
+| vault-manager | Credential Vault CRUD + 敏感域紀律 |
 | wake-sessions | 一鍵恢復 pinned session |
 | wrapup | session 收尾編排器（極簡） |
 | wrapup-marker | session 收尾 marker 讀寫 |
