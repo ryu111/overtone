@@ -75,7 +75,7 @@
 | daemon-utils | daemon 基礎設施共用函式 |
 | daily-logger | 每日日誌聚合器 |
 | decision | Phase 2 模型決策輔助函式 |
-| distillation-agent | Phase 4 蒸餾循環 MVP |
+| distillation-agent | Phase 4 蒸餾循環 |
 | enforcement-health | Feedback Enforcement Meta-enforcement（Phase 5） |
 | error-analyzer | hook error 聚類 + 去重 + 本地任務建立 |
 | evolution | 進化引擎統一 CLI |
@@ -163,18 +163,12 @@
 
 ---
 
-### 待做（8）
+### 待做（2）
 
 | 任務 | 類型 | 優先 | 深度 | 建立時間 |
 |------|------|:----:|:----:|---------|
-| D1-Log 定時清除 — dispatch-metrics 553K + hook-errors 199K 整合進 distillation daily rotate | 功能 | P2 | D1 | 2026-04-16 |
-| D1-hook-errors-歷史資料遷移-tmp合併至-claude-data | 功能 | P2 | D1 | 2026-04-16 |
-| D1-Phase-3-Method-X-Batch-C-元件核心類-5-rules-薄化-目標≤900行 | 功能 | P2 | D1 | 2026-04-16 |
-| D0-wrapup-guard 實機觸發驗收 — pipe stdin 確認 template literal fix 有效 | 功能 | P2 | D1 | 2026-04-16 |
-| D2-剩餘 7 個 failing tests 根因修復 — peer-discussion/benchmark-winner/深度路由/buildEntry | 功能 | P2 | D1 | 2026-04-16 |
-| D1-distillation-agent.js LaunchAgent 實作 — daily 腳本蒸餾 reflections+errors 寫入 vault | 功能 | P2 | D1 | 2026-04-16 |
-| D1-wrapup-guard-SessionEnd-sub-agent-filter-補測試-2個case | 功能 | P2 | D1 | 2026-04-16 |
-| D2-distillation-CronCreate-改macOS-LaunchAgent-永久方案 | 功能 | P2 | D1 | 2026-04-16 |
+| undefined | undefined | — | — | 2026-04-17 |
+| undefined | undefined | — | — | 2026-04-17 |
 
 ---
 

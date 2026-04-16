@@ -287,8 +287,9 @@ describe('模組職責分離', () => {
     expect(result.decision).toBe('allow');
   });
 
-  test('context-injector 原始碼包含 18 個 inject 函式', () => {
-    const src = readFileSync(join(homedir(), '.claude/hooks/modules/context-injector.js'), 'utf-8');
+  test('inject-functions.js 包含 18 個 inject 函式（context-injector.js 拆分後的新位置）', () => {
+    // inject* 函式已拆至 inject-functions.js，context-injector.js 只保留 on handlers
+    const src = readFileSync(join(homedir(), '.claude/hooks/modules/inject-functions.js'), 'utf-8');
     const injectFns = src.match(/function inject\w+/g) || [];
     expect(injectFns.length).toBe(18);
     expect(src).toContain('function injectBriefing');
