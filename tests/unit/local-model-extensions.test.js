@@ -287,22 +287,29 @@ describe('模組職責分離', () => {
     expect(result.decision).toBe('allow');
   });
 
-  test('inject-functions.js 包含 18 個 inject 函式（context-injector.js 拆分後的新位置）', () => {
-    // inject* 函式已拆至 inject-functions.js，context-injector.js 只保留 on handlers
-    const src = readFileSync(join(homedir(), '.claude/hooks/modules/inject-functions.js'), 'utf-8');
-    const injectFns = src.match(/function inject\w+/g) || [];
-    expect(injectFns.length).toBe(18);
-    expect(src).toContain('function injectBriefing');
-    expect(src).toContain('function injectLearnerContext');
-    expect(src).toContain('function injectJudgeContext');
-    expect(src).toContain('function injectHookErrors');
-    expect(src).toContain('function injectImprovements');
-    expect(src).toContain('function injectCapabilityBoundary');
-    expect(src).toContain('function injectInstinctContext');
-    expect(src).toContain('function injectPendingDecisions');
-    expect(src).toContain('function injectSessionAwareness');
-    expect(src).toContain('function injectAutoDriveContext');
-    expect(src).toContain('function injectComplianceTopViolations');
+  test('inject-functions.js 是 barrel（0 個 function，re-export 18 個 inject 函式）', () => {
+    // inject* 函式已拆至 4 個子模組，inject-functions.js 只做 barrel re-export
+    const barrel = readFileSync(join(homedir(), '.claude/hooks/modules/inject-functions.js'), 'utf-8');
+    const barrelFns = barrel.match(/^export function /gm) || [];
+    expect(barrelFns.length).toBe(0);  // barrel 不含任何 function 定義
+
+    // 各子模組含正確函式
+    const session = readFileSync(join(homedir(), '.claude/hooks/modules/inject-session-context.js'), 'utf-8');
+    expect(session).toContain('function injectBriefing');
+    expect(session).toContain('function injectSessionAwareness');
+    expect(session).toContain('function injectAutoDriveContext');
+
+    const quality = readFileSync(join(homedir(), '.claude/hooks/modules/inject-quality-context.js'), 'utf-8');
+    expect(quality).toContain('function injectJudgeContext');
+    expect(quality).toContain('function injectHookErrors');
+    expect(quality).toContain('function injectImprovements');
+    expect(quality).toContain('function injectCapabilityBoundary');
+    expect(quality).toContain('function injectComplianceTopViolations');
+
+    const learning = readFileSync(join(homedir(), '.claude/hooks/modules/inject-learning-context.js'), 'utf-8');
+    expect(learning).toContain('function injectLearnerContext');
+    expect(learning).toContain('function injectInstinctContext');
+    expect(learning).toContain('function injectPendingDecisions');
   });
 
   test('improvements JSONL 可被正確解析', () => {
