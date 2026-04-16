@@ -414,4 +414,158 @@ Obsidian 不創造新問題，它解決一個既有問題：**Layer 3 的空缺�
 
 ---
 
-*nb 撰寫於 2026-04-16，作為 xd-libu 回應*
+## 十一、Manager 深度研究整合（xd-115c 補充）
+
+*以下整合 Manager WebSearch agent 的業界研究發現，回答四個具體問題。*
+
+---
+
+### 11.1 對 Nova 的具體架構建議（不只是 rules fat 放哪裡）
+
+Manager 的研究確認：**Nova 已有正確的記憶架構骨架，缺的是「蒸餾循環」**。
+
+#### 現有架構對應
+
+業界的三類記憶對應 Nova 現有元件：
+
+| 記憶類型 | 業界定義 | Nova 現有元件 | 健康度 |
+|---------|---------|-------------|--------|
+| Episodic（情節記憶）| 有時序的具體事件 | `reflections.jsonl`, `decisions.jsonl`, `data/hook-errors.jsonl` | ✅ 存在，但**無消費者**——只寫不讀 |
+| Semantic（語意記憶）| 提煉後的通用知識 | `skills/`, `rules/` | ✅ 存在，但**靠人工更新** |
+| Procedural（程序記憶）| 執行動作的 SOP | hooks/, 操作型 skills/ | ✅ 存在 |
+
+**核心缺口**：沒有 Episodic → Semantic 的自動蒸餾管道。reflections.jsonl 記錄了踩坑和反思，但從未自動更新對應的 skill 或 rule。這導致：
+1. 同樣的錯誤可能多次記錄進 reflections.jsonl，但 skill 沒有相應強化
+2. decisions.jsonl（989KB）只是 append-only 日誌，沒有被提煉成可檢索的知識
+
+#### 補全後的四層架構
+
+```
+Layer 0 (Procedural)   Layer 1 (Semantic-rules)   Layer 2 (Semantic-skills)   Layer 3 (Episodic)
+┌──────────────────┐   ┌────────────────────────┐  ┌──────────────────────┐   ┌─────────────────────┐
+│ hooks/ (自動)    │   │ CLAUDE.md + rules/     │  │ skills/ (on-demand)  │   │ Obsidian vault/      │
+│ 每次 event 觸發  │   │ MUST/NEVER stubs       │  │ 決策樹、工作流        │   │ incidents/ 踩坑記錄  │
+│ 程序紀律保護     │   │ 指向 skills + vault    │  │ 指向 vault 背景      │   │ decisions/ 決策史    │
+└──────────────────┘   └────────────────────────┘  └──────────────────────┘   └─────────────────────┘
+                              ↑                              ↑                          |
+                              └──────────── 蒸餾循環 ────────┘                         |
+                              reflections.jsonl + hook-errors → Agent 每週提煉 → 更新 rules/skills
+```
+
+---
+
+### 11.2 蒸餾循環（Distillation Loop）Nova 應如何實作
+
+#### 原型：Google Memory Agent Pattern（業界驗證方案）
+
+Manager 研究的三 agent 模式（取代 Vector DB）：
+
+| Agent | 職責 | Nova 對應 |
+|-------|------|----------|
+| IngestAgent | 摘要 + importance score → SQLite | 現有 `wrapup.js` 的收尾邏輯（已每次 session 執行） |
+| ConsolidateAgent | 跨記憶找 pattern | **缺：需要新建** |
+| QueryAgent | 250K context 語意推理 | Claude 本身（已足夠） |
+
+#### Nova 蒸餾循環實作建議
+
+**最小可行版（MVP）**：
+
+```
+trigger: weekly cron（或 nova session wrapup 時帶上 --consolidate flag）
+input: reflections.jsonl 最近 30 天 + hook-errors.jsonl 最近 30 天
+agent: haiku（成本低）
+task:
+  1. 找出重複出現 ≥ 3 次的 pattern（相同 trigger_type + 相似 conclusion）
+  2. 對每個 pattern 判斷：已有對應 rule/skill 強化？
+  3. 輸出蒸餾報告 → data/distillation-report-YYYY-MM-DD.md
+  4. 有未覆蓋的 pattern → cross-dispatch Manager 決定是否加 rule/skill
+```
+
+**判斷「是否值得蒸餾」的 importance score 標準**：
+- 觸發次數 ≥ 3 = 值得提取
+- 類型為 `correction`（使用者糾正）= 優先
+- 類型為 `autonomous`（AI 自主發現）= 次要
+
+這個蒸餾循環是 **Nova 缺的最重要的機制**，比 rules/ 瘦身更根本——rules/ 瘦身只解決現有 context 過肥，蒸餾循環才是讓 nova 隨時間自動強化的核心。
+
+---
+
+### 11.3 Vault 目錄結構（對應 Nova 現有元件的完整版）
+
+在第五節的基礎上，整合業界 three-tier vault 結構：
+
+```
+~/obsidian-vault/nova/
+│
+├── README.md                    # MOC 入口 + AI 讀取指南（解決「AI 知道讀哪個檔案」問題）
+├── AGENTS.md                    # vault schema 手冊（讓 AI 知道各目錄用途，300 行以內）
+│
+├── working/                     # < 48h 的進行中筆記（對應業界 working 層）
+│   └── session-YYYY-MM-DD.md    # 每次 session wrapup 自動建立
+│
+├── episodic/                    # 有時序的事件記錄（業界 episodic 層）
+│   ├── incidents/               # xd-xxx 事件記錄（從 rules/ 動機段抽出）
+│   │   ├── xd-2c4m.md
+│   │   ├── xd-ctz8.md
+│   │   └── ...
+│   ├── reflections-archive/     # reflections.jsonl 蒸餾後的月度歸檔
+│   │   └── 2026-04-reflections.md
+│   └── decisions-archive/       # decisions.jsonl 重要決策歸檔（≥ importance 3）
+│
+├── semantic/                    # 提煉後的通用知識（業界 semantic 層）
+│   ├── rules-background/        # rules/ 動機段落的家
+│   ├── architecture-decisions/  # ADR（架構決策記錄）
+│   └── component-history/       # 元件演進故事
+│
+└── discussions/                 # spec/討論/ 完成後的歸檔
+    └── ...
+```
+
+**AGENTS.md 的重要性**：業界驗證的三種「AI 知道讀哪個檔案」解法中，`AGENTS.md` 對 Nova 最適合——它是 vault root 的 schema 手冊，放在 CLAUDE.md 中加一行 pointer 就能讓 AI 知道「有問題先讀 `~/obsidian-vault/nova/AGENTS.md`」。
+
+---
+
+### 11.4 優先試驗路徑（最快驗證）
+
+Manager 問：先做什麼最快驗證效益？
+
+**Week 1 試驗（3-4 小時工作量）**：
+
+1. **建立 vault 結構 + AGENTS.md**（1 小時）
+   - 在 `~/obsidian-vault/nova/` 建立目錄結構
+   - 寫 AGENTS.md（說明各目錄用途）
+   - 在 CLAUDE.md 加一行：`知識背景庫：~/obsidian-vault/nova/（先讀 AGENTS.md）`
+
+2. **移入 3 個 incident 記錄**（1 小時）
+   - 把 `xd-2c4m`、`xd-ctz8`、`xd-e71m` 的動機段從對應 rules/ 移到 vault incidents/
+   - 3 個 rules 的對應段落換成 `見 ~/obsidian-vault/nova/episodic/incidents/xd-2c4m.md`
+   - **驗收**：問 AI「為什麼 hook 不能用 universal threshold」，看是否能 Read vault 並正確回答
+
+3. **跑一次 architecture.test.js + behavioral eval**（1 小時）
+   - 確認規則條款完整保留，背景移出後 AI 行為不退化
+
+**成功判準**：AI 能正確 Read vault incident 並回答「為什麼」問題，且 3 個 rules 的 MUST/NEVER 條款都仍然生效（behavioral eval 通過）。
+
+**若試驗成功，再決定**：
+- 是否全面推進 29 個 rules 索引化（rules fat → vault，k59i Phase 2）
+- 是否建立蒸餾循環 agent（每週 haiku 跑一次 consolidation）
+
+---
+
+### 11.5 MEMORY.md 問題修正
+
+Manager 研究指出：MEMORY.md 同時服務「人讀 MOC」和「AI 讀 schema」兩個目的，業界建議分開。
+
+**Nova 的修正方案**：
+
+| 目的 | 目前 | 建議 |
+|------|------|------|
+| AI 讀取記憶索引 | MEMORY.md（200 行） | 維持，但只保留「AI 在 session 中需要的 live context」 |
+| 人工瀏覽知識圖 | MEMORY.md 同一個檔案 | → 遷至 vault README.md（Obsidian graph view 更好） |
+| feedback 歷史 | memory/feedback_*.md | → 遷至 vault episodic/incidents/ |
+
+修正後 MEMORY.md 瘦身到 ≤100 行，只含 AI 當前 session 需要的 live reference。
+
+---
+
+*補充於 2026-04-16，整合 Manager WebSearch 研究（xd-115c）*
