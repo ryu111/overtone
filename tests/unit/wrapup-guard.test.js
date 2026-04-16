@@ -59,12 +59,15 @@ describe("wrapup-guard: SessionEnd handler", () => {
 
 describe("wrapup-guard: SessionEnd sub-agent filter（xd-wrapup-subagent）", () => {
 	it("sub-agent session（不等於 current-session-id）→ allow 且不記錄錯誤", async () => {
-		const { existsSync, readFileSync, writeFileSync, mkdirSync, unlinkSync } = await import("node:fs");
-		const { join, dirname } = await import("node:path");
+		const { existsSync, readFileSync, writeFileSync } = await import("node:fs");
+		const { join } = await import("node:path");
 		const { homedir } = await import("node:os");
 
 		const currentSessionFile = join(homedir(), ".claude/data/current-session-id");
 		const errorLog = join(homedir(), ".claude/data/hook-errors.jsonl");
+
+		// 保存原始值（測試後還原，不污染真實 session）
+		const originalSessionId = existsSync(currentSessionFile) ? readFileSync(currentSessionFile, "utf-8") : "";
 
 		// 準備：寫入主 session id
 		const mainId = "main-session-" + Date.now();
@@ -90,28 +93,41 @@ describe("wrapup-guard: SessionEnd sub-agent filter（xd-wrapup-subagent）", ()
 		}
 		expect(linesAfter).toBe(linesBefore);
 
-		// 清理：還原 currentSessionFile（避免污染後續測試）
-		writeFileSync(currentSessionFile, "");
+		// 清理：還原原始值（不清空，避免污染真實 session 的 session_id）
+		writeFileSync(currentSessionFile, originalSessionId);
 	});
 
 	it("主 session（等於 current-session-id）無 marker → 記錄 wrapup_missed", async () => {
-		const { existsSync, readFileSync, writeFileSync } = await import("node:fs");
+		const { existsSync, readFileSync, writeFileSync, unlinkSync } = await import("node:fs");
 		const { join } = await import("node:path");
 		const { homedir } = await import("node:os");
 
 		const currentSessionFile = join(homedir(), ".claude/data/current-session-id");
+		const markerFile = join(homedir(), ".claude/data/last-wrapup.json");
 		const errorLog = join(homedir(), ".claude/data/hook-errors.jsonl");
+
+		// 保存原始值（測試後還原）
+		const origSessionId = existsSync(currentSessionFile) ? readFileSync(currentSessionFile, "utf-8") : "";
+		const origMarker = existsSync(markerFile) ? readFileSync(markerFile, "utf-8") : null;
 
 		// 準備：mainId 與本次 session_id 相同
 		const mainId = "main-session-match-" + Date.now();
 		writeFileSync(currentSessionFile, mainId);
+
+		// 準備：確保 marker 不存在或為過期狀態（讓 isRecent() = false）
+		// 寫入 1 小時前的 stale marker（不同 session_id），避免 isRecent 判定提前放行
+		writeFileSync(markerFile, JSON.stringify({
+			session_id: "stale-session-id",
+			timestamp: new Date(Date.now() - 3_600_000).toISOString(),
+			status: "complete",
+		}));
 
 		let linesBefore = 0;
 		if (existsSync(errorLog)) {
 			linesBefore = readFileSync(errorLog, "utf-8").split("\n").filter(Boolean).length;
 		}
 
-		// 執行：main session（同 id），無 marker → 應記錄 wrapup_missed
+		// 執行：main session（同 id），無近期 marker → 應記錄 wrapup_missed
 		const r = on.SessionEnd({ session_id: mainId });
 		expect(r.decision).toBe("allow");
 
@@ -122,7 +138,12 @@ describe("wrapup-guard: SessionEnd sub-agent filter（xd-wrapup-subagent）", ()
 		}
 		expect(linesAfter).toBe(linesBefore + 1);
 
-		// 清理
-		writeFileSync(currentSessionFile, "");
+		// 清理：還原原始值
+		writeFileSync(currentSessionFile, origSessionId);
+		if (origMarker !== null) {
+			writeFileSync(markerFile, origMarker);
+		} else {
+			try { unlinkSync(markerFile); } catch {}
+		}
 	});
 });
