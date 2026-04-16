@@ -245,4 +245,86 @@ scenario C（最安全）：
 
 ---
 
-*nb 撰寫於 2026-04-16，作為 xd-8gzf Round 2 回應*
+## 補充：Obsidian + CLI 方案分析（xd-8h36 補問）
+
+> 使用者提醒：Option C（Obsidian + CLI）是解決「執行力下降」的關鍵替代方案。
+
+### Obsidian + CLI 方案說明
+
+- rules/ 保持薄身（只留 MUST/NEVER 條款）
+- 詳細知識/動機/例子移到 Obsidian vault `.md` 檔（如 `~/obsidian-vault/nova/`）
+- Claude 需要時直接用 Read tool 讀取（不需 MCP，CLI 可直讀）
+- rules 的行為護欄仍 always-in-context；詳細內容從 context 移出
+
+### 與「方案 X（薄化 + skills）」的比較
+
+| 維度 | 方案 X（rules + skills） | Obsidian + CLI |
+|------|------------------------|----------------|
+| 知識 SoT 位置 | `~/.claude/skills/` | `~/obsidian-vault/nova/` |
+| 觸發機制 | AI 讀 rule pointer → 決定讀 skill | AI 讀 rule pointer → 決定 Read vault 檔 |
+| trigger 可靠度 | 60-70% | 60-70%（**完全相同**） |
+| 使用者可維護性 | 需 CLI 或編輯器 | **Obsidian app 圖形介面 + graph view** |
+| 版本控制 | git（已在 nova repo） | 需 git 外掛或另設 repo |
+| 規則瘦身效果 | 相同 | 相同 |
+| 增加的依賴 | 無 | Obsidian app（使用者用） |
+| 跨 session 穩定性 | 路徑固定（~/.claude） | 路徑需穩定（vault 不可移動） |
+
+**本質評估**：兩個方案在 Claude 視角**完全等效** — 都是「rule stub 指向外部檔案 → AI 讀 Read」。差別只在**使用者體驗**，不在執行效果。
+
+### Obsidian 的真正優勢在哪裡？
+
+1. **Graph view**：visualize rules 之間的關聯（哪個 rule 引用哪個 skill/document）
+2. **手動維護便利**：不需要 CLI，直接在 Obsidian 編輯知識內容
+3. **Dataview 查詢**：可用 Obsidian Dataview 建立 rules 的「最後修改 / 觸發頻率 / 分類」視圖
+4. **外部 SoT 隔離**：知識內容和 nova codebase 分離，修改知識不影響 git history
+
+### Obsidian 的潛在問題
+
+1. **路徑耦合**：rules 中的 pointer 需要固定絕對路徑（`~/obsidian-vault/nova/xxx.md`），vault 移動需全部更新
+2. **git 版本控制缺失**：預設沒有 git，需要手動設定 obsidian-git 外掛，否則知識內容沒有版本追蹤
+3. **skills/ 已承擔此功能**：現有 `~/.claude/skills/` 目錄已是「結構化知識 + CLI 可讀」的 SoT。加 Obsidian = 第三個知識位置，可能造成 scatter（CLAUDE.md → rules/ stub → Obsidian/skills?）
+
+### nb 立場（補充）
+
+Obsidian + CLI 方案**技術可行**，且對使用者的 UX 有真實好處（graph view、視覺化維護）。
+
+但對 Claude 執行力本身：**與方案 X 完全等效，無優劣**。
+
+nb 的建議：
+
+- 若使用者希望**自己更容易維護知識內容**（視覺化、搜尋、連結圖）→ Obsidian 是好選擇，可把知識段落移到 Obsidian，rule 中只留 `詳見 ~/obsidian-vault/nova/xxx.md`
+- 若主要目標是**減少 context 量體** → 方案 X（rules 薄化 + skills）和 Obsidian 效果相同，用已有的 skills/ 就夠
+- 兩方案**可以並行**：規則薄化 + 知識移 Obsidian，同時保留 skills/ 做 procedure/workflow 類知識
+
+### rules 薄身到什麼程度不影響執行力？
+
+**安全最小化閾值**（per rule file）：
+
+```
+標題（1行）
+觸發條件/適用範圍（1行）
+MUST/NEVER/SHOULD 條款（3-8行）
+指向詳細文件（1行）
+= 6-11 行 per rule
+```
+
+**可以安全移出的「fat」**：
+
+| 段落類型 | 是否影響執行力 | 建議 |
+|---------|-------------|------|
+| 動機/背景 | ❌ 不影響 | 移出 |
+| 踩坑記錄（過去事件）| ❌ 不影響 | 移出 |
+| 反例 vs 正例 table | ⚠️ 輕微（幫助理解但非必要）| 移出（pointer 留） |
+| 派生來源（xd-xxx）| ❌ 不影響 | 移出 |
+| 程式化守護說明 | ❌ 不影響（hook 自動守護）| 移出 |
+| **MUST/NEVER 條款本身** | ✅ **直接影響** | **必須留** |
+| **觸發條件**（何時適用）| ✅ 影響 | **必須留** |
+
+以現有 29 個 rules 平均 40 行計算：
+- Fat 估計：每檔 25-30 行（動機 + 踩坑 + 範例 + 派生）
+- 安全最小：每檔 8-12 行
+- 實際節省：每檔 ~28 行 × 29 = **812 行可移出（70%）**
+
+---
+
+*補充於 2026-04-16，作為 xd-8h36 回應（接 xd-8gzf Round 2）*
