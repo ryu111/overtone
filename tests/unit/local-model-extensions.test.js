@@ -289,24 +289,24 @@ describe('模組職責分離', () => {
 
   test('inject-functions.js 是 barrel（0 個 function，re-export 18 個 inject 函式）', () => {
     // inject* 函式已拆至 4 個子模組，inject-functions.js 只做 barrel re-export
-    const barrel = readFileSync(join(homedir(), '.claude/hooks/modules/inject-functions.js'), 'utf-8');
+    const barrel = readFileSync(join(homedir(), '.claude/hooks/lib/inject-functions.js'), 'utf-8');
     const barrelFns = barrel.match(/^export function /gm) || [];
     expect(barrelFns.length).toBe(0);  // barrel 不含任何 function 定義
 
     // 各子模組含正確函式
-    const session = readFileSync(join(homedir(), '.claude/hooks/modules/inject-session-context.js'), 'utf-8');
+    const session = readFileSync(join(homedir(), '.claude/hooks/lib/inject-session-context.js'), 'utf-8');
     expect(session).toContain('function injectBriefing');
     expect(session).toContain('function injectSessionAwareness');
     expect(session).toContain('function injectAutoDriveContext');
 
-    const quality = readFileSync(join(homedir(), '.claude/hooks/modules/inject-quality-context.js'), 'utf-8');
+    const quality = readFileSync(join(homedir(), '.claude/hooks/lib/inject-quality-context.js'), 'utf-8');
     expect(quality).toContain('function injectJudgeContext');
     expect(quality).toContain('function injectHookErrors');
     expect(quality).toContain('function injectImprovements');
     expect(quality).toContain('function injectCapabilityBoundary');
     expect(quality).toContain('function injectComplianceTopViolations');
 
-    const learning = readFileSync(join(homedir(), '.claude/hooks/modules/inject-learning-context.js'), 'utf-8');
+    const learning = readFileSync(join(homedir(), '.claude/hooks/lib/inject-learning-context.js'), 'utf-8');
     expect(learning).toContain('function injectLearnerContext');
     expect(learning).toContain('function injectInstinctContext');
     expect(learning).toContain('function injectPendingDecisions');

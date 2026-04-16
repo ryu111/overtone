@@ -77,7 +77,7 @@ const {
 	injectComplianceTopViolations,
 	injectAutoDriveContext,
 	DATA_DIR: MODULE_DATA_DIR,
-} = await import(join(homedir(), ".claude/hooks/modules/inject-functions.js"));
+} = await import(join(homedir(), ".claude/hooks/lib/inject-functions.js"));
 
 // ─── readText 工具函式 ────────────────────────────────────────────────────────
 
