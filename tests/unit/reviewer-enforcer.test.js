@@ -7,18 +7,22 @@ import {
 	loadState,
 	saveState,
 } from "../../../../.claude/hooks/modules/reviewer-enforcer.js";
-import { homedir } from "node:os";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { unlinkSync, existsSync } from "node:fs";
+import { mkdtempSync, rmSync } from "node:fs";
 
 const SID = "reviewer-test-" + Date.now();
-const STATE_PATH = join(homedir(), ".claude/state", `reviewer-counts-${SID}.json`);
+let tmpDir;
 
 beforeEach(() => {
-	try { unlinkSync(STATE_PATH); } catch {}
+	// 用 tmpDir + env var 隔離，避免 reviewer-enforcer-dedup.test.js 設定的 NOVA_REVIEWER_STATE_DIR
+	// 污染 STATE_DIR 常數（ESM 模組緩存問題 → getStateDir() getter 修復）
+	tmpDir = mkdtempSync(join(tmpdir(), "rev-test-"));
+	process.env.NOVA_REVIEWER_STATE_DIR = tmpDir;
 });
 afterEach(() => {
-	try { unlinkSync(STATE_PATH); } catch {}
+	delete process.env.NOVA_REVIEWER_STATE_DIR;
+	try { rmSync(tmpDir, { recursive: true, force: true }); } catch {}
 });
 
 describe("parseCompleteNotification", () => {

@@ -118,7 +118,8 @@ describe("hashEntry + isDuplicate", () => {
 
 describe("buildEntry", () => {
 	it("預設 trigger_type 為 autonomous", () => {
-		const e = buildEntry({}, { 結論: ["a"], 行動: ["b"] }, "hash1", new Date("2026-04-13T00:00:00Z"));
+		// 用可驗證行動（rules/ path）使 allProse=false → resolved_at=null（xd-nvuj Option D 後行為）
+		const e = buildEntry({}, { 結論: ["a"], 行動: ["rules/核心/深度路由.md 已確認"] }, "hash1", new Date("2026-04-13T00:00:00Z"));
 		expect(e.trigger_type).toBe("autonomous");
 		expect(e.ts).toBe("2026-04-13T00:00:00.000Z");
 		expect(e.resolved_at).toBeNull();
