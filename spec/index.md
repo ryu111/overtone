@@ -48,7 +48,7 @@
 
 ---
 
-### Scripts（70）
+### Scripts（71）
 
 | 名稱 | 簡述 |
 |------|------|
@@ -66,6 +66,7 @@
 | collect | 收尾第一階段：確定性蒐證 |
 | component-health | 元件維護（文件搬遷、lockfile 修復、lifecycle、capability probe） |
 | component-scan | Phase 0a (xd-ycmm) |
+| context-cost-baseline | 實測 SessionStart 注入成本 + cache economics 三方案對比 |
 | cross-session-probe | 跨 Session 能力校準 |
 | daemon-utils | daemon 基礎設施共用函式 |
 | daily-logger | 每日日誌聚合器 |
