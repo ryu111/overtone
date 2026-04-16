@@ -25,7 +25,7 @@ R7 接 Anthropic MA 官方示範（@boxaaron 2min demo）+ R8 nb 盤點揭露 No
 **Blueprint schema 重大修正**（從本 Round 生效）：
 - `mcp_servers` **移出 tier 1**，改為 Environment 物件屬性
 - Blueprint tier 1 改放 `environment_id`（reference）
-- Credentials **永不放 Blueprint**，另建 Credential Vault 物件，Blueprint 用 `credential_refs: [<vault_id>:<key>]` 引用
+- Credentials **永不放 Blueprint**，另建 Credential Vault 物件，Blueprint 用 `credential_refs: [vault://<vault_id>/<key>]` 引用
 
 此修正比官方 MA agent.yaml 更結構化（官方 demo 也把 credential 拉出但 agent.yaml schema 未明示）。
 
@@ -45,7 +45,7 @@ system: |                         # 必填
   <agent-specific system prompt>
 environment_id: <id>              # 必填（R10+ 修正：mcp_servers 移至 Environment 物件）
 credential_refs:                  # optional（R10+ 新增：引用 Credential Vault）
-  - <vault_id>:<key>
+  - vault://<vault_id>/<key>
 tools:                            # optional
   - type: bash | edit_write | mcp_toolset | agent_toolset_YYYYMMDD
     permission_policy:
@@ -167,7 +167,7 @@ binding_rules:
 | `GET` | `/api/environments` | 列表 | — |
 | `GET` | `/api/environments/:id` | 單筆 | — |
 | `PATCH` | `/api/environments/:id` | 更新 | `environment.updated` |
-| `DELETE` | `/api/environments/:id` | 刪 | `environment.deleted` |
+| `DELETE` | `/api/environments/:id` | 刪 | `environment.destroyed` |
 | `POST` | `/api/environments/:id/bind` | 綁 agent | `environment.bound` |
 | `POST` | `/api/environments/:id/unbind` | 解綁 | `environment.unbound` |
 
@@ -221,7 +221,7 @@ credential_refs:
   - github-pat:read          # 支援一 Vault 多 key (least-privilege)
 ```
 
-**命名選定**：`credential_refs: [<vault_id>:<key>]` 複合路徑（R13 定案，取代早期 `credential_vault_refs` 僅 vault_id 版本）。理由：一 Vault 可多 key（如 github-pat 同時含 read/write token）+ least-privilege（agent 只取需要 key）+ UI 可簡化只顯 `vault_id` 作 label 隱藏 `:<key>` 尾綴。
+**命名選定**：`credential_refs: [vault://<vault_id>/<key>]` 複合路徑（R13 定案，取代早期 `credential_vault_refs` 僅 vault_id 版本）。理由：一 Vault 可多 key（如 github-pat 同時含 read/write token）+ least-privilege（agent 只取需要 key）+ UI 可簡化只顯 `vault_id` 作 label 隱藏 `:<key>` 尾綴。
 
 #### 儲存策略（R13 nc accept）
 
@@ -451,7 +451,7 @@ Blueprint 完成後的 deploy 路徑：
 |------------|---------|----------------|----------------|
 | `environment.created` | `POST /api/environments` | `environment_id, version, created_by, ts` | `environment_id` |
 | `environment.updated` | `PATCH /api/environments/:id` | `environment_id, version, changed_fields[], ts` | `environment_id` |
-| `environment.deleted` | `DELETE /api/environments/:id` | `environment_id, deleted_by, ts` | `environment_id` |
+| `environment.destroyed` | `DELETE /api/environments/:id` | `environment_id, deleted_by, ts` | `environment_id` |
 | `environment.bound` | `POST /api/environments/:id/bind` | `environment_id, agent_id, bound_by, ts` | `environment_id` |
 | `environment.unbound` | `POST /api/environments/:id/unbind` | `environment_id, agent_id, unbound_by, reason, ts` | `environment_id` |
 
@@ -618,7 +618,7 @@ Blueprint 完成後的 deploy 路徑：
 **nb 答案**：**延遲到 spawn step 3（runtime）解析，但 step 1 blueprint validation 保留「vault 存在性 sanity check」**。
 
 理由：
-- Step 1 blueprint schema 驗證（§13 JSON Schema）不需 vault access — 只校格式（`credential_refs: [vault_id:key]` 字串 pattern 正確）
+- Step 1 blueprint schema 驗證（§13 JSON Schema）不需 vault access — 只校格式（`credential_refs: [vault://<vault_id>/<key>]` 字串 pattern 正確）
 - Step 1 可做**非侵入式 sanity check**：查 `GET /api/vaults/:id` metadata endpoint（不取 value）確認 vault_id 存在 → 若不存在 `blueprint-schema-invalid` 快失敗
 - Step 3 spawn 時才真正透過 `POST /api/vaults/:id/access` 取 value 注入（觸發 Touch ID 授權 / `credential.accessed` event）
 - 好處：使用者 UI edit blueprint 時 nc 可即時提示「vault `box-oauth` 不存在，需先建」；spawn 時避免在 agent runtime 內破碎取值失敗
