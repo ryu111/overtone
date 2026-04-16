@@ -1,0 +1,12 @@
+{
+  "name": "D1-Log 定時清除 — dispatch-metrics 553K + hook-errors 199K 整合進 distillation daily rotate",
+  "type": "功能",
+  "priority": "P2",
+  "depth": "D1",
+  "description": "",
+  "subtasks": [],
+  "created": "2026-04-16T14:08:15.546Z",
+  "claimed": null,
+  "completed": null,
+  "result": null
+}

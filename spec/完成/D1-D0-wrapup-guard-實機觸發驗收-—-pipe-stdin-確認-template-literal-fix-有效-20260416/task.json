@@ -1,0 +1,12 @@
+{
+  "name": "D0-wrapup-guard 實機觸發驗收 — pipe stdin 確認 template literal fix 有效",
+  "type": "功能",
+  "priority": "P2",
+  "depth": "D1",
+  "description": "",
+  "subtasks": [],
+  "created": "2026-04-16T14:08:07.760Z",
+  "claimed": null,
+  "completed": null,
+  "result": null
+}
