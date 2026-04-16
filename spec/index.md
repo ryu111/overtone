@@ -53,7 +53,7 @@
 
 ---
 
-### Scripts（69）
+### Scripts（70）
 
 | 名稱 | 簡述 |
 |------|------|
@@ -75,6 +75,7 @@
 | daemon-utils | daemon 基礎設施共用函式 |
 | daily-logger | 每日日誌聚合器 |
 | decision | Phase 2 模型決策輔助函式 |
+| distillation-agent | Phase 4 蒸餾循環 MVP |
 | enforcement-health | Feedback Enforcement Meta-enforcement（Phase 5） |
 | error-analyzer | hook error 聚類 + 去重 + 本地任務建立 |
 | evolution | 進化引擎統一 CLI |
@@ -162,9 +163,13 @@
 
 ---
 
-### 待做（0）
+### 待做（3）
 
-_目前無待做任務_
+| 任務 | 類型 | 優先 | 深度 | 建立時間 |
+|------|------|:----:|:----:|---------|
+| 調查 wrapup_missed 1338 次根因 — wrapup-guard.js 有效性驗證 | 功能 | P2 | D1 | 2026-04-16 |
+| distillation-agent.js 實際執行 — 寫入 vault 2026-W16 synthesis | 功能 | P2 | D1 | 2026-04-16 |
+| Phase 2 Method X Batch B — 5 rules 薄化（協作類），目標 ≤900 行 | 功能 | P2 | D1 | 2026-04-16 |
 
 ---
 
