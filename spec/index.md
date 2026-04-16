@@ -10,7 +10,7 @@
 
 ---
 
-### Skills（36）
+### Skills（31）
 
 | 名稱 | 簡述 |
 |------|------|
@@ -24,7 +24,6 @@
 | code-review | "PR Review 知識域：四維度結構化審查 + 回饋分級。WHEN: 審查 PR、code review、撰寫審查回饋時使用。NOT: 撰寫新程式碼、deb |
 | commit-convention | "Conventional commit 知識域。WHEN: 撰寫 commit message、判斷 commit 拆分策略、選擇 type/scope 時使 |
 | component-classification | "元件分類框架：Hook/Rule/Skill/CLAUDE.md 四層職責分離方法論。WHEN: 新增規範前判斷歸屬層級、Rule 膨脹需要拆分、釐清 Hoo |
-| config-sot | "常數 drift 偵測與 config 化決策。WHEN: 發現字串/數字散落多處、修 A 漏 B 的 drift bug、設計新 config 檔、giti |
 | craft | "軟體工藝知識域：Nova 製作原則、設計品味、競品基準、程式碼層級設計模式。WHEN: 設計決策品質判斷、競品對標時使用。NOT: 教科書級基礎知識、一般 c |
 | cross-session | "跨 Session 協作知識域。發送跨專案任務、讀取待辦、回報完成的 API 與流程。WHEN: 需要其他專案 session 配合時（改了 API 需要 i |
 | dead-code | "死碼清理知識：knip/depcheck 工具、手動清理策略、安全刪除。WHEN: 清理未使用程式碼、codebase 瘦身時使用。NOT: 功能開發、重構。 |
@@ -34,13 +33,9 @@
 | feedback-loop | "回饋迴圈知識域：成功即進化、自驅任務迴圈、回報與反思的完整協議。WHEN: 完成任務後的反思、自驅任務的監控與排障、品質回報時使用。NOT: 初次任務規劃、架 |
 | harness-invariants | 結構不變式（structural invariants）知識域 — 定義 AI 執行 Edit/Write 時不可違反的隱式約束，由 hooks/modules |
 | local-model-dispatch | "本地模型（g4-26b）角色派發：五種角色 system prompt、work-stealing 並行模式、安全邊界、升降級閾值。WHEN: Main 要用 |
-| model-cascade | 大模型指揮小模型框架。四層架構：Router→Contract→Executor→Feedback Loop。WHEN: 需要多模型協作、任務分配、成本優化時。 |
-| multi-tier-routing | (D, G-tier) 二維路由 + Layer 過濾 + 升級階梯 g→haiku→sonnet→opus + 失敗 3 次升級 + Workflow loo |
-| nova-eval | Nova 認知偏離偵測五層 eval（structural/trigger/behavioral/red-team/trajectory）的選用、觸發、判讀、失 |
 | nova-pm | "產品探索與需求釐清。引導 planner agent 以 PM 角色探索需求、定義範圍、比較方案。WHEN: 需求不明確需要釐清、規格討論前的 PM 探索、D |
 | nova-spec | "產品規格管理。建立、追蹤、歸檔 spec/design 文件。WHEN: 使用者說「寫規格」「提案」「歸檔」或觸發 /spec:propose、/spec:d |
 | nova-test | "測試策略知識域。什麼該測、什麼不該測、怎麼測、何時跑。基於 Testing Trophy + 風險驅動。WHEN: 新增測試、審查測試設計、處理 test f |
-| onboard | "專案掃描與 CLAUDE.md 骨架生成。WHEN: 初次進入新專案、需要產生或補充 CLAUDE.md 時使用。NOT: 已有完整 CLAUDE.md 的日 |
 | os-control | "OS 操控知識域：桌面自動化、系統管理、螢幕截圖、音訊控制、WebSocket 即時通訊。WHEN: 需要作業系統層級操作（非瀏覽器）時使用。NOT: 純程式 |
 | pinchtab | "Chrome 瀏覽器操控 — Pinchtab HTTP API。WHEN: 需要網頁自動化、表單填寫、截圖擷取且 PinchTab 常駐服務（port 98 |
 | pipeline-quality-gate | "multi-tier-loop / g-executor pipeline 的 4 層品質驗證框架。WHEN: 設計或審查 executor/reviewer |
