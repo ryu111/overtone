@@ -1,5 +1,5 @@
 // inject-functions.test.js — inject-functions.js 所有 18 個 inject* 函式的行為測試
-import { describe, test, expect, beforeEach, afterEach } from "bun:test";
+import { describe, test, expect, afterEach } from "bun:test";
 import { mkdirSync, rmSync, writeFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir, homedir } from "node:os";
@@ -76,7 +76,6 @@ const {
 	injectProceduralMemory,
 	injectComplianceTopViolations,
 	injectAutoDriveContext,
-	DATA_DIR: MODULE_DATA_DIR,
 } = await import(join(homedir(), ".claude/hooks/lib/inject-functions.js"));
 
 // ─── readText 工具函式 ────────────────────────────────────────────────────────
