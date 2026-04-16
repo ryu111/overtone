@@ -46,6 +46,16 @@ describe("guards: evaluateBash QUERY 放行", () => {
 		const r = evaluateBash({ cwd: TEST_CWD, tool_input: { command: "git log --oneline -5" } });
 		expect(r.hookSpecificOutput.permissionDecision).toBe("allow");
 	});
+
+	it("git -C ~/.claude status → allow（git -C path 前綴支援）", () => {
+		const r = evaluateBash({ cwd: TEST_CWD, tool_input: { command: "git -C ~/.claude status" } });
+		expect(r.hookSpecificOutput.permissionDecision).toBe("allow");
+	});
+
+	it("git -C /tmp/foo log --oneline → allow（git -C path 前綴 + log）", () => {
+		const r = evaluateBash({ cwd: TEST_CWD, tool_input: { command: "git -C /tmp/foo log --oneline" } });
+		expect(r.hookSpecificOutput.permissionDecision).toBe("allow");
+	});
 });
 
 describe("guards: HARD GATE routing file", () => {

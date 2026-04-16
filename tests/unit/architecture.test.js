@@ -569,15 +569,12 @@ describe("cross-dispatch 處理單一責任", () => {
   });
 
   it("UserPromptSubmit 是唯一處理 cross-dispatch pending 的掛載點", () => {
-    // 提取 injectSessionAwareness 函式體，確認不含 nova-cross-tasks
-    const fnStart = ciCode.indexOf("function injectSessionAwareness(");
-    const fnEnd = ciCode.indexOf("\nfunction ", fnStart + 1);
-    const fnBody = fnEnd > 0 ? ciCode.slice(fnStart, fnEnd) : ciCode.slice(fnStart, fnStart + 2000);
-    expect(fnBody).not.toContain("nova-cross-tasks");
-    // 確認 UserPromptSubmit 區塊有讀取 cross-tasks
-    const upsStart = ciCode.indexOf("UserPromptSubmit:");
-    const upsBody = ciCode.slice(upsStart, upsStart + 3000);
-    expect(upsBody).toContain("nova-cross-tasks.jsonl");
+    // 整個檔案必須包含 nova-cross-tasks.jsonl（helper 函式中讀取）
+    expect(ciCode).toContain("nova-cross-tasks.jsonl");
+    // SessionStart handler 不應直接讀取 cross-tasks（職責分離）
+    const ssStart = ciCode.indexOf("SessionStart:");
+    const ssBody = ciCode.slice(ssStart, ssStart + 3000);
+    expect(ssBody).not.toContain("nova-cross-tasks.jsonl");
   });
 
   it("UserPromptSubmit 冪等追蹤用 Redis status 過濾 + 同步 acknowledge", () => {

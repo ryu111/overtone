@@ -288,6 +288,18 @@ describe("injectCapabilityBoundary", () => {
 		const result = injectCapabilityBoundary();
 		expect(result).toBeNull();
 	});
+
+	test("capability-boundary.json 為無效 JSON 時 stderr 輸出錯誤訊息並回傳 null", () => {
+		const path = join(REAL_DATA_DIR, "capability-boundary.json");
+		writeTestFile(path, "not valid json {{{");
+		let stderrOutput = "";
+		const originalWrite = process.stderr.write.bind(process.stderr);
+		process.stderr.write = (msg) => { stderrOutput += String(msg); return true; };
+		const result = injectCapabilityBoundary();
+		process.stderr.write = originalWrite;
+		expect(result).toBeNull();
+		expect(stderrOutput).toContain("[inject-quality-context]");
+	});
 });
 
 // ─── injectImprovements ───────────────────────────────────────────────────────
@@ -710,5 +722,33 @@ describe("injectAutoDriveContext", () => {
 		expect(result).toBeNull();
 
 		rmSync(fakeNovaMgr, { recursive: true });
+	});
+});
+
+// ─── injectComplianceTopViolations ────────────────────────────────────────────
+
+describe("injectComplianceTopViolations", () => {
+	const BLOCKS_FILE = "/tmp/guard-blocks.jsonl";
+
+	afterEach(() => {
+		try { rmSync(BLOCKS_FILE, { recursive: true }); } catch { /* 不存在 */ }
+	});
+
+	test("guard-blocks.jsonl 不存在時回傳 null", () => {
+		try { rmSync(BLOCKS_FILE, { recursive: true }); } catch { /* 不存在 */ }
+		const result = injectComplianceTopViolations();
+		expect(result).toBeNull();
+	});
+
+	test("guard-blocks.jsonl 為目錄時 stderr 輸出錯誤訊息並回傳 null", () => {
+		try { rmSync(BLOCKS_FILE, { recursive: true }); } catch { /* 不存在 */ }
+		mkdirSync(BLOCKS_FILE);
+		let stderrOutput = "";
+		const originalWrite = process.stderr.write.bind(process.stderr);
+		process.stderr.write = (msg) => { stderrOutput += String(msg); return true; };
+		const result = injectComplianceTopViolations();
+		process.stderr.write = originalWrite;
+		expect(result).toBeNull();
+		expect(stderrOutput).toContain("[inject-quality-context]");
 	});
 });
