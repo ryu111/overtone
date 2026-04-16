@@ -78,17 +78,33 @@ describe("tmux", () => {
     expect(result.isNew).toBe(true);
   });
 
-  test("sendKeys — 送文字 + Enter", async () => {
+  test("sendKeys — 送文字 + Enter（paste-buffer -p + 延遲 + Enter 三步）", async () => {
     const { sendKeys } = await import(TMUX);
     const deps = makeDeps({});
     sendKeys("nova-brain", "echo hello", deps);
     // load-buffer 走 spawnSync（stdin pipe）
     expect(deps.spawnCalls).toHaveLength(1);
     expect(deps.spawnCalls[0].argv).toEqual(["tmux", "load-buffer", "-"]);
-    // paste-buffer + Enter 走 execSync
-    expect(deps.calls).toHaveLength(2);
-    expect(deps.calls[0]).toContain("paste-buffer");
-    expect(deps.calls[1]).toContain("Enter");
+    // execSync 三步：paste-buffer -p、sleep 0.1、send-keys Enter
+    expect(deps.calls).toHaveLength(3);
+    expect(deps.calls[0]).toContain("paste-buffer -p");
+    expect(deps.calls[1]).toBe("sleep 0.1");
+    expect(deps.calls[2]).toContain("Enter");
+  });
+
+  test("sendKeys — Enter 漏送 regression（xd-1776371446495-n2ke）", async () => {
+    const { sendKeys } = await import(TMUX);
+    const deps = makeDeps({});
+    sendKeys("nova-brain", "任意文字", deps);
+    // regression 鎖定：paste-buffer 必須加 -p（bracketed paste），
+    // paste 與 Enter 之間必須有 sleep，Enter 不可緊接 paste（否則被 CLI 當 paste 最末字元）
+    const idxPaste = deps.calls.findIndex((c) => c.includes("paste-buffer"));
+    const idxSleep = deps.calls.findIndex((c) => c.includes("sleep"));
+    const idxEnter = deps.calls.findIndex((c) => c.includes("Enter"));
+    expect(idxPaste).toBeGreaterThanOrEqual(0);
+    expect(idxSleep).toBeGreaterThan(idxPaste);
+    expect(idxEnter).toBeGreaterThan(idxSleep);
+    expect(deps.calls[idxPaste]).toContain("-p"); // 明示 bracketed paste
   });
 
   test("sendKeys — 特殊字元不被 shell 解讀", async () => {
@@ -106,10 +122,10 @@ describe("tmux", () => {
     const { sendKeys } = await import(TMUX);
     const deps = makeDeps({});
     sendKeys("nova-brain:0", "echo hello", deps);
-    // target 帶冒號格式應完整傳遞給 tmux paste-buffer + Enter（calls[0]/[1]）
-    expect(deps.calls[0]).toContain('"nova-brain:0"'); // paste-buffer
-    expect(deps.calls[1]).toContain('"nova-brain:0"'); // Enter
-    expect(deps.calls[1]).toContain("Enter");
+    // target 帶冒號格式應完整傳遞給 tmux paste-buffer（calls[0]）+ Enter（calls[2]，calls[1] 是 sleep）
+    expect(deps.calls[0]).toContain('"nova-brain:0"'); // paste-buffer -p
+    expect(deps.calls[2]).toContain('"nova-brain:0"'); // Enter
+    expect(deps.calls[2]).toContain("Enter");
   });
 
   test("capturePaneOutput — 讀取輸出", async () => {
