@@ -108,11 +108,11 @@ Blueprint 只存 reference，Environment 物件獨立：
 
 ```yaml
 # Blueprint (Agent 物件)
-environment_id: nova-default-env
+environment_id: env-default-001
 
 # Environment 物件（nc Screen 1.2 + Environments 列表頁）
 # 存放位置: ~/.claude/environments/<env_id>.yaml
-environment_id: nova-default-env
+environment_id: env-default-001
 mcp_servers:
   - name: pencil
     url: stdio:///usr/local/bin/pencil-mcp
@@ -216,9 +216,9 @@ Blueprint 永不內嵌 credentials，用 `credential_refs[]` 複合路徑引用 
 ```yaml
 # Blueprint
 credential_refs:
-  - box-oauth:access_token
-  - box-oauth:refresh_token
-  - github-pat:read          # 支援一 Vault 多 key (least-privilege)
+  - vault://box-oauth/access_token
+  - vault://box-oauth/refresh_token
+  - vault://github-pat/read          # 支援一 Vault 多 key (least-privilege)
 ```
 
 **命名選定**：`credential_refs: [vault://<vault_id>/<key>]` 複合路徑（R13 定案，取代早期 `credential_vault_refs` 僅 vault_id 版本）。理由：一 Vault 可多 key（如 github-pat 同時含 read/write token）+ least-privilege（agent 只取需要 key）+ UI 可簡化只顯 `vault_id` 作 label 隱藏 `:<key>` 尾綴。
@@ -472,12 +472,17 @@ Blueprint 完成後的 deploy 路徑：
 
 ### 12.6 SDD-02 §3 白名單最終預估
 
-當前 18 types（R13 後）→ 最終 25 types：
-- +agent.* 4 types（§12.1）
-- +environment.* 5 types（§12.3）
-- +incubation.* 2 types（§5）
-- credential.* 加 `deleted` → 3→4 types
-- session.* 檢查補齊
+當前 19 types（R15 後）→ **最終 35 types**（R14 Reviewer 校正）：
+- dispatch.* 8 types（既有 §7 canonical）
+- hook.* 2 types（既有 hook.json）
+- session.* 2 types（既有 session.json）
+- model.* 2 types（R9 model.json）
+- credential.* 4 types（R13+R15 credential.json）
+- agent.* 4 types（R14 agent.json §12.1）
+- environment.* 7 types（nm 07e4f27: created/updated/destroyed/bound/unbound/mcp_health/quota_breach）
+- environment_template.* 3 types（nm 07e4f27: created/instantiated/deleted）
+- incubation.* 2 types（R14 incubation.json §5）
+- agent.output_written 1 type（含於 agent.* 計數內）
 
 **R14 batch commit 順序**（nb owned，ns accept order）：
 1. `agent.json`（含 `agent.output_written` — Screen 1.5 nc UI 消費要點）
@@ -514,7 +519,7 @@ Blueprint 完成後的 deploy 路徑：
     },
     "model": {
       "oneOf": [
-        { "type": "string", "enum": ["claude-opus-4-6", "claude-sonnet-4-6", "claude-haiku-4-5-20251001"] },
+        { "type": "string", "pattern": "^claude-(opus|sonnet|haiku)-[0-9a-z.-]+$", "description": "Claude model family pattern，新模型自動相容不需 schema 升版" },
         { "type": "object", "required": ["model_policy"], "properties": { "model_policy": { "const": "depth-routed" } } }
       ]
     },
