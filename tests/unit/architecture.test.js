@@ -252,6 +252,31 @@ describe("Hook module 接線完整性", () => {
     }
     expect(unwired).toEqual([]);
   });
+
+  // guards.js key 級別守護：on 物件每個 key 必須在 LOCAL_MODULES 對應群組中有 guards.js 條目
+  // 防止「guards.js 有 on.PreToolUse:Task 但 LOCAL_MODULES['PreToolUse:Task'] 無 guards.js」的盲點
+  it("guards.js on 物件所有 key 都在 LOCAL_MODULES 對應群組中有 guards.js 條目", () => {
+    const guardsCode = readFile(join(MODULES_DIR, "guards.js"));
+    const hookClientCode = readFile(HOOK_CLIENT);
+
+    // 提取 export const on = { ... } 區塊
+    const onBlock = guardsCode.match(/export\s+const\s+on\s*=\s*\{([\s\S]*?)\n\}/)?.[1] ?? "";
+    // 提取所有 key（含引號 "PreToolUse:Bash" 和無引號 UserPromptSubmit）
+    const keys = [...onBlock.matchAll(/['"]([\w:]+)['"]\s*:|^[\t ]*([\w:]+)\s*:/gm)]
+      .map(m => m[1] || m[2]).filter(Boolean);
+
+    expect(keys.length).toBeGreaterThan(0);
+
+    const missing = [];
+    for (const key of keys) {
+      // 找 LOCAL_MODULES 中對應 key 群組，確認其中有 guards.js
+      const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(":", ":");
+      const groupRe = new RegExp(`['"]${escapedKey}['"]\\s*:\\s*\\[([\\s\\S]*?)\\]`);
+      const block = hookClientCode.match(groupRe)?.[1] ?? "";
+      if (!block.includes("guards.js")) missing.push(key);
+    }
+    expect(missing).toEqual([]);
+  });
 });
 
 // ── Guard 覆蓋率 ──
