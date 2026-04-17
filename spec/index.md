@@ -51,7 +51,7 @@
 
 ---
 
-### Scripts（72）
+### Scripts（73）
 
 | 名稱 | 簡述 |
 |------|------|
@@ -118,12 +118,13 @@
 | session-spawner | claude -p spawn 封裝 |
 | skill-forge | Skill 建立引擎（forgeSkill + improveSkill + deploySkill） |
 | skill-janitor | Skill 庫存管理（pruning + 健康度檢查） |
+| skill-wiki-integrity | Option C 獨立 script（ADR-002 Q2） |
 | smoke-flow | Feedback Loop 主動流程測試（Phase 7） |
 | spec-tasks | 本地任務管理模組（CLI 入口 + re-export） |
 | tool-matcher | 意圖→工具語意匹配：給定任務描述，從 tool-registry 推薦工具組合 |
 | tool-registry | 工具索引：掃描 5 種工具來源，建立統一查詢索引 |
 | vault-manager | Credential Vault CRUD + 敏感域紀律 |
-| vault-ref-linter | 掃 ~/.claude/obsidian/ 全 md 的 broken links（純 JS，無 LLM） |
+| vault-ref-linter | linter.js v2 — 強/軟引用分層掃描（ADR-002 Phase 1.5 Setup） |
 | wake-sessions | 一鍵恢復 pinned session |
 | wrapup | session 收尾編排器（極簡） |
 | wrapup-marker | session 收尾 marker 讀寫 |
