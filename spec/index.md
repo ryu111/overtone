@@ -51,7 +51,7 @@
 
 ---
 
-### Scripts（71）
+### Scripts（72）
 
 | 名稱 | 簡述 |
 |------|------|
@@ -123,6 +123,7 @@
 | tool-matcher | 意圖→工具語意匹配：給定任務描述，從 tool-registry 推薦工具組合 |
 | tool-registry | 工具索引：掃描 5 種工具來源，建立統一查詢索引 |
 | vault-manager | Credential Vault CRUD + 敏感域紀律 |
+| vault-ref-linter | 掃 ~/.claude/obsidian/ 全 md 的 broken links（純 JS，無 LLM） |
 | wake-sessions | 一鍵恢復 pinned session |
 | wrapup | session 收尾編排器（極簡） |
 | wrapup-marker | session 收尾 marker 讀寫 |
@@ -133,7 +134,7 @@
 
 | 名稱 | 簡述 |
 |------|------|
-| ADR-001-vault-upgrade | ADR-001: Vault 升級為 nb 資產 |
+| ADR-001-vault-upgrade | ADR-001: Vault 升級（已搬入 vault canonical） |
 
 ---
 
