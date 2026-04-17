@@ -72,6 +72,14 @@ describe("wrapup autoComplete", () => {
     expect(src).toContain("diffStat");
     expect(src).toContain("git diff --stat");
   });
+
+  test("autoComplete scan 範圍限 pending/delivered，exclude completed/acknowledged (xd-06zm)", () => {
+    const src = readFileSync(WRAPUP, "utf-8");
+    // 鎖死 scan 只抓 pending/delivered（避免對 completed 冪等 race + 對 acknowledged 搶工作）
+    expect(src).toMatch(/if \(d\.status !== "pending" && d\.status !== "delivered"\) continue/);
+    // 反向鎖：確保 acknowledged 不再被當作 auto-complete 目標
+    expect(src).not.toMatch(/d\.status !== "acknowledged"/);
+  });
 });
 
 describe("wrapup-guard Stop hook autoCompleteIncomingDispatches", () => {
