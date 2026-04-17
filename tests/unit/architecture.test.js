@@ -680,3 +680,10 @@ describe("tmux paste-buffer -p 守護", () => {
     });
   }
 });
+
+// ── ask-user-question-enforcer 存在性守護（xd-jze6）──
+describe("ask-user-question-enforcer 存在性", () => {
+  it("hooks/modules/ask-user-question-enforcer.js 存在", () => {
+    expect(existsSync(join(homedir(), ".claude/hooks/modules/ask-user-question-enforcer.js"))).toBe(true);
+  });
+});
