@@ -641,3 +641,53 @@ describe("flow-observer × settings.json 一致性", () => {
     expect(missing).toEqual([]);
   });
 });
+
+
+// ── tmux paste-buffer -p 守護（xd-eo4x ec19e52 根因防擴散）──
+// 背景：bracketed paste + CLI readline paste detection 時序 race → Enter 沒被 submit
+// 對應：nb 616240b scripts/os/tmux.js + ns ec19e52 services/dispatch-transport.js pasteToPane
+describe("tmux paste-buffer -p 守護", () => {
+  const TARGETS = [
+    { path: join(homedir(), ".claude/scripts/os/tmux.js"), label: "nb tmux.js" },
+    { path: join(homedir(), "projects/nova-server/services/dispatch-transport.js"), label: "ns dispatch-transport.js" },
+  ];
+
+  for (const { path, label } of TARGETS) {
+    it(label + " 所有 paste-buffer 呼叫必帶 -p flag", () => {
+      if (!existsSync(path)) {
+        console.warn("[arch-paste-buffer] " + label + " 不存在，跳過");
+        return;
+      }
+      const src = readFile(path);
+      const lines = src.split("\n");
+      const offenders = [];
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        if (!line.includes("paste-buffer")) continue;
+        const trimmed = line.trim();
+        if (trimmed.startsWith("//") || trimmed.startsWith("*") || trimmed.startsWith("#")) continue;
+        if (!line.includes("-p")) {
+          offenders.push({ line: i + 1, content: trimmed });
+        }
+      }
+
+      // ns 遺留議題 1 transition exempt：deliverRemote SSH 路徑（xd-1776393305415-fyrw 已派 ns 修）
+      if (offenders.length > 0 && label === "ns dispatch-transport.js") {
+        const deliverRemoteStart = src.indexOf("deliverRemote");
+        if (deliverRemoteStart !== -1) {
+          const remoteFnLine = src.substring(0, deliverRemoteStart).split("\n").length;
+          const allRemote = offenders.every(o => o.line > remoteFnLine);
+          if (allRemote) {
+            console.warn("[arch-paste-buffer] " + label + " 已知遺留 " + offenders.length + " 條（deliverRemote SSH，xd-fyrw 待修）");
+            return;
+          }
+        }
+      }
+
+      if (offenders.length > 0) {
+        console.error("[arch-paste-buffer] " + label + " paste-buffer 缺 -p：\n" + offenders.map(o => "  L" + o.line + ": " + o.content).join("\n"));
+      }
+      expect(offenders).toEqual([]);
+    });
+  }
+});
