@@ -29,9 +29,8 @@ describe("rules/品質/benchmark-winner-selection.md (xd-lzhn)", () => {
 		expect(content).toMatch(/跨 domain 平均/);
 	});
 
-	it("含派生來源指向 lb phase-b-reflection", () => {
-		expect(content).toContain("phase-b-reflection.md");
-	});
+	// xd-gfoq: 原 test 鎖定 phase-b-reflection.md 引用，但 git log --all 零輸出
+	// = 幽靈引用。Manager Round 2 授權刪除。此 it 為 test-locks-bug 反模式，移除。
 
 	it("行數 ≤ 50 符合 rule 行數治理", () => {
 		const lines = content.split("\n").length;
