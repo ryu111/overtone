@@ -110,4 +110,30 @@ describe("session-end auto-report chain (xd-1776387738014-hmqt)", () => {
     const src = readFileSync(WRAPUP_GUARD, "utf-8");
     expect(src).toContain("auto-complete via wrapup-guard Stop hook");
   });
+
+  test("S1 regression (xd-1776391540736-g149): Stop handler 應含 self-compact auto-trigger", () => {
+    const src = readFileSync(WRAPUP_GUARD, "utf-8");
+    expect(src).toContain("spawnSelfCompactIfNeeded");
+    expect(src).toContain("self-compact.js");
+    // spawn 應為 detached 避免 block Stop
+    expect(src).toMatch(/detached:\s*true/);
+  });
+
+  test("S1 ctx 閾值 gate (守 rules/環境/自壓縮.md MUST 30%)", () => {
+    const src = readFileSync(WRAPUP_GUARD, "utf-8");
+    // 讀 /tmp/nova-usage.json 的 sessions[project].context
+    expect(src).toContain("/tmp/nova-usage.json");
+    expect(src).toContain("sessions?.[project]?.context");
+    // ctx < 30 時 skip spawn
+    expect(src).toMatch(/pct\s*<\s*30/);
+  });
+
+  test("S1 regression: self-compact trigger 必須在 ralph-loop / outgoing check 之前", () => {
+    const src = readFileSync(WRAPUP_GUARD, "utf-8");
+    const stopSection = src.substring(src.indexOf("Stop: (input)"));
+    const compactIdx = stopSection.indexOf("spawnSelfCompactIfNeeded(cwd)");
+    const ralphIdx = stopSection.indexOf("ralph-loop.local.md");
+    expect(compactIdx).toBeGreaterThan(-1);
+    expect(compactIdx).toBeLessThan(ralphIdx);
+  });
 });
