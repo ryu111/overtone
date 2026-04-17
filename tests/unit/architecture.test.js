@@ -671,18 +671,7 @@ describe("tmux paste-buffer -p 守護", () => {
         }
       }
 
-      // ns 遺留議題 1 transition exempt：deliverRemote SSH 路徑（xd-1776393305415-fyrw 已派 ns 修）
-      if (offenders.length > 0 && label === "ns dispatch-transport.js") {
-        const deliverRemoteStart = src.indexOf("deliverRemote");
-        if (deliverRemoteStart !== -1) {
-          const remoteFnLine = src.substring(0, deliverRemoteStart).split("\n").length;
-          const allRemote = offenders.every(o => o.line > remoteFnLine);
-          if (allRemote) {
-            console.warn("[arch-paste-buffer] " + label + " 已知遺留 " + offenders.length + " 條（deliverRemote SSH，xd-fyrw 待修）");
-            return;
-          }
-        }
-      }
+      // ns 遺留議題 1 已由 ns commit 64424c5 修復 — exempt 移除，全覆蓋強制
 
       if (offenders.length > 0) {
         console.error("[arch-paste-buffer] " + label + " paste-buffer 缺 -p：\n" + offenders.map(o => "  L" + o.line + ": " + o.content).join("\n"));
