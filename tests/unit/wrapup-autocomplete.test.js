@@ -1,10 +1,13 @@
 // wrapup-autocomplete.test.js — Phase D autoComplete 測試
+// xd-1776387738014-hmqt (2026-04-17)：Stop 時本 session 收到的 dispatch 應被 auto-complete。
+// 舊版「> sessionStartAt 不關」邏輯已移除（session 結束 = Main 不再處理）。
 import { describe, test, expect } from "bun:test";
-import { existsSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { homedir } from "node:os";
 
 const WRAPUP = join(homedir(), ".claude/scripts/wrapup.js");
+const WRAPUP_GUARD = join(homedir(), ".claude/hooks/modules/wrapup-guard.js");
 
 describe("wrapup autoComplete", () => {
   test("wrapup.js export autoComplete 函式", async () => {
@@ -14,7 +17,6 @@ describe("wrapup autoComplete", () => {
 
   test("autoComplete 函式 fail-open（server 離線不 throw）", async () => {
     const mod = await import(WRAPUP);
-    // server 可能離線，autoComplete 應該 gracefully skip
     await expect(mod.autoComplete()).resolves.toBeUndefined();
   });
 
@@ -46,16 +48,55 @@ describe("wrapup autoComplete", () => {
     expect(src).toContain("verification");
   });
 
-  test("autoComplete 過濾 session 期間建立的 dispatch", () => {
+  test("autoComplete 保留 fail-closed on session-start 檔缺失", () => {
     const src = readFileSync(WRAPUP, "utf-8");
     expect(src).toContain("sessionStartAt");
     expect(src).toContain("nova-session-start-");
+    expect(src).toContain("if (!sessionStartAt) continue");
+  });
+
+  test("autoComplete 保留 30s sanity（剛建立 dispatch 不關）", () => {
+    const src = readFileSync(WRAPUP, "utf-8");
     expect(src).toContain("d.createdAt");
+    expect(src).toContain("30_000");
+  });
+
+  test("regression: autoComplete 不再用 sessionStartAt 過濾本 session dispatch (xd-1776387738014-hmqt)", () => {
+    const src = readFileSync(WRAPUP, "utf-8");
+    // 確認舊的「> sessionStartAt continue/return false」邏輯已移除
+    expect(src).not.toMatch(/getTime\(\)\s*>\s*sessionStartAt/);
   });
 
   test("autoComplete 摘要包含 git diff stat", () => {
     const src = readFileSync(WRAPUP, "utf-8");
     expect(src).toContain("diffStat");
     expect(src).toContain("git diff --stat");
+  });
+});
+
+describe("wrapup-guard Stop hook autoCompleteIncomingDispatches", () => {
+  test("wrapup-guard.js 有 autoCompleteIncomingDispatches 函式", () => {
+    const src = readFileSync(WRAPUP_GUARD, "utf-8");
+    expect(src).toContain("function autoCompleteIncomingDispatches");
+  });
+
+  test("Stop handler 呼叫 autoCompleteIncomingDispatches", () => {
+    const src = readFileSync(WRAPUP_GUARD, "utf-8");
+    expect(src).toContain("autoCompleteIncomingDispatches(cwd)");
+  });
+
+  test("保留 fail-closed on session-start 檔缺失", () => {
+    const src = readFileSync(WRAPUP_GUARD, "utf-8");
+    expect(src).toContain("no session-start file");
+  });
+
+  test("保留 30s sanity", () => {
+    const src = readFileSync(WRAPUP_GUARD, "utf-8");
+    expect(src).toContain("30_000");
+  });
+
+  test("regression: Stop hook 不再用 sessionStartAt 過濾本 session dispatch (xd-1776387738014-hmqt)", () => {
+    const src = readFileSync(WRAPUP_GUARD, "utf-8");
+    expect(src).not.toMatch(/getTime\(\)\s*>\s*sessionStartAt/);
   });
 });
