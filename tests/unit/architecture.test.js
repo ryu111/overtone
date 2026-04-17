@@ -326,6 +326,50 @@ describe("指向完整性", () => {
     }
     expect(missing).toEqual([]);
   });
+
+  // xd-gfoq：e5df485 歸檔 5 個 skill 漏掉 rule 引用守護 → 全域 rules 補同等檢查
+  it("全域 rules 中的「見 skills/」指向目標存在", () => {
+    const globalRulesDir = join(homedir(), ".claude/rules");
+    if (!existsSync(globalRulesDir)) return;
+
+    const subDirs = ["核心", "協作", "品質", "元件", "環境"];
+    const missing = [];
+
+    const scanDir = (dir) => {
+      for (const entry of readdirSync(dir, { withFileTypes: true })) {
+        if (entry.isDirectory()) scanDir(join(dir, entry.name));
+        else if (entry.name.endsWith(".md")) {
+          const file = join(dir, entry.name);
+          const content = readFileSync(file, "utf-8");
+          // 支援「見 skills/...」「派生來源：skills/...」「詳見 skills/...」
+          const skillRefs = content.matchAll(/(?:見|來源[：:])\s*(?:全域\s*)?[`]?skills\/([^\s`」\n；;]+)/g);
+          for (const match of skillRefs) {
+            const target = join(homedir(), ".claude/skills", match[1]);
+            if (!existsSync(target)) {
+              missing.push(`${file.replace(homedir() + "/", "")} → skills/${match[1]}`);
+            }
+          }
+        }
+      }
+    };
+
+    // 掃根目錄 + 5 個子分類
+    for (const entry of readdirSync(globalRulesDir, { withFileTypes: true })) {
+      if (entry.isDirectory() && subDirs.includes(entry.name)) {
+        scanDir(join(globalRulesDir, entry.name));
+      } else if (entry.name.endsWith(".md")) {
+        const content = readFileSync(join(globalRulesDir, entry.name), "utf-8");
+        const skillRefs = content.matchAll(/(?:見|來源[：:])\s*(?:全域\s*)?[`]?skills\/([^\s`」\n；;]+)/g);
+        for (const match of skillRefs) {
+          const target = join(homedir(), ".claude/skills", match[1]);
+          if (!existsSync(target)) {
+            missing.push(`rules/${entry.name} → skills/${match[1]}`);
+          }
+        }
+      }
+    }
+    expect(missing).toEqual([]);
+  });
 });
 
 // ── 靜態規則掃描 ──
