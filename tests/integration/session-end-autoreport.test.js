@@ -79,9 +79,31 @@ describe("session-end auto-report chain (xd-1776387738014-hmqt)", () => {
     expect(src).not.toMatch(/new Date\(d\.createdAt\)\.getTime\(\)\s*>\s*sessionStartAt/);
   });
 
-  test("ralph-loop active 時放行（不觸發 auto-complete）", () => {
+  test("ralph-loop active 時 Stop 放行（但 auto-complete 仍執行）", () => {
     const src = readFileSync(WRAPUP_GUARD, "utf-8");
     expect(src).toContain("ralph-loop.local.md");
+  });
+
+  test("regression: autoCompleteIncomingDispatches 必須在 ralph-loop 檢查之前執行 (xd-1776387738014-hmqt 09:21 修)", () => {
+    const src = readFileSync(WRAPUP_GUARD, "utf-8");
+    const stopSection = src.substring(src.indexOf("Stop: (input)"));
+    const autoIdx = stopSection.indexOf("autoCompleteIncomingDispatches(cwd)");
+    const ralphIdx = stopSection.indexOf("ralph-loop.local.md");
+    expect(autoIdx).toBeGreaterThan(-1);
+    expect(ralphIdx).toBeGreaterThan(-1);
+    // auto-complete 必須在 ralph-loop check 之前，否則 ralph-loop active 時 auto-complete 永不執行
+    expect(autoIdx).toBeLessThan(ralphIdx);
+  });
+
+  test("regression: autoCompleteIncomingDispatches 必須在 hasPendingOutgoingDispatches 檢查之前", () => {
+    const src = readFileSync(WRAPUP_GUARD, "utf-8");
+    const stopSection = src.substring(src.indexOf("Stop: (input)"));
+    const autoIdx = stopSection.indexOf("autoCompleteIncomingDispatches(cwd)");
+    const outgoingIdx = stopSection.indexOf("hasPendingOutgoingDispatches(cwd)");
+    expect(autoIdx).toBeGreaterThan(-1);
+    expect(outgoingIdx).toBeGreaterThan(-1);
+    // 有 pending outgoing 時 session 也該 auto-complete incoming，兩者正交
+    expect(autoIdx).toBeLessThan(outgoingIdx);
   });
 
   test("Stop summary 標註 auto-complete 來源讓 Manager 透明化", () => {
