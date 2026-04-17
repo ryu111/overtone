@@ -51,7 +51,7 @@
 
 ---
 
-### Scripts（73）
+### Scripts（75）
 
 | 名稱 | 簡述 |
 |------|------|
@@ -94,6 +94,7 @@
 | judge-improvements | F 級改善建議生成（從 judge.js 拆分） |
 | judge-scores | 評分記錄的讀寫、去重、截斷（從 judge.js 拆分） |
 | judge-scoring | 確定性評分 + 語意評分（從 judge.js 拆分） |
+| launchd-setup | 統一 launchd plist 管理器 |
 | layer-kpi-collector | 收集 Nova 各層（L1-L4）KPI 指標 |
 | learner | 行為習慣偵測器 |
 | learner-analysis | 行為分析純函式模組 |
@@ -126,6 +127,7 @@
 | vault-manager | Credential Vault CRUD + 敏感域紀律 |
 | vault-ref-linter | linter.js v2 — 強/軟引用分層掃描（ADR-002 Phase 1.5 Setup） |
 | wake-sessions | 一鍵恢復 pinned session |
+| weekly-synthesis | 週蒸餾自動化（Phase 1, xd-v60w） |
 | wrapup | session 收尾編排器（極簡） |
 | wrapup-marker | session 收尾 marker 讀寫 |
 
