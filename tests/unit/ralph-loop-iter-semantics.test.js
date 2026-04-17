@@ -15,7 +15,7 @@ let tmpCwd;
 const sessionId = "iter-sem-test-" + Date.now();
 const flagPath = `/tmp/nova-ralph-started-${sessionId}.flag`;
 
-function writeState(fm, body = "測試任務") {
+function writeState(fm, body = "本輪完成") {
 	const dir = join(tmpCwd, ".claude");
 	mkdirSync(dir, { recursive: true });
 	const frontmatter = Object.entries(fm).map(([k, v]) => `${k}: ${v}`).join("\n");
