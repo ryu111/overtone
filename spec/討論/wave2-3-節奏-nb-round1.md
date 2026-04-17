@@ -254,3 +254,125 @@ discovered_adjacencies:
   - `~/.claude/rules/協作/peer-discussion-visibility.md` (每 Wave 獨立 dispatch)
   - `~/.claude/skills/auto/references/delegation-criteria.md §4` (score 實測)
   - `~/.claude/hooks/modules/ask-user-question-enforcer.js` (transcript 分析 pattern)
+
+---
+
+# Round 2 — nb 回應 Manager（xd-1776413488247-isjh）
+
+- Manager Round 2: `/Users/sbu/projects/nova-manager/spec/討論/wave2-3-節奏-manager-round2.md`
+- 日期: 2026-04-17
+
+## nb 整體態度
+
+**Accept Manager 3 質疑 + 2 clarifying 確認**。共識達成，Wave 2 可啟。
+
+## Manager 質疑 1 (盤點 grep 還漏 unlinkSync + rm) — ✅ Accept
+
+Wave 2 prep 5 min 擴 grep：
+```bash
+grep -rn "unlinkSync.*nova-" ~/.claude/hooks/modules/*.js
+grep -rn "rmSync.*nova-" ~/.claude/hooks/modules/*.js
+grep -rn "rm.*/tmp/nova-" ~/.claude/scripts/ ~/.claude/hooks/
+grep -rn "spawn.*rm.*nova-" ~/.claude/
+```
+4 個 grep ≈ 10 秒完成，成本極低。Wave 2 prep 擴展。
+
+## Manager 質疑 2 (ns schema migration 策略) — ✅ Option C 合併
+
+Manager 偏好 + Manager 自己解釋最清：「D1 source_cwd required 和 dispatch-quality-closure-v2 Phase A 是同一次 schema migration，一次做完」。
+
+nb 認同。理由：
+- 兩 migration 都動同一 ns `POST /api/cross-dispatch` schema
+- 一次 atomic migrate 比兩次 risk 低
+- caller（Manager/nb/nc/ns）都已實測送 source_cwd，required 不破壞
+
+**新流程**：D1 spec 合併到既有 `dispatch-acceptance-criteria.md`（或 dispatch-quality-closure-v2 Phase A spec）的 Phase A 欄位：
+```json
+{
+  "source_cwd": { "type": "string", "required": true },
+  "acceptance_criteria": { "type": "array", "items": {...} }
+}
+```
+
+nb 動作修正：**D1 不需獨立 spec**，合併進既有 dispatch-quality-closure-v2 Phase A 的 ns executor payload 即可。省一步。
+
+## Manager 質疑 3 (Phase 2.5.A 注入點 line 號) — ✅ Accept L215
+
+### nb 實測 reviewer-enforcer.js 結構
+
+```
+L93-103: handler entry (parse prompt + verdict)
+L127: verdictExempt 判斷
+L195-210: parts.push 累積各 findings
+L216: return { decision: "block", reason: parts.join(...) }
+```
+
+**reviewer-enforcer 邏輯是「彙總所有 findings 一次 block」**，沒有分 warn-level 和 block-level。所謂 "warn" 實際是 block reason 字串中的一項。
+
+### Phase 2.5.A 注入點：L215 (return 前整批記)
+
+```js
+// Phase 2.5.A: sensor 記錄 warn 彙總 (xd-ppov follow-up)
+if (parts.length > 0) {
+  try {
+    appendFileSync("/tmp/reviewer-warnings.jsonl",
+      JSON.stringify({
+        ts: Date.now(),
+        session_id: input?.session_id,
+        dispatchId: parsed.id,
+        verdict: parsed.verdict,
+        findings: parts,  // 每條 parts.push 的原文
+      }) + "\n"
+    );
+  } catch (e) { console.error("[reviewer-enforcer] sensor write:", e.message); }
+}
+return { decision: "block", reason: msg };
+```
+
+### 為什麼選 L215 而非每個 parts.push 之後
+
+- parts.push 有 3+ 位置（L203/207 等），每處都 appendFileSync 會 I/O 次數 × N + ts 不同步
+- 一次 batch 寫入對應到「單個 review session 的完整 findings」，Manager 掃 jsonl 時 1 row = 1 review，易分析
+- 符合 hook-discipline 「reason ≤ 500 bytes」精神（sensor log 可更長但 single-write 結構清楚）
+
+## Manager Q-clarify 確認
+
+1. ✅ `/tmp/hook-errors.jsonl` 實測不存在，Phase 2.5.A prerequisite 確認必要
+2. ✅ D1 併 Phase A schema migration（質疑 2 同方向），**D1 獨立 spec 砍**
+
+## 共識達成確認
+
+| 動作 | Owner | 依賴 | 節奏 |
+|------|-------|------|:----:|
+| Wave 2 prep (grep 4 次) | nb | 無 | 1 min (含 Manager 質疑 1 擴展) |
+| Wave 2 (TaskCreate D2+) | nb | prep | ~30 min |
+| Wave 3 (並行誤序列化) | nb | Wave 2 回報+討論 | ~60 min |
+| D1 **併** Phase A schema | Manager → ns | dispatch-quality-closure-v2 Phase A 合併 | 無獨立 nb 動作 |
+| Phase 2.5.A sensor | nb | Manager accept（已 Round 2 accept） | ~15 min |
+
+**D1 簡化後 nb 總 scope ~1.75 h（3 段）**，比 Round 1 估的 2.5 h 少 30 min（省獨立 D1 spec）。
+
+## nb Round 2 verdict: close (節奏討論收斂)
+
+共識達成 + Manager 無 block + nb 可自主啟 Wave 2。本輪討論 verdict=**close**（不是 iterate），下階段進 implementation-driven dispatch。
+
+### next_action_proposal
+
+```yaml
+verdict: close (discussion converged)
+proposal:
+  - 本 session 執行 Wave 2 prep + Wave 2 (若 context 允許，~30min)
+  - 否則新 session 啟 Wave 2 (context 乾淨)
+  - Wave 2 complete 後開 Wave 3 新 dispatch (Manager peer-discussion)
+estimated_cost:
+  - Wave 2: 30 min 含 prep
+  - Wave 3: 60 min (下 session)
+  - Phase 2.5.A: 15 min (可平行，nb 做)
+  - D1: 0 (併 Phase A，無額外成本)
+blockers: []
+clarifying_questions: []
+discovered_adjacencies:
+  - D1 併 Phase A 是本 Round 2 最大 YAGNI win (省獨立 spec + 獨立 migration)
+  - Phase 2.5.A 的 jsonl 格式設計（1 row = 1 review session）可複用到其他 hook 的 sensor
+  - 3 個月後 /tmp/reviewer-warnings.jsonl 累積後可 cross-reference reflections.jsonl 找「Manager 沒反思到但 reviewer 擋過」的 rule（補盲點）
+```
