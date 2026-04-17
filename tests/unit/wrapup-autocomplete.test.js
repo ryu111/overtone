@@ -15,9 +15,12 @@ describe("wrapup autoComplete", () => {
     expect(typeof mod.autoComplete).toBe("function");
   });
 
-  test("autoComplete 函式 fail-open（server 離線不 throw）", async () => {
-    const mod = await import(WRAPUP);
-    await expect(mod.autoComplete()).resolves.toBeUndefined();
+  test("autoComplete fail-open on server error (source grep 無副作用, xd-vo4i)", () => {
+    // 舊版 await mod.autoComplete() 會實打 POST /complete 污染 pending dispatch（xd-06zm/vo4i 實證）
+    // 改為 source grep，鎖 catch fail-open 存在即可
+    const src = readFileSync(WRAPUP, "utf-8");
+    expect(src).toMatch(/\/\/ fail-open: server 掛了不阻擋 wrapup/);
+    expect(src).toMatch(/console\.error\("\[wrapup\] autoComplete skipped:"/);
   });
 
   test("wrapup 全流程包含 autoComplete", () => {
@@ -79,6 +82,19 @@ describe("wrapup autoComplete", () => {
     expect(src).toMatch(/if \(d\.status !== "pending" && d\.status !== "delivered"\) continue/);
     // 反向鎖：確保 acknowledged 不再被當作 auto-complete 目標
     expect(src).not.toMatch(/d\.status !== "acknowledged"/);
+  });
+
+  test("autoComplete POST 前 race check（GET latest status → skip completed/acknowledged, xd-vo4i）", () => {
+    const src = readFileSync(WRAPUP, "utf-8");
+    // race protection：POST /complete 前重新 GET 一次（B 方案過濾後再雙檢 A 方案）
+    expect(src).toMatch(/race protection/);
+    expect(src).toMatch(/const recheck = await fetch/);
+    expect(src).toMatch(/latest\.status === "completed" \|\| latest\.status === "acknowledged"/);
+    // race check 必須在 POST /complete 之前
+    const raceIdx = src.indexOf("race protection");
+    const postIdx = src.indexOf("/api/cross-dispatch/complete");
+    expect(raceIdx).toBeGreaterThan(0);
+    expect(raceIdx).toBeLessThan(postIdx);
   });
 });
 
