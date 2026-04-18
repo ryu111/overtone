@@ -277,6 +277,15 @@ describe("Hook module 接線完整性", () => {
     }
     expect(missing).toEqual([]);
   });
+
+  // xd 2026-04-18: chain-integrity scanner 必須認得 LOCAL_MODULES runtime 載入
+  // 防「36 筆 hooks/modules/*.js 被誤判 orphan 淹沒真 orphan」回歸
+  it("chain-integrity scanner 認得 LOCAL_MODULES runtime 載入", () => {
+    const src = readFileSync(join(homedir(), ".claude/scripts/chain-integrity.js"), "utf-8");
+    expect(src).toMatch(/function\s+collectRuntimeLoaderRefs\s*\(/);
+    expect(src).toContain("hook-client.js");
+    expect(src).toContain("for (const p of collectRuntimeLoaderRefs())");
+  });
 });
 
 // ── Guard 覆蓋率 ──
