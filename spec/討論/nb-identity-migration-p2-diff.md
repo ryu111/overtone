@@ -1,11 +1,13 @@
 ---
-status: diff-preview
-dispatch_id: pending (Batch A.P2 sub-task of xd-c1nl migration-prep-round3)
+status: diff-preview-refined-post-adr007
+dispatch_id: xd-gykt iter 2 (post ADR-007 proposed 591a72d)
 created: 2026-04-18
+updated: 2026-04-18 (iter 2 refine after ADR-007 Batch B.P1 accepted)
 source_cwd: /Users/sbu/projects/nova-brain
 target_cwd: /Users/sbu/projects/nova-manager (以及 ~/.claude/)
-round: P2 diff preview (non-binding, Batch D 實作前 reference)
+round: P2 diff preview refined (Batch D2 apply reference)
 topic: Batch A.P2 身份段 diff — nb CLAUDE.md §Blueprint → obsidian/semantic/agent-identity/nb.md
+adr_reference: ADR-007 Batch B.P1 (2026-04-18 proposed)
 ---
 
 # Batch A.P2 — 身份段 diff Preview
@@ -150,9 +152,21 @@ Discussion persistence: `~/projects/nova-brain/spec/討論/<topic>.md`
 
 ## 未決問題（Batch D 前需 Manager ack）
 
-1. `derived view` 行為：nb CLAUDE.md 保留 1 行 md-link 還是不保留任何 identity trace？
-2. `obsidian/semantic/agent-identity/nm.md`（Manager）是否同步建？（current Manager CLAUDE.md 有類似結構）
-3. backlinks 的 migration spec pointer 是用 absolute path 還是 repo-relative？
+1. ~~`derived view` 行為~~：**ADR-007 Decision §1 定為保留 1 行 md-link trace**（194→~130，減 64 行）
+2. `obsidian/semantic/agent-identity/nm.md`（Manager）是否同步建？— **ADR-007 §5 Scope Exclusion 明示僅 nb migration；nm 另開 ADR-008+**
+3. backlinks 的 migration spec pointer 是用 absolute path 還是 repo-relative？— **待 Manager Round 3 ack，nb 推 absolute path（與其他 ADR-003/005/006 pointer 格式一致）**
+
+## Batch D2 Apply 順序（ADR-007 accepted 後啟動）
+
+依 ADR-007 Batch 表：
+
+1. **D1**：新建 `obsidian/semantic/agent-identity/nb.md`（~100 行）
+2. **D2**：nb CLAUDE.md L113-L194 §Blueprint 整段刪除 → 替換為 1 行 md-link
+3. **D3**：architecture.test.js 加 3 守護
+4. **D4**：memory/ 下檔案改 `nb_*.md` 前綴（C 方案，ADR-007 Decision §2）
+5. **D5**：全 vault references 更新
+
+**本 P2 refine 是 Batch D1-D2 implementation reference**，實作前無需再寫新 spec。
 
 ## Referenced
 
