@@ -1301,3 +1301,30 @@ describe("projects.json SoT canonical 條目完整性（ADR-008 Phase 1.5 gap 2�
     expect(cwdToProject(join(homedir(), ".claude"))).toBe("nova-brain");
   });
 });
+
+// xd-adr008-phase1.5-face2: basename(cwd) 同 bug family（2026-04-19）
+// C 條只抓 cwd.split("/").pop()，遺漏 basename(cwd) 同等反模式
+// 發現契機：vault-session-log.js / dispatch-poller / ctx-tracker 等 5 檔使用 basename(cwd)
+describe("basename(cwd) 反模式零殘留（ADR-008 Phase 1.5 face 2）", () => {
+  const CLAUDE_DIR = join(homedir(), ".claude");
+
+  it("F. hooks/ 與 scripts/ 不得用 basename(cwd|x.cwd|payload.cwd) 當 project 名", () => {
+    const dirs = [join(CLAUDE_DIR, "hooks"), join(CLAUDE_DIR, "scripts")];
+    const violations = [];
+    for (const dir of dirs) {
+      try {
+        const result = execSync(
+          `grep -rn "basename(.*cwd\\|basename(.*\\.cwd" "${dir}" --include="*.js" | grep -v cwd-to-project`,
+          { encoding: "utf-8", timeout: 5000 }
+        );
+        for (const line of result.trim().split("\n").filter(Boolean)) {
+          violations.push(line);
+        }
+      } catch { /* no match = good */ }
+    }
+    if (violations.length > 0) {
+      console.log("違反 basename(cwd) 反模式：\n" + violations.join("\n"));
+    }
+    expect(violations.length).toBe(0);
+  });
+});
