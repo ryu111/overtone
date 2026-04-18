@@ -1,6 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach } from "bun:test";
-import { evaluateBash } from "../../../../.claude/hooks/modules/guards.js";
+import { evaluateBash, evaluateEdit, evaluateTask } from "../../../../.claude/hooks/modules/guards.js";
 import { writeFileSync, unlinkSync } from "node:fs";
+import { homedir } from "node:os";
+import { join } from "node:path";
 
 // 透過 cwd 控制 routingFile path：/tmp/nova-routing-level-{basename(cwd)}.txt
 const TEST_PROJ = "guards-test-" + Date.now();
@@ -104,5 +106,191 @@ describe("guards: fail-open", () => {
 
 	it("null input → allow", () => {
 		expect(() => evaluateBash(null)).not.toThrow();
+	});
+});
+
+// ─────────────────────────────────────────────
+// evaluateEdit 系列
+// ─────────────────────────────────────────────
+
+const EDIT_PROJ = "guards-edit-test-" + Date.now();
+const EDIT_CWD = `/tmp/${EDIT_PROJ}`;
+const EDIT_ROUTING = `/tmp/nova-routing-level-${EDIT_PROJ}.txt`;
+const CLAUDE_DIR = join(homedir(), ".claude");
+
+describe("guards: evaluateEdit HARD GATE", () => {
+	afterEach(() => {
+		try { unlinkSync(EDIT_ROUTING); } catch {}
+	});
+
+	it("無 routing file + filePath 在 ~/.claude → deny（HARD GATE）", () => {
+		try { unlinkSync(EDIT_ROUTING); } catch {}
+		const filePath = join(CLAUDE_DIR, "test-foo.md");
+		const r = evaluateEdit({ cwd: EDIT_CWD, tool_input: { file_path: filePath, content: "hello" } });
+		expect(r.hookSpecificOutput.permissionDecision).toBe("deny");
+		expect(r.hookSpecificOutput.permissionDecisionReason).toContain("HARD GATE");
+	});
+
+	it("有 routing file + filePath 在 ~/.claude → 不因 HARD GATE deny", () => {
+		writeFileSync(EDIT_ROUTING, "D1");
+		const filePath = join(CLAUDE_DIR, "test-foo.md");
+		const r = evaluateEdit({ cwd: EDIT_CWD, tool_input: { file_path: filePath, content: "hello" } });
+		expect(r.hookSpecificOutput.permissionDecisionReason ?? "").not.toContain("HARD GATE");
+	});
+});
+
+describe("guards: evaluateEdit Rule 行數限制", () => {
+	beforeEach(() => { writeFileSync(EDIT_ROUTING, "D1"); });
+	afterEach(() => { try { unlinkSync(EDIT_ROUTING); } catch {} });
+
+	it("rules/.../X.md 內容 51 行 → deny（超過 50 行上限）", () => {
+		const filePath = join(CLAUDE_DIR, "rules/品質/X.md");
+		const content = Array.from({ length: 51 }, (_, i) => `行 ${i + 1}`).join("\n");
+		const r = evaluateEdit({ cwd: EDIT_CWD, tool_input: { file_path: filePath, content } });
+		expect(r.hookSpecificOutput.permissionDecision).toBe("deny");
+		expect(r.hookSpecificOutput.permissionDecisionReason).toContain("50 行上限");
+	});
+
+	it("rules/.../X.md 內容 50 行 → 不因行數限制 deny", () => {
+		const filePath = join(CLAUDE_DIR, "rules/品質/X.md");
+		const content = Array.from({ length: 50 }, (_, i) => `行 ${i + 1}`).join("\n");
+		const r = evaluateEdit({ cwd: EDIT_CWD, tool_input: { file_path: filePath, content } });
+		expect(r.hookSpecificOutput.permissionDecisionReason ?? "").not.toContain("50 行上限");
+	});
+});
+
+describe("guards: evaluateEdit 危險內容偵測", () => {
+	beforeEach(() => { writeFileSync(EDIT_ROUTING, "D1"); });
+	afterEach(() => { try { unlinkSync(EDIT_ROUTING); } catch {} });
+
+	it("非 hooks/modules/ 路徑 + content 含 eval 呼叫 → deny（eval()）", () => {
+		const filePath = "/tmp/some-project/src/util.js";
+		// 用 string concat 避免觸發 guard 本身；guards.js 只掃 tool_input.content，不掃 test 程式碼
+		const dangerous = "const x = " + "ev" + "al" + "(code);";
+		const r = evaluateEdit({ cwd: EDIT_CWD, tool_input: { file_path: filePath, content: dangerous } });
+		expect(r.hookSpecificOutput.permissionDecision).toBe("deny");
+		expect(r.hookSpecificOutput.permissionDecisionReason).toContain("eval()");
+	});
+
+	it("非 hooks/modules/ 路徑 + content 含 .innerHTML = → deny", () => {
+		const filePath = "/tmp/some-project/src/dom.js";
+		const dangerous = "el.innerH" + "TML = userInput;";
+		const r = evaluateEdit({ cwd: EDIT_CWD, tool_input: { file_path: filePath, content: dangerous } });
+		expect(r.hookSpecificOutput.permissionDecision).toBe("deny");
+		expect(r.hookSpecificOutput.permissionDecisionReason).toContain("innerHTML");
+	});
+
+	it("hooks/modules/ 路徑 + 危險內容 → reason 不含 eval()（豁免路徑，改走保護元件）", () => {
+		const filePath = join(CLAUDE_DIR, "hooks/modules/foo.js");
+		const dangerous = "const x = " + "ev" + "al" + "(code);";
+		const r = evaluateEdit({ cwd: EDIT_CWD, tool_input: { file_path: filePath, content: dangerous } });
+		expect(r.hookSpecificOutput.permissionDecisionReason ?? "").not.toContain("eval()");
+	});
+
+	it("非 hooks/modules/ 路徑 + 正常 content → allow", () => {
+		const filePath = "/tmp/some-project/src/normal.js";
+		const r = evaluateEdit({ cwd: EDIT_CWD, tool_input: { file_path: filePath, content: "const x = 1 + 2;" } });
+		expect(r.hookSpecificOutput.permissionDecision).toBe("allow");
+	});
+});
+
+describe("guards: evaluateEdit test.skip 守衛", () => {
+	beforeEach(() => { writeFileSync(EDIT_ROUTING, "D1"); });
+	afterEach(() => { try { unlinkSync(EDIT_ROUTING); } catch {} });
+
+	it("tests/foo.test.js 含 test.skip( → deny（test.skip()）", () => {
+		const filePath = "/tmp/some-project/tests/foo.test.js";
+		const skipContent = 'test' + '.skip("broken", () => {});';
+		const r = evaluateEdit({ cwd: EDIT_CWD, tool_input: { file_path: filePath, content: skipContent } });
+		expect(r.hookSpecificOutput.permissionDecision).toBe("deny");
+		expect(r.hookSpecificOutput.permissionDecisionReason).toContain("test.skip()");
+	});
+
+	it("非 test 路徑 + 含 test.skip 字串 → 不因此 deny", () => {
+		const filePath = "/tmp/some-project/src/util.js";
+		const skipContent = '// test' + '.skip("example");';
+		const r = evaluateEdit({ cwd: EDIT_CWD, tool_input: { file_path: filePath, content: skipContent } });
+		expect(r.hookSpecificOutput.permissionDecisionReason ?? "").not.toContain("test.skip()");
+	});
+
+	it("tests/foo.test.js + 正常 content → allow", () => {
+		const filePath = "/tmp/some-project/tests/foo.test.js";
+		const r = evaluateEdit({ cwd: EDIT_CWD, tool_input: { file_path: filePath, content: 'it("should work", () => { expect(1).toBe(1); });' } });
+		expect(r.hookSpecificOutput.permissionDecision).toBe("allow");
+	});
+});
+
+describe("guards: evaluateEdit PROTECTED_PATHS", () => {
+	beforeEach(() => { writeFileSync(EDIT_ROUTING, "D1"); });
+	afterEach(() => { try { unlinkSync(EDIT_ROUTING); } catch {} });
+
+	it("hooks/modules/foo.js → deny（保護元件）含 CLI hint", () => {
+		const filePath = join(CLAUDE_DIR, "hooks/modules/foo.js");
+		const r = evaluateEdit({ cwd: EDIT_CWD, tool_input: { file_path: filePath, content: "// ok" } });
+		expect(r.hookSpecificOutput.permissionDecision).toBe("deny");
+		expect(r.hookSpecificOutput.permissionDecisionReason).toContain("保護元件");
+		expect(r.hookSpecificOutput.permissionDecisionReason).toContain("CLI");
+	});
+
+	it("skills/foo/SKILL.md → deny（保護元件）含 CLI hint", () => {
+		const filePath = join(CLAUDE_DIR, "skills/foo/SKILL.md");
+		const r = evaluateEdit({ cwd: EDIT_CWD, tool_input: { file_path: filePath, content: "# skill" } });
+		expect(r.hookSpecificOutput.permissionDecision).toBe("deny");
+		expect(r.hookSpecificOutput.permissionDecisionReason).toContain("保護元件");
+		expect(r.hookSpecificOutput.permissionDecisionReason).toContain("CLI");
+	});
+
+	it("agents/foo.md → deny（保護元件）含 CLI hint", () => {
+		const filePath = join(CLAUDE_DIR, "agents/foo.md");
+		const r = evaluateEdit({ cwd: EDIT_CWD, tool_input: { file_path: filePath, content: "# agent" } });
+		expect(r.hookSpecificOutput.permissionDecision).toBe("deny");
+		expect(r.hookSpecificOutput.permissionDecisionReason).toContain("保護元件");
+		expect(r.hookSpecificOutput.permissionDecisionReason).toContain("CLI");
+	});
+
+	it("commands/foo.md → deny（保護元件）", () => {
+		const filePath = join(CLAUDE_DIR, "commands/foo.md");
+		const r = evaluateEdit({ cwd: EDIT_CWD, tool_input: { file_path: filePath, content: "# cmd" } });
+		expect(r.hookSpecificOutput.permissionDecision).toBe("deny");
+		expect(r.hookSpecificOutput.permissionDecisionReason).toContain("保護元件");
+	});
+
+	it("~/.claude 外的路徑 → 跳過 PROTECTED_PATHS，allow", () => {
+		const filePath = "/tmp/some-other-project/foo.js";
+		const r = evaluateEdit({ cwd: EDIT_CWD, tool_input: { file_path: filePath, content: "// ok" } });
+		expect(r.hookSpecificOutput.permissionDecision).toBe("allow");
+	});
+});
+
+// ─────────────────────────────────────────────
+// evaluateTask 系列
+// ─────────────────────────────────────────────
+
+const TASK_PROJ = "guards-task-test-" + Date.now();
+const TASK_CWD = `/tmp/${TASK_PROJ}`;
+const TASK_ROUTING = `/tmp/nova-routing-level-${TASK_PROJ}.txt`;
+
+describe("guards: evaluateTask HARD GATE", () => {
+	afterEach(() => {
+		try { unlinkSync(TASK_ROUTING); } catch {}
+	});
+
+	it("無 routing file → deny（HARD GATE：Agent 委派）", () => {
+		try { unlinkSync(TASK_ROUTING); } catch {}
+		const r = evaluateTask({ cwd: TASK_CWD, tool_input: { prompt: "do something" } });
+		expect(r.hookSpecificOutput.permissionDecision).toBe("deny");
+		expect(r.hookSpecificOutput.permissionDecisionReason).toContain("HARD GATE");
+	});
+
+	it("有 routing file → allow", () => {
+		writeFileSync(TASK_ROUTING, "D2");
+		const r = evaluateTask({ cwd: TASK_CWD, tool_input: { prompt: "do something" } });
+		expect(r.hookSpecificOutput.permissionDecision).toBe("allow");
+	});
+
+	it("null input → allow 不 throw（fail-open）", () => {
+		expect(() => evaluateTask(null)).not.toThrow();
+		const r = evaluateTask(null);
+		expect(r.hookSpecificOutput.permissionDecision).toBe("allow");
 	});
 });
