@@ -731,3 +731,56 @@ describe("ask-user-question-enforcer 存在性", () => {
     expect(existsSync(join(homedir(), ".claude/hooks/modules/ask-user-question-enforcer.js"))).toBe(true);
   });
 });
+
+// ── md-link 格式統一守護（xd-ek2d Round 7）──
+describe("寫作規範 md-link 唯一 SoT", () => {
+  const CLAUDE_DIR = join(homedir(), ".claude");
+
+  it("rules/環境/寫作規範.md 明示 md-link 強制", () => {
+    const path = join(CLAUDE_DIR, "rules/環境/寫作規範.md");
+    const content = readFile(path);
+    expect(content).toMatch(/vault-internal.*markdown link.*\[display\]\(path\.md\)/);
+    expect(content).toMatch(/NEVER 用 backtick 包 path/);
+  });
+
+  it("chain-integrity.js REF_PATTERNS 僅含 md-link", () => {
+    const path = join(CLAUDE_DIR, "scripts/chain-integrity.js");
+    const content = readFile(path);
+    const refBlockMatch = content.match(/const REF_PATTERNS = \[([\s\S]*?)\];/);
+    expect(refBlockMatch).toBeTruthy();
+    const block = refBlockMatch[1];
+    expect(block).not.toMatch(/backtick 包裹的路徑/);
+    expect(block).not.toMatch(/見 X.*backtick/);
+    expect(block).toMatch(/Markdown link/);
+  });
+
+  it("rules/ + skills/ 下無 vault-internal backtick path refs", () => {
+    const targetDirs = ["rules", "skills", "agents", "commands"];
+    const offenders = [];
+    for (const dir of targetDirs) {
+      const files = walkMd(join(CLAUDE_DIR, dir));
+      for (const f of files) {
+        const content = readFile(f);
+        const m = content.match(/`(?:skills|rules|hooks|agents|commands|obsidian|docs)\/[a-zA-Z0-9/_.-]+\.md`/g);
+        if (m) offenders.push({ file: f.replace(CLAUDE_DIR + "/", ""), refs: m.slice(0, 3) });
+      }
+    }
+    // docs/vision.md 是 nova-brain scope, exempt
+    const filtered = offenders.filter(o => !o.refs.every(r => r.includes("docs/vision.md") || r.includes("docs/常駐服務") || r.includes("docs/架構演進") || r.includes("docs/製作規範") || r.includes("docs/目標場景")));
+    if (filtered.length > 0) console.error("[arch-md-link] offenders:\n" + JSON.stringify(filtered, null, 2));
+    expect(filtered).toEqual([]);
+  });
+});
+
+function walkMd(dir) {
+  if (!existsSync(dir)) return [];
+  const out = [];
+  const { readdirSync, statSync } = require("node:fs");
+  for (const entry of readdirSync(dir)) {
+    const p = join(dir, entry);
+    const s = statSync(p);
+    if (s.isDirectory()) out.push(...walkMd(p));
+    else if (entry.endsWith(".md")) out.push(p);
+  }
+  return out;
+}
