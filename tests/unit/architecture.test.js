@@ -806,11 +806,35 @@ describe("wrapup-guard Stop auto-complete 順序", () => {
     expect(ralphCheckIdx).toBeLessThan(autoCompleteCallIdx);
   });
 
-  it("ralph-loop existsSync check 後有 early return allow", () => {
+  it("ralph-loop existsSync check 分支結尾有 return allow", () => {
     const src = readFileSync(WRAPUP_GUARD_PATH, "utf-8");
-    // 提取 ralph check 附近 120 字元，驗證有 return { decision: "allow" }
-    const m = src.match(/if\s*\(existsSync\(ralphFile\)\)\s*\{\s*return\s*\{\s*decision:\s*["']allow["']/);
+    // 提取 ralph check block 到 return allow，驗證分支結尾確實 early return allow
+    // （中間可含 canary exception auto-complete 呼叫 — xd-43j5 治本擴充 2026-04-18）
+    const m = src.match(/if\s*\(existsSync\(ralphFile\)\)\s*\{[\s\S]*?return\s*\{\s*decision:\s*["']allow["']/);
     expect(m).not.toBeNull();
+  });
+
+  // xd-43j5 治本擴充 (2026-04-18)：ralph 分支對 canary dispatch 例外 auto-complete
+  // 根因：canary self-dispatch 累積 4 次 (xd-75gb/kwn1/oiqw/y76x) 無主 → ralph early return 導致無 auto-complete
+  // 治本：ralph 分支 return 前 predicate filter auto-complete priority=low + prompt 含 canary 的 dispatch
+  it("ralph-loop 分支對 canary dispatch 例外 auto-complete", () => {
+    const src = readFileSync(WRAPUP_GUARD_PATH, "utf-8");
+    const ralphBlockMatch = src.match(/if\s*\(existsSync\(ralphFile\)\)\s*\{([\s\S]*?)return\s*\{\s*decision:\s*["']allow["']/);
+    expect(ralphBlockMatch).not.toBeNull();
+    const ralphBlock = ralphBlockMatch[1];
+    // ralph 分支 body 必含 autoCompleteIncomingDispatches 呼叫（帶 predicate）
+    expect(ralphBlock).toContain("autoCompleteIncomingDispatches(cwd,");
+    // predicate 必判 priority=low + prompt 含 canary 字樣
+    expect(ralphBlock).toMatch(/priority\s*===\s*["']low["']/);
+    expect(ralphBlock).toMatch(/canary/i);
+  });
+
+  it("autoCompleteIncomingDispatches 支援 predicate 參數", () => {
+    const src = readFileSync(WRAPUP_GUARD_PATH, "utf-8");
+    // function signature 必含 predicate 參數（預設 () => true 保舊呼叫原行為）
+    expect(src).toMatch(/function\s+autoCompleteIncomingDispatches\s*\(\s*cwd\s*,\s*predicate/);
+    // filter 必呼叫 predicate(d)
+    expect(src).toMatch(/return\s+predicate\(d\)/);
   });
 });
 
