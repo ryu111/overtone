@@ -14,10 +14,10 @@ describe('judge hook scoring', () => {
     expect(score).toBeGreaterThanOrEqual(40);
   });
 
-  test('notification.js 確定性分 = 40', () => {
+  test('notification.js 確定性分 >= 40', () => {
     const score = scoreDeterministic(join(modulesDir, 'notification.js'), 'hook');
-    // export(10) + on handler(10) + lifecycle export(10) + 行數(10)
-    expect(score).toBe(40);
+    // export(10) + on handler(10) + lifecycle export(10) + 行數(10) + 無 console.*(10 iter 18)
+    expect(score).toBeGreaterThanOrEqual(40);
   });
 
   // metrics.js 已遷移到 nova-server/lib/metrics.js
