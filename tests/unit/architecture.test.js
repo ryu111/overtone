@@ -1235,3 +1235,69 @@ describe("自驅 Bundle manifest SoT 守護 (B' 2026-04-18)", () => {
     expect(missing).toEqual([]);
   });
 });
+
+// xd-adr008-phase1.5: ADR-008 Phase 1 搬家後遺症治本守護（2026-04-19）
+// 問題：cwd=/Users/sbu/.claude → basename=".claude"（dot 前綴怪檔名 /tmp/nova-handoff-.claude.md）
+// 修法：所有取 project name from cwd 的 callsites 必走 cwdToProject() helper（讀 projects.json SoT）
+describe("cwd → project 命名一致性（ADR-008 Phase 1.5）", () => {
+  const CLAUDE_DIR = join(homedir(), ".claude");
+  const HELPER_PATH = join(CLAUDE_DIR, "hooks/lib/cwd-to-project.js");
+
+  it("A. cwd-to-project helper 存在", () => {
+    expect(existsSync(HELPER_PATH)).toBe(true);
+  });
+
+  it("B. helper 能將 /Users/sbu/.claude 解成 nova-brain（SoT=projects.json）", async () => {
+    const { cwdToProject } = await import(HELPER_PATH);
+    expect(cwdToProject("/Users/sbu/.claude")).toBe("nova-brain");
+    expect(cwdToProject("/Users/sbu/projects/nova-manager")).toBe("nova-manager");
+    expect(cwdToProject("")).toBe("unknown");
+    expect(cwdToProject(null)).toBe("unknown");
+  });
+
+  it("C. hooks/ 與 scripts/ 不得殘留 cwd.split(\"/\").pop() 反模式（project 名提取）", () => {
+    // 允許：非 cwd 變數的 split pop（filename / path segment 等）
+    // 禁止：用 basename(cwd) 當 project 名
+    const dirs = [join(CLAUDE_DIR, "hooks"), join(CLAUDE_DIR, "scripts")];
+    const violations = [];
+    for (const dir of dirs) {
+      try {
+        // 找所有 <cwdVar>.split("/").pop() 模式，排除 cwd-to-project.js 本身
+        const result = execSync(
+          `grep -rn "\\bcwd[^\\.]*\\.split.*pop" "${dir}" --include="*.js" | grep -v cwd-to-project`,
+          { encoding: "utf-8", timeout: 5000 }
+        );
+        for (const line of result.trim().split("\n").filter(Boolean)) {
+          // 允許 list：non-cwd 變數（source_cwd/target_cwd 記錄在跨 dispatch 追蹤表，已審查 OK）
+          // 但此測試主張：凡是 <X>cwd.split("/").pop() 都該用 helper
+          violations.push(line);
+        }
+      } catch { /* grep no match = good */ }
+    }
+    if (violations.length > 0) {
+      console.log("違反 cwd→project 一致性：\n" + violations.join("\n"));
+    }
+    expect(violations.length).toBe(0);
+  });
+});
+
+// xd-adr008-phase1.5-gap2: helper fallback 死角守護（2026-04-19）
+// 若 data/projects.json 遺失 nova-brain canonical 條目，cwdToProject("/Users/sbu/.claude") 會
+// fallback 回 basename=".claude"（dot 前綴，重現 bug）。鎖定 SoT 條目完整性。
+describe("projects.json SoT canonical 條目完整性（ADR-008 Phase 1.5 gap 2）", () => {
+  const CLAUDE_DIR = join(homedir(), ".claude");
+  const PROJECTS_JSON = join(CLAUDE_DIR, "data/projects.json");
+
+  it("D. projects.json 必含 cwd=/Users/sbu/.claude 的 canonical 條目（name=nova-brain）", () => {
+    const projects = JSON.parse(readFileSync(PROJECTS_JSON, "utf-8"));
+    const match = projects.find(p => p.cwd === join(homedir(), ".claude"));
+    expect(match).toBeDefined();
+    expect(match?.name).toBe("nova-brain");
+  });
+
+  it("E. cwdToProject(~/.claude) 實際返回 'nova-brain'（不依賴 fallback）", async () => {
+    const { cwdToProject, _resetCacheForTest } = await import(join(CLAUDE_DIR, "hooks/lib/cwd-to-project.js"));
+    _resetCacheForTest();
+    expect(cwdToProject(join(homedir(), ".claude"))).toBe("nova-brain");
+  });
+});
