@@ -278,6 +278,23 @@ describe("Hook module 接線完整性", () => {
     expect(missing).toEqual([]);
   });
 
+  // xd adr008-phase2-flow-observer-wire (2026-04-19): flow-observer key-level 接線守護
+  // 根因：PostToolUse handler 定義在 flow-observer 但未接到 LOCAL_MODULES
+  // → testRun 永不遞增 → reflect-guard 每次 commit 都誤觸發
+  // 同根因：UserPromptSubmit / Stop 也曾漏接（本 session 治本一併補）
+  it("flow-observer 關鍵 handler 在 LOCAL_MODULES 對應群組註冊（防 testRun 累加缺失類 bug）", () => {
+    const hookClientCode = readFile(HOOK_CLIENT);
+    // flow-observer 有 runtime 副作用的 handler 必接（非純 data emit）
+    const CRITICAL_KEYS = ["SessionStart", "UserPromptSubmit", "PostToolUse", "Stop", "PreCompact", "PostCompact"];
+    const missing = [];
+    for (const key of CRITICAL_KEYS) {
+      const groupRe = new RegExp("['\"]" + key + "['\"]\\s*:\\s*\\[([\\s\\S]*?)\\]");
+      const block = hookClientCode.match(groupRe)?.[1] ?? "";
+      if (!block.includes("flow-observer.js")) missing.push(key);
+    }
+    expect(missing).toEqual([]);
+  });
+
   // xd 2026-04-18: chain-integrity scanner 必須認得 LOCAL_MODULES runtime 載入
   // 防「36 筆 hooks/modules/*.js 被誤判 orphan 淹沒真 orphan」回歸
   it("chain-integrity scanner 認得 LOCAL_MODULES runtime 載入", () => {
