@@ -5,9 +5,9 @@ import { readFileSync, existsSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 
-const RULE_PATH = join(homedir(), ".claude/rules/品質/benchmark-winner-selection.md");
+const RULE_PATH = join(homedir(), ".claude/rules/品質/基準勝選判準.md");
 
-describe("rules/品質/benchmark-winner-selection.md (xd-lzhn)", () => {
+describe("rules/品質/基準勝選判準.md (xd-lzhn)", () => {
 	it("rule 檔存在", () => {
 		expect(existsSync(RULE_PATH)).toBe(true);
 	});

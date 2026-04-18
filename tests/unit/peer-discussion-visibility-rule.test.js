@@ -5,9 +5,9 @@ import { readFileSync, existsSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 
-const RULE_PATH = join(homedir(), ".claude/rules/協作/peer-discussion-visibility.md");
+const RULE_PATH = join(homedir(), ".claude/rules/協作/對等討論可見性.md");
 
-describe("rules/協作/peer-discussion-visibility.md (xd-aado)", () => {
+describe("rules/協作/對等討論可見性.md (xd-aado)", () => {
 	it("rule 檔存在", () => {
 		expect(existsSync(RULE_PATH)).toBe(true);
 	});
