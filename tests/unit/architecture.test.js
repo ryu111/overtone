@@ -448,10 +448,10 @@ describe("靜態規則掃描", () => {
     expect(conflicts).toEqual([]);
   });
 
-  it("C12: 全域 CLAUDE.md 行數 ≤ 125 (Stage 0.5-1.0 補 hub cascade + ADR 放寬 120→125, xd-35ku)", () => {
+  it("C12: 全域 CLAUDE.md 行數 ≤ 100 (Stage 1.0-H 外移 Blueprint+ADR pointer 收緊 125→100, xd-ah9v)", () => {
     const content = readFileSync(join(CLAUDE_DIR, "CLAUDE.md"), "utf-8");
     const lines = content.split("\n").length;
-    expect(lines).toBeLessThanOrEqual(125);
+    expect(lines).toBeLessThanOrEqual(100);
   });
 });
 
@@ -828,22 +828,54 @@ describe("hub cascade SSoT 完整性", () => {
     expect(missing).toEqual([]);
   });
 
-  it("CLAUDE.md §Pointer 列出全部 ADR-*.md", () => {
+  it("ADR index hub README.md 列出全部 ADR-*.md (Stage 1.0-H xd-ah9v)", () => {
     const adrDir = join(CLAUDE_DIR, "obsidian/semantic/architecture-decisions");
     if (!ex(adrDir)) return;
     const adrFiles = rd(adrDir).filter(f => f.startsWith("ADR-") && f.endsWith(".md"));
-    const claudemd = readFile(join(CLAUDE_DIR, "CLAUDE.md"));
-    const missing = adrFiles.filter(f => !claudemd.includes(`](obsidian/semantic/architecture-decisions/${f})`));
-    if (missing.length) console.error(`[hub-cascade] ADR 漏連 CLAUDE.md: ${missing.join(", ")}`);
+    const readmePath = join(adrDir, "README.md");
+    if (!ex(readmePath)) {
+      console.error(`[hub-cascade] ADR index hub 不存在: ${readmePath}`);
+      expect(ex(readmePath)).toBe(true);
+      return;
+    }
+    const readme = readFile(readmePath);
+    const missing = adrFiles.filter(f => !readme.includes(`](${f})`));
+    if (missing.length) console.error(`[hub-cascade] ADR 漏連 index hub: ${missing.join(", ")}`);
     expect(missing).toEqual([]);
   });
 
-  it("hub BFS reachability: 所有 hub README 從 CLAUDE.md 可達 (Manager Q4 Test 5)", () => {
+  it("CLAUDE.md 指向 Nova Blueprint + 全域元件歸屬規則 (Stage 1.0-H xd-ah9v)", () => {
     const claudemd = readFile(join(CLAUDE_DIR, "CLAUDE.md"));
+    expect(claudemd).toContain("](obsidian/semantic/nova-blueprint.md)");
+    expect(claudemd).toContain("](rules/協作/跨專案協作.md)");
+  });
+
+  it("Nova Blueprint 指向 ADR index hub (Stage 1.0-H xd-ah9v)", () => {
+    const bpPath = join(CLAUDE_DIR, "obsidian/semantic/nova-blueprint.md");
+    if (!ex(bpPath)) {
+      console.error(`[hub-cascade] Nova Blueprint 不存在: ${bpPath}`);
+      expect(ex(bpPath)).toBe(true);
+      return;
+    }
+    const blueprint = readFile(bpPath);
+    expect(blueprint).toContain("](architecture-decisions/README.md)");
+  });
+
+  it("hub BFS reachability: 所有 hub README 從 CLAUDE.md 直達或經 nova-blueprint.md 2 跳可達 (Stage 1.0-H xd-ah9v)", () => {
+    const claudemd = readFile(join(CLAUDE_DIR, "CLAUDE.md"));
+    const bpPath = join(CLAUDE_DIR, "obsidian/semantic/nova-blueprint.md");
+    const blueprint = ex(bpPath) ? readFile(bpPath) : "";
     // 必要 hub: rules/README, skills/README, agents/README
-    const hubs = ["rules/README.md", "skills/README.md", "agents/README.md"];
-    const missing = hubs.filter(h => !claudemd.includes(`](${h})`));
-    if (missing.length) console.error(`[hub-cascade] hub 未從 CLAUDE.md 可達: ${missing.join(", ")}`);
+    // nova-blueprint.md 相對路徑到 ~/.claude/{rules,skills,agents}/README.md = ../../{dir}/README.md
+    const hubs = [
+      { path: "rules/README.md", bpRel: "../../rules/README.md" },
+      { path: "skills/README.md", bpRel: "../../skills/README.md" },
+      { path: "agents/README.md", bpRel: "../../agents/README.md" },
+    ];
+    const missing = hubs.filter(h =>
+      !claudemd.includes(`](${h.path})`) && !blueprint.includes(`](${h.bpRel})`)
+    );
+    if (missing.length) console.error(`[hub-cascade] hub 未從 CLAUDE.md 可達（直達 or 經 blueprint）: ${missing.map(h => h.path).join(", ")}`);
     expect(missing).toEqual([]);
   });
 });
