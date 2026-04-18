@@ -1127,3 +1127,26 @@ describe("wrapup-guard Phase D deliveredAt 冷卻守護 (xd-yv7v 2026-04-18)", (
     expect(content).toMatch(/createdAt[\s\S]*?30_000/);
   });
 });
+
+// ── 自驅 Bundle manifest SoT 守護 (B' 2026-04-18) ──
+describe("自驅 Bundle manifest SoT 守護 (B' 2026-04-18)", () => {
+  const MANIFEST = join(homedir(), ".claude/config/bundles/self-driven.manifest.yaml");
+
+  it("A. self-driven.manifest.yaml 存在", () => {
+    expect(existsSync(MANIFEST)).toBe(true);
+  });
+
+  it("B. manifest schema 合法（schema_version + bundle_id + members）", () => {
+    const c = readFileSync(MANIFEST, "utf-8");
+    expect(c).toMatch(/schema_version:\s*1/);
+    expect(c).toMatch(/bundle_id:\s*self-driven/);
+    expect(c).toMatch(/members:/);
+  });
+
+  it("C. manifest 每成員 path 實檔存在（防 drift）", () => {
+    const c = readFileSync(MANIFEST, "utf-8");
+    const paths = [...c.matchAll(/^\s*-\s+path:\s+(\S+)/gm)].map(m => m[1]);
+    const missing = paths.filter(p => !existsSync(join(homedir(), ".claude", p)));
+    expect(missing).toEqual([]);
+  });
+});
