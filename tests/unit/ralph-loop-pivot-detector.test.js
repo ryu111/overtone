@@ -48,4 +48,20 @@ describe("ralph-loop-pivot-detector", () => {
 		const content = fs.readFileSync(`${require("node:os").homedir()}/.claude/hooks/hook-client.js`, "utf-8");
 		expect(content).toContain("ralph-loop-pivot-detector.js");
 	});
+
+	test("ralph-loop.local.md 格式異常（無 iteration）不 crash", async () => {
+		if (existsSync(TMPDIR)) rmSync(TMPDIR, { recursive: true });
+		mkdirSync(`${TMPDIR}/.claude`, { recursive: true });
+		writeFileSync(`${TMPDIR}/.claude/ralph-loop.local.md`, "---\nactive: true\n---\n");
+		const mod = await import("/Users/sbu/.claude/hooks/modules/ralph-loop-pivot-detector.js");
+		const result = mod.detectPivot({ cwd: TMPDIR });
+		expect(result).toBeNull();
+	});
+
+	test("getIteration 獨立 export — 支援外部診斷呼叫", async () => {
+		setup(7);
+		const mod = await import("/Users/sbu/.claude/hooks/modules/ralph-loop-pivot-detector.js");
+		expect(mod.getIteration(TMPDIR)).toBe(7);
+		expect(mod.getIteration("/tmp/nonexistent-xxx")).toBeNull();
+	});
 });
