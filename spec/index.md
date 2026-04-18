@@ -17,11 +17,11 @@
 |------|------|
 | agent-browser | "瀏覽器自動化 CLI 工具 — Vercel Labs 出品，Rust 核心 + Playwright。WHEN: 需要 JS 執行、鍵盤 modifier  |
 | architecture | "系統架構設計知識域。WHEN: 架構決策（ADR）、設計模式選擇、技術 tradeoff 分析、並發策略選擇時使用。NOT: 純程式碼實作、bug 修復、日常 |
-| ask | 分析當前工作狀態，產出結構化建議並讓使用者選擇執行。WHEN: 任務段落結束、輸出「本次完成」後需要給使用者下一步建議時觸發。NOT: 日常對話回覆、使用者已有 |
-| auto | 深度路由決策。WHAT: 根據設計決策密度選 D0-D4 + 委派策略。WHEN: Main 接到任何任務、或不確定自己做還是委派時。NOT: 已分類的任務執行 |
+| ask | "分析當前工作狀態，產出結構化建議並讓使用者選擇執行。WHEN: 任務段落結束、輸出「本次完成」後需要給使用者下一步建議時觸發。NOT: 日常對話回覆、使用者已 |
+| auto | "深度路由決策。WHAT: 根據設計決策密度選 D0-D4 + 委派策略。WHEN: Main 接到任何任務、或不確定自己做還是委派時。NOT: 已分類的任務執 |
 | auto-drive | "全自動引擎觀察知識域。觀察 nova auto-drive 迴圈健康狀態，判斷症狀根因，決定介入方式。WHEN: 自動引擎出現異常（RSS 高/loop 空轉 |
-| claude-dev | Claude Code Plugin 開發知識。hooks、agents、skills、commands 的 API 格式、settings 設定系統與 Nov |
-| closed-loop | 元件閉環驗證。新增/修改/刪除 Skill、Agent、Hook 時，確認跨元件依賴完整、資訊流通、spec 文件同步。WHEN: 新增 Skill 後確認 A |
+| claude-dev | "Claude Code Plugin 開發知識。hooks、agents、skills、commands 的 API 格式、settings 設定系統與 No |
+| closed-loop | "元件閉環驗證。新增/修改/刪除 Skill、Agent、Hook 時，確認跨元件依賴完整、資訊流通、spec 文件同步。WHEN: 新增 Skill 後確認  |
 | code-review | "PR Review 知識域：四維度結構化審查 + 回饋分級。WHEN: 審查 PR、code review、撰寫審查回饋時使用。NOT: 撰寫新程式碼、deb |
 | commit-convention | "Conventional commit 知識域。WHEN: 撰寫 commit message、判斷 commit 拆分策略、選擇 type/scope 時使 |
 | component-classification | "元件分類框架：Hook/Rule/Skill/CLAUDE.md 四層職責分離方法論。WHEN: 新增規範前判斷歸屬層級、Rule 膨脹需要拆分、釐清 Hoo |
@@ -34,7 +34,7 @@
 | feedback-loop | "回饋迴圈知識域：成功即進化、自驅任務迴圈、回報與反思的完整協議。WHEN: 完成任務後的反思、自驅任務的監控與排障、品質回報時使用。NOT: 初次任務規劃、架 |
 | harness-invariants | 結構不變式（structural invariants）知識域 — 定義 AI 執行 Edit/Write 時不可違反的隱式約束，由 hooks/modules |
 | local-model-dispatch | "本地模型（g4-26b）角色派發：五種角色 system prompt、work-stealing 並行模式、安全邊界、升降級閾值。WHEN: Main 要用 |
-| model-cascade | 大模型指揮小模型框架。四層架構：Router→Contract→Executor→Feedback Loop。WHEN: 需要多模型協作、任務分配、成本優化時。 |
+| model-cascade | "大模型指揮小模型框架。四層架構：Router→Contract→Executor→Feedback Loop。WHEN: 需要多模型協作、任務分配、成本優化時 |
 | nova-eval | Nova 認知偏離偵測五層 eval（structural/trigger/behavioral/red-team/trajectory）的選用、觸發、判讀、失 |
 | nova-pm | "產品探索與需求釐清。引導 planner agent 以 PM 角色探索需求、定義範圍、比較方案。WHEN: 需求不明確需要釐清、規格討論前的 PM 探索、D |
 | nova-spec | "產品規格管理。建立、追蹤、歸檔 spec/design 文件。WHEN: 使用者說「寫規格」「提案」「歸檔」或觸發 /spec:propose、/spec:d |
@@ -44,10 +44,10 @@
 | pipeline-quality-gate | "multi-tier-loop / g-executor pipeline 的 4 層品質驗證框架。WHEN: 設計或審查 executor/reviewer |
 | refactoring | "重構決策知識域：設計分析、拆分策略、品質指標。WHEN: 判斷何時該拆（SRP 違反）、何時不該拆（高內聚）、選擇重構手法（Extract Module/He |
 | self-evolution | "元認知自評框架：行動前客觀 checklist + 行動後 loop 模式反思。WHEN: dispatch 前、驗收前、重大決策前。NOT: 機械性操作、D |
-| skill-judge | 對 Skill 設計品質進行多維度評分（知識密度、觸發精準度、結構完整性等）。WHEN: 量化評估 Skill 整體設計優劣、生成改善建議報告、進行 Skill |
+| skill-judge | "對 Skill 設計品質進行多維度評分（知識密度、觸發精準度、結構完整性等）。WHEN: 量化評估 Skill 整體設計優劣、生成改善建議報告、進行 Skil |
 | system-audit | "系統審查自動化。10 條交叉引用掃描 + P0/P1/P2 診斷 + 品質閘門。WHEN: /audit 觸發、Manager 說「整理」「健康檢查」「清點」 |
 | thinking | "結構化思維工具：卡關脫困策略、反向驗證法、化繁為簡級聯、方案比較。WHEN: 設計決策僵局、複雜問題需要拆解、方案需要反向驗證、需要比較多個方案時使用。NOT |
-| wording | 措詞正確性知識域。涵蓋四級指令強度標記（⛔📋💡🔧）、emoji-關鍵詞搭配規則、語氣校準（技術文件/commit/agent prompt/對話）、繁體中 |
+| wording | "措詞正確性知識域。涵蓋四級指令強度標記（⛔📋💡🔧）、emoji-關鍵詞搭配規則、語氣校準（技術文件/commit/agent prompt/對話）、繁體 |
 
 ---
 
