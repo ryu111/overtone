@@ -120,6 +120,21 @@ echo "# Test Subdir Memory\n\nIf claude-code loads this, subdir works." > ~/.cla
 - 驗證 PASS → Round 4 收斂 B 方案，ADR-007 寫 B
 - 驗證 FAIL → Round 4 收斂 C 方案（檔名前綴 `nb_MEMORY.md` / `nb_feedback_*.md`），ADR-007 寫 C
 
+### Q5.pre 驗證結果（2026-04-18 本 session Iter 15 觀察）
+
+**狀態**：初步傾向 **FAIL → C 方案**，待 Round 4 確認。
+
+**觀察方法**：本 session 壓縮後接續（壓縮前已建 `test-subdir/TEST.md`），SessionStart auto-memory 注入 context 只看到 `MEMORY.md` 直接內容，**未看到 `test-subdir/TEST.md` 檔內容**（frontmatter 或「Subdir Test Canary」字樣不在 inject 的 memory context）。
+
+**判讀**：
+- claude-code auto-memory 機制很可能只 flat-load `MEMORY.md`（單檔），不遞歸掃 subdirectory
+- 但本觀察非決定性 — 壓縮可能 drop 部分 context，或 auto-memory 有 size limit 先優先 MEMORY.md
+
+**建議 Round 4 做法**：
+1. 決定收斂 **C 方案**（檔名前綴 `nb_MEMORY.md` + `nb_feedback_*.md` 於 flat memory 目錄）— 最安全
+2. 保留 `test-subdir/TEST.md` 做 regression canary — 未來若 claude-code 升級支援 subdir 可換 B
+3. ADR-007 Migration 寫「選 C，若 claude-code future upgrade 支援 subdir 再 migration B（cost ~5min，只需 move files）」
+
 ## Section 4：Risk / Rollback
 
 ### 風險
