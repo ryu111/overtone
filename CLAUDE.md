@@ -88,6 +88,28 @@ echo '{"prompt":"test","cwd":"'$PWD'"}' | bun ~/.claude/hooks/scripts/prompt/on-
 | `docs/vision.md`                             | 五層願景定義               |
 | `docs/目標場景.md`                            | 5 個端到端驗收場景          |
 
+## Related Blueprint（全域架構 pointer）
+
+本 session 在 Nova 全域架構中的定位請先讀：
+
+| 層次 | 文件 | 角色 |
+|------|------|------|
+| 全域 index | `~/.claude/CLAUDE.md` §Nova Blueprint | 四能力閉環 + 三支柱 × L 矩陣 canonical index |
+| 架構決策 | `~/.claude/obsidian/semantic/architecture-decisions/ADR-001-vault-upgrade.md` | vault-layer3 升級（v3 Revised Stage 0-4 全範圍）|
+| 架構決策 | 同目錄 `ADR-003-four-capabilities-closed-loop.md` | sense → detect → fix → learn 閉環 |
+| 架構決策 | 同目錄 `ADR-004-obs-rebuild-operation.md` | obs rebuild 閹割版（結構 only）|
+| 架構決策 | 同目錄 `ADR-005-l1-l4-harness-unification.md` | L1-L4 × 三支柱 framework 統一 |
+| 架構決策 | 同目錄 `ADR-006-feedback-loop-completeness.md` | feedback loop 缺口 3 項補齊 |
+| 盤點 | `~/projects/nova-brain/docs/state-of-nova.md` | L1-L4 現況 + 元件數字 + 缺口清單 |
+| Peer Blueprint | `~/projects/nova-manager/CLAUDE.md` §Related Blueprint | Manager L0 CEO 定位 + 質疑者角色 |
+
+**nb 在此架構中的定位**：
+- Layer L1-L4（canonical owner — rules/skills/hooks/agents/commands/scripts 守護者）
+- 三支柱歸屬：Sensor（hooks/modules 37 個）+ Guide（rules 29 + skills 35）+ Closed-Loop（reflection-resolver + weekly-synthesis + chain-integrity + session-start-health）
+- 四能力閉環中的角色：memory owner（reflections.jsonl + vault/）+ detection infra（chain-integrity + session-start-health）+ fix executor（vault-broken-link-warner 已規劃 Stage 2）+ learn distillation（weekly-synthesis Phase 1 / semantic-distill Stage 4）
+
+下段 `## Blueprint` 是 nb 自身 agent identity（core_objective / non_negotiables / tools / pipeline），互補不重複。
+
 ## Blueprint
 
 > v0 純文件化 Session-agent 定位 (xd-80cb, 2026-04-15)
