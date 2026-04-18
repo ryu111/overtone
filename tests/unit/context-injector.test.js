@@ -110,3 +110,33 @@ describe("flow-observer compliance", () => {
 		expect(warnings.length).toBe(1);
 	});
 });
+
+// ─────────────────────────────────────────────
+// SessionStart handoff pointer（spec/討論/sessionstart-handoff-pointer.md 方案 B）
+// iteration 7 TDD baseline + 未來擴充 todo
+// 派生自 ralph-loop iteration 2-6 cluster（synthesis-002）
+// ─────────────────────────────────────────────
+
+describe("context-injector SessionStart handoff pointer (iter 7 baseline)", () => {
+	test("baseline: 現況 SessionStart 不讀 handoff 檔（日後實作 detectHandoffPointer 時此 test 需更新）", async () => {
+		const HANDOFF_PATH = "/tmp/nova-handoff-test-iter7.md";
+		writeFileSync(HANDOFF_PATH, "## Session Handoff — test-iter7\n日期：2026-04-19\n\n### 最近活動摘要\n這是 handoff 前 5 行內容");
+
+		const mod = await import("/Users/sbu/.claude/hooks/modules/context-injector.js");
+		const result = mod.on.SessionStart({ cwd: "/tmp/test-iter7", source: "compact" });
+		const ctx = result.hookSpecificOutput?.additionalContext || "";
+
+		// 現況 baseline：不含 handoff 內容（未實作 detectHandoffPointer）
+		expect(ctx).not.toContain("handoff 檔");
+		expect(ctx).not.toContain("nova-handoff-test-iter7.md");
+
+		try { unlinkSync(HANDOFF_PATH); } catch {}
+	});
+
+	test.todo("方案 B 實作後：source=compact + handoff 存在 → 注入 pointer + 前 5 行");
+	test.todo("方案 B 實作後：source=clear + handoff 存在 → 注入 pointer + 前 5 行");
+	test.todo("方案 B 實作後：source=startup → 不注入（無 handoff 場景）");
+	test.todo("方案 B 實作後：handoff 不存在 → 不注入");
+	test.todo("方案 B 實作後：注入內容 ≤ 500 bytes（避擠壓 5KB cap）");
+	test.todo("方案 B 實作後：pointer 格式含 '📄 handoff 檔：' + 絕對路徑");
+});

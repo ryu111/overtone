@@ -1345,3 +1345,25 @@ describe("basename(cwd) 反模式零殘留（ADR-008 Phase 1.5 face 2）", () =>
     expect(violations.length).toBe(0);
   });
 });
+
+// Phase A (iter 2-11 cluster) — routing-level CLI + rule 升級
+describe("Phase A: routing-level CLI", () => {
+	it("scripts/routing-level.js 存在且輸出 canonical project name", () => {
+		const fs = require("node:fs");
+		const path = `${require("node:os").homedir()}/.claude/scripts/routing-level.js`;
+		expect(fs.existsSync(path)).toBe(true);
+	});
+	it("rules/核心/深度路由.md 引用 routing-level.js (非 basename $PWD)", () => {
+		const fs = require("node:fs");
+		const content = fs.readFileSync(`${require("node:os").homedir()}/.claude/rules/核心/深度路由.md`, "utf-8");
+		expect(content).toContain("routing-level.js");
+	});
+	it("manage-component.js 支援 script/rule/command 3 類", () => {
+		const fs = require("node:fs");
+		const content = fs.readFileSync(`${require("node:os").homedir()}/.claude/scripts/manage-component.js`, "utf-8");
+		expect(content).toContain('"script", "rule", "command"');
+		expect(content).toContain("createScript");
+		expect(content).toContain("createRule");
+		expect(content).toContain("createCommand");
+	});
+});
