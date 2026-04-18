@@ -968,6 +968,51 @@ describe("候選 1 合併守護：討論生命週期 + 多方協作", () => {
   });
 });
 
+// ── xd-vepo R2 dv8g 自驅叢集 soft grouping 守護（Q1.C + Q2.C + Q3.C 2026-04-18）──
+describe("dv8g 自驅叢集 cross-cutting 守護", () => {
+  const CLAUDE_DIR = join(homedir(), ".claude");
+  const readFileDv = (p) => readFileSync(p, "utf-8");
+
+  // Q1.C: rules/核心/README.md + skills/README.md 含「自驅叢集」section
+  it("rules/核心/README.md 含自驅叢集 section", () => {
+    const readme = readFileDv(join(CLAUDE_DIR, "rules/核心/README.md"));
+    expect(readme).toContain("自驅叢集（cross-cutting concern）");
+  });
+
+  it("skills/README.md 含自驅叢集 section", () => {
+    const readme = readFileDv(join(CLAUDE_DIR, "skills/README.md"));
+    expect(readme).toContain("自驅叢集（cross-cutting concern）");
+  });
+
+  // Q2.C: 3 skills description NOT 段含 cross-skill 邊界
+  it("auto-drive NOT 段含 → feedback-loop + → self-evolution 邊界", () => {
+    const src = readFileDv(join(CLAUDE_DIR, "skills/auto-drive/SKILL.md"));
+    expect(src).toContain("→ feedback-loop");
+    expect(src).toContain("→ self-evolution");
+  });
+
+  it("feedback-loop NOT 段含 → auto-drive + → self-evolution 邊界", () => {
+    const src = readFileDv(join(CLAUDE_DIR, "skills/feedback-loop/SKILL.md"));
+    expect(src).toContain("→ auto-drive");
+    expect(src).toContain("→ self-evolution");
+  });
+
+  it("self-evolution NOT 段含 → auto-drive + → feedback-loop 邊界", () => {
+    const src = readFileDv(join(CLAUDE_DIR, "skills/self-evolution/SKILL.md"));
+    expect(src).toContain("→ auto-drive");
+    expect(src).toContain("→ feedback-loop");
+  });
+
+  // Q3.C: ADR-003 §8.5 自驅叢集對應表
+  it("ADR-003 §8.5 自驅叢集對應表存在", () => {
+    const adr = readFileDv(join(CLAUDE_DIR, "obsidian/semantic/architecture-decisions/ADR-003-four-capabilities-closed-loop.md"));
+    expect(adr).toContain("### 8.5 自驅叢集");
+    expect(adr).toMatch(/sense \+ detect 合流/);
+    expect(adr).toMatch(/learn/);
+    expect(adr).toMatch(/fix/);
+  });
+});
+
 // ── Stage 1.0-E hub cascade SSoT 守護（xd-35ku Round 2 全採 E）──
 describe("hub cascade SSoT 完整性", () => {
   const CLAUDE_DIR = join(homedir(), ".claude");
