@@ -24,7 +24,7 @@
 ---
 name: <string>         # 短名稱（檔案標題或功能一句話）
 description: <string>  # 一段 summary（≤ 200 char），LLM 判斷 relevance 用
-type: <enum>           # 類型：rule / skill / hook / agent / command / adr / incident / reflection / wiki / doc / readme / other
+type: <enum>           # 類型：rule / skill / agent / command / adr / incident / reflection / wiki / doc / readme / other
 ---
 ```
 
@@ -34,7 +34,6 @@ type: <enum>           # 類型：rule / skill / hook / agent / command / adr / 
 |------|---------|------|
 | rule | `rules/*/*.md`（非 README）| 深度路由 / 並行執行 |
 | skill | `skills/*/SKILL.md` | auto / model-cascade |
-| hook | `hooks/*.md`（現 1 檔）| README |
 | agent | `agents/*.md` | executor / planner / reviewer |
 | command | `commands/*.md` | ask / audit |
 | adr | `obsidian/semantic/architecture-decisions/*.md` | ADR-003-006 |
