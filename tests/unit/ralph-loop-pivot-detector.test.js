@@ -65,3 +65,69 @@ describe("ralph-loop-pivot-detector", () => {
 		expect(mod.getIteration("/tmp/nonexistent-xxx")).toBeNull();
 	});
 });
+
+// ─── 新動機 baseline（2026-04-19 commit 4107453 rule 升級配合） ───
+// 偵測：近 3 筆 reflections.jsonl 全無 `外部研究` field → pivot-mandatory warn
+import { appendFileSync } from "node:fs";
+
+function setupReflections(entries) {
+	if (existsSync(TMPDIR)) rmSync(TMPDIR, { recursive: true });
+	mkdirSync(`${TMPDIR}/data`, { recursive: true });
+	const lines = entries.map((e) => JSON.stringify(e)).join("\n") + "\n";
+	writeFileSync(`${TMPDIR}/data/reflections.jsonl`, lines);
+}
+
+describe("pivot-detector — 反思外部研究缺漏偵測（commit 4107453 新動機）", () => {
+	test("近 3 筆反思全無 `外部研究` field → 觸發 pivot-mandatory warn", async () => {
+		setupReflections([
+			{ ts: "2026-04-19T09:00:00Z", 結論: ["a"], 行動: ["commit abc1234"], resolved_at: "2026-04-19T09:00:00Z" },
+			{ ts: "2026-04-19T10:00:00Z", 結論: ["b"], 行動: ["commit def5678"], resolved_at: "2026-04-19T10:00:00Z" },
+			{ ts: "2026-04-19T11:00:00Z", 結論: ["c"], 行動: ["commit 9012345"], resolved_at: "2026-04-19T11:00:00Z" },
+		]);
+		const mod = await import("/Users/sbu/.claude/hooks/modules/ralph-loop-pivot-detector.js");
+		const result = mod.detectNoExternalResearch(TMPDIR);
+		expect(result).not.toBeNull();
+		expect(result.warnMessage).toContain("外部研究");
+		expect(result.warnMessage).toContain("pivot-mandatory");
+	});
+
+	test("近 3 筆至少 1 筆含 `外部研究` field → 不觸發", async () => {
+		setupReflections([
+			{ ts: "2026-04-19T09:00:00Z", 結論: ["a"], 行動: ["x"], resolved_at: "2026-04-19T09:00:00Z" },
+			{ ts: "2026-04-19T10:00:00Z", 結論: ["b"], 行動: ["y"], 外部研究: [{ topic: "t", source_url: "https://x.com", insight: "i" }], resolved_at: "2026-04-19T10:00:00Z" },
+			{ ts: "2026-04-19T11:00:00Z", 結論: ["c"], 行動: ["z"], resolved_at: "2026-04-19T11:00:00Z" },
+		]);
+		const mod = await import("/Users/sbu/.claude/hooks/modules/ralph-loop-pivot-detector.js");
+		const result = mod.detectNoExternalResearch(TMPDIR);
+		expect(result).toBeNull();
+	});
+
+	test("reflections.jsonl 不存在不 crash", async () => {
+		if (existsSync(TMPDIR)) rmSync(TMPDIR, { recursive: true });
+		mkdirSync(TMPDIR, { recursive: true });
+		const mod = await import("/Users/sbu/.claude/hooks/modules/ralph-loop-pivot-detector.js");
+		const result = mod.detectNoExternalResearch(TMPDIR);
+		expect(result).toBeNull();
+	});
+
+	test("少於 3 筆反思不觸發（樣本不足）", async () => {
+		setupReflections([
+			{ ts: "2026-04-19T09:00:00Z", 結論: ["a"], 行動: ["x"], resolved_at: "2026-04-19T09:00:00Z" },
+			{ ts: "2026-04-19T10:00:00Z", 結論: ["b"], 行動: ["y"], resolved_at: "2026-04-19T10:00:00Z" },
+		]);
+		const mod = await import("/Users/sbu/.claude/hooks/modules/ralph-loop-pivot-detector.js");
+		const result = mod.detectNoExternalResearch(TMPDIR);
+		expect(result).toBeNull();
+	});
+
+	test("action 字串含 external-references/ path pattern → 視為有外部研究", async () => {
+		setupReflections([
+			{ ts: "2026-04-19T09:00:00Z", 結論: ["a"], 行動: ["寫 obsidian/semantic/external-references/foo.md"], resolved_at: "2026-04-19T09:00:00Z" },
+			{ ts: "2026-04-19T10:00:00Z", 結論: ["b"], 行動: ["y"], resolved_at: "2026-04-19T10:00:00Z" },
+			{ ts: "2026-04-19T11:00:00Z", 結論: ["c"], 行動: ["z"], resolved_at: "2026-04-19T11:00:00Z" },
+		]);
+		const mod = await import("/Users/sbu/.claude/hooks/modules/ralph-loop-pivot-detector.js");
+		const result = mod.detectNoExternalResearch(TMPDIR);
+		expect(result).toBeNull();
+	});
+});
