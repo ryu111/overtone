@@ -51,7 +51,7 @@
 
 ---
 
-### Scripts（76）
+### Scripts（77）
 
 | 名稱 | 簡述 |
 |------|------|
@@ -63,6 +63,7 @@
 | autonomy-self-scan | Phase 0 (xd-phhg/8nfu) |
 | autoresearch-task | heartbeat 全自動：找最低分 eval 跑 autoresearch |
 | briefing-builder | Session 摘要 + 簡報生成 |
+| bundle-scan | Bundle Manifest 掃描器 |
 | capability-probe | 能力邊界探測 + 模型更新 |
 | chain-integrity | Nova 知識鏈完整性掃描器 |
 | claude-md-drift-check | CLAUDE.md 進度漂移掃描 |
