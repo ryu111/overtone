@@ -785,6 +785,35 @@ function walkMd(dir) {
   return out;
 }
 
+// ── wrapup-guard Stop auto-complete 順序守護（xd-43j5 2026-04-18）──
+// 根因：原 Phase 0 (autoCompleteIncomingDispatches) 在 ralph-loop check 之前無條件執行，
+// 每次 ralph iter Stop 誤關 Main 正在處理的 incoming dispatch → 氾濫假通知。
+// 正確順序：ralph-loop active → early return allow（不 auto-complete）；非 ralph 才 auto-complete。
+describe("wrapup-guard Stop auto-complete 順序", () => {
+  const WRAPUP_GUARD_PATH = join(homedir(), ".claude/hooks/modules/wrapup-guard.js");
+
+  it("wrapup-guard.js ralph-loop check 早於 autoCompleteIncomingDispatches 呼叫", () => {
+    const src = readFileSync(WRAPUP_GUARD_PATH, "utf-8");
+    const stopHandlerStart = src.indexOf("Stop: (input)");
+    expect(stopHandlerStart).toBeGreaterThan(-1);
+    // 取 Stop handler 主體（從 Stop: 到下個 SessionEnd 或檔尾）
+    const stopBody = src.slice(stopHandlerStart);
+    const ralphCheckIdx = stopBody.indexOf("ralph-loop.local.md");
+    const autoCompleteCallIdx = stopBody.indexOf("autoCompleteIncomingDispatches(cwd)");
+    expect(ralphCheckIdx).toBeGreaterThan(-1);
+    expect(autoCompleteCallIdx).toBeGreaterThan(-1);
+    // ralph check 必須先於 auto-complete 呼叫
+    expect(ralphCheckIdx).toBeLessThan(autoCompleteCallIdx);
+  });
+
+  it("ralph-loop existsSync check 後有 early return allow", () => {
+    const src = readFileSync(WRAPUP_GUARD_PATH, "utf-8");
+    // 提取 ralph check 附近 120 字元，驗證有 return { decision: "allow" }
+    const m = src.match(/if\s*\(existsSync\(ralphFile\)\)\s*\{\s*return\s*\{\s*decision:\s*["']allow["']/);
+    expect(m).not.toBeNull();
+  });
+});
+
 // ── Stage 1.0-E hub cascade SSoT 守護（xd-35ku Round 2 全採 E）──
 describe("hub cascade SSoT 完整性", () => {
   const CLAUDE_DIR = join(homedir(), ".claude");
