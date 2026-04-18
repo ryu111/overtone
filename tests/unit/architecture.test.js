@@ -448,10 +448,10 @@ describe("靜態規則掃描", () => {
     expect(conflicts).toEqual([]);
   });
 
-  it("C12: 全域 CLAUDE.md 行數 ≤ 120", () => {
+  it("C12: 全域 CLAUDE.md 行數 ≤ 125 (Stage 0.5-1.0 補 hub cascade + ADR 放寬 120→125, xd-35ku)", () => {
     const content = readFileSync(join(CLAUDE_DIR, "CLAUDE.md"), "utf-8");
     const lines = content.split("\n").length;
-    expect(lines).toBeLessThanOrEqual(120);
+    expect(lines).toBeLessThanOrEqual(125);
   });
 });
 
@@ -784,3 +784,66 @@ function walkMd(dir) {
   }
   return out;
 }
+
+// ── Stage 1.0-E hub cascade SSoT 守護（xd-35ku Round 2 全採 E）──
+describe("hub cascade SSoT 完整性", () => {
+  const CLAUDE_DIR = join(homedir(), ".claude");
+  const { readdirSync: rd, statSync: st, existsSync: ex } = require("node:fs");
+
+  const categories = ["協作", "核心", "品質", "元件", "環境"];
+  for (const cat of categories) {
+    it(`rules/${cat}/README.md 列出該類全部 *.md`, () => {
+      const dir = join(CLAUDE_DIR, "rules", cat);
+      const mdFiles = rd(dir).filter(f => f.endsWith(".md") && f !== "README.md");
+      const readme = readFile(join(dir, "README.md"));
+      const missing = mdFiles.filter(f => !readme.includes(`](${f})`));
+      if (missing.length) console.error(`[hub-cascade] rules/${cat}/ 漏連: ${missing.join(", ")}`);
+      expect(missing).toEqual([]);
+    });
+  }
+
+  it("skills/README.md 列出全部 skills/*/SKILL.md", () => {
+    const dir = join(CLAUDE_DIR, "skills");
+    const skillDirs = rd(dir).filter(d => {
+      const p = join(dir, d);
+      return st(p).isDirectory() && ex(join(p, "SKILL.md")) && d !== "_archived";
+    });
+    const readme = readFile(join(dir, "README.md"));
+    const missing = skillDirs.filter(d => !readme.includes(`](${d}/SKILL.md)`));
+    if (missing.length) console.error(`[hub-cascade] skills 漏連: ${missing.join(", ")}`);
+    expect(missing).toEqual([]);
+  });
+
+  it("agents/README.md 列出全部 agents md-link (top + kfc/)", () => {
+    const dir = join(CLAUDE_DIR, "agents");
+    const topAgents = rd(dir).filter(f => f.endsWith(".md") && f !== "README.md");
+    const kfcDir = join(dir, "kfc");
+    const kfcAgents = ex(kfcDir)
+      ? rd(kfcDir).filter(f => f.endsWith(".md")).map(f => `kfc/${f}`)
+      : [];
+    const all = [...topAgents, ...kfcAgents];
+    const readme = readFile(join(dir, "README.md"));
+    const missing = all.filter(f => !readme.includes(`](${f})`));
+    if (missing.length) console.error(`[hub-cascade] agents 漏連: ${missing.join(", ")}`);
+    expect(missing).toEqual([]);
+  });
+
+  it("CLAUDE.md §Pointer 列出全部 ADR-*.md", () => {
+    const adrDir = join(CLAUDE_DIR, "obsidian/semantic/architecture-decisions");
+    if (!ex(adrDir)) return;
+    const adrFiles = rd(adrDir).filter(f => f.startsWith("ADR-") && f.endsWith(".md"));
+    const claudemd = readFile(join(CLAUDE_DIR, "CLAUDE.md"));
+    const missing = adrFiles.filter(f => !claudemd.includes(`](obsidian/semantic/architecture-decisions/${f})`));
+    if (missing.length) console.error(`[hub-cascade] ADR 漏連 CLAUDE.md: ${missing.join(", ")}`);
+    expect(missing).toEqual([]);
+  });
+
+  it("hub BFS reachability: 所有 hub README 從 CLAUDE.md 可達 (Manager Q4 Test 5)", () => {
+    const claudemd = readFile(join(CLAUDE_DIR, "CLAUDE.md"));
+    // 必要 hub: rules/README, skills/README, agents/README
+    const hubs = ["rules/README.md", "skills/README.md", "agents/README.md"];
+    const missing = hubs.filter(h => !claudemd.includes(`](${h})`));
+    if (missing.length) console.error(`[hub-cascade] hub 未從 CLAUDE.md 可達: ${missing.join(", ")}`);
+    expect(missing).toEqual([]);
+  });
+});
