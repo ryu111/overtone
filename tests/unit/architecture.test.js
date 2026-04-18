@@ -988,6 +988,21 @@ describe("候選 1 合併守護：討論生命週期 + 多方協作", () => {
     const readme = readFile1(join(CLAUDE_DIR, "rules/協作/README.md"));
     expect(readme).toMatch(/\]\(多方協作\.md\)/);
   });
+
+  // xd 2026-04-18 使用者糾正反饋（iter 3）：記 rule 第 1 次升級
+  // (a) complete alreadyCompleted 必發新 dispatch 避免 peer 看不到定案
+  // (b) 自驅發現 adjacency 不 defer — 防自驅短暫化反模式
+  it("討論生命週期.md 含 alreadyCompleted 必發新 dispatch 條款", () => {
+    const content = readFile1(join(CLAUDE_DIR, "rules/協作/討論生命週期.md"));
+    expect(content).toContain("alreadyCompleted");
+    expect(content).toMatch(/必發新 dispatch|重送定案/);
+  });
+
+  it("回饋與進化.md 含 adjacency 不 defer 條款", () => {
+    const content = readFile1(join(CLAUDE_DIR, "rules/品質/回饋與進化.md"));
+    expect(content).toContain("自驅短暫化反模式");
+    expect(content).toMatch(/adjacency.*立即做完不 defer/);
+  });
 });
 
 // ── xd-vepo R2 dv8g 自驅叢集 soft grouping 守護（Q1.C + Q2.C + Q3.C 2026-04-18）──
