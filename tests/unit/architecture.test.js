@@ -838,6 +838,46 @@ describe("wrapup-guard Stop auto-complete 順序", () => {
   });
 });
 
+// ── xd-0pcx R2 Rule 廣意化 Phase 2 候選 2：任務管理 + 總結格式 → 任務生命週期（2026-04-18）──
+// Manager Round 2 ack: Q1 45-50 行規模 / Q2 grep+sed 批量 (no redirect) / Q3 加 d) 正向引用守護
+describe("候選 2 合併守護：任務生命週期", () => {
+  const CLAUDE_DIR = join(homedir(), ".claude");
+  const readFile2 = (p) => readFileSync(p, "utf-8");
+
+  // A. 合併後檔案存在性
+  it("rules/核心/任務生命週期.md 存在", () => {
+    expect(existsSync(join(CLAUDE_DIR, "rules/核心/任務生命週期.md"))).toBe(true);
+  });
+
+  // B. 被合檔案消失性（防 drift 舊檔復辟）
+  it("舊任務管理.md + 總結格式.md 已刪除", () => {
+    expect(existsSync(join(CLAUDE_DIR, "rules/核心/任務管理.md"))).toBe(false);
+    expect(existsSync(join(CLAUDE_DIR, "rules/環境/總結格式.md"))).toBe(false);
+  });
+
+  // C. 否定式守護：舊 rule 名稱不在任何 hub README md-link 中
+  it("舊 rule md-link 零引用於 hub README", () => {
+    const hubs = [
+      "rules/核心/README.md",
+      "rules/環境/README.md",
+      "rules/README.md",
+    ];
+    const oldNames = ["任務管理.md", "總結格式.md"];
+    for (const hub of hubs) {
+      const content = readFile2(join(CLAUDE_DIR, hub));
+      for (const name of oldNames) {
+        expect(content).not.toMatch(new RegExp(`\\[.*\\]\\(.*${name}\\)`));
+      }
+    }
+  });
+
+  // d. 正向守護（xd-7w7b R2 Q3 d 加）：新 rule md-link 在 hub README 引用
+  it("新任務生命週期.md 被 rules/核心/README.md md-link 引用", () => {
+    const readme = readFile2(join(CLAUDE_DIR, "rules/核心/README.md"));
+    expect(readme).toMatch(/\]\(任務生命週期\.md\)/);
+  });
+});
+
 // ── Stage 1.0-E hub cascade SSoT 守護（xd-35ku Round 2 全採 E）──
 describe("hub cascade SSoT 完整性", () => {
   const CLAUDE_DIR = join(homedir(), ".claude");
