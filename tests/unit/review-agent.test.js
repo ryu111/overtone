@@ -6,6 +6,7 @@ import {
 	readCommit,
 	readTodayReflection,
 	readLatestSynthesis,
+	hasCrossRepoTest,
 } from "../../../../.claude/scripts/review-agent.js";
 import { mkdtempSync, rmSync, writeFileSync, mkdirSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -99,6 +100,49 @@ describe("buildFindings", () => {
 describe("readCommit", () => {
 	it("非 git 目錄 → null", () => {
 		expect(readCommit(tmpDir)).toBeNull();
+	});
+});
+
+describe("hasCrossRepoTest (cross-repo 偵測修 false positive)", () => {
+	it("hooks/modules/reflect-guard.js → 找到 reflect-guard.test.js", () => {
+		expect(hasCrossRepoTest("hooks/modules/reflect-guard.js")).toBe(true);
+	});
+
+	it("scripts/review-agent.js → 找到 review-agent.test.js", () => {
+		expect(hasCrossRepoTest("scripts/review-agent.js")).toBe(true);
+	});
+
+	it("不存在的檔 → false", () => {
+		expect(hasCrossRepoTest("hooks/modules/nonexistent-xyz-9999.js")).toBe(false);
+	});
+
+	it("支援自訂 testsDir", () => {
+		expect(hasCrossRepoTest("a.js", "/nonexistent-dir")).toBe(false);
+	});
+});
+
+describe("reviewDimensions test_coverage cross-repo 邏輯", () => {
+	it("code 檔有 cross-repo test → score 9 不 actionable", () => {
+		const commit = {
+			hash: "abc1234",
+			message: "feat: x " + "x".repeat(50),
+			files: ["hooks/modules/reflect-guard.js"],
+		};
+		const dims = reviewDimensions({ commit, reflection: null, synthesis: null });
+		expect(dims.test_coverage.score).toBe(9);
+		expect(dims.test_coverage.actionable).toBeUndefined();
+		expect(dims.test_coverage.notes).toContain("cross-repo-test=1");
+	});
+
+	it("code 檔無 cross-repo test → score 4 + actionable", () => {
+		const commit = {
+			hash: "abc1234",
+			message: "feat: x " + "x".repeat(50),
+			files: ["hooks/modules/nonexistent-abcdef.js"],
+		};
+		const dims = reviewDimensions({ commit, reflection: null, synthesis: null });
+		expect(dims.test_coverage.score).toBe(4);
+		expect(dims.test_coverage.actionable).toBeTruthy();
 	});
 });
 
