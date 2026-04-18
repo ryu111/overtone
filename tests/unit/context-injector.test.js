@@ -118,7 +118,7 @@ describe("flow-observer compliance", () => {
 // ─────────────────────────────────────────────
 
 describe("context-injector SessionStart handoff pointer (iter 7 baseline)", () => {
-	test("baseline: 現況 SessionStart 不讀 handoff 檔（日後實作 detectHandoffPointer 時此 test 需更新）", async () => {
+	test("Phase B 實作後：source=compact 現已注入 handoff pointer（iter7 baseline 已升級）", async () => {
 		const HANDOFF_PATH = "/tmp/nova-handoff-test-iter7.md";
 		writeFileSync(HANDOFF_PATH, "## Session Handoff — test-iter7\n日期：2026-04-19\n\n### 最近活動摘要\n這是 handoff 前 5 行內容");
 
@@ -126,17 +126,72 @@ describe("context-injector SessionStart handoff pointer (iter 7 baseline)", () =
 		const result = mod.on.SessionStart({ cwd: "/tmp/test-iter7", source: "compact" });
 		const ctx = result.hookSpecificOutput?.additionalContext || "";
 
-		// 現況 baseline：不含 handoff 內容（未實作 detectHandoffPointer）
-		expect(ctx).not.toContain("handoff 檔");
-		expect(ctx).not.toContain("nova-handoff-test-iter7.md");
+		// Phase B 後 baseline 升級：應含 pointer
+		expect(ctx).toContain("📄 handoff 檔：");
+		expect(ctx).toContain("test-iter7");
 
-		try { unlinkSync(HANDOFF_PATH); } catch {}
+		try { unlinkSync(HANDOFF_PATH); } catch (e) { /* cleanup best-effort */ }
 	});
 
-	test.todo("方案 B 實作後：source=compact + handoff 存在 → 注入 pointer + 前 5 行");
-	test.todo("方案 B 實作後：source=clear + handoff 存在 → 注入 pointer + 前 5 行");
-	test.todo("方案 B 實作後：source=startup → 不注入（無 handoff 場景）");
-	test.todo("方案 B 實作後：handoff 不存在 → 不注入");
-	test.todo("方案 B 實作後：注入內容 ≤ 500 bytes（避擠壓 5KB cap）");
-	test.todo("方案 B 實作後：pointer 格式含 '📄 handoff 檔：' + 絕對路徑");
+	test("方案 B 實作後：source=compact + handoff 存在 → 注入 pointer + 前 5 行", async () => {
+		const HANDOFF_PATH = "/tmp/nova-handoff-test-b1.md";
+		const HANDOFF_BODY = "## Session Handoff — test-b1\n日期：2026-04-19\n\n### 內容\n前 5 行測試 content";
+		writeFileSync(HANDOFF_PATH, HANDOFF_BODY);
+		const mod = await import("/Users/sbu/.claude/hooks/modules/context-injector.js");
+		const result = mod.on.SessionStart({ cwd: "/tmp/test-b1", source: "compact" });
+		const ctx = result.hookSpecificOutput?.additionalContext || "";
+		expect(ctx).toContain("📄 handoff 檔：");
+		expect(ctx).toContain(HANDOFF_PATH);
+		expect(ctx).toContain("前 5 行測試 content");
+		try { unlinkSync(HANDOFF_PATH); } catch (e) { /* cleanup best-effort */ }
+	});
+
+	test("方案 B 實作後：source=clear + handoff 存在 → 注入 pointer + 前 5 行", async () => {
+		const HANDOFF_PATH = "/tmp/nova-handoff-test-b2.md";
+		writeFileSync(HANDOFF_PATH, "line1\nline2\nline3\nline4\nline5\nline6");
+		const mod = await import("/Users/sbu/.claude/hooks/modules/context-injector.js");
+		const result = mod.on.SessionStart({ cwd: "/tmp/test-b2", source: "clear" });
+		const ctx = result.hookSpecificOutput?.additionalContext || "";
+		expect(ctx).toContain("📄 handoff 檔：");
+		try { unlinkSync(HANDOFF_PATH); } catch (e) { /* cleanup best-effort */ }
+	});
+
+	test("方案 B 實作後：source=startup → 不注入（無 handoff 場景）", async () => {
+		const HANDOFF_PATH = "/tmp/nova-handoff-test-b3.md";
+		writeFileSync(HANDOFF_PATH, "some content");
+		const mod = await import("/Users/sbu/.claude/hooks/modules/context-injector.js");
+		const result = mod.on.SessionStart({ cwd: "/tmp/test-b3", source: "startup" });
+		const ctx = result.hookSpecificOutput?.additionalContext || "";
+		expect(ctx).not.toContain("📄 handoff 檔：");
+		try { unlinkSync(HANDOFF_PATH); } catch (e) { /* cleanup best-effort */ }
+	});
+
+	test("方案 B 實作後：handoff 不存在 → 不注入", async () => {
+		const mod = await import("/Users/sbu/.claude/hooks/modules/context-injector.js");
+		const result = mod.on.SessionStart({ cwd: "/tmp/test-b4-nonexistent", source: "compact" });
+		const ctx = result.hookSpecificOutput?.additionalContext || "";
+		expect(ctx).not.toContain("📄 handoff 檔：");
+	});
+
+	test("方案 B 實作後：注入內容 ≤ 500 bytes（避擠壓 5KB cap）", async () => {
+		const HANDOFF_PATH = "/tmp/nova-handoff-test-b5.md";
+		writeFileSync(HANDOFF_PATH, "A".repeat(10000)); // 10KB handoff
+		const mod = await import("/Users/sbu/.claude/hooks/modules/context-injector.js");
+		const result = mod.on.SessionStart({ cwd: "/tmp/test-b5", source: "compact" });
+		const ctx = result.hookSpecificOutput?.additionalContext || "";
+		const pointerMatch = ctx.match(/📄 handoff 檔：[^（]+（完整內容請 Read tool 取得）/s);
+		expect(pointerMatch).toBeTruthy();
+		expect(pointerMatch[0].length).toBeLessThan(500);
+		try { unlinkSync(HANDOFF_PATH); } catch (e) { /* cleanup best-effort */ }
+	});
+
+	test("方案 B 實作後：pointer 格式含 '📄 handoff 檔：' + 絕對路徑", async () => {
+		const HANDOFF_PATH = "/tmp/nova-handoff-test-b6.md";
+		writeFileSync(HANDOFF_PATH, "content");
+		const mod = await import("/Users/sbu/.claude/hooks/modules/context-injector.js");
+		const result = mod.on.SessionStart({ cwd: "/tmp/test-b6", source: "compact" });
+		const ctx = result.hookSpecificOutput?.additionalContext || "";
+		expect(ctx).toMatch(/📄 handoff 檔：\/tmp\/nova-handoff-[\w-]+\.md/);
+		try { unlinkSync(HANDOFF_PATH); } catch (e) { /* cleanup best-effort */ }
+	});
 });
