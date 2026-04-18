@@ -170,7 +170,7 @@ import { glob } from "fs/promises";
 import { homedir } from "node:os";
 
 const IGNORE_PATTERNS = /* parse ~/.claude/.obsidianignore */;
-const TYPE_ENUM = ["rule", "skill", "hook", "agent", "command", "adr", "incident", "reflection", "wiki", "doc", "readme", "other"];
+const TYPE_ENUM = ["rule", "skill", "agent", "command", "adr", "incident", "reflection", "wiki", "doc", "readme", "other"];
 
 for (const md of await glob("~/.claude/**/*.md")) {
   if (matchesIgnore(md, IGNORE_PATTERNS)) continue;
