@@ -8,8 +8,9 @@ import {
 	persistReflection,
 	actionHasVerifiable,
 	validateActions,
+	appendActionsToStatePrompt,
 } from "../../../../.claude/hooks/modules/reflection-persist.js";
-import { mkdtempSync, rmSync, writeFileSync, existsSync, readFileSync } from "node:fs";
+import { mkdtempSync, rmSync, writeFileSync, existsSync, readFileSync, mkdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -257,5 +258,80 @@ describe("persistReflection schema warn", () => {
 			// 有寫入才檢查 warn — 可能 parseInsightBullets 判為 結論 而非 行動
 			// 若行動為空，validateActions 回 null，沒 warn
 		}
+	});
+});
+
+describe("appendActionsToStatePrompt (7/24 閉環組件 1)", () => {
+	function makeState(active = true) {
+		const statePath = join(tmpDir, ".claude/ralph-loop.local.md");
+		mkdirSync(join(tmpDir, ".claude"), { recursive: true });
+		const content = `---
+active: ${active}
+iteration: 1
+session_id: test
+max_iterations: 100
+completion_promise: "DONE"
+started_at: "2026-04-19T00:00:00Z"
+---
+
+原 prompt 內容
+
+═══════════════════════════════════════════
+CRITICAL RULE — Ralph Loop
+═══════════════════════════════════════════
+`;
+		writeFileSync(statePath, content);
+		return statePath;
+	}
+
+	it("有可驗證 action + active=true → append 到 CRITICAL RULE 之前", () => {
+		const statePath = makeState(true);
+		appendActionsToStatePrompt(tmpDir, ["commit abc1234 修了 bug", "rules/核心/失敗與修復.md 補條款"]);
+		const c = readFileSync(statePath, "utf-8");
+		expect(c).toContain("自驅追加");
+		expect(c).toContain("commit abc1234");
+		expect(c).toContain("rules/核心/失敗與修復.md");
+		const appendIdx = c.indexOf("自驅追加");
+		const criticalIdx = c.indexOf("CRITICAL RULE");
+		expect(appendIdx).toBeLessThan(criticalIdx);
+	});
+
+	it("active=false → 不 append（閒置 loop 不污染）", () => {
+		const statePath = makeState(false);
+		appendActionsToStatePrompt(tmpDir, ["commit abc1234 修了 bug"]);
+		const c = readFileSync(statePath, "utf-8");
+		expect(c).not.toContain("自驅追加");
+	});
+
+	it("純散文 action（無可驗證標的）→ 不 append", () => {
+		const statePath = makeState(true);
+		appendActionsToStatePrompt(tmpDir, ["持續觀察", "下次注意"]);
+		const c = readFileSync(statePath, "utf-8");
+		expect(c).not.toContain("自驅追加");
+	});
+
+	it("state 檔案不存在 → silently skip（不 throw）", () => {
+		expect(() => appendActionsToStatePrompt(tmpDir, ["commit abc1234"])).not.toThrow();
+	});
+
+	it("同 action 文字已存在 state → 跳過不重複 append", () => {
+		const statePath = makeState(true);
+		appendActionsToStatePrompt(tmpDir, ["commit abc1234 修了 bug"]);
+		appendActionsToStatePrompt(tmpDir, ["commit abc1234 修了 bug"]);
+		const c = readFileSync(statePath, "utf-8");
+		const occurrences = (c.match(/commit abc1234/g) || []).length;
+		expect(occurrences).toBe(1);
+	});
+
+	it("persistReflection 整合：有 verifiable action → state.prompt 收到 append", () => {
+		const statePath = makeState(true);
+		const insightText = [
+			"`★ Insight ───────`",
+			"1. **發現**：commit def5678 修了 bug via rules/核心/X.md",
+			"`─────────────────`",
+		].join("\n");
+		persistReflection({ cwd: tmpDir, last_assistant_message: insightText });
+		const c = readFileSync(statePath, "utf-8");
+		expect(c).toContain("自驅追加");
 	});
 });
