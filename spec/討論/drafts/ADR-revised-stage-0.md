@@ -1,12 +1,12 @@
-# ADR-001 Revised (v2) — Vault-Layer3 升級為 nb 資產 + 清點 + Stage 0-4 全包
+# ADR-001 Revised (v3) — Vault-Layer3 升級 + 清點 + Stage 0-4 全包（含 Obsidian 官方 ignore 修正）
 
-**狀態**：Draft (proposed, Stage 0 草稿待使用者 Obsidian 切 A PASS 後 commit canonical)
+**狀態**：Draft (proposed v3 — Revised after xd-zsjd Decision 1 證據修正)
 
 ```yaml
 adr_number: 001
-title: Vault-Layer3 Upgrade (Revised v2 — Full Scope with 清點 + Stage Rename)
-schema_version: 2
-supersedes: ADR-001 v1 (2026-04-17 Accepted, Round 1-5)
+title: Vault-Layer3 Upgrade (Revised v3 — Obsidian 官方 ignore + sync script)
+schema_version: 3
+supersedes: ADR-001 v1 (2026-04-17 Accepted, Round 1-5) + v2 intermediate draft
 status: proposed (draft)
 date: 2026-04-18
 authors: nova-brain (scope owner)
@@ -76,13 +76,19 @@ Manager 外部研究（external-research-karpathy-wiki-2026-04.md）盤點 6 項
 
 ### 1. vault_root = A (~/.claude/)
 
-**決策**：Obsidian vault root 設為 `~/.claude/` 整根，以 `.obsidianignore` 排雜訊（projects/ 等 15 類）。
+**決策**：Obsidian vault root 設為 `~/.claude/` 整根，以 **Obsidian 官方 `.obsidian/app.json` 的 `userIgnoreFilters` 陣列**排雜訊（28+ 目錄/檔案）。
 
 **理由**：
 - rules/ ↔ skills/ ↔ obsidian/ 跨目錄 backlink 能被 Obsidian 索引
 - 對齊 Karpathy 2026 markdown-first 模式
-- `.obsidianignore` 已建（28 條 + `!agents/README.md` 補充）
-- 實測 ignore 後 indexed md = 271（遠低於 6000 目標，Graph view 必流暢）
+- **Obsidian 官方 ignore 機制**：`.obsidian/app.json` 的 `userIgnoreFilters: [...]` array（sources: [Obsidian Forum](https://forum.obsidian.md/t/ignore-exclude-completely-files-or-a-folder-from-all-obsidian-indexers-and-parsers/52025)）
+- `.obsidianignore` 保留為 human-friendly SoT（git-friendly），由 `scripts/sync-obsidian-ignore.js` sync 到 app.json 避免兩處 drift
+
+**v2 錯誤修正**（v2 曾宣稱「實測 ignore 後 indexed md = 271」）：
+- 271 數字來自 nb Round 6 Q1 的 `find -not -path` 命令模擬，**非** Obsidian 實際 ignore
+- Obsidian 根本不讀 `.obsidianignore`（自造機制），需用 `app.json userIgnoreFilters` 才生效
+- obsidian CLI `files/folders/orphans` 命令**也不遵守** userIgnoreFilters（列全 vault 66k+ 檔）
+- 實際 Obsidian indexed 檔數需 app 首次 open 後由 Graph view 節點數為準（預估 200-400 範圍）
 
 ### 2. 清點納入 = A（含 27-38d 全範圍）
 
@@ -198,15 +204,21 @@ Nova 實作映射：
 
 **Scope**：
 - ADR Revised draft → canonical（本檔）
-- 使用者 Runbook 切 vault B→A + 實機驗收 2 項
-- 三 CLAUDE.md §Related Blueprint 起草（各自，不 commit canonical）
+- `scripts/sync-obsidian-ignore.js` 實作 + 跑一次同步（`.obsidianignore` → `app.json userIgnoreFilters`）
+- 使用者 Runbook 切 vault B→A + 實機驗 **1 項**（Graph view 節點數）
+- 三 CLAUDE.md §Related Blueprint 起草 + Stage 0 完工同日 3 commit
+- frontmatter schema spec draft 完成
 
 **Gate 條件**（通過 → Stage 1 自動啟動）：
-- ADR Revised draft Manager 驗收 PASS
-- 使用者 Runbook 實機驗 2 項 PASS（首次 index < 30s / Graph view 節點數 ~271）
-- 三 CLAUDE.md §Related Blueprint draft 存在
+- ADR Revised v3 draft Manager 驗收 PASS
+- **CLI 代驗**（靜態配置）：
+  - `jq '.userIgnoreFilters | length' ~/.claude/.obsidian/app.json` ≥ 28
+  - `jq . ~/.claude/.obsidian/app.json` JSON valid
+  - `bun ~/.claude/scripts/sync-obsidian-ignore.js` 跑一次無錯 + 輸出跟 app.json 一致
+- **使用者實機驗 1 項**：open A vault 後 Graph view 節點數 < 6000（首次 index 時間不明示 SLO，體感慢可 rollback）
+- 三 CLAUDE.md §Related Blueprint draft 存在 + 同日 3 commit 計畫
 
-**Fail 路徑**：使用者 Runbook FAIL → Round 8 降 B 討論
+**Fail 路徑**：使用者 Graph view 節點數 ≥ 6000 → Round N 降 B 或補 userIgnoreFilters 再驗
 
 ### Stage 1（2-3 週）— 搬遷主力 + frontmatter 統一
 
@@ -418,5 +430,10 @@ ADR-obsidian-cli (未編號 ADR)
 ## Change Log
 
 - 2026-04-17 v1 accepted by user (Round 3 簽核, xd-vhw3) — Plan C 聚焦 15-21d, 不含清點
-- 2026-04-18 v2 proposed (本 draft) — Round 6-7 共識 + 使用者 4 答 + Karpathy 對齊
-- Pending: Stage 0 完工 dispatch 後 v2 accepted by user + v1 標 superseded
+- 2026-04-18 v2 proposed (intermediate draft) — Round 6-7 共識 + 使用者 4 答 + Karpathy 對齊
+- 2026-04-18 v3 proposed (本 draft, xd-zsjd Round 2 after Manager 發現 Decision 1 證據錯誤) — 修正:
+  - Decision 1 `.obsidianignore` 改 `app.json userIgnoreFilters`（Obsidian 官方機制）
+  - 271 indexed md 數字刪除（find 模擬非 Obsidian 實際）
+  - Stage 0 Gate 降 1 項使用者實機（CLI 代驗靜態配置 + Graph view 節點數 1 項）
+  - 新增 `scripts/sync-obsidian-ignore.js` 為 Stage 0 scope + Gate 驗收項
+- Pending: Stage 0 完工 dispatch 後 v3 accepted by user + v1/v2 標 superseded
