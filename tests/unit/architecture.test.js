@@ -1005,6 +1005,54 @@ describe("候選 1 合併守護：討論生命週期 + 多方協作", () => {
   });
 });
 
+// ── ADR-008 Phase 1 搬家守護（2026-04-19）──
+describe("ADR-008 Phase 1: nb → nova 搬家預鋪", () => {
+  const CLAUDE_DIR = join(homedir(), ".claude");
+  const readFileAdr = (p) => readFileSync(p, "utf-8");
+
+  it("ADR-008 檔案存在", () => {
+    expect(existsSync(join(CLAUDE_DIR, "obsidian/semantic/architecture-decisions/ADR-008-nb-to-nova-full-migration.md"))).toBe(true);
+  });
+
+  it("~/.claude/CLAUDE.md 保留 Blueprint md-link trace（身份段外移）", () => {
+    const claudeMd = readFileAdr(join(CLAUDE_DIR, "CLAUDE.md"));
+    expect(claudeMd).toContain("## Blueprint");
+    expect(claudeMd).toMatch(/\]\(obsidian\/semantic\/agent-identity\/nova\.md\)/);
+    // Blueprint 內容主體外移 — CLAUDE.md 不再含完整 agent_id/core_objective 等欄位
+  });
+
+  it("agent-identity/nova.md 存在且含完整 Blueprint (ADR-007 D1 + ADR-008)", () => {
+    const novaMd = readFileAdr(join(CLAUDE_DIR, "obsidian/semantic/agent-identity/nova.md"));
+    expect(novaMd).toMatch(/agent_id:\s*nova\b/);
+    expect(novaMd).toMatch(/alias:.*nova-brain/);
+    expect(novaMd).toContain("core_objective");
+    expect(novaMd).toContain("non_negotiables");
+    expect(novaMd).toContain("pipeline");
+  });
+
+  it("global-element-guard.js 身份判定讀 CLAUDE.md agent_id", () => {
+    const guard = readFileAdr(join(CLAUDE_DIR, "hooks/modules/global-element-guard.js"));
+    expect(guard).toMatch(/function\s+readAgentId\s*\(/);
+    expect(guard).toContain("AUTHORIZED_AGENTS");
+    expect(guard).toMatch(/Set\(\["nova",\s*"nova-brain"\]\)/);
+    // cwd fallback safety net 必須保留（過渡期）
+    expect(guard).toContain("cwd.includes(\"nova-brain\")");
+    expect(guard).toMatch(/cwd\.startsWith\(CLAUDE_DIR\)/);
+  });
+
+  it("session-ctl.js 含 nova entry 指向 ~/.claude", () => {
+    const sctl = readFileAdr(join(CLAUDE_DIR, "scripts/session-ctl.js"));
+    expect(sctl).toMatch(/"nova":\s*join\(homedir\(\),\s*"\.claude"\)/);
+    // legacy nova-brain 映射保留（過渡兼容）
+    expect(sctl).toMatch(/"nova-brain":\s*join\(homedir\(\),\s*"\.claude"\)/);
+  });
+
+  it("cli/dispatch.js 含 nova entry 指向 ~/.claude", () => {
+    const disp = readFileAdr(join(CLAUDE_DIR, "scripts/cli/dispatch.js"));
+    expect(disp).toMatch(/"nova":\s*join\(homedir\(\),\s*"\.claude"\)/);
+  });
+});
+
 // ── xd-vepo R2 dv8g 自驅叢集 soft grouping 守護（Q1.C + Q2.C + Q3.C 2026-04-18）──
 describe("dv8g 自驅叢集 cross-cutting 守護", () => {
   const CLAUDE_DIR = join(homedir(), ".claude");
