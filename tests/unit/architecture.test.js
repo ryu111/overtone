@@ -878,6 +878,41 @@ describe("候選 2 合併守護：任務生命週期", () => {
   });
 });
 
+// ── xd-7w7b R2 Rule 廣意化 Phase 2 候選 4：canonical-引用驗證 + 呼叫者邊界 → caller-邊界（2026-04-18）──
+describe("候選 4 合併守護：caller-邊界", () => {
+  const CLAUDE_DIR = join(homedir(), ".claude");
+  const readFile4 = (p) => readFileSync(p, "utf-8");
+
+  it("rules/元件/caller-邊界.md 存在", () => {
+    expect(existsSync(join(CLAUDE_DIR, "rules/元件/caller-邊界.md"))).toBe(true);
+  });
+
+  it("舊 canonical-引用驗證.md + 呼叫者邊界.md 已刪除", () => {
+    expect(existsSync(join(CLAUDE_DIR, "rules/協作/canonical-引用驗證.md"))).toBe(false);
+    expect(existsSync(join(CLAUDE_DIR, "rules/元件/呼叫者邊界.md"))).toBe(false);
+  });
+
+  it("舊 rule md-link 零引用於 hub README", () => {
+    const hubs = [
+      "rules/協作/README.md",
+      "rules/元件/README.md",
+      "rules/README.md",
+    ];
+    const oldNames = ["canonical-引用驗證.md", "呼叫者邊界.md"];
+    for (const hub of hubs) {
+      const content = readFile4(join(CLAUDE_DIR, hub));
+      for (const name of oldNames) {
+        expect(content).not.toMatch(new RegExp(`\\[.*\\]\\(.*${name}\\)`));
+      }
+    }
+  });
+
+  it("新 caller-邊界.md 被 rules/元件/README.md md-link 引用", () => {
+    const readme = readFile4(join(CLAUDE_DIR, "rules/元件/README.md"));
+    expect(readme).toMatch(/\]\(caller-邊界\.md\)/);
+  });
+});
+
 // ── Stage 1.0-E hub cascade SSoT 守護（xd-35ku Round 2 全採 E）──
 describe("hub cascade SSoT 完整性", () => {
   const CLAUDE_DIR = join(homedir(), ".claude");
