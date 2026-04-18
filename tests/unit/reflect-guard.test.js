@@ -116,12 +116,29 @@ describe("reflect-guard: reflection.jsonl 品質守護", () => {
 		expect(r.hookSpecificOutput?.additionalContext).toContain("品質不足");
 	});
 
-	it("Write reflections.jsonl 含 rule/skill 關鍵詞 → 不 warn", () => {
+	it("Write reflections.jsonl 含 rule/skill + 外部研究關鍵詞 → 不 warn", () => {
 		const p = join(tmpDir, "reflections.jsonl");
-		const entry = { ts: "2026-04-13", trigger: "test", "行動": ["修 rules/核心/核心.md 第 5 條"] };
+		const entry = {
+			ts: "2026-04-13",
+			trigger: "test",
+			"行動": ["修 rules/核心/核心.md 第 5 條 via WebSearch arxiv 研究"],
+		};
 		writeFileSync(p, `${JSON.stringify(entry)}\n`);
 		const r = handler({ tool_name: "Write", tool_input: { file_path: p } });
 		expect(r.hookSpecificOutput?.additionalContext).toBeUndefined();
+	});
+
+	it("組件5: 有 rule/skill 但無外部研究 → warn 第 4 步缺失 + baseline 累積", () => {
+		const p = join(tmpDir, "reflections.jsonl");
+		const entry = {
+			ts: "2026-04-13",
+			trigger: "test",
+			"行動": ["修 rules/核心/核心.md 第 5 條"],
+		};
+		writeFileSync(p, `${JSON.stringify(entry)}\n`);
+		const r = handler({ tool_name: "Write", tool_input: { file_path: p }, cwd: tmpDir });
+		expect(r.hookSpecificOutput?.additionalContext).toContain("外部研究");
+		expect(r.hookSpecificOutput?.additionalContext).toMatch(/baseline/);
 	});
 
 	it("fail-open：malformed input → allow 不 throw", () => {
