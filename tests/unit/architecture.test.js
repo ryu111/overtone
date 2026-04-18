@@ -1107,3 +1107,23 @@ describe("hub cascade SSoT 完整性", () => {
     expect(missing).toEqual([]);
   });
 });
+
+// ── wrapup-guard Phase D deliveredAt 冷卻守護（xd-yv7v 2026-04-18）─────────────────
+describe("wrapup-guard Phase D deliveredAt 冷卻守護 (xd-yv7v 2026-04-18)", () => {
+  const WRAPUP_PATH = join(homedir(), ".claude/hooks/modules/wrapup-guard.js");
+
+  it("A. wrapup-guard.js 存在", () => {
+    expect(existsSync(WRAPUP_PATH)).toBe(true);
+  });
+
+  it("B. autoCompleteIncomingDispatches 含 deliveredAt 60s 冷卻判斷", () => {
+    const content = readFile(WRAPUP_PATH);
+    // 驗證 deliveredAt 與 60_000 同時存在於 filter 邏輯
+    expect(content).toMatch(/deliveredAt[\s\S]*?60_000|60_000[\s\S]*?deliveredAt/);
+  });
+
+  it("C. createdAt 30s sanity 保留（不被誤刪）", () => {
+    const content = readFile(WRAPUP_PATH);
+    expect(content).toMatch(/createdAt[\s\S]*?30_000/);
+  });
+});
