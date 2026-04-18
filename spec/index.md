@@ -1,5 +1,5 @@
 # 專案索引
-> 自動產生於 2026-04-17
+> 自動產生於 2026-04-18
 
 ## 元件目錄
 
@@ -51,7 +51,7 @@
 
 ---
 
-### Scripts（75）
+### Scripts（76）
 
 | 名稱 | 簡述 |
 |------|------|
@@ -122,6 +122,7 @@
 | skill-wiki-integrity | Option C 獨立 script（ADR-002 Q2） |
 | smoke-flow | Feedback Loop 主動流程測試（Phase 7） |
 | spec-tasks | 本地任務管理模組（CLI 入口 + re-export） |
+| sync-obsidian-ignore | 把 .obsidianignore (SoT) sync 到 .obsidian/app.json userIgnoreFilters |
 | tool-matcher | 意圖→工具語意匹配：給定任務描述，從 tool-registry 推薦工具組合 |
 | tool-registry | 工具索引：掃描 5 種工具來源，建立統一查詢索引 |
 | vault-manager | Credential Vault CRUD + 敏感域紀律 |
