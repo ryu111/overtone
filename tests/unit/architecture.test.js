@@ -286,6 +286,19 @@ describe("Hook module 接線完整性", () => {
     expect(src).toContain("hook-client.js");
     expect(src).toContain("for (const p of collectRuntimeLoaderRefs())");
   });
+
+  // xd 2026-04-18 Q3: chain-integrity scanner 必須讀 component-lifecycle.json allowlist_notes
+  // SSoT coupling 原則：lifecycle governance SoT 決定「有效元件」定義，scanner 須 couple
+  // 防「戰略儲備元件繼續被列 orphan → daily-report 脫敏」回歸
+  it("chain-integrity scanner 讀 allowlist_notes 豁免戰略儲備", () => {
+    const src = readFileSync(join(homedir(), ".claude/scripts/chain-integrity.js"), "utf-8");
+    expect(src).toMatch(/function\s+loadLifecycleAllowlistNotes\s*\(/);
+    expect(src).toContain("component-lifecycle.json");
+    expect(src).toContain("allowlist_notes");
+    expect(src).toContain("exemptedCount");
+    // 必須 log 豁免數（避免靜默豁免）
+    expect(src).toMatch(/log\(`Orphan 判定：\$\{exemptedCount\}/);
+  });
 });
 
 // ── Guard 覆蓋率 ──
