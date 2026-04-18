@@ -913,6 +913,61 @@ describe("候選 4 合併守護：caller-邊界", () => {
   });
 });
 
+// ── xd-hbar R2 C 方案 Rule 廣意化 Phase 2 候選 1：討論式派發+持久化+完成即討論 → 討論生命週期，對等討論可見性 → 多方協作（2026-04-18）──
+describe("候選 1 合併守護：討論生命週期 + 多方協作", () => {
+  const CLAUDE_DIR = join(homedir(), ".claude");
+  const readFile1 = (p) => readFileSync(p, "utf-8");
+
+  // === 討論生命週期.md ===
+  it("rules/協作/討論生命週期.md 存在", () => {
+    expect(existsSync(join(CLAUDE_DIR, "rules/協作/討論生命週期.md"))).toBe(true);
+  });
+
+  it("舊 3 檔已刪除（討論式派發 + 持久化 + 完成即討論）", () => {
+    expect(existsSync(join(CLAUDE_DIR, "rules/協作/討論式派發.md"))).toBe(false);
+    expect(existsSync(join(CLAUDE_DIR, "rules/協作/討論式派發持久化.md"))).toBe(false);
+    expect(existsSync(join(CLAUDE_DIR, "rules/協作/完成即討論.md"))).toBe(false);
+  });
+
+  it("討論生命週期.md 舊 md-link 零引用於 hub README", () => {
+    const hubs = ["rules/協作/README.md", "rules/README.md"];
+    const oldNames = ["討論式派發.md", "討論式派發持久化.md", "完成即討論.md"];
+    for (const hub of hubs) {
+      const content = readFile1(join(CLAUDE_DIR, hub));
+      for (const name of oldNames) {
+        expect(content).not.toMatch(new RegExp(`\\[.*\\]\\(.*${name}\\)`));
+      }
+    }
+  });
+
+  it("新 討論生命週期.md 被 rules/協作/README.md md-link 引用", () => {
+    const readme = readFile1(join(CLAUDE_DIR, "rules/協作/README.md"));
+    expect(readme).toMatch(/\]\(討論生命週期\.md\)/);
+  });
+
+  // === 多方協作.md ===
+  it("rules/協作/多方協作.md 存在", () => {
+    expect(existsSync(join(CLAUDE_DIR, "rules/協作/多方協作.md"))).toBe(true);
+  });
+
+  it("舊對等討論可見性.md 已刪除", () => {
+    expect(existsSync(join(CLAUDE_DIR, "rules/協作/對等討論可見性.md"))).toBe(false);
+  });
+
+  it("對等討論可見性.md md-link 零引用於 hub README", () => {
+    const hubs = ["rules/協作/README.md", "rules/README.md"];
+    for (const hub of hubs) {
+      const content = readFile1(join(CLAUDE_DIR, hub));
+      expect(content).not.toMatch(/\]\(.*對等討論可見性\.md\)/);
+    }
+  });
+
+  it("新 多方協作.md 被 rules/協作/README.md md-link 引用", () => {
+    const readme = readFile1(join(CLAUDE_DIR, "rules/協作/README.md"));
+    expect(readme).toMatch(/\]\(多方協作\.md\)/);
+  });
+});
+
 // ── Stage 1.0-E hub cascade SSoT 守護（xd-35ku Round 2 全採 E）──
 describe("hub cascade SSoT 完整性", () => {
   const CLAUDE_DIR = join(homedir(), ".claude");
