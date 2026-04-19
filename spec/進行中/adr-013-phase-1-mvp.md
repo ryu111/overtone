@@ -183,3 +183,24 @@ related:
 - [nm Round 3 review](~/projects/nova-manager/spec/討論/ADR-013-phase-1-mvp-nm-round3-review.md)
 - [業界對標](../../obsidian/semantic/external-references/agent-self-improvement-memory-integration-2026.md)
 - [Stop hook 驗收偵測 incident（Issue 4 獨立 scope）](../../obsidian/episodic/incidents/stop-hook-verification-detection-too-narrow.md)
+
+## 完成記錄（2026-04-20）
+
+- **Phase 1 上線時間**：2026-04-20
+- **17 test 全綠**：arch 612 pass 0 fail + unit 12 pass
+- **實機 E2E ✅**：`incident-auto-draft` hook 自動產出 `drift-DRAFT-2026-04-19.md`（T10 LOCAL_MODULES wire + T3 邏輯 + T4 config 全鏈路活體驗證）
+- **第一個 ROI demo**：T5 Case 4 rename drift catch 上線瞬間抓到真實 drift（skills/model-cascade → rules/環境/工具選擇.md 引用舊名）
+- **W1 閉環**：xd-x90h reviewer finding → migration v2 擴補無 frontmatter 邊界（commit ef3d56c，4 舊 incident 全補）
+- **ADR-013 升級**：`proposed-draft` → `proposed`（xd-0156）
+
+### Phase 2 P3 ROI gate
+- **2 週後（2026-05-04）**：T9 second snapshot + baseline diff
+- **判決指標**：`new_incident_count` / `violation_trend` / `rule_rename_caught` / `draft_finalize_ratio`
+- diff 達閾值 → Phase 2 實作 P3（Top Violations auto-propose）；否則 P3 延後 / 砍
+
+### 相關 commits（時序）
+- f7a0f2f: T0/T8 baseline snapshot
+- 7fdcf22: T1/T3/T4/T7/T10 core
+- ab54bf8: 17 test (nb)
+- b1d56a7: arch test T5 Case 4 修正 rename revert 判準
+- ef3d56c: migration v2 + 4 incident frontmatter 補齊 (xd-x90h 閉環)
