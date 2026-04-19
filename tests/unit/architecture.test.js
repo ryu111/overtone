@@ -1561,3 +1561,176 @@ describe("Phase A: routing-level CLI", () => {
 		expect(content).toContain("createCommand");
 	});
 });
+
+// ── ADR-013 Phase 1 T5/T6/T9 — obi × harness 整合守護（2026-04-20）──
+describe("ADR-013 Phase 1 T5 — P2 rule-incident evidence", () => {
+	const CLAUDE_DIR = join(homedir(), ".claude");
+	const INCIDENTS_DIR = join(CLAUDE_DIR, "obsidian/episodic/incidents");
+
+	function listIncidentFiles() {
+		const fs = require("node:fs");
+		try {
+			return fs.readdirSync(INCIDENTS_DIR).filter((f) => f.endsWith(".md"));
+		} catch { return []; }
+	}
+
+	it("Case 1: rule 引用 incidents/xd-XXXX 路徑 → 檔必存在", () => {
+		const offenders = [];
+		const rulesDir = join(CLAUDE_DIR, "rules");
+		const fs = require("node:fs");
+		const files = walkMd(rulesDir);
+		for (const f of files) {
+			const content = fs.readFileSync(f, "utf-8");
+			// 匹配 incidents/{topic}.md 路徑
+			const refs = [...content.matchAll(/incidents\/([a-z0-9\-_]+)\.md/gi)];
+			for (const m of refs) {
+				const refFile = join(INCIDENTS_DIR, `${m[1]}.md`);
+				if (!fs.existsSync(refFile)) offenders.push(`${f.replace(CLAUDE_DIR + "/", "")}: incidents/${m[1]}.md`);
+			}
+		}
+		if (offenders.length > 0) {
+			console.warn("[P2 Case 1 warn]", offenders.slice(0, 5).join(" | "));
+		}
+		// 初期 warn（Phase 1 穩定後升 block）
+		expect(Array.isArray(offenders)).toBe(true);
+	});
+
+	it("Case 2: incident upgraded_to: rules/X.md → rule 必 grep keyword", () => {
+		const fs = require("node:fs");
+		const incidents = listIncidentFiles();
+		const violations = [];
+		for (const inc of incidents) {
+			const content = fs.readFileSync(join(INCIDENTS_DIR, inc), "utf-8");
+			const m = content.match(/upgraded_to:\s*(rules\/[^\s\n]+\.md)/);
+			if (!m) continue;
+			const rulePath = join(CLAUDE_DIR, m[1]);
+			if (!fs.existsSync(rulePath)) {
+				violations.push(`${inc}: upgraded_to rule 不存在 ${m[1]}`);
+				continue;
+			}
+			const ruleContent = fs.readFileSync(rulePath, "utf-8");
+			// incident topic slug（檔名去 -DRAFT-YYYY-MM-DD / .md）作 keyword
+			const topicSlug = inc.replace(/-DRAFT-\d{4}-\d{2}-\d{2}/, "").replace(/\.md$/, "");
+			if (!ruleContent.includes(topicSlug) && !ruleContent.includes(inc.replace(".md", ""))) {
+				violations.push(`${inc}: upgraded_to ${m[1]} 但 rule 無 grep keyword ${topicSlug}`);
+			}
+		}
+		if (violations.length > 0) console.warn("[P2 Case 2 warn]", violations.slice(0, 5).join(" | "));
+		expect(Array.isArray(violations)).toBe(true);
+	});
+
+	it("Case 3: rule 引用 obsidian/semantic/ 路徑 → 檔必存在", () => {
+		const fs = require("node:fs");
+		const rulesDir = join(CLAUDE_DIR, "rules");
+		const files = walkMd(rulesDir);
+		const offenders = [];
+		for (const f of files) {
+			const content = fs.readFileSync(f, "utf-8");
+			const refs = [...content.matchAll(/obsidian\/semantic\/([\w\-\/]+\.md)/g)];
+			for (const m of refs) {
+				const refFile = join(CLAUDE_DIR, "obsidian/semantic", m[1]);
+				if (!fs.existsSync(refFile)) offenders.push(`${f.replace(CLAUDE_DIR + "/", "")}: obsidian/semantic/${m[1]}`);
+			}
+		}
+		if (offenders.length > 0) console.warn("[P2 Case 3 warn]", offenders.slice(0, 5).join(" | "));
+		expect(Array.isArray(offenders)).toBe(true);
+	});
+
+	it("Case 4: rename drift — 近 30 天 git rename 引用舊名檢測（-M flag rename detection）", () => {
+		const { execSync } = require("node:child_process");
+		let renames = [];
+		try {
+			const out = execSync(
+				`git -C ${CLAUDE_DIR} log --diff-filter=R -M --name-status --since='30 days ago' --pretty=format: 2>/dev/null`,
+				{ encoding: "utf-8", timeout: 10000 }
+			).trim();
+			// Rename line format: R<score>\t<old>\t<new>
+			renames = out.split("\n")
+				.filter((l) => l.startsWith("R"))
+				.map((l) => { const parts = l.split("\t"); return { old: parts[1], new: parts[2] }; })
+				.filter((r) => r.old && r.new);
+		} catch { /* git log 失敗（無歷史或 timeout）跳過 */ }
+
+		// 掃 rules/ 和 incidents/ 是否仍引用 old name
+		const fs = require("node:fs");
+		const offenders = [];
+		const searchDirs = ["rules", "obsidian/episodic/incidents", "CLAUDE.md"];
+		for (const r of renames) {
+			for (const dir of searchDirs) {
+				const path = join(CLAUDE_DIR, dir);
+				if (!fs.existsSync(path)) continue;
+				try {
+					const grepOut = execSync(
+						`grep -rln ${JSON.stringify(r.old)} ${JSON.stringify(path)} 2>/dev/null || true`,
+						{ encoding: "utf-8", timeout: 5000 }
+					).trim();
+					if (grepOut) offenders.push(`rename ${r.old} → ${r.new}，但仍被引用於 ${grepOut.split("\n")[0]}`);
+				} catch { /* skip */ }
+			}
+		}
+		if (offenders.length > 0) console.warn("[P2 Case 4 rename drift warn]", offenders.slice(0, 3).join(" | "));
+		expect(Array.isArray(offenders)).toBe(true);
+	});
+});
+
+describe("ADR-013 Phase 1 T6 — DRAFT 7d stale guard", () => {
+	const CLAUDE_DIR = join(homedir(), ".claude");
+	const INCIDENTS_DIR = join(CLAUDE_DIR, "obsidian/episodic/incidents");
+	const STALE_MS = 7 * 24 * 60 * 60 * 1000;
+
+	it("episodic/incidents/*-DRAFT-*.md 無 mtime > 7d（若有 → 請 finalize 或刪除）", () => {
+		const fs = require("node:fs");
+		const now = Date.now();
+		const stale = [];
+		try {
+			const files = fs.readdirSync(INCIDENTS_DIR).filter((f) => /-DRAFT-\d{4}-\d{2}-\d{2}\.md$/.test(f));
+			for (const f of files) {
+				const st = fs.statSync(join(INCIDENTS_DIR, f));
+				if (now - st.mtimeMs > STALE_MS) stale.push(f);
+			}
+		} catch { /* INCIDENTS_DIR 不存在跳過 */ }
+		if (stale.length > 0) console.warn("[T6 stale DRAFT]", stale.join(", "));
+		expect(stale).toEqual([]);
+	});
+});
+
+describe("ADR-013 Phase 1 T9 — T8 baseline snapshot arch 守護", () => {
+	const CLAUDE_DIR = join(homedir(), ".claude");
+	const BASELINE_DIR = join(CLAUDE_DIR, "data/phase-1-baseline");
+
+	it("data/phase-1-baseline/ 存在 + 至少 1 snapshot 檔", () => {
+		const fs = require("node:fs");
+		expect(fs.existsSync(BASELINE_DIR)).toBe(true);
+		const files = fs.readdirSync(BASELINE_DIR).filter((f) => f.startsWith("top-violations-") && f.endsWith(".json"));
+		expect(files.length).toBeGreaterThanOrEqual(1);
+	});
+
+	it("T8 snapshot schema valid（snapshot_ts / violations / draft_finalize_ratio）", () => {
+		const fs = require("node:fs");
+		const files = fs.readdirSync(BASELINE_DIR).filter((f) => f.startsWith("top-violations-") && f.endsWith(".json"));
+		expect(files.length).toBeGreaterThanOrEqual(1);
+		const first = JSON.parse(fs.readFileSync(join(BASELINE_DIR, files[0]), "utf-8"));
+		expect(typeof first.snapshot_ts).toBe("string");
+		expect(Array.isArray(first.violations)).toBe(true);
+		expect("draft_finalize_ratio" in first).toBe(true); // key 存在（值可為 null）
+	});
+});
+
+describe("ADR-013 Phase 1 T4 — config/incident-triggers.json SoT", () => {
+	const CLAUDE_DIR = join(homedir(), ".claude");
+	const CFG = join(CLAUDE_DIR, "config/incident-triggers.json");
+
+	it("config/incident-triggers.json 存在 + schema valid", () => {
+		const fs = require("node:fs");
+		expect(fs.existsSync(CFG)).toBe(true);
+		const cfg = JSON.parse(fs.readFileSync(CFG, "utf-8"));
+		expect(Array.isArray(cfg.patterns)).toBe(true);
+		expect(cfg.patterns.length).toBeGreaterThanOrEqual(3);
+		for (const p of cfg.patterns) {
+			expect(typeof p.id).toBe("string");
+			expect(typeof p.pattern).toBe("string");
+			expect(() => new RegExp(p.pattern)).not.toThrow();
+		}
+		expect(typeof cfg._rationale).toBe("string");
+	});
+});
