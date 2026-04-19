@@ -220,6 +220,49 @@ describe("guards: evaluateEdit test.skip 守衛", () => {
 	});
 });
 
+// iter 12 新增：nova session PROTECTED_PATHS 豁免 baseline
+// 使用者授權 commit 9477678 2026-04-19：nova (cwd ∈ ~/.claude/) 為全域核心，豁免 PROTECTED_PATHS
+// 防回歸：若未來誤刪 bypass，本 test 立即失敗
+describe("guards: evaluateEdit nova session PROTECTED_PATHS 豁免 (iter 12)", () => {
+	const NOVA_ROUTING = `/tmp/nova-routing-level-.claude.txt`;
+	beforeEach(() => { writeFileSync(NOVA_ROUTING, "D1"); });
+	afterEach(() => { try { unlinkSync(NOVA_ROUTING); } catch {} });
+
+	it("nova cwd (~/.claude) + hooks/modules/ 保護路徑 → allow（nova 豁免）", () => {
+		const filePath = join(CLAUDE_DIR, "hooks/modules/foo.js");
+		const r = evaluateEdit({ cwd: CLAUDE_DIR, tool_input: { file_path: filePath, content: "// ok" } });
+		expect(r.hookSpecificOutput.permissionDecision).toBe("allow");
+		expect(r.hookSpecificOutput.additionalContext).toContain("nova session");
+		expect(r.hookSpecificOutput.additionalContext).toContain("PROTECTED_PATHS 豁免");
+	});
+
+	it("nova 子目錄 (~/.claude/scripts) + skills/ 保護路徑 → allow", () => {
+		writeFileSync(`/tmp/nova-routing-level-scripts.txt`, "D1");
+		const filePath = join(CLAUDE_DIR, "skills/foo/SKILL.md");
+		const r = evaluateEdit({ cwd: join(CLAUDE_DIR, "scripts"), tool_input: { file_path: filePath, content: "# skill" } });
+		expect(r.hookSpecificOutput.permissionDecision).toBe("allow");
+		try { unlinkSync(`/tmp/nova-routing-level-scripts.txt`); } catch {}
+	});
+
+	it("非 nova cwd (/tmp) + 保護路徑 → deny（原行為保留）", () => {
+		writeFileSync(EDIT_ROUTING, "D1");
+		const filePath = join(CLAUDE_DIR, "hooks/modules/foo.js");
+		const r = evaluateEdit({ cwd: EDIT_CWD, tool_input: { file_path: filePath, content: "// ok" } });
+		expect(r.hookSpecificOutput.permissionDecision).toBe("deny");
+		expect(r.hookSpecificOutput.permissionDecisionReason).toContain("保護元件");
+		try { unlinkSync(EDIT_ROUTING); } catch {}
+	});
+
+	it("nova cwd 相似但非根路徑 (/Users/sbu/.claude-fake) → 不 allow（精準前綴守護）", () => {
+		writeFileSync(`/tmp/nova-routing-level-.claude-fake.txt`, "D1");
+		const fakeDir = `${homedir()}/.claude-fake`;
+		const filePath = join(CLAUDE_DIR, "hooks/modules/foo.js");
+		const r = evaluateEdit({ cwd: fakeDir, tool_input: { file_path: filePath, content: "// ok" } });
+		expect(r.hookSpecificOutput.permissionDecision).toBe("deny");
+		try { unlinkSync(`/tmp/nova-routing-level-.claude-fake.txt`); } catch {}
+	});
+});
+
 describe("guards: evaluateEdit PROTECTED_PATHS", () => {
 	beforeEach(() => { writeFileSync(EDIT_ROUTING, "D1"); });
 	afterEach(() => { try { unlinkSync(EDIT_ROUTING); } catch {} });
