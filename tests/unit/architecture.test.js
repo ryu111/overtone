@@ -297,8 +297,9 @@ describe("Hook module 接線完整性", () => {
 
   // xd 2026-04-18: chain-integrity scanner 必須認得 LOCAL_MODULES runtime 載入
   // 防「36 筆 hooks/modules/*.js 被誤判 orphan 淹沒真 orphan」回歸
+  // iter 19 方案 C 單點拆：Phase 1 移至 scripts/lib/chain-integrity-ref.js
   it("chain-integrity scanner 認得 LOCAL_MODULES runtime 載入", () => {
-    const src = readFileSync(join(homedir(), ".claude/scripts/chain-integrity.js"), "utf-8");
+    const src = readFileSync(join(homedir(), ".claude/scripts/lib/chain-integrity-ref.js"), "utf-8");
     expect(src).toMatch(/function\s+collectRuntimeLoaderRefs\s*\(/);
     expect(src).toContain("hook-client.js");
     expect(src).toContain("for (const p of collectRuntimeLoaderRefs())");
@@ -307,8 +308,9 @@ describe("Hook module 接線完整性", () => {
   // xd 2026-04-18 Q3: chain-integrity scanner 必須讀 component-lifecycle.json allowlist_notes
   // SSoT coupling 原則：lifecycle governance SoT 決定「有效元件」定義，scanner 須 couple
   // 防「戰略儲備元件繼續被列 orphan → daily-report 脫敏」回歸
+  // iter 19 方案 C 單點拆：Phase 1 移至 scripts/lib/chain-integrity-ref.js
   it("chain-integrity scanner 讀 allowlist_notes 豁免戰略儲備", () => {
-    const src = readFileSync(join(homedir(), ".claude/scripts/chain-integrity.js"), "utf-8");
+    const src = readFileSync(join(homedir(), ".claude/scripts/lib/chain-integrity-ref.js"), "utf-8");
     expect(src).toMatch(/function\s+loadLifecycleAllowlistNotes\s*\(/);
     expect(src).toContain("component-lifecycle.json");
     expect(src).toContain("allowlist_notes");
@@ -782,8 +784,9 @@ describe("寫作規範 md-link 唯一 SoT", () => {
     expect(content).toMatch(/NEVER 用 backtick 包 path/);
   });
 
+  // iter 19 方案 C 單點拆：REF_PATTERNS 移至 scripts/lib/chain-integrity-ref.js
   it("chain-integrity.js REF_PATTERNS 僅含 md-link", () => {
-    const path = join(CLAUDE_DIR, "scripts/chain-integrity.js");
+    const path = join(CLAUDE_DIR, "scripts/lib/chain-integrity-ref.js");
     const content = readFile(path);
     const refBlockMatch = content.match(/const REF_PATTERNS = \[([\s\S]*?)\];/);
     expect(refBlockMatch).toBeTruthy();
