@@ -763,6 +763,24 @@ describe("tmux paste-buffer -p 守護", () => {
       }
       expect(offenders).toEqual([]);
     });
+
+    // Wave1 P2（iter 3）— 防 vacuous pass：若有人刪光 paste-buffer 呼叫
+    // test 仍 pass（offenders.length=0）。加 existence assertion。
+    it(label + " 必含 ≥1 paste-buffer -p 呼叫（防 S1 regression）", () => {
+      if (!existsSync(path)) {
+        console.warn("[arch-paste-buffer-exists] " + label + " 不存在，跳過");
+        return;
+      }
+      const src = readFile(path);
+      const lines = src.split("\n");
+      let count = 0;
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (trimmed.startsWith("//") || trimmed.startsWith("*") || trimmed.startsWith("#")) continue;
+        if (line.includes("paste-buffer") && line.includes("-p")) count++;
+      }
+      expect(count).toBeGreaterThanOrEqual(1);
+    });
   }
 });
 
