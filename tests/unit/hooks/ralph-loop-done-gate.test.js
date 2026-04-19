@@ -69,10 +69,18 @@ describe("ralph-loop.js Phase 3.5/4 已加 DONE gate (source grep 驗證)", () =
     expect(src).toMatch(/xd-flmk/);
   });
 
-  test("graceful close 關鍵字 allow（iter 5 commit caaa4a1 配合）", () => {
+  // iter 14 治本：graceful close 需附可驗證 evidence（不再單純 claim 就放行）
+  test("graceful close 含 evidence（ctx 數字 / quota / 使用者明示）→ allow", () => {
     expect(isPromptDoneAllowed("本輪完成 → graceful close：ctx > 50% 需新 session")).toBe(true);
-    expect(isPromptDoneAllowed("graceful close 本 session")).toBe(true);
-    expect(isPromptDoneAllowed("Graceful Close — structural reason")).toBe(true);
+    expect(isPromptDoneAllowed("graceful close：ctx usage > 70% 接近上限")).toBe(true);
+    expect(isPromptDoneAllowed("graceful close：quota 接近 5h 上限")).toBe(true);
+    expect(isPromptDoneAllowed("graceful close：使用者明示暫停")).toBe(true);
+  });
+
+  test("graceful close 無 evidence 單純 claim → reject（iter 14 治本 AI self-dismissal）", () => {
+    expect(isPromptDoneAllowed("graceful close 本 session")).toBe(false);
+    expect(isPromptDoneAllowed("Graceful Close — structural reason")).toBe(false);
+    expect(isPromptDoneAllowed("本輪完成 graceful close")).toBe(false);
   });
 
   test("無 graceful close 且無其他白名單 → reject", () => {
@@ -99,8 +107,35 @@ describe("下一目標續 iter 強制不 DONE（iter 12 使用者糾正治本）
     expect(isPromptDoneAllowed("本輪無剩餘任務，下一目標：待定")).toBe(true);
   });
 
-  test("舊 graceful close 行為不變", () => {
+  test("舊 graceful close 行為：含 ctx evidence 仍 allow", () => {
     expect(isPromptDoneAllowed("本輪完成 → graceful close：ctx > 70%")).toBe(true);
     expect(isPromptDoneAllowed("本輪無剩餘任務")).toBe(true);
+  });
+});
+
+// iter 14 使用者糾正「找出自驅停止根因」治本 baseline (2026-04-19)
+describe("graceful close + deferred pipeline 矛盾偵測（iter 14 治本 AI self-dismissal）", () => {
+  test("graceful close + ≥ 2 bullet 下一目標清單 → reject（矛盾）", () => {
+    const promptWithPipeline = [
+      "本輪完成 → graceful close：ctx > 70%",
+      "下一目標清單：",
+      "- (1) 做 A",
+      "- (2) 做 B",
+    ].join("\n");
+    expect(isPromptDoneAllowed(promptWithPipeline)).toBe(false);
+  });
+
+  test("graceful close + 2 個「下一目標」字串 → reject", () => {
+    const p = "下一目標：X 任務。下一目標：Y 任務。graceful close：ctx > 70%";
+    expect(isPromptDoneAllowed(p)).toBe(false);
+  });
+
+  test("graceful close + 單一下一目標 + evidence → allow", () => {
+    const p = "graceful close：ctx > 70%，下一目標：deferred 到 successor";
+    expect(isPromptDoneAllowed(p)).toBe(true);
+  });
+
+  test("graceful close 無 bullet 無多重目標 + evidence → allow（正常場景）", () => {
+    expect(isPromptDoneAllowed("本輪完成 → graceful close：ctx > 80% 需新 session")).toBe(true);
   });
 });

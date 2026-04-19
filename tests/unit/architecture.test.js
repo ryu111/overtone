@@ -1143,10 +1143,18 @@ describe("ralph-loop 7/24 持續運轉紀律 baseline", () => {
     expect(src).toMatch(/graceful\s*close\s*僅限.*ctx.*quota.*使用者明示/s);
   });
 
-  it("ralph-loop.md MUST pick 最小 ROI 項續 iter 反模式識別", () => {
+  it("ralph-loop.md MUST pick 至少一項續 iter 反模式識別（iter 13 複選升級）", () => {
     const src = readFileSync(rulePath, "utf-8");
     expect(src).toContain("選項表格 ≥ 2 項");
-    expect(src).toMatch(/pick 其中最小 ROI 項續 iter/);
+    expect(src).toMatch(/pick 其中至少一項（複選更佳）續 iter/);
+  });
+
+  // iter 14 使用者糾正「找出自驅停止根因」治本 wording (2026-04-19)
+  it("ralph-loop.md 含 iter 14 AI self-dismissal 治本條款", () => {
+    const src = readFileSync(rulePath, "utf-8");
+    expect(src).toMatch(/NEVER.*AI 主觀 claim graceful close/);
+    expect(src).toContain("可驗證 evidence");
+    expect(src).toMatch(/NEVER.*graceful close.*AND.*下一目標清單.*AND.*下一目標/s);
   });
 });
 
