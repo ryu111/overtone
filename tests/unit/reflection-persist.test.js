@@ -408,6 +408,45 @@ describe("parseExternalResearch", () => {
 	});
 
 	// iter 6 live flow 驗證：mirror iter 5 實際輸出結構
+	it("reflection lite — buildEntry 空行動+有外部研究 → resolve_reason=insight_with_external_research_only", () => {
+		const parsed = {
+			結論: ["insight"],
+			行動: [],
+			外部研究: [{ topic: "T", source_url: "https://x.com", insight: "i" }],
+		};
+		const entry = buildEntry({ cwd: "/tmp" }, parsed, "hash_lite");
+		expect(entry.外部研究).toBeDefined();
+		expect(entry.resolve_reason).toBe("insight_with_external_research_only");
+		expect(entry.resolved_at).not.toBeNull();
+	});
+
+	it("persistReflection — 空行動+空外部研究 → systemMessage 不 persist", () => {
+		const tmpCwd = require("node:fs").mkdtempSync(require("node:os").tmpdir() + "/reflection-lite-");
+		const text = `前言\n### ★ Insight\n- 教學洞察 A（純 prose）\n- 教學洞察 B（無 action）\n## 接下來的建議`;
+		const r = persistReflection({ cwd: tmpCwd, last_assistant_message: text });
+		expect(r.systemMessage).toContain("純教學");
+		expect(require("node:fs").existsSync(tmpCwd + "/data/reflections.jsonl")).toBe(false);
+	});
+
+	it("persistReflection — 空行動+有外部研究 → persist entry with reflection lite", () => {
+		const tmpCwd = require("node:fs").mkdtempSync(require("node:os").tmpdir() + "/reflection-lite-");
+		const text = `前言
+### ★ Insight
+- 教學洞察 A（純 prose）
+- 教學洞察 B（無 action）
+
+## 外部研究
+- Topic X：見 https://arxiv.org/abs/1234.5678 — 業界印證
+## 接下來的建議`;
+		persistReflection({ cwd: tmpCwd, last_assistant_message: text });
+		const path = tmpCwd + "/data/reflections.jsonl";
+		expect(require("node:fs").existsSync(path)).toBe(true);
+		const entry = JSON.parse(require("node:fs").readFileSync(path, "utf-8").trim().split("\n").pop());
+		expect(entry.外部研究).toBeDefined();
+		expect(entry.外部研究.length).toBeGreaterThan(0);
+		expect(entry.resolve_reason).toBe("insight_with_external_research_only");
+	});
+
 	it("行首錨點 — 表格 cell 內 `## 外部研究` 不誤匹配（iter 6 bug 回歸）", () => {
 		const text = `## 本次完成
 
