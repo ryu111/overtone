@@ -871,6 +871,13 @@ describe("ADR-012 sub1 M2 pipeline enforcement", () => {
     expect(typeof cfg.escape_hatch?.diff_lines_threshold).toBe("number");
     expect(cfg.escape_hatch.diff_lines_threshold).toBeGreaterThan(0);
     expect(typeof cfg.emergency_disable_env).toBe("string");
+
+    // xd-k6zj Step 3 (2026-04-20): ignore_path_prefixes schema 守護
+    // M2 hook LIVE false positive 閉環後補；防 silent fallback（hook 讀不到 key → 無豁免）
+    expect(Array.isArray(cfg.ignore_path_prefixes)).toBe(true);
+    expect(cfg.ignore_path_prefixes.length).toBeGreaterThanOrEqual(1);
+    expect(typeof cfg._ignore_path_rationale).toBe("string");
+    expect(cfg._ignore_path_rationale.length).toBeGreaterThan(20);
   });
 });
 
