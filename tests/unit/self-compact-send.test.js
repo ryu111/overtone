@@ -14,9 +14,14 @@ describe("self-compact /compact 純指令", () => {
 		expect(src).not.toMatch(/send\s*\(\s*["']\/compact\s+["']\s*\+\s*compactArgs/);
 	});
 
-	test("實際 send 呼叫是純 /compact", () => {
+	test("實際 send 呼叫是純 /compact（直接呼或透過 slash 變數）", () => {
 		const src = readFileSync(SELF_COMPACT, "utf-8");
-		expect(src).toMatch(/await\s+send\s*\(\s*["']\/compact["']\s*\)/);
+		// 接受兩種 pattern：
+		//   (a) await send("/compact")     — 直接字面量
+		//   (b) const slash = MODE_CLEAR ? "/clear" : "/compact"; await send(slash)  — 變數版
+		const literal = /await\s+send\s*\(\s*["']\/compact["']\s*\)/.test(src);
+		const viaSlash = /MODE_CLEAR\s*\?\s*["']\/clear["']\s*:\s*["']\/compact["']/.test(src) && /await\s+send\s*\(\s*slash\s*\)/.test(src);
+		expect(literal || viaSlash).toBe(true);
 	});
 
 	test("xd-1776393999624-cyg7 標註存在（溯源）", () => {

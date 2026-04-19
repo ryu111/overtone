@@ -33,10 +33,15 @@ describe("handoff new mode 契約（xd-izqa Round 4）", () => {
 	});
 
 	it("self-compact.js clear mode 走 PreCompact hook + /clear 分支", () => {
-		// clear mode 分支必須在 /compact 送出前短路退出
-		expect(selfCompactContent).toMatch(/if\s*\(\s*MODE_CLEAR\s*\)/);
+		// 2026-04-19 事件驅動重寫後接受兩種 pattern：
+		//   (a) if (MODE_CLEAR) { ...; send("/clear"); }    — 獨立分支
+		//   (b) const slash = MODE_CLEAR ? "/clear" : ...; send(slash); — 變數分發
 		expect(selfCompactContent).toContain("hook-client.js");
-		expect(selfCompactContent).toContain('send("/clear")');
+		const hasMode = /if\s*\(\s*MODE_CLEAR\s*\)/.test(selfCompactContent) || /MODE_CLEAR\s*\?\s*["']\/clear["']/.test(selfCompactContent);
+		expect(hasMode).toBe(true);
+		// 送出 /clear 事實存在（字面量或變數值）
+		const sendsClear = /send\s*\(\s*["']\/clear["']\s*\)/.test(selfCompactContent) || /["']\/clear["']\s*:\s*["']\/compact["']/.test(selfCompactContent);
+		expect(sendsClear).toBe(true);
 	});
 
 	it("self-compact.js clear mode 有 reasoning 註解（為何 default clear）", () => {
