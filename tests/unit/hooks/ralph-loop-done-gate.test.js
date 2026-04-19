@@ -68,4 +68,15 @@ describe("ralph-loop.js Phase 3.5/4 已加 DONE gate (source grep 驗證)", () =
     expect(src).toMatch(/export function isPromptDoneAllowed\(promptText\)/);
     expect(src).toMatch(/xd-flmk/);
   });
+
+  test("graceful close 關鍵字 allow（iter 5 commit caaa4a1 配合）", () => {
+    expect(isPromptDoneAllowed("本輪完成 → graceful close：ctx > 50% 需新 session")).toBe(true);
+    expect(isPromptDoneAllowed("graceful close 本 session")).toBe(true);
+    expect(isPromptDoneAllowed("Graceful Close — structural reason")).toBe(true);
+  });
+
+  test("無 graceful close 且無其他白名單 → reject", () => {
+    expect(isPromptDoneAllowed("執行中任務")).toBe(false);
+    expect(isPromptDoneAllowed("本輪尚未完成某項")).toBe(false);
+  });
 });
