@@ -999,6 +999,24 @@ describe("ADR-012 sub1 M3 rule + planner wire", () => {
     expect(c).toMatch(/rule-calibration-gold\.json/);
   });
 
+  // ── ralph-loop autonomy robustness 補強守護（P0/P1/P2，2026-04-20）──
+  it("P0 A: adjacency-streak-detector hook 存在 + STREAK_WARN_THRESHOLD", () => {
+    const p = join(CLAUDE_DIR, "hooks/modules/adjacency-streak-detector.js");
+    expect(existsSync(p)).toBe(true);
+    const c = readFile(p);
+    expect(c).toMatch(/STREAK_WARN_THRESHOLD\s*=\s*2/);
+  });
+
+  it("P1 D: ralph-loop.js 含啟前 eval gate", () => {
+    const c = readFile(join(CLAUDE_DIR, "hooks/modules/ralph-loop.js"));
+    expect(c).toMatch(/P1 D.*eval gate|eval-runner\.js.*behavioral/);
+  });
+
+  it("P2 B: reflection-persist 含 preIter 外研 reminder", () => {
+    const c = readFile(join(CLAUDE_DIR, "hooks/modules/reflection-persist.js"));
+    expect(c).toMatch(/preIterExternalResearchReminder/);
+  });
+
   it("config/hook-rule-mapping.json 一致性（sub2 M1）", () => {
     const mappingPath = join(CLAUDE_DIR, "config/hook-rule-mapping.json");
     expect(existsSync(mappingPath)).toBe(true);
