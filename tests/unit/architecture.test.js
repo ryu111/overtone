@@ -740,6 +740,18 @@ describe("flow-observer × settings.json 一致性", () => {
 //      — ❌ 刻意不加 -p（不是 bracketed paste 場景），由 ns tests/terminal-send-race.test.js
 //      獨立守護 `唯一命名 buffer + -d` pattern。本 arch test 不重複覆蓋。
 // 結論：既有 2 targets 已完整覆蓋 bracketed paste scope，無新 target 需加入。
+//
+// Redundancy 軸盤點（iter 6 2026-04-19）— property qualification 三軸之 redundancy：
+// 本 describe 3 類 test 互補非冗餘（去任一即失去該軸防護）：
+//   - Test 類 A「所有 paste-buffer 呼叫必帶 -p」(per TARGET) — conditional rule
+//   - Test 類 B「必含 ≥1 paste-buffer -p 呼叫」(per TARGET) — existence 防 vacuous
+//   - Test 類 C「exempt target 仍存在且 line_pattern 仍 match」(per EXEMPT) — drift detection
+// 跨檔對照：
+//   - nb tests/unit/tmux.test.js `deps.calls[0]).toContain("paste-buffer -p")` 是 behavioral
+//     unit test（execSync call），本 arch test 是 structural regex 掃，Testing Trophy 不同層不冗餘
+//   - ns tests/dispatch-transport-paste-race.test.js 同上結構不冗餘
+//   - ns tests/terminal-send-race.test.js 對應 EXEMPT 條目的獨立守護（驗 race fix 行為），非 nb 重覆
+// 結論：3 類 test 保留，形成 property qualification 三軸閉環（vacuity/coverage/redundancy）。
 describe("tmux paste-buffer -p 守護", () => {
   const TARGETS = [
     { path: join(homedir(), ".claude/scripts/os/tmux.js"), label: "nb tmux.js" },
