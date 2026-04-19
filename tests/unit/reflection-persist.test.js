@@ -162,6 +162,22 @@ describe("persistReflection 整合", () => {
 		expect(persistReflection({}).decision).toBe("allow");
 	});
 
+	it("cwd 誤指 data/ 末尾 → strip 避免雙層 data/data/（iter 2 fix）", () => {
+		const dataDir = join(tmpDir, "data");
+		mkdirSync(dataDir, { recursive: true });
+		const insightText = [
+			"本次完成",
+			"`★ Insight ───────`",
+			"1. **發現**：commit def5678 修了 bug",
+			"`─────────────────`",
+		].join("\n");
+		persistReflection({ cwd: dataDir, last_assistant_message: insightText });
+		// 正確：寫到 tmpDir/data/reflections.jsonl（strip 末尾 /data）
+		expect(existsSync(join(tmpDir, "data/reflections.jsonl"))).toBe(true);
+		// 錯誤：雙層 data/data/reflections.jsonl 不該存在
+		expect(existsSync(join(tmpDir, "data/data/reflections.jsonl"))).toBe(false);
+	});
+
 	it("無 last_assistant_message → fail-open", () => {
 		expect(persistReflection({ cwd: tmpDir }).decision).toBe("allow");
 		expect(existsSync(join(tmpDir, "data/reflections.jsonl"))).toBe(false);
