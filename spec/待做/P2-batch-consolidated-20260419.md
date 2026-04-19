@@ -27,11 +27,16 @@
 - **優先級**：low（需先量化 FP rate 決定 ROI）
 
 ### P2-4: refactor-test-sync-guard hook POC
-- **來源**：iter 10 deferred（external-ref refactor-test-drift-2026.md 提出）
-- **目標**：PreToolUse hook，Edit 修改 `scripts/**/*.js` / `hooks/**/*.js` 時自動 grep 對應 test 是否存在 + test 是否命中新檔路徑
-- **觸發條件**：refactor-test drift > 3 次/month（iter 10 + iter 19 共 2 次，未達門檻）
-- **成本**：~45 min D2 hook + baseline test
-- **優先級**：low（ROI 閾值未達）
+- **狀態 iter 19 判定**：**already covered by P2-6 + review-agent.js — close as YAGNI**
+  - iter 16 P2-6 hasCrossRepoTest prefix match 已是 refactor-test drift 被動偵測
+  - review-agent.js score + auto-append nudge 已起 warn 作用
+  - 新 hook 會與既有功能重複
+- **新 edge case（iter 19 發現 → P2-7）**：multi-function-in-one-test 類型（inject-learning-context.js 對應 inject-functions.test.js）prefix match 無法識別。
+
+### P2-7: hasCrossRepoTest multi-function test 偵測（iter 19 新發現）
+- **現象**：`inject-learning-context.js` 對應 test 是 `inject-functions.test.js`（多 inject 函式共用 test），prefix match 無法識別 → auto-append 誤報
+- **成本**：~30 min D1 — 加 alias whitelist 或 test 檔 content scan 看 import
+- **優先級**：low（干擾但不阻擋工作）
 
 ### P2-5: 白名單 filter 定期 audit 入 skills/claude-dev
 - **來源**：iter 15 前 reflection deferred
