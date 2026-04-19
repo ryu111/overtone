@@ -732,14 +732,13 @@ describe("flow-observer × settings.json 一致性", () => {
 // 背景：bracketed paste + CLI readline paste detection 時序 race → Enter 沒被 submit
 // 對應：nb 616240b scripts/os/tmux.js + ns ec19e52 services/dispatch-transport.js pasteToPane
 //
-// Coverage 軸盤點（iter 4 2026-04-19）— property qualification 三軸之 coverage：
-// 全 repo 掃 source code 使用 tmux paste-buffer 命中 3 處：
+// Coverage 軸盤點（iter 4 2026-04-19；xd-ulhg 2026-04-19 更新）— property qualification 三軸之 coverage：
+// 全 repo 掃 source code 使用 tmux paste-buffer 命中 2 處：
 //   1. ~/.claude/scripts/os/tmux.js L106（bracketed paste）— ✅ 本守護覆蓋
 //   2. ~/projects/nova-server/services/dispatch-transport.js L71（bracketed paste）— ✅ 本守護覆蓋
-//   3. ~/projects/nova-server/api/actions.js L69（`paste-buffer -b ... -d` terminal-send race fix）
-//      — ❌ 刻意不加 -p（不是 bracketed paste 場景），由 ns tests/terminal-send-race.test.js
-//      獨立守護 `唯一命名 buffer + -d` pattern。本 arch test 不重複覆蓋。
-// 結論：既有 2 targets 已完整覆蓋 bracketed paste scope，無新 target 需加入。
+// 歷史：ns actions.js L69 原有 `paste-buffer -b ... -d`（terminal-send race fix），2026-04-19
+//   xd-ulhg ns commit 6e0866e 改 import pasteToPane 走單一 SoT，行內 paste 消失 → EXEMPT 清空。
+// 結論：既有 2 targets 已完整覆蓋 bracketed paste scope。
 //
 // Redundancy 軸盤點（iter 6 2026-04-19）— property qualification 三軸之 redundancy：
 // 本 describe 3 類 test 互補非冗餘（去任一即失去該軸防護）：
@@ -763,14 +762,10 @@ describe("tmux paste-buffer -p 守護", () => {
   //   1. EXEMPT 宣告式化 — 新 paste-buffer 用法需明示豁免原因
   //   2. target-existence check — 若 exempt target 被刪/改 → test fail 提醒清 exempt
   // 對齊：obsidian/semantic/external-references/architecture-test-coverage-2026.md
-  const EXEMPT_PASTE_BUFFER_WITHOUT_P = [
-    {
-      path: join(homedir(), "projects/nova-server/api/actions.js"),
-      line_pattern: /paste-buffer.*-b.*-d/,
-      label: "ns actions.js L69",
-      reason: "terminal-send race fix（唯一命名 buffer + -d 刪 buffer 語義），不是 bracketed paste 場景。獨立守護：ns tests/terminal-send-race.test.js",
-    },
-  ];
+  // xd-ulhg 2026-04-19 清空：actions.js L69 原 `paste-buffer -b -d` 已由 ns commit 6e0866e
+  // 改為 `import pasteToPane` 走單一 SoT（pasteToPane 本身由 ns dispatch-transport.js L71 TARGET 覆蓋）。
+  // 無豁免需求保留。
+  const EXEMPT_PASTE_BUFFER_WITHOUT_P = [];
 
   for (const { path, label } of TARGETS) {
     it(label + " 所有 paste-buffer 呼叫必帶 -p flag", () => {
