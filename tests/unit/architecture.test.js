@@ -885,11 +885,14 @@ describe("ADR-012 sub1 M2 pipeline enforcement", () => {
 describe("ADR-012 sub1 M3 rule + planner wire", () => {
   const CLAUDE_DIR = join(homedir(), ".claude");
 
-  it("rules/核心/pipeline-enforcement.md 存在且 ≤ 50 行", () => {
+  it("rules/核心/pipeline-enforcement.md 存在且 ≤ 50 行（frontmatter 除外）", () => {
     const path = join(CLAUDE_DIR, "rules/核心/pipeline-enforcement.md");
     expect(existsSync(path)).toBe(true);
     const content = readFile(path);
-    const lineCount = content.split("\n").length;
+    // sub2 M1 後 rule 帶 lifecycle frontmatter，≤50 行治理針對「規則內容」非 metadata
+    // 扣除開頭 --- 到第二個 --- 之間的 frontmatter block
+    const body = content.replace(/^---\n[\s\S]*?\n---\n/, "");
+    const lineCount = body.split("\n").length;
     expect(lineCount).toBeLessThanOrEqual(50);
     // 核心條款存在性
     expect(content).toMatch(/D2\+/);
@@ -936,6 +939,57 @@ describe("ADR-012 sub1 M3 rule + planner wire", () => {
     const content = readFile(join(CLAUDE_DIR, "rules/環境/ralph-loop.md"));
     expect(content).toMatch(/根本性\s*vs\s*便宜性/);
     expect(content).toMatch(/連續\s*≥\s*2\s*iter.*adjacency/);
+  });
+
+  // ── ADR-013 sub2 M1 Rule Lifecycle 守護（2026-04-20）──
+  it("rules/**/*.md frontmatter 必含 lifecycle 段 + usage_type（sub2 M1）", () => {
+    const fs = require("node:fs");
+    const path = require("node:path");
+    function walkRules(dir) {
+      const out = [];
+      for (const entry of fs.readdirSync(dir)) {
+        const full = path.join(dir, entry);
+        const stat = fs.statSync(full);
+        if (stat.isDirectory()) out.push(...walkRules(full));
+        else if (entry.endsWith(".md") && entry !== "README.md") out.push(full);
+      }
+      return out;
+    }
+    const ruleFiles = walkRules(join(CLAUDE_DIR, "rules"));
+    expect(ruleFiles.length).toBeGreaterThanOrEqual(27);
+    const missing = [];
+    for (const f of ruleFiles) {
+      const content = readFile(f);
+      // 只看前 30 行（frontmatter 範圍）
+      const head = content.split("\n").slice(0, 30).join("\n");
+      if (!/^usage_type:\s*(trigger|regulation|hybrid)/m.test(head)) missing.push(`${f} 缺 usage_type`);
+      if (!/^lifecycle:/m.test(head)) missing.push(`${f} 缺 lifecycle 段`);
+    }
+    if (missing.length > 0) console.error("rule frontmatter 缺欄位：\n" + missing.join("\n"));
+    expect(missing.length).toBe(0);
+  });
+
+  it("config/hook-rule-mapping.json 一致性（sub2 M1）", () => {
+    const mappingPath = join(CLAUDE_DIR, "config/hook-rule-mapping.json");
+    expect(existsSync(mappingPath)).toBe(true);
+    const mapping = JSON.parse(readFile(mappingPath));
+    const mappings = mapping.mappings || {};
+    // ≥ 8 個 hook mapping
+    expect(Object.keys(mappings).length).toBeGreaterThanOrEqual(8);
+    // 每 mapped hook 必真實存在於 hooks/modules/
+    const missingHooks = [];
+    for (const hookName of Object.keys(mappings)) {
+      if (!existsSync(join(CLAUDE_DIR, "hooks/modules", hookName))) {
+        missingHooks.push(hookName);
+      }
+    }
+    if (missingHooks.length > 0) console.error("mapping 中 hook 不存在：" + missingHooks.join(", "));
+    expect(missingHooks.length).toBe(0);
+    // 每 mapping 必含 rule_ids + trigger_types
+    for (const [hook, m] of Object.entries(mappings)) {
+      expect(Array.isArray(m.rule_ids), `${hook} 缺 rule_ids`).toBe(true);
+      expect(Array.isArray(m.trigger_types), `${hook} 缺 trigger_types`).toBe(true);
+    }
   });
 });
 
