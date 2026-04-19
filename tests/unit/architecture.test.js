@@ -1118,6 +1118,38 @@ describe("dv8g 自驅叢集 cross-cutting 守護", () => {
   });
 });
 
+// ── iter 10 使用者糾正「有建議就不用停」baseline (2026-04-19) ──
+describe("ralph-loop 7/24 持續運轉紀律 baseline", () => {
+  const CLAUDE_DIR = join(homedir(), ".claude");
+  const rulePath = join(CLAUDE_DIR, "rules/環境/ralph-loop.md");
+
+  it("ralph-loop.md 含 7/24 持續運轉紀律 section", () => {
+    const src = readFileSync(rulePath, "utf-8");
+    expect(src).toContain("7/24 持續運轉紀律");
+  });
+
+  it("ralph-loop.md NEVER「接下來的建議」列選項後 graceful close", () => {
+    const src = readFileSync(rulePath, "utf-8");
+    expect(src).toMatch(/NEVER.*接下來的建議.*選項.*graceful\s*close/);
+  });
+
+  it("ralph-loop.md NEVER 用「需另開 session」當 graceful close 理由", () => {
+    const src = readFileSync(rulePath, "utf-8");
+    expect(src).toMatch(/NEVER.*需另開\s*session|非本\s*loop\s*scope/);
+  });
+
+  it("ralph-loop.md MUST 四場景白名單 graceful close", () => {
+    const src = readFileSync(rulePath, "utf-8");
+    expect(src).toMatch(/graceful\s*close\s*僅限.*ctx.*quota.*使用者明示/s);
+  });
+
+  it("ralph-loop.md MUST pick 最小 ROI 項續 iter 反模式識別", () => {
+    const src = readFileSync(rulePath, "utf-8");
+    expect(src).toContain("選項表格 ≥ 2 項");
+    expect(src).toMatch(/pick 其中最小 ROI 項續 iter/);
+  });
+});
+
 // ── Stage 1.0-E hub cascade SSoT 守護（xd-35ku Round 2 全採 E）──
 describe("hub cascade SSoT 完整性", () => {
   const CLAUDE_DIR = join(homedir(), ".claude");
