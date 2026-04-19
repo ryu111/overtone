@@ -1,9 +1,22 @@
+---
+title: reflections.jsonl canonical 統一議題
+date: 2026-04-19
+status: accepted          # iter 11 升：nm xd-wrh2 Round 1 ack 方向 B
+scope: global             # ~/.claude/ + ~/projects/* aggregate
+trigger: ralph-loop iter 2 發現 double-data drift
+owner: nb
+round: 1                  # Round 1 閉環，Round 2 由 nm 下 session 帶 AskUser 後派
+related_dispatches:
+  - xd-1776592573552-sa79  # nb → nm Round 1 request
+  - xd-1776592645128-wrh2  # nm → nb Round 1 ack 方向 B
+---
+
 # reflections.jsonl canonical 統一議題
 
 - **日期**：2026-04-19
 - **觸發**：ralph-loop iter 2 發現 `~/.claude/data/data/reflections.jsonl` 雙層殘檔時，追到根因後發現更大的 path drift 議題
 - **Scope**：Nova 全域（~/.claude/ + ~/projects/nova-brain + ~/projects/nova-manager）
-- **Status**：discovery（iter 8 2026-04-19）— 待 Manager / 使用者決策方向 → iter 9+ 實作
+- **Status**：accepted（iter 11 升）— nm Round 1 ack 方向 B，待下 nm session 帶使用者 AskUser 後派 Round 2 實作
 
 ## 問題
 
