@@ -69,15 +69,36 @@ describe("ralph-loop.js Phase 3.5/4 已加 DONE gate (source grep 驗證)", () =
     expect(src).toMatch(/xd-flmk/);
   });
 
-  // iter 14 治本：graceful close 需附可驗證 evidence（不再單純 claim 就放行）
-  test("graceful close 含 evidence（ctx 數字 / quota / 使用者明示）→ allow", () => {
-    expect(isPromptDoneAllowed("本輪完成 → graceful close：ctx > 50% 需新 session")).toBe(true);
-    expect(isPromptDoneAllowed("graceful close：ctx usage > 70% 接近上限")).toBe(true);
-    expect(isPromptDoneAllowed("graceful close：quota 接近 5h 上限")).toBe(true);
-    expect(isPromptDoneAllowed("graceful close：使用者明示暫停")).toBe(true);
+  // iter 15 治本：ctx/quota AI self-claimable 漏洞收緊 — evidence 僅接受「使用者明示 + 引文」
+  test("graceful close 含 ctx 數字 → reject（iter 15 治本 AI self-claim 漏洞）", () => {
+    expect(isPromptDoneAllowed("本輪完成 → graceful close：ctx > 50% 需新 session")).toBe(false);
+    expect(isPromptDoneAllowed("graceful close：ctx usage > 70% 接近上限")).toBe(false);
+    expect(isPromptDoneAllowed("graceful close：ctx usage > 80%")).toBe(false);
   });
 
-  test("graceful close 無 evidence 單純 claim → reject（iter 14 治本 AI self-dismissal）", () => {
+  test("graceful close 含 quota AI 自述 → reject", () => {
+    expect(isPromptDoneAllowed("graceful close：quota 接近 5h 上限")).toBe(false);
+    expect(isPromptDoneAllowed("graceful close：quota warning")).toBe(false);
+  });
+
+  test("graceful close 含使用者明示 + 動詞（暫停/切換/停止/結束） → allow", () => {
+    expect(isPromptDoneAllowed("graceful close：使用者明示暫停 session")).toBe(true);
+    expect(isPromptDoneAllowed("graceful close：使用者指示切換 project")).toBe(true);
+    expect(isPromptDoneAllowed("graceful close：使用者授權結束本輪")).toBe(true);
+  });
+
+  test("graceful close 含使用者引文 quote → allow", () => {
+    expect(isPromptDoneAllowed('graceful close 因使用者訊息「暫停休息」')).toBe(true);
+    expect(isPromptDoneAllowed('graceful close: user said "暫停本 session"')).toBe(true);
+  });
+
+  test("graceful close 含 self-rationalize fingerprint → reject（即使有 quote 也擋）", () => {
+    expect(isPromptDoneAllowed('graceful close：使用者明示暫停，本 session 累積 20 commits')).toBe(false);
+    expect(isPromptDoneAllowed('graceful close：使用者指示結束，重大推進完成')).toBe(false);
+    expect(isPromptDoneAllowed('graceful close：使用者授權暫停，iter 14 20 commits')).toBe(false);
+  });
+
+  test("graceful close 無 evidence 單純 claim → reject（iter 14 繼承行為）", () => {
     expect(isPromptDoneAllowed("graceful close 本 session")).toBe(false);
     expect(isPromptDoneAllowed("Graceful Close — structural reason")).toBe(false);
     expect(isPromptDoneAllowed("本輪完成 graceful close")).toBe(false);
@@ -97,9 +118,9 @@ describe("下一目標續 iter 強制不 DONE（iter 12 使用者糾正治本）
     expect(isPromptDoneAllowed("處理完成 → 下一目標：pick spec/待做 D2 roadmap Phase 1")).toBe(false);
   });
 
-  test("state.prompt 含「下一目標 + graceful close」→ allowed（明示暫停）", () => {
-    expect(isPromptDoneAllowed("本輪完成 → 下一目標：修 4 fail（但 graceful close 因 ctx > 70%）")).toBe(true);
-    expect(isPromptDoneAllowed("下一目標：X 任務；graceful close：quota 接近上限")).toBe(true);
+  test("state.prompt 含「下一目標 + graceful close」→ allowed（使用者明示 evidence）", () => {
+    expect(isPromptDoneAllowed("本輪完成 → 下一目標：修 4 fail（但 graceful close 因使用者明示暫停）")).toBe(true);
+    expect(isPromptDoneAllowed("下一目標：X 任務；graceful close：使用者指示切換 project")).toBe(true);
   });
 
   test("state.prompt 「下一目標」後無具體任務（< 5 字）→ allowed（視為無實質目標）", () => {
@@ -107,9 +128,9 @@ describe("下一目標續 iter 強制不 DONE（iter 12 使用者糾正治本）
     expect(isPromptDoneAllowed("本輪無剩餘任務，下一目標：待定")).toBe(true);
   });
 
-  test("舊 graceful close 行為：含 ctx evidence 仍 allow", () => {
-    expect(isPromptDoneAllowed("本輪完成 → graceful close：ctx > 70%")).toBe(true);
+  test("「本輪無剩餘任務」無 graceful close → allow（正常退出 path）", () => {
     expect(isPromptDoneAllowed("本輪無剩餘任務")).toBe(true);
+    expect(isPromptDoneAllowed("本輪完成")).toBe(true);
   });
 });
 
@@ -130,12 +151,12 @@ describe("graceful close + deferred pipeline 矛盾偵測（iter 14 治本 AI se
     expect(isPromptDoneAllowed(p)).toBe(false);
   });
 
-  test("graceful close + 單一下一目標 + evidence → allow", () => {
-    const p = "graceful close：ctx > 70%，下一目標：deferred 到 successor";
+  test("graceful close + 單一下一目標 + 使用者明示 evidence → allow", () => {
+    const p = "graceful close：使用者明示暫停，下一目標：deferred 到 successor";
     expect(isPromptDoneAllowed(p)).toBe(true);
   });
 
-  test("graceful close 無 bullet 無多重目標 + evidence → allow（正常場景）", () => {
-    expect(isPromptDoneAllowed("本輪完成 → graceful close：ctx > 80% 需新 session")).toBe(true);
+  test("graceful close 無 bullet 無多重目標 + 使用者明示 evidence → allow（正常場景）", () => {
+    expect(isPromptDoneAllowed("本輪完成 → graceful close：使用者明示暫停本 session")).toBe(true);
   });
 });
