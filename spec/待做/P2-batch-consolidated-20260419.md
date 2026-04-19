@@ -1,0 +1,64 @@
+# P2 批次整合 — iter 15 session 後 consolidated
+
+**來源**：iter 12 inventory 整理 + 本 session 新發現項
+**日期**：2026-04-19
+**Scope**：nova 自己（~/.claude/），不需 cross-dispatch
+
+## 批次清單
+
+### P2-1: chain-integrity.js 方案 A 全拆 9 module
+- **現況**：iter 19 方案 C 單點拆 Phase 1 至 chain-integrity-ref.js（629→497 行）
+- **目標**：剩餘 Phase 2-6 依 domain 拆為 duplicates / guard-coverage / cascade / session-coverage / mermaid 獨立 module
+- **觸發條件**：chain-integrity.js 逼近 650 行上限 OR 新 Phase 加入
+- **成本**：~2h D2 需 planner
+- **優先級**：low（目前 497 行空間足）
+
+### P2-2: SessionStart 快照 lag 分析
+- **來源**：iter 15 前 deferred backlog（iter 16 候選）
+- **現象**：SessionStart 注入 context 可能 lag（顯示的 reflection 數 vs 實際 jsonl 不符 — iter 15 審計發現 jsonl 只 2 entries，SessionStart 顯示 26）
+- **根因假設**：SessionStart 讀 obsidian/raw/reflections/YYYY-MM-DD.md（rotated）而非 jsonl 即時
+- **成本**：~30 min D1 調查 + 記錄 ADR
+- **優先級**：medium（影響 session 感知準確度）
+
+### P2-3: structural-invariants 升 AST-based
+- **現況**：iter 4 commit c328307 升 identifier-set diff（比 text string 進步）
+- **目標**：進一步升 AST-based（業界 2026 FP rate 8-12% vs 現 identifier-set 估 15-20%）
+- **成本**：~1-2h D2 需 planner ROI 評估 + WebSearch ESLint AST plugin
+- **優先級**：low（需先量化 FP rate 決定 ROI）
+
+### P2-4: refactor-test-sync-guard hook POC
+- **來源**：iter 10 deferred（external-ref refactor-test-drift-2026.md 提出）
+- **目標**：PreToolUse hook，Edit 修改 `scripts/**/*.js` / `hooks/**/*.js` 時自動 grep 對應 test 是否存在 + test 是否命中新檔路徑
+- **觸發條件**：refactor-test drift > 3 次/month（iter 10 + iter 19 共 2 次，未達門檻）
+- **成本**：~45 min D2 hook + baseline test
+- **優先級**：low（ROI 閾值未達）
+
+### P2-5: 白名單 filter 定期 audit 入 skills/claude-dev
+- **來源**：iter 15 前 reflection deferred
+- **目標**：Claude Code 新版持續加 slash commands（hooks/statusline/plugin/mcp），skills/claude-dev 需定期 audit 白名單是否涵蓋新能力
+- **成本**：~15 min D1 + schedule（每 quarter 提醒）
+- **優先級**：medium（避免白名單 stale）
+
+### P2-6: reflection-persist auto-append 誤報（iter 15 新發現）
+- **現象**：iter 15 commit f3585ae 實際**有**對應 test（nova-brain repo），但 auto-append 檢測「改 1 程式檔無 test」因為 ~/.claude 的 commit diff 無 test 檔
+- **根因**：auto-append 邏輯不跨 repo 關聯，單看當 repo commit
+- **成本**：~30 min D1 擴 auto-append 邏輯讀 cross-repo test map
+- **優先級**：low（誤報不阻擋工作，但會干擾反思信號）
+
+## 批次 dispatch 策略
+
+- **P2 全項皆 nova 自己 scope**，不 cross-dispatch
+- **優先級排序**：P2-5 > P2-2 > P2-6 > P2-1 > P2-4 > P2-3（medium → low → ROI-pending）
+- **下 session pick 順序**：P2-5（最小 ROI 15 min）→ P2-2（影響認知準確度）→ 其他按需要
+
+## 驗收標準（整體）
+
+- 每項獨立 commit + baseline test（nova-brain）
+- 完成後移至 spec/完成/
+- 總成本估 ~4-5 hours across multi-session
+
+## Related
+
+- iter 12 inventory：data/reflections.jsonl + iter 1-10 deferred 匯總
+- iter 10 refactor-test-drift-2026.md（P2-4 根源）
+- iter 15 reflection-persist.js 審計（P2-6 根源）
