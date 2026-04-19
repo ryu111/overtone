@@ -442,38 +442,24 @@ describe("injectSessionAwareness", () => {
 
 // ─── injectFeedbackContext ────────────────────────────────────────────────────
 
-describe("injectFeedbackContext", () => {
-	afterEach(() => {
-		try { rmSync("/tmp/nova-feedback-registry.json"); } catch { /* 不存在 */ }
-		try { rmSync("/tmp/nova-feedback-suggestions.json"); } catch { /* 不存在 */ }
+describe("injectFeedbackContext (iter 35 xd-sxa2 A cleanup stub)", () => {
+	// iter 35 治本：feedback-registry / feedback-suggestions orphan schemas 移除，
+	// injectFeedbackContext 永遠 return null。3 regression test 鎖 stub 行為。
+
+	test("無 feedback files → null", () => {
+		expect(injectFeedbackContext()).toBeNull();
 	});
 
-	test("兩個檔案都不存在時回傳 null", () => {
-		try { rmSync("/tmp/nova-feedback-registry.json"); } catch { /* 不存在 */ }
-		try { rmSync("/tmp/nova-feedback-suggestions.json"); } catch { /* 不存在 */ }
-		const result = injectFeedbackContext();
-		expect(result).toBeNull();
+	test("有 registry 資料 → 仍 null（stub 不讀 orphan）", () => {
+		writeFileSync("/tmp/nova-feedback-registry.json", JSON.stringify({ components: [{ name: "x", health: "degraded" }] }));
+		expect(injectFeedbackContext()).toBeNull();
+		try { rmSync("/tmp/nova-feedback-registry.json"); } catch {}
 	});
 
-	test("有 degraded 元件時回傳包含 Feedback 狀態的字串", () => {
-		const reg = {
-			components: [{ name: "learner", health: "degraded" }],
-		};
-		writeFileSync("/tmp/nova-feedback-registry.json", JSON.stringify(reg));
-		const result = injectFeedbackContext();
-		expect(typeof result).toBe("string");
-		expect(result).toContain("Feedback 狀態");
-		expect(result).toContain("learner");
-	});
-
-	test("有 high priority pending 建議時包含待處理建議", () => {
-		const suggestions = [
-			{ priority: "high", status: "pending", suggestion: "修復 context-injector 效能問題" },
-		];
-		writeFileSync("/tmp/nova-feedback-suggestions.json", JSON.stringify(suggestions));
-		const result = injectFeedbackContext();
-		expect(typeof result).toBe("string");
-		expect(result).toContain("待處理建議");
+	test("有 suggestions 資料 → 仍 null", () => {
+		writeFileSync("/tmp/nova-feedback-suggestions.json", JSON.stringify([{ priority: "high", status: "pending", suggestion: "x" }]));
+		expect(injectFeedbackContext()).toBeNull();
+		try { rmSync("/tmp/nova-feedback-suggestions.json"); } catch {}
 	});
 });
 
