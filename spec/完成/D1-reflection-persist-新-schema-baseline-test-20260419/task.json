@@ -1,0 +1,12 @@
+{
+  "name": "reflection-persist 新 schema baseline test",
+  "type": "測試",
+  "priority": "P2",
+  "depth": "D1",
+  "description": "鎖 parseInsightBullets 外部研究抓取 3-5 case（section 存在/空/多條目/異常格式）",
+  "subtasks": [],
+  "created": "2026-04-19T03:17:43.462Z",
+  "claimed": "2026-04-19T03:21:06.929Z",
+  "completed": "2026-04-19T03:21:06.943Z",
+  "result": "合併入 P0 commit fab29b0 (nova-brain)，7 新 case 鎖定 extractExternalResearchSection / parseExternalResearch / buildEntry 外部研究 field"
+}

@@ -1,0 +1,12 @@
+{
+  "name": "PRMs 觀念引入 ralph-loop",
+  "type": "功能",
+  "priority": "P2",
+  "depth": "D3",
+  "description": "Process Reward Models 每 iter 自評分（0-100），連 3 iter 無進步 → pivot；external-references/ai-reflection-patterns-2026.md 提過",
+  "subtasks": [],
+  "created": "2026-04-19T03:17:43.505Z",
+  "claimed": "2026-04-19T03:23:37.162Z",
+  "completed": "2026-04-19T03:29:12.066Z",
+  "result": "commit 上述 + baseline — ralph-iter-scorer.js MVP, 18/18 pass"
+}

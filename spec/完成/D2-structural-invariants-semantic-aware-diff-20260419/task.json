@@ -1,0 +1,12 @@
+{
+  "name": "structural-invariants semantic-aware diff",
+  "type": "重構",
+  "priority": "P2",
+  "depth": "D2",
+  "description": "iter 19 backlog：import A→A+B 誤判消失 → 升級為 semantic preserve（AST 級別比對）",
+  "subtasks": [],
+  "created": "2026-04-19T03:17:43.477Z",
+  "claimed": "2026-04-19T03:23:37.146Z",
+  "completed": "2026-04-19T03:29:12.051Z",
+  "result": "commit c328307 (nova) + edac3c1 (nb) — extractImportIdentifiers + preserveImports 改 identifier set diff, 18/18 pass"
+}

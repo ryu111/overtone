@@ -1,0 +1,12 @@
+{
+  "name": "pivot-detector 觸發次數 telemetry",
+  "type": "功能",
+  "priority": "P2",
+  "depth": "D1",
+  "description": "write 觸發事件到 data/sensor-metrics.jsonl，7 日後盤點決定 warn→block 升級時機",
+  "subtasks": [],
+  "created": "2026-04-19T03:17:43.491Z",
+  "claimed": "2026-04-19T03:23:37.132Z",
+  "completed": "2026-04-19T03:29:12.037Z",
+  "result": "commit 04d3d8b (nova) + 668d192 (nb) — telemetry write sensor-metrics.jsonl, 14/14 pass"
+}

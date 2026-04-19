@@ -1,0 +1,12 @@
+{
+  "name": "reflection-persist 抓外部研究章節寫入  field",
+  "type": "功能",
+  "priority": "P2",
+  "depth": "D1",
+  "description": "parseInsightBullets 擴抓 ## 外部研究 章節 → 新 field；與 commit 4107453 rule 升級 + 9bc789d hook sensor 閉環",
+  "subtasks": [],
+  "created": "2026-04-19T03:17:43.447Z",
+  "claimed": "2026-04-19T03:21:04.725Z",
+  "completed": "2026-04-19T03:21:04.740Z",
+  "result": "實作完成 commit 529639b + baseline (nova-brain) fab29b0 — 43/43 pass"
+}
