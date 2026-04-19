@@ -153,3 +153,54 @@ describe("pivot-detector — 反思外部研究缺漏偵測（commit 4107453 新
 		expect(() => mod.emitTelemetry("", "x")).not.toThrow();
 	});
 });
+
+// ─── 偵測三：next-goal missing baseline（使用者糾正 2026-04-19） ───
+describe("pivot-detector — next-goal missing（機械性停偵測）", () => {
+	function setupState(promptBody) {
+		if (existsSync(TMPDIR)) rmSync(TMPDIR, { recursive: true });
+		mkdirSync(`${TMPDIR}/.claude`, { recursive: true });
+		writeFileSync(`${TMPDIR}/.claude/ralph-loop.local.md`, `---\niteration: 5\n---\n\n${promptBody}\n`);
+	}
+
+	test("state.prompt 寫「可 DONE」但無「下一目標」→ 觸發", async () => {
+		setupState("本輪完成 X Y Z。\n本輪無剩餘任務，可 DONE。");
+		const mod = await import("/Users/sbu/.claude/hooks/modules/ralph-loop-pivot-detector.js");
+		const result = mod.detectNoNextGoal(TMPDIR);
+		expect(result?.warnMessage).toContain("next-goal missing");
+	});
+
+	test("state.prompt 寫「可 DONE」+ 「下一目標」→ 不觸發", async () => {
+		setupState("本輪完成 X。\n下一目標：做 Y。\n可 DONE。");
+		const mod = await import("/Users/sbu/.claude/hooks/modules/ralph-loop-pivot-detector.js");
+		const result = mod.detectNoNextGoal(TMPDIR);
+		expect(result).toBeNull();
+	});
+
+	test("state.prompt 寫「可 DONE」+ graceful close 原因 → 不觸發", async () => {
+		setupState("本輪完成。graceful close: ctx > 50% 需新 session。");
+		const mod = await import("/Users/sbu/.claude/hooks/modules/ralph-loop-pivot-detector.js");
+		const result = mod.detectNoNextGoal(TMPDIR);
+		expect(result).toBeNull();
+	});
+
+	test("state.prompt 無 DONE 信號 → 不檢查（任務進行中）", async () => {
+		setupState("執行中任務 A / B / C，尚未完成。");
+		const mod = await import("/Users/sbu/.claude/hooks/modules/ralph-loop-pivot-detector.js");
+		const result = mod.detectNoNextGoal(TMPDIR);
+		expect(result).toBeNull();
+	});
+
+	test("state 檔不存在不 crash", async () => {
+		const mod = await import("/Users/sbu/.claude/hooks/modules/ralph-loop-pivot-detector.js");
+		expect(mod.detectNoNextGoal("/tmp/nonexistent-nextgoal")).toBeNull();
+	});
+
+	test("detectPivot 整合偵測三 → telemetry 記錄 mechanical-stop", async () => {
+		setupState("本輪無剩餘任務，可 DONE。");
+		const mod = await import("/Users/sbu/.claude/hooks/modules/ralph-loop-pivot-detector.js");
+		mod.detectPivot({ cwd: TMPDIR });
+		const metricsPath = `${TMPDIR}/data/sensor-metrics.jsonl`;
+		expect(existsSync(metricsPath)).toBe(true);
+		expect(require("node:fs").readFileSync(metricsPath, "utf-8")).toContain("mechanical-stop-no-next-goal");
+	});
+});
