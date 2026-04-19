@@ -874,6 +874,42 @@ describe("ADR-012 sub1 M2 pipeline enforcement", () => {
   });
 });
 
+// ── ADR-012 sub1 M3 rule + planner CoVe wire 守護 ──
+describe("ADR-012 sub1 M3 rule + planner wire", () => {
+  const CLAUDE_DIR = join(homedir(), ".claude");
+
+  it("rules/核心/pipeline-enforcement.md 存在且 ≤ 50 行", () => {
+    const path = join(CLAUDE_DIR, "rules/核心/pipeline-enforcement.md");
+    expect(existsSync(path)).toBe(true);
+    const content = readFile(path);
+    const lineCount = content.split("\n").length;
+    expect(lineCount).toBeLessThanOrEqual(50);
+    // 核心條款存在性
+    expect(content).toMatch(/D2\+/);
+    expect(content).toMatch(/escape hatch|escape_hatch/);
+    expect(content).toMatch(/NOVA_PIPELINE_ENFORCE/);
+  });
+
+  it("rules/核心/README.md 含 pipeline-enforcement 條目（hub cascade）", () => {
+    const content = readFile(join(CLAUDE_DIR, "rules/核心/README.md"));
+    expect(content).toMatch(/pipeline-enforcement\.md/);
+    expect(content).toMatch(/7 條/);
+  });
+
+  it("rules/README.md 總條數對齊（27 條）", () => {
+    const content = readFile(join(CLAUDE_DIR, "rules/README.md"));
+    expect(content).toMatch(/27 條/);
+    expect(content).toMatch(/7 條.*pipeline-enforcement|pipeline-enforcement.*7 條/s);
+  });
+
+  it("agents/planner.md 含 CoVe Step 0 wire", () => {
+    const content = readFile(join(CLAUDE_DIR, "agents/planner.md"));
+    expect(content).toMatch(/CoVe/);
+    expect(content).toMatch(/target-path-verifier/);
+    expect(content).toMatch(/second-pattern/);
+  });
+});
+
 // ── md-link 格式統一守護（xd-ek2d Round 7）──
 describe("寫作規範 md-link 唯一 SoT", () => {
   const CLAUDE_DIR = join(homedir(), ".claude");
