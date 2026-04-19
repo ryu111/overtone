@@ -148,39 +148,23 @@ describe("injectBriefing", () => {
 
 // ─── injectLearnerContext ─────────────────────────────────────────────────────
 
-describe("injectLearnerContext", () => {
-	afterEach(cleanupTestFiles);
+describe("injectLearnerContext (iter 31 xd-96dj A cleanup stub)", () => {
+	// iter 31 治本：behaviors.jsonl orphan schema 移除 writer 從未實作，
+	// injectLearnerContext 永遠 return null。保留 3 個 regression test 鎖 stub 行為。
 
-	test("behaviors.jsonl 不存在時回傳 null", () => {
-		const path = join(REAL_DATA_DIR, "behaviors.jsonl");
-		try { rmSync(path); } catch { /* 不存在 */ }
-		const result = injectLearnerContext();
-		expect(result).toBeNull();
+	test("無 behaviors file → null", () => {
+		expect(injectLearnerContext()).toBeNull();
 	});
 
-	test("有 high impact + suggestion 的行為時回傳包含描述的字串", () => {
+	test("有 high impact behavior entry → 仍 null（stub 不讀 orphan）", () => {
 		const path = join(REAL_DATA_DIR, "behaviors.jsonl");
-		const entry = {
-			id: "b1",
-			impact: "high",
-			polarity: -1,
-			confidence: 0.9,
-			description: "重複使用 workaround",
-			suggestion: { content: "應找根因修復" },
-		};
+		const entry = { id: "b1", impact: "high", polarity: -1, suggestion: { content: "x" } };
 		writeTestFile(path, JSON.stringify(entry) + "\n");
-		const result = injectLearnerContext();
-		expect(typeof result).toBe("string");
-		expect(result).toContain("Learner 行為觀察");
-		expect(result).toContain("應找根因修復");
+		expect(injectLearnerContext()).toBeNull();
 	});
 
-	test("無 high impact 行為時回傳 null", () => {
-		const path = join(REAL_DATA_DIR, "behaviors.jsonl");
-		const entry = { id: "b2", impact: "low", polarity: 1, confidence: 0.5 };
-		writeTestFile(path, JSON.stringify(entry) + "\n");
-		const result = injectLearnerContext();
-		expect(result).toBeNull();
+	test("任何 entry → stub 永遠 null（orphan schema cleanup）", () => {
+		expect(injectLearnerContext()).toBeNull();
 	});
 });
 
