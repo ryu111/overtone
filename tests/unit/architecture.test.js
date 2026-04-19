@@ -915,6 +915,11 @@ describe("ADR-012 sub1 M3 rule + planner wire", () => {
     expect(content).toMatch(/target-path-verifier/);
     expect(content).toMatch(/second-pattern/);
   });
+
+  it("agents/planner.md 要求 spec 首段引述 verifyCanonicalPaths_result JSON（M3 LIVE trace）", () => {
+    const content = readFile(join(CLAUDE_DIR, "agents/planner.md"));
+    expect(content).toMatch(/verifyCanonicalPaths_result/);
+  });
 });
 
 // ── md-link 格式統一守護（xd-ek2d Round 7）──
