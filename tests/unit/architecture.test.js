@@ -839,6 +839,41 @@ describe("ask-user-question-enforcer 存在性", () => {
   });
 });
 
+// ── ADR-012 sub1 M2 pipeline-enforcer 接線 + config SoT 守護 ──
+describe("ADR-012 sub1 M2 pipeline enforcement", () => {
+  const CLAUDE_DIR = join(homedir(), ".claude");
+  const HOOK_CLIENT = readFile(join(CLAUDE_DIR, "hooks/hook-client.js"));
+
+  it("pipeline-enforcer.js 模組 wire 到 LOCAL_MODULES", () => {
+    expect(existsSync(join(CLAUDE_DIR, "hooks/modules/pipeline-enforcer.js"))).toBe(true);
+    expect(HOOK_CLIENT).toMatch(/pipeline-enforcer\.js/);
+  });
+
+  it("target-path-verifier.js 模組 wire 到 LOCAL_MODULES", () => {
+    expect(existsSync(join(CLAUDE_DIR, "hooks/modules/target-path-verifier.js"))).toBe(true);
+    expect(HOOK_CLIENT).toMatch(/target-path-verifier\.js/);
+  });
+
+  it("config/pipeline-tags.json 存在且 schema valid（SoT）", () => {
+    const path = join(CLAUDE_DIR, "config/pipeline-tags.json");
+    expect(existsSync(path)).toBe(true);
+    const cfg = JSON.parse(readFile(path));
+    expect(cfg.version).toBeGreaterThanOrEqual(1);
+    expect(Array.isArray(cfg.tags)).toBe(true);
+    expect(cfg.tags.length).toBeGreaterThan(0);
+    for (const t of cfg.tags) {
+      expect(typeof t.id).toBe("string");
+      expect(typeof t.pattern).toBe("string");
+      expect(/^D[2-4]$/.test(t.depth_floor)).toBe(true);
+      // pattern 必 regex-compilable
+      expect(() => new RegExp(t.pattern)).not.toThrow();
+    }
+    expect(typeof cfg.escape_hatch?.diff_lines_threshold).toBe("number");
+    expect(cfg.escape_hatch.diff_lines_threshold).toBeGreaterThan(0);
+    expect(typeof cfg.emergency_disable_env).toBe("string");
+  });
+});
+
 // ── md-link 格式統一守護（xd-ek2d Round 7）──
 describe("寫作規範 md-link 唯一 SoT", () => {
   const CLAUDE_DIR = join(homedir(), ".claude");
