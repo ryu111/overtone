@@ -406,4 +406,56 @@ describe("parseExternalResearch", () => {
 		const entry = buildEntry({ cwd: "/tmp" }, parsed, "hash2");
 		expect(entry.外部研究).toBeUndefined();
 	});
+
+	// iter 6 live flow 驗證：mirror iter 5 實際輸出結構
+	it("行首錨點 — 表格 cell 內 `## 外部研究` 不誤匹配（iter 6 bug 回歸）", () => {
+		const text = `## 本次完成
+
+| # | 動作 |
+|---|------|
+| 1 | extractExternalResearchSection 抓 \`## 外部研究\` section |
+| 2 | 另外一列 |
+
+## ★ Insight
+內容`;
+		// 表格 cell 含反引號包的 ## 外部研究 — 不該被當 heading
+		expect(extractExternalResearchSection(text)).toBeNull();
+	});
+
+	it("live flow — iter 5 型態（5 H2 headers 含 ## 外部研究）應抓到 section 本體", () => {
+		const text = `## 本次完成
+| # | 任務 | 動作 |
+|---|------|------|
+| 1 | 做事 | 完成 |
+
+## 副作用與關聯改動
+- 小事
+
+## 外部研究
+
+- **Goal clarity > prompt complexity**（OneReach.ai 2026）
+- **Goal decomposition into task graph**（Intellectyx 2026）
+- **Aggregated score threshold termination**（Gleecus 2026）
+- 詳見 [autonomous-agent-goal-termination-2026.md](./obsidian/semantic/external-references/autonomous-agent-goal-termination-2026.md)
+
+## ★ Insight
+
+1. **洞察一**：內容
+2. **洞察二**：內容
+
+## 接下來的建議
+- tomorrow
+
+<promise>DONE</promise>`;
+		const section = extractExternalResearchSection(text);
+		expect(section).not.toBeNull();
+		expect(section).toContain("Goal clarity");
+		expect(section).toContain("autonomous-agent-goal-termination-2026.md");
+		expect(section).not.toContain("洞察一");
+
+		const items = parseExternalResearch(section, "");
+		expect(items.length).toBeGreaterThanOrEqual(3);
+		const joined = items.map((i) => i.topic + "|" + i.insight).join("||");
+		expect(joined).toContain("Goal clarity");
+	});
 });
