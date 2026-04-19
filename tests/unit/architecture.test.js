@@ -318,6 +318,35 @@ describe("Hook module 接線完整性", () => {
     // 必須 log 豁免數（避免靜默豁免）
     expect(src).toMatch(/log\(`Orphan 判定：\$\{exemptedCount\}/);
   });
+
+  // P3 C：rule-change-eval-trigger 守護（2026-04-20）
+  // 確保反向 behavioral eval 的 hook 和 case 不被意外刪除
+  it("rule-change-eval-trigger.js hook 存在 + 含 GIT_COMMIT_RE pattern", () => {
+    const hookPath = join(homedir(), ".claude/hooks/modules/rule-change-eval-trigger.js");
+    expect(existsSync(hookPath)).toBe(true);
+    const code = readFile(hookPath);
+    // 必須偵測 git commit 指令
+    expect(code).toMatch(/GIT_COMMIT_RE|git.*commit/i);
+    // 必須偵測 rules path
+    expect(code).toMatch(/RULES_PATH_RE|rules\/.*\.md/);
+    // 必須 fail-open
+    expect(code).toMatch(/fail.open|permissionDecision.*allow/i);
+  });
+
+  it("rule-reverse-middle-state.eval.js eval case 存在 + 含 rule-reverse describe 識別符", () => {
+    const evalPath = join(
+      homedir(),
+      "projects/nova-brain/tests/evals/behavioral/rule-reverse-middle-state.eval.js"
+    );
+    expect(existsSync(evalPath)).toBe(true);
+    const code = readFile(evalPath);
+    // 識別符：describe 含 rule-reverse
+    expect(code).toMatch(/describe.*rule-reverse/);
+    // 必須有 analyzeOutput export（供 eval-runner 呼叫）
+    expect(code).toContain("export function analyzeOutput");
+    // 必須有 fail_signals 設計
+    expect(code).toMatch(/FAIL_SIGNALS|fail_signal/);
+  });
 });
 
 // ── Guard 覆蓋率 ──
