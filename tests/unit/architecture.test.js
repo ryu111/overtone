@@ -731,6 +731,15 @@ describe("flow-observer × settings.json 一致性", () => {
 // ── tmux paste-buffer -p 守護（xd-eo4x ec19e52 根因防擴散）──
 // 背景：bracketed paste + CLI readline paste detection 時序 race → Enter 沒被 submit
 // 對應：nb 616240b scripts/os/tmux.js + ns ec19e52 services/dispatch-transport.js pasteToPane
+//
+// Coverage 軸盤點（iter 4 2026-04-19）— property qualification 三軸之 coverage：
+// 全 repo 掃 source code 使用 tmux paste-buffer 命中 3 處：
+//   1. ~/.claude/scripts/os/tmux.js L106（bracketed paste）— ✅ 本守護覆蓋
+//   2. ~/projects/nova-server/services/dispatch-transport.js L71（bracketed paste）— ✅ 本守護覆蓋
+//   3. ~/projects/nova-server/api/actions.js L69（`paste-buffer -b ... -d` terminal-send race fix）
+//      — ❌ 刻意不加 -p（不是 bracketed paste 場景），由 ns tests/terminal-send-race.test.js
+//      獨立守護 `唯一命名 buffer + -d` pattern。本 arch test 不重複覆蓋。
+// 結論：既有 2 targets 已完整覆蓋 bracketed paste scope，無新 target 需加入。
 describe("tmux paste-buffer -p 守護", () => {
   const TARGETS = [
     { path: join(homedir(), ".claude/scripts/os/tmux.js"), label: "nb tmux.js" },
