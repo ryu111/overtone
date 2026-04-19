@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from "bun:test";
-import { evaluateBash, evaluateEdit, evaluateTask } from "../../../../.claude/hooks/modules/guards.js";
+import { evaluateBash, evaluateEdit, evaluateTask, evaluateOsControl } from "../../../../.claude/hooks/modules/guards.js";
 import { writeFileSync, unlinkSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
@@ -335,5 +335,43 @@ describe("guards: evaluateTask HARD GATE", () => {
 		expect(() => evaluateTask(null)).not.toThrow();
 		const r = evaluateTask(null);
 		expect(r.hookSpecificOutput.permissionDecision).toBe("allow");
+	});
+});
+
+// ─────────────────────────────────────────────
+// evaluateOsControl 系列（iter 13 補 SessionStart 建議 baseline）
+// ─────────────────────────────────────────────
+
+describe("guards: evaluateOsControl", () => {
+	it("非 os-control 命令 → null（不處理 fall-through）", () => {
+		const r = evaluateOsControl({ tool_input: { command: "ls /tmp" } });
+		expect(r).toBeNull();
+	});
+
+	it("os-control + password 字串 → block（密碼欄位偵測）", () => {
+		const r = evaluateOsControl({ tool_input: { command: "os-control click password field" } });
+		expect(r?.decision).toBe("block");
+		expect(r?.reason).toContain("密碼");
+	});
+
+	it("cliclick + 密碼中文 → block", () => {
+		const r = evaluateOsControl({ tool_input: { command: "cliclick 輸入 密碼" } });
+		expect(r?.decision).toBe("block");
+	});
+
+	it("vision-loop + keychain → block（keychain 關鍵字）", () => {
+		const r = evaluateOsControl({ tool_input: { command: "vision-loop tap keychain access" } });
+		expect(r?.decision).toBe("block");
+	});
+
+	it("os-control 無密碼無 app 參數 → null（通過）", () => {
+		const r = evaluateOsControl({ tool_input: { command: "os-control screenshot" } });
+		expect(r).toBeNull();
+	});
+
+	it("null input → 不 throw（fail-open）", () => {
+		expect(() => evaluateOsControl(null)).not.toThrow();
+		expect(() => evaluateOsControl({})).not.toThrow();
+		expect(() => evaluateOsControl({ tool_input: {} })).not.toThrow();
 	});
 });
