@@ -7,11 +7,12 @@
 ## 批次清單
 
 ### P2-1: chain-integrity.js 方案 A 全拆 9 module
-- **現況**：iter 19 方案 C 單點拆 Phase 1 至 chain-integrity-ref.js（629→497 行）
-- **目標**：剩餘 Phase 2-6 依 domain 拆為 duplicates / guard-coverage / cascade / session-coverage / mermaid 獨立 module
-- **觸發條件**：chain-integrity.js 逼近 650 行上限 OR 新 Phase 加入
-- **成本**：~2h D2 需 planner
-- **優先級**：low（目前 497 行空間足）
+- **狀態 iter 28 ROI 評估**：**defer not actionable**
+  - 當前主檔 497 行 / ref.js 拆出 133 行，total 630 行（兩檔合計）
+  - 主檔離 650 上限 -153 行（24% 空間）
+  - 無新 Phase 即將加入（spec 觸發條件皆未達）
+  - 拆分成本 ~2h vs 無觸發信號 → ROI 低
+- **未來 pick 條件**：主檔 > 600 行 OR 新 Phase 7 spec 提出 OR scanner 性能問題
 
 ### P2-2: SessionStart 快照 lag 分析
 - **來源**：iter 15 前 deferred backlog（iter 16 候選）
