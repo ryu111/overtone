@@ -1,5 +1,5 @@
 # 專案索引
-> 自動產生於 2026-04-18
+> 自動產生於 2026-04-19
 
 ## 元件目錄
 
@@ -51,7 +51,7 @@
 
 ---
 
-### Scripts（77）
+### Scripts（83）
 
 | 名稱 | 簡述 |
 |------|------|
@@ -111,6 +111,8 @@
 | reflect | 收尾第二階段：LLM 反思 |
 | reflection-backfill | 一次性腳本，backfill 歷史 reflections.jsonl 的 resolved_at |
 | reflection-resolver | CLI 工具：掃 reflections.jsonl 自動回填 resolved_at |
+| review-agent | Role: Closed-Loop / Sensor（非同步品質覆查） |
+| routing-level | routing-level |
 | rule-audit | 掃 ~/.claude/rules/**/*.md，抓所有 📋 MUST 條款， |
 | self-check | 自檢閉環腳本（4 Phase: scan → aggregate → act → persist） |
 | self-compact | 自壓縮觸發器（含 session 替換） |
@@ -126,8 +128,12 @@
 | sync-obsidian-ignore | 把 .obsidianignore (SoT) sync 到 .obsidian/app.json userIgnoreFilters |
 | tool-matcher | 意圖→工具語意匹配：給定任務描述，從 tool-registry 推薦工具組合 |
 | tool-registry | 工具索引：掃描 5 種工具來源，建立統一查詢索引 |
+| vault-backlink | Phase 2 缺口 C (ADR-001) |
+| vault-dispatches-sync | Phase 2 缺口 B (ADR-001) |
+| vault-distill | 次數觸發式反思蒸餾（Phase 2 缺口 D, 2026-04-19） |
 | vault-manager | Credential Vault CRUD + 敏感域紀律 |
 | vault-ref-linter | linter.js v2 — 強/軟引用分層掃描（ADR-002 Phase 1.5 Setup） |
+| vault-self-heal | Role: Closed-Loop（obi 自修 orchestrator） |
 | wake-sessions | 一鍵恢復 pinned session |
 | weekly-synthesis | 週蒸餾自動化（Phase 1, xd-v60w） |
 | wrapup | session 收尾編排器（極簡） |
@@ -190,13 +196,13 @@
 
 | 任務 | 類型 | 完成時間 | 結果 |
 |------|------|---------|------|
+| PRMs 觀念引入 ralph-loop | 功能 | 2026-04-19 | commit 上述 + baseline — ralph-iter-scorer |
+| structural-invariants semantic-aware diff | 重構 | 2026-04-19 | commit c328307 (nova) + edac3c1 (nb) — e |
+| pivot-detector 觸發次數 telemetry | 功能 | 2026-04-19 | commit 04d3d8b (nova) + 668d192 (nb) — t |
+| reflection-persist 新 schema baseline test | 測試 | 2026-04-19 | 合併入 P0 commit fab29b0 (nova-brain)，7 新 c |
+| reflection-persist 抓外部研究章節寫入  field | 功能 | 2026-04-19 | 實作完成 commit 529639b + baseline (nova-bra |
 | 新增 scanStaleDocs 掃描函式並整合到 self-check | 功能 | 2026-04-02 | — |
 | 重複結案架構測試 | 功能 | 2026-04-01 | — |
 | heartbeat品質修復 | 功能 | 2026-04-01 | — |
 | 修復三問閉環積壓 | 功能 | 2026-04-01 | — |
 | 建立卡住自動通知-Manager-機制 | 功能 | 2026-04-01 | — |
-| 修復自驅引擎重複結案-bug | 功能 | 2026-04-01 | — |
-| D1-AskUserQuestion-SSE-事件時機修正 | 功能 | 2026-04-01 | — |
-| D2-Feedback-Loop-P0-守衛 | 功能 | 2026-04-01 | — |
-| D2-CLI-標準化-Phase1 | 功能 | 2026-04-01 | — |
-| 修復-heartbeat-三個問題 | 功能 | 2026-04-01 | — |
