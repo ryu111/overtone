@@ -59,6 +59,27 @@
 - **優先級排序**：P2-5 > P2-2 > P2-6 > P2-1 > P2-4 > P2-3（medium → low → ROI-pending）
 - **下 session pick 順序**：P2-5（最小 ROI 15 min）→ P2-2（影響認知準確度）→ 其他按需要
 
+## 執行結果（iter 16-28 實作 / iter 37 誤判校正）
+
+| # | 狀態 |
+|---|------|
+| P2-1 chain-integrity 全拆 | defer — 主檔 497 行 24% 空間充足 |
+| P2-2 SessionStart lag | ✅ iter 18 injectReflections schema fallback |
+| P2-3 AST 升級 | defer — FP 10% 未達 > 5/month ROI 閾值 |
+| P2-4 refactor-test-sync-guard | close YAGNI — 已由 P2-6 review-agent 覆蓋 |
+| P2-5 claude-dev audit | ✅ iter 17 加每季 audit checklist |
+| P2-6 hasCrossRepoTest prefix | ✅ iter 16 prefix match + iter 19 content-scan 回退 |
+| P2-7 multi-function test | close known limitation |
+
+## Iter 37 後續 — orphan schema 誤判校正
+
+xd-sxa2 批 1/2 cleanup 執行中發現 grep 方法缺陷：
+- scores.jsonl iter 33 判為 orphan → iter 37 double-check 發現 judge-scores.js 變數間接 writer
+- 批 2 撤回（xd-0bxr 通知 Manager）
+- 批 1 三檔 re-verify OK（behaviors backup 檔不執行 / feedback-* 真無 var-indirect writer）
+
+詳見 `obsidian/episodic/incidents/xd-sxa2-orphan-schema-systemic-pattern.md` iter 37 防護設計。
+
 ## 驗收標準（整體）
 
 - 每項獨立 commit + baseline test（nova-brain）
