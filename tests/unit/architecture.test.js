@@ -969,6 +969,21 @@ describe("ADR-012 sub1 M3 rule + planner wire", () => {
     expect(missing.length).toBe(0);
   });
 
+  // ── 中間態根因治本守護（2026-04-20）──
+  it("rules/核心/任務生命週期.md 含下一步二擇一條款（中間態治本）", () => {
+    const content = readFile(join(CLAUDE_DIR, "rules/核心/任務生命週期.md"));
+    expect(content).toMatch(/下一步二擇一/);
+    expect(content).toMatch(/消除中間態|中間態/);
+    expect(content).toMatch(/AI 自決|AskUserQuestion/);
+  });
+
+  it("hooks/modules/summary-format-guard.js 含中間態偵測（PICK_UI_MARKERS）", () => {
+    const content = readFile(join(CLAUDE_DIR, "hooks/modules/summary-format-guard.js"));
+    expect(content).toMatch(/PICK_UI_MARKERS/);
+    expect(content).toMatch(/Recommended/);
+    expect(content).toMatch(/中間態/);
+  });
+
   it("config/hook-rule-mapping.json 一致性（sub2 M1）", () => {
     const mappingPath = join(CLAUDE_DIR, "config/hook-rule-mapping.json");
     expect(existsSync(mappingPath)).toBe(true);
