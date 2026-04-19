@@ -550,18 +550,58 @@ describe("injectReflections", () => {
 		expect(result).toBeNull();
 	});
 
-	test("有反思記錄時回傳包含前次反思的字串", () => {
+	test("新 schema（結論[]）→ 輸出 結論[0]（iter 18 治本 P2-2）", () => {
 		const path = join(REAL_DATA_DIR, "reflections.jsonl");
 		const entry = {
 			ts: new Date().toISOString(),
-			trigger: "correction",
-			reflection: "應在實作前先讀 spec",
+			trigger_type: "autonomous",
+			trigger: "Stop hook 自動抓取",
+			結論: ["應在實作前先讀 spec", "第二條結論"],
+			行動: ["commit abc1234"],
 		};
 		writeTestFile(path, JSON.stringify(entry) + "\n");
 		const result = injectReflections();
 		expect(typeof result).toBe("string");
 		expect(result).toContain("前次反思");
 		expect(result).toContain("應在實作前先讀 spec");
+		expect(result).not.toContain("undefined");
+	});
+
+	test("無結論但有行動 → fallback 行動[0]", () => {
+		const path = join(REAL_DATA_DIR, "reflections.jsonl");
+		const entry = {
+			ts: new Date().toISOString(),
+			trigger: "autonomous",
+			結論: [],
+			行動: ["commit xyz9876 修 bug"],
+		};
+		writeTestFile(path, JSON.stringify(entry) + "\n");
+		const result = injectReflections();
+		expect(result).toContain("commit xyz9876 修 bug");
+	});
+
+	test("結論/行動 都空 → fallback trigger", () => {
+		const path = join(REAL_DATA_DIR, "reflections.jsonl");
+		const entry = {
+			ts: new Date().toISOString(),
+			trigger: "empty-entry-trigger",
+			結論: [],
+			行動: [],
+		};
+		writeTestFile(path, JSON.stringify(entry) + "\n");
+		const result = injectReflections();
+		expect(result).toContain("empty-entry-trigger");
+		expect(result).not.toContain("undefined");
+	});
+
+	test("結論 > 120 字 → 截斷到 120 字", () => {
+		const path = join(REAL_DATA_DIR, "reflections.jsonl");
+		const long = "a".repeat(200);
+		const entry = { ts: new Date().toISOString(), trigger: "x", 結論: [long], 行動: [] };
+		writeTestFile(path, JSON.stringify(entry) + "\n");
+		const result = injectReflections();
+		expect(result).toContain("a".repeat(120));
+		expect(result).not.toContain("a".repeat(121));
 	});
 });
 
