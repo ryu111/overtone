@@ -392,4 +392,20 @@ describe("guards: evaluateOsControl", () => {
 		const r = evaluateOsControl({ tool_input: { command: 'echo "docs: vision-loop workflow with password"' } });
 		expect(r).toBeNull();
 	});
+
+	// iter 14 invocation pattern review：補絕對路徑 / 相對路徑呼叫
+	it("絕對路徑 /usr/local/bin/cliclick 呼叫 → 觸發偵測", () => {
+		const r = evaluateOsControl({ tool_input: { command: "/usr/local/bin/cliclick c:100,200 password" } });
+		expect(r?.decision).toBe("block");
+	});
+
+	it("相對路徑 ./scripts/os/vision-loop.js 呼叫 → 觸發偵測", () => {
+		const r = evaluateOsControl({ tool_input: { command: "./scripts/os/vision-loop.js keychain" } });
+		expect(r?.decision).toBe("block");
+	});
+
+	it("HOME 波浪展開 ~/.claude/scripts/os/vision-loop.js → 觸發偵測", () => {
+		const r = evaluateOsControl({ tool_input: { command: "bun ~/.claude/scripts/os/vision-loop.js password" } });
+		expect(r?.decision).toBe("block");
+	});
 });
