@@ -8,6 +8,7 @@ import {
 	loadInvariantsConfig,
 	extractImports,
 	extractExports,
+	extractImportIdentifiers,
 	checkInvariant,
 	runInvariants,
 	_resetCache,
@@ -137,5 +138,65 @@ describe("runInvariants 整合 + skip override", () => {
 		const next = `// removed`;
 		const violations = runInvariants(old, next, { skip: ["preserveImports"] });
 		expect(violations.length).toBe(0);
+	});
+});
+
+// ─── semantic-aware diff baseline（iter 19 backlog 治本）───
+describe("extractImportIdentifiers — identifier 級 semantic diff", () => {
+	it("default + named + namespace + side-effect + require 全支援", () => {
+		const code = `import A from 'a';
+import { b, c as cc } from 'b';
+import * as Ns from 'ns';
+import 'side-effect';
+const fs = require('node:fs');
+const { x, y } = require('z');`;
+		const ids = extractImportIdentifiers(code);
+		expect(ids.has("A")).toBe(true);
+		expect(ids.has("b")).toBe(true);
+		expect(ids.has("cc")).toBe(true);
+		expect(ids.has("Ns")).toBe(true);
+		expect(ids.has("(side:side-effect)")).toBe(true);
+		expect(ids.has("fs")).toBe(true);
+		expect(ids.has("x")).toBe(true);
+		expect(ids.has("y")).toBe(true);
+	});
+});
+
+describe("preserveImports semantic-aware（iter 19 誤判根因）", () => {
+	const invariant = { name: "preserveImports", severity: "error" };
+
+	it("`import A from 'x'` → `import { A, B } from 'x'` 不誤判（A 保留 + B 新增）", () => {
+		const old = `import A from 'x';`;
+		const next = `import { A, B } from 'x';`;
+		// 註：A 從 default 變成 named 在 identifier set 中都是「A」，保留算 ok
+		expect(checkInvariant(invariant, old, next).ok).toBe(true);
+	});
+
+	it("`import { A, B } from 'x'` → `import { A } from 'x'` 觸發（B 丟失）", () => {
+		const old = `import { A, B } from 'x';`;
+		const next = `import { A } from 'x';`;
+		const r = checkInvariant(invariant, old, next);
+		expect(r.ok).toBe(false);
+		expect(r.reason).toContain("B");
+	});
+
+	it("`const X = require('y')` → `const { X, Y } = require('y')` 不誤判", () => {
+		const old = `const X = require('y');`;
+		const next = `const { X, Y } = require('y');`;
+		expect(checkInvariant(invariant, old, next).ok).toBe(true);
+	});
+
+	it("rename as → 舊別名消失觸發（語義確實丟失）", () => {
+		const old = `import { a as A } from 'x';`;
+		const next = `import { a as B } from 'x';`;
+		const r = checkInvariant(invariant, old, next);
+		expect(r.ok).toBe(false);
+		expect(r.reason).toContain("A");
+	});
+
+	it("import 順序改變不誤判", () => {
+		const old = `import { a, b } from 'x';`;
+		const next = `import { b, a } from 'x';`;
+		expect(checkInvariant(invariant, old, next).ok).toBe(true);
 	});
 });
