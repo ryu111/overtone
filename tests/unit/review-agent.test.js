@@ -138,6 +138,11 @@ describe("hasCrossRepoTest (cross-repo 偵測修 false positive)", () => {
 		// 預設 readdirSync 找「foo.test.js」或「foo-*.test.js」— foobar- 前綴不 match
 		expect(hasCrossRepoTest("hooks/modules/nonexistent-xyz-9999.js")).toBe(false);
 	});
+
+	// iter 19 P2-7 known limitation（不加 test.skip，純註解記錄）：
+	// multi-function aggregating test（inject-learning-context.js 對應 inject-functions.test.js）
+	// prefix match 漏報 auto-append 誤報。content-scan 回退嘗試誤報率過高 close。
+	// Workaround：未來此類 test 檔命名改為 base-aggregate.test.js 符 prefix match。
 });
 
 describe("reviewDimensions test_coverage cross-repo 邏輯", () => {
