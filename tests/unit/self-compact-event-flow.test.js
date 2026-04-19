@@ -1,4 +1,4 @@
-// self-compact-event-flow.test.js — spec/進行中/self-compact-event-driven.md
+// self-compact-event-flow.test.js — spec/完成/self-compact-event-driven.md
 // 驗 flow-observer.js 5 個 handler 寫入事件 flag 供 scripts/self-compact.js 等待
 // Stop / SessionEnd / SessionStart / PostCompact → 各自寫 /tmp/nova-session-*-<project>.flag
 // UserPromptSubmit → 清除 4 個 flag（one-shot）

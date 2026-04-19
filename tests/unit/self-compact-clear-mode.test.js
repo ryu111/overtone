@@ -1,6 +1,6 @@
 // self-compact.js --mode=clear 原始碼驗證（2026-04-19 升級為事件驅動）
 //
-// 更新：spec/進行中/self-compact-event-driven.md 實作後，舊 mtime polling 邏輯被
+// 更新：spec/完成/self-compact-event-driven.md 實作後，舊 mtime polling 邏輯被
 // 「spawnSync exitCode + 單次 statSync + fs.watch on session-started flag」取代。
 // 本檔保留「clear mode 結構性保證」測試（模式識別、流程順序、contPrompt 語意）。
 // 事件 flag 寫入驗證見 self-compact-event-flow.test.js。
@@ -73,7 +73,7 @@ describe("self-compact.js clear mode Bug B 防禦（handoff staleness）", () =>
 	});
 });
 
-describe("self-compact.js 事件驅動移除所有 time-based 邏輯（spec/進行中/self-compact-event-driven.md）", () => {
+describe("self-compact.js 事件驅動移除所有 time-based 邏輯（spec/完成/self-compact-event-driven.md）", () => {
 	it("不含 IDLE_THRESHOLD_MS / waitForIdle / waitForCtxUpdate", () => {
 		expect(source).not.toContain("IDLE_THRESHOLD_MS");
 		expect(source).not.toContain("waitForIdle");
