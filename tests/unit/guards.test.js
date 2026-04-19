@@ -374,4 +374,22 @@ describe("guards: evaluateOsControl", () => {
 		expect(() => evaluateOsControl({})).not.toThrow();
 		expect(() => evaluateOsControl({ tool_input: {} })).not.toThrow();
 	});
+
+	// iter 13 治本：substring → command 開頭動詞 + bun/node 呼叫 pattern
+	// 自驅發現：commit message 含「cliclick」字面誤 block
+	it("git commit message 含 cliclick 字面 → null（不誤 block）", () => {
+		const msg = 'git commit -m "test: cliclick + password case"';
+		const r = evaluateOsControl({ tool_input: { command: msg } });
+		expect(r).toBeNull();
+	});
+
+	it("bun scripts/os/os-control.js click 呼叫 → 觸發偵測（真呼叫不放過）", () => {
+		const r = evaluateOsControl({ tool_input: { command: "bun scripts/os/os-control.js click password" } });
+		expect(r?.decision).toBe("block");
+	});
+
+	it("echo 內含 vision-loop 字面 → null（docstring 不誤 block）", () => {
+		const r = evaluateOsControl({ tool_input: { command: 'echo "docs: vision-loop workflow with password"' } });
+		expect(r).toBeNull();
+	});
 });
