@@ -1,3 +1,14 @@
+---
+title: 知而不行 Phase 3 真違規候選盤點
+date: 2026-04-15
+status: in_progress
+scope: global
+owner: nb
+round: 2                        # 目前 Round 2 iterate 中（handoff 序列任務顯示）
+authorization:
+  - xd-0sej                     # 觸發來源
+---
+
 # 知而不行 Phase 3 真違規候選（xd-0sej, 2026-04-15）
 
 ## 輸入

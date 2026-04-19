@@ -1,3 +1,16 @@
+---
+title: Wave 1 + Silent Regression 合併執行
+date: 2026-04-17
+status: in_progress
+scope: global
+progress: 4/7                    # iter 3-7 完 P1/P2/P3 根因/M1；剩 F1/M2/M3
+owner: nb
+authorization:
+  - xd-1776385791431-r1im        # Manager Wave1 Round 8 採納
+  - xd-1776390507819-lcqe        # Silent regression Manager Round 2 採納
+  - xd-1776390660212-jys3        # Silent regression 補充授權
+---
+
 # Wave 1 + Silent Regression 合併執行 spec
 
 - **觸發**：/ask 使用者勾選 7 項（短期 4 + 中期 3）

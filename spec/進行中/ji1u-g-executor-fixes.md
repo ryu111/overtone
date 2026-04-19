@@ -1,3 +1,13 @@
+---
+title: multi-tier-loop g-executor 結構缺陷修復
+date: 2026-04-13
+status: in_progress
+scope: nova-brain sandbox       # g 路由 Phase 5 暫不 GA
+owner: nb
+authorization:
+  - xd-1776092084077-ji1u       # 觸發來源 block-world R119 POC
+---
+
 # multi-tier-loop g-executor 結構缺陷修復（xd-ji1u）
 
 ## 來源
