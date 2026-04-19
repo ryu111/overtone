@@ -130,4 +130,26 @@ describe("pivot-detector — 反思外部研究缺漏偵測（commit 4107453 新
 		const result = mod.detectNoExternalResearch(TMPDIR);
 		expect(result).toBeNull();
 	});
+
+	test("telemetry：觸發 pivot-mandatory 時 write sensor-metrics.jsonl", async () => {
+		setupReflections([
+			{ ts: "2026-04-19T09:00:00Z", 結論: ["a"], 行動: ["x"], resolved_at: "2026-04-19T09:00:00Z" },
+			{ ts: "2026-04-19T10:00:00Z", 結論: ["b"], 行動: ["y"], resolved_at: "2026-04-19T10:00:00Z" },
+			{ ts: "2026-04-19T11:00:00Z", 結論: ["c"], 行動: ["z"], resolved_at: "2026-04-19T11:00:00Z" },
+		]);
+		mkdirSync(`${TMPDIR}/.claude`, { recursive: true });
+		writeFileSync(`${TMPDIR}/.claude/ralph-loop.local.md`, "---\niteration: 5\n---\n");
+		const mod = await import("/Users/sbu/.claude/hooks/modules/ralph-loop-pivot-detector.js");
+		mod.detectPivot({ cwd: TMPDIR });
+		const metricsPath = `${TMPDIR}/data/sensor-metrics.jsonl`;
+		expect(existsSync(metricsPath)).toBe(true);
+		const content = require("node:fs").readFileSync(metricsPath, "utf-8");
+		expect(content).toContain("pivot-mandatory-no-external-research");
+	});
+
+	test("emitTelemetry 缺 cwd 不 crash", async () => {
+		const mod = await import("/Users/sbu/.claude/hooks/modules/ralph-loop-pivot-detector.js");
+		expect(() => mod.emitTelemetry(null, "x")).not.toThrow();
+		expect(() => mod.emitTelemetry("", "x")).not.toThrow();
+	});
 });
