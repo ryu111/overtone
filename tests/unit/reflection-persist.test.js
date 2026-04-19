@@ -9,6 +9,8 @@ import {
 	actionHasVerifiable,
 	validateActions,
 	appendActionsToStatePrompt,
+	extractExternalResearchSection,
+	parseExternalResearch,
 } from "../../../../.claude/hooks/modules/reflection-persist.js";
 import { mkdtempSync, rmSync, writeFileSync, existsSync, readFileSync, mkdirSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -333,5 +335,75 @@ CRITICAL RULE — Ralph Loop
 		persistReflection({ cwd: tmpDir, last_assistant_message: insightText });
 		const c = readFileSync(statePath, "utf-8");
 		expect(c).toContain("自驅追加");
+	});
+});
+
+// ─── 外部研究 schema baseline（commit 4107453 rule 配合，P0 spec 擴） ───
+describe("extractExternalResearchSection", () => {
+	it("抓取 ## 外部研究 markdown section", () => {
+		const text = [
+			"## 本次完成",
+			"...",
+			"### ★ Insight",
+			"- 第一條",
+			"## 外部研究",
+			"- 主題 A: 見 https://arxiv.org/abs/2405.06682",
+			"- 主題 B: external-references/foo.md",
+			"## 下一步",
+		].join("\n");
+		const s = extractExternalResearchSection(text);
+		expect(s).toContain("主題 A");
+		expect(s).toContain("主題 B");
+		expect(s).not.toContain("下一步");
+	});
+
+	it("無外部研究 section 回 null", () => {
+		expect(extractExternalResearchSection("純文字")).toBeNull();
+		expect(extractExternalResearchSection("")).toBeNull();
+		expect(extractExternalResearchSection(null)).toBeNull();
+	});
+});
+
+describe("parseExternalResearch", () => {
+	it("parse bullet 段成陣列，抽 URL 和 external-references path", () => {
+		const section = [
+			"- Reflexion patterns: 見 https://arxiv.org/abs/2405.06682 — self-critique +11%",
+			"- MIRIX Vault: obsidian/semantic/external-references/ai-agent-architecture-2026.md — KV 對齊",
+		].join("\n");
+		const items = parseExternalResearch(section);
+		expect(items.length).toBe(2);
+		expect(items[0].topic).toContain("Reflexion");
+		expect(items[0].source_url).toBe("https://arxiv.org/abs/2405.06682");
+		expect(items[1].external_ref_path).toContain("external-references/ai-agent-architecture-2026.md");
+	});
+
+	it("section 為空但 fallbackText 含 external-references path → fallback 一筆", () => {
+		const items = parseExternalResearch(null, "見 external-references/xyz.md 詳細");
+		expect(items.length).toBe(1);
+		expect(items[0].external_ref_path).toContain("external-references/xyz.md");
+		expect(items[0].topic).toBe("xyz");
+	});
+
+	it("section 和 fallbackText 都無 → 空陣列", () => {
+		expect(parseExternalResearch(null, "純內部反思")).toEqual([]);
+		expect(parseExternalResearch("", "")).toEqual([]);
+	});
+
+	it("buildEntry 含 parsed.外部研究 → entry 含 外部研究 field", () => {
+		const parsed = {
+			結論: ["c1"],
+			行動: ["commit abcdef1"],
+			外部研究: [{ topic: "T", source_url: "https://x.com", insight: "i" }],
+		};
+		const entry = buildEntry({ cwd: "/tmp" }, parsed, "hash1");
+		expect(entry.外部研究).toBeDefined();
+		expect(entry.外部研究.length).toBe(1);
+		expect(entry.外部研究[0].topic).toBe("T");
+	});
+
+	it("buildEntry 無 parsed.外部研究 → entry 無 外部研究 field", () => {
+		const parsed = { 結論: ["c1"], 行動: ["commit abcdef1"] };
+		const entry = buildEntry({ cwd: "/tmp" }, parsed, "hash2");
+		expect(entry.外部研究).toBeUndefined();
 	});
 });
