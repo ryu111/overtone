@@ -746,6 +746,20 @@ describe("tmux paste-buffer -p 守護", () => {
     { path: join(homedir(), "projects/nova-server/services/dispatch-transport.js"), label: "ns dispatch-transport.js" },
   ];
 
+  // Exempt 升級為 test 常數（iter 5，對齊 ArchUnit 社群 meta-assertion 最佳實踐）
+  // 原本 iter 4 comment-only，升級後：
+  //   1. EXEMPT 宣告式化 — 新 paste-buffer 用法需明示豁免原因
+  //   2. target-existence check — 若 exempt target 被刪/改 → test fail 提醒清 exempt
+  // 對齊：obsidian/semantic/external-references/architecture-test-coverage-2026.md
+  const EXEMPT_PASTE_BUFFER_WITHOUT_P = [
+    {
+      path: join(homedir(), "projects/nova-server/api/actions.js"),
+      line_pattern: /paste-buffer.*-b.*-d/,
+      label: "ns actions.js L69",
+      reason: "terminal-send race fix（唯一命名 buffer + -d 刪 buffer 語義），不是 bracketed paste 場景。獨立守護：ns tests/terminal-send-race.test.js",
+    },
+  ];
+
   for (const { path, label } of TARGETS) {
     it(label + " 所有 paste-buffer 呼叫必帶 -p flag", () => {
       if (!existsSync(path)) {
@@ -789,6 +803,24 @@ describe("tmux paste-buffer -p 守護", () => {
         if (line.includes("paste-buffer") && line.includes("-p")) count++;
       }
       expect(count).toBeGreaterThanOrEqual(1);
+    });
+  }
+
+  // Wave1 P2（iter 5）— exempt target-existence check 防 drift：
+  // 若 EXEMPT 中 target 檔案被刪/改到 line_pattern 不 match → fail 提醒清 exempt
+  for (const exempt of EXEMPT_PASTE_BUFFER_WITHOUT_P) {
+    it("exempt target 仍存在且 line_pattern 仍 match：" + exempt.label, () => {
+      expect(existsSync(exempt.path)).toBe(true);
+      const src = readFile(exempt.path);
+      const hasPattern = src.split("\n").some((line) => {
+        const trimmed = line.trim();
+        if (trimmed.startsWith("//") || trimmed.startsWith("*") || trimmed.startsWith("#")) return false;
+        return exempt.line_pattern.test(line);
+      });
+      if (!hasPattern) {
+        console.error(`[arch-exempt-drift] ${exempt.label} 的 line_pattern 不再 match，檢查是否可清 exempt。理由：${exempt.reason}`);
+      }
+      expect(hasPattern).toBe(true);
     });
   }
 });
