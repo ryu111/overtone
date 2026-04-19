@@ -119,6 +119,25 @@ describe("hasCrossRepoTest (cross-repo 偵測修 false positive)", () => {
 	it("支援自訂 testsDir", () => {
 		expect(hasCrossRepoTest("a.js", "/nonexistent-dir")).toBe(false);
 	});
+
+	// iter 16 治本 P2-6 — prefix match 修誤報
+	it("hooks/modules/ralph-loop.js → 找到 ralph-loop-done-gate.test.js（prefix match）", () => {
+		expect(hasCrossRepoTest("hooks/modules/ralph-loop.js")).toBe(true);
+	});
+
+	it("hooks/modules/ralph-loop.js → 找到 ralph-loop-flag-lifecycle.test.js", () => {
+		// 同一 base 多 test 檔都算 covered
+		expect(hasCrossRepoTest("hooks/modules/ralph-loop.js")).toBe(true);
+	});
+
+	it("hooks/modules/guards.js → 找到 guards.test.js（原精確匹配仍 work）", () => {
+		expect(hasCrossRepoTest("hooks/modules/guards.js")).toBe(true);
+	});
+
+	it("prefix 非後接 hyphen 不誤判：不存在 foo.js → foobar-xxx.test.js 不算", () => {
+		// 預設 readdirSync 找「foo.test.js」或「foo-*.test.js」— foobar- 前綴不 match
+		expect(hasCrossRepoTest("hooks/modules/nonexistent-xyz-9999.js")).toBe(false);
+	});
 });
 
 describe("reviewDimensions test_coverage cross-repo 邏輯", () => {
