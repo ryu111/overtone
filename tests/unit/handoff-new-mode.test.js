@@ -25,9 +25,11 @@ describe("handoff new mode 契約（xd-izqa Round 4）", () => {
 		expect(handoffContent).toContain("--mode=clear");
 	});
 
-	it("self-compact.js 解析 --mode=clear argv flag", () => {
-		expect(selfCompactContent).toContain("process.argv.includes(\"--mode=clear\")");
+	it("self-compact.js 從 argv 辨識 clear mode", () => {
+		// 2026-04-19 default 切 clear 後改為 opt-in compact：`--mode=compact` 反向
+		// MODE_CLEAR 旗標 + argv 解析契約仍需存在（clear 是 default，或顯式 --mode=clear 亦可）
 		expect(selfCompactContent).toContain("MODE_CLEAR");
+		expect(selfCompactContent).toMatch(/process\.argv\.includes\("--mode=(clear|compact)"\)/);
 	});
 
 	it("self-compact.js clear mode 走 PreCompact hook + /clear 分支", () => {
@@ -37,9 +39,10 @@ describe("handoff new mode 契約（xd-izqa Round 4）", () => {
 		expect(selfCompactContent).toContain('send("/clear")');
 	});
 
-	it("self-compact.js clear mode commit message 含 symmetry 推論註解", () => {
-		// 確保未來有人看 source 能追溯為何沒做 P0 empirical
-		expect(selfCompactContent).toMatch(/symmetry|悖論|self-clear/);
+	it("self-compact.js clear mode 有 reasoning 註解（為何 default clear）", () => {
+		// 2026-04-19 default=clear 切換的 reasoning 必須在 source 可追溯
+		// 原要求 symmetry|悖論|self-clear；2026-04-19 實際 commit 用「acompact subagent」語彙
+		expect(selfCompactContent).toMatch(/symmetry|悖論|self-clear|acompact|避.*subagent/);
 	});
 
 	it("self-compact.js clear mode continuation prompt 指向 handoff 檔", () => {
