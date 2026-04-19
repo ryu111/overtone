@@ -918,6 +918,13 @@ describe("候選 2 合併守護：任務生命週期", () => {
     const readme = readFile2(join(CLAUDE_DIR, "rules/核心/README.md"));
     expect(readme).toMatch(/\]\(任務生命週期\.md\)/);
   });
+
+  // iter 21 使用者糾正「tasklist 又沒有顯示」— ralph-loop 每 iter 必 TaskCreate
+  it("任務生命週期.md 含 ralph-loop iter 必 TaskCreate 條款", () => {
+    const src = readFile2(join(CLAUDE_DIR, "rules/核心/任務生命週期.md"));
+    expect(src).toMatch(/ralph-loop.*每\s*iter.*TaskCreate/);
+    expect(src).toMatch(/NEVER.*iter 內跳過 TaskCreate/);
+  });
 });
 
 // ── xd-7w7b R2 Rule 廣意化 Phase 2 候選 4：canonical-引用驗證 + 呼叫者邊界 → caller-邊界（2026-04-18）──
