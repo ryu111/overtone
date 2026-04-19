@@ -2,8 +2,10 @@
 name: self-compact 事件驅動重設計
 depth: D2
 domain: hooks / self-drive infrastructure
-status: 討論中
+status: 已完成
 created: 2026-04-19
+completed: 2026-04-19
+implementation_commit: 03e03fa (~/.claude) + 配套 tests commit (nova-brain)
 author: nova-brain
 related:
   - rules/環境/自壓縮.md
