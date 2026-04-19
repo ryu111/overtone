@@ -116,7 +116,7 @@
 | routing-level | routing-level |
 | rule-audit | 掃 ~/.claude/rules/**/*.md，抓所有 📋 MUST 條款， |
 | self-check | 自檢閉環腳本（4 Phase: scan → aggregate → act → persist） |
-| self-compact | 事件驅動自壓縮（spec/進行中/self-compact-event-driven.md） |
+| self-compact | 事件驅動自壓縮（spec/完成/self-compact-event-driven.md） |
 | session-ctl | Session 管理 CLI 工具 |
 | session-recorder | Session 摘要與簡報記錄（Phase 4a + 4b 包裝） |
 | session-rename | SessionStart 後自動命名 session |
