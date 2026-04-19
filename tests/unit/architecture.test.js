@@ -990,6 +990,15 @@ describe("ADR-012 sub1 M3 rule + planner wire", () => {
     expect(content).toMatch(/\^下一步\\s\*\[：:\]/);
   });
 
+  // sub3 M2a progressive guard（xd-qzhd close 2026-04-20，executor ready 後強制）
+  it("sub3 M2a scripts/rule-audit.js soft guard", () => {
+    const p = join(homedir(), "projects/nova-manager/scripts/rule-audit.js");
+    if (!existsSync(p)) return;
+    const c = readFile(p);
+    expect(c).toMatch(/weak_signal|0\.72/);
+    expect(c).toMatch(/rule-calibration-gold\.json/);
+  });
+
   it("config/hook-rule-mapping.json 一致性（sub2 M1）", () => {
     const mappingPath = join(CLAUDE_DIR, "config/hook-rule-mapping.json");
     expect(existsSync(mappingPath)).toBe(true);
