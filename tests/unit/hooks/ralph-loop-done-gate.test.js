@@ -80,3 +80,27 @@ describe("ralph-loop.js Phase 3.5/4 已加 DONE gate (source grep 驗證)", () =
     expect(isPromptDoneAllowed("本輪尚未完成某項")).toBe(false);
   });
 });
+
+// iter 12 使用者糾正「停下來多次」治本 baseline (2026-04-19)
+describe("下一目標續 iter 強制不 DONE（iter 12 使用者糾正治本）", () => {
+  test("state.prompt 含「下一目標：<具體任務>」無 graceful close → NOT allowed（強制續做）", () => {
+    expect(isPromptDoneAllowed("本輪完成 → 下一目標：消化 23 建議 inventory 讀 reflections.jsonl")).toBe(false);
+    expect(isPromptDoneAllowed("本輪完成 → 下一目標：修 architecture.test.js 4 fail")).toBe(false);
+    expect(isPromptDoneAllowed("處理完成 → 下一目標：pick spec/待做 D2 roadmap Phase 1")).toBe(false);
+  });
+
+  test("state.prompt 含「下一目標 + graceful close」→ allowed（明示暫停）", () => {
+    expect(isPromptDoneAllowed("本輪完成 → 下一目標：修 4 fail（但 graceful close 因 ctx > 70%）")).toBe(true);
+    expect(isPromptDoneAllowed("下一目標：X 任務；graceful close：quota 接近上限")).toBe(true);
+  });
+
+  test("state.prompt 「下一目標」後無具體任務（< 5 字）→ allowed（視為無實質目標）", () => {
+    expect(isPromptDoneAllowed("本輪完成 → 下一目標：X")).toBe(true);
+    expect(isPromptDoneAllowed("本輪無剩餘任務，下一目標：待定")).toBe(true);
+  });
+
+  test("舊 graceful close 行為不變", () => {
+    expect(isPromptDoneAllowed("本輪完成 → graceful close：ctx > 70%")).toBe(true);
+    expect(isPromptDoneAllowed("本輪無剩餘任務")).toBe(true);
+  });
+});
