@@ -984,6 +984,12 @@ describe("ADR-012 sub1 M3 rule + planner wire", () => {
     expect(content).toMatch(/中間態/);
   });
 
+  it("summary-format-guard HAS_NEXT_RE 接受 inline「下一步：」直述（AI 自決模式）", () => {
+    const content = readFile(join(CLAUDE_DIR, "hooks/modules/summary-format-guard.js"));
+    // 支援 inline 直述，不強制 markdown header（對齊新 rule §下一步二擇一 AI 自決直述）
+    expect(content).toMatch(/\^下一步\\s\*\[：:\]/);
+  });
+
   it("config/hook-rule-mapping.json 一致性（sub2 M1）", () => {
     const mappingPath = join(CLAUDE_DIR, "config/hook-rule-mapping.json");
     expect(existsSync(mappingPath)).toBe(true);
