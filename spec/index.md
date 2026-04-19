@@ -11,7 +11,7 @@
 
 ---
 
-### Skills（33）
+### Skills（34）
 
 | 名稱 | 簡述 |
 |------|------|
@@ -43,6 +43,7 @@
 | pinchtab | "Chrome 瀏覽器操控 — Pinchtab HTTP API。WHEN: 需要網頁自動化、表單填寫、截圖擷取且 PinchTab 常駐服務（port 98 |
 | pipeline-quality-gate | "multi-tier-loop / g-executor pipeline 的 4 層品質驗證框架。WHEN: 設計或審查 executor/reviewer |
 | refactoring | "重構決策知識域：設計分析、拆分策略、品質指標。WHEN: 判斷何時該拆（SRP 違反）、何時不該拆（高內聚）、選擇重構手法（Extract Module/He |
+| regression-prevention | "回歸防禦方法論知識域。arch test 三軸治理（vacuity/coverage/redundancy）+ exempt drift detection  |
 | self-evolution | "元認知自評框架：行動前客觀 checklist + 行動後 loop 模式反思。WHEN: dispatch 前、驗收前、重大決策前。NOT: 機械性操作、D |
 | skill-judge | "對 Skill 設計品質進行多維度評分（知識密度、觸發精準度、結構完整性等）。WHEN: 量化評估 Skill 整體設計優劣、生成改善建議報告、進行 Skil |
 | system-audit | "系統審查自動化。10 條交叉引用掃描 + P0/P1/P2 診斷 + 品質閘門。WHEN: /audit 觸發、Manager 說「整理」「健康檢查」「清點」 |
@@ -51,7 +52,7 @@
 
 ---
 
-### Scripts（83）
+### Scripts（84）
 
 | 名稱 | 簡述 |
 |------|------|
@@ -128,6 +129,7 @@
 | sync-obsidian-ignore | 把 .obsidianignore (SoT) sync 到 .obsidian/app.json userIgnoreFilters |
 | tool-matcher | 意圖→工具語意匹配：給定任務描述，從 tool-registry 推薦工具組合 |
 | tool-registry | 工具索引：掃描 5 種工具來源，建立統一查詢索引 |
+| validate-frontmatter | spec frontmatter schema validator |
 | vault-backlink | Phase 2 缺口 C (ADR-001) |
 | vault-dispatches-sync | Phase 2 缺口 B (ADR-001) |
 | vault-distill | 次數觸發式反思蒸餾（Phase 2 缺口 D, 2026-04-19） |
@@ -182,13 +184,9 @@
 
 ---
 
-### 待做（3）
+### 待做（0）
 
-| 任務 | 類型 | 優先 | 深度 | 建立時間 |
-|------|------|:----:|:----:|---------|
-| plan-c-karpathy-wiki-roadmap | 功能 | P2 | D1 | 2026-04-17 |
-| undefined | undefined | — | — | 2026-04-17 |
-| undefined | undefined | — | — | 2026-04-17 |
+_目前無待做任務_
 
 ---
 
