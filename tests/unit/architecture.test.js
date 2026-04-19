@@ -920,6 +920,23 @@ describe("ADR-012 sub1 M3 rule + planner wire", () => {
     const content = readFile(join(CLAUDE_DIR, "agents/planner.md"));
     expect(content).toMatch(/verifyCanonicalPaths_result/);
   });
+
+  // ── 斷鏈修復守護（2026-04-20 斷鏈 1/2/3）──
+  it("scripts/converge.js 存在（斷鏈 1：wrapup converge phase）", () => {
+    expect(existsSync(join(CLAUDE_DIR, "scripts/converge.js"))).toBe(true);
+  });
+
+  it("scripts/wrapup.js pipeline 接線 converge phase", () => {
+    const content = readFile(join(CLAUDE_DIR, "scripts/wrapup.js"));
+    expect(content).toMatch(/import\s*\{\s*converge\s*\}\s*from\s*["']\.\/converge\.js["']/);
+    expect(content).toMatch(/await converge\(\)/);
+  });
+
+  it("rules/環境/ralph-loop.md 含根本性 vs 便宜性判準（斷鏈 2）", () => {
+    const content = readFile(join(CLAUDE_DIR, "rules/環境/ralph-loop.md"));
+    expect(content).toMatch(/根本性\s*vs\s*便宜性/);
+    expect(content).toMatch(/連續\s*≥\s*2\s*iter.*adjacency/);
+  });
 });
 
 // ── md-link 格式統一守護（xd-ek2d Round 7）──
