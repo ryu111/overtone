@@ -84,7 +84,7 @@ related:
 - Case 1：rule 引用 `incidents/xd-XXXX` 或 `incidents/YYYY.md` → 檔必存在
 - Case 2：incident `upgraded_to: rules/X.md` → rule 必 grep keyword
 - Case 3：rule 引用 `obsidian/semantic/...` → 檔存在
-- Case 4（**v2 新，Round 3 Issue 3**）：**rename drift** — 掃近 30 天 git log `--name-status R*` 重命名，若 rule/incident 引用舊名 → fail
+- Case 4（**v2 新，Round 3 Issue 3 + Round 5 Q3 精修**）：**rename drift** — 用 `git log --diff-filter=R -M --name-status --since='30 days ago'` 偵測重命名（`-M` flag 啟 rename detection similarity 50% 預設，避 `R*` porcelain filter 版本兼容問題），若 rule/incident 引用舊名 → fail
 - 初期全 warn，Phase 1 驗收後升 block
 
 ### T6: DRAFT 檔 7 天 stale guard（+ 邊界 test）
@@ -100,11 +100,16 @@ related:
 ### T8: Top Violations baseline snapshot（Round 3 Issue 5 — before Phase 1）
 - 一次性 snapshot 寫 `data/phase-1-baseline/top-violations-YYYY-MM-DD.json`
 - schema：`{ snapshot_ts, violations: {id, count, last_seen}[] }`
-- 執行時機：Phase 1 實作**啟動前第一動作**（T1 實作前）
+- 執行時機：Phase 1 **T0 pre-Phase-1 sanity**，**不 block T1-T10**（Round 5 Q4 確認可並行）
 
 ### T9: T8 snapshot arch test 守護（Round 3 Issue 5 — after Phase 1）
 - architecture.test.js case：`data/phase-1-baseline/` 目錄存在 + 至少 1 snapshot 檔
 - Phase 1 完成後 2 週重取 second snapshot → 跟 baseline diff 決定 P3 進退
+- **4 指標**（Round 5 Q2 補第 4）：
+  - `new_incident_count`（Phase 1 後新增 incident 數）
+  - `violation_trend`（Top Violations 累計變化）
+  - `rule_rename_caught`（T5 Case 4 抓到幾次 rename drift）
+  - `draft_finalize_ratio`（**新**：DRAFT 檔 7 日內被 finalize vs stale 比例，用於 T4 keyword 寬嚴度判定 — Phase 1 本身成功信號）
 - **test**: 無新 unit test，靠 arch test 守護存在性
 
 ### T10: LOCAL_MODULES wire（Round 3 附帶）
