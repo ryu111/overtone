@@ -21,10 +21,12 @@
 - **優先級**：medium（影響 session 感知準確度）
 
 ### P2-3: structural-invariants 升 AST-based
-- **現況**：iter 4 commit c328307 升 identifier-set diff（比 text string 進步）
-- **目標**：進一步升 AST-based（業界 2026 FP rate 8-12% vs 現 identifier-set 估 15-20%）
-- **成本**：~1-2h D2 需 planner ROI 評估 + WebSearch ESLint AST plugin
-- **優先級**：low（需先量化 FP rate 決定 ROI）
+- **狀態 iter 19 ROI 量化**：**defer 至 FP > 5/month 才啟動**
+  - 業界 AST FP rate 8-12% vs nova identifier-set 估 15-20%
+  - 本 session 20 iter 實測 FP 2 次 = 10% 觸發率（不高於業界）
+  - 成本 1-2h vs 減 FP 1/20 iter → ROI 未達
+  - 詳見 `obsidian/semantic/external-references/ast-static-analysis-2026.md` § iter 19 ROI 量化
+- **未來 pick 條件**：FP > 5/month OR 新類型 preserveExports/Declarations FP 新增 OR ESLint 官方 AST native integration 成熟
 
 ### P2-4: refactor-test-sync-guard hook POC
 - **狀態 iter 19 判定**：**already covered by P2-6 + review-agent.js — close as YAGNI**
