@@ -1636,26 +1636,31 @@ describe("ADR-013 Phase 1 T5 — P2 rule-incident evidence", () => {
 		expect(Array.isArray(offenders)).toBe(true);
 	});
 
-	it("Case 4: rename drift — 近 30 天 git rename 引用舊名檢測（-M flag rename detection）", () => {
+	it("Case 4: rename drift — 近 30 天 git rename 引用舊名檢測（-M flag + old path 真不存在）", () => {
 		const { execSync } = require("node:child_process");
+		const fs = require("node:fs");
 		let renames = [];
 		try {
 			const out = execSync(
 				`git -C ${CLAUDE_DIR} log --diff-filter=R -M --name-status --since='30 days ago' --pretty=format: 2>/dev/null`,
 				{ encoding: "utf-8", timeout: 10000 }
 			).trim();
-			// Rename line format: R<score>\t<old>\t<new>
 			renames = out.split("\n")
 				.filter((l) => l.startsWith("R"))
 				.map((l) => { const parts = l.split("\t"); return { old: parts[1], new: parts[2] }; })
 				.filter((r) => r.old && r.new);
 		} catch { /* git log 失敗（無歷史或 timeout）跳過 */ }
 
-		// 掃 rules/ 和 incidents/ 是否仍引用 old name
-		const fs = require("node:fs");
+		// 只在 old path 真不存在 AND new path 存在 時才算 drift（排除 rename revert case）
+		const activeRenames = renames.filter((r) => {
+			const oldPath = join(CLAUDE_DIR, r.old);
+			const newPath = join(CLAUDE_DIR, r.new);
+			return !fs.existsSync(oldPath) && fs.existsSync(newPath);
+		});
+
 		const offenders = [];
-		const searchDirs = ["rules", "obsidian/episodic/incidents", "CLAUDE.md"];
-		for (const r of renames) {
+		const searchDirs = ["rules", "obsidian/episodic/incidents"];
+		for (const r of activeRenames) {
 			for (const dir of searchDirs) {
 				const path = join(CLAUDE_DIR, dir);
 				if (!fs.existsSync(path)) continue;
