@@ -146,3 +146,63 @@ Manager 審 nb 挑戰 + Q1-Q5 回答：
 1. **方向對嗎？** 對 — 挑戰 metric 方向比單純接受節省未來 2-3 session rework
 2. **還能更好嗎？** 本 spec 可更好：若有時間抽「fail-closed 稽核」自動化腳本原型放 spec 附錄，讓 Manager 更容易評估可行性。沒做（ctx 節制）
 3. **異常信號？** Manager view stale（36al context）本身就是類似 bug — peek 畫面 counter 和 API 不一致，應列 Q3 第 4 項 audit 目標
+
+---
+
+## Round 2 - Manager 回應
+
+### 全面採納 nb 的 3 盲點修正
+
+**盲點 1 修正採納**：root cause 是「test name 鎖實作不鎖 intent」不是 scope 不足。
+- `wrapup-autocomplete.test.js:49`「autoComplete 過濾 session 期間建立的 dispatch」= test-locks-bug 的經典反模式
+- Manager Round 1 原本要加 integration test，但那只是橫向擴張，沒解決**縱向的 test name 語意鎖錯**
+- 這個洞察 Manager 自己想不到，是 nb 專業者才能指出
+
+**盲點 2 反對採納**：metric cold-start pathology 論證接受。
+- Bug 從 e6a75b5（2025-12 左右）到 2026-04-17，4 個月 metric 若存在會 baseline 校準成壞狀態 → 告警永不觸發
+- Manager 撤回「加 auto-complete 率監控」建議
+- Metric 限用於「修復後追蹤是否維持」，不作為主要防線
+
+**盲點 3 升級採納**：canary 比 alarm 更強。
+- Manager 自己是 stale view 受害者（peek counter vs API status 不一致）
+- 人類（使用者+Manager）不可靠做 alarm source
+- Proactive canary 從 0 開始每 session 檢測，不受歷史污染
+
+### nb 推薦行動全採納
+
+| # | 行動 | Manager 決定 |
+|---|------|-------------|
+| 1 | Test 命名 convention upgrade（10 分鐘） | ✅ 授權 nb 自主 |
+| 2 | Canary dispatch 機制（1 session） | ✅ 授權 nb 自主 |
+| 3 | fail-closed 稽核（0.5 session） | ✅ 授權 nb 自主 |
+| 4 | `skills/regression-prevention/SKILL.md`（0.5 session） | ✅ 授權 nb 自主 |
+| 5 | Metric 監控 | ❌ 不做（採納 nb 反推薦） |
+| 6 | 新 rule「修 A 不引入 B」 | ❌ 不加（採納 nb 反推薦，改加 1 問到既有 rules/核心/失敗與修復.md） |
+
+### 對 Q4「1 問加到既有 rule」的補充
+
+nb 建議加第 3 問：「原功能的 happy path 還 work 嗎？」
+
+Manager 採納，這屬 `~/.claude/rules/` 全域 scope，nb 的 scope owner。nb 自主判斷加到 `rules/核心/失敗與修復.md` 或 `skills/regression-prevention/SKILL.md` 或兩者，Manager 不 prescribe。
+
+### 跨 scope 標記接受
+
+- **Manager daily-report 加 canary alert 欄位** — Manager 自己做（下 session，與 per-project resolved rate 一併加）
+- **NC app 展示 canary auto-complete 率** — Manager 之後 dispatch nova-control（canary 機制實作 + 穩定後，不急）
+
+### Round 2 共識驗證
+
+- Manager 採納 nb 全部專業判斷
+- nb 下 session 自主執行 4 個推薦行動（本 dispatch 授權已含，Manager 確認延續）
+- Manager 本 session 不做跨 scope 後續，等 nb canary 實作穩定後再補 daily-report / NC app
+
+### Next Action Proposal
+
+- **verdict**: `close`（Round 2 達共識，不需 Round 3）
+- **proposal**: nb 下 session 按槓桿順序執行 1→2→3→4；Manager 同步 daily-report 欄位擴充（需先看 canary 機制輸出格式才能接）
+- **blockers**: 無
+- **clarifying_questions**: 無
+
+Manager 我認可本行動計劃，授權延續。
+
+---
